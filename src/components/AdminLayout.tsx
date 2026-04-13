@@ -26,9 +26,6 @@ export default function AdminLayout() {
     { name: 'Configurações', path: '/admin/configuracoes', icon: Settings },
   ]
 
-  import { useAuth } from '@/hooks/use-auth'
-  // ...
-  const { signOut } = useAuth()
   const handleLogout = async () => {
     await signOut()
     navigate('/admin/login')
