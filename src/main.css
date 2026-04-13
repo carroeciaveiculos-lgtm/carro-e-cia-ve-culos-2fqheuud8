@@ -23,12 +23,13 @@
     --secondary: 0 0% 10%;
     --secondary-foreground: 0 0% 100%;
 
-    /* Muted/Accent: #F5F5F5 (Light Gray) */
+    /* Muted */
     --muted: 0 0% 96%;
     --muted-foreground: 0 0% 40%;
 
-    --accent: 0 0% 96%;
-    --accent-foreground: 0 0% 10%;
+    /* Accent: #F39C12 (Gold/Amber) */
+    --accent: 37 90% 51%;
+    --accent-foreground: 0 0% 100%;
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;

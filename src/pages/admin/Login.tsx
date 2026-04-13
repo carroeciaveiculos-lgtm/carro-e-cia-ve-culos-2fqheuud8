@@ -1,20 +1,38 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { useAuth } from '@/hooks/use-auth'
+import { useToast } from '@/hooks/use-toast'
 
 const Login = () => {
   const navigate = useNavigate()
+  const { signIn, user } = useAuth()
+  const { toast } = useToast()
   const [loading, setLoading] = useState(false)
+  const [email, setEmail] = useState('adriana.araujo@kmzero.com.br')
+  const [password, setPassword] = useState('Skip@Pass123!')
 
-  const handleLogin = (e: React.FormEvent) => {
+  useEffect(() => {
+    if (user) navigate('/admin')
+  }, [user, navigate])
+
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
-    setTimeout(() => {
-      setLoading(false)
+    const { error } = await signIn(email, password)
+    setLoading(false)
+
+    if (error) {
+      toast({
+        title: 'Erro de Autenticação',
+        description: 'E-mail ou senha incorretos.',
+        variant: 'destructive',
+      })
+    } else {
       navigate('/admin')
-    }, 1000)
+    }
   }
 
   return (
@@ -36,19 +54,22 @@ const Login = () => {
             <Input
               id="email"
               type="email"
-              placeholder="admin@carroecia.com.br"
               required
-              defaultValue="admin@carroecia.com.br"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
             />
           </div>
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <Label htmlFor="password">Senha</Label>
-              <a href="#" className="text-xs text-primary hover:underline">
-                Esqueceu a senha?
-              </a>
             </div>
-            <Input id="password" type="password" required defaultValue="password123" />
+            <Input
+              id="password"
+              type="password"
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
           </div>
           <Button type="submit" className="w-full h-12 text-lg" disabled={loading}>
             {loading ? 'Entrando...' : 'Entrar no Sistema'}

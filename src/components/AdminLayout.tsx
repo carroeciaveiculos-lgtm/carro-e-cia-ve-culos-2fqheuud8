@@ -11,10 +11,12 @@ import {
   SidebarFooter,
 } from '@/components/ui/sidebar'
 import { Button } from '@/components/ui/button'
+import { useAuth } from '@/hooks/use-auth'
 
 export default function AdminLayout() {
   const location = useLocation()
   const navigate = useNavigate()
+  const { signOut } = useAuth()
 
   const adminLinks = [
     { name: 'Dashboard', path: '/admin', icon: LayoutDashboard },
@@ -24,7 +26,11 @@ export default function AdminLayout() {
     { name: 'Configurações', path: '/admin/configuracoes', icon: Settings },
   ]
 
-  const handleLogout = () => {
+  import { useAuth } from '@/hooks/use-auth'
+  // ...
+  const { signOut } = useAuth()
+  const handleLogout = async () => {
+    await signOut()
     navigate('/admin/login')
   }
 

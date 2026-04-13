@@ -1,5 +1,5 @@
-import { useState, useMemo } from 'react'
-import { Search, Filter, SlidersHorizontal } from 'lucide-react'
+import { useState, useMemo, useEffect } from 'react'
+import { Search, Filter, SlidersHorizontal, Car } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
@@ -12,26 +12,37 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
-import { mockVehicles } from '@/lib/mock-data'
 import { VehicleCard } from '@/components/VehicleCard'
+import { getVeiculos, Veiculo } from '@/services/veiculos'
+import { Skeleton } from '@/components/ui/skeleton'
 
 const Estoque = () => {
+  const [vehicles, setVehicles] = useState<Veiculo[]>([])
+  const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [priceRange, setPriceRange] = useState([0, 300000])
   const [brand, setBrand] = useState('todas')
   const [year, setYear] = useState('todos')
 
+  useEffect(() => {
+    getVeiculos().then(({ data }) => {
+      if (data) setVehicles(data)
+      setLoading(false)
+    })
+  }, [])
+
   const filteredVehicles = useMemo(() => {
-    return mockVehicles.filter((v) => {
+    return vehicles.filter((v) => {
       const matchSearch =
-        v.model.toLowerCase().includes(search.toLowerCase()) ||
-        v.brand.toLowerCase().includes(search.toLowerCase())
-      const matchBrand = brand === 'todas' || v.brand.toLowerCase() === brand.toLowerCase()
-      const matchYear = year === 'todos' || v.year.includes(year)
-      const matchPrice = v.price >= priceRange[0] && v.price <= priceRange[1]
+        v.modelo.toLowerCase().includes(search.toLowerCase()) ||
+        v.marca.toLowerCase().includes(search.toLowerCase())
+      const matchBrand = brand === 'todas' || v.marca.toLowerCase() === brand.toLowerCase()
+      const matchYear = year === 'todos' || v.ano_modelo?.toString() === year
+      const matchPrice =
+        (v.preco_venda || 0) >= priceRange[0] && (v.preco_venda || 0) <= priceRange[1]
       return matchSearch && matchBrand && matchYear && matchPrice
     })
-  }, [search, brand, year, priceRange])
+  }, [vehicles, search, brand, year, priceRange])
 
   const FilterContent = () => (
     <div className="space-y-8">
@@ -51,7 +62,6 @@ const Estoque = () => {
               <SelectItem value="honda">Honda</SelectItem>
               <SelectItem value="volkswagen">Volkswagen</SelectItem>
               <SelectItem value="chevrolet">Chevrolet</SelectItem>
-              <SelectItem value="hyundai">Hyundai</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -111,12 +121,11 @@ const Estoque = () => {
         <div className="mb-8">
           <h1 className="font-display font-bold text-3xl md:text-4xl mb-4">Nosso Estoque</h1>
           <p className="text-muted-foreground">
-            Encontre o veículo ideal para você com garantia de procedência.
+            Encontre o veículo ideal para você com procedência garantida.
           </p>
         </div>
 
         <div className="flex flex-col lg:flex-row gap-8">
-          {/* Desktop Sidebar */}
           <aside className="hidden lg:block w-72 shrink-0">
             <div className="sticky top-28 bg-card p-6 rounded-xl border shadow-sm">
               <FilterContent />
@@ -124,7 +133,6 @@ const Estoque = () => {
           </aside>
 
           <main className="flex-1">
-            {/* Search & Mobile Filter Bar */}
             <div className="flex flex-col sm:flex-row gap-4 mb-8">
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-5 h-5" />
@@ -150,18 +158,25 @@ const Estoque = () => {
               </Sheet>
             </div>
 
-            {/* Results Grid */}
-            <div className="mb-6 text-sm text-muted-foreground">
-              Mostrando <span className="font-bold text-foreground">{filteredVehicles.length}</span>{' '}
-              veículos
-            </div>
-
-            {filteredVehicles.length > 0 ? (
+            {loading ? (
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                {filteredVehicles.map((vehicle) => (
-                  <VehicleCard key={vehicle.id} vehicle={vehicle} />
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <Skeleton key={i} className="h-[400px] rounded-xl" />
                 ))}
               </div>
+            ) : filteredVehicles.length > 0 ? (
+              <>
+                <div className="mb-6 text-sm text-muted-foreground">
+                  Mostrando{' '}
+                  <span className="font-bold text-foreground">{filteredVehicles.length}</span>{' '}
+                  veículos
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                  {filteredVehicles.map((vehicle) => (
+                    <VehicleCard key={vehicle.id} vehicle={vehicle} />
+                  ))}
+                </div>
+              </>
             ) : (
               <div className="text-center py-20 bg-card rounded-xl border border-dashed">
                 <Car className="w-12 h-12 text-muted-foreground mx-auto mb-4 opacity-50" />
@@ -177,5 +192,4 @@ const Estoque = () => {
     </div>
   )
 }
-import { Car } from 'lucide-react'
 export default Estoque

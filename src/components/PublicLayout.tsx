@@ -5,6 +5,8 @@ import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetTrigger, SheetClose } from '@/components/ui/sheet'
 import { cn } from '@/lib/utils'
 
+import { WhatsAppButton } from './WhatsAppButton'
+
 export default function PublicLayout() {
   const [scrolled, setScrolled] = useState(false)
   const location = useLocation()
@@ -201,6 +203,7 @@ export default function PublicLayout() {
           <p className="mt-2 md:mt-0">Feito com dedicação para Uberaba e Região.</p>
         </div>
       </footer>
+      <WhatsAppButton />
     </div>
   )
 }

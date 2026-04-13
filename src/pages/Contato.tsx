@@ -56,6 +56,7 @@ const Contato = () => {
             <LeadForm
               title="Envie uma mensagem"
               subtitle="Preencha os campos abaixo que retornaremos em breve."
+              origem="Site - Contato"
             />
           </div>
         </div>

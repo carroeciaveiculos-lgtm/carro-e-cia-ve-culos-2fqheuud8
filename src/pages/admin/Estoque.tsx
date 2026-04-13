@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Plus, Search, MoreHorizontal, Pencil, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -17,15 +17,25 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { mockVehicles } from '@/lib/mock-data'
+import { getVeiculos, Veiculo } from '@/services/veiculos'
+import { Skeleton } from '@/components/ui/skeleton'
 
 const AdminEstoque = () => {
+  const [vehicles, setVehicles] = useState<Veiculo[]>([])
+  const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
 
-  const filtered = mockVehicles.filter(
+  useEffect(() => {
+    getVeiculos().then(({ data }) => {
+      if (data) setVehicles(data)
+      setLoading(false)
+    })
+  }, [])
+
+  const filtered = vehicles.filter(
     (v) =>
-      v.brand.toLowerCase().includes(search.toLowerCase()) ||
-      v.model.toLowerCase().includes(search.toLowerCase()),
+      v.marca.toLowerCase().includes(search.toLowerCase()) ||
+      v.modelo.toLowerCase().includes(search.toLowerCase()),
   )
 
   return (
@@ -64,58 +74,72 @@ const AdminEstoque = () => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filtered.map((vehicle) => (
-              <TableRow key={vehicle.id}>
-                <TableCell>
-                  <div className="flex items-center gap-3">
-                    <img
-                      src={vehicle.images[0]}
-                      alt=""
-                      className="w-12 h-12 rounded object-cover border"
-                    />
-                    <div>
-                      <div className="font-medium">
-                        {vehicle.brand} {vehicle.model}
-                      </div>
-                      <div className="text-xs text-muted-foreground line-clamp-1 max-w-[200px]">
-                        {vehicle.version}
-                      </div>
-                    </div>
-                  </div>
-                </TableCell>
-                <TableCell>{vehicle.year}</TableCell>
-                <TableCell className="font-medium">
-                  R$ {vehicle.price.toLocaleString('pt-BR')}
-                </TableCell>
-                <TableCell>
-                  <Badge variant={vehicle.type === 'consignado' ? 'secondary' : 'outline'}>
-                    {vehicle.type === 'consignado' ? 'Consignado' : 'Próprio'}
-                  </Badge>
-                </TableCell>
-                <TableCell>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon">
-                        <MoreHorizontal className="w-4 h-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem className="gap-2">
-                        <Pencil className="w-4 h-4" /> Editar
-                      </DropdownMenuItem>
-                      <DropdownMenuItem className="gap-2 text-destructive focus:bg-destructive focus:text-destructive-foreground">
-                        <Trash2 className="w-4 h-4" /> Excluir
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </TableCell>
-              </TableRow>
-            ))}
+            {loading
+              ? Array.from({ length: 3 }).map((_, i) => (
+                  <TableRow key={i}>
+                    <TableCell colSpan={5}>
+                      <Skeleton className="h-12 w-full" />
+                    </TableCell>
+                  </TableRow>
+                ))
+              : filtered.map((vehicle) => {
+                  const images = vehicle.fotos as string[]
+                  return (
+                    <TableRow key={vehicle.id}>
+                      <TableCell>
+                        <div className="flex items-center gap-3">
+                          {images && images.length > 0 && (
+                            <img
+                              src={images[0]}
+                              alt=""
+                              className="w-12 h-12 rounded object-cover border"
+                            />
+                          )}
+                          <div>
+                            <div className="font-medium">
+                              {vehicle.marca} {vehicle.modelo}
+                            </div>
+                            <div className="text-xs text-muted-foreground line-clamp-1 max-w-[200px]">
+                              {vehicle.versao}
+                            </div>
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        {vehicle.ano_fabricacao}/{vehicle.ano_modelo}
+                      </TableCell>
+                      <TableCell className="font-medium">
+                        R$ {(vehicle.preco_venda || 0).toLocaleString('pt-BR')}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={vehicle.is_consignado ? 'secondary' : 'outline'}>
+                          {vehicle.is_consignado ? 'Consignado' : 'Próprio'}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon">
+                              <MoreHorizontal className="w-4 h-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem className="gap-2">
+                              <Pencil className="w-4 h-4" /> Editar
+                            </DropdownMenuItem>
+                            <DropdownMenuItem className="gap-2 text-destructive focus:bg-destructive focus:text-destructive-foreground">
+                              <Trash2 className="w-4 h-4" /> Excluir
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  )
+                })}
           </TableBody>
         </Table>
       </div>
     </div>
   )
 }
-
 export default AdminEstoque
