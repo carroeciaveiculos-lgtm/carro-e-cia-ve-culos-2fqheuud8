@@ -430,27 +430,37 @@ export type Database = {
           ano_fabricacao: number | null
           ano_modelo: number | null
           cambio: string | null
+          caracteristicas: Json | null
+          categoria: string | null
+          chassi: string | null
           combustivel: string | null
           cor: string | null
           created_at: string | null
           descricao: string | null
+          destaque: boolean | null
           diferenciais: Json | null
           final_placa: string | null
           fotos: Json | null
           id: string
           ipva_pago: boolean | null
           is_consignado: boolean | null
+          is_zero_km: boolean | null
           marca: string
           modelo: string
+          placa: string | null
           portas: number | null
+          preco_classificados: number | null
           preco_minimo: number | null
           preco_venda: number | null
           proprietario_nome: string | null
           proprietario_telefone: string | null
           publicado_icarros: boolean | null
+          publicado_mercadolivre: boolean | null
+          publicado_napista: boolean | null
           publicado_olx: boolean | null
           publicado_webmotors: boolean | null
           quilometragem: number | null
+          renavam: string | null
           responsavel_id: string | null
           status: string | null
           updated_at: string | null
@@ -462,27 +472,37 @@ export type Database = {
           ano_fabricacao?: number | null
           ano_modelo?: number | null
           cambio?: string | null
+          caracteristicas?: Json | null
+          categoria?: string | null
+          chassi?: string | null
           combustivel?: string | null
           cor?: string | null
           created_at?: string | null
           descricao?: string | null
+          destaque?: boolean | null
           diferenciais?: Json | null
           final_placa?: string | null
           fotos?: Json | null
           id?: string
           ipva_pago?: boolean | null
           is_consignado?: boolean | null
+          is_zero_km?: boolean | null
           marca: string
           modelo: string
+          placa?: string | null
           portas?: number | null
+          preco_classificados?: number | null
           preco_minimo?: number | null
           preco_venda?: number | null
           proprietario_nome?: string | null
           proprietario_telefone?: string | null
           publicado_icarros?: boolean | null
+          publicado_mercadolivre?: boolean | null
+          publicado_napista?: boolean | null
           publicado_olx?: boolean | null
           publicado_webmotors?: boolean | null
           quilometragem?: number | null
+          renavam?: string | null
           responsavel_id?: string | null
           status?: string | null
           updated_at?: string | null
@@ -494,27 +514,37 @@ export type Database = {
           ano_fabricacao?: number | null
           ano_modelo?: number | null
           cambio?: string | null
+          caracteristicas?: Json | null
+          categoria?: string | null
+          chassi?: string | null
           combustivel?: string | null
           cor?: string | null
           created_at?: string | null
           descricao?: string | null
+          destaque?: boolean | null
           diferenciais?: Json | null
           final_placa?: string | null
           fotos?: Json | null
           id?: string
           ipva_pago?: boolean | null
           is_consignado?: boolean | null
+          is_zero_km?: boolean | null
           marca?: string
           modelo?: string
+          placa?: string | null
           portas?: number | null
+          preco_classificados?: number | null
           preco_minimo?: number | null
           preco_venda?: number | null
           proprietario_nome?: string | null
           proprietario_telefone?: string | null
           publicado_icarros?: boolean | null
+          publicado_mercadolivre?: boolean | null
+          publicado_napista?: boolean | null
           publicado_olx?: boolean | null
           publicado_webmotors?: boolean | null
           quilometragem?: number | null
+          renavam?: string | null
           responsavel_id?: string | null
           status?: string | null
           updated_at?: string | null
@@ -806,6 +836,16 @@ export const Constants = {
 //   publicado_icarros: boolean (nullable, default: false)
 //   created_at: timestamp without time zone (nullable, default: now())
 //   updated_at: timestamp without time zone (nullable, default: now())
+//   placa: text (nullable)
+//   chassi: text (nullable)
+//   renavam: text (nullable)
+//   preco_classificados: numeric (nullable)
+//   is_zero_km: boolean (nullable, default: false)
+//   categoria: text (nullable, default: 'Carro'::text)
+//   destaque: boolean (nullable, default: false)
+//   publicado_mercadolivre: boolean (nullable, default: false)
+//   publicado_napista: boolean (nullable, default: false)
+//   caracteristicas: jsonb (nullable, default: '[]'::jsonb)
 
 // --- CONSTRAINTS ---
 // Table: consignacoes

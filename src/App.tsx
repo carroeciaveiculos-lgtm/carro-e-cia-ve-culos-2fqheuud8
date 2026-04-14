@@ -25,6 +25,9 @@ import AdminLeads from './pages/admin/Leads'
 import Portais from './pages/admin/Portais'
 import Relatorios from './pages/admin/Relatorios'
 import Configuracoes from './pages/admin/Configuracoes'
+import Usuarios from './pages/admin/Usuarios'
+import EditUsuario from './pages/admin/EditUsuario'
+import EmConstrucao from './pages/admin/EmConstrucao'
 
 const App = () => (
   <AuthProvider>
@@ -48,11 +51,23 @@ const App = () => (
           <Route path="/admin" element={<ProtectedRoute />}>
             <Route element={<AdminLayout />}>
               <Route index element={<Dashboard />} />
-              <Route path="veiculos" element={<AdminEstoque />} />
+              <Route path="estoque" element={<AdminEstoque />} />
+              <Route path="veiculos" element={<Navigate to="/admin/estoque" replace />} />
               <Route path="crm" element={<AdminLeads />} />
               <Route path="portais" element={<Portais />} />
               <Route path="relatorios" element={<Relatorios />} />
               <Route path="configuracoes" element={<Configuracoes />} />
+
+              {/* Controle de Acesso */}
+              <Route path="usuarios" element={<Usuarios />} />
+              <Route path="usuarios/:id" element={<EditUsuario />} />
+
+              {/* Módulos em Construção */}
+              <Route path="site" element={<EmConstrucao />} />
+              <Route path="avaliacao" element={<EmConstrucao />} />
+              <Route path="marketing" element={<EmConstrucao />} />
+              <Route path="suporte" element={<EmConstrucao />} />
+
               <Route path="faturas" element={<Navigate to="/admin" replace />} />
             </Route>
           </Route>
