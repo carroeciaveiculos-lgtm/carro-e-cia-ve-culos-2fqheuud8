@@ -16,6 +16,9 @@ import Veiculo from './pages/Veiculo'
 import Consignacao from './pages/Consignacao'
 import Sobre from './pages/Sobre'
 import Contato from './pages/Contato'
+import Seguranca from './pages/consignacao/Seguranca'
+import Praticidade from './pages/consignacao/Praticidade'
+import Troca from './pages/consignacao/Troca'
 
 // Admin Pages
 import Login from './pages/admin/Login'
@@ -44,6 +47,11 @@ const App = () => (
             <Route path="/consignacao" element={<Consignacao />} />
             <Route path="/sobre" element={<Sobre />} />
             <Route path="/contato" element={<Contato />} />
+
+            {/* Landing Pages LPs */}
+            <Route path="/lp/venda-segura" element={<Seguranca />} />
+            <Route path="/lp/venda-rapida" element={<Praticidade />} />
+            <Route path="/lp/troca-com-troco" element={<Troca />} />
           </Route>
 
           {/* Admin Routes */}

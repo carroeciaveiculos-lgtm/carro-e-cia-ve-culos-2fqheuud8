@@ -37,6 +37,14 @@ export default function AdminLeads() {
     loadLeads()
   }, [filterType, search])
 
+  // SLA Monitor: Refresh leads periodically
+  useEffect(() => {
+    const interval = setInterval(() => {
+      loadLeads()
+    }, 30000)
+    return () => clearInterval(interval)
+  }, [filterType, search])
+
   const activeLead = leads.find((l) => l.id === activeLeadId)
 
   const updateLeadStatus = async (status: string) => {
@@ -51,6 +59,12 @@ export default function AdminLeads() {
     await supabase.from('leads').update({ temperatura }).eq('id', activeLeadId)
     toast({ title: 'Temperatura atualizada' })
     loadLeads()
+  }
+
+  const isSlaViolated = (createdAt: string, status: string) => {
+    if (status !== 'novo' && status !== 'Pendente') return false
+    const diffMinutes = (new Date().getTime() - new Date(createdAt).getTime()) / 60000
+    return diffMinutes > 15
   }
 
   return (
@@ -84,38 +98,56 @@ export default function AdminLeads() {
       <div className="flex-1 flex overflow-hidden">
         {/* COLUNA ESQUERDA: Lista */}
         <div className="w-80 border-r bg-muted/10 overflow-y-auto flex flex-col">
-          {leads.map((lead) => (
-            <button
-              key={lead.id}
-              onClick={() => setActiveLeadId(lead.id)}
-              className={`p-4 text-left border-b hover:bg-muted/50 transition-colors ${activeLeadId === lead.id ? 'bg-card border-l-4 border-l-primary' : 'border-l-4 border-l-transparent'}`}
-            >
-              <div className="flex justify-between items-start mb-1">
-                <span className="font-bold text-sm truncate pr-2">{lead.nome}</span>
-                <span className="text-[10px] text-muted-foreground whitespace-nowrap">
-                  {new Date(lead.created_at).toLocaleDateString('pt-BR')}
-                </span>
-              </div>
-              <div className="flex gap-1 mb-2">
-                <Badge variant="outline" className="text-[10px] py-0 h-4">
-                  {lead.tipo}
-                </Badge>
-                {lead.temperatura === 'quente' && (
-                  <Badge className="text-[10px] py-0 h-4 bg-red-500 hover:bg-red-600 border-none">
-                    Quente
-                  </Badge>
+          {leads.map((lead) => {
+            const hasSlaWarning = isSlaViolated(lead.created_at, lead.status)
+            return (
+              <button
+                key={lead.id}
+                onClick={() => setActiveLeadId(lead.id)}
+                className={`p-4 text-left border-b hover:bg-muted/50 transition-colors relative overflow-hidden ${activeLeadId === lead.id ? 'bg-card border-l-4 border-l-primary' : 'border-l-4 border-l-transparent'} ${hasSlaWarning ? 'bg-red-500/10 hover:bg-red-500/20' : ''}`}
+              >
+                {hasSlaWarning && (
+                  <div
+                    className="absolute top-0 right-0 w-2 h-full bg-red-500 animate-pulse"
+                    title="SLA de 15min violado"
+                  />
                 )}
-                {lead.temperatura === 'morno' && (
-                  <Badge className="text-[10px] py-0 h-4 bg-amber-500 hover:bg-amber-600 border-none">
-                    Morno
+                <div className="flex justify-between items-start mb-1">
+                  <span
+                    className={`font-bold text-sm truncate pr-2 ${hasSlaWarning ? 'text-red-600 dark:text-red-400' : ''}`}
+                  >
+                    {lead.nome}
+                  </span>
+                  <span className="text-[10px] text-muted-foreground whitespace-nowrap mr-2">
+                    {new Date(lead.created_at).toLocaleTimeString('pt-BR', {
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })}
+                  </span>
+                </div>
+                <div className="flex gap-1 mb-2">
+                  <Badge variant="outline" className="text-[10px] py-0 h-4">
+                    {lead.tipo}
                   </Badge>
-                )}
-              </div>
-              <p className="text-xs text-muted-foreground truncate">
-                {lead.veiculo_interesse || lead.observacoes || 'Sem detalhes'}
-              </p>
-            </button>
-          ))}
+                  {lead.temperatura === 'quente' && (
+                    <Badge className="text-[10px] py-0 h-4 bg-red-500 hover:bg-red-600 border-none">
+                      Quente
+                    </Badge>
+                  )}
+                  {lead.temperatura === 'morno' && (
+                    <Badge className="text-[10px] py-0 h-4 bg-amber-500 hover:bg-amber-600 border-none">
+                      Morno
+                    </Badge>
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground truncate mr-2">
+                  {lead.carro_modelo
+                    ? `${lead.carro_modelo} ${lead.carro_ano || ''}`
+                    : lead.veiculo_interesse || lead.observacoes || 'Sem detalhes'}
+                </p>
+              </button>
+            )
+          })}
         </div>
 
         {/* COLUNA CENTRAL: Detalhes */}
@@ -178,8 +210,28 @@ export default function AdminLeads() {
 
                 <div className="bg-muted p-4 rounded-xl">
                   <h4 className="font-bold mb-2 text-sm uppercase text-muted-foreground">
-                    Interesse / Observações
+                    Interesse / Observações / Veículo
                   </h4>
+                  {activeLead.carro_modelo && (
+                    <div className="mb-4 p-3 bg-background rounded-lg border border-border">
+                      <p className="font-bold text-sm mb-1 text-primary">
+                        Dados da Consignação/Troca:
+                      </p>
+                      <ul className="text-sm grid grid-cols-1 md:grid-cols-3 gap-2">
+                        <li>
+                          <span className="text-muted-foreground">Modelo:</span>{' '}
+                          {activeLead.carro_modelo}
+                        </li>
+                        <li>
+                          <span className="text-muted-foreground">Ano:</span> {activeLead.carro_ano}
+                        </li>
+                        <li>
+                          <span className="text-muted-foreground">Placa:</span>{' '}
+                          {activeLead.carro_placa}
+                        </li>
+                      </ul>
+                    </div>
+                  )}
                   <p className="whitespace-pre-wrap">{activeLead.veiculo_interesse}</p>
                   <p className="whitespace-pre-wrap mt-2">{activeLead.observacoes}</p>
                   {activeLead.faixa_preco && (
