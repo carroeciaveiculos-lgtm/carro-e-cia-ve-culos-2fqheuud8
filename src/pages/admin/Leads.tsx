@@ -11,7 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Search, Phone, Mail, MessageCircle, Calendar } from 'lucide-react'
+import { Search, Phone, Mail, MessageCircle, Calendar, Users } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 
 export default function AdminLeads() {

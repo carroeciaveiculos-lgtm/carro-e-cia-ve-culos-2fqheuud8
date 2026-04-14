@@ -9,6 +9,38 @@ export type Database = {
   }
   public: {
     Tables: {
+      access_log: {
+        Row: {
+          acao: string | null
+          id: number
+          modulo: string | null
+          timestamp: string | null
+          usuario_id: string | null
+        }
+        Insert: {
+          acao?: string | null
+          id?: number
+          modulo?: string | null
+          timestamp?: string | null
+          usuario_id?: string | null
+        }
+        Update: {
+          acao?: string | null
+          id?: number
+          modulo?: string | null
+          timestamp?: string | null
+          usuario_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'access_log_usuario_id_fkey'
+            columns: ['usuario_id']
+            isOneToOne: false
+            referencedRelation: 'usuarios'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       consignacoes: {
         Row: {
           comissao: number | null
@@ -404,24 +436,33 @@ export type Database = {
           created_at: string | null
           email: string
           id: string
+          modulos: string[] | null
+          nivel: string | null
           nome: string
           role: string | null
+          ultimo_acesso: string | null
         }
         Insert: {
           ativo?: boolean | null
           created_at?: string | null
           email: string
           id?: string
+          modulos?: string[] | null
+          nivel?: string | null
           nome: string
           role?: string | null
+          ultimo_acesso?: string | null
         }
         Update: {
           ativo?: boolean | null
           created_at?: string | null
           email?: string
           id?: string
+          modulos?: string[] | null
+          nivel?: string | null
           nome?: string
           role?: string | null
+          ultimo_acesso?: string | null
         }
         Relationships: []
       }
@@ -709,6 +750,12 @@ export const Constants = {
 // --- COLUMN TYPES (actual PostgreSQL types) ---
 // Use this to know the real database type when writing migrations.
 // "string" in TypeScript types above may be uuid, text, varchar, timestamptz, etc.
+// Table: access_log
+//   id: bigint (not null, default: nextval('access_log_id_seq'::regclass))
+//   usuario_id: uuid (nullable)
+//   modulo: text (nullable)
+//   acao: text (nullable)
+//   timestamp: timestamp without time zone (nullable, default: now())
 // Table: consignacoes
 //   id: uuid (not null, default: gen_random_uuid())
 //   lead_id: uuid (nullable)
@@ -805,6 +852,9 @@ export const Constants = {
 //   role: text (nullable, default: 'vendedor'::text)
 //   ativo: boolean (nullable, default: true)
 //   created_at: timestamp without time zone (nullable, default: now())
+//   modulos: _text (nullable, default: ARRAY['estoque'::text])
+//   ultimo_acesso: timestamp without time zone (nullable)
+//   nivel: text (nullable, default: 'operador'::text)
 // Table: veiculos
 //   id: uuid (not null, default: gen_random_uuid())
 //   marca: text (not null)
@@ -848,6 +898,9 @@ export const Constants = {
 //   caracteristicas: jsonb (nullable, default: '[]'::jsonb)
 
 // --- CONSTRAINTS ---
+// Table: access_log
+//   PRIMARY KEY access_log_pkey: PRIMARY KEY (id)
+//   FOREIGN KEY access_log_usuario_id_fkey: FOREIGN KEY (usuario_id) REFERENCES usuarios(id)
 // Table: consignacoes
 //   FOREIGN KEY consignacoes_lead_id_fkey: FOREIGN KEY (lead_id) REFERENCES leads(id)
 //   PRIMARY KEY consignacoes_pkey: PRIMARY KEY (id)
@@ -886,6 +939,10 @@ export const Constants = {
 //   FOREIGN KEY veiculos_responsavel_id_fkey: FOREIGN KEY (responsavel_id) REFERENCES usuarios(id)
 
 // --- ROW LEVEL SECURITY POLICIES ---
+// Table: access_log
+//   Policy "allow_auth_all_access_log" (ALL, PERMISSIVE) roles={authenticated}
+//     USING: true
+//     WITH CHECK: true
 // Table: consignacoes
 //   Policy "allow_auth_all_consignacoes" (ALL, PERMISSIVE) roles={authenticated}
 //     USING: true
