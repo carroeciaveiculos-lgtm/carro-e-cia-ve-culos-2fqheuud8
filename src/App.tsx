@@ -22,6 +22,9 @@ import Login from './pages/admin/Login'
 import Dashboard from './pages/admin/Dashboard'
 import AdminEstoque from './pages/admin/Estoque'
 import AdminLeads from './pages/admin/Leads'
+import Portais from './pages/admin/Portais'
+import Relatorios from './pages/admin/Relatorios'
+import Configuracoes from './pages/admin/Configuracoes'
 
 const App = () => (
   <AuthProvider>
@@ -47,8 +50,10 @@ const App = () => (
               <Route index element={<Dashboard />} />
               <Route path="veiculos" element={<AdminEstoque />} />
               <Route path="crm" element={<AdminLeads />} />
-              <Route path="consignacoes" element={<Navigate to="/admin/crm" replace />} />
-              <Route path="configuracoes" element={<Navigate to="/admin" replace />} />
+              <Route path="portais" element={<Portais />} />
+              <Route path="relatorios" element={<Relatorios />} />
+              <Route path="configuracoes" element={<Configuracoes />} />
+              <Route path="faturas" element={<Navigate to="/admin" replace />} />
             </Route>
           </Route>
 

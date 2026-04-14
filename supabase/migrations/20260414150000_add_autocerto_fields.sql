@@ -1,0 +1,10 @@
+ALTER TABLE public.veiculos ADD COLUMN IF NOT EXISTS placa text;
+ALTER TABLE public.veiculos ADD COLUMN IF NOT EXISTS chassi text;
+ALTER TABLE public.veiculos ADD COLUMN IF NOT EXISTS renavam text;
+ALTER TABLE public.veiculos ADD COLUMN IF NOT EXISTS preco_classificados numeric;
+ALTER TABLE public.veiculos ADD COLUMN IF NOT EXISTS is_zero_km boolean DEFAULT false;
+ALTER TABLE public.veiculos ADD COLUMN IF NOT EXISTS categoria text DEFAULT 'Carro';
+ALTER TABLE public.veiculos ADD COLUMN IF NOT EXISTS destaque boolean DEFAULT false;
+ALTER TABLE public.veiculos ADD COLUMN IF NOT EXISTS publicado_mercadolivre boolean DEFAULT false;
+ALTER TABLE public.veiculos ADD COLUMN IF NOT EXISTS publicado_napista boolean DEFAULT false;
+ALTER TABLE public.veiculos ADD COLUMN IF NOT EXISTS caracteristicas jsonb DEFAULT '[]'::jsonb;
