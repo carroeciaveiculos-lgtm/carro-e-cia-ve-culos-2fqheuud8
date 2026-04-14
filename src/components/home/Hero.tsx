@@ -1,58 +1,192 @@
-import { Link } from 'react-router-dom'
+import { useState } from 'react'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import * as z from 'zod'
+import { ShieldCheck, Megaphone, Clock, Send, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Key, Car, ShieldCheck, Megaphone, Clock } from 'lucide-react'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { useToast } from '@/hooks/use-toast'
+import { createLead } from '@/services/leads'
+
+const formSchema = z.object({
+  nome: z.string().min(3, 'Nome é obrigatório'),
+  email: z.string().email('E-mail inválido'),
+  telefone: z.string().min(14, 'WhatsApp inválido'),
+  busca: z.string().min(1, 'Selecione uma opção'),
+})
+
+type FormData = z.infer<typeof formSchema>
 
 export function Hero() {
+  const { toast } = useToast()
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
+  const form = useForm<FormData>({
+    resolver: zodResolver(formSchema),
+    defaultValues: { nome: '', email: '', telefone: '', busca: '' },
+  })
+
+  const onSubmit = async (data: FormData) => {
+    setIsSubmitting(true)
+    try {
+      const { error } = await createLead({
+        nome: data.nome,
+        email: data.email,
+        telefone: data.telefone,
+        tipo: 'contato',
+        origem: 'homepage_formulario',
+        observacoes: `Interesse: ${data.busca}`,
+      })
+
+      if (error) throw error
+
+      toast({
+        title: 'Sucesso!',
+        description: 'Recebemos sua solicitação! Em breve entraremos em contato via WhatsApp.',
+      })
+      form.reset()
+    } catch (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Erro',
+        description: 'Ocorreu um erro ao enviar sua solicitação. Tente novamente.',
+      })
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let value = e.target.value.replace(/\D/g, '')
+    if (value.length <= 11) {
+      value = value.replace(/^(\d{2})(\d)/g, '($1) $2')
+      value = value.replace(/(\d)(\d{4})$/, '$1-$2')
+    }
+    form.setValue('telefone', value, { shouldValidate: true })
+  }
+
+  const { onChange: onPhoneChange, ...phoneRest } = form.register('telefone')
+
   return (
     <>
-      <section className="relative bg-secondary text-secondary-foreground pt-16 pb-32 lg:pt-24 lg:pb-40 overflow-hidden">
-        <div className="absolute inset-0 z-0 opacity-10 bg-[url('https://img.usecurling.com/p/1200/800?q=car%20dealership')] bg-cover bg-center" />
+      <section className="relative pt-24 pb-32 lg:pt-32 lg:pb-48 overflow-hidden">
+        <div
+          className="absolute inset-0 z-0 bg-cover bg-center bg-fixed"
+          style={{
+            backgroundImage:
+              'url("https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Fotos/fachada%20da%20loja.jpeg")',
+          }}
+        />
+        <div className="absolute inset-0 z-0 bg-black/50" />
+
         <div className="container relative z-10 grid lg:grid-cols-2 gap-12 items-center">
           <div className="text-center lg:text-left">
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-display font-extrabold mb-6 leading-tight">
-              Venda ou Compre seu Veículo com <span className="text-primary">Segurança</span>
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-display font-bold mb-6 leading-tight text-white drop-shadow-lg">
+              Você tem um carro para vender. <br className="hidden lg:block" />
+              <span className="text-primary">Nós temos os compradores esperando.</span>
             </h1>
-            <p className="text-lg md:text-xl text-gray-300 mb-8 max-w-2xl mx-auto lg:mx-0">
-              Há mais de 20 anos conectando quem quer vender a quem quer comprar em Uberaba e
-              Região.
+            <p className="text-lg md:text-xl text-gray-100 mb-8 max-w-2xl mx-auto lg:mx-0 drop-shadow-md">
+              Consignação segura, rápida e transparente em Uberaba há mais de 20 anos.
             </p>
-            <div className="flex flex-col sm:flex-row justify-center lg:justify-start gap-4">
-              <Button
-                asChild
-                size="lg"
-                className="bg-[#25D366] hover:bg-[#20bd5a] text-white gap-2 text-lg h-14"
-              >
-                <a href="#consignacao">
-                  <Key className="w-5 h-5" /> Quero Vender meu Carro
-                </a>
-              </Button>
-              <Button
-                asChild
-                size="lg"
-                className="bg-primary hover:bg-primary/90 text-white gap-2 text-lg h-14"
-              >
-                <Link to="/estoque">
-                  <Car className="w-5 h-5" /> Ver Estoque de Veículos
-                </Link>
-              </Button>
-            </div>
           </div>
-          <div className="hidden lg:block relative">
-            <div className="absolute -inset-4 bg-primary/20 rounded-full blur-3xl" />
-            <img
-              src="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Fotos/Luiz%20Fernando%20foto%20profissional.jpeg"
-              alt="Luiz Fernando CEO"
-              className="relative z-10 w-full max-w-sm mx-auto rounded-2xl shadow-2xl border-4 border-secondary-foreground/10 object-cover aspect-[3/4]"
-            />
-            <div className="absolute -bottom-6 -left-6 bg-background p-4 rounded-xl shadow-xl z-20 flex items-center gap-4 animate-fade-in-up">
-              <div className="w-12 h-12 bg-primary rounded-full flex items-center justify-center text-primary-foreground font-bold text-xl">
-                +20
+
+          <div className="bg-background rounded-xl p-6 sm:p-8 shadow-2xl w-full max-w-md mx-auto lg:ml-auto border border-border/50 animate-fade-in-up">
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="nome">Nome completo *</Label>
+                <Input id="nome" placeholder="Seu nome" {...form.register('nome')} />
+                {form.formState.errors.nome && (
+                  <p className="text-xs text-destructive">{form.formState.errors.nome.message}</p>
+                )}
               </div>
-              <div>
-                <p className="font-bold text-foreground">Anos de</p>
-                <p className="text-sm text-muted-foreground">Experiência</p>
+
+              <div className="space-y-2">
+                <Label htmlFor="email">E-mail *</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="seu@email.com"
+                  {...form.register('email')}
+                />
+                {form.formState.errors.email && (
+                  <p className="text-xs text-destructive">{form.formState.errors.email.message}</p>
+                )}
               </div>
-            </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="telefone">WhatsApp *</Label>
+                <Input
+                  id="telefone"
+                  placeholder="(34) 99999-9999"
+                  {...phoneRest}
+                  onChange={(e) => {
+                    onPhoneChange(e)
+                    handlePhoneChange(e)
+                  }}
+                />
+                {form.formState.errors.telefone && (
+                  <p className="text-xs text-destructive">
+                    {form.formState.errors.telefone.message}
+                  </p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="busca">O que você busca? *</Label>
+                <Select
+                  onValueChange={(val) => form.setValue('busca', val, { shouldValidate: true })}
+                >
+                  <SelectTrigger
+                    id="busca"
+                    className={form.formState.errors.busca ? 'border-destructive' : ''}
+                  >
+                    <SelectValue placeholder="Selecione uma opção" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Quero deixar meu veículo para vender">
+                      Quero deixar meu veículo para vender
+                    </SelectItem>
+                    <SelectItem value="Quero comprar um veículo">
+                      Quero comprar um veículo
+                    </SelectItem>
+                    <SelectItem value="Quero financiar um veículo">
+                      Quero financiar um veículo
+                    </SelectItem>
+                    <SelectItem value="Quero fazer um seguro para meu veículo">
+                      Quero fazer um seguro para meu veículo
+                    </SelectItem>
+                    <SelectItem value="Quero comprar um consórcio de veículo">
+                      Quero comprar um consórcio de veículo
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+                {form.formState.errors.busca && (
+                  <p className="text-xs text-destructive">{form.formState.errors.busca.message}</p>
+                )}
+              </div>
+
+              <Button
+                type="submit"
+                className="w-full h-12 text-lg font-semibold bg-primary hover:bg-primary/90 transition-colors duration-300 mt-2"
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? (
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                ) : (
+                  <>
+                    <Send className="w-5 h-5 mr-2" /> Solicite Agora
+                  </>
+                )}
+              </Button>
+            </form>
           </div>
         </div>
       </section>
