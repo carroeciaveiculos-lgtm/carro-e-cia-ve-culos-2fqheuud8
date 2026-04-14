@@ -19,6 +19,9 @@ import Contato from './pages/Contato'
 import Seguranca from './pages/consignacao/Seguranca'
 import Praticidade from './pages/consignacao/Praticidade'
 import Troca from './pages/consignacao/Troca'
+import Obrigado from './pages/Obrigado'
+import SeguroAuto from './pages/SeguroAuto'
+import ConsorcioAuto from './pages/ConsorcioAuto'
 
 // Admin Pages
 import Login from './pages/admin/Login'
@@ -52,6 +55,11 @@ const App = () => (
             <Route path="/lp/venda-segura" element={<Seguranca />} />
             <Route path="/lp/venda-rapida" element={<Praticidade />} />
             <Route path="/lp/troca-com-troco" element={<Troca />} />
+
+            {/* Pós-conversão e Serviços */}
+            <Route path="/obrigado" element={<Obrigado />} />
+            <Route path="/seguro-auto" element={<SeguroAuto />} />
+            <Route path="/consorcio-auto" element={<ConsorcioAuto />} />
           </Route>
 
           {/* Admin Routes */}

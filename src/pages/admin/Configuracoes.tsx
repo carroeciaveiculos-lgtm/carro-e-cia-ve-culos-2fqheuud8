@@ -174,23 +174,27 @@ export default function Configuracoes() {
                   <CardContent className="pt-6 grid grid-cols-1 gap-4 bg-white">
                     <div>
                       <Label className="text-xs font-bold text-gray-500 uppercase mb-1 block">
-                        API Key / Client ID
+                        {api.portal === 'Brevo' ? 'Chave de API - Brevo' : 'API Key / Client ID'}
                       </Label>
                       <Input
                         value={api.api_key || ''}
                         onChange={(e) => updateApi(api.id, 'api_key', e.target.value)}
-                        placeholder="Insira a chave da API"
+                        placeholder={
+                          api.portal === 'Brevo' ? 'xkeysib-...' : 'Insira a chave da API'
+                        }
                       />
                     </div>
                     <div>
                       <Label className="text-xs font-bold text-gray-500 uppercase mb-1 block">
-                        Auth Token / Secret
+                        {api.portal === 'Brevo' ? 'ID da Lista - Brevo' : 'Auth Token / Secret'}
                       </Label>
                       <Input
-                        type="password"
+                        type={api.portal === 'Brevo' ? 'text' : 'password'}
                         value={api.auth_token || ''}
                         onChange={(e) => updateApi(api.id, 'auth_token', e.target.value)}
-                        placeholder="Insira o Token de Autenticação"
+                        placeholder={
+                          api.portal === 'Brevo' ? 'Ex: 2' : 'Insira o Token de Autenticação'
+                        }
                       />
                     </div>
                   </CardContent>

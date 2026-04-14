@@ -242,6 +242,14 @@ export default function Veiculo() {
                     <div className="py-4 space-y-6">
                       <div className="space-y-4">
                         <div>
+                          <label className="text-sm font-bold mb-2 block text-muted-foreground">
+                            Valor do Veículo
+                          </label>
+                          <div className="h-12 bg-muted flex items-center px-3 rounded-md font-bold text-lg">
+                            {formatCurrency(vehicle.preco_venda || 0)}
+                          </div>
+                        </div>
+                        <div>
                           <label className="text-sm font-bold mb-2 block">
                             Valor de Entrada (R$)
                           </label>
@@ -250,13 +258,13 @@ export default function Veiculo() {
                             placeholder="Ex: 20000"
                             value={simEntrada}
                             onChange={(e) => setSimEntrada(e.target.value)}
-                            className="h-12"
+                            className="h-12 text-lg font-bold"
                           />
                         </div>
                         <div>
                           <label className="text-sm font-bold mb-2 block">Número de Parcelas</label>
                           <Select value={simParcelas} onValueChange={setSimParcelas}>
-                            <SelectTrigger className="h-12">
+                            <SelectTrigger className="h-12 text-lg">
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
@@ -264,36 +272,35 @@ export default function Veiculo() {
                               <SelectItem value="24">24x</SelectItem>
                               <SelectItem value="36">36x</SelectItem>
                               <SelectItem value="48">48x</SelectItem>
-                              <SelectItem value="60">60x</SelectItem>
                             </SelectContent>
                           </Select>
                         </div>
                       </div>
 
                       {simValue > 0 && simEntrada && (
-                        <div className="bg-muted p-4 rounded-xl text-center border">
+                        <div className="bg-muted p-4 rounded-xl text-center border border-primary/20">
                           <p className="text-sm text-muted-foreground mb-1">
                             Resultado estimado da parcela:
                           </p>
-                          <p className="text-2xl font-bold text-primary">
+                          <p className="text-3xl font-extrabold text-primary">
                             {simParcelas}x de {formatCurrency(simParcela)}
                           </p>
                           <p className="text-xs text-muted-foreground mt-2">
-                            * Valores sujeitos a análise de crédito.
+                            * Valores sujeitos a análise de crédito pelas financeiras.
                           </p>
                         </div>
                       )}
 
                       <Button
                         asChild
-                        className="w-full h-12 bg-[#25D366] hover:bg-[#20bd5a] text-white"
+                        className="w-full h-14 text-lg font-bold bg-[#25D366] hover:bg-[#20bd5a] text-white uppercase tracking-wide"
                       >
                         <a
                           href={`https://wa.me/5534999484285?text=${wppSimText}`}
                           target="_blank"
                           rel="noopener noreferrer"
                         >
-                          Simular com nosso consultor
+                          Simule Agora
                         </a>
                       </Button>
                     </div>

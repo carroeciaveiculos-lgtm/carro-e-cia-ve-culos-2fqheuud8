@@ -41,6 +41,36 @@ export type Database = {
           },
         ]
       }
+      configuracoes_api: {
+        Row: {
+          api_key: string | null
+          ativo: boolean | null
+          auth_token: string | null
+          created_at: string | null
+          id: string
+          portal: string
+          updated_at: string | null
+        }
+        Insert: {
+          api_key?: string | null
+          ativo?: boolean | null
+          auth_token?: string | null
+          created_at?: string | null
+          id?: string
+          portal: string
+          updated_at?: string | null
+        }
+        Update: {
+          api_key?: string | null
+          ativo?: boolean | null
+          auth_token?: string | null
+          created_at?: string | null
+          id?: string
+          portal?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       consignacoes: {
         Row: {
           comissao: number | null
@@ -324,6 +354,9 @@ export type Database = {
       }
       leads: {
         Row: {
+          carro_ano: string | null
+          carro_modelo: string | null
+          carro_placa: string | null
           cpf: string | null
           created_at: string | null
           email: string | null
@@ -343,6 +376,9 @@ export type Database = {
           veiculo_interesse: string | null
         }
         Insert: {
+          carro_ano?: string | null
+          carro_modelo?: string | null
+          carro_placa?: string | null
           cpf?: string | null
           created_at?: string | null
           email?: string | null
@@ -362,6 +398,9 @@ export type Database = {
           veiculo_interesse?: string | null
         }
         Update: {
+          carro_ano?: string | null
+          carro_modelo?: string | null
+          carro_placa?: string | null
           cpf?: string | null
           created_at?: string | null
           email?: string | null
@@ -396,6 +435,33 @@ export type Database = {
             referencedColumns: ['id']
           },
         ]
+      }
+      logs_integracao: {
+        Row: {
+          created_at: string | null
+          id: string
+          payload_erro: Json | null
+          portal: string
+          status: string | null
+          veiculo_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          payload_erro?: Json | null
+          portal: string
+          status?: string | null
+          veiculo_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          payload_erro?: Json | null
+          portal?: string
+          status?: string | null
+          veiculo_id?: string | null
+        }
+        Relationships: []
       }
       mensagens_template: {
         Row: {
@@ -756,6 +822,14 @@ export const Constants = {
 //   modulo: text (nullable)
 //   acao: text (nullable)
 //   timestamp: timestamp without time zone (nullable, default: now())
+// Table: configuracoes_api
+//   id: uuid (not null, default: gen_random_uuid())
+//   portal: text (not null)
+//   api_key: text (nullable)
+//   auth_token: text (nullable)
+//   ativo: boolean (nullable, default: false)
+//   created_at: timestamp with time zone (nullable, default: now())
+//   updated_at: timestamp with time zone (nullable, default: now())
 // Table: consignacoes
 //   id: uuid (not null, default: gen_random_uuid())
 //   lead_id: uuid (nullable)
@@ -836,6 +910,16 @@ export const Constants = {
 //   observacoes: text (nullable)
 //   created_at: timestamp without time zone (nullable, default: now())
 //   updated_at: timestamp without time zone (nullable, default: now())
+//   carro_modelo: text (nullable)
+//   carro_ano: text (nullable)
+//   carro_placa: text (nullable)
+// Table: logs_integracao
+//   id: uuid (not null, default: gen_random_uuid())
+//   veiculo_id: uuid (nullable)
+//   portal: text (not null)
+//   payload_erro: jsonb (nullable)
+//   status: text (nullable)
+//   created_at: timestamp with time zone (nullable, default: now())
 // Table: mensagens_template
 //   id: uuid (not null, default: gen_random_uuid())
 //   titulo: text (not null)
@@ -901,6 +985,9 @@ export const Constants = {
 // Table: access_log
 //   PRIMARY KEY access_log_pkey: PRIMARY KEY (id)
 //   FOREIGN KEY access_log_usuario_id_fkey: FOREIGN KEY (usuario_id) REFERENCES usuarios(id)
+// Table: configuracoes_api
+//   PRIMARY KEY configuracoes_api_pkey: PRIMARY KEY (id)
+//   UNIQUE configuracoes_api_portal_key: UNIQUE (portal)
 // Table: consignacoes
 //   FOREIGN KEY consignacoes_lead_id_fkey: FOREIGN KEY (lead_id) REFERENCES leads(id)
 //   PRIMARY KEY consignacoes_pkey: PRIMARY KEY (id)
@@ -929,6 +1016,8 @@ export const Constants = {
 //   PRIMARY KEY leads_pkey: PRIMARY KEY (id)
 //   FOREIGN KEY leads_responsavel_id_fkey: FOREIGN KEY (responsavel_id) REFERENCES usuarios(id)
 //   FOREIGN KEY leads_veiculo_id_fkey: FOREIGN KEY (veiculo_id) REFERENCES veiculos(id)
+// Table: logs_integracao
+//   PRIMARY KEY logs_integracao_pkey: PRIMARY KEY (id)
 // Table: mensagens_template
 //   PRIMARY KEY mensagens_template_pkey: PRIMARY KEY (id)
 // Table: usuarios
@@ -943,6 +1032,10 @@ export const Constants = {
 //   Policy "allow_auth_all_access_log" (ALL, PERMISSIVE) roles={authenticated}
 //     USING: true
 //     WITH CHECK: true
+// Table: configuracoes_api
+//   Policy "allow_auth_all_configuracoes_api" (ALL, PERMISSIVE) roles={authenticated}
+//     USING: true
+//     WITH CHECK: true
 // Table: consignacoes
 //   Policy "allow_auth_all_consignacoes" (ALL, PERMISSIVE) roles={authenticated}
 //     USING: true
@@ -951,6 +1044,10 @@ export const Constants = {
 //   Policy "allow_anon_insert_leads" (INSERT, PERMISSIVE) roles={public}
 //     WITH CHECK: true
 //   Policy "allow_auth_all_leads" (ALL, PERMISSIVE) roles={authenticated}
+//     USING: true
+//     WITH CHECK: true
+// Table: logs_integracao
+//   Policy "allow_auth_all_logs_integracao" (ALL, PERMISSIVE) roles={authenticated}
 //     USING: true
 //     WITH CHECK: true
 // Table: usuarios
@@ -1011,6 +1108,8 @@ export const Constants = {
 //
 
 // --- INDEXES ---
+// Table: configuracoes_api
+//   CREATE UNIQUE INDEX configuracoes_api_portal_key ON public.configuracoes_api USING btree (portal)
 // Table: fipe_anos
 //   CREATE UNIQUE INDEX fipe_anos_codigo_modelo_codigo_marca_codigo_key ON public.fipe_anos USING btree (codigo, modelo_codigo, marca_codigo)
 // Table: fipe_marcas

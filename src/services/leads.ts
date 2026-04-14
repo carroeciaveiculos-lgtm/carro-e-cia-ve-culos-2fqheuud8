@@ -15,16 +15,22 @@ export const createLead = async (lead: Database['public']['Tables']['leads']['In
   const { data, error } = await supabase.from('leads').insert([lead]).select().single()
 
   if (data && !error) {
-    await supabase.functions.invoke('send-lead-email', {
-      body: {
-        nome: data.nome,
-        telefone: data.telefone,
-        email: data.email,
-        mensagem: data.observacoes,
-        origem: data.origem,
-        veiculo: data.veiculo_interesse,
-      },
-    })
+    // Alerta interno
+    supabase.functions
+      .invoke('send-lead-email', {
+        body: {
+          nome: data.nome,
+          telefone: data.telefone,
+          email: data.email,
+          mensagem: data.observacoes,
+          origem: data.origem,
+          veiculo: data.veiculo_interesse,
+        },
+      })
+      .catch(console.error)
+
+    // Dispara gatilho do CRM (Boas-vindas e Brevo)
+    supabase.functions.invoke('on-lead-created', { body: data }).catch(console.error)
   }
 
   return { data, error }

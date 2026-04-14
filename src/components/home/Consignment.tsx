@@ -22,6 +22,7 @@ export function Consignment() {
 
   const [formData, setFormData] = useState({
     nome: '',
+    email: '',
     telefone: '',
     marca: '',
     modelo: '',
@@ -56,6 +57,7 @@ export function Consignment() {
       const { error } = await supabase.from('leads').insert([
         {
           nome: formData.nome,
+          email: formData.email,
           telefone: formData.telefone,
           tipo: 'consignacao',
           origem: formData.origem || 'site',
@@ -84,6 +86,7 @@ export function Consignment() {
       })
       setFormData({
         nome: '',
+        email: '',
         telefone: '',
         marca: '',
         modelo: '',
@@ -180,7 +183,7 @@ export function Consignment() {
               Solicite uma Avaliação Gratuita
             </h3>
             <form onSubmit={handleSubmit} className="space-y-5">
-              <div className="grid sm:grid-cols-2 gap-5">
+              <div className="space-y-5">
                 <Input
                   placeholder="Nome completo *"
                   required
@@ -188,18 +191,35 @@ export function Consignment() {
                   onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
                   className="h-12"
                 />
-                <Input
-                  placeholder="WhatsApp *"
-                  required
-                  value={formData.telefone}
-                  onChange={(e) => setFormData({ ...formData, telefone: e.target.value })}
-                  className="h-12"
-                />
+                <div className="grid sm:grid-cols-2 gap-5">
+                  <Input
+                    type="email"
+                    placeholder="E-mail *"
+                    required
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    className="h-12"
+                  />
+                  <Input
+                    placeholder="WhatsApp *"
+                    required
+                    value={formData.telefone}
+                    onChange={(e) => setFormData({ ...formData, telefone: e.target.value })}
+                    className="h-12"
+                  />
+                </div>
               </div>
+
+              <div className="pt-4 pb-2">
+                <h4 className="font-bold text-sm text-muted-foreground uppercase tracking-wide">
+                  Dados do Veículo (Opcional)
+                </h4>
+              </div>
+
               <div className="grid sm:grid-cols-2 gap-5">
-                <Select value={formData.marca} onValueChange={handleMarcaChange} required>
+                <Select value={formData.marca} onValueChange={handleMarcaChange}>
                   <SelectTrigger className="h-12">
-                    <SelectValue placeholder="Marca *" />
+                    <SelectValue placeholder="Marca" />
                   </SelectTrigger>
                   <SelectContent>
                     {marcas.map((m) => (
@@ -213,10 +233,9 @@ export function Consignment() {
                   value={formData.modelo}
                   onValueChange={handleModeloChange}
                   disabled={!formData.marca}
-                  required
                 >
                   <SelectTrigger className="h-12">
-                    <SelectValue placeholder="Modelo *" />
+                    <SelectValue placeholder="Modelo" />
                   </SelectTrigger>
                   <SelectContent>
                     {modelos.map((m) => (
@@ -232,10 +251,9 @@ export function Consignment() {
                   value={formData.ano}
                   onValueChange={(v) => setFormData({ ...formData, ano: v })}
                   disabled={!formData.modelo}
-                  required
                 >
                   <SelectTrigger className="h-12">
-                    <SelectValue placeholder="Ano *" />
+                    <SelectValue placeholder="Ano" />
                   </SelectTrigger>
                   <SelectContent>
                     {anos.map((a) => (
@@ -246,8 +264,7 @@ export function Consignment() {
                   </SelectContent>
                 </Select>
                 <Input
-                  placeholder="KM aproximado *"
-                  required
+                  placeholder="KM aproximado"
                   value={formData.km}
                   onChange={(e) => setFormData({ ...formData, km: e.target.value })}
                   className="h-12"
