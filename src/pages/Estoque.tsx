@@ -1,9 +1,9 @@
-import { useState, useMemo, useEffect } from 'react'
-import { Search, Filter, SlidersHorizontal, Car } from 'lucide-react'
-import { Input } from '@/components/ui/input'
+import { useState, useEffect } from 'react'
+import { useSearchParams } from 'react-router-dom'
+import { supabase } from '@/lib/supabase/client'
+import { VehicleCard } from '@/components/VehicleCard'
 import { Button } from '@/components/ui/button'
-import { Label } from '@/components/ui/label'
-import { Slider } from '@/components/ui/slider'
+import { Input } from '@/components/ui/input'
 import {
   Select,
   SelectContent,
@@ -11,104 +11,258 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Label } from '@/components/ui/label'
+import { Slider } from '@/components/ui/slider'
+import { getMarcas, getModelos } from '@/services/fipe'
+import { Filter, Search } from 'lucide-react'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
-import { VehicleCard } from '@/components/VehicleCard'
-import { getVeiculos, Veiculo } from '@/services/veiculos'
-import { Skeleton } from '@/components/ui/skeleton'
 
-const Estoque = () => {
-  const [vehicles, setVehicles] = useState<Veiculo[]>([])
+export default function Estoque() {
+  const [searchParams, setSearchParams] = useSearchParams()
+  const [vehicles, setVehicles] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
-  const [search, setSearch] = useState('')
-  const [priceRange, setPriceRange] = useState([0, 300000])
-  const [brand, setBrand] = useState('todas')
-  const [year, setYear] = useState('todos')
+  const [marcas, setMarcas] = useState<any[]>([])
+  const [modelos, setModelos] = useState<any[]>([])
+
+  const [filters, setFilters] = useState({
+    marca: searchParams.get('marca') || '',
+    modelo: searchParams.get('modelo') || '',
+    precoMin: searchParams.get('precoMin') || '',
+    precoMax: searchParams.get('precoMax') || '',
+    anoMin: searchParams.get('anoMin') || '',
+    anoMax: searchParams.get('anoMax') || '',
+    cambio: searchParams.getAll('cambio') || [],
+    combustivel: searchParams.getAll('combustivel') || [],
+    kmMax: searchParams.get('kmMax') ? parseInt(searchParams.get('kmMax')!) : 300000,
+    tipo: searchParams.getAll('tipo') || [],
+    ordem: searchParams.get('ordem') || 'recentes',
+  })
 
   useEffect(() => {
-    getVeiculos().then(({ data }) => {
-      if (data) setVehicles(data)
-      setLoading(false)
-    })
+    getMarcas().then(setMarcas).catch(console.error)
   }, [])
 
-  const filteredVehicles = useMemo(() => {
-    return vehicles.filter((v) => {
-      const matchSearch =
-        v.modelo.toLowerCase().includes(search.toLowerCase()) ||
-        v.marca.toLowerCase().includes(search.toLowerCase())
-      const matchBrand = brand === 'todas' || v.marca.toLowerCase() === brand.toLowerCase()
-      const matchYear = year === 'todos' || v.ano_modelo?.toString() === year
-      const matchPrice =
-        (v.preco_venda || 0) >= priceRange[0] && (v.preco_venda || 0) <= priceRange[1]
-      return matchSearch && matchBrand && matchYear && matchPrice
-    })
-  }, [vehicles, search, brand, year, priceRange])
+  useEffect(() => {
+    if (filters.marca) {
+      const m = marcas.find((x) => x.nome === filters.marca)
+      if (m) getModelos(m.codigo).then(setModelos).catch(console.error)
+    }
+  }, [filters.marca, marcas])
 
-  const FilterContent = () => (
+  const fetchVehicles = async () => {
+    setLoading(true)
+    let query = supabase.from('veiculos').select('*').in('status', ['disponivel', 'reservado'])
+
+    if (filters.marca && filters.marca !== 'todas') query = query.eq('marca', filters.marca)
+    if (filters.modelo && filters.modelo !== 'todos') query = query.eq('modelo', filters.modelo)
+    if (filters.precoMin) query = query.gte('preco_venda', filters.precoMin)
+    if (filters.precoMax) query = query.lte('preco_venda', filters.precoMax)
+    if (filters.anoMin) query = query.gte('ano_fabricacao', filters.anoMin)
+    if (filters.anoMax) query = query.lte('ano_fabricacao', filters.anoMax)
+    if (filters.kmMax < 300000) query = query.lte('quilometragem', filters.kmMax)
+    if (filters.cambio.length > 0) query = query.in('cambio', filters.cambio)
+    if (filters.combustivel.length > 0) query = query.in('combustivel', filters.combustivel)
+
+    if (filters.tipo.length === 1) {
+      query = query.eq('is_consignado', filters.tipo[0] === 'Consignado')
+    }
+
+    if (filters.ordem === 'menor_preco') query = query.order('preco_venda', { ascending: true })
+    else if (filters.ordem === 'maior_preco')
+      query = query.order('preco_venda', { ascending: false })
+    else if (filters.ordem === 'menor_km') query = query.order('quilometragem', { ascending: true })
+    else query = query.order('created_at', { ascending: false })
+
+    const { data } = await query
+    if (data) setVehicles(data)
+    setLoading(false)
+  }
+
+  useEffect(() => {
+    fetchVehicles()
+
+    const params = new URLSearchParams()
+    if (filters.marca) params.set('marca', filters.marca)
+    if (filters.modelo) params.set('modelo', filters.modelo)
+    if (filters.precoMin) params.set('precoMin', filters.precoMin)
+    if (filters.precoMax) params.set('precoMax', filters.precoMax)
+    if (filters.kmMax < 300000) params.set('kmMax', filters.kmMax.toString())
+    if (filters.ordem) params.set('ordem', filters.ordem)
+    filters.cambio.forEach((c) => params.append('cambio', c))
+    filters.combustivel.forEach((c) => params.append('combustivel', c))
+    filters.tipo.forEach((t) => params.append('tipo', t))
+    setSearchParams(params, { replace: true })
+  }, [filters])
+
+  const toggleArrayFilter = (key: 'cambio' | 'combustivel' | 'tipo', value: string) => {
+    setFilters((prev) => ({
+      ...prev,
+      [key]: prev[key].includes(value)
+        ? prev[key].filter((v) => v !== value)
+        : [...prev[key], value],
+    }))
+  }
+
+  const FilterSidebar = () => (
     <div className="space-y-8">
-      <div className="space-y-4">
-        <h3 className="font-display font-bold text-lg border-b pb-2">Filtros</h3>
-
-        <div className="space-y-2">
-          <Label>Marca</Label>
-          <Select value={brand} onValueChange={setBrand}>
+      <div>
+        <h3 className="font-bold mb-4">Marca e Modelo</h3>
+        <div className="space-y-4">
+          <Select
+            value={filters.marca || 'todas'}
+            onValueChange={(v) =>
+              setFilters({ ...filters, marca: v === 'todas' ? '' : v, modelo: '' })
+            }
+          >
             <SelectTrigger>
-              <SelectValue placeholder="Selecione a marca" />
+              <SelectValue placeholder="Todas as Marcas" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="todas">Todas as Marcas</SelectItem>
-              <SelectItem value="toyota">Toyota</SelectItem>
-              <SelectItem value="jeep">Jeep</SelectItem>
-              <SelectItem value="honda">Honda</SelectItem>
-              <SelectItem value="volkswagen">Volkswagen</SelectItem>
-              <SelectItem value="chevrolet">Chevrolet</SelectItem>
+              {marcas.map((m) => (
+                <SelectItem key={m.codigo} value={m.nome}>
+                  {m.nome}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
-        </div>
-
-        <div className="space-y-2">
-          <Label>Ano</Label>
-          <Select value={year} onValueChange={setYear}>
+          <Select
+            value={filters.modelo || 'todos'}
+            onValueChange={(v) => setFilters({ ...filters, modelo: v === 'todos' ? '' : v })}
+            disabled={!filters.marca}
+          >
             <SelectTrigger>
-              <SelectValue placeholder="Selecione o ano" />
+              <SelectValue placeholder="Todos os Modelos" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="todos">Todos os Anos</SelectItem>
-              <SelectItem value="2024">2024</SelectItem>
-              <SelectItem value="2023">2023</SelectItem>
-              <SelectItem value="2022">2022</SelectItem>
-              <SelectItem value="2021">2021</SelectItem>
-              <SelectItem value="2020">2020</SelectItem>
+              <SelectItem value="todos">Todos os Modelos</SelectItem>
+              {modelos.map((m) => (
+                <SelectItem key={m.codigo} value={m.nome}>
+                  {m.nome}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
+      </div>
 
-        <div className="space-y-4 pt-4">
-          <div className="flex items-center justify-between">
-            <Label>Faixa de Preço</Label>
-            <span className="text-xs text-muted-foreground font-medium">
-              Até R$ {priceRange[1].toLocaleString('pt-BR')}
-            </span>
-          </div>
-          <Slider
-            min={0}
-            max={300000}
-            step={5000}
-            value={priceRange}
-            onValueChange={setPriceRange}
-            className="my-4"
+      <div>
+        <h3 className="font-bold mb-4">Preço</h3>
+        <div className="flex items-center gap-2">
+          <Input
+            type="number"
+            placeholder="Min"
+            value={filters.precoMin}
+            onChange={(e) => setFilters({ ...filters, precoMin: e.target.value })}
+          />
+          <span>-</span>
+          <Input
+            type="number"
+            placeholder="Max"
+            value={filters.precoMax}
+            onChange={(e) => setFilters({ ...filters, precoMax: e.target.value })}
           />
         </div>
       </div>
+
+      <div>
+        <h3 className="font-bold mb-4">Ano</h3>
+        <div className="flex items-center gap-2">
+          <Input
+            type="number"
+            placeholder="De"
+            value={filters.anoMin}
+            onChange={(e) => setFilters({ ...filters, anoMin: e.target.value })}
+          />
+          <span>-</span>
+          <Input
+            type="number"
+            placeholder="Até"
+            value={filters.anoMax}
+            onChange={(e) => setFilters({ ...filters, anoMax: e.target.value })}
+          />
+        </div>
+      </div>
+
+      <div>
+        <h3 className="font-bold mb-4">
+          KM Máximo: {filters.kmMax === 300000 ? 'Qualquer' : filters.kmMax.toLocaleString()}
+        </h3>
+        <Slider
+          value={[filters.kmMax]}
+          max={300000}
+          step={10000}
+          onValueChange={(v) => setFilters({ ...filters, kmMax: v[0] })}
+        />
+      </div>
+
+      <div>
+        <h3 className="font-bold mb-4">Câmbio</h3>
+        <div className="space-y-2">
+          {['Manual', 'Automático', 'CVT', 'Dupla Embreagem'].map((c) => (
+            <div key={c} className="flex items-center gap-2">
+              <Checkbox
+                id={`c-${c}`}
+                checked={filters.cambio.includes(c)}
+                onCheckedChange={() => toggleArrayFilter('cambio', c)}
+              />
+              <Label htmlFor={`c-${c}`}>{c}</Label>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div>
+        <h3 className="font-bold mb-4">Combustível</h3>
+        <div className="space-y-2">
+          {['Flex', 'Gasolina', 'Etanol', 'Diesel', 'Elétrico'].map((c) => (
+            <div key={c} className="flex items-center gap-2">
+              <Checkbox
+                id={`f-${c}`}
+                checked={filters.combustivel.includes(c)}
+                onCheckedChange={() => toggleArrayFilter('combustivel', c)}
+              />
+              <Label htmlFor={`f-${c}`}>{c}</Label>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div>
+        <h3 className="font-bold mb-4">Tipo</h3>
+        <div className="space-y-2">
+          {['Consignado', 'Próprio'].map((c) => (
+            <div key={c} className="flex items-center gap-2">
+              <Checkbox
+                id={`t-${c}`}
+                checked={filters.tipo.includes(c)}
+                onCheckedChange={() => toggleArrayFilter('tipo', c)}
+              />
+              <Label htmlFor={`t-${c}`}>{c}</Label>
+            </div>
+          ))}
+        </div>
+      </div>
+
       <Button
         variant="outline"
         className="w-full"
-        onClick={() => {
-          setBrand('todas')
-          setYear('todos')
-          setPriceRange([0, 300000])
-          setSearch('')
-        }}
+        onClick={() =>
+          setFilters({
+            marca: '',
+            modelo: '',
+            precoMin: '',
+            precoMax: '',
+            anoMin: '',
+            anoMax: '',
+            cambio: [],
+            combustivel: [],
+            kmMax: 300000,
+            tipo: [],
+            ordem: 'recentes',
+          })
+        }
       >
         Limpar Filtros
       </Button>
@@ -116,80 +270,95 @@ const Estoque = () => {
   )
 
   return (
-    <div className="pt-24 pb-20 bg-muted/20 min-h-screen">
-      <div className="container">
-        <div className="mb-8">
-          <h1 className="font-display font-bold text-3xl md:text-4xl mb-4">Nosso Estoque</h1>
-          <p className="text-muted-foreground">
-            Encontre o veículo ideal para você com procedência garantida.
-          </p>
+    <div className="container py-8 lg:py-12">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+        <h1 className="text-3xl md:text-4xl font-display font-bold">Estoque de Veículos</h1>
+
+        <div className="flex items-center gap-4 w-full md:w-auto">
+          <div className="md:hidden">
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button variant="outline" size="icon">
+                  <Filter className="w-4 h-4" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="left" className="overflow-y-auto">
+                <SheetHeader className="mb-6">
+                  <SheetTitle>Filtros</SheetTitle>
+                </SheetHeader>
+                <FilterSidebar />
+              </SheetContent>
+            </Sheet>
+          </div>
+
+          <Select value={filters.ordem} onValueChange={(v) => setFilters({ ...filters, ordem: v })}>
+            <SelectTrigger className="w-full md:w-[200px]">
+              <SelectValue placeholder="Ordenar por" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="recentes">Mais Recentes</SelectItem>
+              <SelectItem value="menor_preco">Menor Preço</SelectItem>
+              <SelectItem value="maior_preco">Maior Preço</SelectItem>
+              <SelectItem value="menor_km">Menor KM</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      <div className="grid lg:grid-cols-[280px_1fr] gap-8 items-start">
+        <div className="hidden lg:block sticky top-24 bg-card p-6 rounded-xl border">
+          <div className="flex items-center gap-2 mb-6">
+            <Filter className="w-5 h-5 text-primary" />
+            <h2 className="text-xl font-bold font-display">Filtros</h2>
+          </div>
+          <FilterSidebar />
         </div>
 
-        <div className="flex flex-col lg:flex-row gap-8">
-          <aside className="hidden lg:block w-72 shrink-0">
-            <div className="sticky top-28 bg-card p-6 rounded-xl border shadow-sm">
-              <FilterContent />
+        <div>
+          {loading ? (
+            <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-6">
+              {[1, 2, 3, 4, 5, 6].map((i) => (
+                <div key={i} className="animate-pulse bg-muted h-[400px] rounded-xl" />
+              ))}
             </div>
-          </aside>
-
-          <main className="flex-1">
-            <div className="flex flex-col sm:flex-row gap-4 mb-8">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-5 h-5" />
-                <Input
-                  placeholder="Buscar por marca ou modelo..."
-                  className="pl-10 h-12 text-base bg-card"
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                />
-              </div>
-              <Sheet>
-                <SheetTrigger asChild>
-                  <Button variant="outline" className="h-12 lg:hidden flex gap-2">
-                    <SlidersHorizontal className="w-4 h-4" /> Filtros
-                  </Button>
-                </SheetTrigger>
-                <SheetContent side="left" className="w-[300px]">
-                  <SheetHeader className="mb-6">
-                    <SheetTitle>Filtros</SheetTitle>
-                  </SheetHeader>
-                  <FilterContent />
-                </SheetContent>
-              </Sheet>
+          ) : vehicles.length > 0 ? (
+            <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-6">
+              {vehicles.map((v) => (
+                <VehicleCard key={v.id} vehicle={v} />
+              ))}
             </div>
-
-            {loading ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                {Array.from({ length: 6 }).map((_, i) => (
-                  <Skeleton key={i} className="h-[400px] rounded-xl" />
-                ))}
-              </div>
-            ) : filteredVehicles.length > 0 ? (
-              <>
-                <div className="mb-6 text-sm text-muted-foreground">
-                  Mostrando{' '}
-                  <span className="font-bold text-foreground">{filteredVehicles.length}</span>{' '}
-                  veículos
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                  {filteredVehicles.map((vehicle) => (
-                    <VehicleCard key={vehicle.id} vehicle={vehicle} />
-                  ))}
-                </div>
-              </>
-            ) : (
-              <div className="text-center py-20 bg-card rounded-xl border border-dashed">
-                <Car className="w-12 h-12 text-muted-foreground mx-auto mb-4 opacity-50" />
-                <h3 className="font-display font-semibold text-xl mb-2">
-                  Nenhum veículo encontrado
-                </h3>
-                <p className="text-muted-foreground">Tente ajustar seus filtros de busca.</p>
-              </div>
-            )}
-          </main>
+          ) : (
+            <div className="text-center py-20 bg-muted/30 rounded-xl border border-dashed">
+              <Search className="w-12 h-12 mx-auto text-muted-foreground mb-4 opacity-50" />
+              <h3 className="text-xl font-bold mb-2">Nenhum veículo encontrado</h3>
+              <p className="text-muted-foreground">
+                Tente ajustar seus filtros para ver mais resultados.
+              </p>
+              <Button
+                variant="outline"
+                className="mt-6"
+                onClick={() =>
+                  setFilters({
+                    marca: '',
+                    modelo: '',
+                    precoMin: '',
+                    precoMax: '',
+                    anoMin: '',
+                    anoMax: '',
+                    cambio: [],
+                    combustivel: [],
+                    kmMax: 300000,
+                    tipo: [],
+                    ordem: 'recentes',
+                  })
+                }
+              >
+                Limpar Filtros
+              </Button>
+            </div>
+          )}
         </div>
       </div>
     </div>
   )
 }
-export default Estoque

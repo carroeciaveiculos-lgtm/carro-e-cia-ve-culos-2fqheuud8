@@ -845,22 +845,40 @@ export const Constants = {
 //   PRIMARY KEY veiculos_pkey: PRIMARY KEY (id)
 //   FOREIGN KEY veiculos_responsavel_id_fkey: FOREIGN KEY (responsavel_id) REFERENCES usuarios(id)
 
+// --- ROW LEVEL SECURITY POLICIES ---
+// Table: consignacoes
+//   Policy "allow_auth_all_consignacoes" (ALL, PERMISSIVE) roles={authenticated}
+//     USING: true
+//     WITH CHECK: true
+// Table: leads
+//   Policy "allow_anon_insert_leads" (INSERT, PERMISSIVE) roles={public}
+//     WITH CHECK: true
+//   Policy "allow_auth_all_leads" (ALL, PERMISSIVE) roles={authenticated}
+//     USING: true
+//     WITH CHECK: true
+// Table: usuarios
+//   Policy "allow_auth_all_usuarios" (ALL, PERMISSIVE) roles={authenticated}
+//     USING: true
+//     WITH CHECK: true
+// Table: veiculos
+//   Policy "allow_anon_select_veiculos" (SELECT, PERMISSIVE) roles={public}
+//     USING: true
+//   Policy "allow_auth_all_veiculos" (ALL, PERMISSIVE) roles={authenticated}
+//     USING: true
+//     WITH CHECK: true
+
 // --- WARNING: TABLES WITH RLS ENABLED BUT NO POLICIES ---
 // These tables have Row Level Security enabled but NO policies defined.
 // This means ALL queries (SELECT, INSERT, UPDATE, DELETE) will return ZERO rows
 // for non-superuser roles (including the anon and authenticated roles used by the app).
 // You MUST create RLS policies for these tables to allow data access.
-//   - consignacoes
 //   - financeiras
 //   - fipe_anos
 //   - fipe_marcas
 //   - fipe_modelos
 //   - followups
 //   - interacoes
-//   - leads
 //   - mensagens_template
-//   - usuarios
-//   - veiculos
 
 // --- DATABASE FUNCTIONS ---
 // FUNCTION rls_auto_enable()

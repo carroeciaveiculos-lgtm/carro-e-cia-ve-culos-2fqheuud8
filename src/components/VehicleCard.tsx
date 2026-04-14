@@ -1,59 +1,67 @@
 import { Link } from 'react-router-dom'
+import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Card, CardContent } from '@/components/ui/card'
-import { Fuel, Settings, Gauge } from 'lucide-react'
-import { Veiculo } from '@/services/veiculos'
 
-export function VehicleCard({ vehicle }: { vehicle: Veiculo }) {
-  const images = (vehicle.fotos as string[]) || ['https://img.usecurling.com/p/800/600?q=car']
-  const price = vehicle.preco_venda || 0
+export function VehicleCard({ vehicle }: { vehicle: any }) {
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value)
+  }
+
+  const wppText = encodeURIComponent(
+    `Olá! Vi o ${vehicle.marca} ${vehicle.modelo} ${vehicle.ano_fabricacao} por ${formatCurrency(vehicle.preco_venda || 0)} no site. Ainda está disponível?`,
+  )
+
+  const coverImage =
+    vehicle.fotos && vehicle.fotos.length > 0
+      ? vehicle.fotos[0]
+      : 'https://img.usecurling.com/p/400/300?q=car'
 
   return (
-    <Link to={`/estoque/${vehicle.id}`}>
-      <Card className="overflow-hidden group cursor-pointer transition-all hover:shadow-lg hover:-translate-y-1 bg-card h-full flex flex-col">
-        <div className="relative aspect-[4/3] overflow-hidden bg-muted shrink-0">
-          <img
-            src={images[0]}
-            alt={`${vehicle.marca} ${vehicle.modelo}`}
-            className="object-cover w-full h-full transition-transform duration-500 group-hover:scale-105"
-          />
-          {vehicle.is_consignado && (
-            <Badge className="absolute top-3 left-3 shadow-md bg-accent text-accent-foreground hover:bg-accent/90">
-              Consignado
-            </Badge>
-          )}
+    <div className="group flex flex-col bg-card rounded-lg overflow-hidden border shadow-sm hover:shadow-md transition-shadow">
+      <div className="relative aspect-[4/3] overflow-hidden bg-muted">
+        <img
+          src={coverImage}
+          alt={`${vehicle.marca} ${vehicle.modelo}`}
+          className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-500"
+        />
+        {vehicle.is_consignado && (
+          <Badge className="absolute top-3 right-3 bg-primary text-primary-foreground border-none">
+            Consignado
+          </Badge>
+        )}
+        {!vehicle.is_consignado && (
+          <Badge className="absolute top-3 right-3 bg-secondary text-secondary-foreground border-none">
+            Próprio
+          </Badge>
+        )}
+      </div>
+      <div className="p-5 flex flex-col flex-grow">
+        <h3 className="font-display font-bold text-lg text-foreground line-clamp-1">
+          {vehicle.marca} {vehicle.modelo} {vehicle.ano_fabricacao}
+        </h3>
+        <p className="text-muted-foreground text-sm mb-4">
+          {vehicle.quilometragem?.toLocaleString('pt-BR') || 0} km • {vehicle.cambio}
+        </p>
+        <div className="mt-auto flex items-center justify-between">
+          <span className="font-bold text-primary text-xl">
+            {formatCurrency(vehicle.preco_venda || 0)}
+          </span>
         </div>
-        <CardContent className="p-5 flex-1 flex flex-col">
-          <div className="mb-2">
-            <h3 className="font-display font-bold text-lg text-foreground line-clamp-1 group-hover:text-primary transition-colors">
-              {vehicle.marca} {vehicle.modelo}
-            </h3>
-            <p className="text-sm text-muted-foreground line-clamp-1">{vehicle.versao}</p>
-          </div>
-
-          <div className="flex items-center gap-4 text-xs text-muted-foreground my-4">
-            <div className="flex items-center gap-1.5">
-              <Settings className="w-3.5 h-3.5" />
-              <span>
-                {vehicle.ano_fabricacao}/{vehicle.ano_modelo}
-              </span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <Gauge className="w-3.5 h-3.5" />
-              <span>{(vehicle.quilometragem || 0).toLocaleString('pt-BR')} km</span>
-            </div>
-          </div>
-
-          <div className="pt-4 border-t border-border flex items-center justify-between mt-auto">
-            <span className="font-display font-bold text-xl text-foreground">
-              R$ {price.toLocaleString('pt-BR')}
-            </span>
-            <span className="text-primary text-sm font-medium group-hover:underline">
-              Ver detalhes
-            </span>
-          </div>
-        </CardContent>
-      </Card>
-    </Link>
+        <div className="grid grid-cols-2 gap-2 mt-4">
+          <Button asChild variant="outline" className="w-full">
+            <Link to={`/estoque/${vehicle.id}`}>Detalhes</Link>
+          </Button>
+          <Button asChild className="w-full bg-[#25D366] hover:bg-[#20bd5a] text-white">
+            <a
+              href={`https://wa.me/5534999484285?text=${wppText}`}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Tenho Interesse
+            </a>
+          </Button>
+        </div>
+      </div>
+    </div>
   )
 }

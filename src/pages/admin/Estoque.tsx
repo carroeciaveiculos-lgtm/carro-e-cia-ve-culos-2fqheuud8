@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Plus, Search, MoreHorizontal, Pencil, Trash2 } from 'lucide-react'
+import { supabase } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -11,135 +11,166 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import { getVeiculos, Veiculo } from '@/services/veiculos'
-import { Skeleton } from '@/components/ui/skeleton'
+import { Plus, Edit2, ExternalLink, Trash2, Search } from 'lucide-react'
+import { useToast } from '@/hooks/use-toast'
+import VehicleFormModal from './VehicleFormModal'
 
-const AdminEstoque = () => {
-  const [vehicles, setVehicles] = useState<Veiculo[]>([])
-  const [loading, setLoading] = useState(true)
+export default function AdminEstoque() {
+  const [vehicles, setVehicles] = useState<any[]>([])
   const [search, setSearch] = useState('')
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const { toast } = useToast()
+
+  const loadVehicles = async () => {
+    let query = supabase.from('veiculos').select('*').order('created_at', { ascending: false })
+    if (search) {
+      query = query.or(`marca.ilike.%${search}%,modelo.ilike.%${search}%`)
+    }
+    const { data } = await query
+    if (data) setVehicles(data)
+  }
 
   useEffect(() => {
-    getVeiculos().then(({ data }) => {
-      if (data) setVehicles(data)
-      setLoading(false)
-    })
-  }, [])
+    loadVehicles()
+  }, [search])
 
-  const filtered = vehicles.filter(
-    (v) =>
-      v.marca.toLowerCase().includes(search.toLowerCase()) ||
-      v.modelo.toLowerCase().includes(search.toLowerCase()),
-  )
+  const handleDelete = async (id: string) => {
+    if (!confirm('Tem certeza que deseja excluir este veículo?')) return
+    const { error } = await supabase.from('veiculos').delete().eq('id', id)
+    if (error) {
+      toast({ title: 'Erro', description: 'Erro ao excluir veículo', variant: 'destructive' })
+    } else {
+      toast({ title: 'Sucesso', description: 'Veículo excluído' })
+      loadVehicles()
+    }
+  }
+
+  const openEdit = (id: string) => {
+    setEditingId(id)
+    setIsModalOpen(true)
+  }
+
+  const openNew = () => {
+    setEditingId(null)
+    setIsModalOpen(true)
+  }
+
+  const formatCurrency = (val: number) =>
+    new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val)
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h2 className="text-2xl font-bold tracking-tight">Gerenciar Estoque</h2>
-          <p className="text-muted-foreground">Adicione, edite ou remova veículos do site.</p>
-        </div>
-        <Button className="gap-2">
-          <Plus className="w-4 h-4" /> Adicionar Veículo
+    <div>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
+        <h1 className="text-3xl font-display font-bold">Gerenciar Estoque</h1>
+        <Button onClick={openNew}>
+          <Plus className="w-4 h-4 mr-2" /> Adicionar Veículo
         </Button>
       </div>
 
-      <div className="bg-card border rounded-xl shadow-sm overflow-hidden">
-        <div className="p-4 border-b flex items-center gap-4">
-          <div className="relative flex-1 max-w-sm">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input
-              placeholder="Buscar placa, modelo ou marca..."
-              className="pl-9 bg-background"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-          </div>
+      <div className="bg-card rounded-xl border shadow-sm p-4 mb-6">
+        <div className="relative max-w-md">
+          <Search className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            placeholder="Buscar por marca ou modelo..."
+            className="pl-10"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
         </div>
+      </div>
 
+      <div className="bg-card rounded-xl border shadow-sm overflow-hidden">
         <Table>
           <TableHeader>
             <TableRow>
               <TableHead>Veículo</TableHead>
               <TableHead>Ano</TableHead>
               <TableHead>Preço</TableHead>
-              <TableHead>Tipo</TableHead>
-              <TableHead className="w-[100px]"></TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead className="text-right">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {loading
-              ? Array.from({ length: 3 }).map((_, i) => (
-                  <TableRow key={i}>
-                    <TableCell colSpan={5}>
-                      <Skeleton className="h-12 w-full" />
-                    </TableCell>
-                  </TableRow>
-                ))
-              : filtered.map((vehicle) => {
-                  const images = vehicle.fotos as string[]
-                  return (
-                    <TableRow key={vehicle.id}>
-                      <TableCell>
-                        <div className="flex items-center gap-3">
-                          {images && images.length > 0 && (
-                            <img
-                              src={images[0]}
-                              alt=""
-                              className="w-12 h-12 rounded object-cover border"
-                            />
-                          )}
-                          <div>
-                            <div className="font-medium">
-                              {vehicle.marca} {vehicle.modelo}
-                            </div>
-                            <div className="text-xs text-muted-foreground line-clamp-1 max-w-[200px]">
-                              {vehicle.versao}
-                            </div>
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        {vehicle.ano_fabricacao}/{vehicle.ano_modelo}
-                      </TableCell>
-                      <TableCell className="font-medium">
-                        R$ {(vehicle.preco_venda || 0).toLocaleString('pt-BR')}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={vehicle.is_consignado ? 'secondary' : 'outline'}>
-                          {vehicle.is_consignado ? 'Consignado' : 'Próprio'}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon">
-                              <MoreHorizontal className="w-4 h-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem className="gap-2">
-                              <Pencil className="w-4 h-4" /> Editar
-                            </DropdownMenuItem>
-                            <DropdownMenuItem className="gap-2 text-destructive focus:bg-destructive focus:text-destructive-foreground">
-                              <Trash2 className="w-4 h-4" /> Excluir
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
-                  )
-                })}
+            {vehicles.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={5} className="text-center py-10 text-muted-foreground">
+                  Nenhum veículo encontrado.
+                </TableCell>
+              </TableRow>
+            ) : (
+              vehicles.map((v) => (
+                <TableRow key={v.id}>
+                  <TableCell>
+                    <div className="flex items-center gap-3">
+                      <div className="w-16 h-12 bg-muted rounded overflow-hidden">
+                        {v.fotos && v.fotos[0] ? (
+                          <img src={v.fotos[0]} className="w-full h-full object-cover" />
+                        ) : null}
+                      </div>
+                      <div>
+                        <p className="font-bold">
+                          {v.marca} {v.modelo}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {v.is_consignado ? 'Consignado' : 'Próprio'}
+                        </p>
+                      </div>
+                    </div>
+                  </TableCell>
+                  <TableCell>{v.ano_fabricacao}</TableCell>
+                  <TableCell className="font-medium">
+                    {formatCurrency(v.preco_venda || 0)}
+                  </TableCell>
+                  <TableCell>
+                    <Badge
+                      variant={v.status === 'disponivel' ? 'default' : 'secondary'}
+                      className="capitalize"
+                    >
+                      {v.status}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex justify-end gap-2">
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => openEdit(v.id)}
+                        title="Editar"
+                      >
+                        <Edit2 className="w-4 h-4" />
+                      </Button>
+                      <Button variant="outline" size="icon" asChild title="Ver no site">
+                        <a href={`/estoque/${v.id}`} target="_blank">
+                          <ExternalLink className="w-4 h-4" />
+                        </a>
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="text-destructive hover:bg-destructive hover:text-white"
+                        onClick={() => handleDelete(v.id)}
+                        title="Excluir"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
           </TableBody>
         </Table>
       </div>
+
+      {isModalOpen && (
+        <VehicleFormModal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          vehicleId={editingId}
+          onSuccess={loadVehicles}
+        />
+      )}
     </div>
   )
 }
-export default AdminEstoque

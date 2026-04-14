@@ -25,7 +25,7 @@ import AdminLeads from './pages/admin/Leads'
 
 const App = () => (
   <AuthProvider>
-    <BrowserRouter future={{ v7_startTransition: false, v7_relativeSplatPath: false }}>
+    <BrowserRouter>
       <TooltipProvider>
         <Toaster />
         <Sonner />
@@ -45,9 +45,9 @@ const App = () => (
           <Route path="/admin" element={<ProtectedRoute />}>
             <Route element={<AdminLayout />}>
               <Route index element={<Dashboard />} />
-              <Route path="estoque" element={<AdminEstoque />} />
-              <Route path="leads" element={<AdminLeads />} />
-              <Route path="consignacoes" element={<Navigate to="/admin/leads" replace />} />
+              <Route path="veiculos" element={<AdminEstoque />} />
+              <Route path="crm" element={<AdminLeads />} />
+              <Route path="consignacoes" element={<Navigate to="/admin/crm" replace />} />
               <Route path="configuracoes" element={<Navigate to="/admin" replace />} />
             </Route>
           </Route>
