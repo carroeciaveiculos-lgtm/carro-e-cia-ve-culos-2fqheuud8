@@ -1,8 +1,9 @@
 {
   "_versions": {
     "send-lead-email": 2,
-    "receive-leads": 1,
+    "receive-leads": 2,
     "sync-estoque": 1,
-    "webhook-portais": 1
+    "webhook-portais": 1,
+    "on-lead-created": 1
   }
 }
