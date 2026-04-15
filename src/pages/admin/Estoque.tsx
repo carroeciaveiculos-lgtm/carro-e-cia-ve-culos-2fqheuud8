@@ -45,6 +45,10 @@ export default function AdminEstoque() {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [sortBy, setSortBy] = useState('recentes')
   const [statusFilter, setStatusFilter] = useState('todos')
+  const [diasFilter, setDiasFilter] = useState('todos')
+  const [page, setPage] = useState(0)
+  const [totalCount, setTotalCount] = useState(0)
+  const pageSize = 10
   const [shareVehicle, setShareVehicle] = useState<any>(null)
   const { toast } = useToast()
 
@@ -55,7 +59,7 @@ export default function AdminEstoque() {
 
   const loadVehicles = async () => {
     try {
-      let query = supabase.from('veiculos').select('*')
+      let query = supabase.from('veiculos').select('*', { count: 'exact' })
       if (debouncedSearch) {
         query = query.or(
           `marca.ilike.%${debouncedSearch}%,modelo.ilike.%${debouncedSearch}%,placa.ilike.%${debouncedSearch}%`,
@@ -66,15 +70,23 @@ export default function AdminEstoque() {
         if (statusFilter === 'inativos')
           query = query.in('status', ['vendido', 'reservado', 'inativo'])
       }
+      if (diasFilter !== 'todos') {
+        const dateLimit = new Date()
+        dateLimit.setDate(dateLimit.getDate() - parseInt(diasFilter))
+        query = query.lte('created_at', dateLimit.toISOString())
+      }
 
       if (sortBy === 'recentes') query = query.order('created_at', { ascending: false })
       if (sortBy === 'antigos') query = query.order('created_at', { ascending: true })
       if (sortBy === 'menor_preco') query = query.order('preco_venda', { ascending: true })
       if (sortBy === 'maior_preco') query = query.order('preco_venda', { ascending: false })
 
-      const { data, error } = await query
+      query = query.range(page * pageSize, (page + 1) * pageSize - 1)
+
+      const { data, count, error } = await query
       if (error) throw error
       if (data) setVehicles(data)
+      if (count !== null) setTotalCount(count)
     } catch (error) {
       toast({ title: 'Erro ao carregar estoque', variant: 'destructive' })
     }
@@ -82,7 +94,7 @@ export default function AdminEstoque() {
 
   useEffect(() => {
     loadVehicles()
-  }, [debouncedSearch, sortBy, statusFilter])
+  }, [debouncedSearch, sortBy, statusFilter, diasFilter, page])
 
   const handleDelete = async (id: string) => {
     if (!confirm('Tem certeza que deseja excluir este veículo?')) return
@@ -186,7 +198,18 @@ export default function AdminEstoque() {
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
-        <div className="flex gap-4">
+        <div className="flex flex-wrap gap-4">
+          <Select value={diasFilter} onValueChange={setDiasFilter}>
+            <SelectTrigger className="w-[140px]">
+              <SelectValue placeholder="Tempo Estoque" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="todos">Todos</SelectItem>
+              <SelectItem value="30">+ de 30 dias</SelectItem>
+              <SelectItem value="60">+ de 60 dias</SelectItem>
+              <SelectItem value="90">+ de 90 dias</SelectItem>
+            </SelectContent>
+          </Select>
           <Select value={statusFilter} onValueChange={setStatusFilter}>
             <SelectTrigger className="w-[140px]">
               <SelectValue placeholder="Status" />
@@ -351,6 +374,34 @@ export default function AdminEstoque() {
             )}
           </TableBody>
         </Table>
+
+        {/* Paginação */}
+        {totalCount > pageSize && (
+          <div className="p-4 border-t flex items-center justify-between bg-slate-50">
+            <span className="text-sm text-slate-500">
+              Mostrando {page * pageSize + 1} a {Math.min((page + 1) * pageSize, totalCount)} de{' '}
+              {totalCount} veículos
+            </span>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setPage((p) => Math.max(0, p - 1))}
+                disabled={page === 0}
+              >
+                Anterior
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setPage((p) => p + 1)}
+                disabled={(page + 1) * pageSize >= totalCount}
+              >
+                Próxima
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
       <ShareModal />
       {isModalOpen && (

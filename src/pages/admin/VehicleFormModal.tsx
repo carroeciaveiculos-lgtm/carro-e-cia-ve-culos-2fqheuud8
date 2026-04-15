@@ -210,21 +210,70 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
     }
   }, [isOpen, vehicleId])
 
+  const compressImage = (file: File): Promise<Blob> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.readAsDataURL(file)
+      reader.onload = (event) => {
+        const img = new Image()
+        img.src = event.target?.result as string
+        img.onload = () => {
+          const canvas = document.createElement('canvas')
+          const MAX_WIDTH = 1920
+          const MAX_HEIGHT = 1080
+          let width = img.width
+          let height = img.height
+
+          if (width > height) {
+            if (width > MAX_WIDTH) {
+              height *= MAX_WIDTH / width
+              width = MAX_WIDTH
+            }
+          } else {
+            if (height > MAX_HEIGHT) {
+              width *= MAX_HEIGHT / height
+              height = MAX_HEIGHT
+            }
+          }
+          canvas.width = width
+          canvas.height = height
+          const ctx = canvas.getContext('2d')
+          ctx?.drawImage(img, 0, 0, width, height)
+          canvas.toBlob(
+            (blob) => {
+              if (blob) resolve(blob)
+              else reject(new Error('Canvas to Blob failed'))
+            },
+            'image/jpeg',
+            0.8,
+          )
+        }
+      }
+    })
+  }
+
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files) return
     setLoading(true)
     const newUrls = []
     for (const file of Array.from(e.target.files)) {
-      const ext = file.name.split('.').pop()
-      const filename = `${Math.random().toString(36).substring(2)}.${ext}`
-      const { error } = await supabase.storage
-        .from('veiculos-fotos')
-        .upload(`fotos/${filename}`, file)
-      if (!error) {
-        const {
-          data: { publicUrl },
-        } = supabase.storage.from('veiculos-fotos').getPublicUrl(`fotos/${filename}`)
-        newUrls.push(publicUrl)
+      try {
+        const compressedBlob = await compressImage(file)
+        const compressedFile = new File([compressedBlob], file.name.replace(/\.[^/.]+$/, '.jpg'), {
+          type: 'image/jpeg',
+        })
+        const filename = `${Math.random().toString(36).substring(2)}.jpg`
+        const { error } = await supabase.storage
+          .from('veiculos-fotos')
+          .upload(`fotos/${filename}`, compressedFile)
+        if (!error) {
+          const {
+            data: { publicUrl },
+          } = supabase.storage.from('veiculos-fotos').getPublicUrl(`fotos/${filename}`)
+          newUrls.push(publicUrl)
+        }
+      } catch (err) {
+        console.error('Erro ao comprimir imagem:', err)
       }
     }
     setFormData((prev: any) => ({ ...prev, fotos: [...(prev.fotos || []), ...newUrls] }))
@@ -284,11 +333,23 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
       }
       delete payload.tipo_entrada // Remove local state field before saving
 
-      const { error } = payload.id
-        ? await supabase.from('veiculos').update(payload).eq('id', payload.id)
-        : await supabase.from('veiculos').insert([payload])
+      const { data, error } = payload.id
+        ? await supabase.from('veiculos').update(payload).eq('id', payload.id).select()
+        : await supabase.from('veiculos').insert([payload]).select()
 
       if (error) throw error
+
+      // Trigger sync se publicado em algum portal
+      if (
+        payload.publicado_olx ||
+        payload.publicado_webmotors ||
+        payload.publicado_icarros ||
+        payload.publicado_mercadolivre
+      ) {
+        supabase.functions
+          .invoke('sync-estoque', { body: { veiculo_id: data?.[0]?.id || payload.id } })
+          .catch(console.error)
+      }
 
       toast({ title: 'Veículo salvo com sucesso!' })
       onSuccess()
@@ -340,6 +401,11 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
                 <Input
                   value={formData.placa || ''}
                   onChange={(e) => setFormData({ ...formData, placa: e.target.value })}
+                  onBlur={() => {
+                    if (formData.placa && formData.placa.length >= 7 && !formData.chassi) {
+                      consultarAPIPlaca()
+                    }
+                  }}
                   className="mt-1 font-mono uppercase bg-slate-50 text-lg h-12"
                   placeholder="ABC-1234"
                   maxLength={8}
