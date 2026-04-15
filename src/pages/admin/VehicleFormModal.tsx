@@ -66,28 +66,59 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
   })
 
   useEffect(() => {
-    if (vehicleId) {
-      supabase
-        .from('veiculos')
-        .select('*')
-        .eq('id', vehicleId)
-        .single()
-        .then(({ data }) => {
-          if (data) {
-            setFormData({
-              ...data,
-              diferenciais: data.diferenciais || [],
-              caracteristicas: data.caracteristicas || [],
-              fotos: data.fotos || [],
-              tipo_entrada: data.is_consignado ? 'consignacao' : 'proprio',
-            })
-          }
+    if (isOpen) {
+      if (vehicleId) {
+        supabase
+          .from('veiculos')
+          .select('*')
+          .eq('id', vehicleId)
+          .single()
+          .then(({ data }) => {
+            if (data) {
+              setFormData({
+                ...data,
+                diferenciais: data.diferenciais || [],
+                caracteristicas: data.caracteristicas || [],
+                fotos: data.fotos || [],
+                tipo_entrada: data.is_consignado ? 'consignacao' : 'proprio',
+              })
+            }
+          })
+          .catch(() => {
+            toast({ title: 'Erro ao carregar dados do veículo', variant: 'destructive' })
+          })
+      } else {
+        setFormData({
+          categoria: 'Carro',
+          placa: '',
+          chassi: '',
+          renavam: '',
+          marca: '',
+          modelo: '',
+          ano_fabricacao: '',
+          ano_modelo: '',
+          cor: '',
+          combustivel: '',
+          valor_fipe: '',
+          preco_venda: '',
+          preco_classificados: '',
+          quilometragem: '',
+          cambio: 'Manual',
+          status: 'disponivel',
+          tipo_entrada: 'consignacao',
+          proprietario_nome: '',
+          proprietario_telefone: '',
+          diferenciais: [],
+          caracteristicas: [],
+          fotos: [],
+          publicado_olx: false,
+          publicado_webmotors: false,
+          publicado_icarros: false,
+          publicado_mercadolivre: false,
         })
-        .catch(() => {
-          toast({ title: 'Erro ao carregar dados do veículo', variant: 'destructive' })
-        })
+      }
     }
-  }, [vehicleId])
+  }, [isOpen, vehicleId])
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files) return
@@ -120,22 +151,35 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
     }
     setLoadingPlaca(true)
 
-    // Simulação da chamada API Brasil
-    setTimeout(() => {
+    try {
+      const { data, error } = await supabase.functions.invoke('consultar-placa', {
+        body: { placa: formData.placa },
+      })
+
+      if (error) throw error
+      if (!data.success) throw new Error(data.error || 'Falha ao consultar placa')
+
+      const vData = data.data
+
       setFormData((prev: any) => ({
         ...prev,
-        chassi: '9BWNE21J532000001',
-        marca: 'Fiat',
-        modelo: 'Uno Vivace',
-        ano_fabricacao: 2020,
-        ano_modelo: 2021,
-        combustivel: 'Flex',
-        cor: 'Branco',
-        valor_fipe: 45000,
+        chassi: vData.chassi || prev.chassi || '',
+        renavam: vData.renavam || prev.renavam || '',
+        marca: vData.marca || prev.marca || '',
+        modelo: vData.modelo || prev.modelo || '',
+        ano_fabricacao: vData.ano_fab || prev.ano_fabricacao || '',
+        ano_modelo: vData.ano_modelo || prev.ano_modelo || '',
+        combustivel: vData.combustivel || prev.combustivel || '',
+        cor: vData.cor || prev.cor || '',
+        valor_fipe: vData.preco_fipe || prev.valor_fipe || '',
       }))
+
+      toast({ title: 'Sucesso!', description: 'Dados importados com sucesso.' })
+    } catch (err: any) {
+      toast({ title: 'Erro ao consultar placa', description: err.message, variant: 'destructive' })
+    } finally {
       setLoadingPlaca(false)
-      toast({ title: 'Sucesso!', description: 'Dados importados da API Brasil com sucesso.' })
-    }, 1500)
+    }
   }
 
   const save = async (statusOverride?: string) => {
@@ -325,7 +369,10 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
                           type="number"
                           value={formData.preco_venda || ''}
                           onChange={(e) =>
-                            setFormData({ ...formData, preco_venda: parseFloat(e.target.value) })
+                            setFormData({
+                              ...formData,
+                              preco_venda: parseFloat(e.target.value) || 0,
+                            })
                           }
                           className="mt-1 font-bold text-green-700"
                         />
@@ -340,7 +387,7 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
                           onChange={(e) =>
                             setFormData({
                               ...formData,
-                              preco_classificados: parseFloat(e.target.value),
+                              preco_classificados: parseFloat(e.target.value) || 0,
                             })
                           }
                           className="mt-1"
@@ -367,7 +414,10 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
                           type="number"
                           value={formData.quilometragem || ''}
                           onChange={(e) =>
-                            setFormData({ ...formData, quilometragem: parseInt(e.target.value) })
+                            setFormData({
+                              ...formData,
+                              quilometragem: parseInt(e.target.value) || 0,
+                            })
                           }
                           className="mt-1"
                         />
