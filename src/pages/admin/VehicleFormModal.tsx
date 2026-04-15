@@ -3,7 +3,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
 import {
   Select,
   SelectContent,
@@ -18,7 +17,20 @@ import { useToast } from '@/hooks/use-toast'
 import { getMarcas, getModelos, getAnos } from '@/services/fipe'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { CARACTERISTICAS, OPCIONAIS, CORES } from '@/lib/constants'
-import { Camera, Search, Trash2, GripHorizontal, Save, Send, ArrowLeft } from 'lucide-react'
+import {
+  Camera,
+  Search,
+  Trash2,
+  GripHorizontal,
+  Save,
+  Send,
+  ArrowLeft,
+  Car,
+  Info,
+  Settings,
+  Share2,
+} from 'lucide-react'
+import { cn } from '@/lib/utils'
 
 export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess }: any) {
   const [loading, setLoading] = useState(false)
@@ -109,6 +121,7 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
     if (!a) return
     const ano = a.nome.match(/\d{4}/)?.[0] || '0'
     setFormData((p: any) => ({ ...p, ano_fabricacao: parseInt(ano), ano_modelo: parseInt(ano) }))
+
     const m = marcas.find((x) => x.nome === formData.marca)
     const mod = modelos.find((x) => x.nome === formData.modelo)
     if (m && mod) {
@@ -130,6 +143,7 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
     const { error } = payload.id
       ? await supabase.from('veiculos').update(payload).eq('id', payload.id)
       : await supabase.from('veiculos').insert([payload])
+
     if (error) toast({ title: 'Erro ao salvar', variant: 'destructive' })
     else {
       toast({ title: 'Veículo salvo!' })
@@ -160,24 +174,26 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-6xl h-[95vh] flex flex-col p-0 bg-[#F5F5F5]">
-        <DialogHeader className="px-6 py-4 border-b bg-[#0D47A1] text-white shrink-0">
-          <DialogTitle className="text-xl">
-            {vehicleId ? 'EDITAR VEÍCULO' : 'NOVO VEÍCULO'}
+      <DialogContent className="max-w-6xl h-[95vh] flex flex-col p-0 bg-[#F4F6F8] gap-0">
+        <DialogHeader className="px-6 py-4 border-b bg-white text-slate-800 shrink-0">
+          <DialogTitle className="text-xl font-bold flex items-center gap-2">
+            <Car className="w-6 h-6 text-blue-600" />{' '}
+            {vehicleId ? 'EDITAR VEÍCULO' : 'CADASTRAR VEÍCULO'}
           </DialogTitle>
         </DialogHeader>
 
         <ScrollArea className="flex-1 p-6">
           <div className="space-y-6 max-w-5xl mx-auto">
-            {/* BLOCO A */}
-            <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
-              <h3 className="font-bold text-[#0D47A1] mb-4 border-b border-gray-100 pb-2 flex items-center gap-2">
-                <Camera className="w-5 h-5" /> BLOCO A - FOTOS DO VEÍCULO
+            {/* BLOCO DE FOTOS */}
+            <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
+              <h3 className="font-bold text-slate-800 mb-4 border-b border-slate-100 pb-2 flex items-center gap-2">
+                <Camera className="w-5 h-5 text-blue-600" /> GESTÃO DE FOTOS
               </h3>
-              <p className="text-xs text-gray-500 mb-4">
-                Para alterar a ordem das fotos, arraste a foto para posição desejada. (Máx 30)
+              <p className="text-xs text-slate-500 mb-4 flex items-center gap-1.5 bg-blue-50 text-blue-700 p-2 rounded border border-blue-100">
+                <Info className="w-4 h-4" /> Arraste as fotos para reordenar. A primeira foto será a
+                capa do anúncio. (Máx 30 fotos)
               </p>
-              <div className="grid grid-cols-3 sm:grid-cols-5 md:grid-cols-8 gap-3 mb-4">
+              <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-3 mb-4">
                 {formData.fotos?.map((f: string, i: number) => (
                   <div
                     key={f}
@@ -185,12 +201,17 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
                     onDragStart={(e) => dragStart(e, i)}
                     onDragOver={(e) => e.preventDefault()}
                     onDrop={(e) => drop(e, i)}
-                    className="relative group aspect-video bg-gray-100 rounded border border-gray-200 cursor-grab"
+                    className="relative group aspect-square bg-slate-100 rounded-lg border border-slate-200 cursor-grab overflow-hidden"
                   >
-                    <img src={f} className="w-full h-full object-cover rounded" />
+                    <img src={f} className="w-full h-full object-cover" />
+                    {i === 0 && (
+                      <div className="absolute top-0 left-0 bg-blue-600 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-br">
+                        Capa
+                      </div>
+                    )}
                     <button
                       type="button"
-                      className="absolute top-1 right-1 bg-white/90 p-1 rounded opacity-0 group-hover:opacity-100"
+                      className="absolute top-1 right-1 bg-white/90 p-1.5 rounded-md opacity-0 group-hover:opacity-100 transition-opacity shadow-sm hover:bg-red-50"
                       onClick={() =>
                         setFormData((p: any) => ({
                           ...p,
@@ -198,16 +219,16 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
                         }))
                       }
                     >
-                      <Trash2 className="w-3 h-3 text-[#C62828]" />
+                      <Trash2 className="w-3.5 h-3.5 text-red-600" />
                     </button>
-                    <div className="absolute bottom-1 left-1 bg-black/60 p-1 rounded opacity-0 group-hover:opacity-100">
-                      <GripHorizontal className="w-3 h-3 text-white" />
+                    <div className="absolute bottom-1 left-1 bg-slate-900/60 p-1.5 rounded-md opacity-0 group-hover:opacity-100 transition-opacity">
+                      <GripHorizontal className="w-3.5 h-3.5 text-white" />
                     </div>
                   </div>
                 ))}
-                <label className="aspect-video flex flex-col items-center justify-center border-2 border-dashed border-[#1565C0] rounded bg-[#E3F2FD] text-[#1565C0] cursor-pointer hover:bg-[#BBDEFB] transition-colors">
-                  <Camera className="w-5 h-5 mb-1" />
-                  <span className="text-[10px] font-bold">Adicionar</span>
+                <label className="aspect-square flex flex-col items-center justify-center border-2 border-dashed border-blue-300 rounded-lg bg-blue-50 text-blue-600 cursor-pointer hover:bg-blue-100 transition-colors">
+                  <Camera className="w-6 h-6 mb-1" />
+                  <span className="text-[10px] font-bold uppercase">Adicionar</span>
                   <input
                     type="file"
                     multiple
@@ -218,44 +239,48 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
                   />
                 </label>
               </div>
-              <div className="max-w-md">
-                <Label>Link Vídeo (YouTube)</Label>
-                <Input
-                  value={formData.video_url || ''}
-                  onChange={(e) => setFormData({ ...formData, video_url: e.target.value })}
-                  className="mt-1 bg-gray-50"
-                />
-              </div>
             </div>
 
-            {/* BLOCO B */}
-            <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
-              <h3 className="font-bold text-[#0D47A1] mb-6 border-b border-gray-100 pb-2">
-                BLOCO B - DADOS DO VEÍCULO
+            {/* DADOS DO VEÍCULO */}
+            <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
+              <h3 className="font-bold text-slate-800 mb-6 border-b border-slate-100 pb-2 flex items-center gap-2">
+                <Settings className="w-5 h-5 text-blue-600" /> PERFIL TÉCNICO COMPLETO
               </h3>
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                {/* Coluna 1 */}
                 <div className="space-y-4">
                   <div className="flex gap-2 items-end">
                     <div className="flex-1">
-                      <Label>Placa</Label>
+                      <Label className="text-xs font-bold text-slate-500 uppercase">
+                        Placa do Veículo
+                      </Label>
                       <Input
                         value={formData.placa || ''}
                         onChange={(e) => setFormData({ ...formData, placa: e.target.value })}
-                        className="mt-1 font-mono uppercase"
+                        className="mt-1 font-mono uppercase bg-slate-50"
+                        placeholder="AAA-0A00"
                       />
                     </div>
-                    <Button type="button" className="bg-[#1565C0] hover:bg-[#0D47A1]">
-                      <Search className="w-4 h-4 mr-2" /> DENATRAN
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="text-blue-700 border-blue-200 bg-blue-50 hover:bg-blue-100"
+                    >
+                      <Search className="w-4 h-4 mr-2" /> Consulta DENATRAN
                     </Button>
                   </div>
+
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <Label>Categoria</Label>
+                      <Label className="text-xs font-bold text-slate-500 uppercase">
+                        Categoria
+                      </Label>
                       <Select
                         value={formData.categoria}
                         onValueChange={(v) => setFormData({ ...formData, categoria: v })}
                       >
-                        <SelectTrigger className="mt-1">
+                        <SelectTrigger className="mt-1 bg-white">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -266,7 +291,9 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
                       </Select>
                     </div>
                     <div>
-                      <Label>Marca (FIPE)</Label>
+                      <Label className="text-xs font-bold text-slate-500 uppercase">
+                        Marca (FIPE)
+                      </Label>
                       <Select
                         value={formData.marca}
                         onValueChange={(v) => {
@@ -275,7 +302,7 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
                           if (m) getModelos(m.codigo).then(setModelos)
                         }}
                       >
-                        <SelectTrigger className="mt-1">
+                        <SelectTrigger className="mt-1 bg-white">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -288,9 +315,12 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
                       </Select>
                     </div>
                   </div>
+
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <Label>Modelo (FIPE)</Label>
+                      <Label className="text-xs font-bold text-slate-500 uppercase">
+                        Modelo (FIPE)
+                      </Label>
                       <Select
                         value={formData.modelo}
                         onValueChange={(v) => {
@@ -300,7 +330,7 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
                           if (m && mod) getAnos(m.codigo, mod.codigo).then(setAnos)
                         }}
                       >
-                        <SelectTrigger className="mt-1">
+                        <SelectTrigger className="mt-1 bg-white">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -313,12 +343,14 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
                       </Select>
                     </div>
                     <div>
-                      <Label>Ano Fab/Mod (FIPE)</Label>
+                      <Label className="text-xs font-bold text-slate-500 uppercase">
+                        Ano (FIPE)
+                      </Label>
                       <Select
                         value={formData.ano_fabricacao?.toString()}
                         onValueChange={handleAnoChange}
                       >
-                        <SelectTrigger className="mt-1">
+                        <SelectTrigger className="mt-1 bg-white">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -331,87 +363,98 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
                       </Select>
                     </div>
                   </div>
+
                   <div>
-                    <Label>Versão</Label>
+                    <Label className="text-xs font-bold text-slate-500 uppercase">
+                      Versão Detalhada
+                    </Label>
                     <Input
                       value={formData.versao || ''}
                       onChange={(e) => setFormData({ ...formData, versao: e.target.value })}
-                      className="mt-1"
+                      className="mt-1 bg-white"
+                      placeholder="Ex: 2.0 EXL 16V FLEX 4P AUTOMÁTICO"
                     />
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
+
+                  <div className="p-4 bg-slate-50 rounded-lg border border-slate-100 grid grid-cols-2 gap-4">
                     <div>
-                      <Label>Preço Site (R$)</Label>
+                      <Label className="text-xs font-bold text-slate-500 uppercase">Chassi</Label>
                       <Input
-                        type="number"
-                        value={formData.preco_venda || ''}
-                        onChange={(e) =>
-                          setFormData({ ...formData, preco_venda: parseFloat(e.target.value) })
-                        }
-                        className="mt-1 text-[#2E7D32] font-bold"
+                        value={formData.chassi || ''}
+                        onChange={(e) => setFormData({ ...formData, chassi: e.target.value })}
+                        className="mt-1 bg-white text-xs font-mono uppercase"
                       />
                     </div>
                     <div>
-                      <Label>Preço Classificados (R$)</Label>
+                      <Label className="text-xs font-bold text-slate-500 uppercase">Renavam</Label>
                       <Input
-                        type="number"
-                        value={formData.preco_classificados || ''}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            preco_classificados: parseFloat(e.target.value),
-                          })
-                        }
-                        className="mt-1"
+                        value={formData.renavam || ''}
+                        onChange={(e) => setFormData({ ...formData, renavam: e.target.value })}
+                        className="mt-1 bg-white text-xs font-mono"
                       />
                     </div>
                   </div>
                 </div>
+
+                {/* Coluna 2 */}
                 <div className="space-y-4">
-                  <div className="flex gap-4 mb-2">
-                    <label className="flex items-center gap-2 cursor-pointer">
+                  <div className="flex gap-4 p-3 bg-slate-50 rounded-lg border border-slate-100">
+                    <label className="flex items-center gap-2 cursor-pointer text-sm font-medium text-slate-700">
                       <input
                         type="radio"
                         checked={formData.is_zero_km}
                         onChange={() => setFormData({ ...formData, is_zero_km: true })}
+                        className="accent-blue-600 w-4 h-4"
                       />{' '}
-                      0Km
+                      0Km (Novo)
                     </label>
-                    <label className="flex items-center gap-2 cursor-pointer">
+                    <label className="flex items-center gap-2 cursor-pointer text-sm font-medium text-slate-700">
                       <input
                         type="radio"
                         checked={!formData.is_zero_km}
                         onChange={() => setFormData({ ...formData, is_zero_km: false })}
+                        className="accent-blue-600 w-4 h-4"
                       />{' '}
-                      Usado
+                      Usado/Seminovo
                     </label>
                   </div>
+
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <Label>Combustível</Label>
+                      <Label className="text-xs font-bold text-slate-500 uppercase">
+                        Combustível
+                      </Label>
                       <Select
                         value={formData.combustivel || ''}
                         onValueChange={(v) => setFormData({ ...formData, combustivel: v })}
                       >
-                        <SelectTrigger className="mt-1">
+                        <SelectTrigger className="mt-1 bg-white">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="Flex">Flex</SelectItem>
-                          <SelectItem value="Gasolina">Gasolina</SelectItem>
-                          <SelectItem value="Diesel">Diesel</SelectItem>
-                          <SelectItem value="Elétrico">Elétrico</SelectItem>
-                          <SelectItem value="Híbrido">Híbrido</SelectItem>
+                          {[
+                            'Flex',
+                            'Gasolina',
+                            'Diesel',
+                            'Elétrico',
+                            'Híbrido',
+                            'Etanol',
+                            'GNV',
+                          ].map((c) => (
+                            <SelectItem key={c} value={c}>
+                              {c}
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                     </div>
                     <div>
-                      <Label>Cor</Label>
+                      <Label className="text-xs font-bold text-slate-500 uppercase">Cor</Label>
                       <Select
                         value={formData.cor || ''}
                         onValueChange={(v) => setFormData({ ...formData, cor: v })}
                       >
-                        <SelectTrigger className="mt-1">
+                        <SelectTrigger className="mt-1 bg-white">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -424,302 +467,322 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
                       </Select>
                     </div>
                   </div>
-                  <div className="grid grid-cols-3 gap-4 items-end">
+
+                  <div className="grid grid-cols-3 gap-4">
                     <div className="col-span-1">
-                      <Label>Câmbio</Label>
+                      <Label className="text-xs font-bold text-slate-500 uppercase">Câmbio</Label>
                       <Select
                         value={formData.cambio || ''}
                         onValueChange={(v) => setFormData({ ...formData, cambio: v })}
                       >
-                        <SelectTrigger className="mt-1">
+                        <SelectTrigger className="mt-1 bg-white">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="Manual">Manual</SelectItem>
-                          <SelectItem value="Automático">Automático</SelectItem>
-                          <SelectItem value="CVT">CVT</SelectItem>
-                          <SelectItem value="Semi-automático">Semi-automático</SelectItem>
+                          {['Manual', 'Automático', 'CVT', 'Semi-automático'].map((c) => (
+                            <SelectItem key={c} value={c}>
+                              {c}
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                     </div>
                     <div className="col-span-1">
-                      <Label>KM</Label>
+                      <Label className="text-xs font-bold text-slate-500 uppercase">
+                        Quilometragem
+                      </Label>
                       <Input
                         type="number"
                         value={formData.quilometragem || ''}
                         onChange={(e) =>
                           setFormData({ ...formData, quilometragem: parseInt(e.target.value) })
                         }
-                        className="mt-1"
+                        className="mt-1 bg-white"
+                        placeholder="0"
                       />
                     </div>
-                    <div className="col-span-1 mb-2 flex items-center gap-2">
-                      <Checkbox id="nkm" />
-                      <Label htmlFor="nkm" className="text-xs">
-                        Ocultar KM
-                      </Label>
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-3 gap-4">
-                    <div>
-                      <Label>Portas</Label>
+                    <div className="col-span-1">
+                      <Label className="text-xs font-bold text-slate-500 uppercase">Portas</Label>
                       <Select
                         value={formData.portas?.toString()}
                         onValueChange={(v) => setFormData({ ...formData, portas: parseInt(v) })}
                       >
-                        <SelectTrigger className="mt-1">
+                        <SelectTrigger className="mt-1 bg-white">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="2">2</SelectItem>
-                          <SelectItem value="3">3</SelectItem>
-                          <SelectItem value="4">4</SelectItem>
-                          <SelectItem value="5">5</SelectItem>
+                          {['2', '3', '4', '5'].map((c) => (
+                            <SelectItem key={c} value={c}>
+                              {c}
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                     </div>
-                    <div>
-                      <Label>Chassi</Label>
-                      <Input
-                        value={formData.chassi || ''}
-                        onChange={(e) => setFormData({ ...formData, chassi: e.target.value })}
-                        className="mt-1"
-                      />
-                    </div>
-                    <div>
-                      <Label>Renavam</Label>
-                      <Input
-                        value={formData.renavam || ''}
-                        onChange={(e) => setFormData({ ...formData, renavam: e.target.value })}
-                        className="mt-1"
-                      />
-                    </div>
                   </div>
-                  <div>
-                    <Label>Valor FIPE Estimado</Label>
-                    <Input
-                      readOnly
-                      value={formData.valor_fipe ? `FIPE: R$ ${formData.valor_fipe}` : ''}
-                      className="mt-1 bg-gray-100 text-gray-500 font-mono font-bold"
-                    />
+
+                  <div className="p-4 bg-green-50 rounded-lg border border-green-100 space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label className="text-xs font-bold text-green-700 uppercase">
+                          Preço p/ Site (R$)
+                        </Label>
+                        <Input
+                          type="number"
+                          value={formData.preco_venda || ''}
+                          onChange={(e) =>
+                            setFormData({ ...formData, preco_venda: parseFloat(e.target.value) })
+                          }
+                          className="mt-1 text-green-700 font-bold bg-white border-green-200"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-xs font-bold text-green-700 uppercase">
+                          Preço Mínimo (R$)
+                        </Label>
+                        <Input
+                          type="number"
+                          value={formData.preco_classificados || ''}
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              preco_classificados: parseFloat(e.target.value),
+                            })
+                          }
+                          className="mt-1 bg-white border-green-200"
+                          placeholder="Margem interna"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <Label className="text-xs font-bold text-slate-500 uppercase">
+                        Valor FIPE (Referência)
+                      </Label>
+                      <Input
+                        readOnly
+                        value={
+                          formData.valor_fipe
+                            ? `R$ ${formData.valor_fipe.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
+                            : ''
+                        }
+                        className="mt-1 bg-slate-100 text-slate-500 font-mono font-bold border-transparent"
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* BLOCOS C, E, F, G */}
-            <div className="grid grid-cols-1 gap-6">
-              <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
-                <div className="flex items-center gap-4 mb-4 border-b border-gray-100 pb-2">
-                  <h3 className="font-bold text-[#0D47A1]">BLOCO C - CONSIGNAÇÃO</h3>
-                  <div className="flex items-center gap-2">
+            {/* CHECKLIST DE CARACTERÍSTICAS E OPCIONAIS */}
+            <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
+              <h3 className="font-bold text-slate-800 mb-4 border-b border-slate-100 pb-2">
+                CHECKLIST DE OPCIONAIS E CARACTERÍSTICAS
+              </h3>
+              <div className="space-y-6">
+                <div>
+                  <Label className="text-xs font-bold text-blue-600 uppercase mb-3 block">
+                    Principais Diferenciais
+                  </Label>
+                  <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3">
+                    {CARACTERISTICAS.map((c) => (
+                      <label
+                        key={c}
+                        className="flex items-center gap-2 text-xs cursor-pointer hover:bg-slate-50 p-1.5 rounded-md border border-transparent hover:border-slate-200 transition-colors"
+                      >
+                        <Checkbox
+                          checked={(formData.caracteristicas || []).includes(c)}
+                          onCheckedChange={() => toggleArray('caracteristicas', c)}
+                        />{' '}
+                        {c}
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <Label className="text-xs font-bold text-slate-500 uppercase mb-3 block">
+                    Opcionais do Veículo
+                  </Label>
+                  <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-y-3 gap-x-2">
+                    {OPCIONAIS.map((o) => (
+                      <label
+                        key={o}
+                        className="flex items-center gap-2 text-[11px] cursor-pointer hover:bg-slate-50 p-1.5 rounded-md border border-transparent hover:border-slate-200 transition-colors text-slate-600"
+                      >
+                        <Checkbox
+                          checked={(formData.diferenciais || []).includes(o)}
+                          onCheckedChange={() => toggleArray('diferenciais', o)}
+                          className="w-3.5 h-3.5"
+                        />{' '}
+                        {o}
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* PUBLICAÇÃO E INTEGRAÇÕES */}
+            <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
+              <h3 className="font-bold text-slate-800 mb-4 border-b border-slate-100 pb-2 flex items-center gap-2">
+                <Share2 className="w-5 h-5 text-blue-600" /> STATUS E MATRIZ DE PUBLICAÇÃO
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div className="space-y-4">
+                  <div>
+                    <Label className="text-xs font-bold text-slate-500 uppercase">
+                      Status no Estoque
+                    </Label>
+                    <Select
+                      value={formData.status}
+                      onValueChange={(v) => setFormData({ ...formData, status: v })}
+                    >
+                      <SelectTrigger className="mt-1 bg-white font-medium">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="disponivel">Ativo / Disponível</SelectItem>
+                        <SelectItem value="reservado">Reservado</SelectItem>
+                        <SelectItem value="vendido">Vendido</SelectItem>
+                        <SelectItem value="inativo">Inativo / Oculto</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="flex items-center justify-between p-3 bg-amber-50 rounded-lg border border-amber-100">
+                    <Label
+                      htmlFor="destaque"
+                      className="font-bold text-amber-800 text-sm cursor-pointer"
+                    >
+                      Selo "Destaque" no Site
+                    </Label>
+                    <Switch
+                      checked={formData.destaque}
+                      onCheckedChange={(c) => setFormData({ ...formData, destaque: c })}
+                      id="destaque"
+                      className="data-[state=checked]:bg-amber-600"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <Label className="text-xs font-bold text-slate-500 uppercase mb-3 block">
+                    Sincronizar Portais Externos
+                  </Label>
+                  <div className="space-y-2.5 p-3 bg-slate-50 rounded-lg border border-slate-100">
+                    <label className="flex items-center gap-3 text-sm cursor-pointer font-medium text-slate-700">
+                      <Checkbox
+                        checked={formData.publicado_webmotors}
+                        onCheckedChange={(c) =>
+                          setFormData({ ...formData, publicado_webmotors: c })
+                        }
+                      />{' '}
+                      WebMotors
+                    </label>
+                    <label className="flex items-center gap-3 text-sm cursor-pointer font-medium text-slate-700">
+                      <Checkbox
+                        checked={formData.publicado_icarros}
+                        onCheckedChange={(c) => setFormData({ ...formData, publicado_icarros: c })}
+                      />{' '}
+                      iCarros
+                    </label>
+                    <label className="flex items-center gap-3 text-sm cursor-pointer font-medium text-slate-700">
+                      <Checkbox
+                        checked={formData.publicado_mercadolivre}
+                        onCheckedChange={(c) =>
+                          setFormData({ ...formData, publicado_mercadolivre: c })
+                        }
+                      />{' '}
+                      Mercado Livre
+                    </label>
+                    <label className="flex items-center gap-3 text-sm cursor-pointer font-medium text-slate-700">
+                      <Checkbox
+                        checked={formData.publicado_napista}
+                        onCheckedChange={(c) => setFormData({ ...formData, publicado_napista: c })}
+                      />{' '}
+                      NaPista
+                    </label>
+                    <label className="flex items-center gap-3 text-sm cursor-pointer font-medium text-slate-700">
+                      <Checkbox
+                        checked={formData.publicado_olx}
+                        onCheckedChange={(c) => setFormData({ ...formData, publicado_olx: c })}
+                      />{' '}
+                      OLX
+                    </label>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg border border-blue-100">
+                    <Label
+                      htmlFor="is_consignado"
+                      className="font-bold text-blue-800 text-sm cursor-pointer"
+                    >
+                      É Consignado?
+                    </Label>
                     <Switch
                       checked={formData.is_consignado}
                       onCheckedChange={(c) => setFormData({ ...formData, is_consignado: c })}
                       id="is_consignado"
                     />
-                    <Label htmlFor="is_consignado">Veículo Consignado?</Label>
                   </div>
-                </div>
-                {formData.is_consignado && (
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-blue-50 rounded">
-                    <div>
-                      <Label>Proprietário *</Label>
-                      <Input
-                        value={formData.proprietario_nome || ''}
-                        onChange={(e) =>
-                          setFormData({ ...formData, proprietario_nome: e.target.value })
-                        }
-                        className="bg-white"
-                      />
-                    </div>
-                    <div>
-                      <Label>Telefone *</Label>
-                      <Input
-                        value={formData.proprietario_telefone || ''}
-                        onChange={(e) =>
-                          setFormData({ ...formData, proprietario_telefone: e.target.value })
-                        }
-                        className="bg-white"
-                      />
-                    </div>
-                    <div>
-                      <Label>Valor Mínimo (Interno)</Label>
-                      <Input
-                        type="number"
-                        value={formData.valor_minimo || ''}
-                        onChange={(e) =>
-                          setFormData({ ...formData, valor_minimo: parseFloat(e.target.value) })
-                        }
-                        className="bg-white"
-                      />
-                    </div>
-                    <div>
-                      <Label>Data Entrada</Label>
-                      <Input
-                        type="date"
-                        value={formData.data_entrada || ''}
-                        onChange={(e) => setFormData({ ...formData, data_entrada: e.target.value })}
-                        className="bg-white"
-                      />
-                    </div>
-                  </div>
-                )}
-              </div>
 
-              <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
-                <h3 className="font-bold text-[#0D47A1] mb-4 border-b border-gray-100 pb-2">
-                  BLOCO E - CARACTERÍSTICAS
-                </h3>
-                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3">
-                  {CARACTERISTICAS.map((c) => (
-                    <label
-                      key={c}
-                      className="flex items-center gap-2 text-xs cursor-pointer hover:bg-gray-50 p-1 rounded"
-                    >
-                      <Checkbox
-                        checked={(formData.caracteristicas || []).includes(c)}
-                        onCheckedChange={() => toggleArray('caracteristicas', c)}
-                      />{' '}
-                      {c}
-                    </label>
-                  ))}
-                </div>
-              </div>
-
-              <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
-                <h3 className="font-bold text-[#0D47A1] mb-4 border-b border-gray-100 pb-2">
-                  BLOCO F - OPCIONAIS
-                </h3>
-                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-y-3 gap-x-2">
-                  {OPCIONAIS.map((o) => (
-                    <label
-                      key={o}
-                      className="flex items-center gap-2 text-[11px] cursor-pointer hover:bg-gray-50 p-1 rounded"
-                    >
-                      <Checkbox
-                        checked={(formData.diferenciais || []).includes(o)}
-                        onCheckedChange={() => toggleArray('diferenciais', o)}
-                      />{' '}
-                      {o}
-                    </label>
-                  ))}
-                </div>
-              </div>
-
-              <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
-                <h3 className="font-bold text-[#0D47A1] mb-4 border-b border-gray-100 pb-2">
-                  BLOCO G - PUBLICAÇÃO E STATUS
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                  <div className="space-y-4">
-                    <div>
-                      <Label>Status</Label>
-                      <Select
-                        value={formData.status}
-                        onValueChange={(v) => setFormData({ ...formData, status: v })}
-                      >
-                        <SelectTrigger className="mt-1">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="disponivel">Disponível</SelectItem>
-                          <SelectItem value="reservado">Reservado</SelectItem>
-                          <SelectItem value="vendido">Vendido</SelectItem>
-                          <SelectItem value="consignado">Consignado</SelectItem>
-                        </SelectContent>
-                      </Select>
+                  {formData.is_consignado && (
+                    <div className="p-4 bg-slate-50 rounded-lg border border-slate-200 space-y-3">
+                      <div>
+                        <Label className="text-[10px] font-bold text-slate-500 uppercase">
+                          Proprietário (Oculto no site)
+                        </Label>
+                        <Input
+                          value={formData.proprietario_nome || ''}
+                          onChange={(e) =>
+                            setFormData({ ...formData, proprietario_nome: e.target.value })
+                          }
+                          className="mt-1 bg-white h-8 text-xs"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-[10px] font-bold text-slate-500 uppercase">
+                          Telefone Proprietário
+                        </Label>
+                        <Input
+                          value={formData.proprietario_telefone || ''}
+                          onChange={(e) =>
+                            setFormData({ ...formData, proprietario_telefone: e.target.value })
+                          }
+                          className="mt-1 bg-white h-8 text-xs"
+                        />
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2 p-3 bg-gray-50 rounded border">
-                      <Switch
-                        checked={formData.destaque}
-                        onCheckedChange={(c) => setFormData({ ...formData, destaque: c })}
-                        id="destaque"
-                      />
-                      <Label htmlFor="destaque" className="font-bold">
-                        Destacar na Home do site
-                      </Label>
-                    </div>
-                  </div>
-                  <div>
-                    <Label className="mb-2 block">Publicar nos Portais</Label>
-                    <div className="space-y-2">
-                      <label className="flex items-center gap-2 text-sm cursor-pointer">
-                        <Checkbox
-                          checked={formData.publicado_webmotors}
-                          onCheckedChange={(c) =>
-                            setFormData({ ...formData, publicado_webmotors: c })
-                          }
-                        />{' '}
-                        WebMotors
-                      </label>
-                      <label className="flex items-center gap-2 text-sm cursor-pointer">
-                        <Checkbox
-                          checked={formData.publicado_icarros}
-                          onCheckedChange={(c) =>
-                            setFormData({ ...formData, publicado_icarros: c })
-                          }
-                        />{' '}
-                        iCarros
-                      </label>
-                      <label className="flex items-center gap-2 text-sm cursor-pointer">
-                        <Checkbox
-                          checked={formData.publicado_mercadolivre}
-                          onCheckedChange={(c) =>
-                            setFormData({ ...formData, publicado_mercadolivre: c })
-                          }
-                        />{' '}
-                        Mercado Livre
-                      </label>
-                      <label className="flex items-center gap-2 text-sm cursor-pointer">
-                        <Checkbox
-                          checked={formData.publicado_napista}
-                          onCheckedChange={(c) =>
-                            setFormData({ ...formData, publicado_napista: c })
-                          }
-                        />{' '}
-                        NaPista
-                      </label>
-                    </div>
-                  </div>
-                  <div>
-                    <Label>Responsável pelo cadastro</Label>
-                    <Select
-                      value={formData.responsavel_id || '1'}
-                      onValueChange={(v) => setFormData({ ...formData, responsavel_id: v })}
-                    >
-                      <SelectTrigger className="mt-1">
-                        <SelectValue placeholder="Selecione" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="1">Luiz Fernando</SelectItem>
-                        <SelectItem value="2">Roberto Junior</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+                  )}
                 </div>
               </div>
             </div>
           </div>
         </ScrollArea>
-        <div className="px-6 py-4 border-t bg-white shrink-0 flex justify-end gap-3 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
-          <Button variant="outline" onClick={onClose} className="text-gray-600">
-            <ArrowLeft className="w-4 h-4 mr-2" /> Cancelar
+
+        <div className="px-6 py-4 border-t bg-white shrink-0 flex justify-end gap-3 shadow-[0_-10px_15px_-3px_rgba(0,0,0,0.05)] z-10">
+          <Button
+            variant="outline"
+            onClick={onClose}
+            className="text-slate-600 bg-white border-slate-200 hover:bg-slate-50 font-medium"
+          >
+            Cancelar
           </Button>
           <Button
             variant="secondary"
-            onClick={() => save('rascunho')}
+            onClick={() => save('inativo')}
             disabled={loading}
-            className="bg-gray-200 hover:bg-gray-300 text-gray-800"
+            className="bg-slate-200 hover:bg-slate-300 text-slate-800 font-medium"
           >
-            <Save className="w-4 h-4 mr-2" /> Salvar Rascunho
+            <Save className="w-4 h-4 mr-2" /> Salvar como Rascunho
           </Button>
           <Button
             onClick={() => save()}
             disabled={loading}
-            className="bg-[#1565C0] hover:bg-[#0D47A1] text-white px-8"
+            className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-8 shadow-sm"
           >
-            <Send className="w-4 h-4 mr-2" /> {loading ? 'Salvando...' : 'Salvar e Publicar'}
+            <Send className="w-4 h-4 mr-2" />{' '}
+            {loading ? 'Salvando...' : 'Salvar e Publicar Anúncio'}
           </Button>
         </div>
       </DialogContent>

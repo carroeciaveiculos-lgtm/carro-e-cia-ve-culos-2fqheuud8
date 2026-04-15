@@ -2,7 +2,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/hooks/use-auth'
 import { supabase } from '@/lib/supabase/client'
 import { NotificationBell } from './NotificationBell'
-import { LogOut, Home, FileText, HelpCircle, Users } from 'lucide-react'
+import { LogOut, Home, HelpCircle, Users, Car, Calendar } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
 export function AdminHeader() {
@@ -35,7 +35,7 @@ export function AdminHeader() {
     user?.email === 'adriana.araujo@kmzero.com.br'
 
   return (
-    <header className="flex flex-col w-full shadow-sm z-10">
+    <header className="flex flex-col w-full shadow-sm z-20">
       {/* Linha 1 */}
       <div className="bg-[#0D47A1] text-white px-4 md:px-6 py-3 flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-4">
@@ -44,6 +44,9 @@ export function AdminHeader() {
             alt="Logo Carro e Cia"
             className="h-10 w-10 rounded bg-white p-1"
           />
+          <span className="font-display font-bold text-lg hidden sm:inline-block tracking-wide">
+            CENTRAL DE COMANDO
+          </span>
         </div>
         <div className="flex items-center gap-4 md:gap-6">
           <NotificationBell />
@@ -64,34 +67,49 @@ export function AdminHeader() {
       </div>
 
       {/* Linha 2 - NAV BAR */}
-      <div className="bg-[#1565C0] text-white px-4 md:px-6 py-2 flex flex-wrap items-center gap-4 md:gap-6 text-xs md:text-sm">
+      <div className="bg-[#1565C0] text-white px-4 md:px-6 py-2 flex flex-wrap items-center gap-2 md:gap-6 text-xs md:text-sm font-medium">
         <Link
           to="/admin"
-          className="flex items-center gap-1.5 hover:text-white/80 transition-colors"
+          className="flex items-center gap-1.5 hover:bg-[#1976D2] px-3 py-1.5 rounded-md transition-colors"
         >
           <Home className="w-4 h-4" /> Home
         </Link>
         <Link
-          to="/admin/faturas"
-          className="flex items-center gap-1.5 hover:text-white/80 transition-colors"
+          to="/admin/crm"
+          className="flex items-center gap-1.5 hover:bg-[#1976D2] px-3 py-1.5 rounded-md transition-colors"
         >
-          <FileText className="w-4 h-4" /> Faturas
+          <Users className="w-4 h-4" /> Leads
         </Link>
         <Link
-          to="/admin/suporte"
-          className="flex items-center gap-1.5 hover:text-white/80 transition-colors"
+          to="/admin/estoque"
+          className="flex items-center gap-1.5 hover:bg-[#1976D2] px-3 py-1.5 rounded-md transition-colors"
         >
-          <HelpCircle className="w-4 h-4" /> Suporte
+          <Car className="w-4 h-4" /> Consulta
+        </Link>
+        <Link
+          to="/admin/agenda"
+          className="flex items-center gap-1.5 hover:bg-[#1976D2] px-3 py-1.5 rounded-md transition-colors opacity-70"
+          title="Em construção"
+        >
+          <Calendar className="w-4 h-4" /> Agenda
         </Link>
 
-        {isAdminMaster && (
+        <div className="ml-auto flex items-center gap-2 md:gap-4">
           <Link
-            to="/admin/usuarios"
-            className="flex items-center gap-1.5 hover:text-white/80 transition-colors ml-auto bg-[#0D47A1] px-3 py-1.5 rounded-full font-semibold border border-white/10 shadow-sm"
+            to="/admin/suporte"
+            className="flex items-center gap-1.5 hover:bg-[#1976D2] px-3 py-1.5 rounded-md transition-colors"
           >
-            <Users className="w-4 h-4" /> Gerenciar Usuários
+            <HelpCircle className="w-4 h-4" /> Suporte
           </Link>
-        )}
+          {isAdminMaster && (
+            <Link
+              to="/admin/usuarios"
+              className="flex items-center gap-1.5 hover:text-white/80 transition-colors bg-[#0D47A1] px-4 py-1.5 rounded-full font-semibold border border-white/20 shadow-sm"
+            >
+              <Users className="w-4 h-4" /> Usuários
+            </Link>
+          )}
+        </div>
       </div>
     </header>
   )
