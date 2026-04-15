@@ -42,7 +42,7 @@ export function AdminHeader() {
           <img
             src="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Logos/logo%20carro%20e%20cia%20quadrado.png"
             alt="Logo Carro e Cia"
-            className="h-10 w-10 rounded bg-white p-1"
+            className="h-12 w-12 rounded object-contain bg-white p-1 shadow-sm"
           />
           <span className="font-display font-bold text-lg hidden sm:inline-block tracking-wide">
             CENTRAL DE COMANDO
