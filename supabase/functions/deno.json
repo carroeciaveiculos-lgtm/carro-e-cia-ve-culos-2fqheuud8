@@ -4,6 +4,7 @@
     "receive-leads": 2,
     "sync-estoque": 1,
     "webhook-portais": 1,
-    "on-lead-created": 1
+    "on-lead-created": 1,
+    "consultar-placa": 1
   }
 }
