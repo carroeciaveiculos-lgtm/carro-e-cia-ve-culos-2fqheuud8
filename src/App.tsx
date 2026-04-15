@@ -67,9 +67,32 @@ const App = () => (
           <Route path="/admin" element={<ProtectedRoute />}>
             <Route element={<AdminLayout />}>
               <Route index element={<Dashboard />} />
+
+              {/* Module: Estoque */}
               <Route path="estoque" element={<AdminEstoque />} />
+              <Route path="estoque/:submenu" element={<EmConstrucao />} />
               <Route path="veiculos" element={<Navigate to="/admin/estoque" replace />} />
+
+              {/* Module: CRM / Leads */}
               <Route path="crm" element={<AdminLeads />} />
+              <Route path="crm/:submenu" element={<EmConstrucao />} />
+
+              {/* Module: Avaliação */}
+              <Route path="avaliacao" element={<EmConstrucao />} />
+              <Route path="avaliacao/:submenu" element={<EmConstrucao />} />
+
+              {/* Module: Site */}
+              <Route path="site" element={<EmConstrucao />} />
+              <Route path="site/:submenu" element={<EmConstrucao />} />
+
+              {/* Module: Financiamento */}
+              <Route path="financiamento" element={<EmConstrucao />} />
+              <Route path="financiamento/:submenu" element={<EmConstrucao />} />
+
+              {/* Module: Administrativo */}
+              <Route path="administrativo" element={<EmConstrucao />} />
+              <Route path="administrativo/:submenu" element={<EmConstrucao />} />
+
               <Route path="portais" element={<Portais />} />
               <Route path="relatorios" element={<Relatorios />} />
               <Route path="configuracoes" element={<Configuracoes />} />
@@ -78,14 +101,7 @@ const App = () => (
               <Route path="usuarios" element={<Usuarios />} />
               <Route path="usuarios/:id" element={<EditUsuario />} />
 
-              {/* Módulos em Construção */}
-              <Route path="site" element={<EmConstrucao />} />
-              <Route path="avaliacao" element={<EmConstrucao />} />
-              <Route path="marketing" element={<EmConstrucao />} />
-              <Route path="suporte" element={<EmConstrucao />} />
-              <Route path="agenda" element={<EmConstrucao />} />
               <Route path="em-construcao" element={<EmConstrucao />} />
-
               <Route path="faturas" element={<Navigate to="/admin" replace />} />
             </Route>
           </Route>

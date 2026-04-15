@@ -2,7 +2,17 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/hooks/use-auth'
 import { supabase } from '@/lib/supabase/client'
 import { NotificationBell } from './NotificationBell'
-import { LogOut, Home, HelpCircle, Users, Car, Calendar } from 'lucide-react'
+import {
+  LogOut,
+  Home,
+  HelpCircle,
+  Users,
+  Car,
+  Calendar,
+  Globe,
+  Banknote,
+  FileText,
+} from 'lucide-react'
 import { useEffect, useState } from 'react'
 
 export function AdminHeader() {
@@ -67,12 +77,18 @@ export function AdminHeader() {
       </div>
 
       {/* Linha 2 - NAV BAR */}
-      <div className="bg-[#1565C0] text-white px-4 md:px-6 py-2 flex flex-wrap items-center gap-2 md:gap-6 text-xs md:text-sm font-medium">
+      <div className="bg-[#1565C0] text-white px-4 md:px-6 py-2 flex flex-wrap items-center gap-1 md:gap-4 text-xs font-medium">
         <Link
           to="/admin"
           className="flex items-center gap-1.5 hover:bg-[#1976D2] px-3 py-1.5 rounded-md transition-colors"
         >
           <Home className="w-4 h-4" /> Home
+        </Link>
+        <Link
+          to="/admin/estoque"
+          className="flex items-center gap-1.5 hover:bg-[#1976D2] px-3 py-1.5 rounded-md transition-colors"
+        >
+          <Car className="w-4 h-4" /> Estoque
         </Link>
         <Link
           to="/admin/crm"
@@ -81,26 +97,31 @@ export function AdminHeader() {
           <Users className="w-4 h-4" /> Leads
         </Link>
         <Link
-          to="/admin/estoque"
+          to="/admin/avaliacao"
           className="flex items-center gap-1.5 hover:bg-[#1976D2] px-3 py-1.5 rounded-md transition-colors"
         >
-          <Car className="w-4 h-4" /> Consulta
+          <Calendar className="w-4 h-4" /> Avaliação
         </Link>
         <Link
-          to="/admin/agenda"
-          className="flex items-center gap-1.5 hover:bg-[#1976D2] px-3 py-1.5 rounded-md transition-colors opacity-70"
-          title="Em construção"
+          to="/admin/site"
+          className="flex items-center gap-1.5 hover:bg-[#1976D2] px-3 py-1.5 rounded-md transition-colors"
         >
-          <Calendar className="w-4 h-4" /> Agenda
+          <Globe className="w-4 h-4" /> Site
+        </Link>
+        <Link
+          to="/admin/financiamento"
+          className="flex items-center gap-1.5 hover:bg-[#1976D2] px-3 py-1.5 rounded-md transition-colors"
+        >
+          <Banknote className="w-4 h-4" /> Financiamento
+        </Link>
+        <Link
+          to="/admin/administrativo"
+          className="flex items-center gap-1.5 hover:bg-[#1976D2] px-3 py-1.5 rounded-md transition-colors"
+        >
+          <FileText className="w-4 h-4" /> Admin / NF
         </Link>
 
-        <div className="ml-auto flex items-center gap-2 md:gap-4">
-          <Link
-            to="/admin/suporte"
-            className="flex items-center gap-1.5 hover:bg-[#1976D2] px-3 py-1.5 rounded-md transition-colors"
-          >
-            <HelpCircle className="w-4 h-4" /> Suporte
-          </Link>
+        <div className="ml-auto flex items-center gap-2">
           {isAdminMaster && (
             <Link
               to="/admin/usuarios"

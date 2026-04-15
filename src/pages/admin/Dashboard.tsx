@@ -34,14 +34,14 @@ const ALL_MODULES = [
     icon: Banknote,
     line1: 'Simulador de',
     line2: 'Financiamentos',
-    route: '/admin/em-construcao',
+    route: '/admin/financiamento',
   },
   {
     id: 'administrativo',
     icon: FileText,
     line1: 'Administrativo',
     line2: 'e NFs',
-    route: '/admin/em-construcao',
+    route: '/admin/administrativo',
   },
 ]
 

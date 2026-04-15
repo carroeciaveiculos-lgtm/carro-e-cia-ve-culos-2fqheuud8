@@ -110,6 +110,14 @@ const VERSOES_COMUNS = [
 export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess }: any) {
   const [loading, setLoading] = useState(false)
   const [loadingPlaca, setLoadingPlaca] = useState(false)
+
+  const [searchMode, setSearchMode] = useState<'placa' | 'fipe'>('placa')
+  const [fipeMarcas, setFipeMarcas] = useState<any[]>([])
+  const [fipeModelos, setFipeModelos] = useState<any[]>([])
+  const [fipeAnos, setFipeAnos] = useState<any[]>([])
+  const [fipeSelection, setFipeSelection] = useState({ marca: '', modelo: '', ano: '' })
+  const [loadingFipe, setLoadingFipe] = useState(false)
+
   const { toast } = useToast()
 
   const [formData, setFormData] = useState<any>({
@@ -150,6 +158,11 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
 
   useEffect(() => {
     if (isOpen) {
+      fetch('https://parallelum.com.br/fipe/api/v1/carros/marcas')
+        .then((res) => res.json())
+        .then((data) => setFipeMarcas(data))
+        .catch(console.error)
+
       if (vehicleId) {
         supabase
           .from('veiculos')
@@ -171,6 +184,8 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
             toast({ title: 'Erro ao carregar dados do veículo', variant: 'destructive' })
           })
       } else {
+        setFipeSelection({ marca: '', modelo: '', ano: '' })
+        setSearchMode('placa')
         setFormData({
           categoria: 'Carro',
           placa: '',
@@ -278,6 +293,90 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
     }
     setFormData((prev: any) => ({ ...prev, fotos: [...(prev.fotos || []), ...newUrls] }))
     setLoading(false)
+  }
+
+  const handleFipeMarcaChange = async (marcaCod: string) => {
+    setFipeSelection({ marca: marcaCod, modelo: '', ano: '' })
+    setFipeModelos([])
+    setFipeAnos([])
+    const marcaNome = fipeMarcas.find((m) => m.codigo == marcaCod)?.nome || ''
+    setFormData((p: any) => ({
+      ...p,
+      marca: marcaNome,
+      modelo: '',
+      ano_fabricacao: '',
+      ano_modelo: '',
+      valor_fipe: '',
+    }))
+
+    try {
+      const res = await fetch(
+        `https://parallelum.com.br/fipe/api/v1/carros/marcas/${marcaCod}/modelos`,
+      )
+      const data = await res.json()
+      setFipeModelos(data.modelos || [])
+    } catch (e) {
+      console.error(e)
+    }
+  }
+
+  const handleFipeModeloChange = async (modeloCod: string) => {
+    setFipeSelection((p) => ({ ...p, modelo: modeloCod, ano: '' }))
+    setFipeAnos([])
+    const modeloNome = fipeModelos.find((m) => m.codigo == modeloCod)?.nome || ''
+    setFormData((p: any) => ({
+      ...p,
+      modelo: modeloNome,
+      ano_fabricacao: '',
+      ano_modelo: '',
+      valor_fipe: '',
+    }))
+
+    try {
+      const res = await fetch(
+        `https://parallelum.com.br/fipe/api/v1/carros/marcas/${fipeSelection.marca}/modelos/${modeloCod}/anos`,
+      )
+      const data = await res.json()
+      setFipeAnos(data || [])
+    } catch (e) {
+      console.error(e)
+    }
+  }
+
+  const handleFipeAnoChange = async (anoCod: string) => {
+    setFipeSelection((p) => ({ ...p, ano: anoCod }))
+    setLoadingFipe(true)
+
+    try {
+      const res = await fetch(
+        `https://parallelum.com.br/fipe/api/v1/carros/marcas/${fipeSelection.marca}/modelos/${fipeSelection.modelo}/anos/${anoCod}`,
+      )
+      const data = await res.json()
+
+      const anoNum = parseInt(data.AnoModelo)
+      const fipeValue = parseFloat(
+        data.Valor?.replace('R$ ', '').replace(/\./g, '').replace(',', '.'),
+      )
+
+      setFormData((prev: any) => ({
+        ...prev,
+        ano_fabricacao: anoNum || prev.ano_fabricacao,
+        ano_modelo: anoNum || prev.ano_modelo,
+        combustivel: data.Combustivel || prev.combustivel,
+        valor_fipe: fipeValue || 0,
+        fipe_ref: data.MesReferencia || prev.fipe_ref || 'Atual',
+      }))
+
+      toast({ title: 'Sucesso!', description: 'Dados da FIPE importados com sucesso.' })
+    } catch (e: any) {
+      toast({
+        title: 'Erro',
+        description: 'Não foi possível buscar a FIPE',
+        variant: 'destructive',
+      })
+    } finally {
+      setLoadingFipe(false)
+    }
   }
 
   const consultarAPIPlaca = async () => {
@@ -392,38 +491,124 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
 
         <ScrollArea className="flex-1 p-6">
           <div className="space-y-6 max-w-5xl mx-auto">
-            {/* BUSCA PLACA API */}
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100 flex flex-col sm:flex-row gap-4 items-end">
-              <div className="flex-1">
-                <Label className="text-xs font-bold text-slate-500 uppercase">
-                  Placa do Veículo
-                </Label>
-                <Input
-                  value={formData.placa || ''}
-                  onChange={(e) => setFormData({ ...formData, placa: e.target.value })}
-                  onBlur={() => {
-                    if (formData.placa && formData.placa.length >= 7 && !formData.chassi) {
-                      consultarAPIPlaca()
-                    }
-                  }}
-                  className="mt-1 font-mono uppercase bg-slate-50 text-lg h-12"
-                  placeholder="ABC-1234"
-                  maxLength={8}
-                />
+            {/* MODO DE BUSCA */}
+            <Tabs
+              value={searchMode}
+              onValueChange={(v: any) => setSearchMode(v)}
+              className="w-full bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-slate-100"
+            >
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-4">
+                <h3 className="font-bold text-slate-800 flex items-center gap-2">
+                  <Search className="w-5 h-5 text-blue-600" /> IMPORTAÇÃO DE DADOS
+                </h3>
+                <TabsList className="bg-slate-100">
+                  <TabsTrigger value="placa" className="text-xs font-bold uppercase">
+                    POR PLACA
+                  </TabsTrigger>
+                  <TabsTrigger value="fipe" className="text-xs font-bold uppercase">
+                    MANUAL (FIPE)
+                  </TabsTrigger>
+                </TabsList>
               </div>
-              <Button
-                onClick={consultarAPIPlaca}
-                disabled={loadingPlaca}
-                className="h-12 px-8 bg-blue-600 hover:bg-blue-700 text-white font-bold shadow-md"
-              >
-                {loadingPlaca ? (
-                  <Loader2 className="w-5 h-5 animate-spin mr-2" />
-                ) : (
-                  <Search className="w-5 h-5 mr-2" />
-                )}
-                DENATRAN
-              </Button>
-            </div>
+
+              <TabsContent value="placa" className="mt-0">
+                <div className="flex flex-col sm:flex-row gap-4 items-end bg-slate-50 p-4 rounded-lg border border-slate-100">
+                  <div className="flex-1 w-full">
+                    <Label className="text-xs font-bold text-slate-500 uppercase">
+                      Placa do Veículo
+                    </Label>
+                    <Input
+                      value={formData.placa || ''}
+                      onChange={(e) => setFormData({ ...formData, placa: e.target.value })}
+                      onBlur={() => {
+                        if (formData.placa && formData.placa.length >= 7 && !formData.chassi) {
+                          consultarAPIPlaca()
+                        }
+                      }}
+                      className="mt-1 font-mono uppercase bg-white text-lg h-12"
+                      placeholder="ABC-1234"
+                      maxLength={8}
+                    />
+                  </div>
+                  <Button
+                    onClick={consultarAPIPlaca}
+                    disabled={loadingPlaca}
+                    className="h-12 px-8 bg-blue-600 hover:bg-blue-700 text-white font-bold shadow-md w-full sm:w-auto"
+                  >
+                    {loadingPlaca ? (
+                      <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                    ) : (
+                      <Search className="w-5 h-5 mr-2" />
+                    )}
+                    DENATRAN
+                  </Button>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="fipe" className="mt-0">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 bg-slate-50 p-4 rounded-lg border border-slate-100">
+                  <div>
+                    <Label className="text-xs font-bold text-slate-500 uppercase">
+                      Marca (FIPE)
+                    </Label>
+                    <Select value={fipeSelection.marca} onValueChange={handleFipeMarcaChange}>
+                      <SelectTrigger className="mt-1 bg-white h-10">
+                        <SelectValue placeholder="Selecione a Marca" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {fipeMarcas.map((m) => (
+                          <SelectItem key={m.codigo} value={m.codigo.toString()}>
+                            {m.nome}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label className="text-xs font-bold text-slate-500 uppercase">
+                      Modelo (FIPE)
+                    </Label>
+                    <Select
+                      value={fipeSelection.modelo}
+                      onValueChange={handleFipeModeloChange}
+                      disabled={!fipeSelection.marca}
+                    >
+                      <SelectTrigger className="mt-1 bg-white h-10">
+                        <SelectValue placeholder="Selecione o Modelo" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {fipeModelos.map((m) => (
+                          <SelectItem key={m.codigo} value={m.codigo.toString()}>
+                            {m.nome}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label className="text-xs font-bold text-slate-500 uppercase">Ano (FIPE)</Label>
+                    <Select
+                      value={fipeSelection.ano}
+                      onValueChange={handleFipeAnoChange}
+                      disabled={!fipeSelection.modelo || loadingFipe}
+                    >
+                      <SelectTrigger className="mt-1 bg-white h-10">
+                        <SelectValue
+                          placeholder={loadingFipe ? 'Carregando...' : 'Selecione o Ano'}
+                        />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {fipeAnos.map((a) => (
+                          <SelectItem key={a.codigo} value={a.codigo.toString()}>
+                            {a.nome}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </TabsContent>
+            </Tabs>
 
             {/* DADOS DO VEÍCULO */}
             <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
