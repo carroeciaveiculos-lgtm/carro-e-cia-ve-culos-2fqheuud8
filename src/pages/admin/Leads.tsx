@@ -20,6 +20,7 @@ import {
   Paperclip,
   Mic,
   Thermometer,
+  Target,
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { cn } from '@/lib/utils'
