@@ -464,7 +464,7 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
 
       if (contratoError) throw contratoError
 
-      const { error } = await supabase.functions.invoke('enviar-para-assinatura', {
+      const { data, error } = await supabase.functions.invoke('enviar-para-assinatura', {
         body: {
           contrato_id: contratoData.id,
           email_cliente: formData.proprietario_email,
@@ -477,6 +477,7 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
       })
 
       if (error) throw error
+      if (data && !data.success) throw new Error(data.error || 'Falha ao enviar para assinatura')
 
       toast({ title: 'Sucesso', description: 'Contrato enviado para assinatura.' })
     } catch (err: any) {
