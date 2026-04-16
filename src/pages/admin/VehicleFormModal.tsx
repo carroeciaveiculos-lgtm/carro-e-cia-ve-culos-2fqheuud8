@@ -17,6 +17,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { supabase } from '@/lib/supabase/client'
 import { useToast } from '@/hooks/use-toast'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import { CpfInput } from '@/components/ui/cpf-input'
 import {
   Camera,
   Search,
@@ -110,7 +111,6 @@ const VERSOES_COMUNS = [
 export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess }: any) {
   const [loading, setLoading] = useState(false)
   const [loadingPlaca, setLoadingPlaca] = useState(false)
-  const [loadingCpf, setLoadingCpf] = useState(false)
 
   const [searchMode, setSearchMode] = useState<'placa' | 'fipe'>('placa')
   const [fipeMarcas, setFipeMarcas] = useState<any[]>([])
@@ -382,40 +382,6 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
       })
     } finally {
       setLoadingFipe(false)
-    }
-  }
-
-  const consultarAPI_CPF = async () => {
-    if (!formData.proprietario_cpf) {
-      return toast({
-        title: 'Atenção',
-        description: 'Digite o CPF primeiro.',
-        variant: 'destructive',
-      })
-    }
-    setLoadingCpf(true)
-
-    try {
-      const { data, error } = await supabase.functions.invoke('consultar-cpf', {
-        body: { cpf: formData.proprietario_cpf },
-      })
-
-      if (error) throw error
-      if (!data.success) throw new Error(data.error || 'Falha ao consultar CPF')
-
-      if (data.data?.nome) {
-        setFormData((prev: any) => ({
-          ...prev,
-          proprietario_nome: data.data.nome || prev.proprietario_nome,
-        }))
-        toast({ title: 'Sucesso!', description: 'Nome importado com sucesso.' })
-      } else {
-        toast({ title: 'Aviso', description: 'CPF não encontrado ou nome não disponível.' })
-      }
-    } catch (err: any) {
-      toast({ title: 'Erro ao consultar CPF', description: err.message, variant: 'destructive' })
-    } finally {
-      setLoadingCpf(false)
     }
   }
 
@@ -1034,29 +1000,18 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
                             <Label className="text-[10px] uppercase text-slate-500 font-bold">
                               Proprietário CPF
                             </Label>
-                            <div className="flex gap-2 mt-1">
-                              <Input
+                            <div className="mt-1">
+                              <CpfInput
                                 value={formData.proprietario_cpf || ''}
-                                onChange={(e) =>
-                                  setFormData({ ...formData, proprietario_cpf: e.target.value })
+                                onChange={(val) =>
+                                  setFormData({ ...formData, proprietario_cpf: val })
                                 }
-                                className="h-8 text-xs bg-white flex-1"
+                                onNameFound={(nome) =>
+                                  setFormData({ ...formData, proprietario_nome: nome })
+                                }
+                                className="h-8 text-xs bg-white"
+                                buttonClassName="h-8 bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-200"
                               />
-                              <Button
-                                type="button"
-                                onClick={consultarAPI_CPF}
-                                disabled={loadingCpf}
-                                size="sm"
-                                variant="outline"
-                                className="h-8 px-2 bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-200"
-                                title="Consultar CPF"
-                              >
-                                {loadingCpf ? (
-                                  <Loader2 className="w-3 h-3 animate-spin" />
-                                ) : (
-                                  <Search className="w-3 h-3" />
-                                )}
-                              </Button>
                             </div>
                           </div>
                         </div>
