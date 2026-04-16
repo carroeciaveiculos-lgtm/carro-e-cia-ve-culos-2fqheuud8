@@ -113,4 +113,9 @@ const App = () => (
 
           <Route path="*" element={<NotFound />} />
         </Routes>
-   
+      </TooltipProvider>
+    </BrowserRouter>
+  </AuthProvider>
+)
+
+export default App
