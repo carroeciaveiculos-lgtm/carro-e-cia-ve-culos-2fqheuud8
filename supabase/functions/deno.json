@@ -5,6 +5,8 @@
     "sync-estoque": 2,
     "webhook-portais": 1,
     "on-lead-created": 1,
-    "consultar-placa": 1
+    "consultar-placa": 1,
+    "enviar-para-assinatura": 1,
+    "webhook-autentique": 1
   }
 }
