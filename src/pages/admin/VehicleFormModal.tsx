@@ -18,6 +18,8 @@ import { supabase } from '@/lib/supabase/client'
 import { useToast } from '@/hooks/use-toast'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { CpfInput } from '@/components/ui/cpf-input'
+import ContratoDocxGenerator from '@/components/ContratoDocxGenerator'
+import { ContratoData } from '@/types/contrato'
 import {
   Camera,
   Search,
@@ -426,6 +428,57 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
     } finally {
       setLoadingPlaca(false)
     }
+  }
+
+  const contratoData: ContratoData = {
+    id: formData.id || 'novo',
+    numeroContrato: `CONS-${new Date().getFullYear()}${(new Date().getMonth() + 1).toString().padStart(2, '0')}-${Math.floor(
+      Math.random() * 1000,
+    )
+      .toString()
+      .padStart(4, '0')}`,
+    dataContrato: new Date().toLocaleDateString('pt-BR'),
+    proprietario: {
+      nome: formData.proprietario_nome || 'Não informado',
+      cpf: formData.proprietario_cpf || 'Não informado',
+      rg: 'Não informado',
+      telefone: formData.proprietario_telefone || 'Não informado',
+      email: formData.proprietario_email || 'Não informado',
+      endereco: 'Não informado',
+      cidade: 'Uberaba',
+      estado: 'MG',
+    },
+    loja: {
+      razaoSocial: 'Carro e Cia Veículos Ltda',
+      cnpj: '17.125.199/0001-87',
+      endereco: 'Av. Guilherme Ferreira, 1131, São Benedito',
+      telefone: '(34) 3333-4444',
+      responsavel: 'Luiz Fernando Rodrigues de Araújo',
+    },
+    veiculo: {
+      placa: formData.placa || 'Não informado',
+      chassi: formData.chassi || 'Não informado',
+      marca: formData.marca || 'Não informado',
+      modelo: formData.modelo || 'Não informado',
+      anoFab: formData.ano_fabricacao?.toString() || 'Não informado',
+      anoModelo: formData.ano_modelo?.toString() || 'Não informado',
+      combustivel: formData.combustivel || 'Não informado',
+      cor: formData.cor || 'Não informado',
+      quilometragem: formData.quilometragem || 0,
+      renavam: formData.renavam || 'Não informado',
+    },
+    condicoesComerciais: {
+      precoVendaSugerido: Number(formData.preco_venda) || 0,
+      precoMinimoAceito: Number(formData.preco_minimo) || 0,
+      comissaoPercentual: 5,
+      comissaoValor: Number(formData.preco_venda) * 0.05 || 0,
+      periodoConsignacaoDias: 90,
+      dataInicio: new Date().toLocaleDateString('pt-BR'),
+      dataVencimento: new Date(new Date().getTime() + 90 * 24 * 60 * 60 * 1000).toLocaleDateString(
+        'pt-BR',
+      ),
+    },
+    observacoes: formData.descricao || '',
   }
 
   const enviarParaAssinatura = async () => {
@@ -1015,7 +1068,7 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
                             </div>
                           </div>
                         </div>
-                        <div className="pt-2 flex gap-2">
+                        <div className="pt-2 flex flex-wrap gap-2">
                           <Button
                             type="button"
                             variant="outline"
@@ -1030,6 +1083,7 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
                           >
                             Gerar Contrato (PDF)
                           </Button>
+                          <ContratoDocxGenerator contratoData={contratoData} />
                           <Button
                             type="button"
                             variant="default"
