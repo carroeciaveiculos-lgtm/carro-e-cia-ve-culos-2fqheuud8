@@ -18,6 +18,7 @@ import { supabase } from '@/lib/supabase/client'
 import { useToast } from '@/hooks/use-toast'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { CpfInput } from '@/components/ui/cpf-input'
+import { CurrencyInput } from '@/components/ui/currency-input'
 import ContratoDocxGenerator from '@/components/ContratoDocxGenerator'
 import { ContratoData } from '@/types/contrato'
 import {
@@ -137,6 +138,7 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
     combustivel: '',
     valor_fipe: '',
     preco_venda: '',
+    preco_minimo: '',
     preco_classificados: '',
     quilometragem: '',
     cambio: 'Manual',
@@ -205,6 +207,7 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
           combustivel: '',
           valor_fipe: '',
           preco_venda: '',
+          preco_minimo: '',
           preco_classificados: '',
           quilometragem: '',
           cambio: 'Manual',
@@ -551,6 +554,25 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
       }
       delete payload.tipo_entrada // Remove local state field before saving
 
+      // Sanitização de dados numéricos para evitar invalid input syntax
+      const numericFields = [
+        'valor_fipe',
+        'preco_venda',
+        'preco_minimo',
+        'preco_classificados',
+        'quilometragem',
+        'ano_fabricacao',
+        'ano_modelo',
+      ]
+      numericFields.forEach((field) => {
+        if (payload[field] === '' || payload[field] === null || payload[field] === undefined) {
+          payload[field] = null
+        } else {
+          const num = Number(payload[field])
+          payload[field] = isNaN(num) ? null : num
+        }
+      })
+
       const { data, error } = payload.id
         ? await supabase.from('veiculos').update(payload).eq('id', payload.id).select()
         : await supabase.from('veiculos').insert([payload]).select()
@@ -871,59 +893,65 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
 
                 <div className="space-y-4">
                   {/* FIPE DESTAQUE */}
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-center justify-between">
-                    <div>
-                      <div className="text-blue-800 font-bold text-xl">
-                        Fipe: R${' '}
-                        {Number(formData.valor_fipe || 0).toLocaleString('pt-BR', {
-                          minimumFractionDigits: 2,
-                        })}
-                      </div>
-                      <div className="text-blue-600 text-xs font-medium uppercase mt-1">
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex flex-col gap-3">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-xs font-bold text-blue-800 uppercase">
+                        Valor FIPE
+                      </Label>
+                      <div className="text-blue-600 text-xs font-medium uppercase">
                         Ref: {formData.fipe_ref || 'Atual'}
                       </div>
                     </div>
-                    <Button
-                      type="button"
-                      size="icon"
-                      className="bg-green-500 hover:bg-green-600 text-white rounded-full h-12 w-12 shrink-0 shadow-sm"
-                    >
-                      <DollarSign className="w-6 h-6" />
-                    </Button>
+                    <div className="flex items-center gap-4">
+                      <CurrencyInput
+                        value={formData.valor_fipe || ''}
+                        onChange={(val) => setFormData({ ...formData, valor_fipe: val })}
+                        className="font-bold text-blue-800 text-lg bg-white h-12"
+                        placeholder="R$ 0,00"
+                      />
+                      <Button
+                        type="button"
+                        size="icon"
+                        className="bg-green-500 hover:bg-green-600 text-white rounded-full h-12 w-12 shrink-0 shadow-sm"
+                      >
+                        <DollarSign className="w-6 h-6" />
+                      </Button>
+                    </div>
                   </div>
 
                   <div className="p-4 bg-green-50 rounded-lg border border-green-100 space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                       <div>
                         <Label className="text-xs font-bold text-green-700 uppercase">
-                          Preço p/ Site (R$)
+                          Preço p/ Site
                         </Label>
-                        <Input
-                          type="number"
+                        <CurrencyInput
                           value={formData.preco_venda || ''}
-                          onChange={(e) =>
-                            setFormData({
-                              ...formData,
-                              preco_venda: parseFloat(e.target.value) || 0,
-                            })
-                          }
-                          className="mt-1 font-bold text-green-700 text-lg"
+                          onChange={(val) => setFormData({ ...formData, preco_venda: val })}
+                          className="mt-1 font-bold text-green-700 text-lg bg-white"
+                          placeholder="R$ 0,00"
                         />
                       </div>
                       <div>
                         <Label className="text-xs font-bold text-green-700 uppercase">
-                          Preço Classificados:
+                          Preço Mínimo
                         </Label>
-                        <Input
-                          type="number"
+                        <CurrencyInput
+                          value={formData.preco_minimo || ''}
+                          onChange={(val) => setFormData({ ...formData, preco_minimo: val })}
+                          className="mt-1 text-lg bg-white"
+                          placeholder="R$ 0,00"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-xs font-bold text-green-700 uppercase">
+                          Classificados
+                        </Label>
+                        <CurrencyInput
                           value={formData.preco_classificados || ''}
-                          onChange={(e) =>
-                            setFormData({
-                              ...formData,
-                              preco_classificados: parseFloat(e.target.value) || 0,
-                            })
-                          }
-                          className="mt-1 text-lg"
+                          onChange={(val) => setFormData({ ...formData, preco_classificados: val })}
+                          className="mt-1 text-lg bg-white"
+                          placeholder="R$ 0,00"
                         />
                       </div>
                     </div>
