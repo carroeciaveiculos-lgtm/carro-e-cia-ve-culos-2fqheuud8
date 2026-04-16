@@ -28,6 +28,10 @@ import Login from './pages/admin/Login'
 import Dashboard from './pages/admin/Dashboard'
 import AdminEstoque from './pages/admin/Estoque'
 import AdminLeads from './pages/admin/Leads'
+import Avaliacao from './pages/admin/Avaliacao'
+import SiteManager from './pages/admin/SiteManager'
+import Financiamento from './pages/admin/Financiamento'
+import Administrativo from './pages/admin/Administrativo'
 import Portais from './pages/admin/Portais'
 import Relatorios from './pages/admin/Relatorios'
 import Configuracoes from './pages/admin/Configuracoes'
@@ -78,20 +82,20 @@ const App = () => (
               <Route path="crm/:submenu" element={<EmConstrucao />} />
 
               {/* Module: Avaliação */}
-              <Route path="avaliacao" element={<EmConstrucao />} />
-              <Route path="avaliacao/:submenu" element={<EmConstrucao />} />
+              <Route path="avaliacao" element={<Avaliacao />} />
+              <Route path="avaliacao/:submenu" element={<Avaliacao />} />
 
               {/* Module: Site */}
-              <Route path="site" element={<EmConstrucao />} />
-              <Route path="site/:submenu" element={<EmConstrucao />} />
+              <Route path="site" element={<SiteManager />} />
+              <Route path="site/:submenu" element={<SiteManager />} />
 
               {/* Module: Financiamento */}
-              <Route path="financiamento" element={<EmConstrucao />} />
-              <Route path="financiamento/:submenu" element={<EmConstrucao />} />
+              <Route path="financiamento" element={<Financiamento />} />
+              <Route path="financiamento/:submenu" element={<Financiamento />} />
 
               {/* Module: Administrativo */}
-              <Route path="administrativo" element={<EmConstrucao />} />
-              <Route path="administrativo/:submenu" element={<EmConstrucao />} />
+              <Route path="administrativo" element={<Administrativo />} />
+              <Route path="administrativo/:submenu" element={<Administrativo />} />
 
               <Route path="portais" element={<Portais />} />
               <Route path="relatorios" element={<Relatorios />} />
