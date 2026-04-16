@@ -8,6 +8,7 @@
     "consultar-placa": 22,
     "enviar-para-assinatura": 16,
     "webhook-autentique": 15,
-    "consultar-cpf": 11
+    "consultar-cpf": 11,
+    "gerar-pdf-contrato": 1
   }
 }
