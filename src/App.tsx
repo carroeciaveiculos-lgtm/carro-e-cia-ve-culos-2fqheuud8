@@ -50,6 +50,7 @@ const App = () => (
           <Route element={<PublicLayout />}>
             <Route path="/" element={<Index />} />
             <Route path="/estoque" element={<Estoque />} />
+            <Route path="/comprar" element={<Navigate to="/estoque" replace />} />
             <Route path="/estoque/:id" element={<Veiculo />} />
             <Route path="/consignacao" element={<Consignacao />} />
             <Route path="/sobre" element={<Sobre />} />
