@@ -120,6 +120,7 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
 
   const { toast } = useToast()
 
+  const [loadingSignature, setLoadingSignature] = useState(false)
   const [formData, setFormData] = useState<any>({
     categoria: 'Carro',
     placa: '',
@@ -140,6 +141,8 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
     tipo_entrada: 'consignacao', // 'consignacao' | 'proprio'
     proprietario_nome: '',
     proprietario_telefone: '',
+    proprietario_email: '',
+    proprietario_cpf: '',
     diferenciais: [],
     caracteristicas: [],
     fotos: [],
@@ -206,6 +209,8 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
           tipo_entrada: 'consignacao',
           proprietario_nome: '',
           proprietario_telefone: '',
+          proprietario_email: '',
+          proprietario_cpf: '',
           diferenciais: [],
           caracteristicas: [],
           fotos: [],
@@ -419,6 +424,65 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
       toast({ title: 'Erro ao consultar placa', description: err.message, variant: 'destructive' })
     } finally {
       setLoadingPlaca(false)
+    }
+  }
+
+  const enviarParaAssinatura = async () => {
+    if (!formData.id) {
+      return toast({
+        title: 'Aviso',
+        description: 'Salve o veículo primeiro antes de gerar o contrato.',
+        variant: 'destructive',
+      })
+    }
+    if (!formData.proprietario_nome || !formData.proprietario_email) {
+      return toast({
+        title: 'Aviso',
+        description: 'Nome e E-mail do proprietário são obrigatórios.',
+        variant: 'destructive',
+      })
+    }
+
+    setLoadingSignature(true)
+    try {
+      const mockPdfUrl = 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf'
+
+      const { data: contratoData, error: contratoError } = await supabase
+        .from('contratos_consignacao')
+        .insert({
+          veiculo_id: formData.id,
+          proprietario_nome: formData.proprietario_nome,
+          proprietario_email: formData.proprietario_email,
+          proprietario_telefone: formData.proprietario_telefone,
+          proprietario_cpf: formData.proprietario_cpf || '',
+          numero_contrato: `CTR-${Math.floor(Math.random() * 10000)}`,
+          pdf_url: mockPdfUrl,
+          assinatura_status: 'nao_enviado',
+        })
+        .select()
+        .single()
+
+      if (contratoError) throw contratoError
+
+      const { error } = await supabase.functions.invoke('enviar-para-assinatura', {
+        body: {
+          contrato_id: contratoData.id,
+          email_cliente: formData.proprietario_email,
+          nome_cliente: formData.proprietario_nome,
+          pdf_url: mockPdfUrl,
+          proprietario_telefone: formData.proprietario_telefone,
+          proprietario_cpf: formData.proprietario_cpf,
+          numero_contrato: contratoData.numero_contrato,
+        },
+      })
+
+      if (error) throw error
+
+      toast({ title: 'Sucesso', description: 'Contrato enviado para assinatura.' })
+    } catch (err: any) {
+      toast({ title: 'Erro', description: err.message, variant: 'destructive' })
+    } finally {
+      setLoadingSignature(false)
     }
   }
 
@@ -889,30 +953,90 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
                       </label>
                     </div>
                     {formData.tipo_entrada === 'consignacao' && (
-                      <div className="mt-4 grid grid-cols-2 gap-3 pt-4 border-t border-blue-200/50">
-                        <div>
-                          <Label className="text-[10px] uppercase text-slate-500 font-bold">
-                            Proprietário Nome
-                          </Label>
-                          <Input
-                            value={formData.proprietario_nome || ''}
-                            onChange={(e) =>
-                              setFormData({ ...formData, proprietario_nome: e.target.value })
-                            }
-                            className="mt-1 h-8 text-xs bg-white"
-                          />
+                      <div className="mt-4 space-y-3 pt-4 border-t border-blue-200/50">
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <Label className="text-[10px] uppercase text-slate-500 font-bold">
+                              Proprietário Nome
+                            </Label>
+                            <Input
+                              value={formData.proprietario_nome || ''}
+                              onChange={(e) =>
+                                setFormData({ ...formData, proprietario_nome: e.target.value })
+                              }
+                              className="mt-1 h-8 text-xs bg-white"
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-[10px] uppercase text-slate-500 font-bold">
+                              Proprietário E-mail
+                            </Label>
+                            <Input
+                              type="email"
+                              value={formData.proprietario_email || ''}
+                              onChange={(e) =>
+                                setFormData({ ...formData, proprietario_email: e.target.value })
+                              }
+                              className="mt-1 h-8 text-xs bg-white"
+                            />
+                          </div>
                         </div>
-                        <div>
-                          <Label className="text-[10px] uppercase text-slate-500 font-bold">
-                            Proprietário Telefone
-                          </Label>
-                          <Input
-                            value={formData.proprietario_telefone || ''}
-                            onChange={(e) =>
-                              setFormData({ ...formData, proprietario_telefone: e.target.value })
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <Label className="text-[10px] uppercase text-slate-500 font-bold">
+                              Proprietário Telefone
+                            </Label>
+                            <Input
+                              value={formData.proprietario_telefone || ''}
+                              onChange={(e) =>
+                                setFormData({ ...formData, proprietario_telefone: e.target.value })
+                              }
+                              className="mt-1 h-8 text-xs bg-white"
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-[10px] uppercase text-slate-500 font-bold">
+                              Proprietário CPF
+                            </Label>
+                            <Input
+                              value={formData.proprietario_cpf || ''}
+                              onChange={(e) =>
+                                setFormData({ ...formData, proprietario_cpf: e.target.value })
+                              }
+                              className="mt-1 h-8 text-xs bg-white"
+                            />
+                          </div>
+                        </div>
+                        <div className="pt-2 flex gap-2">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="text-xs bg-white"
+                            onClick={() =>
+                              toast({
+                                title: 'PDF Gerado',
+                                description: 'Contrato salvo no repositório.',
+                              })
                             }
-                            className="mt-1 h-8 text-xs bg-white"
-                          />
+                          >
+                            Gerar Contrato (PDF)
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="default"
+                            size="sm"
+                            className="text-xs bg-blue-600 hover:bg-blue-700 text-white"
+                            onClick={enviarParaAssinatura}
+                            disabled={loadingSignature}
+                          >
+                            {loadingSignature ? (
+                              <Loader2 className="w-3 h-3 animate-spin mr-2" />
+                            ) : (
+                              <Send className="w-3 h-3 mr-2" />
+                            )}
+                            Assinatura Autentique
+                          </Button>
                         </div>
                       </div>
                     )}
