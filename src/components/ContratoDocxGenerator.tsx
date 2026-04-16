@@ -27,19 +27,18 @@ const ContratoDocxGenerator: React.FC<ContratoDocxGeneratorProps> = ({ contratoD
       const filename = `contrato_consignacao_${contratoData.numeroContrato}.docx`
       const filePath = `rascunhos/${filename}`
 
-      await uploadFileToSupabase(
-        'contratos-consignacao',
-        filePath,
-        docxBlob,
-        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      )
+      // Garantir o MIME type correto para DOCX para evitar problemas de download
+      const docxMimeType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+      const typedBlob = new Blob([docxBlob], { type: docxMimeType })
+
+      await uploadFileToSupabase('contratos-consignacao', filePath, typedBlob, docxMimeType)
 
       toast({
         title: 'Sucesso',
-        description: `Contrato DOCX gerado e salvo com sucesso.`,
+        description: `Contrato DOCX gerado e salvo no repositório. O download iniciará em instantes.`,
       })
 
-      downloadBlob(docxBlob, filename)
+      downloadBlob(typedBlob, filename)
     } catch (err: any) {
       console.error('Erro ao gerar ou baixar DOCX:', err)
       toast({
