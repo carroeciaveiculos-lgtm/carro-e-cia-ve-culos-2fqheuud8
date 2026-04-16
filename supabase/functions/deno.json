@@ -1,12 +1,12 @@
 {
   "_versions": {
-    "send-lead-email": 7,
-    "receive-leads": 7,
-    "sync-estoque": 7,
-    "webhook-portais": 6,
-    "on-lead-created": 6,
-    "consultar-placa": 11,
-    "enviar-para-assinatura": 6,
-    "webhook-autentique": 6
+    "send-lead-email": 8,
+    "receive-leads": 8,
+    "sync-estoque": 8,
+    "webhook-portais": 7,
+    "on-lead-created": 7,
+    "consultar-placa": 12,
+    "enviar-para-assinatura": 7,
+    "webhook-autentique": 7
   }
 }
