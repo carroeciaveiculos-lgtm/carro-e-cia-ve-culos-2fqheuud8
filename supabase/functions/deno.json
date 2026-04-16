@@ -5,8 +5,9 @@
     "sync-estoque": 8,
     "webhook-portais": 7,
     "on-lead-created": 7,
-    "consultar-placa": 13,
+    "consultar-placa": 14,
     "enviar-para-assinatura": 8,
-    "webhook-autentique": 7
+    "webhook-autentique": 7,
+    "consultar-cpf": 1
   }
 }
