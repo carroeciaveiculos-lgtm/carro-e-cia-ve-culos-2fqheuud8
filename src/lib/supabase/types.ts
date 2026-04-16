@@ -1,11 +1,17 @@
 // AVOID UPDATING THIS FILE DIRECTLY. It is automatically generated.
-export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[]
+export type Json =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: Json | undefined }
+  | Json[]
 
 export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: '14.5'
+    PostgrestVersion: "14.5"
   }
   public: {
     Tables: {
@@ -33,11 +39,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: 'access_log_usuario_id_fkey'
-            columns: ['usuario_id']
+            foreignKeyName: "access_log_usuario_id_fkey"
+            columns: ["usuario_id"]
             isOneToOne: false
-            referencedRelation: 'usuarios'
-            referencedColumns: ['id']
+            referencedRelation: "usuarios"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -65,11 +71,82 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: 'assinatura_historico_contrato_id_fkey'
-            columns: ['contrato_id']
+            foreignKeyName: "assinatura_historico_contrato_id_fkey"
+            columns: ["contrato_id"]
             isOneToOne: false
-            referencedRelation: 'contratos_consignacao'
-            referencedColumns: ['id']
+            referencedRelation: "contratos_consignacao"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      avaliacoes: {
+        Row: {
+          ano: string | null
+          cliente_nome: string | null
+          cliente_telefone: string | null
+          condicao_geral: string | null
+          created_at: string | null
+          data_avaliacao: string | null
+          id: string
+          lead_id: string | null
+          marca: string | null
+          margem_esperada: number | null
+          modelo: string | null
+          observacoes: string | null
+          placa_veiculo: string | null
+          preco_consignacao: number | null
+          quilometragem: number | null
+          status: string | null
+          valor_avaliado: number | null
+          valor_fipe: number | null
+        }
+        Insert: {
+          ano?: string | null
+          cliente_nome?: string | null
+          cliente_telefone?: string | null
+          condicao_geral?: string | null
+          created_at?: string | null
+          data_avaliacao?: string | null
+          id?: string
+          lead_id?: string | null
+          marca?: string | null
+          margem_esperada?: number | null
+          modelo?: string | null
+          observacoes?: string | null
+          placa_veiculo?: string | null
+          preco_consignacao?: number | null
+          quilometragem?: number | null
+          status?: string | null
+          valor_avaliado?: number | null
+          valor_fipe?: number | null
+        }
+        Update: {
+          ano?: string | null
+          cliente_nome?: string | null
+          cliente_telefone?: string | null
+          condicao_geral?: string | null
+          created_at?: string | null
+          data_avaliacao?: string | null
+          id?: string
+          lead_id?: string | null
+          marca?: string | null
+          margem_esperada?: number | null
+          modelo?: string | null
+          observacoes?: string | null
+          placa_veiculo?: string | null
+          preco_consignacao?: number | null
+          quilometragem?: number | null
+          status?: string | null
+          valor_avaliado?: number | null
+          valor_fipe?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "avaliacoes_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -148,18 +225,18 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: 'consignacoes_lead_id_fkey'
-            columns: ['lead_id']
+            foreignKeyName: "consignacoes_lead_id_fkey"
+            columns: ["lead_id"]
             isOneToOne: false
-            referencedRelation: 'leads'
-            referencedColumns: ['id']
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'consignacoes_veiculo_id_fkey'
-            columns: ['veiculo_id']
+            foreignKeyName: "consignacoes_veiculo_id_fkey"
+            columns: ["veiculo_id"]
             isOneToOne: false
-            referencedRelation: 'veiculos'
-            referencedColumns: ['id']
+            referencedRelation: "veiculos"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -217,11 +294,85 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: 'contratos_consignacao_veiculo_id_fkey'
-            columns: ['veiculo_id']
+            foreignKeyName: "contratos_consignacao_veiculo_id_fkey"
+            columns: ["veiculo_id"]
             isOneToOne: false
-            referencedRelation: 'veiculos'
-            referencedColumns: ['id']
+            referencedRelation: "veiculos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      despesas: {
+        Row: {
+          categoria: string | null
+          comprovante_url: string | null
+          created_at: string | null
+          data_despesa: string | null
+          descricao: string | null
+          forma_pagamento: string | null
+          id: string
+          registrada_por: string | null
+          valor: number | null
+        }
+        Insert: {
+          categoria?: string | null
+          comprovante_url?: string | null
+          created_at?: string | null
+          data_despesa?: string | null
+          descricao?: string | null
+          forma_pagamento?: string | null
+          id?: string
+          registrada_por?: string | null
+          valor?: number | null
+        }
+        Update: {
+          categoria?: string | null
+          comprovante_url?: string | null
+          created_at?: string | null
+          data_despesa?: string | null
+          descricao?: string | null
+          forma_pagamento?: string | null
+          id?: string
+          registrada_por?: string | null
+          valor?: number | null
+        }
+        Relationships: []
+      }
+      documentos: {
+        Row: {
+          created_at: string | null
+          id: string
+          nome_documento: string | null
+          tamanho: number | null
+          tipo: string | null
+          url_documento: string | null
+          veiculo_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          nome_documento?: string | null
+          tamanho?: number | null
+          tipo?: string | null
+          url_documento?: string | null
+          veiculo_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          nome_documento?: string | null
+          tamanho?: number | null
+          tipo?: string | null
+          url_documento?: string | null
+          veiculo_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "documentos_veiculo_id_fkey"
+            columns: ["veiculo_id"]
+            isOneToOne: false
+            referencedRelation: "veiculos"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -348,11 +499,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: 'fipe_modelos_marca_codigo_fkey'
-            columns: ['marca_codigo']
+            foreignKeyName: "fipe_modelos_marca_codigo_fkey"
+            columns: ["marca_codigo"]
             isOneToOne: false
-            referencedRelation: 'fipe_marcas'
-            referencedColumns: ['codigo']
+            referencedRelation: "fipe_marcas"
+            referencedColumns: ["codigo"]
           },
         ]
       }
@@ -386,18 +537,18 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: 'followups_lead_id_fkey'
-            columns: ['lead_id']
+            foreignKeyName: "followups_lead_id_fkey"
+            columns: ["lead_id"]
             isOneToOne: false
-            referencedRelation: 'leads'
-            referencedColumns: ['id']
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'followups_responsavel_id_fkey'
-            columns: ['responsavel_id']
+            foreignKeyName: "followups_responsavel_id_fkey"
+            columns: ["responsavel_id"]
             isOneToOne: false
-            referencedRelation: 'usuarios'
-            referencedColumns: ['id']
+            referencedRelation: "usuarios"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -431,18 +582,18 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: 'interacoes_lead_id_fkey'
-            columns: ['lead_id']
+            foreignKeyName: "interacoes_lead_id_fkey"
+            columns: ["lead_id"]
             isOneToOne: false
-            referencedRelation: 'leads'
-            referencedColumns: ['id']
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'interacoes_usuario_id_fkey'
-            columns: ['usuario_id']
+            foreignKeyName: "interacoes_usuario_id_fkey"
+            columns: ["usuario_id"]
             isOneToOne: false
-            referencedRelation: 'usuarios'
-            referencedColumns: ['id']
+            referencedRelation: "usuarios"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -527,18 +678,18 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: 'leads_responsavel_id_fkey'
-            columns: ['responsavel_id']
+            foreignKeyName: "leads_responsavel_id_fkey"
+            columns: ["responsavel_id"]
             isOneToOne: false
-            referencedRelation: 'usuarios'
-            referencedColumns: ['id']
+            referencedRelation: "usuarios"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'leads_veiculo_id_fkey'
-            columns: ['veiculo_id']
+            foreignKeyName: "leads_veiculo_id_fkey"
+            columns: ["veiculo_id"]
             isOneToOne: false
-            referencedRelation: 'veiculos'
-            referencedColumns: ['id']
+            referencedRelation: "veiculos"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -599,6 +750,238 @@ export type Database = {
           tipo?: string | null
           titulo?: string
           variaveis?: Json | null
+        }
+        Relationships: []
+      }
+      notas_fiscais: {
+        Row: {
+          cliente_cpf_cnpj: string | null
+          cliente_nome: string | null
+          cofins: number | null
+          created_at: string | null
+          data_venda: string | null
+          icms: number | null
+          id: string
+          numero_nota: string | null
+          pdf_url: string | null
+          pis: number | null
+          status: string | null
+          valor_liquido: number | null
+          valor_venda: number | null
+          veiculo_id: string | null
+        }
+        Insert: {
+          cliente_cpf_cnpj?: string | null
+          cliente_nome?: string | null
+          cofins?: number | null
+          created_at?: string | null
+          data_venda?: string | null
+          icms?: number | null
+          id?: string
+          numero_nota?: string | null
+          pdf_url?: string | null
+          pis?: number | null
+          status?: string | null
+          valor_liquido?: number | null
+          valor_venda?: number | null
+          veiculo_id?: string | null
+        }
+        Update: {
+          cliente_cpf_cnpj?: string | null
+          cliente_nome?: string | null
+          cofins?: number | null
+          created_at?: string | null
+          data_venda?: string | null
+          icms?: number | null
+          id?: string
+          numero_nota?: string | null
+          pdf_url?: string | null
+          pis?: number | null
+          status?: string | null
+          valor_liquido?: number | null
+          valor_venda?: number | null
+          veiculo_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notas_fiscais_veiculo_id_fkey"
+            columns: ["veiculo_id"]
+            isOneToOne: false
+            referencedRelation: "veiculos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      parametros_avaliacao: {
+        Row: {
+          ajuste_percentual: number | null
+          ativo: boolean | null
+          condicao: string | null
+          created_at: string | null
+          id: string
+          parametro: string
+        }
+        Insert: {
+          ajuste_percentual?: number | null
+          ativo?: boolean | null
+          condicao?: string | null
+          created_at?: string | null
+          id?: string
+          parametro: string
+        }
+        Update: {
+          ajuste_percentual?: number | null
+          ativo?: boolean | null
+          condicao?: string | null
+          created_at?: string | null
+          id?: string
+          parametro?: string
+        }
+        Relationships: []
+      }
+      simulacoes: {
+        Row: {
+          cliente_cpf: string | null
+          cliente_nome: string | null
+          cliente_telefone: string | null
+          created_at: string | null
+          entrada_percentual: number | null
+          id: string
+          prazo_meses: number | null
+          prestacao_mensal: number | null
+          status: string | null
+          taxa_juros: number | null
+          valor_carro: number | null
+          veiculo_id: string | null
+        }
+        Insert: {
+          cliente_cpf?: string | null
+          cliente_nome?: string | null
+          cliente_telefone?: string | null
+          created_at?: string | null
+          entrada_percentual?: number | null
+          id?: string
+          prazo_meses?: number | null
+          prestacao_mensal?: number | null
+          status?: string | null
+          taxa_juros?: number | null
+          valor_carro?: number | null
+          veiculo_id?: string | null
+        }
+        Update: {
+          cliente_cpf?: string | null
+          cliente_nome?: string | null
+          cliente_telefone?: string | null
+          created_at?: string | null
+          entrada_percentual?: number | null
+          id?: string
+          prazo_meses?: number | null
+          prestacao_mensal?: number | null
+          status?: string | null
+          taxa_juros?: number | null
+          valor_carro?: number | null
+          veiculo_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "simulacoes_veiculo_id_fkey"
+            columns: ["veiculo_id"]
+            isOneToOne: false
+            referencedRelation: "veiculos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      site_banners: {
+        Row: {
+          ativo: boolean | null
+          botao_link: string | null
+          botao_texto: string | null
+          created_at: string | null
+          id: string
+          imagem_url: string | null
+          ordem: number | null
+          texto: string | null
+          titulo: string | null
+        }
+        Insert: {
+          ativo?: boolean | null
+          botao_link?: string | null
+          botao_texto?: string | null
+          created_at?: string | null
+          id?: string
+          imagem_url?: string | null
+          ordem?: number | null
+          texto?: string | null
+          titulo?: string | null
+        }
+        Update: {
+          ativo?: boolean | null
+          botao_link?: string | null
+          botao_texto?: string | null
+          created_at?: string | null
+          id?: string
+          imagem_url?: string | null
+          ordem?: number | null
+          texto?: string | null
+          titulo?: string | null
+        }
+        Relationships: []
+      }
+      site_configuracoes: {
+        Row: {
+          chave: string
+          id: string
+          updated_at: string | null
+          valor: Json | null
+        }
+        Insert: {
+          chave: string
+          id?: string
+          updated_at?: string | null
+          valor?: Json | null
+        }
+        Update: {
+          chave?: string
+          id?: string
+          updated_at?: string | null
+          valor?: Json | null
+        }
+        Relationships: []
+      }
+      site_depoimentos: {
+        Row: {
+          created_at: string | null
+          estrelas: number | null
+          foto_url: string | null
+          id: string
+          nome_cliente: string | null
+          publicado: boolean | null
+          texto: string | null
+          tipo: string | null
+          verificado: boolean | null
+        }
+        Insert: {
+          created_at?: string | null
+          estrelas?: number | null
+          foto_url?: string | null
+          id?: string
+          nome_cliente?: string | null
+          publicado?: boolean | null
+          texto?: string | null
+          tipo?: string | null
+          verificado?: boolean | null
+        }
+        Update: {
+          created_at?: string | null
+          estrelas?: number | null
+          foto_url?: string | null
+          id?: string
+          nome_cliente?: string | null
+          publicado?: boolean | null
+          texto?: string | null
+          tipo?: string | null
+          verificado?: boolean | null
         }
         Relationships: []
       }
@@ -791,11 +1174,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: 'veiculos_responsavel_id_fkey'
-            columns: ['responsavel_id']
+            foreignKeyName: "veiculos_responsavel_id_fkey"
+            columns: ["responsavel_id"]
             isOneToOne: false
-            referencedRelation: 'usuarios'
-            referencedColumns: ['id']
+            referencedRelation: "usuarios"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -815,31 +1198,33 @@ export type Database = {
   }
 }
 
-type DatabaseWithoutInternals = Omit<Database, '__InternalSupabase'>
+type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
 
-type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, 'public'>]
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
 
 export type Tables<
   DefaultSchemaTableNameOrOptions extends
-    | keyof (DefaultSchema['Tables'] & DefaultSchema['Views'])
+    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'] &
-        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Views'])
+    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
     : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
-  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'] &
-      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Views'])[TableName] extends {
+  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
       Row: infer R
     }
     ? R
     : never
-  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema['Tables'] & DefaultSchema['Views'])
-    ? (DefaultSchema['Tables'] & DefaultSchema['Views'])[DefaultSchemaTableNameOrOptions] extends {
+  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])
+    ? (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
         Row: infer R
       }
       ? R
@@ -848,23 +1233,23 @@ export type Tables<
 
 export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema['Tables']
+    | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables']
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
     : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
-  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'][TableName] extends {
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
       Insert: infer I
     }
     ? I
     : never
-  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema['Tables']
-    ? DefaultSchema['Tables'][DefaultSchemaTableNameOrOptions] extends {
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
         Insert: infer I
       }
       ? I
@@ -873,23 +1258,23 @@ export type TablesInsert<
 
 export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema['Tables']
+    | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables']
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
     : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
-  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'][TableName] extends {
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
       Update: infer U
     }
     ? U
     : never
-  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema['Tables']
-    ? DefaultSchema['Tables'][DefaultSchemaTableNameOrOptions] extends {
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
         Update: infer U
       }
       ? U
@@ -898,36 +1283,36 @@ export type TablesUpdate<
 
 export type Enums<
   DefaultSchemaEnumNameOrOptions extends
-    | keyof DefaultSchema['Enums']
+    | keyof DefaultSchema["Enums"]
     | { schema: keyof DatabaseWithoutInternals },
   EnumName extends DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions['schema']]['Enums']
+    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
     : never = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
-  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions['schema']]['Enums'][EnumName]
-  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema['Enums']
-    ? DefaultSchema['Enums'][DefaultSchemaEnumNameOrOptions]
+  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
+  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
+    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
     : never
 
 export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
-    | keyof DefaultSchema['CompositeTypes']
+    | keyof DefaultSchema["CompositeTypes"]
     | { schema: keyof DatabaseWithoutInternals },
   CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions['schema']]['CompositeTypes']
+    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
     : never = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
-  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions['schema']]['CompositeTypes'][CompositeTypeName]
-  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema['CompositeTypes']
-    ? DefaultSchema['CompositeTypes'][PublicCompositeTypeNameOrOptions]
+  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
+  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
+    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
     : never
 
 export const Constants = {
@@ -935,6 +1320,7 @@ export const Constants = {
     Enums: {},
   },
 } as const
+
 
 // ====== DATABASE EXTENDED CONTEXT (auto-generated) ======
 // This section contains actual PostgreSQL column types, constraints, RLS policies,
@@ -957,6 +1343,25 @@ export const Constants = {
 //   contrato_id: uuid (nullable)
 //   evento: text (not null)
 //   detalhes: jsonb (nullable)
+//   created_at: timestamp with time zone (nullable, default: now())
+// Table: avaliacoes
+//   id: uuid (not null, default: gen_random_uuid())
+//   lead_id: uuid (nullable)
+//   cliente_nome: text (nullable)
+//   cliente_telefone: text (nullable)
+//   data_avaliacao: timestamp with time zone (nullable)
+//   placa_veiculo: text (nullable)
+//   marca: text (nullable)
+//   modelo: text (nullable)
+//   ano: text (nullable)
+//   valor_fipe: numeric (nullable)
+//   valor_avaliado: numeric (nullable)
+//   preco_consignacao: numeric (nullable)
+//   margem_esperada: numeric (nullable)
+//   condicao_geral: text (nullable)
+//   quilometragem: integer (nullable)
+//   observacoes: text (nullable)
+//   status: text (nullable, default: 'Agendada'::text)
 //   created_at: timestamp with time zone (nullable, default: now())
 // Table: configuracoes_api
 //   id: uuid (not null, default: gen_random_uuid())
@@ -995,6 +1400,24 @@ export const Constants = {
 //   pdf_assinado_url: text (nullable)
 //   created_at: timestamp with time zone (nullable, default: now())
 //   updated_at: timestamp with time zone (nullable, default: now())
+// Table: despesas
+//   id: uuid (not null, default: gen_random_uuid())
+//   categoria: text (nullable)
+//   descricao: text (nullable)
+//   valor: numeric (nullable)
+//   data_despesa: date (nullable)
+//   forma_pagamento: text (nullable)
+//   comprovante_url: text (nullable)
+//   registrada_por: uuid (nullable)
+//   created_at: timestamp with time zone (nullable, default: now())
+// Table: documentos
+//   id: uuid (not null, default: gen_random_uuid())
+//   nome_documento: text (nullable)
+//   tipo: text (nullable)
+//   url_documento: text (nullable)
+//   veiculo_id: uuid (nullable)
+//   tamanho: integer (nullable)
+//   created_at: timestamp with time zone (nullable, default: now())
 // Table: financeiras
 //   id: uuid (not null, default: gen_random_uuid())
 //   nome: text (not null)
@@ -1085,6 +1508,66 @@ export const Constants = {
 //   variaveis: jsonb (nullable)
 //   ativo: boolean (nullable, default: true)
 //   created_at: timestamp without time zone (nullable, default: now())
+// Table: notas_fiscais
+//   id: uuid (not null, default: gen_random_uuid())
+//   numero_nota: text (nullable)
+//   cliente_nome: text (nullable)
+//   cliente_cpf_cnpj: text (nullable)
+//   veiculo_id: uuid (nullable)
+//   data_venda: date (nullable)
+//   valor_venda: numeric (nullable)
+//   icms: numeric (nullable)
+//   pis: numeric (nullable)
+//   cofins: numeric (nullable)
+//   valor_liquido: numeric (nullable)
+//   status: text (nullable, default: 'Emitida'::text)
+//   pdf_url: text (nullable)
+//   created_at: timestamp with time zone (nullable, default: now())
+// Table: parametros_avaliacao
+//   id: uuid (not null, default: gen_random_uuid())
+//   parametro: text (not null)
+//   condicao: text (nullable)
+//   ajuste_percentual: numeric (nullable)
+//   ativo: boolean (nullable, default: true)
+//   created_at: timestamp with time zone (nullable, default: now())
+// Table: simulacoes
+//   id: uuid (not null, default: gen_random_uuid())
+//   cliente_nome: text (nullable)
+//   cliente_telefone: text (nullable)
+//   cliente_cpf: text (nullable)
+//   valor_carro: numeric (nullable)
+//   entrada_percentual: numeric (nullable)
+//   prazo_meses: integer (nullable)
+//   taxa_juros: numeric (nullable)
+//   prestacao_mensal: numeric (nullable)
+//   status: text (nullable, default: 'Pendente'::text)
+//   veiculo_id: uuid (nullable)
+//   created_at: timestamp with time zone (nullable, default: now())
+// Table: site_banners
+//   id: uuid (not null, default: gen_random_uuid())
+//   titulo: text (nullable)
+//   imagem_url: text (nullable)
+//   texto: text (nullable)
+//   botao_texto: text (nullable)
+//   botao_link: text (nullable)
+//   ativo: boolean (nullable, default: true)
+//   ordem: integer (nullable, default: 0)
+//   created_at: timestamp with time zone (nullable, default: now())
+// Table: site_configuracoes
+//   id: uuid (not null, default: gen_random_uuid())
+//   chave: text (not null)
+//   valor: jsonb (nullable)
+//   updated_at: timestamp with time zone (nullable, default: now())
+// Table: site_depoimentos
+//   id: uuid (not null, default: gen_random_uuid())
+//   nome_cliente: text (nullable)
+//   foto_url: text (nullable)
+//   texto: text (nullable)
+//   estrelas: integer (nullable, default: 5)
+//   tipo: text (nullable)
+//   publicado: boolean (nullable, default: false)
+//   verificado: boolean (nullable, default: true)
+//   created_at: timestamp with time zone (nullable, default: now())
 // Table: usuarios
 //   id: uuid (not null, default: gen_random_uuid())
 //   nome: text (not null)
@@ -1152,6 +1635,9 @@ export const Constants = {
 // Table: assinatura_historico
 //   FOREIGN KEY assinatura_historico_contrato_id_fkey: FOREIGN KEY (contrato_id) REFERENCES contratos_consignacao(id) ON DELETE CASCADE
 //   PRIMARY KEY assinatura_historico_pkey: PRIMARY KEY (id)
+// Table: avaliacoes
+//   FOREIGN KEY avaliacoes_lead_id_fkey: FOREIGN KEY (lead_id) REFERENCES leads(id)
+//   PRIMARY KEY avaliacoes_pkey: PRIMARY KEY (id)
 // Table: configuracoes_api
 //   PRIMARY KEY configuracoes_api_pkey: PRIMARY KEY (id)
 //   UNIQUE configuracoes_api_portal_key: UNIQUE (portal)
@@ -1162,6 +1648,12 @@ export const Constants = {
 // Table: contratos_consignacao
 //   PRIMARY KEY contratos_consignacao_pkey: PRIMARY KEY (id)
 //   FOREIGN KEY contratos_consignacao_veiculo_id_fkey: FOREIGN KEY (veiculo_id) REFERENCES veiculos(id) ON DELETE SET NULL
+// Table: despesas
+//   PRIMARY KEY despesas_pkey: PRIMARY KEY (id)
+//   FOREIGN KEY despesas_registrada_por_fkey: FOREIGN KEY (registrada_por) REFERENCES auth.users(id)
+// Table: documentos
+//   PRIMARY KEY documentos_pkey: PRIMARY KEY (id)
+//   FOREIGN KEY documentos_veiculo_id_fkey: FOREIGN KEY (veiculo_id) REFERENCES veiculos(id)
 // Table: financeiras
 //   PRIMARY KEY financeiras_pkey: PRIMARY KEY (id)
 // Table: fipe_anos
@@ -1190,6 +1682,21 @@ export const Constants = {
 //   PRIMARY KEY logs_integracao_pkey: PRIMARY KEY (id)
 // Table: mensagens_template
 //   PRIMARY KEY mensagens_template_pkey: PRIMARY KEY (id)
+// Table: notas_fiscais
+//   PRIMARY KEY notas_fiscais_pkey: PRIMARY KEY (id)
+//   FOREIGN KEY notas_fiscais_veiculo_id_fkey: FOREIGN KEY (veiculo_id) REFERENCES veiculos(id)
+// Table: parametros_avaliacao
+//   PRIMARY KEY parametros_avaliacao_pkey: PRIMARY KEY (id)
+// Table: simulacoes
+//   PRIMARY KEY simulacoes_pkey: PRIMARY KEY (id)
+//   FOREIGN KEY simulacoes_veiculo_id_fkey: FOREIGN KEY (veiculo_id) REFERENCES veiculos(id)
+// Table: site_banners
+//   PRIMARY KEY site_banners_pkey: PRIMARY KEY (id)
+// Table: site_configuracoes
+//   UNIQUE site_configuracoes_chave_key: UNIQUE (chave)
+//   PRIMARY KEY site_configuracoes_pkey: PRIMARY KEY (id)
+// Table: site_depoimentos
+//   PRIMARY KEY site_depoimentos_pkey: PRIMARY KEY (id)
 // Table: usuarios
 //   UNIQUE usuarios_email_key: UNIQUE (email)
 //   PRIMARY KEY usuarios_pkey: PRIMARY KEY (id)
@@ -1206,6 +1713,10 @@ export const Constants = {
 //   Policy "allow_auth_all_assinatura_historico" (ALL, PERMISSIVE) roles={authenticated}
 //     USING: true
 //     WITH CHECK: true
+// Table: avaliacoes
+//   Policy "allow_auth_all_avaliacoes" (ALL, PERMISSIVE) roles={authenticated}
+//     USING: true
+//     WITH CHECK: true
 // Table: configuracoes_api
 //   Policy "allow_auth_all_configuracoes_api" (ALL, PERMISSIVE) roles={authenticated}
 //     USING: true
@@ -1218,6 +1729,14 @@ export const Constants = {
 //   Policy "allow_auth_all_contratos_consignacao" (ALL, PERMISSIVE) roles={authenticated}
 //     USING: true
 //     WITH CHECK: true
+// Table: despesas
+//   Policy "allow_auth_all_despesas" (ALL, PERMISSIVE) roles={authenticated}
+//     USING: true
+//     WITH CHECK: true
+// Table: documentos
+//   Policy "allow_auth_all_documentos" (ALL, PERMISSIVE) roles={authenticated}
+//     USING: true
+//     WITH CHECK: true
 // Table: leads
 //   Policy "allow_anon_insert_leads" (INSERT, PERMISSIVE) roles={public}
 //     WITH CHECK: true
@@ -1226,6 +1745,38 @@ export const Constants = {
 //     WITH CHECK: true
 // Table: logs_integracao
 //   Policy "allow_auth_all_logs_integracao" (ALL, PERMISSIVE) roles={authenticated}
+//     USING: true
+//     WITH CHECK: true
+// Table: notas_fiscais
+//   Policy "allow_auth_all_notas_fiscais" (ALL, PERMISSIVE) roles={authenticated}
+//     USING: true
+//     WITH CHECK: true
+// Table: parametros_avaliacao
+//   Policy "allow_auth_all_parametros" (ALL, PERMISSIVE) roles={authenticated}
+//     USING: true
+//     WITH CHECK: true
+// Table: simulacoes
+//   Policy "allow_anon_insert_simulacoes" (INSERT, PERMISSIVE) roles={public}
+//     WITH CHECK: true
+//   Policy "allow_auth_all_simulacoes" (ALL, PERMISSIVE) roles={authenticated}
+//     USING: true
+//     WITH CHECK: true
+// Table: site_banners
+//   Policy "allow_all_banners_select" (SELECT, PERMISSIVE) roles={public}
+//     USING: true
+//   Policy "allow_auth_banners_all" (ALL, PERMISSIVE) roles={authenticated}
+//     USING: true
+//     WITH CHECK: true
+// Table: site_configuracoes
+//   Policy "allow_all_configuracoes_select" (SELECT, PERMISSIVE) roles={public}
+//     USING: true
+//   Policy "allow_auth_configuracoes_all" (ALL, PERMISSIVE) roles={authenticated}
+//     USING: true
+//     WITH CHECK: true
+// Table: site_depoimentos
+//   Policy "allow_all_depoimentos_select" (SELECT, PERMISSIVE) roles={public}
+//     USING: true
+//   Policy "allow_auth_depoimentos_all" (ALL, PERMISSIVE) roles={authenticated}
 //     USING: true
 //     WITH CHECK: true
 // Table: usuarios
@@ -1283,7 +1834,7 @@ export const Constants = {
 //     END LOOP;
 //   END;
 //   $function$
-//
+//   
 
 // --- INDEXES ---
 // Table: configuracoes_api
@@ -1294,5 +1845,8 @@ export const Constants = {
 //   CREATE UNIQUE INDEX fipe_marcas_codigo_key ON public.fipe_marcas USING btree (codigo)
 // Table: fipe_modelos
 //   CREATE UNIQUE INDEX fipe_modelos_codigo_marca_codigo_key ON public.fipe_modelos USING btree (codigo, marca_codigo)
+// Table: site_configuracoes
+//   CREATE UNIQUE INDEX site_configuracoes_chave_key ON public.site_configuracoes USING btree (chave)
 // Table: usuarios
 //   CREATE UNIQUE INDEX usuarios_email_key ON public.usuarios USING btree (email)
+
