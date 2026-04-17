@@ -6,9 +6,11 @@ import { TooltipProvider } from '@/components/ui/tooltip'
 import { AuthProvider } from '@/hooks/use-auth'
 
 import PublicLayout from '@/components/PublicLayout'
-import AdminLayout from '@/components/AdminLayout'
 import { ProtectedRoute } from '@/components/ProtectedRoute'
 import NotFound from './pages/NotFound'
+
+// Admin Layout lazy loaded to reduce unused JS in public routes
+const AdminLayout = lazy(() => import('@/components/AdminLayout'))
 
 // Public Pages (Lazy loaded for performance/code-splitting)
 const Index = lazy(() => import('./pages/Index'))
