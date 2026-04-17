@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { useToast } from '@/hooks/use-toast'
 import { supabase } from '@/lib/supabase/client'
+import { SEO } from '@/components/SEO'
 
 export default function Contato() {
   const [loading, setLoading] = useState(false)
@@ -64,6 +65,10 @@ export default function Contato() {
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
+      <SEO
+        title="Entre em Contato | Carro e Cia Veículos"
+        description="Entre em contato com a Carro e Cia Veículos. Telefone, WhatsApp e endereço. Estamos localizados em Uberaba, MG."
+      />
       <section className="bg-secondary text-white py-20 text-center">
         <div className="container">
           <h1 className="text-4xl md:text-5xl font-display font-extrabold mb-6">Fale Conosco</h1>
@@ -79,7 +84,7 @@ export default function Contato() {
           <div className="grid lg:grid-cols-[1fr_400px] gap-12">
             <div className="bg-card rounded-2xl p-8 border shadow-sm">
               <h2 className="text-3xl font-display font-bold mb-8">Envie Sua Mensagem</h2>
-              <form onSubmit={handleSubmit} className="space-y-6">
+              <form onSubmit={handleSubmit} className="space-y-6" data-event="contato">
                 <div className="grid sm:grid-cols-2 gap-6">
                   <div>
                     <label className="text-sm font-medium mb-2 block">Nome completo *</label>

@@ -17,6 +17,7 @@ import { Slider } from '@/components/ui/slider'
 import { getMarcas, getModelos } from '@/services/fipe'
 import { Filter, Search } from 'lucide-react'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
+import { SEO } from '@/components/SEO'
 
 export default function Estoque() {
   const [searchParams, setSearchParams] = useSearchParams()
@@ -102,6 +103,23 @@ export default function Estoque() {
         ? prev[key].filter((v) => v !== value)
         : [...prev[key], value],
     }))
+  }
+
+  const schema = {
+    '@context': 'https://schema.org',
+    '@type': 'Product',
+    name: 'Veículos Usados de Qualidade',
+    description: 'Compre ou consigne seu veículo com a Carro e Cia',
+    brand: {
+      '@type': 'Brand',
+      name: 'Carro e Cia Veículos',
+    },
+    offers: {
+      '@type': 'AggregateOffer',
+      priceCurrency: 'BRL',
+      offerCount: '50+',
+      availability: 'https://schema.org/InStock',
+    },
   }
 
   const FilterSidebar = () => (
@@ -271,6 +289,11 @@ export default function Estoque() {
 
   return (
     <div className="container py-8 lg:py-12">
+      <SEO
+        title="Carros Usados de Qualidade em Uberaba | Carro e Cia"
+        description="Estoque de veículos usados - Carro e Cia. Confira nossa seleção de carros de qualidade. Filtros por marca, modelo e preço."
+        schema={schema}
+      />
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
         <h1 className="text-3xl md:text-4xl font-display font-bold">Estoque de Veículos</h1>
 

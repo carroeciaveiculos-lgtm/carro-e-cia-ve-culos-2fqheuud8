@@ -1,9 +1,14 @@
 import { ConsignacaoLPForm } from '@/components/ConsignacaoLPForm'
 import { Clock, Zap, Star } from 'lucide-react'
+import { SEO } from '@/components/SEO'
 
 export default function Praticidade() {
   return (
     <div className="min-h-[calc(100vh-80px)] bg-muted/30 flex items-center">
+      <SEO
+        title="Venda seu Carro Rápido | Avaliação Imediata | Carro e Cia"
+        description="Venda seu carro rápido na Carro e Cia. Avaliação imediata. Pagamento no ato. Solução ágil para vender seu veículo."
+      />
       <div className="container mx-auto px-4 py-16 lg:py-24">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           <div className="space-y-8 animate-fade-in-up">

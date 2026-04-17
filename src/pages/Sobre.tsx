@@ -1,4 +1,5 @@
 import { Clock, Users, ShieldCheck, Target, Heart, Lightbulb } from 'lucide-react'
+import { SEO } from '@/components/SEO'
 
 export default function Sobre() {
   const team = [
@@ -34,6 +35,10 @@ export default function Sobre() {
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
+      <SEO
+        title="Sobre Nós | Carro e Cia Veículos"
+        description="Conheça a Carro e Cia Veículos. Mais de 20 anos de experiência no mercado automóvel. Referência em confiança e qualidade em Uberaba."
+      />
       <section className="relative pt-24 pb-32 overflow-hidden bg-secondary text-white">
         <div className="absolute inset-0 z-0 opacity-30 bg-[url('https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Fotos/fachada%20da%20loja.jpeg')] bg-cover bg-center" />
         <div className="absolute inset-0 bg-gradient-to-t from-secondary via-secondary/80 to-transparent z-10" />

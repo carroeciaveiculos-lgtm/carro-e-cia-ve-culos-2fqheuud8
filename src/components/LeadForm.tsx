@@ -69,7 +69,7 @@ export function LeadForm({
       <h3 className="font-display font-bold text-2xl mb-2 text-foreground">{title}</h3>
       <p className="text-muted-foreground mb-6 text-sm">{subtitle}</p>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-4" data-event="lead">
         <div className="space-y-2">
           <Label htmlFor="name">Nome Completo</Label>
           <Input

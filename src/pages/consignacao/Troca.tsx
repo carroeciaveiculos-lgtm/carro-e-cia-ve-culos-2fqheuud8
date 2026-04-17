@@ -1,9 +1,14 @@
 import { ConsignacaoLPForm } from '@/components/ConsignacaoLPForm'
 import { RefreshCcw, CarFront, TrendingUp } from 'lucide-react'
+import { SEO } from '@/components/SEO'
 
 export default function Troca() {
   return (
     <div className="min-h-[calc(100vh-80px)] bg-background flex items-center">
+      <SEO
+        title="Troca com Troco de Carros | Desconto Garantido | Carro e Cia"
+        description="Troca com Troco na Carro e Cia. Troque seu carro antigo por um novo com desconto. Solução rápida e segura em Uberaba."
+      />
       <div className="container mx-auto px-4 py-16 lg:py-24">
         <div className="grid lg:grid-cols-2 gap-12 items-center flex-col-reverse">
           <div className="animate-fade-in-up lg:order-1 order-2">

@@ -5,8 +5,25 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion'
+import { SEO } from '@/components/SEO'
 
 export default function Consignacao() {
+  const schema = {
+    '@context': 'https://schema.org',
+    '@type': 'Service',
+    name: 'Consignação de Veículos',
+    description: 'Consigne seu veículo com segurança e transparência',
+    provider: {
+      '@type': 'LocalBusiness',
+      name: 'Carro e Cia Veículos',
+    },
+    areaServed: {
+      '@type': 'City',
+      name: 'Uberaba',
+    },
+    serviceType: 'Consignação de Veículos',
+  }
+
   const faqs = [
     {
       q: 'Quanto tempo leva para vender?',
@@ -32,6 +49,11 @@ export default function Consignacao() {
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
+      <SEO
+        title="Consigne seu Carro com Segurança | Carro e Cia Veículos"
+        description="Consigne seu veículo com a Carro e Cia. Solução segura e confiável para vender seu carro. Anunciamos em iCarros, WebMotors e Mercado Livre."
+        schema={schema}
+      />
       <section className="relative bg-secondary text-secondary-foreground pt-20 pb-32 overflow-hidden">
         <div className="absolute inset-0 z-0 opacity-20 bg-[url('https://img.usecurling.com/p/1200/800?q=car%20showroom')] bg-cover bg-center" />
         <div className="container relative z-10 text-center max-w-3xl">

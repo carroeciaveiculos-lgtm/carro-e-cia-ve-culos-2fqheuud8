@@ -1,9 +1,14 @@
 import { ConsignacaoLPForm } from '@/components/ConsignacaoLPForm'
 import { ShieldCheck, CheckCircle2 } from 'lucide-react'
+import { SEO } from '@/components/SEO'
 
 export default function Seguranca() {
   return (
     <div className="min-h-[calc(100vh-80px)] bg-background flex items-center">
+      <SEO
+        title="Venda Segura de Veículos | Documentação Completa | Carro e Cia"
+        description="Venda Segura de Veículos - Carro e Cia. Venda seu carro sem risco. Documentação completa e transparência garantida."
+      />
       <div className="container mx-auto px-4 py-16 lg:py-24">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           <div className="space-y-8 animate-fade-in-up">
