@@ -3,7 +3,7 @@
     "send-lead-email": 16,
     "receive-leads": 16,
     "sync-estoque": 16,
-    "webhook-portais": 15,
+    "webhook-portais": 16,
     "on-lead-created": 15,
     "consultar-placa": 22,
     "enviar-para-assinatura": 16,
