@@ -122,10 +122,7 @@ export default function Veiculo() {
               <img
                 src={
                   photos[activePhoto]
-                    ? photos[activePhoto].includes('/object/public/')
-                      ? photos[activePhoto].replace('/object/public/', '/render/image/public/') +
-                        '?width=1200&quality=80&format=webp'
-                      : photos[activePhoto]
+                    ? photos[activePhoto]
                     : 'https://img.usecurling.com/p/800/600?q=car'
                 }
                 alt={vehicle.modelo}
@@ -154,12 +151,7 @@ export default function Veiculo() {
                     className={`aspect-video rounded-md overflow-hidden border-2 transition-all ${activePhoto === i ? 'border-primary' : 'border-transparent opacity-70 hover:opacity-100'}`}
                   >
                     <img
-                      src={
-                        p.includes('/object/public/')
-                          ? p.replace('/object/public/', '/render/image/public/') +
-                            '?width=300&quality=70&format=webp'
-                          : p
-                      }
+                      src={p}
                       alt={`Foto ${i + 1}`}
                       loading="lazy"
                       decoding="async"

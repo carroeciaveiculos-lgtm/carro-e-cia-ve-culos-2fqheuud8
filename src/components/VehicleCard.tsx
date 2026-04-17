@@ -11,16 +11,10 @@ export function VehicleCard({ vehicle }: { vehicle: any }) {
     `Olá! Vi o ${vehicle.marca} ${vehicle.modelo} ${vehicle.ano_fabricacao} por ${formatCurrency(vehicle.preco_venda || 0)} no site. Ainda está disponível?`,
   )
 
-  let coverImage =
+  const coverImage =
     vehicle.fotos && vehicle.fotos.length > 0
       ? vehicle.fotos[0]
       : 'https://img.usecurling.com/p/400/300?q=car'
-
-  if (coverImage.includes('supabase.co') && coverImage.includes('/object/public/')) {
-    coverImage =
-      coverImage.replace('/object/public/', '/render/image/public/') +
-      '?width=600&quality=80&format=webp'
-  }
 
   return (
     <div className="group flex flex-col bg-card rounded-lg overflow-hidden border shadow-sm hover:shadow-md transition-shadow">
