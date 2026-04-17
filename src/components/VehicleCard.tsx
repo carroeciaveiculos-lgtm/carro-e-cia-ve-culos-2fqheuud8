@@ -22,6 +22,8 @@ export function VehicleCard({ vehicle }: { vehicle: any }) {
         <img
           src={coverImage}
           alt={`${vehicle.marca} ${vehicle.modelo}`}
+          loading="lazy"
+          decoding="async"
           className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-500"
         />
         {vehicle.is_consignado && (

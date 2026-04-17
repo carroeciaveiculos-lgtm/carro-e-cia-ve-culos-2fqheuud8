@@ -2,5 +2,4 @@ User-agent: *
 Allow: /
 Disallow: /admin
 Disallow: /api
-
 Sitemap: https://carroeciaveiculos.goskip.app/sitemap.xml

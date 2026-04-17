@@ -7,6 +7,7 @@ export function Analytics() {
       script1.id = 'ga4-script'
       script1.src = `https://www.googletagmanager.com/gtag/js?id=${import.meta.env.VITE_GA_MEASUREMENT_ID || 'G-7NCHPJ2SLT'}`
       script1.async = true
+      script1.defer = true
       document.head.appendChild(script1)
 
       const script2 = document.createElement('script')
@@ -25,7 +26,7 @@ export function Analytics() {
       script4.innerHTML = `
         (function(c,l,a,r,i,t,y){
             c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
-            t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+            t=l.createElement(r);t.async=1;t.defer=1;t.src="https://www.clarity.ms/tag/"+i;
             y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
         })(window, document, "clarity", "script", "${import.meta.env.VITE_CLARITY_ID || 'wb6vgqmca2'}");
       `

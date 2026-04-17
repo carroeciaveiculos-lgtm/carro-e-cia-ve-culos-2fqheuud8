@@ -98,6 +98,8 @@ export function TestimonialsAndLocation() {
                 <img
                   src={p.logo}
                   alt={p.name}
+                  loading="lazy"
+                  decoding="async"
                   className="max-w-full max-h-full object-contain mix-blend-multiply dark:mix-blend-normal"
                 />
                 {p.highlight && (
