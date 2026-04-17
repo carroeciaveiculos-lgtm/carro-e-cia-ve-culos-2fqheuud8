@@ -16,6 +16,7 @@ import Veiculo from './pages/Veiculo'
 import Consignacao from './pages/Consignacao'
 import Sobre from './pages/Sobre'
 import Contato from './pages/Contato'
+import PoliticaPrivacidade from './pages/PoliticaPrivacidade'
 import Seguranca from './pages/consignacao/Seguranca'
 import Praticidade from './pages/consignacao/Praticidade'
 import Troca from './pages/consignacao/Troca'
@@ -55,6 +56,7 @@ const App = () => (
             <Route path="/consignacao" element={<Consignacao />} />
             <Route path="/sobre" element={<Sobre />} />
             <Route path="/contato" element={<Contato />} />
+            <Route path="/politica-de-privacidade" element={<PoliticaPrivacidade />} />
 
             {/* Landing Pages LPs */}
             <Route path="/lp/venda-segura" element={<Seguranca />} />
