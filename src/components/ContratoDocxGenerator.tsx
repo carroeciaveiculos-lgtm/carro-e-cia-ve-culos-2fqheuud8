@@ -1,8 +1,8 @@
 import React, { useState } from 'react'
 import { ContratoData } from '@/types/contrato'
-import { generateContratoDocx } from '@/utils/generateDocx'
 import { downloadBlob } from '@/utils/downloadFile'
 import { uploadFileToSupabase } from '@/services/supabaseStorage'
+import { supabase } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Loader2, FileText } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
@@ -23,13 +23,21 @@ const ContratoDocxGenerator: React.FC<ContratoDocxGeneratorProps> = ({ contratoD
         throw new Error('Dados do contrato incompletos para geração do DOCX.')
       }
 
-      const docxBlob = await generateContratoDocx(contratoData)
+      // Delegação total da geração do arquivo para a Edge Function
+      const { data: blobData, error } = await supabase.functions.invoke('gerar-pdf-contrato', {
+        body: { contratoData },
+      })
+
+      if (error) {
+        throw new Error('Falha ao processar o documento no servidor.')
+      }
+
       const filename = `contrato_consignacao_${contratoData.numeroContrato}.docx`
       const filePath = `rascunhos/${filename}`
 
-      // Garantir o MIME type correto para DOCX para evitar problemas de download
+      // O retorno vem parseado como Blob quando o Content-Type é application/vnd.openxmlformats...
       const docxMimeType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-      const typedBlob = new Blob([docxBlob], { type: docxMimeType })
+      const typedBlob = new Blob([blobData as BlobPart], { type: docxMimeType })
 
       await uploadFileToSupabase('contratos-consignacao', filePath, typedBlob, docxMimeType)
 
