@@ -22,6 +22,7 @@ export function ConsignacaoLPForm({
   const { toast } = useToast()
   const navigate = useNavigate()
   const [loading, setLoading] = useState(false)
+  const [honeypot, setHoneypot] = useState('')
   const [formData, setFormData] = useState({
     nome: '',
     email: '',
@@ -37,6 +38,12 @@ export function ConsignacaoLPForm({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    if (honeypot) {
+      navigate('/obrigado')
+      return
+    }
+
     setLoading(true)
 
     try {
@@ -67,6 +74,16 @@ export function ConsignacaoLPForm({
       <p className="text-muted-foreground mb-6 text-sm">{subtitle}</p>
 
       <form onSubmit={handleSubmit} className="space-y-4" data-event="consignacao">
+        <div style={{ display: 'none' }} aria-hidden="true">
+          <Input
+            type="text"
+            name="website_url"
+            tabIndex={-1}
+            autoComplete="off"
+            value={honeypot}
+            onChange={(e) => setHoneypot(e.target.value)}
+          />
+        </div>
         <div className="space-y-2">
           <Label htmlFor="nome">Nome Completo</Label>
           <Input

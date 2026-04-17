@@ -4,9 +4,11 @@ import { Button } from '@/components/ui/button'
 import { VehicleCard } from '@/components/VehicleCard'
 import { supabase } from '@/lib/supabase/client'
 import { CheckCircle2, MapPin, Search, Star } from 'lucide-react'
+import { Skeleton } from '@/components/ui/skeleton'
 
 export function StockAndFeatures() {
   const [vehicles, setVehicles] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     supabase
@@ -17,6 +19,7 @@ export function StockAndFeatures() {
       .limit(6)
       .then(({ data }) => {
         if (data) setVehicles(data)
+        setLoading(false)
       })
   }, [])
 
@@ -39,13 +42,32 @@ export function StockAndFeatures() {
           </div>
 
           <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-8">
-            {vehicles.map((v) => (
-              <VehicleCard key={v.id} vehicle={v} />
-            ))}
-            {vehicles.length === 0 && (
+            {loading ? (
+              Array.from({ length: 6 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="flex flex-col space-y-3 bg-card rounded-lg overflow-hidden border p-0"
+                >
+                  <Skeleton className="h-[250px] w-full rounded-none" />
+                  <div className="p-5 space-y-4 flex flex-col flex-grow">
+                    <Skeleton className="h-6 w-3/4" />
+                    <Skeleton className="h-4 w-1/2" />
+                    <div className="mt-auto pt-4">
+                      <Skeleton className="h-8 w-1/3 mb-4" />
+                      <div className="grid grid-cols-2 gap-2">
+                        <Skeleton className="h-10 w-full" />
+                        <Skeleton className="h-10 w-full" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))
+            ) : vehicles.length === 0 ? (
               <div className="col-span-full bg-muted/30 border border-dashed rounded-xl text-center py-16 text-muted-foreground">
-                <p className="text-lg">Carregando nosso estoque atualizado...</p>
+                <p className="text-lg">Nenhum veículo encontrado no momento.</p>
               </div>
+            ) : (
+              vehicles.map((v) => <VehicleCard key={v.id} vehicle={v} />)
             )}
           </div>
         </div>

@@ -29,6 +29,7 @@ import {
   PaintBucket,
 } from 'lucide-react'
 import { VehicleCard } from '@/components/VehicleCard'
+import { Skeleton } from '@/components/ui/skeleton'
 
 export default function Veiculo() {
   const { id } = useParams()
@@ -62,8 +63,33 @@ export default function Veiculo() {
     fetchVehicle()
   }, [id])
 
-  if (loading)
-    return <div className="container py-20 text-center animate-pulse">Carregando veículo...</div>
+  if (loading) {
+    return (
+      <div className="bg-background min-h-screen pb-20">
+        <div className="container py-6">
+          <Skeleton className="h-6 w-48 mb-6" />
+          <div className="grid lg:grid-cols-[1.2fr_1fr] gap-10">
+            <div className="space-y-4">
+              <Skeleton className="aspect-[4/3] rounded-xl w-full" />
+              <div className="grid grid-cols-5 sm:grid-cols-6 gap-2">
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <Skeleton key={i} className="aspect-video rounded-md" />
+                ))}
+              </div>
+            </div>
+            <div className="flex flex-col space-y-6">
+              <div>
+                <Skeleton className="h-10 w-3/4 mb-2" />
+                <Skeleton className="h-6 w-1/2" />
+              </div>
+              <Skeleton className="h-[400px] w-full rounded-xl" />
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   if (!vehicle) return <div className="container py-20 text-center">Veículo não encontrado.</div>
 
   const formatCurrency = (val: number) =>
@@ -94,8 +120,17 @@ export default function Veiculo() {
           <div className="space-y-4">
             <div className="aspect-[4/3] rounded-xl overflow-hidden bg-muted relative group">
               <img
-                src={photos[activePhoto] || 'https://img.usecurling.com/p/800/600?q=car'}
+                src={
+                  photos[activePhoto]
+                    ? photos[activePhoto].includes('/object/public/')
+                      ? photos[activePhoto].replace('/object/public/', '/render/image/public/') +
+                        '?width=1200&quality=80&format=webp'
+                      : photos[activePhoto]
+                    : 'https://img.usecurling.com/p/800/600?q=car'
+                }
                 alt={vehicle.modelo}
+                loading="lazy"
+                decoding="async"
                 className="w-full h-full object-cover"
               />
               {vehicle.is_consignado && (
@@ -118,7 +153,18 @@ export default function Veiculo() {
                     onClick={() => setActivePhoto(i)}
                     className={`aspect-video rounded-md overflow-hidden border-2 transition-all ${activePhoto === i ? 'border-primary' : 'border-transparent opacity-70 hover:opacity-100'}`}
                   >
-                    <img src={p} alt={`Foto ${i + 1}`} className="w-full h-full object-cover" />
+                    <img
+                      src={
+                        p.includes('/object/public/')
+                          ? p.replace('/object/public/', '/render/image/public/') +
+                            '?width=300&quality=70&format=webp'
+                          : p
+                      }
+                      alt={`Foto ${i + 1}`}
+                      loading="lazy"
+                      decoding="async"
+                      className="w-full h-full object-cover"
+                    />
                   </button>
                 ))}
               </div>

@@ -21,6 +21,7 @@ const formSchema = z.object({
   email: z.string().email('E-mail inválido'),
   telefone: z.string().min(14, 'WhatsApp inválido'),
   busca: z.string().min(1, 'Selecione uma opção'),
+  honeypot: z.string().optional(),
 })
 
 type FormData = z.infer<typeof formSchema>
@@ -35,6 +36,15 @@ export function Hero() {
   })
 
   const onSubmit = async (data: FormData) => {
+    if (data.honeypot) {
+      toast({
+        title: 'Sucesso!',
+        description: 'Recebemos sua solicitação! Em breve entraremos em contato via WhatsApp.',
+      })
+      form.reset()
+      return
+    }
+
     setIsSubmitting(true)
     try {
       const { error } = await createLead({
@@ -82,7 +92,7 @@ export function Hero() {
           className="absolute inset-0 z-0 bg-cover bg-center bg-fixed"
           style={{
             backgroundImage:
-              'url("https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Fotos/fachada%20da%20loja.jpeg")',
+              'url("https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/render/image/public/logos-e-imagens/Fotos/fachada%20da%20loja.jpeg?width=1920&quality=80&format=webp")',
           }}
         />
         <div className="absolute inset-0 z-0 bg-black/50" />
@@ -100,6 +110,14 @@ export function Hero() {
 
           <div className="bg-background rounded-xl p-6 sm:p-8 shadow-2xl w-full max-w-md mx-auto lg:ml-auto border border-border/50 animate-fade-in-up">
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <div style={{ display: 'none' }} aria-hidden="true">
+                <Input
+                  type="text"
+                  tabIndex={-1}
+                  autoComplete="off"
+                  {...form.register('honeypot')}
+                />
+              </div>
               <div className="space-y-2">
                 <Label htmlFor="nome">Nome completo *</Label>
                 <Input id="nome" placeholder="Seu nome" {...form.register('nome')} />

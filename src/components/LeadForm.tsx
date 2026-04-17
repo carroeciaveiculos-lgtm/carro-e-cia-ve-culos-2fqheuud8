@@ -22,6 +22,7 @@ export function LeadForm({
 }: LeadFormProps) {
   const { toast } = useToast()
   const [loading, setLoading] = useState(false)
+  const [honeypot, setHoneypot] = useState('')
   const [formData, setFormData] = useState({
     nome: '',
     telefone: '',
@@ -32,6 +33,15 @@ export function LeadForm({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    if (honeypot) {
+      toast({
+        title: 'Sucesso!',
+        description: 'Seus dados foram enviados. Aguarde nosso contato.',
+      })
+      return
+    }
+
     setLoading(true)
 
     const { error } = await createLead({
@@ -70,6 +80,16 @@ export function LeadForm({
       <p className="text-muted-foreground mb-6 text-sm">{subtitle}</p>
 
       <form onSubmit={handleSubmit} className="space-y-4" data-event="lead">
+        <div style={{ display: 'none' }} aria-hidden="true">
+          <Input
+            type="text"
+            name="website_url"
+            tabIndex={-1}
+            autoComplete="off"
+            value={honeypot}
+            onChange={(e) => setHoneypot(e.target.value)}
+          />
+        </div>
         <div className="space-y-2">
           <Label htmlFor="name">Nome Completo</Label>
           <Input

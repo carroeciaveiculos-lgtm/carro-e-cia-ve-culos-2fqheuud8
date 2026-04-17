@@ -4,9 +4,10 @@ interface SEOProps {
   title: string
   description: string
   schema?: object
+  canonical?: string
 }
 
-export function SEO({ title, description, schema }: SEOProps) {
+export function SEO({ title, description, schema, canonical }: SEOProps) {
   useEffect(() => {
     // Atualiza o título da página
     document.title = title
@@ -29,13 +30,23 @@ export function SEO({ title, description, schema }: SEOProps) {
       document.head.appendChild(script)
     }
 
+    // Adiciona ou atualiza a tag Canonical
+    const canonicalUrl = canonical || window.location.href.split('?')[0]
+    let linkCanonical = document.querySelector('link[rel="canonical"]')
+    if (!linkCanonical) {
+      linkCanonical = document.createElement('link')
+      linkCanonical.setAttribute('rel', 'canonical')
+      document.head.appendChild(linkCanonical)
+    }
+    linkCanonical.setAttribute('href', canonicalUrl)
+
     // Cleanup para remover o schema e limpar ao trocar de página
     return () => {
       if (script && document.head.contains(script)) {
         document.head.removeChild(script)
       }
     }
-  }, [title, description, schema])
+  }, [title, description, schema, canonical])
 
   return null
 }
