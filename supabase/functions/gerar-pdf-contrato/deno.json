@@ -1,3 +1,5 @@
 {
-  "imports": {}
+  "imports": {
+    "docx": "npm:docx@8.6.0"
+  }
 }

@@ -18,16 +18,25 @@ export default function Administrativo() {
 
       if (error) throw error
 
+      if (data?.document) {
+        const link = document.createElement('a')
+        link.href = `data:application/vnd.openxmlformats-officedocument.wordprocessingml.document;base64,${data.document}`
+        link.download = `${tipo}.docx`
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+      }
+
       toast({
         title: 'Documento gerado',
-        description: `O documento ${tipo} foi gerado com sucesso via Edge Function.`,
+        description: `O documento de ${tipo.replace('_', ' ')} foi gerado com sucesso.`,
       })
     } catch (error: any) {
       console.error(error)
-      // Fallback para simulação na interface
       toast({
-        title: 'Documento gerado (Simulação)',
-        description: `O documento de ${tipo.replace('_', ' ')} foi processado com sucesso.`,
+        variant: 'destructive',
+        title: 'Erro ao gerar documento',
+        description: 'Não foi possível gerar o documento. Tente novamente mais tarde.',
       })
     } finally {
       setLoading(null)
