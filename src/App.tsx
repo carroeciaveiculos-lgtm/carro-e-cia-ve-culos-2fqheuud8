@@ -5,9 +5,9 @@ import { Toaster as Sonner } from '@/components/ui/sonner'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { AuthProvider } from '@/hooks/use-auth'
 
-import { PublicLayout } from './components/PublicLayout'
-import { AdminLayout } from './components/AdminLayout'
-import { ProtectedRoute } from './components/ProtectedRoute'
+import PublicLayout from '@/components/PublicLayout'
+import AdminLayout from '@/components/AdminLayout'
+import { ProtectedRoute } from '@/components/ProtectedRoute'
 import NotFound from './pages/NotFound'
 
 // Public Pages (Lazy loaded for performance/code-splitting)
