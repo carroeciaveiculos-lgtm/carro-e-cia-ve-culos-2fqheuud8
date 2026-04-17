@@ -1,25 +1,25 @@
-import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
-import { createClient } from 'jsr:@supabase/supabase-js@2'
-import { corsHeaders } from '../_shared/cors.ts'
+import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
+import { createClient } from 'jsr:@supabase/supabase-js@2';
+import { corsHeaders } from '../_shared/cors.ts';
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+    return new Response('ok', { headers: corsHeaders });
   }
 
   try {
-    const body = await req.json()
-    const record = body.record || body
+    const body = await req.json();
+    const record = body.record || body;
 
-    const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? ''
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    const supabase = createClient(supabaseUrl, supabaseKey)
+    const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
+    const supabase = createClient(supabaseUrl, supabaseKey);
 
-    const { nome, email, telefone } = record
+    const { nome, email, telefone } = record;
 
     // 1. E-mail de Boas-Vindas Automático (Resend)
     if (email) {
-      const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')
+      const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY');
       if (RESEND_API_KEY) {
         const htmlBody = `
           <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;border:1px solid #eee;border-radius:10px;overflow:hidden">
@@ -32,20 +32,20 @@ Deno.serve(async (req) => {
               <p style="font-size:16px;line-height:1.5">Obrigado por confiar na equipe que mais entende de carros em Uberaba!</p>
             </div>
           </div>
-        `
+        `;
         await fetch('https://api.resend.com/emails', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${RESEND_API_KEY}`,
+            Authorization: `Bearer ${RESEND_API_KEY}`
           },
           body: JSON.stringify({
             from: 'contato@carroeciaveiculos.goskip.app',
             to: email,
             subject: 'Recebemos seus dados! | Carro e Cia',
-            html: htmlBody,
+            html: htmlBody
           }),
-        }).catch(console.error)
+        }).catch(console.error);
       }
     }
 
@@ -55,37 +55,37 @@ Deno.serve(async (req) => {
         .from('configuracoes_api')
         .select('*')
         .eq('portal', 'Brevo')
-        .single()
+        .single();
 
       if (config && config.ativo && config.api_key && config.auth_token) {
-        const listId = parseInt(config.auth_token, 10)
+        const listId = parseInt(config.auth_token, 10);
         if (!isNaN(listId)) {
           const brevoRes = await fetch('https://api.brevo.com/v3/contacts', {
             method: 'POST',
             headers: {
-              accept: 'application/json',
+              'accept': 'application/json',
               'content-type': 'application/json',
-              'api-key': config.api_key,
+              'api-key': config.api_key
             },
             body: JSON.stringify({
               email: email,
               attributes: {
                 NOME: nome,
-                WHATSAPP: telefone,
+                WHATSAPP: telefone
               },
               listIds: [listId],
-              updateEnabled: true,
-            }),
-          })
-
+              updateEnabled: true
+            })
+          });
+          
           if (!brevoRes.ok) {
-            const err = await brevoRes.text()
+            const err = await brevoRes.text();
             // Logar falha de integração silenciosamente sem travar o lead
             await supabase.from('logs_integracao').insert({
               portal: 'Brevo',
               status: 'falha',
-              payload_erro: { error: err, email },
-            })
+              payload_erro: { error: err, email }
+            });
           }
         }
       }
@@ -93,11 +93,8 @@ Deno.serve(async (req) => {
 
     return new Response(JSON.stringify({ success: true }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    })
+    });
   } catch (err: any) {
-    return new Response(JSON.stringify({ error: err.message }), {
-      status: 400,
-      headers: corsHeaders,
-    })
+    return new Response(JSON.stringify({ error: err.message }), { status: 400, headers: corsHeaders });
   }
-})
+});
