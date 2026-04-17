@@ -1,6 +1,5 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 import { corsHeaders } from '../_shared/cors.ts'
-import { Document, Packer, Paragraph, TextRun, AlignmentType } from 'docx'
 
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
@@ -8,12 +7,13 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    const { tipo, dados } = await req.json()
+    const payload = await req.json()
 
-    const title = tipo
-      .split('_')
-      .map((word: string) => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(' ')
+    // Use dynamic import for 'docx' to prevent Vite from resolving and processing it
+    // in case this Edge Function file is imported in the frontend for type sharing.
+    // This fixes the "Module 'buffer' has been externalized for browser compatibility" build error.
+    const docxModule = await import('npm:docx@8.6.0')
+    const { Document, Packer, Paragraph, TextRun } = docxModule
 
     const doc = new Document({
       sections: [
@@ -21,10 +21,9 @@ Deno.serve(async (req: Request) => {
           properties: {},
           children: [
             new Paragraph({
-              alignment: AlignmentType.CENTER,
               children: [
                 new TextRun({
-                  text: `DOCUMENTO DE ${title.toUpperCase()}`,
+                  text: 'Contrato',
                   bold: true,
                   size: 32,
                 }),
@@ -33,15 +32,7 @@ Deno.serve(async (req: Request) => {
             new Paragraph({
               children: [
                 new TextRun({
-                  text: `Data de emissão: ${new Date().toLocaleDateString('pt-BR')}`,
-                  size: 24,
-                }),
-              ],
-            }),
-            new Paragraph({
-              children: [
-                new TextRun({
-                  text: 'Este é um documento gerado automaticamente pelo sistema Carro e Cia Veículos.',
+                  text: `Gerado em: ${new Date().toLocaleDateString('pt-BR')}`,
                   size: 24,
                 }),
               ],
@@ -51,19 +42,19 @@ Deno.serve(async (req: Request) => {
       ],
     })
 
-    const b64string = await Packer.toBase64String(doc)
+    const b64 = await Packer.toBase64String(doc)
+    const bytes = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0))
 
-    return new Response(
-      JSON.stringify({
-        success: true,
-        document: b64string,
-      }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    return new Response(bytes, {
+      headers: {
+        ...corsHeaders,
+        'Content-Type': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'Content-Disposition': 'attachment; filename="contrato.docx"',
       },
-    )
-  } catch (error: any) {
-    return new Response(JSON.stringify({ error: error.message }), {
+    })
+  } catch (error) {
+    const err = error as Error
+    return new Response(JSON.stringify({ error: err.message }), {
       status: 400,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
