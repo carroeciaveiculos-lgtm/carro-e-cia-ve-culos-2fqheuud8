@@ -107,19 +107,29 @@ export default function Estoque() {
 
   const schema = {
     '@context': 'https://schema.org',
-    '@type': 'Product',
-    name: 'Veículos Usados de Qualidade',
-    description: 'Compre ou consigne seu veículo com a Carro e Cia',
-    brand: {
-      '@type': 'Brand',
-      name: 'Carro e Cia Veículos',
-    },
-    offers: {
-      '@type': 'AggregateOffer',
-      priceCurrency: 'BRL',
-      offerCount: '50+',
-      availability: 'https://schema.org/InStock',
-    },
+    '@type': 'ItemList',
+    name: 'Estoque de Veículos Usados - Carro e Cia',
+    description: 'Confira nossa seleção de carros de qualidade em Uberaba.',
+    itemListElement: vehicles.slice(0, 30).map((v, i) => ({
+      '@type': 'ListItem',
+      position: i + 1,
+      item: {
+        '@type': 'Product',
+        name: `${v.marca} ${v.modelo} ${v.ano_fabricacao}`,
+        url: `https://carroeciaveiculos.goskip.app/estoque/${v.id}`,
+        image:
+          Array.isArray(v.fotos) && v.fotos.length > 0
+            ? v.fotos[0]
+            : 'https://img.usecurling.com/p/800/600?q=car',
+        description: v.descricao || `${v.marca} ${v.modelo} em excelente estado.`,
+        offers: {
+          '@type': 'Offer',
+          price: v.preco_venda || 0,
+          priceCurrency: 'BRL',
+          availability: 'https://schema.org/InStock',
+        },
+      },
+    })),
   }
 
   const FilterSidebar = () => (

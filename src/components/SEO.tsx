@@ -7,6 +7,7 @@ interface SEOProps {
   canonical?: string
   image?: string
   type?: string
+  noindex?: boolean
 }
 
 export function SEO({
@@ -16,6 +17,7 @@ export function SEO({
   canonical,
   image = 'https://img.usecurling.com/p/1200/630?q=car%20dealership',
   type = 'website',
+  noindex = false,
 }: SEOProps) {
   useEffect(() => {
     // Atualiza o título da página
@@ -76,13 +78,22 @@ export function SEO({
       element.setAttribute('content', tag.content)
     })
 
+    // Adiciona ou atualiza meta robots (noindex)
+    let metaRobots = document.querySelector('meta[name="robots"]')
+    if (!metaRobots) {
+      metaRobots = document.createElement('meta')
+      metaRobots.setAttribute('name', 'robots')
+      document.head.appendChild(metaRobots)
+    }
+    metaRobots.setAttribute('content', noindex ? 'noindex, nofollow' : 'index, follow')
+
     // Cleanup para remover o schema e limpar ao trocar de página
     return () => {
       if (script && document.head.contains(script)) {
         document.head.removeChild(script)
       }
     }
-  }, [title, description, schema, canonical])
+  }, [title, description, schema, canonical, image, type, noindex])
 
   return null
 }

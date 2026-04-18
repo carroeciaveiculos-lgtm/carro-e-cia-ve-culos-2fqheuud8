@@ -8,6 +8,7 @@ export default function Seguranca() {
       <SEO
         title="Venda Segura de Veículos | Documentação Completa | Carro e Cia"
         description="Venda Segura de Veículos - Carro e Cia. Venda seu carro sem risco. Documentação completa e transparência garantida."
+        noindex={true}
       />
       <div className="container mx-auto px-4 py-16 lg:py-24">
         <div className="grid lg:grid-cols-2 gap-12 items-center">

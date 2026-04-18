@@ -8,6 +8,7 @@ export default function Troca() {
       <SEO
         title="Troca com Troco de Carros | Desconto Garantido | Carro e Cia"
         description="Troca com Troco na Carro e Cia. Troque seu carro antigo por um novo com desconto. Solução rápida e segura em Uberaba."
+        noindex={true}
       />
       <div className="container mx-auto px-4 py-16 lg:py-24">
         <div className="grid lg:grid-cols-2 gap-12 items-center flex-col-reverse">
