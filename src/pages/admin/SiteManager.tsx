@@ -1,14 +1,75 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
-import { Globe, Image as ImageIcon, FileText, MessageSquare, Layout } from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
+import {
+  Globe,
+  Image as ImageIcon,
+  FileText,
+  MessageSquare,
+  Layout,
+  Search,
+  Plus,
+  Edit,
+  Trash2,
+  CheckCircle,
+  XCircle,
+} from 'lucide-react'
+import { supabase } from '@/lib/supabase/client'
+import { useToast } from '@/hooks/use-toast'
+
+interface BlogPost {
+  id: string
+  title: string
+  slug: string
+  published: boolean
+  category: string
+}
 
 export default function SiteManager() {
   const [activeTab, setActiveTab] = useState('geral')
+  const [searchQuery, setSearchQuery] = useState('')
+  const [blogPosts, setBlogPosts] = useState<BlogPost[]>([])
+  const { toast } = useToast()
+
+  useEffect(() => {
+    if (activeTab === 'blog') {
+      fetchBlogPosts()
+    }
+  }, [activeTab])
+
+  const fetchBlogPosts = async () => {
+    const { data } = await supabase
+      .from('blog_posts')
+      .select('id, title, slug, published, category')
+      .order('created_at', { ascending: false })
+    if (data) setBlogPosts(data)
+  }
+
+  const togglePublish = async (id: string, currentStatus: boolean) => {
+    const { error } = await supabase
+      .from('blog_posts')
+      .update({ published: !currentStatus })
+      .eq('id', id)
+    if (!error) {
+      toast({ title: 'Status atualizado com sucesso!' })
+      fetchBlogPosts()
+    } else {
+      toast({ title: 'Erro ao atualizar', variant: 'destructive' })
+    }
+  }
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('Tem certeza que deseja excluir? Esta ação não pode ser desfeita.')) return
+    const { error } = await supabase.from('blog_posts').delete().eq('id', id)
+    if (!error) {
+      toast({ title: 'Post excluído com sucesso!' })
+      fetchBlogPosts()
+    }
+  }
 
   const teamPhotos = [
     {
@@ -37,18 +98,34 @@ export default function SiteManager() {
     'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Parceiros/santander.png',
   ]
 
+  const filteredPosts = blogPosts.filter((p) =>
+    p.title.toLowerCase().includes(searchQuery.toLowerCase()),
+  )
+
   return (
     <div className="p-4 md:p-8 max-w-[1600px] mx-auto">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-800 uppercase tracking-tight flex items-center gap-2">
-            <Globe className="w-6 h-6 text-blue-600" /> Gerenciador do Site
+            <Globe className="w-6 h-6 text-blue-600" /> CMS & Gestão do Site
           </h1>
           <p className="text-sm text-slate-500 mt-1">
-            Controle banners, textos, parceiros e configurações de SEO.
+            Controle banners, textos, blog dinâmico, SEO e parceiros.
           </p>
         </div>
-        <Button className="bg-blue-600 hover:bg-blue-700">Salvar Alterações</Button>
+        <div className="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto">
+          <div className="relative w-full sm:w-64">
+            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              type="search"
+              placeholder="Busca global (veículos, posts)..."
+              className="pl-8"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+          <Button className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto">Salvar Tudo</Button>
+        </div>
       </div>
 
       <div className="flex flex-col md:flex-row gap-6">
@@ -62,6 +139,20 @@ export default function SiteManager() {
               Dados da Loja & SEO
             </Button>
             <Button
+              variant={activeTab === 'blog' ? 'secondary' : 'ghost'}
+              className="justify-start"
+              onClick={() => setActiveTab('blog')}
+            >
+              Blog & Artigos
+            </Button>
+            <Button
+              variant={activeTab === 'lps' ? 'secondary' : 'ghost'}
+              className="justify-start"
+              onClick={() => setActiveTab('lps')}
+            >
+              Landing Pages
+            </Button>
+            <Button
               variant={activeTab === 'imagens' ? 'secondary' : 'ghost'}
               className="justify-start"
               onClick={() => setActiveTab('imagens')}
@@ -73,7 +164,7 @@ export default function SiteManager() {
               className="justify-start"
               onClick={() => setActiveTab('conteudo')}
             >
-              Páginas & Equipe
+              Equipe & Textos
             </Button>
             <Button
               variant={activeTab === 'depoimentos' ? 'secondary' : 'ghost'}
@@ -96,7 +187,7 @@ export default function SiteManager() {
           {activeTab === 'geral' && (
             <div className="space-y-6">
               <h3 className="font-bold text-lg flex items-center gap-2">
-                <Layout className="w-5 h-5" /> Configurações Gerais
+                <Layout className="w-5 h-5" /> Configurações Gerais & SEO Global
               </h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
@@ -108,7 +199,7 @@ export default function SiteManager() {
                   <Input defaultValue="17.125.199/0001-87" />
                 </div>
                 <div>
-                  <Label>Telefone Principal</Label>
+                  <Label>Telefone Principal (WhatsApp)</Label>
                   <Input defaultValue="(34) 99994-8428" />
                 </div>
                 <div>
@@ -119,10 +210,117 @@ export default function SiteManager() {
                   <Label>Endereço Completo</Label>
                   <Input defaultValue="Av. Guilherme Ferreira, 1131 - São Benedito, Uberaba - MG" />
                 </div>
-                <div className="sm:col-span-2">
-                  <Label>Meta Description (SEO)</Label>
-                  <Textarea defaultValue="Venda seu carro com segurança. Consignação de veículos em Uberaba." />
+                <div className="sm:col-span-2 mt-4">
+                  <h4 className="font-semibold mb-2">SEO Padrão da Home</h4>
                 </div>
+                <div className="sm:col-span-2">
+                  <Label>Title Tag (Meta Título)</Label>
+                  <Input defaultValue="Carro e Cia Veículos | Os Melhores Seminovos de Uberaba" />
+                </div>
+                <div className="sm:col-span-2">
+                  <Label>Meta Description</Label>
+                  <Textarea defaultValue="Venda seu carro com segurança. Consignação e financiamento de veículos em Uberaba. Mais de 20 anos de mercado." />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Recomendado: 150-160 caracteres.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'blog' && (
+            <div className="space-y-6">
+              <div className="flex justify-between items-center">
+                <h3 className="font-bold text-lg flex items-center gap-2">
+                  <FileText className="w-5 h-5" /> Gestão Centralizada de Conteúdo
+                </h3>
+                <Button size="sm" className="gap-1">
+                  <Plus className="w-4 h-4" /> Novo Post
+                </Button>
+              </div>
+              <div className="grid gap-4">
+                {filteredPosts.map((post) => (
+                  <Card
+                    key={post.id}
+                    className="p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
+                  >
+                    <div>
+                      <h4 className="font-semibold text-slate-800">{post.title}</h4>
+                      <div className="flex gap-2 items-center mt-1 text-sm text-slate-500">
+                        <Badge variant="outline" className="bg-slate-50">
+                          {post.category}
+                        </Badge>
+                        <span className="hidden sm:inline">/{post.slug}</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 w-full sm:w-auto">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => togglePublish(post.id, post.published)}
+                        className={post.published ? 'text-green-600' : 'text-slate-400'}
+                      >
+                        {post.published ? (
+                          <CheckCircle className="w-4 h-4 mr-1" />
+                        ) : (
+                          <XCircle className="w-4 h-4 mr-1" />
+                        )}
+                        {post.published ? 'Publicado' : 'Rascunho'}
+                      </Button>
+                      <Button variant="outline" size="icon" title="Editar">
+                        <Edit className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        size="icon"
+                        title="Excluir"
+                        onClick={() => handleDelete(post.id)}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </Card>
+                ))}
+                {filteredPosts.length === 0 && (
+                  <p className="text-muted-foreground text-center py-8">
+                    Nenhum artigo encontrado.
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'lps' && (
+            <div className="space-y-6">
+              <div className="flex justify-between items-center">
+                <h3 className="font-bold text-lg flex items-center gap-2">
+                  <Layout className="w-5 h-5" /> Landing Pages & SEO Otimizado
+                </h3>
+                <Button size="sm" className="gap-1">
+                  <Plus className="w-4 h-4" /> Nova Página
+                </Button>
+              </div>
+              <div className="grid gap-4">
+                {[
+                  '/carros-seminovos-uberaba-mg',
+                  '/financiamento-veiculo-consignado',
+                  '/venda-seu-carro-rapido-uberaba',
+                ].map((path, i) => (
+                  <Card
+                    key={i}
+                    className="p-4 flex flex-col sm:flex-row justify-between sm:items-center gap-4"
+                  >
+                    <div>
+                      <h4 className="font-semibold text-slate-800">
+                        {path.replace('/', '').replace(/-/g, ' ').toUpperCase()}
+                      </h4>
+                      <p className="text-sm text-blue-600 font-medium">{path}</p>
+                    </div>
+                    <Button variant="outline" size="sm" className="w-full sm:w-auto">
+                      <Edit className="w-4 h-4 mr-2" /> Editar SEO / Conteúdo
+                    </Button>
+                  </Card>
+                ))}
               </div>
             </div>
           )}
@@ -151,7 +349,6 @@ export default function SiteManager() {
                   </div>
                 </div>
               </div>
-
               <div>
                 <h3 className="font-bold text-lg flex items-center gap-2 mb-4">
                   <ImageIcon className="w-5 h-5" /> Fachada e Logo
@@ -219,7 +416,12 @@ export default function SiteManager() {
               </div>
               <Card>
                 <CardContent className="p-4 flex gap-4 items-center">
-                  <div className="w-12 h-12 rounded-full bg-slate-200 shrink-0"></div>
+                  <div className="w-12 h-12 rounded-full bg-slate-200 shrink-0 overflow-hidden">
+                    <img
+                      src="https://img.usecurling.com/ppl/thumbnail?seed=1&gender=female"
+                      alt="Avatar"
+                    />
+                  </div>
                   <div>
                     <p className="font-bold">Maria Oliveira</p>
                     <p className="text-sm text-slate-600">
@@ -235,11 +437,10 @@ export default function SiteManager() {
           {activeTab === 'scripts' && (
             <div className="space-y-6">
               <h3 className="font-bold text-lg flex items-center gap-2">
-                <Globe className="w-5 h-5" /> Tags de Rastreamento
+                <Globe className="w-5 h-5" /> Tags de Rastreamento & Automações
               </h3>
               <p className="text-sm text-slate-500">
-                As tags abaixo já estão integradas no código fonte da plataforma de forma otimizada
-                para SEO.
+                As tags abaixo garantem a rastreabilidade total no CRM.
               </p>
               <div className="grid gap-4">
                 <div>
@@ -253,14 +454,6 @@ export default function SiteManager() {
                 <div>
                   <Label>Clarity ID</Label>
                   <Input defaultValue="wb6vgqmca2" readOnly className="bg-slate-50 font-mono" />
-                </div>
-                <div>
-                  <Label>Google Search Console</Label>
-                  <Input
-                    defaultValue="U4M2M0e2Nz-6Zl4r_lpDH0y8n7f3PVH785u50RxyVYI"
-                    readOnly
-                    className="bg-slate-50 font-mono"
-                  />
                 </div>
               </div>
             </div>

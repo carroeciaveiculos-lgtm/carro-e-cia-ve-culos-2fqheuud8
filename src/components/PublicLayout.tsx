@@ -1,184 +1,192 @@
-import { Link, Outlet, useLocation } from 'react-router-dom'
-import { useState, useEffect } from 'react'
-import { WhatsAppButton } from './WhatsAppButton'
-import { Analytics } from './Analytics'
-import { Menu, X, Facebook, Instagram, Phone } from 'lucide-react'
+import { Outlet, Link, useLocation } from 'react-router-dom'
+import { Menu, X, Phone } from 'lucide-react'
+import { useState } from 'react'
 import { Button } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
 
 export default function PublicLayout() {
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const [isMenuOpen, setIsMenuOpen] = useState(false)
   const location = useLocation()
 
-  useEffect(() => {
-    setIsMobileMenuOpen(false)
-    window.scrollTo(0, 0)
-  }, [location.pathname])
-
-  const navLinks = [
-    { label: 'Home', path: '/' },
-    { label: 'Estoque', path: '/estoque' },
-    { label: 'Consignação', path: '/consignacao' },
-    { label: 'Sobre', path: '/sobre' },
-    { label: 'Contato', path: '/contato' },
+  const links = [
+    { name: 'Início', path: '/' },
+    { name: 'Estoque', path: '/estoque' },
+    { name: 'Vender/Consignar', path: '/consignacao' },
+    { name: 'Blog', path: '/blog' },
+    { name: 'Sobre', path: '/sobre' },
+    { name: 'Contato', path: '/contato' },
   ]
 
   return (
-    <div className="flex flex-col min-h-screen bg-background">
-      <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 shadow-sm">
-        <div className="container flex h-20 items-center justify-between">
+    <div className="flex flex-col min-h-screen font-sans">
+      <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2">
             <img
               src="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Logos/logo%20carro%20e%20cia.png"
               alt="Carro e Cia Veículos"
-              className="h-10 md:h-12 w-auto object-contain"
+              className="h-8 md:h-10 object-contain"
             />
           </Link>
 
-          <nav className="hidden lg:flex gap-8 items-center">
-            {navLinks.map((link) => (
+          {/* Desktop Nav */}
+          <nav className="hidden md:flex items-center gap-6">
+            {links.map((link) => (
               <Link
                 key={link.path}
                 to={link.path}
-                className="text-sm font-medium text-foreground hover:text-primary transition-colors"
+                className={cn(
+                  'text-sm font-medium transition-colors hover:text-primary',
+                  location.pathname === link.path ? 'text-primary font-bold' : 'text-slate-600',
+                )}
               >
-                {link.label}
+                {link.name}
               </Link>
             ))}
-            <Button asChild className="bg-[#25D366] hover:bg-[#20bd5a] text-white gap-2">
+            <Button asChild variant="default" size="sm" className="ml-2 shadow-sm rounded-full">
               <a
-                href="https://wa.me/5534999484285?text=Ol%C3%A1!%20Vim%20pelo%20site%20e%20gostaria%20de%20mais%20informa%C3%A7%C3%B5es."
+                href="https://api.whatsapp.com/send?phone=5534999948428&text=Ol%C3%A1!%20Vim%20pelo%20site%20e%20gostaria%20de%20atendimento."
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                <Phone className="w-4 h-4" /> Falar no WhatsApp
+                <Phone className="w-4 h-4 mr-2" /> Atendimento Rápido
               </a>
             </Button>
           </nav>
 
+          {/* Mobile Menu Toggle */}
           <button
-            className="lg:hidden p-2 text-foreground"
-            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            className="md:hidden p-2 text-slate-700"
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
           >
-            {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
           </button>
         </div>
 
-        {isMobileMenuOpen && (
-          <div className="lg:hidden border-t bg-background px-4 py-4 space-y-4 shadow-lg absolute w-full">
-            {navLinks.map((link) => (
-              <Link
-                key={link.path}
-                to={link.path}
-                className="block py-3 text-base font-medium text-foreground hover:text-primary border-b border-border/50 last:border-0"
-              >
-                {link.label}
-              </Link>
-            ))}
-            <Button
-              asChild
-              className="w-full bg-[#25D366] hover:bg-[#20bd5a] text-white gap-2 mt-4 h-12"
-            >
-              <a
-                href="https://wa.me/5534999484285?text=Ol%C3%A1!%20Vim%20pelo%20site%20e%20gostaria%20de%20mais%20informa%C3%A7%C3%B5es."
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <Phone className="w-5 h-5" /> Falar no WhatsApp
-              </a>
-            </Button>
+        {/* Mobile Nav */}
+        {isMenuOpen && (
+          <div className="md:hidden border-t p-4 bg-background absolute w-full shadow-lg">
+            <nav className="flex flex-col gap-4">
+              {links.map((link) => (
+                <Link
+                  key={link.path}
+                  to={link.path}
+                  onClick={() => setIsMenuOpen(false)}
+                  className={cn(
+                    'text-lg font-medium pb-2 border-b border-slate-100',
+                    location.pathname === link.path ? 'text-primary font-bold' : 'text-slate-700',
+                  )}
+                >
+                  {link.name}
+                </Link>
+              ))}
+              <Button asChild variant="default" className="w-full mt-2 rounded-full">
+                <a
+                  href="https://api.whatsapp.com/send?phone=5534999948428"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <Phone className="w-4 h-4 mr-2" /> Falar via WhatsApp
+                </a>
+              </Button>
+            </nav>
           </div>
         )}
       </header>
 
-      <main className="flex-1">
+      <main className="flex-1 flex flex-col">
         <Outlet />
       </main>
 
-      <footer className="bg-secondary text-secondary-foreground py-12 lg:py-16 border-t border-secondary-foreground/10">
-        <div className="container grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
-          <div className="lg:col-span-2">
+      <footer className="bg-slate-900 text-slate-200 py-12 md:py-16">
+        <div className="container mx-auto px-4 grid grid-cols-1 md:grid-cols-4 gap-8">
+          <div className="md:col-span-1">
             <img
               src="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Logos/logo%20carro%20e%20cia.png"
               alt="Carro e Cia"
-              className="h-14 w-auto object-contain brightness-0 invert mb-6"
+              className="h-10 brightness-0 invert opacity-90 mb-4 object-contain"
             />
-            <p className="text-gray-400 mb-6 max-w-md leading-relaxed">
-              Compre ou consigne seu veículo com segurança em Uberaba. Mais de 20 anos de
-              experiência. Consignação, transparência e procedência garantida.
+            <p className="text-sm text-slate-400 leading-relaxed">
+              Mais de 20 anos de tradição em Uberaba MG. Especialistas em seminovos com procedência
+              e garantia e financiamento consignado.
             </p>
-            <div className="flex gap-4">
-              <a
-                href="https://instagram.com/carroecia02"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-10 h-10 rounded-full bg-secondary-foreground/10 flex items-center justify-center hover:bg-primary hover:text-primary-foreground transition-colors"
-              >
-                <Instagram className="w-5 h-5" />
-              </a>
-              <a
-                href="https://www.facebook.com/carroeciaosmelhoresveiculos"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-10 h-10 rounded-full bg-secondary-foreground/10 flex items-center justify-center hover:bg-primary hover:text-primary-foreground transition-colors"
-              >
-                <Facebook className="w-5 h-5" />
-              </a>
-            </div>
           </div>
           <div>
-            <h4 className="font-display font-bold text-lg mb-6 text-white">Links Rápidos</h4>
-            <ul className="space-y-3">
-              {navLinks.map((link) => (
-                <li key={link.path}>
-                  <Link
-                    to={link.path}
-                    className="text-gray-400 hover:text-primary transition-colors inline-block"
-                  >
-                    {link.label}
-                  </Link>
-                </li>
-              ))}
+            <h4 className="font-bold text-white mb-4 uppercase tracking-wider text-sm">
+              Navegação
+            </h4>
+            <ul className="space-y-3 text-sm">
+              <li>
+                <Link to="/estoque" className="text-slate-400 hover:text-white transition-colors">
+                  Ver Nosso Estoque
+                </Link>
+              </li>
+              <li>
+                <Link
+                  to="/consignacao"
+                  className="text-slate-400 hover:text-white transition-colors"
+                >
+                  Quero Vender Meu Carro
+                </Link>
+              </li>
+              <li>
+                <Link
+                  to="/financiamento-veiculo-consignado"
+                  className="text-slate-400 hover:text-white transition-colors"
+                >
+                  Financiamento Consignado
+                </Link>
+              </li>
+              <li>
+                <Link
+                  to="/blog"
+                  className="text-slate-400 hover:text-white transition-colors font-semibold"
+                >
+                  Blog e Dicas Automotivas
+                </Link>
+              </li>
             </ul>
           </div>
           <div>
-            <h4 className="font-display font-bold text-lg mb-6 text-white">Contato</h4>
-            <ul className="space-y-4 text-gray-400">
+            <h4 className="font-bold text-white mb-4 uppercase tracking-wider text-sm">Contato</h4>
+            <ul className="space-y-3 text-sm text-slate-400">
+              <li className="flex items-center gap-2">
+                <Phone className="w-4 h-4" /> (34) 99994-8428
+              </li>
+              <li>lgacomerciodeveiculos@gmail.com</li>
               <li className="leading-relaxed">
-                Av. Guilherme Ferreira, 1119
+                Av. Guilherme Ferreira, 1131
                 <br />
                 São Benedito, Uberaba - MG
-                <br />
-                38022-200
-              </li>
-              <li>
-                <a
-                  href="https://wa.me/5534999484285"
-                  className="hover:text-primary transition-colors"
-                >
-                  (34) 99948-4285
-                </a>
-              </li>
-              <li>
-                <a
-                  href="mailto:lgacomerciodeveiculos@gmail.com"
-                  className="hover:text-primary transition-colors break-all"
-                >
-                  lgacomerciodeveiculos@gmail.com
-                </a>
               </li>
             </ul>
           </div>
+          <div>
+            <h4 className="font-bold text-white mb-4 uppercase tracking-wider text-sm">Horário</h4>
+            <ul className="space-y-3 text-sm text-slate-400">
+              <li>Segunda a Sexta: 08:00 às 18:00</li>
+              <li>Sábado: 08:00 às 12:00</li>
+            </ul>
+            <div className="mt-6">
+              <Button
+                asChild
+                variant="outline"
+                className="w-full bg-transparent border-slate-700 hover:bg-slate-800 text-slate-300"
+              >
+                <Link to="/admin/login">Acesso Restrito</Link>
+              </Button>
+            </div>
+          </div>
         </div>
-        <div className="container mt-12 pt-8 border-t border-secondary-foreground/10 text-center text-gray-500 text-sm">
-          <p>
-            Carro e Cia Veículos © {new Date().getFullYear()} — Todos os direitos reservados. CNPJ:
-            17.125.199/0001-87
-          </p>
+        <div className="container mx-auto px-4 mt-12 pt-8 border-t border-slate-800 flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-slate-500">
+          <p>© {new Date().getFullYear()} Carro e Cia Veículos. Todos os direitos reservados.</p>
+          <div className="flex gap-4">
+            <Link to="/politica-de-privacidade" className="hover:text-slate-300">
+              Privacidade
+            </Link>
+          </div>
         </div>
       </footer>
-
-      <WhatsAppButton />
-      <Analytics />
     </div>
   )
 }
