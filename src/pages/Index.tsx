@@ -3,6 +3,9 @@ import { Consignment } from '@/components/home/Consignment'
 import { StockAndFeatures } from '@/components/home/StockAndFeatures'
 import { TestimonialsAndLocation } from '@/components/home/TestimonialsAndLocation'
 import { SEO } from '@/components/SEO'
+import { NavigationCards } from '@/components/home/NavigationCards'
+import { Partners } from '@/components/home/Partners'
+import { LatestPosts } from '@/components/home/LatestPosts'
 
 export default function Index() {
   const schema = {
@@ -46,9 +49,12 @@ export default function Index() {
         schema={schema}
       />
       <Hero />
+      <NavigationCards />
+      <Partners />
       <Consignment />
       <StockAndFeatures />
       <TestimonialsAndLocation />
+      <LatestPosts />
     </div>
   )
 }

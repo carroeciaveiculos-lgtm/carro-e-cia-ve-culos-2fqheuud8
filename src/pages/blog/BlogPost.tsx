@@ -29,8 +29,23 @@ interface Post {
   tags: string[]
 }
 
+import { RelatedPosts } from '@/components/blog/RelatedPosts'
+
 export default function BlogPost() {
   const { slug } = useParams()
+  const [scrollProgress, setScrollProgress] = useState(0)
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const totalScroll = document.documentElement.scrollTop
+      const windowHeight =
+        document.documentElement.scrollHeight - document.documentElement.clientHeight
+      const scroll = `${totalScroll / windowHeight}`
+      setScrollProgress(Number(scroll) * 100)
+    }
+    window.addEventListener('scroll', handleScroll)
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
   const { toast } = useToast()
   const [post, setPost] = useState<Post | null>(null)
   const [loading, setLoading] = useState(true)
@@ -102,6 +117,10 @@ export default function BlogPost() {
 
   return (
     <main className="flex-1 bg-background py-10">
+      <div
+        className="fixed top-0 left-0 h-1 bg-primary z-50 transition-all duration-150"
+        style={{ width: `${scrollProgress}%` }}
+      />
       <SEO
         title={`${post.title} | Carro e Cia Veículos`}
         description={post.meta_description}
@@ -187,6 +206,8 @@ export default function BlogPost() {
               </Button>
             </div>
           </div>
+
+          <RelatedPosts category={post.category || 'Novidade'} currentId={post.id} />
 
           <div className="bg-muted/50 rounded-2xl p-6 flex flex-col md:flex-row items-center md:items-start gap-6 border border-border/50">
             <img

@@ -1,26 +1,20 @@
-<!-- HTML template for the frontend react app: https://developer.mozilla.org/en-US/docs/Web/HTML --><!doctype html>
-<html lang="en">
+<!doctype html>
+<html lang="pt-BR">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Carro e Cia Consignação</title>
-    <meta name="description" content="Você tem um carro para vender. Nos temos os compradores." />
+    <title>Carro e Cia Veículos | Consignação e Venda</title>
+    <meta name="description" content="Compre, venda ou consigne seu carro com a Carro e Cia Veículos em Uberaba MG." />
     <meta name="author" content="Skip (https://goskip.dev)" />
     <meta property="og:image" content="/og-image.jpeg" />
-    <meta
-      name="keywords"
-      content="consignar, consignação, veiculos, veículos, veiculo, veículo, carro, carros, automóvel, automóveis, auto, venda seu veiculo, consignar meu veiculo, solução em consignação, trocar meu veiculo, comprar um veiculo, comprar um carro, comprar um automóvel, vender um automóvel, vender um carro, vender meu carro"
-    />
-    <meta property="og:title" content="Carro e Cia Consignação" />
-    <meta
-      property="og:description"
-      content="Você tem um carro para vender. Nos temos os compradores."
-    />
     <meta name="google-site-verification" content="U4M2M0e2Nz-6Zl4r_lpDH0y8n7f3PVH785u50RxyVYI" />
+    
     <link rel="preconnect" href="https://htpcqdbhktmvppfemnad.supabase.co" crossorigin />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="dns-prefetch" href="https://www.google-analytics.com" />
     <link rel="preload" as="image" href="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Fotos/fachada%20da%20loja.jpeg" />
+
     <!-- Google Tag Manager -->
     <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
     new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
@@ -28,6 +22,24 @@
     'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
     })(window,document,'script','dataLayer','GTM-N7LFK82W');</script>
     <!-- End Google Tag Manager -->
+
+    <!-- Google tag (gtag.js) GA4 -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-7NCHPJ2SLT"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-7NCHPJ2SLT');
+    </script>
+
+    <!-- Microsoft Clarity -->
+    <script type="text/javascript">
+      (function(c,l,a,r,i,t,y){
+          c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+          t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+          y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+      })(window, document, "clarity", "script", "wb6vgqmca2");
+    </script>
   </head>
 
   <body>
@@ -35,10 +47,9 @@
     <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-N7LFK82W"
     height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     <!-- End Google Tag Manager (noscript) -->
+    
     <div id="root"></div>
-    <!-- @skip-protected: Do not remove. Required for app features. -->
     <script defer src="https://goskip.dev/skip.js"></script>
-    <!-- @skip-protected: Do not remove. App entrypoint. -->
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

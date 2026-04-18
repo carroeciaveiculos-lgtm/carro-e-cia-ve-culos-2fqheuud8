@@ -31,6 +31,7 @@ const ConsorcioAuto = lazy(() => import('./pages/ConsorcioAuto'))
 const CarrosSeminovosUberaba = lazy(() => import('./pages/lp/CarrosSeminovosUberaba'))
 const FinanciamentoConsignado = lazy(() => import('./pages/lp/FinanciamentoConsignado'))
 const VendaCarroRapido = lazy(() => import('./pages/lp/VendaCarroRapido'))
+const VenderMeuCarro = lazy(() => import('./pages/VenderMeuCarro'))
 const BlogIndex = lazy(() => import('./pages/blog/BlogIndex'))
 const BlogPost = lazy(() => import('./pages/blog/BlogPost'))
 
@@ -88,6 +89,7 @@ const App = () => (
                 element={<FinanciamentoConsignado />}
               />
               <Route path="/venda-seu-carro-rapido-uberaba" element={<VendaCarroRapido />} />
+              <Route path="/vender-meu-carro" element={<VenderMeuCarro />} />
 
               {/* Blog */}
               <Route path="/blog" element={<BlogIndex />} />

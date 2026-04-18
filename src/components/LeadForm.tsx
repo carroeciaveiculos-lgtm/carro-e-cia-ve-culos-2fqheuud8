@@ -1,155 +1,163 @@
 import { useState } from 'react'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import * as z from 'zod'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { useToast } from '@/hooks/use-toast'
-import { Send } from 'lucide-react'
-import { createLead } from '@/services/leads'
+import { Loader2, Send } from 'lucide-react'
+import { supabase } from '@/lib/supabase/client'
+import { getWhatsAppLink } from '@/lib/whatsapp'
+
+const formSchema = z.object({
+  nome: z.string().min(3, 'Nome é obrigatório'),
+  telefone: z.string().min(14, 'WhatsApp inválido'),
+  marcaModelo: z.string().min(2, 'Marca e Modelo obrigatórios'),
+  ano: z.string().min(4, 'Ano obrigatório'),
+  km: z.string().optional(),
+  mensagem: z.string().optional(),
+  honeypot: z.string().optional(),
+})
+
+type FormData = z.infer<typeof formSchema>
 
 interface LeadFormProps {
-  title?: string
-  subtitle?: string
-  origem?: string
-  veiculoInteresse?: string
+  tipo?: string
+  buttonText?: string
+  whatsappText?: string
 }
 
 export function LeadForm({
-  title = 'Preencha seus dados',
-  subtitle = 'Nossa equipe entrará em contato em até 15 minutos.',
-  origem = 'Site - Contato',
-  veiculoInteresse = '',
+  tipo = 'venda',
+  buttonText = 'Quero Vender Meu Carro Agora',
+  whatsappText = 'Olá Luiz, quero vender meu carro!',
 }: LeadFormProps) {
-  const { toast } = useToast()
-  const [loading, setLoading] = useState(false)
-  const [honeypot, setHoneypot] = useState('')
-  const [formData, setFormData] = useState({
-    nome: '',
-    telefone: '',
-    email: '',
-    veiculo_interesse: veiculoInteresse,
-    observacoes: '',
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const form = useForm<FormData>({
+    resolver: zodResolver(formSchema),
+    defaultValues: { nome: '', telefone: '', marcaModelo: '', ano: '', km: '', mensagem: '' },
   })
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const onSubmit = async (data: FormData) => {
+    if (data.honeypot) return
 
-    if (honeypot) {
-      toast({
-        title: 'Sucesso!',
-        description: 'Seus dados foram enviados. Aguarde nosso contato.',
-      })
-      return
-    }
+    setIsSubmitting(true)
+    try {
+      const payload = {
+        nome: data.nome,
+        telefone: data.telefone,
+        carro_modelo: data.marcaModelo,
+        carro_ano: data.ano,
+        carro_km: data.km,
+        observacoes: data.mensagem,
+        tipo,
+        origem: window.location.pathname,
+      }
 
-    setLoading(true)
+      // Call edge function directly without needing RLS policies bypass from client side
+      await supabase.functions.invoke('receive-leads', { body: payload })
 
-    const { error } = await createLead({
-      ...formData,
-      tipo: origem.includes('Consignação') ? 'vendedor' : 'comprador',
-      origem,
-      status: 'novo',
-    })
-
-    setLoading(false)
-
-    if (error) {
-      toast({
-        title: 'Erro',
-        description: 'Ocorreu um erro ao enviar sua mensagem. Tente novamente mais tarde.',
-        variant: 'destructive',
-      })
-    } else {
-      toast({
-        title: 'Sucesso!',
-        description: 'Seus dados foram enviados. Aguarde nosso contato.',
-      })
-      setFormData({
-        nome: '',
-        telefone: '',
-        email: '',
-        veiculo_interesse: veiculoInteresse,
-        observacoes: '',
-      })
+      // Redirect to WhatsApp
+      window.open(getWhatsAppLink(whatsappText), '_blank')
+      form.reset()
+    } catch (error) {
+      console.error(error)
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
-  return (
-    <div className="bg-card p-8 rounded-xl shadow-lg border border-border">
-      <h3 className="font-display font-bold text-2xl mb-2 text-foreground">{title}</h3>
-      <p className="text-muted-foreground mb-6 text-sm">{subtitle}</p>
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let value = e.target.value.replace(/\D/g, '')
+    if (value.length <= 11) {
+      value = value.replace(/^(\d{2})(\d)/g, '($1) $2')
+      value = value.replace(/(\d)(\d{4})$/, '$1-$2')
+    }
+    form.setValue('telefone', value, { shouldValidate: true })
+  }
 
-      <form onSubmit={handleSubmit} className="space-y-4" data-event="lead">
-        <div style={{ display: 'none' }} aria-hidden="true">
-          <Input
-            type="text"
-            name="website_url"
-            tabIndex={-1}
-            autoComplete="off"
-            value={honeypot}
-            onChange={(e) => setHoneypot(e.target.value)}
-          />
-        </div>
+  return (
+    <form
+      onSubmit={form.handleSubmit(onSubmit)}
+      className="space-y-4 bg-white/95 backdrop-blur-sm p-6 rounded-xl shadow-xl"
+      data-event="envio_formulario"
+    >
+      <div style={{ display: 'none' }} aria-hidden="true">
+        <Input type="text" tabIndex={-1} autoComplete="off" {...form.register('honeypot')} />
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="nome">Nome completo *</Label>
+        <Input id="nome" placeholder="Seu nome" {...form.register('nome')} />
+        {form.formState.errors.nome && (
+          <p className="text-xs text-destructive">{form.formState.errors.nome.message}</p>
+        )}
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="telefone">WhatsApp *</Label>
+        <Input
+          id="telefone"
+          placeholder="(34) 99999-9999"
+          {...form.register('telefone')}
+          onChange={(e) => {
+            form.register('telefone').onChange(e)
+            handlePhoneChange(e)
+          }}
+        />
+        {form.formState.errors.telefone && (
+          <p className="text-xs text-destructive">{form.formState.errors.telefone.message}</p>
+        )}
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label htmlFor="name">Nome Completo</Label>
-          <Input
-            id="name"
-            required
-            placeholder="Digite seu nome"
-            value={formData.nome}
-            onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="phone">WhatsApp</Label>
-          <Input
-            id="phone"
-            required
-            placeholder="(34) 99999-9999"
-            type="tel"
-            value={formData.telefone}
-            onChange={(e) => setFormData({ ...formData, telefone: e.target.value })}
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="email">E-mail</Label>
-          <Input
-            id="email"
-            type="email"
-            placeholder="seu@email.com"
-            value={formData.email}
-            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="vehicle">Veículo (Opcional)</Label>
-          <Input
-            id="vehicle"
-            placeholder="Ex: Compass 2022"
-            value={formData.veiculo_interesse}
-            onChange={(e) => setFormData({ ...formData, veiculo_interesse: e.target.value })}
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="message">Mensagem (Opcional)</Label>
-          <Textarea
-            id="message"
-            placeholder="Como podemos ajudar?"
-            className="resize-none"
-            value={formData.observacoes}
-            onChange={(e) => setFormData({ ...formData, observacoes: e.target.value })}
-          />
-        </div>
-        <Button type="submit" className="w-full bg-primary hover:bg-primary/90" disabled={loading}>
-          {loading ? (
-            'Enviando...'
-          ) : (
-            <>
-              Enviar Solicitação <Send className="w-4 h-4 ml-2" />
-            </>
+          <Label htmlFor="marcaModelo">Marca e Modelo *</Label>
+          <Input id="marcaModelo" placeholder="Ex: Onix 1.0" {...form.register('marcaModelo')} />
+          {form.formState.errors.marcaModelo && (
+            <p className="text-xs text-destructive">{form.formState.errors.marcaModelo.message}</p>
           )}
-        </Button>
-      </form>
-    </div>
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="ano">Ano *</Label>
+          <Input id="ano" placeholder="Ex: 2020" {...form.register('ano')} />
+          {form.formState.errors.ano && (
+            <p className="text-xs text-destructive">{form.formState.errors.ano.message}</p>
+          )}
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="km">KM Aproximado</Label>
+        <Input id="km" placeholder="Ex: 50000" {...form.register('km')} />
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="mensagem">Mensagem (opcional)</Label>
+        <Textarea
+          id="mensagem"
+          placeholder="Detalhes do veículo..."
+          {...form.register('mensagem')}
+          className="resize-none"
+          rows={2}
+        />
+      </div>
+
+      <Button
+        type="submit"
+        className="w-full h-12 text-lg font-bold bg-[#25D366] hover:bg-[#25D366]/90 text-white"
+        disabled={isSubmitting}
+        aria-label={buttonText}
+      >
+        {isSubmitting ? (
+          <Loader2 className="w-5 h-5 animate-spin" />
+        ) : (
+          <>
+            <Send className="w-5 h-5 mr-2" /> {buttonText}
+          </>
+        )}
+      </Button>
+    </form>
   )
 }

@@ -94,6 +94,7 @@ export function Hero() {
             backgroundImage:
               'url("https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Fotos/fachada%20da%20loja.jpeg")',
           }}
+          aria-label="Fachada da Loja Carro e Cia"
         />
         <div className="absolute inset-0 z-0 bg-black/50" />
 
@@ -193,8 +194,9 @@ export function Hero() {
 
               <Button
                 type="submit"
-                className="w-full h-12 text-lg font-semibold bg-primary hover:bg-primary/90 transition-colors duration-300 mt-2"
+                className="w-full h-12 text-lg font-semibold bg-[#25D366] hover:bg-[#25D366]/90 text-white transition-colors duration-300 mt-2"
                 disabled={isSubmitting}
+                aria-label="Enviar solicitação de contato"
               >
                 {isSubmitting ? (
                   <Loader2 className="w-5 h-5 animate-spin" />

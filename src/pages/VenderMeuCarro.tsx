@@ -29,7 +29,7 @@ const team = [
   },
 ]
 
-export default function Consignacao() {
+export default function VenderMeuCarro() {
   const schema = {
     '@context': 'https://schema.org',
     '@type': 'AutoDealer',
@@ -48,32 +48,24 @@ export default function Consignacao() {
 
   const faqs = [
     {
-      q: 'Quanto tempo leva para vender?',
-      a: 'O tempo médio varia, mas com nossa divulgação profissional, muitos veículos são vendidos em menos de 30 dias.',
+      q: 'Como a avaliação é feita?',
+      a: 'Usamos tabelas de mercado atualizadas (FIPE, Webmotors) e analisamos o estado real do seu veículo para garantir a melhor proposta.',
     },
     {
-      q: 'Qual é a comissão da loja?',
-      a: 'A comissão é transparente e fixada em contrato. Entre em contato para uma avaliação e detalhes dos valores.',
+      q: 'Eu preciso pagar alguma taxa antecipada?',
+      a: 'Não. A avaliação é 100% gratuita e sem compromisso.',
     },
     {
-      q: 'O veículo fica na loja?',
-      a: 'Sim, em pátio seguro e segurado, garantindo exposição máxima aos compradores.',
-    },
-    {
-      q: 'E se eu precisar do carro?',
-      a: 'Temos contratos flexíveis. Basta nos avisar com antecedência.',
-    },
-    {
-      q: 'A loja garante a venda?',
-      a: 'Fazemos todo o esforço de marketing, financiamento e negociação para viabilizar a venda o mais rápido possível.',
+      q: 'O pagamento é seguro?',
+      a: 'Sim. Todo o trâmite financeiro e documental é feito com segurança, transparência e respaldo jurídico.',
     },
   ]
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
       <SEO
-        title="Consignação de Veículos em Uberaba MG | Carro e Cia Veículos"
-        description="Consigne seu veículo na Carro e Cia em Uberaba MG. Mais de 20 anos de mercado, contrato seguro, anúncios profissionais e venda garantida. Simule grátis!"
+        title="Quero Vender Meu Carro em Uberaba | Carro e Cia Veículos"
+        description="Quer vender seu carro rápido e pelo melhor preço em Uberaba? Consigne com a Carro e Cia. Cuidamos de tudo: fotos, anúncios e negociação. Avaliação grátis!"
         schema={schema}
       />
 
@@ -92,17 +84,17 @@ export default function Consignacao() {
         <div className="container relative z-10 grid lg:grid-cols-2 gap-12 items-center">
           <div className="text-white text-center lg:text-left">
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 leading-tight">
-              Consignação de Veículos em Uberaba: A Forma Mais Inteligente de Vender Seu Carro
+              Quer Vender Seu Carro Rápido e Pelo Melhor Preço?
             </h1>
             <p className="text-xl text-gray-200">
-              20 anos de experiência. Contrato seguro. Você não faz nada — a gente vende pra você.
+              A Carro e Cia cuida de tudo pra você. Avaliação gratuita, sem compromisso.
             </p>
           </div>
           <div className="w-full max-w-md mx-auto lg:ml-auto">
             <LeadForm
-              tipo="consignacao"
-              buttonText="Quero Consignar Meu Carro Agora"
-              whatsappText="Olá Luiz, quero consignar meu carro!"
+              tipo="venda"
+              buttonText="Quero Vender Meu Carro Agora"
+              whatsappText="Olá Luiz, quero vender meu carro!"
             />
           </div>
         </div>
@@ -111,15 +103,15 @@ export default function Consignacao() {
       <section className="py-20">
         <div className="container max-w-4xl text-center">
           <h2 className="text-3xl md:text-4xl font-bold mb-8">
-            Por Que a Consignação é a Melhor Opção para Vender Seu Carro?
+            Por Que Vender Seu Carro Sozinho Pode Sair Caro?
           </h2>
           <p className="text-lg text-muted-foreground leading-relaxed">
-            Vender um carro pode ser um processo demorado e estressante. Desde a preparação do
-            veículo, passando pela criação de anúncios, até a negociação com potenciais compradores
-            e a burocracia da transferência, cada etapa exige tempo e conhecimento. A consignação
-            surge como a alternativa inteligente, delegando todo esse trabalho a especialistas. Na
-            Carro e Cia, você conta com a expertise de 20 anos de mercado para vender seu veículo de
-            forma rápida, segura e pelo melhor preço, sem que você precise se preocupar com nada.
+            Milhares de pessoas em Uberaba tentam vender seu carro colocando no vidro um papel
+            escrito "VENDE-SE". Ficam semanas esperando. Recebem ligações de curiosos. Arriscam
+            encontros com desconhecidos. E ainda correm o risco de cair em golpes — cheques sem
+            fundo, financiamentos fraudulentos, documentos falsificados. Você merece mais do que
+            isso. Na Carro e Cia, você entrega seu carro e vai embora tranquilo. A gente cuida do
+            resto.
           </p>
         </div>
       </section>
@@ -127,40 +119,34 @@ export default function Consignacao() {
       <section className="py-20 bg-muted/30">
         <div className="container max-w-5xl">
           <h2 className="text-3xl font-bold text-center mb-12">
-            Nossos Diferenciais na Consignação
+            Como Funciona a Consignação de Veículos?
           </h2>
-          <div className="grid md:grid-cols-2 gap-8">
+          <div className="grid md:grid-cols-5 gap-6 text-center">
             {[
               {
-                t: 'Segurança Jurídica',
-                d: 'Contrato claro e transparente que protege seus interesses.',
+                step: '1',
+                t: 'Contato e Avaliação',
+                d: 'Você nos contata e trazemos o veículo para avaliação gratuita.',
+              },
+              { step: '2', t: 'Preço Justo', d: 'Definimos juntos o melhor preço de venda.' },
+              {
+                step: '3',
+                t: 'Contrato Seguro',
+                d: 'Assinamos um contrato seguro que protege você e seu veículo.',
               },
               {
-                t: 'Avaliação Profissional',
-                d: 'Definimos o preço justo de mercado para seu veículo.',
+                step: '4',
+                t: 'Divulgação Max',
+                d: 'Anunciamos nas maiores plataformas: iCarros, WebMotors, Mercado Livre.',
               },
-              {
-                t: 'Marketing Abrangente',
-                d: 'Anunciamos seu carro nas maiores plataformas e redes sociais.',
-              },
-              {
-                t: 'Financiamento Facilitado',
-                d: 'Oferecemos opções de financiamento para o comprador, agilizando a venda.',
-              },
-              {
-                t: 'Zero Preocupação',
-                d: 'Cuidamos de toda a negociação, documentação e transferência.',
-              },
+              { step: '5', t: 'Venda Concluída', d: 'Vendemos, você recebe. Simples assim!' },
             ].map((item, i) => (
-              <div
-                key={i}
-                className="flex gap-4 items-start p-6 bg-background rounded-xl shadow-sm"
-              >
-                <CheckCircle2 className="w-8 h-8 text-primary shrink-0" />
-                <div>
-                  <h3 className="font-bold text-xl mb-2">{item.t}</h3>
-                  <p className="text-muted-foreground">{item.d}</p>
+              <div key={i} className="flex flex-col items-center">
+                <div className="w-16 h-16 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-2xl font-bold mb-4 shadow-lg">
+                  {item.step}
                 </div>
+                <h3 className="font-bold text-lg mb-2">{item.t}</h3>
+                <p className="text-sm text-muted-foreground">{item.d}</p>
               </div>
             ))}
           </div>
@@ -170,42 +156,47 @@ export default function Consignacao() {
       <section className="py-20">
         <div className="container max-w-4xl">
           <h2 className="text-3xl font-bold text-center mb-10">
-            Consignação Carro e Cia: Transparência e Confiança
+            Particular x Consignação: A Comparação que Ninguém Mostra
           </h2>
           <div className="overflow-x-auto border rounded-xl shadow-sm">
             <table className="w-full text-left border-collapse bg-card">
               <thead>
                 <tr className="bg-muted/50 border-b">
-                  <th className="p-4 font-bold">Benefício</th>
+                  <th className="p-4 font-bold">Item</th>
                   <th className="p-4 font-bold">Venda Particular</th>
                   <th className="p-4 font-bold text-primary">Consignação Carro e Cia</th>
                 </tr>
               </thead>
               <tbody>
                 <tr className="border-b">
-                  <td className="p-4 font-medium">Preço de Venda</td>
-                  <td className="p-4 text-muted-foreground">Pode ser subvalorizado</td>
-                  <td className="p-4 font-medium text-primary">✅ Otimizado por especialistas</td>
+                  <td className="p-4 font-medium">Segurança na negociação</td>
+                  <td className="p-4 text-muted-foreground">❌ Você por conta</td>
+                  <td className="p-4 font-medium text-primary">✅ Garantida por contrato</td>
                 </tr>
                 <tr className="border-b">
-                  <td className="p-4 font-medium">Tempo de Venda</td>
-                  <td className="p-4 text-muted-foreground">Longo e imprevisível</td>
-                  <td className="p-4 font-medium text-primary">✅ Mais rápido e eficiente</td>
+                  <td className="p-4 font-medium">Anúncios profissionais</td>
+                  <td className="p-4 text-muted-foreground">❌ Fotos do celular</td>
+                  <td className="p-4 font-medium text-primary">✅ Fotos profissionais</td>
                 </tr>
                 <tr className="border-b">
-                  <td className="p-4 font-medium">Exposição do Veículo</td>
-                  <td className="p-4 text-muted-foreground">Limitada a poucos canais</td>
-                  <td className="p-4 font-medium text-primary">✅ Ampla em plataformas premium</td>
+                  <td className="p-4 font-medium">Alcance de compradores</td>
+                  <td className="p-4 text-muted-foreground">❌ Limitado</td>
+                  <td className="p-4 font-medium text-primary">✅ iCarros, WebMotors, ML</td>
                 </tr>
                 <tr className="border-b">
-                  <td className="p-4 font-medium">Burocracia</td>
-                  <td className="p-4 text-muted-foreground">Totalmente sua responsabilidade</td>
-                  <td className="p-4 font-medium text-primary">✅ Cuidamos de tudo</td>
+                  <td className="p-4 font-medium">Risco de golpes</td>
+                  <td className="p-4 text-muted-foreground">❌ Alto</td>
+                  <td className="p-4 font-medium text-primary">✅ Zero</td>
+                </tr>
+                <tr className="border-b">
+                  <td className="p-4 font-medium">Tempo dedicado</td>
+                  <td className="p-4 text-muted-foreground">❌ Horas do seu dia</td>
+                  <td className="p-4 font-medium text-primary">✅ Nenhum</td>
                 </tr>
                 <tr>
-                  <td className="p-4 font-medium">Suporte Financeiro</td>
-                  <td className="p-4 text-muted-foreground">Inexistente</td>
-                  <td className="p-4 font-medium text-primary">✅ Parcerias para o comprador</td>
+                  <td className="p-4 font-medium">Negociação</td>
+                  <td className="p-4 text-muted-foreground">❌ Você sozinho</td>
+                  <td className="p-4 font-medium text-primary">✅ Especialistas de 20 anos</td>
                 </tr>
               </tbody>
             </table>
@@ -216,7 +207,7 @@ export default function Consignacao() {
       <section className="py-20 bg-muted/30">
         <div className="container">
           <h2 className="text-3xl font-bold text-center mb-12">
-            Conheça Quem Vai Cuidar do Seu Veículo
+            Nossa Equipe Cuida do Seu Carro Como Se Fosse Nosso
           </h2>
           <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
             {team.map((member, i) => (
@@ -241,9 +232,7 @@ export default function Consignacao() {
 
       <section className="py-20 bg-muted/30 border-t">
         <div className="container max-w-3xl">
-          <h2 className="text-3xl md:text-4xl font-bold mb-10 text-center">
-            Dúvidas Frequentes sobre Consignação
-          </h2>
+          <h2 className="text-3xl md:text-4xl font-bold mb-10 text-center">Perguntas Frequentes</h2>
           <Accordion
             type="single"
             collapsible
@@ -266,15 +255,15 @@ export default function Consignacao() {
               asChild
               size="lg"
               className="w-full sm:w-auto h-14 px-8 text-lg bg-[#25D366] hover:bg-[#25D366]/90 text-white font-bold"
-              aria-label="Quero Consignar Meu Carro Agora"
+              aria-label="Quero Avaliar Meu Carro Grátis"
             >
               <a
-                href={getWhatsAppLink('Olá Luiz, quero consignar meu carro agora!')}
+                href={getWhatsAppLink('Olá Luiz, quero avaliar meu carro grátis!')}
                 target="_blank"
                 rel="noopener noreferrer"
                 data-event="clique_whatsapp"
               >
-                Quero Consignar Meu Carro Agora
+                Quero Avaliar Meu Carro Grátis
               </a>
             </Button>
           </div>

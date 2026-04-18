@@ -2,19 +2,20 @@ import { MessageCircle } from 'lucide-react'
 import { getWhatsAppLink } from '@/lib/whatsapp'
 
 export const WhatsAppButton = () => {
-  const defaultMessage = 'Olá! Vim pelo site e gostaria de mais informações.'
+  const defaultMessage = 'Olá Luiz, vim pelo site!'
 
   return (
     <a
       href={getWhatsAppLink(defaultMessage)}
       target="_blank"
       rel="noopener noreferrer"
-      className="fixed bottom-6 right-6 z-50 bg-[#25D366] text-white p-4 rounded-full shadow-lg hover:scale-110 transition-transform flex items-center justify-center group"
-      aria-label="Iniciar conversa no WhatsApp"
+      className="fixed bottom-6 right-6 z-[9999] bg-[#25D366] text-white p-4 rounded-full shadow-lg hover:scale-110 transition-transform flex items-center justify-center group"
+      aria-label="Abrir conversa no WhatsApp com Luiz"
+      data-event="clique_whatsapp"
     >
       <MessageCircle className="w-8 h-8" aria-hidden="true" />
       <span className="absolute right-full mr-4 bg-white text-black text-sm px-3 py-1.5 rounded-lg shadow-md whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-        Fale Conosco
+        💬 Falar com Luiz
       </span>
     </a>
   )
