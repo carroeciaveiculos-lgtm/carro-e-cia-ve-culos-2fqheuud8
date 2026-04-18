@@ -31,6 +31,7 @@ interface Post {
 
 export default function BlogPost() {
   const { slug } = useParams()
+  const { toast } = useToast()
   const [post, setPost] = useState<Post | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
@@ -84,8 +85,6 @@ export default function BlogPost() {
       name: post.author || 'Carro e Cia Veículos',
     },
   }
-
-  const { toast } = useToast()
 
   const shareUrl = window.location.href
   const fbShare = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`
