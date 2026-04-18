@@ -4,21 +4,4 @@ Disallow: /login/
 Disallow: /api/
 Allow: /
 
-# Permite que o conteúdo apareça nas respostas de IA do Google
-User-agent: Google-Extended
-Allow: /
-
-# Bloqueio de bots de scraping e rastreadores indesejados
-User-agent: Amazonbot
-Disallow: /
-
-User-agent: Bytespider
-Disallow: /
-
-User-agent: CCBot
-Disallow: /
-
-User-agent: GPTBot
-Disallow: /
-
-Sitemap: https://carroeciaveiculos.goskip.app/sitemap.xml
+# Per
