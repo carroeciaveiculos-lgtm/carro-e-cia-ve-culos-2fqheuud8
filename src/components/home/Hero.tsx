@@ -234,9 +234,9 @@ export function Hero() {
                 className="bg-card p-8 rounded-xl shadow-lg border border-border/50 flex flex-col items-center text-center hover:-translate-y-1 transition-transform duration-300"
               >
                 <div className="w-16 h-16 bg-primary/10 text-primary rounded-full flex items-center justify-center mb-6">
-                  <b.icon className="w-8 h-8" />
+                  <b.icon className="w-8 h-8" aria-hidden="true" />
                 </div>
-                <h3 className="text-xl font-display font-bold mb-3">{b.title}</h3>
+                <h2 className="text-xl font-display font-bold mb-3">{b.title}</h2>
                 <p className="text-muted-foreground leading-relaxed">{b.desc}</p>
               </div>
             ))}

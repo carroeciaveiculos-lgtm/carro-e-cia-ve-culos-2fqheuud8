@@ -150,7 +150,7 @@ export default function Contato() {
                       <MapPin className="w-6 h-6" />
                     </div>
                     <div>
-                      <h4 className="font-bold mb-1">Endereço</h4>
+                      <h3 className="font-bold mb-1 text-base">Endereço</h3>
                       <p className="text-muted-foreground text-sm leading-relaxed">
                         Av. Guilherme Ferreira, 1119
                         <br />
@@ -165,7 +165,7 @@ export default function Contato() {
                       <Phone className="w-6 h-6" />
                     </div>
                     <div>
-                      <h4 className="font-bold mb-1">WhatsApp</h4>
+                      <h3 className="font-bold mb-1 text-base">WhatsApp</h3>
                       <a
                         href="https://wa.me/5534999484285?text=Ol%C3%A1!%20Vim%20pelo%20site%20e%20gostaria%20de%20mais%20informa%C3%A7%C3%B5es."
                         target="_blank"
@@ -181,7 +181,7 @@ export default function Contato() {
                       <Mail className="w-6 h-6" />
                     </div>
                     <div>
-                      <h4 className="font-bold mb-1">E-mail</h4>
+                      <h3 className="font-bold mb-1 text-base">E-mail</h3>
                       <a
                         href="mailto:lgacomerciodeveiculos@gmail.com"
                         className="text-muted-foreground hover:text-primary transition-colors text-sm break-all"
@@ -200,17 +200,19 @@ export default function Contato() {
                     href="https://instagram.com/carroecia02"
                     target="_blank"
                     rel="noopener noreferrer"
+                    aria-label="Siga-nos no Instagram"
                     className="w-12 h-12 bg-secondary text-secondary-foreground rounded-full flex items-center justify-center hover:bg-primary hover:text-primary-foreground transition-colors"
                   >
-                    <Instagram className="w-5 h-5" />
+                    <Instagram className="w-5 h-5" aria-hidden="true" />
                   </a>
                   <a
                     href="https://www.facebook.com/carroeciaosmelhoresveiculos"
                     target="_blank"
                     rel="noopener noreferrer"
+                    aria-label="Siga-nos no Facebook"
                     className="w-12 h-12 bg-secondary text-secondary-foreground rounded-full flex items-center justify-center hover:bg-primary hover:text-primary-foreground transition-colors"
                   >
-                    <Facebook className="w-5 h-5" />
+                    <Facebook className="w-5 h-5" aria-hidden="true" />
                   </a>
                 </div>
               </div>
@@ -219,6 +221,7 @@ export default function Contato() {
 
           <div className="mt-16 rounded-2xl overflow-hidden shadow-sm h-[400px] border">
             <iframe
+              title="Mapa interativo mostrando a localização da loja Carro e Cia Veículos"
               src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3755.932468759535!2d-47.93268868461794!3d-19.76810008669527!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x94bad00010839e0d%3A0xc3cf4813589b9d31!2sCarro%20%26%20Cia%20Ve%C3%ADculos!5e0!3m2!1spt-BR!2sbr!4v1714570198270!5m2!1spt-BR!2sbr"
               width="100%"
               height="100%"

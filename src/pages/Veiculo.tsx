@@ -121,11 +121,13 @@ export default function Veiculo() {
                     ? photos[activePhoto]
                     : 'https://img.usecurling.com/p/800/600?q=car'
                 }
-                alt={vehicle.modelo}
-                loading="lazy"
+                alt={`Foto principal do veículo ${vehicle.marca} ${vehicle.modelo}`}
+                width="800"
+                height="600"
+                loading="eager"
                 decoding="async"
                 className="w-full h-full object-cover"
-              />
+              />{' '}
               {vehicle.is_consignado && (
                 <Badge className="absolute top-4 right-4 bg-primary text-primary-foreground border-none text-sm px-3 py-1">
                   Consignado
@@ -148,7 +150,9 @@ export default function Veiculo() {
                   >
                     <img
                       src={p}
-                      alt={`Foto ${i + 1}`}
+                      alt={`Miniatura ${i + 1} do ${vehicle.modelo}`}
+                      width="160"
+                      height="90"
                       loading="lazy"
                       decoding="async"
                       className="w-full h-full object-cover"
@@ -160,7 +164,12 @@ export default function Veiculo() {
 
             {vehicle.video_url && (
               <div className="mt-8 aspect-video rounded-xl overflow-hidden bg-black">
-                <iframe src={vehicle.video_url} className="w-full h-full" allowFullScreen></iframe>
+                <iframe
+                  title={`Vídeo de apresentação do veículo ${vehicle.marca} ${vehicle.modelo}`}
+                  src={vehicle.video_url}
+                  className="w-full h-full"
+                  allowFullScreen
+                ></iframe>
               </div>
             )}
           </div>
@@ -343,7 +352,7 @@ export default function Veiculo() {
 
         <div className="mt-16 grid lg:grid-cols-2 gap-12">
           <div>
-            <h3 className="text-2xl font-display font-bold mb-6">Diferenciais do Veículo</h3>
+            <h2 className="text-2xl font-display font-bold mb-6">Diferenciais do Veículo</h2>
             {vehicle.diferenciais &&
             Array.isArray(vehicle.diferenciais) &&
             vehicle.diferenciais.length > 0 ? (
@@ -360,7 +369,7 @@ export default function Veiculo() {
             )}
           </div>
           <div>
-            <h3 className="text-2xl font-display font-bold mb-6">Descrição</h3>
+            <h2 className="text-2xl font-display font-bold mb-6">Descrição</h2>
             <div className="prose prose-sm max-w-none text-muted-foreground whitespace-pre-wrap">
               {vehicle.descricao || 'Sem descrição detalhada.'}
             </div>
@@ -369,7 +378,7 @@ export default function Veiculo() {
 
         {similar.length > 0 && (
           <div className="mt-20 pt-10 border-t">
-            <h3 className="text-2xl font-display font-bold mb-8">Veículos Similares</h3>
+            <h2 className="text-2xl font-display font-bold mb-8">Veículos Similares</h2>
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {similar.map((v) => (
                 <VehicleCard key={v.id} vehicle={v} />

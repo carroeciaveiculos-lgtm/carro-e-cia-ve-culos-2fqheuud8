@@ -102,7 +102,10 @@ export default function Sobre() {
                 <div className="aspect-square bg-muted">
                   <img
                     src={member.photo}
-                    alt={member.name}
+                    alt={`Foto de ${member.name}, ${member.role} na Carro e Cia`}
+                    width="300"
+                    height="300"
+                    loading="lazy"
                     className="w-full h-full object-cover object-top"
                   />
                 </div>

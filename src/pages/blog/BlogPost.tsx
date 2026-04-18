@@ -144,7 +144,10 @@ export default function BlogPost() {
           </h1>
           <img
             src={post.image_url || `https://img.usecurling.com/p/800/400?q=car%20dealership`}
-            alt={post.title}
+            alt={`Capa do artigo: ${post.title}`}
+            width="800"
+            height="400"
+            loading="eager"
             className="w-full aspect-video object-cover rounded-xl shadow-sm"
           />
         </header>
@@ -187,9 +190,12 @@ export default function BlogPost() {
 
           <div className="bg-muted/50 rounded-2xl p-6 flex flex-col md:flex-row items-center md:items-start gap-6 border border-border/50">
             <img
-              src="https://img.usecurling.com/i?q=car"
-              alt="Carro e Cia"
-              className="w-16 h-16 rounded-full bg-white p-2 shadow-sm"
+              src="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Logos/logo%20carro%20e%20cia.png"
+              alt="Logo Carro e Cia"
+              width="64"
+              height="64"
+              loading="lazy"
+              className="w-16 h-16 rounded-full bg-white p-2 shadow-sm object-contain"
             />
             <div className="text-center md:text-left">
               <p className="font-bold text-xl mb-2">{post.author || 'Carro e Cia Veículos'}</p>

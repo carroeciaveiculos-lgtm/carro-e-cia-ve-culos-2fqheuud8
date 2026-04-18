@@ -97,10 +97,12 @@ export function TestimonialsAndLocation() {
               >
                 <img
                   src={p.logo}
-                  alt={p.name}
+                  alt={`Logo do parceiro ${p.name}`}
+                  width="120"
+                  height="60"
                   loading="lazy"
                   decoding="async"
-                  className="max-w-full max-h-full object-contain mix-blend-multiply dark:mix-blend-normal"
+                  className="w-full h-full object-contain mix-blend-multiply dark:mix-blend-normal"
                 />
                 {p.highlight && (
                   <span className="absolute -bottom-8 left-1/2 -translate-x-1/2 w-max text-sm font-bold text-primary opacity-0 group-hover:opacity-100 transition-opacity">
@@ -125,7 +127,7 @@ export function TestimonialsAndLocation() {
                   <MapPin className="w-6 h-6" />
                 </div>
                 <div>
-                  <h4 className="font-bold text-lg mb-1">Endereço</h4>
+                  <h3 className="font-bold text-lg mb-1">Endereço</h3>
                   <p className="text-muted-foreground leading-relaxed">
                     Av. Guilherme Ferreira, 1119
                     <br />
@@ -140,7 +142,7 @@ export function TestimonialsAndLocation() {
                   <Clock className="w-6 h-6" />
                 </div>
                 <div>
-                  <h4 className="font-bold text-lg mb-1">Horário de Funcionamento</h4>
+                  <h3 className="font-bold text-lg mb-1">Horário de Funcionamento</h3>
                   <p className="text-muted-foreground leading-relaxed">
                     Segunda a Sexta: 08h às 18h
                     <br />
@@ -155,7 +157,7 @@ export function TestimonialsAndLocation() {
                   <Phone className="w-6 h-6" />
                 </div>
                 <div>
-                  <h4 className="font-bold text-lg mb-1">WhatsApp de Atendimento</h4>
+                  <h3 className="font-bold text-lg mb-1">WhatsApp de Atendimento</h3>
                   <p className="text-muted-foreground">
                     <a
                       href="https://wa.me/5534999484285"
@@ -170,6 +172,7 @@ export function TestimonialsAndLocation() {
           </div>
           <div className="rounded-3xl overflow-hidden shadow-2xl h-[500px] border">
             <iframe
+              title="Mapa de localização da Carro e Cia Veículos"
               src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3755.932468759535!2d-47.93268868461794!3d-19.76810008669527!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x94bad00010839e0d%3A0xc3cf4813589b9d31!2sCarro%20%26%20Cia%20Ve%C3%ADculos!5e0!3m2!1spt-BR!2sbr!4v1714570198270!5m2!1spt-BR!2sbr"
               width="100%"
               height="100%"

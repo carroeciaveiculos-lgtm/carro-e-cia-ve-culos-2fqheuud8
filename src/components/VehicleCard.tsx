@@ -21,7 +21,9 @@ export function VehicleCard({ vehicle }: { vehicle: any }) {
       <div className="relative aspect-[4/3] overflow-hidden bg-muted">
         <img
           src={coverImage}
-          alt={`${vehicle.marca} ${vehicle.modelo}`}
+          alt={`${vehicle.marca} ${vehicle.modelo} ${vehicle.ano_fabricacao}`}
+          width="400"
+          height="300"
           loading="lazy"
           decoding="async"
           className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-500"

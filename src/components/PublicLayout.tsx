@@ -21,11 +21,13 @@ export default function PublicLayout() {
     <div className="flex flex-col min-h-screen font-sans">
       <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-2">
+          <Link to="/" className="flex items-center gap-2" aria-label="Página Inicial Carro e Cia">
             <img
               src="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Logos/logo%20carro%20e%20cia.png"
-              alt="Carro e Cia Veículos"
-              className="h-8 md:h-10 object-contain"
+              alt="Logo Carro e Cia Veículos"
+              width="150"
+              height="40"
+              className="h-8 md:h-10 w-auto object-contain"
             />
           </Link>
 
@@ -58,8 +60,14 @@ export default function PublicLayout() {
           <button
             className="md:hidden p-2 text-slate-700"
             onClick={() => setIsMenuOpen(!isMenuOpen)}
+            aria-expanded={isMenuOpen}
+            aria-label="Menu principal"
           >
-            {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            {isMenuOpen ? (
+              <X className="w-6 h-6" aria-hidden="true" />
+            ) : (
+              <Menu className="w-6 h-6" aria-hidden="true" />
+            )}
           </button>
         </div>
 
@@ -103,10 +111,13 @@ export default function PublicLayout() {
           <div className="md:col-span-1">
             <img
               src="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Logos/logo%20carro%20e%20cia.png"
-              alt="Carro e Cia"
-              className="h-10 brightness-0 invert opacity-90 mb-4 object-contain"
+              alt="Logo Carro e Cia Veículos Rodapé"
+              width="150"
+              height="40"
+              loading="lazy"
+              className="h-10 w-auto brightness-0 invert opacity-90 mb-4 object-contain"
             />
-            <p className="text-sm text-slate-400 leading-relaxed">
+            <p className="text-sm text-slate-300 leading-relaxed">
               Mais de 20 anos de tradição em Uberaba MG. Especialistas em seminovos com procedência
               e garantia e financiamento consignado.
             </p>
@@ -117,14 +128,14 @@ export default function PublicLayout() {
             </h4>
             <ul className="space-y-3 text-sm">
               <li>
-                <Link to="/estoque" className="text-slate-400 hover:text-white transition-colors">
+                <Link to="/estoque" className="text-slate-300 hover:text-white transition-colors">
                   Ver Nosso Estoque
                 </Link>
               </li>
               <li>
                 <Link
                   to="/consignacao"
-                  className="text-slate-400 hover:text-white transition-colors"
+                  className="text-slate-300 hover:text-white transition-colors"
                 >
                   Quero Vender Meu Carro
                 </Link>
@@ -132,7 +143,7 @@ export default function PublicLayout() {
               <li>
                 <Link
                   to="/financiamento-veiculo-consignado"
-                  className="text-slate-400 hover:text-white transition-colors"
+                  className="text-slate-300 hover:text-white transition-colors"
                 >
                   Financiamento Consignado
                 </Link>
@@ -140,7 +151,7 @@ export default function PublicLayout() {
               <li>
                 <Link
                   to="/blog"
-                  className="text-slate-400 hover:text-white transition-colors font-semibold"
+                  className="text-slate-300 hover:text-white transition-colors font-semibold"
                 >
                   Blog e Dicas Automotivas
                 </Link>
@@ -149,7 +160,7 @@ export default function PublicLayout() {
           </div>
           <div>
             <h4 className="font-bold text-white mb-4 uppercase tracking-wider text-sm">Contato</h4>
-            <ul className="space-y-3 text-sm text-slate-400">
+            <ul className="space-y-3 text-sm text-slate-300">
               <li className="flex items-center gap-2">
                 <Phone className="w-4 h-4" /> (34) 99994-8428
               </li>
@@ -163,7 +174,7 @@ export default function PublicLayout() {
           </div>
           <div>
             <h4 className="font-bold text-white mb-4 uppercase tracking-wider text-sm">Horário</h4>
-            <ul className="space-y-3 text-sm text-slate-400">
+            <ul className="space-y-3 text-sm text-slate-300">
               <li>Segunda a Sexta: 08:00 às 18:00</li>
               <li>Sábado: 08:00 às 12:00</li>
             </ul>

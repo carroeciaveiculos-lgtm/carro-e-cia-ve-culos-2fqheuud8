@@ -135,9 +135,9 @@ export function Consignment() {
             ].map((s, i) => (
               <div key={i} className="relative z-10 flex flex-col items-center text-center">
                 <div className="w-16 h-16 bg-background border-[3px] border-primary rounded-full flex items-center justify-center mb-4 shadow-md text-primary">
-                  <s.icon className="w-6 h-6" />
+                  <s.icon className="w-6 h-6" aria-hidden="true" />
                 </div>
-                <h4 className="font-bold mb-2">{s.t}</h4>
+                <h3 className="font-bold mb-2 text-base">{s.t}</h3>
                 <p className="text-sm text-muted-foreground">{s.d}</p>
               </div>
             ))}
@@ -211,9 +211,9 @@ export function Consignment() {
               </div>
 
               <div className="pt-4 pb-2">
-                <h4 className="font-bold text-sm text-muted-foreground uppercase tracking-wide">
+                <p className="font-bold text-sm text-muted-foreground uppercase tracking-wide">
                   Dados do Veículo (Opcional)
-                </h4>
+                </p>
               </div>
 
               <div className="grid sm:grid-cols-2 gap-5">

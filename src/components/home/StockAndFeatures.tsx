@@ -106,9 +106,9 @@ export function StockAndFeatures() {
                 className="bg-card p-8 rounded-xl border flex flex-col items-center text-center shadow-sm hover:shadow-md transition-shadow"
               >
                 <div className="w-14 h-14 bg-primary/10 text-primary rounded-full flex items-center justify-center mb-5">
-                  <f.icon className="w-7 h-7" />
+                  <f.icon className="w-7 h-7" aria-hidden="true" />
                 </div>
-                <h4 className="font-bold text-lg mb-3">{f.t}</h4>
+                <h3 className="font-bold text-lg mb-3">{f.t}</h3>
                 <p className="text-muted-foreground text-sm leading-relaxed">{f.d}</p>
               </div>
             ))}
