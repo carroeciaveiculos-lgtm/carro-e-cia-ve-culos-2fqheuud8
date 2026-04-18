@@ -32,17 +32,61 @@ export function SEO({
     }
     metaDescription.setAttribute('content', description)
 
-    // Injeta o Schema Markup (JSON-LD)
+    // Organization Schema (Global)
+    const organizationSchema = {
+      '@context': 'https://schema.org',
+      '@type': 'Organization',
+      name: 'Carro e Cia Veículos',
+      url: 'https://carroeciamotors.com.br',
+      logo: 'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/logo-carro-e-cia.png',
+      telephone: '+5534999484285',
+      address: {
+        '@type': 'PostalAddress',
+        streetAddress: 'Av. Guilherme Ferreira, 1119',
+        addressLocality: 'Uberaba',
+        addressRegion: 'MG',
+        postalCode: '38010-200',
+        addressCountry: 'BR',
+      },
+      sameAs: ['https://www.instagram.com/carroeciaveiculos', 'https://wa.me/5534999484285'],
+    }
+
+    const scripts: HTMLScriptElement[] = []
+
+    // Check if org schema is already there
+    let orgScript = document.querySelector('script#schema-org') as HTMLScriptElement
+    if (!orgScript) {
+      orgScript = document.createElement('script')
+      orgScript.type = 'application/ld+json'
+      orgScript.id = 'schema-org'
+      orgScript.text = JSON.stringify(organizationSchema)
+      document.head.appendChild(orgScript)
+    }
+
+    // Injeta o Schema Markup (JSON-LD) da página
     let script: HTMLScriptElement | null = null
     if (schema) {
       script = document.createElement('script')
       script.type = 'application/ld+json'
       script.text = JSON.stringify(schema)
       document.head.appendChild(script)
+      scripts.push(script)
     }
 
-    // Adiciona ou atualiza a tag Canonical
-    const canonicalUrl = canonical || window.location.href.split('?')[0]
+    // Adiciona ou atualiza a tag Canonical - Força o novo domínio
+    let canonicalUrl = canonical || window.location.href.split('?')[0]
+    try {
+      const urlObj = new URL(canonicalUrl, 'https://carroeciamotors.com.br')
+      urlObj.hostname = 'carroeciamotors.com.br'
+      urlObj.protocol = 'https:'
+      if (urlObj.port) urlObj.port = ''
+      canonicalUrl = urlObj.toString()
+      if (canonicalUrl !== 'https://carroeciamotors.com.br/' && canonicalUrl.endsWith('/')) {
+        canonicalUrl = canonicalUrl.slice(0, -1)
+      }
+    } catch (e) {
+      // fallback
+    }
     let linkCanonical = document.querySelector('link[rel="canonical"]')
     if (!linkCanonical) {
       linkCanonical = document.createElement('link')

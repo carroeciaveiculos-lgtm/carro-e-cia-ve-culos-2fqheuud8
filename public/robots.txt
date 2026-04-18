@@ -1,24 +1,12 @@
 User-agent: *
-Disallow: /admin/
-Disallow: /login/
-Disallow: /api/
 Allow: /
-
-# Permite que o conteúdo apareça nas respostas de IA do Google
-User-agent: Google-Extended
-Allow: /
-
-# Bloqueio de bots de scraping e rastreadores indesejados
-User-agent: Amazonbot
-Disallow: /
-
-User-agent: Bytespider
-Disallow: /
-
-User-agent: CCBot
-Disallow: /
+Disallow: /admin
+Disallow: /lp/
 
 User-agent: GPTBot
 Disallow: /
+
+User-agent: Google-Extended
+Allow: /
 
 Sitemap: https://carroeciamotors.com.br/sitemap.xml

@@ -40,7 +40,7 @@ Deno.serve(async (req) => {
             Authorization: `Bearer ${RESEND_API_KEY}`,
           },
           body: JSON.stringify({
-            from: 'contato@carroeciaveiculos.goskip.app',
+            from: 'contato@carroeciamotors.com.br',
             to: email,
             subject: 'Recebemos seus dados! | Carro e Cia',
             html: htmlBody,
