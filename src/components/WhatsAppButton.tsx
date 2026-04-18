@@ -1,12 +1,12 @@
 import { MessageCircle } from 'lucide-react'
+import { getWhatsAppLink } from '@/lib/whatsapp'
 
 export const WhatsAppButton = () => {
-  const phoneNumber = import.meta.env.VITE_WHATSAPP_PHONE || '5534999484285'
   const defaultMessage = 'Olá! Vim pelo site e gostaria de mais informações.'
 
   return (
     <a
-      href={`https://wa.me/${phoneNumber}?text=${encodeURIComponent(defaultMessage)}`}
+      href={getWhatsAppLink(defaultMessage)}
       target="_blank"
       rel="noopener noreferrer"
       className="fixed bottom-6 right-6 z-50 bg-[#25D366] text-white p-4 rounded-full shadow-lg hover:scale-110 transition-transform flex items-center justify-center group"

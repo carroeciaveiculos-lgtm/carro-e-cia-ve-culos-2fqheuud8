@@ -17,9 +17,15 @@ import {
   Trash2,
   CheckCircle,
   XCircle,
+  Share2,
+  Instagram,
+  Download,
+  Copy,
+  Facebook,
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase/client'
 import { useToast } from '@/hooks/use-toast'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 
 interface BlogPost {
   id: string
@@ -27,6 +33,8 @@ interface BlogPost {
   slug: string
   published: boolean
   category: string
+  meta_description?: string
+  image_url?: string
 }
 
 export default function SiteManager() {
@@ -97,6 +105,26 @@ export default function SiteManager() {
     'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Parceiros/Safra.jpeg',
     'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Parceiros/santander.png',
   ]
+
+  const [editingPost, setEditingPost] = useState<BlogPost | null>(null)
+  const [isSocialHubOpen, setIsSocialHubOpen] = useState(false)
+
+  const copyForInstagram = (post: BlogPost) => {
+    const url = `${import.meta.env.VITE_SITE_URL || 'https://carroeciaveiculos.goskip.app'}/blog/${post.slug}`
+    const text = `Confira nosso novo artigo: ${post.title}\n\n${post.meta_description || ''}\n\nLeia mais no link da bio! 🚗💨\n\n#CarroECia #Uberaba #Seminovos`
+    navigator.clipboard.writeText(text)
+    toast({
+      title: 'Copiado para o Instagram!',
+      description: 'Legenda e link copiados com sucesso.',
+    })
+  }
+
+  const downloadCard = (post: BlogPost) => {
+    toast({ title: 'Gerando card...', description: 'O download iniciará em instantes.' })
+    setTimeout(() => {
+      window.open(post.image_url || 'https://img.usecurling.com/p/800/800?q=car', '_blank')
+    }, 1000)
+  }
 
   const filteredPosts = blogPosts.filter((p) =>
     p.title.toLowerCase().includes(searchQuery.toLowerCase()),
@@ -234,7 +262,19 @@ export default function SiteManager() {
                 <h3 className="font-bold text-lg flex items-center gap-2">
                   <FileText className="w-5 h-5" /> Gestão Centralizada de Conteúdo
                 </h3>
-                <Button size="sm" className="gap-1">
+                <Button
+                  size="sm"
+                  className="gap-1"
+                  onClick={() =>
+                    setEditingPost({
+                      id: 'new',
+                      title: '',
+                      slug: '',
+                      published: false,
+                      category: '',
+                    })
+                  }
+                >
                   <Plus className="w-4 h-4" /> Novo Post
                 </Button>
               </div>
@@ -242,7 +282,7 @@ export default function SiteManager() {
                 {filteredPosts.map((post) => (
                   <Card
                     key={post.id}
-                    className="p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
+                    className="p-4 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4"
                   >
                     <div>
                       <h4 className="font-semibold text-slate-800">{post.title}</h4>
@@ -253,7 +293,7 @@ export default function SiteManager() {
                         <span className="hidden sm:inline">/{post.slug}</span>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2 w-full sm:w-auto">
+                    <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto">
                       <Button
                         variant="ghost"
                         size="sm"
@@ -265,9 +305,28 @@ export default function SiteManager() {
                         ) : (
                           <XCircle className="w-4 h-4 mr-1" />
                         )}
-                        {post.published ? 'Publicado' : 'Rascunho'}
+                        <span className="hidden sm:inline">
+                          {post.published ? 'Publicado' : 'Rascunho'}
+                        </span>
                       </Button>
-                      <Button variant="outline" size="icon" title="Editar">
+
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => {
+                          setEditingPost(post)
+                          setIsSocialHubOpen(true)
+                        }}
+                      >
+                        <Share2 className="w-4 h-4 mr-2" /> Social Hub
+                      </Button>
+
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        title="Editar"
+                        onClick={() => setEditingPost(post)}
+                      >
                         <Edit className="w-4 h-4" />
                       </Button>
                       <Button
@@ -460,6 +519,146 @@ export default function SiteManager() {
           )}
         </div>
       </div>
+
+      <Dialog
+        open={!!editingPost}
+        onOpenChange={(open) => {
+          if (!open) {
+            setEditingPost(null)
+            setIsSocialHubOpen(false)
+          }
+        }}
+      >
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {isSocialHubOpen ? 'Social Hub - Compartilhamento' : 'Editar Post'}
+            </DialogTitle>
+          </DialogHeader>
+
+          {editingPost && (
+            <div className="mt-4">
+              {isSocialHubOpen ? (
+                <div className="grid md:grid-cols-2 gap-8">
+                  <div className="space-y-6">
+                    <div>
+                      <h4 className="font-bold flex items-center gap-2 mb-2">
+                        <Instagram className="w-5 h-5 text-pink-600" /> Instagram & Redes Sociais
+                      </h4>
+                      <p className="text-sm text-slate-500 mb-4">
+                        Gere legendas otimizadas e copie o link para compartilhar facilmente.
+                      </p>
+
+                      <div className="space-y-3">
+                        <Button
+                          className="w-full justify-start"
+                          variant="outline"
+                          onClick={() => copyForInstagram(editingPost)}
+                        >
+                          <Copy className="w-4 h-4 mr-2" /> Copiar Legenda + Link
+                        </Button>
+                        <Button
+                          className="w-full justify-start"
+                          variant="outline"
+                          onClick={() => downloadCard(editingPost)}
+                        >
+                          <Download className="w-4 h-4 mr-2" /> Baixar Card do Post (Imagem)
+                        </Button>
+                      </div>
+                    </div>
+
+                    <div className="pt-4 border-t">
+                      <h4 className="font-bold flex items-center gap-2 mb-4">
+                        Tags Open Graph (OG)
+                      </h4>
+                      <div className="space-y-4">
+                        <div>
+                          <Label>OG Title (Título de Compartilhamento)</Label>
+                          <Input defaultValue={editingPost.title} />
+                        </div>
+                        <div>
+                          <Label>OG Description</Label>
+                          <Textarea defaultValue={editingPost.meta_description} className="h-20" />
+                        </div>
+                        <div>
+                          <Label>OG Image URL</Label>
+                          <Input
+                            defaultValue={
+                              editingPost.image_url || 'https://img.usecurling.com/p/800/400?q=car'
+                            }
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-slate-50 p-6 rounded-xl border">
+                    <h4 className="font-bold flex items-center gap-2 mb-4 text-slate-700">
+                      <Facebook className="w-5 h-5 text-blue-600" /> Social Preview
+                    </h4>
+                    <div className="bg-white rounded-lg border shadow-sm overflow-hidden mt-4">
+                      <img
+                        src={editingPost.image_url || 'https://img.usecurling.com/p/800/400?q=car'}
+                        alt="Preview"
+                        className="w-full h-48 object-cover"
+                      />
+                      <div className="p-4 bg-slate-100">
+                        <p className="text-xs text-slate-500 uppercase tracking-wider mb-1">
+                          carroeciaveiculos.goskip.app
+                        </p>
+                        <h5 className="font-bold text-slate-900 line-clamp-1">
+                          {editingPost.title}
+                        </h5>
+                        <p className="text-sm text-slate-600 line-clamp-2 mt-1">
+                          {editingPost.meta_description ||
+                            'Descrição do artigo aparecerá aqui nas redes sociais...'}
+                        </p>
+                      </div>
+                    </div>
+                    <p className="text-xs text-slate-400 mt-4 text-center">
+                      É assim que seu link aparecerá no WhatsApp, Facebook e LinkedIn.
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="col-span-2">
+                      <Label>Título</Label>
+                      <Input defaultValue={editingPost.title} />
+                    </div>
+                    <div>
+                      <Label>Slug (URL)</Label>
+                      <Input defaultValue={editingPost.slug} />
+                    </div>
+                    <div>
+                      <Label>Categoria</Label>
+                      <Input defaultValue={editingPost.category} />
+                    </div>
+                    <div className="col-span-2">
+                      <Label>Meta Description</Label>
+                      <Textarea defaultValue={editingPost.meta_description} className="h-20" />
+                    </div>
+                    <div className="col-span-2">
+                      <Label>Conteúdo (HTML)</Label>
+                      <Textarea
+                        defaultValue="<p>Escreva seu post aqui...</p>"
+                        className="h-64 font-mono text-sm"
+                      />
+                    </div>
+                  </div>
+                  <div className="flex justify-end gap-2 mt-4">
+                    <Button variant="outline" onClick={() => setEditingPost(null)}>
+                      Cancelar
+                    </Button>
+                    <Button>Salvar Post</Button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

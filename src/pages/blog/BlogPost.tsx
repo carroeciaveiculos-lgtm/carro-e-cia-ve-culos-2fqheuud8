@@ -12,6 +12,9 @@ import { useParams, Navigate, Link } from 'react-router-dom'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { supabase } from '@/lib/supabase/client'
+import { getWhatsAppLink } from '@/lib/whatsapp'
+import { Instagram } from 'lucide-react'
+import { useToast } from '@/hooks/use-toast'
 
 interface Post {
   id: string
@@ -82,9 +85,21 @@ export default function BlogPost() {
     },
   }
 
+  const { toast } = useToast()
+
   const shareUrl = window.location.href
   const fbShare = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`
-  const wppShare = `https://api.whatsapp.com/send?text=${encodeURIComponent(post.title + ' ' + shareUrl)}`
+  const wppShare = getWhatsAppLink(`${post.title} ${shareUrl}`)
+
+  const copyForInstagram = () => {
+    navigator.clipboard.writeText(
+      `Confira nosso novo artigo: ${post.title}\n\nLeia mais em: ${shareUrl}`,
+    )
+    toast({
+      title: 'Copiado para o Instagram!',
+      description: 'Link e legenda copiados. Cole no seu story ou bio do Instagram.',
+    })
+  }
 
   return (
     <main className="flex-1 bg-background py-10">
@@ -153,8 +168,11 @@ export default function BlogPost() {
                 </Badge>
               ))}
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <span className="text-sm font-medium text-muted-foreground">Compartilhar:</span>
+              <Button variant="outline" size="sm" onClick={copyForInstagram}>
+                <Instagram className="w-4 h-4 mr-2 text-pink-600" /> Instagram
+              </Button>
               <Button variant="outline" size="sm" asChild>
                 <a href={fbShare} target="_blank" rel="noopener noreferrer">
                   Facebook
@@ -182,7 +200,9 @@ export default function BlogPost() {
               </p>
               <Button className="mt-4" asChild>
                 <a
-                  href="https://api.whatsapp.com/send?phone=5534999948428&text=Ol%C3%A1!%20Li%20um%20artigo%20no%20blog%20e%20gostaria%20de%20mais%20informa%C3%A7%C3%B5es."
+                  href={getWhatsAppLink(
+                    'Olá! Li um artigo no blog e gostaria de mais informações.',
+                  )}
                   target="_blank"
                   rel="noopener noreferrer"
                 >

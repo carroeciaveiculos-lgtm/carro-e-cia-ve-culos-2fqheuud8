@@ -96,15 +96,11 @@ export default function Veiculo() {
     new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val)
   const photos = vehicle.fotos || []
 
-  const wppText = encodeURIComponent(
-    `Olá! Vi o ${vehicle.marca} ${vehicle.modelo} ${vehicle.ano_fabricacao} por ${formatCurrency(vehicle.preco_venda || 0)} no site. Ainda está disponível?`,
-  )
+  const wppText = `Olá! Vi o ${vehicle.marca} ${vehicle.modelo} ${vehicle.ano_fabricacao} por ${formatCurrency(vehicle.preco_venda || 0)} no site. Ainda está disponível?`
 
   const simValue = vehicle.preco_venda - (parseFloat(simEntrada) || 0)
   const simParcela = simValue > 0 ? (simValue * 1.5) / parseInt(simParcelas) : 0
-  const wppSimText = encodeURIComponent(
-    `Olá! Tenho interesse em simular o financiamento do ${vehicle.marca} ${vehicle.modelo} ${vehicle.ano_fabricacao} com R$ ${simEntrada} de entrada e ${simParcelas} parcelas. Podem me ajudar com as condições?`,
-  )
+  const wppSimText = `Olá! Tenho interesse em simular o financiamento do ${vehicle.marca} ${vehicle.modelo} ${vehicle.ano_fabricacao} com R$ ${simEntrada} de entrada e ${simParcelas} parcelas. Podem me ajudar com as condições?`
 
   return (
     <div className="bg-background min-h-screen pb-20">
@@ -258,11 +254,7 @@ export default function Veiculo() {
                   asChild
                   className="w-full bg-[#25D366] hover:bg-[#20bd5a] text-white h-14 text-lg"
                 >
-                  <a
-                    href={`https://wa.me/5534999484285?text=${wppText}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
+                  <a href={getWhatsAppLink(wppText)} target="_blank" rel="noopener noreferrer">
                     Tenho Interesse
                   </a>
                 </Button>
@@ -334,7 +326,7 @@ export default function Veiculo() {
                         className="w-full h-14 text-lg font-bold bg-[#25D366] hover:bg-[#20bd5a] text-white uppercase tracking-wide"
                       >
                         <a
-                          href={`https://wa.me/5534999484285?text=${wppSimText}`}
+                          href={getWhatsAppLink(wppSimText)}
                           target="_blank"
                           rel="noopener noreferrer"
                         >
