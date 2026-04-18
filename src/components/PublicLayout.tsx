@@ -15,6 +15,7 @@ export default function PublicLayout() {
     { label: 'Consignação', href: '/consignacao' },
     { label: 'Financiamento', href: '/financiamento-veiculo-consignado' },
     { label: 'Blog', href: '/blog' },
+    { label: 'Sobre', href: '/sobre' },
   ]
 
   return (
@@ -48,7 +49,7 @@ export default function PublicLayout() {
               target="_blank"
               rel="noopener noreferrer"
               className="bg-[#25D366] text-white px-4 py-2 rounded-full font-bold hover:bg-[#25D366]/90 transition-colors"
-              aria-label="Falar pelo WhatsApp com Luiz"
+              aria-label="Falar com Luiz pelo WhatsApp"
               data-event="clique_whatsapp"
             >
               Falar pelo WhatsApp
@@ -93,6 +94,7 @@ export default function PublicLayout() {
               rel="noopener noreferrer"
               className="bg-[#25D366] text-white px-4 py-3 rounded-full font-bold text-center block"
               onClick={() => setMenuOpen(false)}
+              aria-label="Falar com Luiz pelo WhatsApp"
               data-event="clique_whatsapp"
             >
               Falar pelo WhatsApp

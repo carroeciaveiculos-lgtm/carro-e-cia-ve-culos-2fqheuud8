@@ -205,6 +205,7 @@ export function ConsignacaoLPForm({
           type="submit"
           className="w-full bg-[#C0392B] hover:bg-[#a12f23] mt-4 h-14 text-sm md:text-lg font-bold text-white uppercase tracking-wide shadow-lg whitespace-normal h-auto py-3"
           disabled={loading}
+          aria-label="Enviar solicitação de avaliação gratuita"
         >
           {loading ? (
             'Enviando...'

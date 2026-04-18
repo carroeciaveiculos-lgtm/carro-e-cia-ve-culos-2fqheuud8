@@ -148,7 +148,7 @@ export function LeadForm({
         type="submit"
         className="w-full h-12 text-lg font-bold bg-[#25D366] hover:bg-[#25D366]/90 text-white"
         disabled={isSubmitting}
-        aria-label={buttonText}
+        aria-label="Enviar solicitação de avaliação gratuita"
       >
         {isSubmitting ? (
           <Loader2 className="w-5 h-5 animate-spin" />

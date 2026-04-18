@@ -12,14 +12,18 @@ export function Analytics() {
       if (eventElement && eventElement.tagName !== 'FORM') {
         const eventName = eventElement.getAttribute('data-event')
         if (eventName && (window as any).gtag) {
-          // Deferir execução para não bloquear a main thread (Reduz TBT)
-          setTimeout(() => {
+          const sendEvent = () => {
             ;(window as any).gtag('event', `${eventName}_clique`, {
               event_category: 'engajamento',
               event_label: `botao_${eventName}`,
               value: 1,
             })
-          }, 0)
+          }
+          if ('requestIdleCallback' in window) {
+            ;(window as any).requestIdleCallback(sendEvent)
+          } else {
+            setTimeout(sendEvent, 0)
+          }
         }
       }
     }
@@ -30,13 +34,18 @@ export function Analytics() {
       const formName = target.getAttribute('data-event') || 'formulario_generico'
 
       if ((window as any).gtag) {
-        setTimeout(() => {
+        const sendSubmitEvent = () => {
           ;(window as any).gtag('event', 'formulario_enviado', {
             event_category: 'conversao',
             event_label: formName,
             value: 1,
           })
-        }, 0)
+        }
+        if ('requestIdleCallback' in window) {
+          ;(window as any).requestIdleCallback(sendSubmitEvent)
+        } else {
+          setTimeout(sendSubmitEvent, 0)
+        }
       }
     }
 
