@@ -4,7 +4,7 @@
     "receive-leads": 23,
     "sync-estoque": 23,
     "webhook-portais": 24,
-    "on-lead-created": 22,
+    "on-lead-created": 23,
     "consultar-placa": 29,
     "enviar-para-assinatura": 24,
     "webhook-autentique": 22,
