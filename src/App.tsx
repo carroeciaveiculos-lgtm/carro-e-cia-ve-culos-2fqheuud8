@@ -1,6 +1,13 @@
 import { Suspense, lazy } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { Toaster } from '@/components/ui/toaster'
+
+// Redirecionamento 301 (Client-side) do domínio antigo para o novo
+if (typeof window !== 'undefined' && window.location.hostname === 'carroeciaveiculos.goskip.app') {
+  window.location.replace(
+    `https://carroeciamotors.com.br${window.location.pathname}${window.location.search}`,
+  )
+}
 import { Toaster as Sonner } from '@/components/ui/sonner'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { AuthProvider } from '@/hooks/use-auth'

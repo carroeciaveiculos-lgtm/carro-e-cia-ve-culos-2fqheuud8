@@ -21,4 +21,4 @@ Disallow: /
 User-agent: GPTBot
 Disallow: /
 
-Sitemap: https://carroeciaveiculos.goskip.app/sitemap.xml
+Sitemap: https://carroeciamotors.com.br/sitemap.xml
