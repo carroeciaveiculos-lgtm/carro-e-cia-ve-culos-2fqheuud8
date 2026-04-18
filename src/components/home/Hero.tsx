@@ -92,7 +92,7 @@ export function Hero() {
           className="absolute inset-0 z-0 bg-cover bg-center bg-fixed"
           style={{
             backgroundImage:
-              'url("https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Fotos/fachada%20da%20loja.jpeg")',
+              'url("https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/render/image/public/logos-e-imagens/Fotos/fachada%20da%20loja.jpeg?width=1920&quality=80&format=webp")',
           }}
           aria-label="Fachada da Loja Carro e Cia"
         />

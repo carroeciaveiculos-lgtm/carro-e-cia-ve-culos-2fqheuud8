@@ -11,9 +11,20 @@ export function VehicleCard({ vehicle }: { vehicle: any }) {
     `Olá! Vi o ${vehicle.marca} ${vehicle.modelo} ${vehicle.ano_fabricacao} por ${formatCurrency(vehicle.preco_venda || 0)} no site. Ainda está disponível?`,
   )
 
+  const getOptimizedUrl = (url: string) => {
+    if (!url) return 'https://img.usecurling.com/p/400/300?q=car'
+    if (url.includes('supabase.co/storage/v1/object/public/')) {
+      return (
+        url.replace('/storage/v1/object/public/', '/storage/v1/render/image/public/') +
+        '?width=400&quality=80&format=webp'
+      )
+    }
+    return url
+  }
+
   const coverImage =
     vehicle.fotos && vehicle.fotos.length > 0
-      ? vehicle.fotos[0]
+      ? getOptimizedUrl(vehicle.fotos[0])
       : 'https://img.usecurling.com/p/400/300?q=car'
 
   return (

@@ -159,12 +159,19 @@ export default function CarrosSeminovosUberaba() {
           {/* Filtros */}
           <div className="bg-muted/30 p-6 rounded-xl border mb-10 flex flex-col md:flex-row gap-4 items-end">
             <div className="w-full md:w-1/3">
-              <label className="text-sm font-medium mb-2 block text-foreground">
+              <label
+                htmlFor="busca-veiculo"
+                className="text-sm font-medium mb-2 block text-foreground"
+              >
                 Buscar Veículo
               </label>
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Search
+                  className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground"
+                  aria-hidden="true"
+                />
                 <Input
+                  id="busca-veiculo"
                   placeholder="Ex: Civic, Corolla..."
                   className="pl-9 bg-background"
                   value={searchTerm}
@@ -174,9 +181,18 @@ export default function CarrosSeminovosUberaba() {
             </div>
 
             <div className="w-full md:w-1/4">
-              <label className="text-sm font-medium mb-2 block text-foreground">Marca</label>
+              <label
+                htmlFor="filtro-marca"
+                className="text-sm font-medium mb-2 block text-foreground"
+              >
+                Marca
+              </label>
               <Select value={selectedMarca} onValueChange={setSelectedMarca}>
-                <SelectTrigger className="bg-background">
+                <SelectTrigger
+                  id="filtro-marca"
+                  aria-label="Filtro de Marca"
+                  className="bg-background"
+                >
                   <SelectValue placeholder="Todas as Marcas" />
                 </SelectTrigger>
                 <SelectContent>
@@ -191,11 +207,18 @@ export default function CarrosSeminovosUberaba() {
             </div>
 
             <div className="w-full md:w-1/4">
-              <label className="text-sm font-medium mb-2 block text-foreground">
+              <label
+                htmlFor="filtro-preco"
+                className="text-sm font-medium mb-2 block text-foreground"
+              >
                 Faixa de Preço
               </label>
               <Select value={selectedPreco} onValueChange={setSelectedPreco}>
-                <SelectTrigger className="bg-background">
+                <SelectTrigger
+                  id="filtro-preco"
+                  aria-label="Filtro de Preço"
+                  className="bg-background"
+                >
                   <SelectValue placeholder="Qualquer Preço" />
                 </SelectTrigger>
                 <SelectContent>
@@ -272,7 +295,10 @@ export default function CarrosSeminovosUberaba() {
                 'Mais de 20 anos de confiança consolidada em Uberaba MG',
               ].map((item, i) => (
                 <li key={i} className="flex items-start gap-4 m-0">
-                  <CheckCircle2 className="w-6 h-6 text-primary flex-shrink-0 mt-1" />
+                  <CheckCircle2
+                    className="w-6 h-6 text-primary flex-shrink-0 mt-1"
+                    aria-hidden="true"
+                  />
                   <span className="leading-snug">{item}</span>
                 </li>
               ))}

@@ -2,27 +2,27 @@ export function Partners() {
   const partners = [
     {
       name: 'Bradesco',
-      src: 'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Parceiros/Bradesco.png',
+      src: 'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/render/image/public/logos-e-imagens/Parceiros/Bradesco.png?width=200&quality=90&format=webp',
     },
     {
       name: 'BV',
-      src: 'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Parceiros/BV.png',
+      src: 'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/render/image/public/logos-e-imagens/Parceiros/BV.png?width=200&quality=90&format=webp',
     },
     {
       name: 'Porto Bank',
-      src: 'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Parceiros/PORTO%20BANK%20LOGO.png',
+      src: 'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/render/image/public/logos-e-imagens/Parceiros/PORTO%20BANK%20LOGO.png?width=200&quality=90&format=webp',
     },
     {
       name: 'Safra',
-      src: 'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Parceiros/Safra.jpeg',
+      src: 'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/render/image/public/logos-e-imagens/Parceiros/Safra.jpeg?width=200&quality=90&format=webp',
     },
     {
       name: 'Santander',
-      src: 'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Parceiros/santander.png',
+      src: 'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/render/image/public/logos-e-imagens/Parceiros/santander.png?width=200&quality=90&format=webp',
     },
     {
       name: 'Km Zero',
-      src: 'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Parceiros/Logo%20quadrado%20fundo%20branco%202%20transparente.png',
+      src: 'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/render/image/public/logos-e-imagens/Parceiros/Logo%20quadrado%20fundo%20branco%202%20transparente.png?width=200&quality=90&format=webp',
     },
   ]
 

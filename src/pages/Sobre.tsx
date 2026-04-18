@@ -7,28 +7,28 @@ export default function Sobre() {
       name: 'Luiz Fernando',
       role: 'CEO',
       photo:
-        'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Fotos/Luiz%20Fernando%20foto%20profissional.jpeg',
+        'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/render/image/public/logos-e-imagens/Fotos/Luiz%20Fernando%20foto%20profissional.jpeg?width=400&quality=80&format=webp',
       bio: 'Com mais de 20 anos de experiência, Luiz é a alma da Carro e Cia. Sua paixão por veículos e seu carisma garantem a melhor experiência para cada cliente.',
     },
     {
       name: 'Roberto Junior',
       role: 'Vendedor',
       photo:
-        'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Fotos/Roberto%20Junior%20foto%20profissional.jpeg',
+        'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/render/image/public/logos-e-imagens/Fotos/Roberto%20Junior%20foto%20profissional.jpeg?width=400&quality=80&format=webp',
       bio: 'Irmão de Luiz Fernando, Roberto é o braço direito nas vendas. Com sua energia e conhecimento, ele ajuda a encontrar o veículo perfeito para você.',
     },
     {
       name: 'Jessica Germano',
       role: 'Financeiro',
       photo:
-        'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Fotos/jessica%20foto%20profissional.jpeg',
+        'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/render/image/public/logos-e-imagens/Fotos/Ljessica%20foto%20profissional.jpeg?width=400&quality=80&format=webp',
       bio: 'Jessica cuida de toda a parte financeira, garantindo que cada transação seja clara, segura e sem burocracia para nossos clientes.',
     },
     {
       name: 'Adriana Araújo',
       role: 'Administrativa',
       photo:
-        'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Fotos/Adriana%20foto%20profissional.jpeg',
+        'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/render/image/public/logos-e-imagens/Fotos/Adriana%20foto%20profissional.jpeg?width=400&quality=80&format=webp',
       bio: 'Com sua expertise administrativa, Adriana organiza e otimiza os processos internos, assegurando a eficiência e a qualidade do nosso atendimento.',
     },
   ]
@@ -40,7 +40,7 @@ export default function Sobre() {
         description="Conheça a Carro e Cia Veículos. Mais de 20 anos de experiência no mercado automóvel. Referência em confiança e qualidade em Uberaba."
       />
       <section className="relative pt-24 pb-32 overflow-hidden bg-secondary text-white">
-        <div className="absolute inset-0 z-0 opacity-30 bg-[url('https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Fotos/fachada%20da%20loja.jpeg')] bg-cover bg-center" />
+        <div className="absolute inset-0 z-0 opacity-30 bg-[url('https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/render/image/public/logos-e-imagens/Fotos/fachada%20da%20loja.jpeg?width=1920&quality=80&format=webp')] bg-cover bg-center" />
         <div className="absolute inset-0 bg-gradient-to-t from-secondary via-secondary/80 to-transparent z-10" />
         <div className="container relative z-20 text-center max-w-4xl">
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-display font-extrabold mb-6 leading-tight">
@@ -55,7 +55,7 @@ export default function Sobre() {
       <section className="py-20 bg-background">
         <div className="container max-w-4xl">
           <div className="flex items-center gap-4 mb-8">
-            <Clock className="w-8 h-8 text-primary" />
+            <Clock className="w-8 h-8 text-primary" aria-hidden="true" />
             <h2 className="text-3xl md:text-4xl font-display font-bold">
               Nossa Trajetória: Paixão por Veículos e Pessoas
             </h2>
@@ -128,7 +128,7 @@ export default function Sobre() {
           <div className="grid md:grid-cols-3 gap-8">
             <div className="bg-card p-8 rounded-xl border text-center shadow-sm">
               <div className="w-16 h-16 bg-primary/10 text-primary rounded-full flex items-center justify-center mx-auto mb-6">
-                <Target className="w-8 h-8" />
+                <Target className="w-8 h-8" aria-hidden="true" />
               </div>
               <h3 className="text-2xl font-bold font-display mb-4">Missão</h3>
               <p className="text-muted-foreground leading-relaxed">
@@ -138,7 +138,7 @@ export default function Sobre() {
             </div>
             <div className="bg-card p-8 rounded-xl border text-center shadow-sm">
               <div className="w-16 h-16 bg-primary/10 text-primary rounded-full flex items-center justify-center mx-auto mb-6">
-                <Lightbulb className="w-8 h-8" />
+                <Lightbulb className="w-8 h-8" aria-hidden="true" />
               </div>
               <h3 className="text-2xl font-bold font-display mb-4">Visão</h3>
               <p className="text-muted-foreground leading-relaxed">
@@ -148,7 +148,7 @@ export default function Sobre() {
             </div>
             <div className="bg-card p-8 rounded-xl border text-center shadow-sm">
               <div className="w-16 h-16 bg-primary/10 text-primary rounded-full flex items-center justify-center mx-auto mb-6">
-                <Heart className="w-8 h-8" />
+                <Heart className="w-8 h-8" aria-hidden="true" />
               </div>
               <h3 className="text-2xl font-bold font-display mb-4">Valores</h3>
               <p className="text-muted-foreground leading-relaxed">

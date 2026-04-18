@@ -1,4 +1,3 @@
 User-agent: *
 Allow: /
-
 Sitemap: https://carroeciaveiculos.goskip.app/sitemap.xml
