@@ -13,11 +13,11 @@ export function VehicleCard({ vehicle }: { vehicle: any }) {
 
   const getOptimizedUrl = (url: string) => {
     if (!url) return 'https://img.usecurling.com/p/400/300?q=car'
-    if (url.includes('supabase.co/storage/v1/object/public/')) {
-      return (
-        url.replace('/storage/v1/object/public/', '/storage/v1/render/image/public/') +
-        '?width=400&quality=80&format=webp'
-      )
+    // Remover uso do render transform do Supabase (causando quebra de imagem sem o plano PRO)
+    if (url.includes('supabase.co/storage/v1/render/image/public/')) {
+      return url
+        .replace('/storage/v1/render/image/public/', '/storage/v1/object/public/')
+        .split('?')[0]
     }
     return url
   }

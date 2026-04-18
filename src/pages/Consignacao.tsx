@@ -15,17 +15,17 @@ const team = [
   {
     name: 'Luiz Fernando',
     role: 'CEO',
-    img: 'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/render/image/public/logos-e-imagens/Fotos/Luiz%20Fernando%20foto%20profissional.jpeg?width=400&quality=80&format=webp',
+    img: 'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Fotos/Luiz%20Fernando%20foto%20profissional.jpeg',
   },
   {
     name: 'Roberto Junior',
     role: 'Vendedor',
-    img: 'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/render/image/public/logos-e-imagens/Fotos/Roberto%20Junior%20foto%20profissional.jpeg?width=400&quality=80&format=webp',
+    img: 'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Fotos/Roberto%20Junior%20foto%20profissional.jpeg',
   },
   {
     name: 'Jessica Germano',
     role: 'Financeiro',
-    img: 'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/render/image/public/logos-e-imagens/Fotos/Ljessica%20foto%20profissional.jpeg?width=400&quality=80&format=webp',
+    img: 'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Fotos/Ljessica%20foto%20profissional.jpeg',
   },
 ]
 
@@ -79,21 +79,16 @@ export default function Consignacao() {
 
       <section className="relative min-h-[90vh] flex items-center pt-24 pb-16">
         <div className="absolute inset-0 z-0">
-          <picture>
-            <source
-              srcSet="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/render/image/public/logos-e-imagens/Fotos/fachada%20da%20loja.jpeg?width=1920&quality=80&format=webp"
-              type="image/webp"
-            />
-            <img
-              src="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Fotos/fachada%20da%20loja.jpeg"
-              alt="Fachada Carro e Cia"
-              className="w-full h-full object-cover"
-              loading="eager"
-              width="1920"
-              height="1080"
-              fetchPriority="high"
-            />
-          </picture>
+          <img
+            src="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Fotos/fachada%20da%20loja.jpeg"
+            alt="Fachada Carro e Cia Veículos Uberaba MG"
+            width="1920"
+            height="1080"
+            fetchPriority="high"
+            loading="eager"
+            decoding="async"
+            className="w-full h-full object-cover object-center"
+          />
           <div className="absolute inset-0 bg-black/60" />
         </div>
         <div className="container relative z-10 grid lg:grid-cols-2 gap-12 items-center">
@@ -230,10 +225,11 @@ export default function Consignacao() {
               <div key={i} className="text-center">
                 <img
                   src={member.img}
-                  alt={`Foto ${member.name}`}
-                  width="200"
-                  height="200"
+                  alt={`${member.name} - Carro e Cia Veículos`}
+                  width="400"
+                  height="400"
                   loading="lazy"
+                  decoding="async"
                   className="w-48 h-48 rounded-full object-cover mx-auto mb-4 border-4 border-background shadow-md"
                 />
                 <h3 className="text-xl font-bold">{member.name}</h3>

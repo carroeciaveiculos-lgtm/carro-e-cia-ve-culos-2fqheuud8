@@ -2,27 +2,27 @@ export function Partners() {
   const partners = [
     {
       name: 'Bradesco',
-      src: 'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/render/image/public/logos-e-imagens/Parceiros/Bradesco.png?width=200&quality=90&format=webp',
+      src: 'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Parceiros/Bradesco.png',
     },
     {
       name: 'BV',
-      src: 'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/render/image/public/logos-e-imagens/Parceiros/BV.png?width=200&quality=90&format=webp',
+      src: 'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Parceiros/BV.png',
     },
     {
       name: 'Porto Bank',
-      src: 'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/render/image/public/logos-e-imagens/Parceiros/PORTO%20BANK%20LOGO.png?width=200&quality=90&format=webp',
+      src: 'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Parceiros/PORTO%20BANK%20LOGO.png',
     },
     {
       name: 'Safra',
-      src: 'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/render/image/public/logos-e-imagens/Parceiros/Safra.jpeg?width=200&quality=90&format=webp',
+      src: 'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Parceiros/Safra.jpeg',
     },
     {
       name: 'Santander',
-      src: 'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/render/image/public/logos-e-imagens/Parceiros/santander.png?width=200&quality=90&format=webp',
+      src: 'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Parceiros/santander.png',
     },
     {
       name: 'Km Zero',
-      src: 'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/render/image/public/logos-e-imagens/Parceiros/Logo%20quadrado%20fundo%20branco%202%20transparente.png?width=200&quality=90&format=webp',
+      src: 'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Parceiros/Logo%20quadrado%20fundo%20branco%202%20transparente.png',
     },
   ]
 
@@ -35,10 +35,11 @@ export function Partners() {
             <img
               key={i}
               src={p.src}
-              alt={`Logo ${p.name}`}
-              width="120"
-              height="40"
+              alt={`${p.name} - Parceiro Carro e Cia`}
+              width="200"
+              height="80"
               loading="lazy"
+              decoding="async"
               className="h-10 object-contain grayscale hover:grayscale-0 transition-all duration-300"
             />
           ))}
