@@ -27,6 +27,13 @@ const Obrigado = lazy(() => import('./pages/Obrigado'))
 const SeguroAuto = lazy(() => import('./pages/SeguroAuto'))
 const ConsorcioAuto = lazy(() => import('./pages/ConsorcioAuto'))
 
+// Novas LPs e Blog
+const CarrosSeminovosUberaba = lazy(() => import('./pages/lp/CarrosSeminovosUberaba'))
+const FinanciamentoConsignado = lazy(() => import('./pages/lp/FinanciamentoConsignado'))
+const VendaCarroRapido = lazy(() => import('./pages/lp/VendaCarroRapido'))
+const BlogIndex = lazy(() => import('./pages/blog/BlogIndex'))
+const BlogPost = lazy(() => import('./pages/blog/BlogPost'))
+
 // Admin Pages (Lazy loaded)
 const Login = lazy(() => import('./pages/admin/Login'))
 const Dashboard = lazy(() => import('./pages/admin/Dashboard'))
@@ -73,6 +80,18 @@ const App = () => (
               <Route path="/lp/venda-segura" element={<Seguranca />} />
               <Route path="/lp/venda-rapida" element={<Praticidade />} />
               <Route path="/lp/troca-com-troco" element={<Troca />} />
+
+              {/* LPs SEO */}
+              <Route path="/carros-seminovos-uberaba-mg" element={<CarrosSeminovosUberaba />} />
+              <Route
+                path="/financiamento-veiculo-consignado"
+                element={<FinanciamentoConsignado />}
+              />
+              <Route path="/venda-seu-carro-rapido-uberaba" element={<VendaCarroRapido />} />
+
+              {/* Blog */}
+              <Route path="/blog" element={<BlogIndex />} />
+              <Route path="/blog/:slug" element={<BlogPost />} />
 
               {/* Pós-conversão e Serviços */}
               <Route path="/obrigado" element={<Obrigado />} />
