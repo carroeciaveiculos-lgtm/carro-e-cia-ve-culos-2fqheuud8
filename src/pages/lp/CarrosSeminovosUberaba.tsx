@@ -1,3 +1,4 @@
+import { useEffect, useState, useMemo } from 'react'
 import { SEO } from '@/components/SEO'
 import {
   Breadcrumb,
@@ -8,11 +9,72 @@ import {
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { Skeleton } from '@/components/ui/skeleton'
 import { getWhatsAppLink } from '@/lib/whatsapp'
-import { CheckCircle2 } from 'lucide-react'
+import { supabase } from '@/lib/supabase/client'
+import { VehicleCard } from '@/components/VehicleCard'
+import { CheckCircle2, FilterX, Search } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
 export default function CarrosSeminovosUberaba() {
+  const [vehicles, setVehicles] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+
+  const [searchTerm, setSearchTerm] = useState('')
+  const [selectedMarca, setSelectedMarca] = useState('all')
+  const [selectedPreco, setSelectedPreco] = useState('all')
+
+  useEffect(() => {
+    supabase
+      .from('veiculos')
+      .select('*')
+      .eq('status', 'disponivel')
+      .order('created_at', { ascending: false })
+      .then(({ data }) => {
+        if (data) setVehicles(data)
+        setLoading(false)
+      })
+  }, [])
+
+  const marcas = useMemo(() => {
+    const unique = new Set(vehicles.map((v) => v.marca))
+    return Array.from(unique).sort()
+  }, [vehicles])
+
+  const filteredVehicles = useMemo(() => {
+    return vehicles.filter((v) => {
+      const matchSearch =
+        v.modelo.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        v.marca.toLowerCase().includes(searchTerm.toLowerCase())
+
+      const matchMarca = selectedMarca === 'all' || v.marca === selectedMarca
+
+      let matchPreco = true
+      if (selectedPreco !== 'all') {
+        const preco = v.preco_venda || 0
+        if (selectedPreco === 'ate-50k') matchPreco = preco <= 50000
+        if (selectedPreco === '50k-100k') matchPreco = preco > 50000 && preco <= 100000
+        if (selectedPreco === 'acima-100k') matchPreco = preco > 100000
+      }
+
+      return matchSearch && matchMarca && matchPreco
+    })
+  }, [vehicles, searchTerm, selectedMarca, selectedPreco])
+
+  const clearFilters = () => {
+    setSearchTerm('')
+    setSelectedMarca('all')
+    setSelectedPreco('all')
+  }
+
   const schema = {
     '@context': 'https://schema.org',
     '@type': 'LocalBusiness',
@@ -82,7 +144,116 @@ export default function CarrosSeminovosUberaba() {
         </div>
       </section>
 
-      <section className="py-16 md:py-24 container max-w-4xl">
+      {/* Seção de Estoque Dinâmico */}
+      <section className="py-16 bg-background" id="estoque">
+        <div className="container">
+          <div className="flex flex-col md:flex-row justify-between items-end mb-10 gap-6">
+            <div>
+              <h2 className="text-3xl font-display font-bold mb-4">Nosso Estoque de Seminovos</h2>
+              <p className="text-muted-foreground">
+                Encontre o carro perfeito para você com filtros fáceis de usar.
+              </p>
+            </div>
+          </div>
+
+          {/* Filtros */}
+          <div className="bg-muted/30 p-6 rounded-xl border mb-10 flex flex-col md:flex-row gap-4 items-end">
+            <div className="w-full md:w-1/3">
+              <label className="text-sm font-medium mb-2 block text-foreground">
+                Buscar Veículo
+              </label>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  placeholder="Ex: Civic, Corolla..."
+                  className="pl-9 bg-background"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div className="w-full md:w-1/4">
+              <label className="text-sm font-medium mb-2 block text-foreground">Marca</label>
+              <Select value={selectedMarca} onValueChange={setSelectedMarca}>
+                <SelectTrigger className="bg-background">
+                  <SelectValue placeholder="Todas as Marcas" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todas as Marcas</SelectItem>
+                  {marcas.map((marca) => (
+                    <SelectItem key={marca as string} value={marca as string}>
+                      {marca as string}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="w-full md:w-1/4">
+              <label className="text-sm font-medium mb-2 block text-foreground">
+                Faixa de Preço
+              </label>
+              <Select value={selectedPreco} onValueChange={setSelectedPreco}>
+                <SelectTrigger className="bg-background">
+                  <SelectValue placeholder="Qualquer Preço" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Qualquer Preço</SelectItem>
+                  <SelectItem value="ate-50k">Até R$ 50.000</SelectItem>
+                  <SelectItem value="50k-100k">R$ 50.000 a R$ 100.000</SelectItem>
+                  <SelectItem value="acima-100k">Acima de R$ 100.000</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <Button
+              variant="outline"
+              onClick={clearFilters}
+              className="w-full md:w-auto flex items-center gap-2 bg-background"
+            >
+              <FilterX className="w-4 h-4" />
+              Limpar
+            </Button>
+          </div>
+
+          {/* Grid de Veículos */}
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {loading ? (
+              Array.from({ length: 8 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="flex flex-col space-y-3 bg-card rounded-lg overflow-hidden border p-0"
+                >
+                  <Skeleton className="h-[200px] w-full rounded-none" />
+                  <div className="p-4 space-y-4 flex flex-col flex-grow">
+                    <Skeleton className="h-6 w-3/4" />
+                    <Skeleton className="h-4 w-1/2" />
+                    <div className="mt-auto pt-4">
+                      <Skeleton className="h-8 w-1/3 mb-4" />
+                      <div className="grid grid-cols-2 gap-2">
+                        <Skeleton className="h-10 w-full" />
+                        <Skeleton className="h-10 w-full" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))
+            ) : filteredVehicles.length === 0 ? (
+              <div className="col-span-full bg-muted/30 border border-dashed rounded-xl text-center py-16 text-muted-foreground">
+                <p className="text-lg">Nenhum veículo encontrado com os filtros atuais.</p>
+                <Button variant="link" onClick={clearFilters} className="mt-2">
+                  Limpar filtros
+                </Button>
+              </div>
+            ) : (
+              filteredVehicles.map((v) => <VehicleCard key={v.id} vehicle={v} />)
+            )}
+          </div>
+        </div>
+      </section>
+
+      <section className="py-16 md:py-24 container max-w-4xl border-t">
         <div className="prose prose-lg dark:prose-invert max-w-none prose-headings:font-bold prose-h2:text-3xl prose-h3:text-2xl">
           <h2>Por que Comprar Seminovo na Carro e Cia Veículos?</h2>
           <p>
