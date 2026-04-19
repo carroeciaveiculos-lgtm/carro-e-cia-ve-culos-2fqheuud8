@@ -10,7 +10,7 @@ export default function PublicLayout() {
 
   const links = [
     { label: 'Início', href: '/' },
-    { label: 'Estoque', href: '/carros-seminovos-uberaba-mg' },
+    { label: 'Estoque', href: '/estoque' },
     { label: 'Vender Meu Carro', href: '/vender-meu-carro' },
     { label: 'Consignação', href: '/consignacao' },
     { label: 'Financiamento', href: '/financiamento-veiculo-consignado' },

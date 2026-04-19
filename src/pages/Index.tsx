@@ -12,9 +12,9 @@ export default function Index() {
     '@context': 'https://schema.org',
     '@type': 'LocalBusiness',
     name: 'Carro e Cia Veículos',
-    image: 'https://carroeciaveiculos.goskip.app/logo.png',
+    image: 'https://carroeciamotors.com.br/logo.png',
     description: 'Loja de veículos usados com consignação de carros em Uberaba',
-    url: 'https://carroeciaveiculos.goskip.app',
+    url: 'https://carroeciamotors.com.br',
     telephone: '+55 34 99948-4285',
     address: {
       '@type': 'PostalAddress',

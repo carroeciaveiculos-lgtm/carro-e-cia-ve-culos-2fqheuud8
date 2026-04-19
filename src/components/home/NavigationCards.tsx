@@ -9,7 +9,7 @@ export function NavigationCards() {
       title: 'Quero Comprar um Carro',
       desc: 'Estoque renovado com procedência e documentação 100% regularizada.',
       icon: Car,
-      link: '/carros-seminovos-uberaba-mg',
+      link: '/estoque',
       cta: 'Ver Estoque',
     },
     {

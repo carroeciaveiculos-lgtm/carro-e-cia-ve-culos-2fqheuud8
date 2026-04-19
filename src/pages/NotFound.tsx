@@ -1,29 +1,23 @@
-import { Link, useLocation } from 'react-router-dom'
-import { useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 
-const NotFound = () => {
-  const location = useLocation()
-
-  useEffect(() => {
-    console.error('404 Error: User attempted to access non-existent route:', location.pathname)
-  }, [location.pathname])
-
+export default function NotFound() {
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-background text-center px-4">
-      <h1 className="text-7xl md:text-9xl font-display font-extrabold text-primary mb-4 animate-fade-in-up">
-        404
-      </h1>
-      <h2 className="text-3xl font-bold mb-4">Página não encontrada</h2>
-      <p className="text-muted-foreground mb-8 max-w-md text-lg">
-        A página que você está procurando pode ter sido removida, teve seu nome alterado ou está
-        temporariamente indisponível.
+    <div className="flex flex-col items-center justify-center min-h-[70vh] px-4 text-center">
+      <h1 className="text-6xl font-bold text-primary mb-4">404</h1>
+      <h2 className="text-2xl font-semibold mb-6">Página não encontrada</h2>
+      <p className="text-muted-foreground max-w-md mb-8 text-lg">
+        Desculpe, não conseguimos encontrar a página que você estava procurando. Ela pode ter sido
+        movida ou não existe mais.
       </p>
-      <Button asChild size="lg" className="h-12 px-8 text-lg">
-        <Link to="/">Voltar para o Início</Link>
-      </Button>
+      <div className="flex flex-col sm:flex-row gap-4">
+        <Button asChild size="lg">
+          <Link to="/">Voltar para o Início</Link>
+        </Button>
+        <Button asChild size="lg" variant="outline">
+          <Link to="/estoque">Ver nosso Estoque</Link>
+        </Button>
+      </div>
     </div>
   )
 }
-
-export default NotFound
