@@ -2,11 +2,14 @@ import { Suspense, lazy } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { Toaster } from '@/components/ui/toaster'
 
-// Redirecionamento 301 (Client-side) do domínio antigo para o novo
-if (typeof window !== 'undefined' && window.location.hostname === 'carroeciaveiculos.goskip.app') {
-  window.location.replace(
-    `https://carroeciamotors.com.br${window.location.pathname}${window.location.search}`,
-  )
+// Redirecionamento 301 (Client-side) do domínio antigo e www para o novo domínio oficial
+if (typeof window !== 'undefined') {
+  const hostname = window.location.hostname
+  if (hostname === 'carroeciaveiculos.goskip.app' || hostname === 'www.carroeciamotors.com.br') {
+    window.location.replace(
+      `https://carroeciamotors.com.br${window.location.pathname}${window.location.search}`,
+    )
+  }
 }
 import { Toaster as Sonner } from '@/components/ui/sonner'
 import { TooltipProvider } from '@/components/ui/tooltip'
@@ -15,6 +18,7 @@ import { AuthProvider } from '@/hooks/use-auth'
 import PublicLayout from '@/components/PublicLayout'
 import { ProtectedRoute } from '@/components/ProtectedRoute'
 import NotFound from './pages/NotFound'
+import { Analytics } from '@/components/Analytics'
 
 // Admin Layout lazy loaded to reduce unused JS in public routes
 const AdminLayout = lazy(() => import('@/components/AdminLayout'))
@@ -67,6 +71,7 @@ const PageLoader = () => (
 
 const App = () => (
   <AuthProvider>
+    <Analytics />
     <BrowserRouter>
       <TooltipProvider>
         <Toaster />
@@ -91,8 +96,13 @@ const App = () => (
 
               {/* LPs SEO */}
               <Route path="/carros-seminovos-uberaba-mg" element={<CarrosSeminovosUberaba />} />
+              {/* Redirecionamento da URL antiga para a nova (plural) */}
               <Route
                 path="/financiamento-veiculo-consignado"
+                element={<Navigate to="/financiamento-veiculos-consignados" replace />}
+              />
+              <Route
+                path="/financiamento-veiculos-consignados"
                 element={<FinanciamentoConsignado />}
               />
               <Route path="/venda-seu-carro-rapido-uberaba" element={<VendaCarroRapido />} />

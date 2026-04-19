@@ -73,7 +73,7 @@ export function SEO({
       scripts.push(script)
     }
 
-    // Adiciona ou atualiza a tag Canonical - Força o novo domínio
+    // Adiciona ou atualiza a tag Canonical - Força o domínio oficial sempre sem www e sem goskip
     let canonicalUrl = canonical || window.location.href.split('?')[0]
     try {
       const urlObj = new URL(canonicalUrl, 'https://carroeciamotors.com.br')
@@ -85,7 +85,8 @@ export function SEO({
         canonicalUrl = canonicalUrl.slice(0, -1)
       }
     } catch (e) {
-      // fallback
+      // fallback caso a URL seja inválida
+      canonicalUrl = 'https://carroeciamotors.com.br'
     }
     let linkCanonical = document.querySelector('link[rel="canonical"]')
     if (!linkCanonical) {

@@ -89,7 +89,7 @@ export default function Estoque() {
     if (filters.precoMin) params.set('precoMin', filters.precoMin)
     if (filters.precoMax) params.set('precoMax', filters.precoMax)
     if (filters.kmMax < 300000) params.set('kmMax', filters.kmMax.toString())
-    if (filters.ordem) params.set('ordem', filters.ordem)
+    if (filters.ordem && filters.ordem !== 'recentes') params.set('ordem', filters.ordem)
     filters.cambio.forEach((c) => params.append('cambio', c))
     filters.combustivel.forEach((c) => params.append('combustivel', c))
     filters.tipo.forEach((t) => params.append('tipo', t))
