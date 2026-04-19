@@ -122,14 +122,19 @@ export function SEO({
       element.setAttribute('content', tag.content)
     })
 
-    // Adiciona ou atualiza meta robots (noindex)
+    // Adiciona ou atualiza meta robots (noindex) e otimização de snippet
     let metaRobots = document.querySelector('meta[name="robots"]')
     if (!metaRobots) {
       metaRobots = document.createElement('meta')
       metaRobots.setAttribute('name', 'robots')
       document.head.appendChild(metaRobots)
     }
-    metaRobots.setAttribute('content', noindex ? 'noindex, nofollow' : 'index, follow')
+    metaRobots.setAttribute(
+      'content',
+      noindex
+        ? 'noindex, nofollow'
+        : 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1',
+    )
 
     // Cleanup para remover o schema e limpar ao trocar de página
     return () => {

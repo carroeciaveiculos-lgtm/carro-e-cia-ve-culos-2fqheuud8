@@ -2,6 +2,25 @@ import { useEffect } from 'react'
 
 export function Analytics() {
   useEffect(() => {
+    // Instalação Global da Tag do Google Ads (AW-18085065720)
+    if (!document.getElementById('google-ads-tag')) {
+      const script1 = document.createElement('script')
+      script1.id = 'google-ads-tag'
+      script1.async = true
+      script1.src = 'https://www.googletagmanager.com/gtag/js?id=AW-18085065720'
+      document.head.appendChild(script1)
+
+      const script2 = document.createElement('script')
+      script2.id = 'google-ads-init'
+      script2.innerHTML = `
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'AW-18085065720');
+      `
+      document.head.appendChild(script2)
+    }
+
     // Scripts nativos movidos para o index.html por performance.
     // Listener global para rastrear cliques em elementos com data-event
     const handleGlobalClick = (e: MouseEvent) => {
