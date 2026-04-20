@@ -1,23 +1,27 @@
-import { Suspense, lazy } from 'react'
+import { Suspense, lazy, useEffect } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { Toaster } from '@/components/ui/toaster'
-
-// Redirecionamento 301 (Client-side) do domínio antigo e www para o novo domínio oficial
-if (typeof window !== 'undefined') {
-  const hostname = window.location.hostname
-  if (
-    hostname === 'carroeciaveiculos.goskip.app' ||
-    hostname === 'www.carroeciamotors.com.br' ||
-    hostname === 'carro-e-cia-veiculos-bf939--preview.goskip.app'
-  ) {
-    window.location.replace(
-      `https://carroeciamotors.com.br${window.location.pathname}${window.location.search}`,
-    )
-  }
-}
 import { Toaster as Sonner } from '@/components/ui/sonner'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { AuthProvider } from '@/hooks/use-auth'
+
+const DomainRedirect = () => {
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const hostname = window.location.hostname
+      // Evita redirecionar no ambiente de preview do Skip
+      if (
+        hostname === 'carroeciaveiculos.goskip.app' ||
+        hostname === 'www.carroeciamotors.com.br'
+      ) {
+        window.location.replace(
+          `https://carroeciamotors.com.br${window.location.pathname}${window.location.search}`,
+        )
+      }
+    }
+  }, [])
+  return null
+}
 
 import PublicLayout from '@/components/PublicLayout'
 import { ProtectedRoute } from '@/components/ProtectedRoute'
@@ -77,6 +81,7 @@ const PageLoader = () => (
 const App = () => (
   <AuthProvider>
     <BrowserRouter>
+      <DomainRedirect />
       <TooltipProvider>
         <Toaster />
         <Sonner />
