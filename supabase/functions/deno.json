@@ -1,14 +1,14 @@
 {
   "_versions": {
-    "send-lead-email": 25,
-    "receive-leads": 24,
-    "sync-estoque": 24,
-    "webhook-portais": 25,
-    "on-lead-created": 25,
-    "consultar-placa": 30,
-    "enviar-para-assinatura": 26,
-    "webhook-autentique": 23,
-    "consultar-cpf": 19,
-    "gerar-pdf-contrato": 12
+    "send-lead-email": 26,
+    "receive-leads": 25,
+    "sync-estoque": 25,
+    "webhook-portais": 26,
+    "on-lead-created": 26,
+    "consultar-placa": 31,
+    "enviar-para-assinatura": 27,
+    "webhook-autentique": 24,
+    "consultar-cpf": 20,
+    "gerar-pdf-contrato": 13
   }
 }
