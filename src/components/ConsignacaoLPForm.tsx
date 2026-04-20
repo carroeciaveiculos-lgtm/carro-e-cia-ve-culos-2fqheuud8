@@ -1,36 +1,34 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { trackConversion, trackGTMEvent } from '@/lib/tracking'
-import { useToast } from '@/hooks/use-toast'
 import { supabase } from '@/lib/supabase/client'
-import { getWhatsAppLink } from '@/lib/whatsapp'
-
-interface ConsignacaoLPFormProps {
-  origem: string
-  title: string
-  subtitle: string
-  campanha: string
-  whatsappText: string
-}
+import { useToast } from '@/hooks/use-toast'
+import { Loader2 } from 'lucide-react'
 
 export function ConsignacaoLPForm({
-  origem,
-  title,
-  subtitle,
-  campanha,
+  title = 'Solicite uma avaliação',
+  subtitle = 'Nossa equipe entrará em contato rapidamente.',
+  campanha = 'consignacao',
+  origem = 'LP',
   whatsappText,
-}: ConsignacaoLPFormProps) {
+}: {
+  title?: string
+  subtitle?: string
+  campanha?: string
+  origem?: string
+  whatsappText?: string
+}) {
   const [loading, setLoading] = useState(false)
+  const navigate = useNavigate()
   const { toast } = useToast()
 
   const [formData, setFormData] = useState({
     nome: '',
-    telefone: '',
     email: '',
-    carro_modelo: '',
-    carro_ano: '',
+    whatsapp: '',
+    modelo_veiculo: '',
   })
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -38,43 +36,27 @@ export function ConsignacaoLPForm({
     setLoading(true)
 
     try {
-      const { data, error } = await supabase.functions.invoke('lead-automation', {
+      const urlParams = new URLSearchParams(window.location.search)
+
+      const { error } = await supabase.functions.invoke('lead-automation', {
         body: {
-          nome: formData.nome,
-          email: formData.email,
-          whatsapp: formData.telefone,
-          modelo_veiculo: formData.carro_modelo,
-          ano_veiculo: formData.carro_ano,
+          ...formData,
           campanha,
           origem,
+          utm_source: urlParams.get('utm_source'),
+          utm_medium: urlParams.get('utm_medium'),
+          utm_campaign: urlParams.get('utm_campaign'),
         },
       })
 
       if (error) throw error
-      if (data?.error) throw new Error(data.error)
 
-      trackConversion('formulario')
-      trackGTMEvent(`submit_form_${campanha}`, {
-        campaign: campanha,
-        email: formData.email,
-        lead_id: data?.lead_id,
-      })
-
-      toast({
-        title: 'Dados enviados com sucesso!',
-        description: 'Você será redirecionado para o WhatsApp em instantes.',
-      })
-
-      setFormData({ nome: '', telefone: '', email: '', carro_modelo: '', carro_ano: '' })
-
-      setTimeout(() => {
-        window.location.href = getWhatsAppLink(whatsappText)
-      }, 1500)
+      navigate('/obrigado', { state: { nome: formData.nome } })
     } catch (err: any) {
       console.error(err)
       toast({
-        title: 'Erro ao enviar dados',
-        description: 'Tente novamente ou nos chame diretamente no WhatsApp.',
+        title: 'Erro ao enviar',
+        description: 'Ocorreu um erro ao enviar seus dados. Tente novamente ou chame no WhatsApp.',
         variant: 'destructive',
       })
     } finally {
@@ -83,82 +65,62 @@ export function ConsignacaoLPForm({
   }
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="bg-card p-6 md:p-8 rounded-2xl shadow-xl border space-y-4"
-    >
-      <div className="text-center mb-6">
-        <h3 className="text-2xl font-bold mb-2">{title}</h3>
-        <p className="text-muted-foreground text-sm">{subtitle}</p>
+    <div className="space-y-6 text-left">
+      <div className="text-center">
+        <h3 className="text-2xl font-bold">{title}</h3>
+        <p className="text-muted-foreground mt-2">{subtitle}</p>
       </div>
 
-      <div className="space-y-2 text-left">
-        <Label htmlFor="nome">Nome Completo</Label>
-        <Input
-          id="nome"
-          required
-          value={formData.nome}
-          onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
-          placeholder="Seu nome"
-        />
-      </div>
-
-      <div className="space-y-2 text-left">
-        <Label htmlFor="telefone">WhatsApp</Label>
-        <Input
-          id="telefone"
-          required
-          value={formData.telefone}
-          onChange={(e) => setFormData({ ...formData, telefone: e.target.value })}
-          placeholder="(34) 99999-9999"
-        />
-      </div>
-
-      <div className="space-y-2 text-left">
-        <Label htmlFor="email">E-mail</Label>
-        <Input
-          id="email"
-          type="email"
-          required
-          value={formData.email}
-          onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-          placeholder="seu@email.com"
-        />
-      </div>
-
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2 text-left">
-          <Label htmlFor="modelo">
-            Modelo do Veículo{' '}
-            <span className="text-muted-foreground font-normal text-xs">(Opcional)</span>
-          </Label>
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="space-y-2">
+          <Label htmlFor="nome_lp">Nome Completo *</Label>
           <Input
-            id="modelo"
-            value={formData.carro_modelo}
-            onChange={(e) => setFormData({ ...formData, carro_modelo: e.target.value })}
-            placeholder="Ex: Corolla"
+            id="nome_lp"
+            required
+            value={formData.nome}
+            onChange={(e) => setFormData((prev) => ({ ...prev, nome: e.target.value }))}
+            placeholder="Seu nome"
           />
         </div>
-        <div className="space-y-2 text-left">
-          <Label htmlFor="ano">
-            Ano <span className="text-muted-foreground font-normal text-xs">(Opcional)</span>
-          </Label>
+
+        <div className="space-y-2">
+          <Label htmlFor="email_lp">E-mail</Label>
           <Input
-            id="ano"
-            value={formData.carro_ano}
-            onChange={(e) => setFormData({ ...formData, carro_ano: e.target.value })}
-            placeholder="Ex: 2020"
+            id="email_lp"
+            type="email"
+            value={formData.email}
+            onChange={(e) => setFormData((prev) => ({ ...prev, email: e.target.value }))}
+            placeholder="seu.email@exemplo.com"
           />
         </div>
-      </div>
 
-      <Button
-        type="submit"
-        className="w-full h-12 text-lg font-bold bg-red-600 hover:bg-red-700 text-white mt-4"
-        disabled={loading}
-      >
-        {loading ? 'Enviando...' : 'QUERO UMA AVALIAÇÃO'}
-      </Button>
-    </form>
+        <div className="space-y-2">
+          <Label htmlFor="whatsapp_lp">WhatsApp *</Label>
+          <Input
+            id="whatsapp_lp"
+            required
+            value={formData.whatsapp}
+            onChange={(e) => setFormData((prev) => ({ ...prev, whatsapp: e.target.value }))}
+            placeholder="(34) 99999-9999"
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="modelo_veiculo_lp">Veículo *</Label>
+          <Input
+            id="modelo_veiculo_lp"
+            required
+            value={formData.modelo_veiculo}
+            onChange={(e) => setFormData((prev) => ({ ...prev, modelo_veiculo: e.target.value }))}
+            placeholder="Ex: Honda Civic 2021"
+          />
+        </div>
+
+        <Button type="submit" className="w-full h-14 text-lg font-bold mt-4" disabled={loading}>
+          {loading ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : null}
+          Quero Avaliar Meu Carro
+        </Button>
+      </form>
+    </div>
   )
 }

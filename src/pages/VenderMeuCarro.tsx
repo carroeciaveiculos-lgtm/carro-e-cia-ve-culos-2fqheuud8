@@ -95,6 +95,8 @@ export default function VenderMeuCarro() {
           <div className="w-full max-w-md mx-auto lg:ml-auto">
             <LeadForm
               tipo="venda"
+              campanha="consignacao"
+              origem="Página - Vender Meu Carro"
               buttonText="Quero Vender Meu Carro Agora"
               whatsappText="Olá Luiz, quero vender meu carro!"
             />
