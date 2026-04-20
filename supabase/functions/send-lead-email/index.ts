@@ -1,6 +1,11 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 
-import { corsHeaders } from '../_shared/cors.ts'
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+  'Access-Control-Allow-Headers':
+    'authorization, x-client-info, x-supabase-client-platform, apikey, content-type',
+}
 
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY') || 're_gNKcmAnQ_NyzW7K8kj1Mgbf7AnJzXGoQj'
 const TO_EMAIL = 'contato@carroeciamotors.com.br'

@@ -1,6 +1,6 @@
 {
   "_versions": {
-    "send-lead-email": 24,
+    "send-lead-email": 25,
     "receive-leads": 24,
     "sync-estoque": 24,
     "webhook-portais": 25,
