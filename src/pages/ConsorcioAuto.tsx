@@ -5,6 +5,7 @@ import { trackConversion } from '@/lib/tracking'
 
 export default function ConsorcioAuto() {
   const wppText = 'Olá Adriana! Quero simular um consórcio de veículo.'
+  const phoneConsorcio = '5534998037651'
 
   const parceiros = ['Porto Consórcios', 'Ademicon']
 
@@ -30,7 +31,7 @@ export default function ConsorcioAuto() {
             className="text-lg px-8 py-6 h-auto bg-red-600 hover:bg-red-700 text-white w-full sm:w-auto rounded-full font-bold shadow-lg shadow-red-600/20"
           >
             <a
-              href={getWhatsAppLink(wppText)}
+              href={getWhatsAppLink(wppText, phoneConsorcio)}
               target="_blank"
               rel="noopener noreferrer"
               onClick={() => trackConversion('whatsapp')}
@@ -43,7 +44,14 @@ export default function ConsorcioAuto() {
 
       <section className="py-20 px-4">
         <div className="container max-w-5xl mx-auto grid md:grid-cols-2 gap-12 items-center">
-          <div className="order-2 md:order-1">
+          <div className="flex justify-center md:justify-end md:order-1">
+            <img
+              src="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Fotos/Adriana%20foto%20profissional.jpeg"
+              alt="Adriana Araújo"
+              className="w-[200px] h-[240px] md:w-[280px] md:h-[320px] object-cover rounded-xl shadow-xl"
+            />
+          </div>
+          <div className="text-center md:text-left md:order-2">
             <h2 className="text-3xl font-bold mb-6">Adriana Araújo</h2>
             <p className="text-lg text-red-600 font-bold mb-4">
               Consultora de Consórcios
@@ -55,13 +63,6 @@ export default function ConsorcioAuto() {
               financeira.
             </p>
             <p className="font-bold text-lg">Km Zero Corretora de Seguros e Consórcios</p>
-          </div>
-          <div className="order-1 md:order-2 flex justify-center">
-            <img
-              src="https://img.usecurling.com/ppl/large?gender=female&seed=12"
-              alt="Adriana Araújo"
-              className="w-64 h-64 md:w-80 md:h-80 object-cover rounded-full border-8 border-red-100 shadow-xl"
-            />
           </div>
         </div>
       </section>
@@ -167,7 +168,7 @@ export default function ConsorcioAuto() {
             className="text-lg px-8 py-6 h-auto bg-[#25D366] hover:bg-[#20bd5a] text-white w-full sm:w-auto rounded-full font-bold shadow-lg"
           >
             <a
-              href={getWhatsAppLink(wppText)}
+              href={getWhatsAppLink(wppText, phoneConsorcio)}
               target="_blank"
               rel="noopener noreferrer"
               onClick={() => trackConversion('whatsapp')}

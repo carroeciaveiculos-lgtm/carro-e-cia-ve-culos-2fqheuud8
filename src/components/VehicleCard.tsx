@@ -39,16 +39,6 @@ export function VehicleCard({ vehicle }: { vehicle: any }) {
           decoding="async"
           className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-500"
         />
-        {vehicle.is_consignado && (
-          <Badge className="absolute top-3 right-3 bg-primary text-primary-foreground border-none">
-            Consignado
-          </Badge>
-        )}
-        {!vehicle.is_consignado && (
-          <Badge className="absolute top-3 right-3 bg-secondary text-secondary-foreground border-none">
-            Próprio
-          </Badge>
-        )}
       </div>
       <div className="p-5 flex flex-col flex-grow">
         <h3 className="font-display font-bold text-lg text-foreground line-clamp-1">

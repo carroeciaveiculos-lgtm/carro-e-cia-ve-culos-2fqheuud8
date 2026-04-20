@@ -17,16 +17,19 @@ const team = [
     name: 'Luiz Fernando',
     role: 'CEO',
     img: 'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Fotos/Luiz%20Fernando%20foto%20profissional.jpeg',
+    position: 'center 20%',
   },
   {
     name: 'Roberto Junior',
     role: 'Vendedor',
     img: 'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Fotos/Roberto%20Junior%20foto%20profissional.jpeg',
+    position: 'center 15%',
   },
   {
     name: 'Jessica Germano',
     role: 'Financeiro',
     img: 'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Fotos/Ljessica%20foto%20profissional.jpeg',
+    position: 'center 10%',
   },
 ]
 
@@ -223,15 +226,16 @@ export default function Consignacao() {
           </h2>
           <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
             {team.map((member, i) => (
-              <div key={i} className="text-center">
+              <div key={i} className="text-center flex flex-col items-center">
                 <img
                   src={member.img}
                   alt={`${member.name} - Carro e Cia Veículos`}
-                  width="400"
-                  height="400"
+                  width="160"
+                  height="160"
                   loading="lazy"
                   decoding="async"
-                  className="w-48 h-48 rounded-full object-cover mx-auto mb-4 border-4 border-background shadow-md"
+                  className="w-[120px] h-[120px] md:w-[160px] md:h-[160px] rounded-full object-cover mx-auto mb-4 border-[3px] border-[#E53935] shadow-md"
+                  style={{ objectPosition: member.position }}
                 />
                 <h3 className="text-xl font-bold">{member.name}</h3>
                 <p className="text-muted-foreground">{member.role}</p>

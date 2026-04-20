@@ -219,17 +219,25 @@ export default function Contato() {
             </div>
           </div>
 
-          <div className="mt-16 rounded-2xl overflow-hidden shadow-sm h-[400px] border">
-            <iframe
-              title="Mapa interativo mostrando a localização da loja Carro e Cia Veículos"
-              src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3755.932468759535!2d-47.93268868461794!3d-19.76810008669527!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x94bad00010839e0d%3A0xc3cf4813589b9d31!2sCarro%20%26%20Cia%20Ve%C3%ADculos!5e0!3m2!1spt-BR!2sbr!4v1714570198270!5m2!1spt-BR!2sbr"
-              width="100%"
-              height="100%"
-              style={{ border: 0 }}
-              allowFullScreen
-              loading="lazy"
-              referrerPolicy="no-referrer-when-downgrade"
-            ></iframe>
+          <div className="mt-16 space-y-6">
+            <div className="rounded-xl overflow-hidden shadow-[0_4px_12px_rgba(0,0,0,0.1)]">
+              <iframe
+                title="Mapa interativo mostrando a localização da loja Carro e Cia Veículos"
+                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3754.8879051323597!2d-47.93789018845835!3d-19.759916581513842!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x94bad1b54ff23a55%3A0x1d3108bae712d85d!2sCarro%20e%20Cia%20Com%C3%A9rcio%20de%20Ve%C3%ADculos!5e0!3m2!1spt-BR!2sbr!4v1776692231909!5m2!1spt-BR!2sbr"
+                width="100%"
+                className="h-[280px] md:h-[420px] border-0"
+                allowFullScreen
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+              ></iframe>
+            </div>
+            <div className="text-center text-muted-foreground bg-muted/30 p-6 rounded-xl border">
+              <p className="font-medium text-foreground mb-2">
+                📍 Av. Guilherme Ferreira, 1119 - São Benedito, Uberaba - MG · CEP 38022-200
+              </p>
+              <p className="mb-2">⏰ Seg a Sex: 8h às 18h | Sábado: 8h às 13h</p>
+              <p className="font-bold text-primary">📱 WhatsApp: (34) 99948-4285</p>
+            </div>
           </div>
         </div>
       </section>

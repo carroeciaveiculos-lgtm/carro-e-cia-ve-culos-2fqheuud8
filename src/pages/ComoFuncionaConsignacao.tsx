@@ -84,38 +84,41 @@ export default function ComoFuncionaConsignacao() {
         </div>
       </section>
 
-      <section className="py-20 px-4 overflow-hidden">
-        <div className="container max-w-5xl mx-auto">
-          <div className="relative">
-            <div className="absolute left-6 top-0 bottom-0 w-1 bg-red-200 lg:hidden"></div>
-            <div className="hidden lg:block absolute top-[44px] left-0 right-0 h-1 bg-red-200"></div>
+      <section className="py-20 px-4 overflow-hidden bg-muted/10">
+        <div className="container max-w-6xl mx-auto relative">
+          <div className="absolute left-[37px] lg:left-0 lg:right-0 top-8 bottom-8 lg:top-[17px] lg:bottom-auto w-[2px] lg:w-full lg:h-[2px] border-l-2 lg:border-l-0 lg:border-t-2 border-dashed border-[#E53935] z-0 opacity-50" />
 
-            <div className="flex flex-col lg:flex-row justify-between gap-12 lg:gap-6 relative">
-              {steps.map((step, i) => (
-                <div key={i} className="relative pl-16 lg:pl-0 lg:pt-24 lg:w-1/6">
-                  <div className="absolute left-0 top-0 lg:left-1/2 lg:-translate-x-1/2 lg:top-0 w-12 h-12 bg-red-600 text-white rounded-full flex items-center justify-center font-bold text-xl z-10 shadow-md">
-                    {step.n}
-                  </div>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-y-16 gap-x-8 relative z-10">
+            {steps.map((step, i) => (
+              <div key={i} className="relative pt-2 lg:pt-12 flex flex-col h-full">
+                <div className="absolute left-[20px] top-0 lg:left-1/2 lg:-translate-x-1/2 lg:-top-4 w-[36px] h-[36px] bg-[#E53935] text-white rounded-full flex items-center justify-center font-bold text-[18px] z-10 shadow-md ring-4 ring-background">
+                  {step.n}
+                </div>
 
-                  <div className="bg-card border-2 border-red-100 hover:border-red-300 rounded-xl p-6 h-full shadow-sm transition-colors relative pb-16">
-                    <div className="text-3xl mb-3">{step.emoji}</div>
-                    <h3 className="font-bold text-lg mb-3 leading-tight">{step.title}</h3>
-                    <p className="text-muted-foreground text-sm mb-6 leading-relaxed">
-                      {step.desc}
-                    </p>
+                <div className="bg-[#FFFFFF] border-2 border-[#E53935] rounded-[16px] p-[24px] shadow-[0_4px_16px_rgba(0,0,0,0.08)] flex flex-col flex-grow ml-16 lg:ml-0">
+                  <div className="text-3xl mb-4">{step.emoji}</div>
+                  <h3 className="font-bold text-[16px] uppercase text-[#333333] mb-3 leading-tight">
+                    {step.title}
+                  </h3>
+                  <p className="text-[14px] text-[#333333] mb-6 leading-[1.6] flex-grow">
+                    {step.desc}
+                  </p>
+                  <Button
+                    asChild
+                    className="w-full bg-[#E53935] hover:bg-red-700 text-white font-bold text-[14px] rounded-[8px] py-[10px] px-[20px] h-auto mt-auto"
+                  >
                     <a
                       href={getWhatsAppLink(wppText)}
                       target="_blank"
                       rel="noopener noreferrer"
                       onClick={() => trackConversion('whatsapp')}
-                      className="text-red-600 font-bold text-sm hover:underline absolute bottom-6 left-6 right-6"
                     >
-                      {step.cta} &rarr;
+                      {step.cta}
                     </a>
-                  </div>
+                  </Button>
                 </div>
-              ))}
-            </div>
+              </div>
+            ))}
           </div>
         </div>
       </section>

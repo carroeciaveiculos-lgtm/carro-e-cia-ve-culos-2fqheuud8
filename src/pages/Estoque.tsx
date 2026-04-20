@@ -36,7 +36,6 @@ export default function Estoque() {
     cambio: searchParams.getAll('cambio') || [],
     combustivel: searchParams.getAll('combustivel') || [],
     kmMax: searchParams.get('kmMax') ? parseInt(searchParams.get('kmMax')!) : 300000,
-    tipo: searchParams.getAll('tipo') || [],
     ordem: searchParams.get('ordem') || 'recentes',
   })
 
@@ -65,10 +64,6 @@ export default function Estoque() {
     if (filters.cambio.length > 0) query = query.in('cambio', filters.cambio)
     if (filters.combustivel.length > 0) query = query.in('combustivel', filters.combustivel)
 
-    if (filters.tipo.length === 1) {
-      query = query.eq('is_consignado', filters.tipo[0] === 'Consignado')
-    }
-
     if (filters.ordem === 'menor_preco') query = query.order('preco_venda', { ascending: true })
     else if (filters.ordem === 'maior_preco')
       query = query.order('preco_venda', { ascending: false })
@@ -92,7 +87,6 @@ export default function Estoque() {
     if (filters.ordem && filters.ordem !== 'recentes') params.set('ordem', filters.ordem)
     filters.cambio.forEach((c) => params.append('cambio', c))
     filters.combustivel.forEach((c) => params.append('combustivel', c))
-    filters.tipo.forEach((t) => params.append('tipo', t))
 
     // Only set if there are params, else clear it to keep URL clean
     if (params.toString()) {
@@ -102,7 +96,7 @@ export default function Estoque() {
     }
   }, [filters])
 
-  const toggleArrayFilter = (key: 'cambio' | 'combustivel' | 'tipo', value: string) => {
+  const toggleArrayFilter = (key: 'cambio' | 'combustivel', value: string) => {
     setFilters((prev) => ({
       ...prev,
       [key]: prev[key].includes(value)
@@ -255,22 +249,6 @@ export default function Estoque() {
         </div>
       </div>
 
-      <div>
-        <h3 className="font-bold mb-4">Tipo</h3>
-        <div className="space-y-2">
-          {['Consignado', 'Próprio'].map((c) => (
-            <div key={c} className="flex items-center gap-2">
-              <Checkbox
-                id={`t-${c}`}
-                checked={filters.tipo.includes(c)}
-                onCheckedChange={() => toggleArrayFilter('tipo', c)}
-              />
-              <Label htmlFor={`t-${c}`}>{c}</Label>
-            </div>
-          ))}
-        </div>
-      </div>
-
       <Button
         variant="outline"
         className="w-full"
@@ -285,7 +263,6 @@ export default function Estoque() {
             cambio: [],
             combustivel: [],
             kmMax: 300000,
-            tipo: [],
             ordem: 'recentes',
           })
         }
@@ -379,7 +356,6 @@ export default function Estoque() {
                     cambio: [],
                     combustivel: [],
                     kmMax: 300000,
-                    tipo: [],
                     ordem: 'recentes',
                   })
                 }
