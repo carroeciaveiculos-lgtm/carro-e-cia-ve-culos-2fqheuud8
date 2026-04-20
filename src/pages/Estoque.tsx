@@ -84,8 +84,8 @@ export default function Estoque() {
     fetchVehicles()
 
     const params = new URLSearchParams()
-    if (filters.marca) params.set('marca', filters.marca)
-    if (filters.modelo) params.set('modelo', filters.modelo)
+    if (filters.marca && filters.marca !== 'todas') params.set('marca', filters.marca)
+    if (filters.modelo && filters.modelo !== 'todos') params.set('modelo', filters.modelo)
     if (filters.precoMin) params.set('precoMin', filters.precoMin)
     if (filters.precoMax) params.set('precoMax', filters.precoMax)
     if (filters.kmMax < 300000) params.set('kmMax', filters.kmMax.toString())
@@ -93,7 +93,13 @@ export default function Estoque() {
     filters.cambio.forEach((c) => params.append('cambio', c))
     filters.combustivel.forEach((c) => params.append('combustivel', c))
     filters.tipo.forEach((t) => params.append('tipo', t))
-    setSearchParams(params, { replace: true })
+
+    // Only set if there are params, else clear it to keep URL clean
+    if (params.toString()) {
+      setSearchParams(params, { replace: true })
+    } else {
+      setSearchParams({}, { replace: true })
+    }
   }, [filters])
 
   const toggleArrayFilter = (key: 'cambio' | 'combustivel' | 'tipo', value: string) => {

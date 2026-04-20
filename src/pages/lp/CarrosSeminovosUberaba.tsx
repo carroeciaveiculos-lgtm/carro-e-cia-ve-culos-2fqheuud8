@@ -19,6 +19,7 @@ import {
 } from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
 import { getWhatsAppLink } from '@/lib/whatsapp'
+import { trackConversion } from '@/lib/tracking'
 import { supabase } from '@/lib/supabase/client'
 import { VehicleCard } from '@/components/VehicleCard'
 import { CheckCircle2, FilterX, Search } from 'lucide-react'
@@ -136,6 +137,7 @@ export default function CarrosSeminovosUberaba() {
                 )}
                 target="_blank"
                 rel="noopener noreferrer"
+                onClick={() => trackConversion('whatsapp')}
               >
                 Fale com a Carro e Cia pelo WhatsApp — Clique Aqui
               </a>
@@ -356,6 +358,7 @@ export default function CarrosSeminovosUberaba() {
                 href={getWhatsAppLink('Olá! Gostaria de avaliar meu carro para dar como entrada.')}
                 target="_blank"
                 rel="noopener noreferrer"
+                onClick={() => trackConversion('whatsapp')}
               >
                 Solicitar Avaliação Grátis pelo WhatsApp
               </a>

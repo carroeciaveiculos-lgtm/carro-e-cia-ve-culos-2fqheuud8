@@ -3,7 +3,7 @@ import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 import { corsHeaders } from '../_shared/cors.ts'
 
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY') || 're_gNKcmAnQ_NyzW7K8kj1Mgbf7AnJzXGoQj'
-const TO_EMAIL = 'lgacomerciodeveiculos@gmail.com'
+const TO_EMAIL = 'contato@carroeciamotors.com.br'
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {

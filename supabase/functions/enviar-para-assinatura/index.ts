@@ -67,7 +67,7 @@ Deno.serve(async (req) => {
         },
         {
           name: Deno.env.get('BREVO_SENDER_NAME') || 'Carro e Cia Veículos',
-          email: Deno.env.get('BREVO_SENDER_EMAIL') || 'contato@carroeciamotors.com.br',
+          email: Deno.env.get('BREVO_SENDER_EMAIL') || 'vendas@carroeciamotors.com.br',
           action: 'SIGN',
         },
       ],

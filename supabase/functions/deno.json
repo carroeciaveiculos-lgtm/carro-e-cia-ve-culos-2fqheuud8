@@ -4,9 +4,9 @@
     "receive-leads": 24,
     "sync-estoque": 24,
     "webhook-portais": 25,
-    "on-lead-created": 24,
+    "on-lead-created": 25,
     "consultar-placa": 30,
-    "enviar-para-assinatura": 25,
+    "enviar-para-assinatura": 26,
     "webhook-autentique": 23,
     "consultar-cpf": 19,
     "gerar-pdf-contrato": 12

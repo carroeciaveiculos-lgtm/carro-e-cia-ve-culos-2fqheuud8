@@ -9,6 +9,7 @@ import {
 } from '@/components/ui/accordion'
 import { Button } from '@/components/ui/button'
 import { getWhatsAppLink } from '@/lib/whatsapp'
+import { trackConversion } from '@/lib/tracking'
 
 const team = [
   {
@@ -260,10 +261,11 @@ export default function VenderMeuCarro() {
               aria-label="Quero Avaliar Meu Carro Grátis"
             >
               <a
-                href={getWhatsAppLink('Olá Luiz, quero avaliar meu carro grátis!')}
+                href={getWhatsAppLink('Olá Luiz! Quero saber mais sobre a consignação.')}
                 target="_blank"
                 rel="noopener noreferrer"
                 data-event="clique_whatsapp"
+                onClick={() => trackConversion('whatsapp')}
               >
                 Quero Avaliar Meu Carro Grátis
               </a>

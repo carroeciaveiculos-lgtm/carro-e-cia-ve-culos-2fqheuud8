@@ -10,6 +10,7 @@ import {
 } from '@/components/ui/accordion'
 import { Button } from '@/components/ui/button'
 import { getWhatsAppLink } from '@/lib/whatsapp'
+import { trackConversion } from '@/lib/tracking'
 
 const team = [
   {
@@ -272,10 +273,11 @@ export default function Consignacao() {
               aria-label="Quero Consignar Meu Carro Agora"
             >
               <a
-                href={getWhatsAppLink('Olá Luiz, quero consignar meu carro agora!')}
+                href={getWhatsAppLink('Olá Luiz! Quero saber mais sobre a consignação.')}
                 target="_blank"
                 rel="noopener noreferrer"
                 data-event="clique_whatsapp"
+                onClick={() => trackConversion('whatsapp')}
               >
                 Quero Consignar Meu Carro Agora
               </a>

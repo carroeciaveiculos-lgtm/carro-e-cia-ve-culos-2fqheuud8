@@ -1,103 +1,182 @@
-import { TrendingUp, PiggyBank, Target } from 'lucide-react'
+import { SEO } from '@/components/SEO'
 import { Button } from '@/components/ui/button'
+import { getWhatsAppLink } from '@/lib/whatsapp'
+import { trackConversion } from '@/lib/tracking'
 
 export default function ConsorcioAuto() {
-  const wppText = encodeURIComponent(
-    'Olá Adriana! Quero entender como funciona o Consórcio Auto pela Km Zero Corretora.',
-  )
+  const wppText = 'Olá Adriana! Quero simular um consórcio de veículo.'
+
+  const parceiros = ['Porto Consórcios', 'Ademicon']
 
   return (
-    <div className="min-h-[calc(100vh-80px)] bg-background">
-      <div className="bg-[#1B5E20] text-white py-20 px-4 text-center">
+    <div className="min-h-screen bg-background flex flex-col">
+      <SEO
+        title="Consórcio Auto em Uberaba | Carro e Cia Veículos"
+        description="A forma mais inteligente de conquistar seu próximo veículo. Sem juros, sem entrada, com assessoria da consultora Adriana Araújo."
+      />
+
+      <section className="bg-black text-white py-20 px-4 text-center">
         <div className="container max-w-4xl mx-auto">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 text-white text-sm font-bold uppercase tracking-wider mb-6">
-            <PiggyBank className="w-4 h-4" /> Planejamento Inteligente
-          </div>
-          <h1 className="text-4xl lg:text-6xl font-display font-extrabold mb-6 leading-tight">
-            Seu próximo carro sem pagar juros.
+          <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 leading-tight">
+            Consórcio Auto em Uberaba — Compre seu carro sem juros
           </h1>
-          <p className="text-xl text-green-100 mb-8 max-w-2xl mx-auto">
-            O Consórcio é a forma mais inteligente e barata de planejar a troca do seu veículo.
-            Parceria exclusiva Carro e Cia & Km Zero Corretora.
+          <p className="text-xl text-gray-300 mb-10 max-w-2xl mx-auto">
+            A forma mais inteligente de conquistar seu próximo veículo. Sem juros, sem entrada, com
+            assessoria especializada da consultora Adriana Araújo.
           </p>
-        </div>
-      </div>
-
-      <div className="container max-w-5xl mx-auto py-16 px-4">
-        <div className="grid md:grid-cols-2 gap-12 items-center flex-col-reverse">
-          <div className="bg-card p-8 rounded-2xl shadow-xl border text-center">
-            <div className="w-32 h-32 rounded-full overflow-hidden mx-auto mb-6 border-4 border-background shadow-md">
-              <img
-                src="https://img.usecurling.com/ppl/thumbnail?gender=female&seed=2"
-                alt="Adriana - Km Zero Corretora"
-                className="w-full h-full object-cover"
-              />
-            </div>
-            <h3 className="font-display font-bold text-2xl mb-2">Adriana - Km Zero</h3>
-            <p className="text-muted-foreground mb-6">
-              Tire todas as suas dúvidas sobre lances, contemplação e taxas com nossa especialista.
-            </p>
-
-            <Button
-              asChild
-              className="w-full h-14 text-lg font-bold bg-[#25D366] hover:bg-[#20bd5a] text-white"
+          <Button
+            asChild
+            size="lg"
+            className="text-lg px-8 py-6 h-auto bg-red-600 hover:bg-red-700 text-white w-full sm:w-auto rounded-full font-bold shadow-lg shadow-red-600/20"
+          >
+            <a
+              href={getWhatsAppLink(wppText)}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => trackConversion('whatsapp')}
             >
-              <a
-                href={`https://wa.me/5534999484285?text=${wppText}`}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                Simular Consórcio
-              </a>
-            </Button>
+              QUERO SIMULAR UM CONSÓRCIO
+            </a>
+          </Button>
+        </div>
+      </section>
+
+      <section className="py-20 px-4">
+        <div className="container max-w-5xl mx-auto grid md:grid-cols-2 gap-12 items-center">
+          <div className="order-2 md:order-1">
+            <h2 className="text-3xl font-bold mb-6">Adriana Araújo</h2>
+            <p className="text-lg text-red-600 font-bold mb-4">
+              Consultora de Consórcios
+              <br />
+              Especialista em Planejamento Financeiro Automotivo
+            </p>
+            <p className="text-muted-foreground mb-4 leading-relaxed">
+              Mais de 20 anos ajudando pessoas a conquistarem seus objetivos com inteligência
+              financeira.
+            </p>
+            <p className="font-bold text-lg">Km Zero Corretora de Seguros e Consórcios</p>
           </div>
+          <div className="order-1 md:order-2 flex justify-center">
+            <img
+              src="https://img.usecurling.com/ppl/large?gender=female&seed=12"
+              alt="Adriana Araújo"
+              className="w-64 h-64 md:w-80 md:h-80 object-cover rounded-full border-8 border-red-100 shadow-xl"
+            />
+          </div>
+        </div>
+      </section>
 
-          <div className="space-y-8">
-            <h2 className="text-3xl font-display font-bold">
-              Por que o consórcio é a escolha certa?
-            </h2>
-
-            <div className="flex gap-4">
-              <div className="w-12 h-12 rounded-full bg-green-500/10 flex items-center justify-center flex-shrink-0">
-                <TrendingUp className="w-6 h-6 text-green-600" />
-              </div>
-              <div>
-                <h3 className="font-bold text-xl mb-1">Zero Juros</h3>
-                <p className="text-muted-foreground">
-                  Diferente do financiamento, no consórcio você paga apenas uma pequena taxa de
-                  administração. Economia real para o seu bolso.
-                </p>
-              </div>
+      <section className="py-20 bg-muted/30 px-4 border-y">
+        <div className="container max-w-5xl mx-auto">
+          <h2 className="text-3xl font-bold text-center mb-12">Consórcio vs Financiamento</h2>
+          <div className="grid md:grid-cols-2 gap-8">
+            <div className="bg-card border rounded-2xl p-8 shadow-sm">
+              <h3 className="text-2xl font-bold mb-6 text-green-600 flex items-center gap-2">
+                <span className="text-3xl">✅</span> CONSÓRCIO
+              </h3>
+              <ul className="space-y-4">
+                <li className="flex items-center gap-3">
+                  <span className="text-green-500 font-bold">✓</span> Sem juros
+                </li>
+                <li className="flex items-center gap-3">
+                  <span className="text-green-500 font-bold">✓</span> Sem entrada obrigatória
+                </li>
+                <li className="flex items-center gap-3">
+                  <span className="text-green-500 font-bold">✓</span> Parcelas menores
+                </li>
+                <li className="flex items-center gap-3">
+                  <span className="text-green-500 font-bold">✓</span> Carta de crédito com poder de
+                  compra
+                </li>
+              </ul>
             </div>
 
-            <div className="flex gap-4">
-              <div className="w-12 h-12 rounded-full bg-green-500/10 flex items-center justify-center flex-shrink-0">
-                <Target className="w-6 h-6 text-green-600" />
-              </div>
-              <div>
-                <h3 className="font-bold text-xl mb-1">Poder de Compra à Vista</h3>
-                <p className="text-muted-foreground">
-                  Ao ser contemplado, você tem a carta de crédito na mão, garantindo alto poder de
-                  negociação na Carro e Cia.
-                </p>
-              </div>
-            </div>
-
-            <div className="flex gap-4">
-              <div className="w-12 h-12 rounded-full bg-green-500/10 flex items-center justify-center flex-shrink-0">
-                <PiggyBank className="w-6 h-6 text-green-600" />
-              </div>
-              <div>
-                <h3 className="font-bold text-xl mb-1">Flexibilidade e Planejamento</h3>
-                <p className="text-muted-foreground">
-                  Parcelas que cabem no seu orçamento. Ideal para quem não tem pressa e quer trocar
-                  de carro no médio prazo.
-                </p>
-              </div>
+            <div className="bg-card border rounded-2xl p-8 shadow-sm">
+              <h3 className="text-2xl font-bold mb-6 text-red-600 flex items-center gap-2">
+                <span className="text-3xl">❌</span> FINANCIAMENTO
+              </h3>
+              <ul className="space-y-4">
+                <li className="flex items-center gap-3">
+                  <span className="text-red-500 font-bold">✕</span> Juros altos (até 2,5% ao mês)
+                </li>
+                <li className="flex items-center gap-3">
+                  <span className="text-red-500 font-bold">✕</span> Entrada obrigatória
+                </li>
+                <li className="flex items-center gap-3">
+                  <span className="text-red-500 font-bold">✕</span> Parcelas maiores
+                </li>
+                <li className="flex items-center gap-3">
+                  <span className="text-red-500 font-bold">✕</span> Paga muito mais que o valor do
+                  carro
+                </li>
+              </ul>
             </div>
           </div>
         </div>
-      </div>
+      </section>
+
+      <section className="py-20 px-4">
+        <div className="container max-w-5xl mx-auto">
+          <h2 className="text-3xl font-bold text-center mb-12">Como Funciona</h2>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-8 text-center">
+            <div className="bg-muted/30 border rounded-2xl p-6 shadow-sm">
+              <div className="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-4">
+                1
+              </div>
+              <h3 className="font-bold">SIMULAÇÃO GRATUITA</h3>
+            </div>
+            <div className="bg-muted/30 border rounded-2xl p-6 shadow-sm">
+              <div className="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-4">
+                2
+              </div>
+              <h3 className="font-bold">ESCOLHA DO PLANO</h3>
+            </div>
+            <div className="bg-muted/30 border rounded-2xl p-6 shadow-sm">
+              <div className="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-4">
+                3
+              </div>
+              <h3 className="font-bold">ADESÃO AO GRUPO</h3>
+            </div>
+            <div className="bg-muted/30 border rounded-2xl p-6 shadow-sm">
+              <div className="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-4">
+                4
+              </div>
+              <h3 className="font-bold">CONTEMPLAÇÃO</h3>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="py-20 px-4 text-center bg-black text-white">
+        <div className="container max-w-5xl mx-auto">
+          <h2 className="text-3xl font-bold mb-12">Parceiros</h2>
+          <div className="flex flex-wrap justify-center gap-4 mb-16">
+            {parceiros.map((p) => (
+              <div
+                key={p}
+                className="bg-white/10 border border-white/20 px-6 py-3 rounded-full font-medium"
+              >
+                {p}
+              </div>
+            ))}
+          </div>
+
+          <Button
+            asChild
+            size="lg"
+            className="text-lg px-8 py-6 h-auto bg-[#25D366] hover:bg-[#20bd5a] text-white w-full sm:w-auto rounded-full font-bold shadow-lg"
+          >
+            <a
+              href={getWhatsAppLink(wppText)}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => trackConversion('whatsapp')}
+            >
+              SIMULAR MEU CONSÓRCIO AGORA
+            </a>
+          </Button>
+        </div>
+      </section>
     </div>
   )
 }

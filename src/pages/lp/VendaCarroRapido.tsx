@@ -9,6 +9,7 @@ import {
 } from '@/components/ui/breadcrumb'
 import { Button } from '@/components/ui/button'
 import { getWhatsAppLink } from '@/lib/whatsapp'
+import { trackConversion } from '@/lib/tracking'
 import { Link } from 'react-router-dom'
 import {
   Table,
@@ -71,11 +72,10 @@ export default function VendaCarroRapido() {
             </p>
             <Button size="lg" className="text-lg px-8 py-6 h-auto w-full sm:w-auto" asChild>
               <a
-                href={getWhatsAppLink(
-                  'Olá! Quero vender meu carro de forma rápida e segura com a Carro e Cia.',
-                )}
+                href={getWhatsAppLink('Olá Luiz! Preciso vender meu carro rápido. Pode me ajudar?')}
                 target="_blank"
                 rel="noopener noreferrer"
+                onClick={() => trackConversion('whatsapp')}
               >
                 Quero Vender Meu Carro — Solicitar Avaliação Grátis
               </a>
@@ -185,11 +185,10 @@ export default function VendaCarroRapido() {
             </p>
             <Button asChild size="lg" className="w-full sm:w-auto h-14 text-lg px-8">
               <a
-                href={getWhatsAppLink(
-                  'Olá! Gostaria de agendar a avaliação do meu carro para colocar em consignação.',
-                )}
+                href={getWhatsAppLink('Olá Luiz! Preciso vender meu carro rápido. Pode me ajudar?')}
                 target="_blank"
                 rel="noopener noreferrer"
+                onClick={() => trackConversion('whatsapp')}
               >
                 Quero Vender Meu Carro — Solicitar Avaliação Grátis
               </a>

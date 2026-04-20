@@ -5,7 +5,11 @@ import { Toaster } from '@/components/ui/toaster'
 // Redirecionamento 301 (Client-side) do domínio antigo e www para o novo domínio oficial
 if (typeof window !== 'undefined') {
   const hostname = window.location.hostname
-  if (hostname === 'carroeciaveiculos.goskip.app' || hostname === 'www.carroeciamotors.com.br') {
+  if (
+    hostname === 'carroeciaveiculos.goskip.app' ||
+    hostname === 'www.carroeciamotors.com.br' ||
+    hostname === 'carro-e-cia-veiculos-bf939--preview.goskip.app'
+  ) {
     window.location.replace(
       `https://carroeciamotors.com.br${window.location.pathname}${window.location.search}`,
     )
@@ -18,7 +22,6 @@ import { AuthProvider } from '@/hooks/use-auth'
 import PublicLayout from '@/components/PublicLayout'
 import { ProtectedRoute } from '@/components/ProtectedRoute'
 import NotFound from './pages/NotFound'
-import { Analytics } from '@/components/Analytics'
 
 // Admin Layout lazy loaded to reduce unused JS in public routes
 const AdminLayout = lazy(() => import('@/components/AdminLayout'))
@@ -37,10 +40,12 @@ const Troca = lazy(() => import('./pages/consignacao/Troca'))
 const Obrigado = lazy(() => import('./pages/Obrigado'))
 const SeguroAuto = lazy(() => import('./pages/SeguroAuto'))
 const ConsorcioAuto = lazy(() => import('./pages/ConsorcioAuto'))
+const ConsignarMeuCarro = lazy(() => import('./pages/ConsignarMeuCarro'))
+const ComoFuncionaConsignacao = lazy(() => import('./pages/ComoFuncionaConsignacao'))
+const FinanciamentoAuto = lazy(() => import('./pages/FinanciamentoAuto'))
 
 // Novas LPs e Blog
 const CarrosSeminovosUberaba = lazy(() => import('./pages/lp/CarrosSeminovosUberaba'))
-const FinanciamentoConsignado = lazy(() => import('./pages/lp/FinanciamentoConsignado'))
 const VendaCarroRapido = lazy(() => import('./pages/lp/VendaCarroRapido'))
 const VenderMeuCarro = lazy(() => import('./pages/VenderMeuCarro'))
 const BlogIndex = lazy(() => import('./pages/blog/BlogIndex'))
@@ -71,7 +76,6 @@ const PageLoader = () => (
 
 const App = () => (
   <AuthProvider>
-    <Analytics />
     <BrowserRouter>
       <TooltipProvider>
         <Toaster />
@@ -96,15 +100,19 @@ const App = () => (
 
               {/* LPs SEO */}
               <Route path="/carros-seminovos-uberaba-mg" element={<CarrosSeminovosUberaba />} />
-              {/* Redirecionamento da URL antiga para a nova (plural) */}
+              {/* Redirecionamento da URL antiga para a nova */}
               <Route
                 path="/financiamento-veiculo-consignado"
-                element={<Navigate to="/financiamento-veiculos-consignados" replace />}
+                element={<Navigate to="/financiamento-auto" replace />}
               />
               <Route
                 path="/financiamento-veiculos-consignados"
-                element={<FinanciamentoConsignado />}
+                element={<Navigate to="/financiamento-auto" replace />}
               />
+              <Route path="/financiamento-auto" element={<FinanciamentoAuto />} />
+
+              <Route path="/consignar-meu-carro" element={<ConsignarMeuCarro />} />
+              <Route path="/como-funciona-a-consignacao" element={<ComoFuncionaConsignacao />} />
               <Route path="/venda-seu-carro-rapido-uberaba" element={<VendaCarroRapido />} />
               <Route path="/vender-meu-carro" element={<VenderMeuCarro />} />
 

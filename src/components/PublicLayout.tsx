@@ -1,22 +1,36 @@
 import { Outlet, Link } from 'react-router-dom'
 import { WhatsAppButton } from './WhatsAppButton'
 import { ExitIntentPopup } from './ExitIntentPopup'
-import { Menu, X } from 'lucide-react'
+import { Menu, X, ChevronDown } from 'lucide-react'
 import { useState } from 'react'
 import { cn } from '@/lib/utils'
+import { trackConversion } from '@/lib/tracking'
+import { getWhatsAppLink } from '@/lib/whatsapp'
 
 export default function PublicLayout() {
   const [menuOpen, setMenuOpen] = useState(false)
+  const [servicesOpen, setServicesOpen] = useState(false)
 
   const links = [
     { label: 'Início', href: '/' },
-    { label: 'Estoque', href: '/estoque' },
+    { label: 'Veículos', href: '/estoque' },
+  ]
+
+  const servicesDropdown = [
+    { label: 'Consignação de Veículos', href: '/consignacao' },
     { label: 'Vender Meu Carro', href: '/vender-meu-carro' },
-    { label: 'Consignação', href: '/consignacao' },
-    { label: 'Financiamento', href: '/financiamento-veiculo-consignado' },
+    { label: 'Financiamento Auto', href: '/financiamento-auto' },
+    { label: 'Seguro Auto', href: '/seguro-auto' },
+    { label: 'Consórcio Auto', href: '/consorcio-auto' },
+  ]
+
+  const rightLinks = [
+    { label: 'Como Funciona', href: '/como-funciona-a-consignacao' },
     { label: 'Blog', href: '/blog' },
     { label: 'Sobre', href: '/sobre' },
   ]
+
+  const wppText = 'Olá Luiz! Quero saber mais sobre a consignação.'
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -33,24 +47,50 @@ export default function PublicLayout() {
           </Link>
 
           {/* Desktop Menu */}
-          <nav className="hidden md:flex items-center space-x-6 text-sm font-medium">
+          <nav className="hidden lg:flex items-center space-x-6 text-sm font-medium">
             {links.map((l) => (
               <Link
                 key={l.href}
                 to={l.href}
                 className="transition-colors hover:text-foreground/80 text-foreground/60"
-                target="_self"
               >
                 {l.label}
               </Link>
             ))}
+
+            <div className="relative group">
+              <button className="flex items-center gap-1 transition-colors hover:text-foreground/80 text-foreground/60 py-2">
+                Nossos Serviços <ChevronDown className="w-4 h-4" />
+              </button>
+              <div className="absolute top-full left-0 hidden group-hover:flex flex-col bg-white border shadow-lg rounded-md min-w-[240px] text-black overflow-hidden">
+                {servicesDropdown.map((d) => (
+                  <Link
+                    key={d.href}
+                    to={d.href}
+                    className="px-4 py-3 hover:bg-gray-50 hover:text-red-600 border-l-4 border-transparent hover:border-red-600 transition-colors text-sm font-medium"
+                  >
+                    {d.label}
+                  </Link>
+                ))}
+              </div>
+            </div>
+
+            {rightLinks.map((l) => (
+              <Link
+                key={l.href}
+                to={l.href}
+                className="transition-colors hover:text-foreground/80 text-foreground/60"
+              >
+                {l.label}
+              </Link>
+            ))}
+
             <a
-              href="https://wa.me/5534999484285?text=Olá%20Luiz%2C%20vim%20pelo%20site!"
+              href={getWhatsAppLink(wppText)}
               target="_blank"
               rel="noopener noreferrer"
+              onClick={() => trackConversion('whatsapp')}
               className="bg-[#25D366] text-white px-4 py-2 rounded-full font-bold hover:bg-[#25D366]/90 transition-colors"
-              aria-label="Falar com Luiz pelo WhatsApp"
-              data-event="clique_whatsapp"
             >
               Falar pelo WhatsApp
             </a>
@@ -58,7 +98,7 @@ export default function PublicLayout() {
 
           {/* Mobile Toggle */}
           <button
-            className="md:hidden p-2"
+            className="lg:hidden p-2"
             onClick={() => setMenuOpen(!menuOpen)}
             aria-label="Menu"
           >
@@ -70,32 +110,67 @@ export default function PublicLayout() {
       {/* Mobile Menu Offcanvas */}
       <div
         className={cn(
-          'fixed inset-0 z-40 bg-background transition-transform transform md:hidden flex flex-col',
+          'fixed inset-0 z-40 bg-background transition-transform transform lg:hidden flex flex-col overflow-y-auto',
           menuOpen ? 'translate-x-0' : 'translate-x-full',
         )}
         style={{ top: '64px' }}
       >
-        <nav className="flex flex-col p-6 space-y-6 text-lg font-medium flex-1">
+        <nav className="flex flex-col p-6 space-y-4 text-lg font-medium flex-1">
           {links.map((l) => (
             <Link
               key={l.href}
               to={l.href}
               onClick={() => setMenuOpen(false)}
-              target="_self"
-              className="hover:text-primary"
+              className="hover:text-primary py-2 border-b"
             >
               {l.label}
             </Link>
           ))}
-          <div className="mt-auto pb-8">
+
+          <div className="py-2 border-b">
+            <button
+              onClick={() => setServicesOpen(!servicesOpen)}
+              className="flex items-center justify-between w-full hover:text-primary"
+            >
+              Nossos Serviços{' '}
+              <ChevronDown
+                className={cn('w-5 h-5 transition-transform', servicesOpen && 'rotate-180')}
+              />
+            </button>
+            {servicesOpen && (
+              <div className="flex flex-col pl-4 mt-2 space-y-3 pb-2">
+                {servicesDropdown.map((d) => (
+                  <Link
+                    key={d.href}
+                    to={d.href}
+                    onClick={() => setMenuOpen(false)}
+                    className="text-muted-foreground hover:text-red-600 border-l-2 border-transparent hover:border-red-600 pl-3 py-1"
+                  >
+                    {d.label}
+                  </Link>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {rightLinks.map((l) => (
+            <Link
+              key={l.href}
+              to={l.href}
+              onClick={() => setMenuOpen(false)}
+              className="hover:text-primary py-2 border-b"
+            >
+              {l.label}
+            </Link>
+          ))}
+
+          <div className="mt-8 pb-8">
             <a
-              href="https://wa.me/5534999484285?text=Olá%20Luiz%2C%20vim%20pelo%20site!"
+              href={getWhatsAppLink(wppText)}
               target="_blank"
               rel="noopener noreferrer"
+              onClick={() => trackConversion('whatsapp')}
               className="bg-[#25D366] text-white px-4 py-3 rounded-full font-bold text-center block"
-              onClick={() => setMenuOpen(false)}
-              aria-label="Falar com Luiz pelo WhatsApp"
-              data-event="clique_whatsapp"
             >
               Falar pelo WhatsApp
             </a>
