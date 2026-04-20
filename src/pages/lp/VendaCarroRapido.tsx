@@ -9,8 +9,9 @@ import {
 } from '@/components/ui/breadcrumb'
 import { Button } from '@/components/ui/button'
 import { getWhatsAppLink } from '@/lib/whatsapp'
-import { trackConversion } from '@/lib/tracking'
+import { trackConversion, trackGTMEvent } from '@/lib/tracking'
 import { Link } from 'react-router-dom'
+import { ConsignacaoLPForm } from '@/components/ConsignacaoLPForm'
 import {
   Table,
   TableBody,
@@ -75,7 +76,10 @@ export default function VendaCarroRapido() {
                 href={getWhatsAppLink('Olá Luiz! Preciso vender meu carro rápido. Pode me ajudar?')}
                 target="_blank"
                 rel="noopener noreferrer"
-                onClick={() => trackConversion('whatsapp')}
+                onClick={() => {
+                  trackConversion('whatsapp')
+                  trackGTMEvent('click_whatsapp_venda_rapida')
+                }}
               >
                 Quero Vender Meu Carro — Solicitar Avaliação Grátis
               </a>
@@ -175,24 +179,42 @@ export default function VendaCarroRapido() {
             <li>Vendido — você recebe o valor combinado</li>
           </ol>
 
-          <div className="mt-16 p-10 bg-primary/5 border border-primary/20 rounded-2xl text-center shadow-sm">
-            <h2 className="text-3xl font-bold mb-6 mt-0 text-foreground">
-              Pare de perder tempo com propostas que não dão em nada!
-            </h2>
-            <p className="mb-8 text-muted-foreground text-lg">
-              Quer vender rápido e seguro? Nossa equipe tem dezenas de compradores esperando. Clique
-              abaixo e comece a resolver a venda do seu carro hoje mesmo.
-            </p>
-            <Button asChild size="lg" className="w-full sm:w-auto h-14 text-lg px-8">
-              <a
-                href={getWhatsAppLink('Olá Luiz! Preciso vender meu carro rápido. Pode me ajudar?')}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={() => trackConversion('whatsapp')}
-              >
-                Quero Vender Meu Carro — Solicitar Avaliação Grátis
-              </a>
-            </Button>
+          <div className="mt-16 bg-muted/20 border rounded-2xl shadow-sm overflow-hidden">
+            <div className="grid md:grid-cols-2 gap-8 items-center p-8 md:p-12">
+              <div>
+                <h2 className="text-3xl font-bold mb-6 mt-0 text-foreground">
+                  Pare de perder tempo com propostas que não dão em nada!
+                </h2>
+                <p className="mb-8 text-muted-foreground text-lg">
+                  Quer vender rápido e seguro? Nossa equipe tem dezenas de compradores esperando.
+                  Preencha o formulário e nossa equipe entrará em contato em minutos.
+                </p>
+                <Button asChild size="lg" className="w-full sm:w-auto h-14 text-lg px-8">
+                  <a
+                    href={getWhatsAppLink(
+                      'Olá Luiz! Preciso vender meu carro rápido. Pode me ajudar?',
+                    )}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() => {
+                      trackConversion('whatsapp')
+                      trackGTMEvent('click_whatsapp_venda_rapida')
+                    }}
+                  >
+                    Falar Direto no WhatsApp
+                  </a>
+                </Button>
+              </div>
+              <div className="bg-background rounded-xl">
+                <ConsignacaoLPForm
+                  origem="LP - Venda Rápida"
+                  title="Venda Rápida"
+                  subtitle="Avaliação online gratuita"
+                  campanha="venda_rapida"
+                  whatsappText="Olá Luiz! Preciso vender meu carro rápido. Pode me ajudar?"
+                />
+              </div>
+            </div>
           </div>
         </div>
       </section>

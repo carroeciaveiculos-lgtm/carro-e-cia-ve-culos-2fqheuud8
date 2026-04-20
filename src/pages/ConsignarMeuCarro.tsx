@@ -1,7 +1,7 @@
 import { SEO } from '@/components/SEO'
 import { Button } from '@/components/ui/button'
 import { getWhatsAppLink } from '@/lib/whatsapp'
-import { trackConversion } from '@/lib/tracking'
+import { trackConversion, trackGTMEvent } from '@/lib/tracking'
 import { CheckCircle2, XCircle } from 'lucide-react'
 import { ConsignacaoLPForm } from '@/components/ConsignacaoLPForm'
 
@@ -33,7 +33,10 @@ export default function ConsignarMeuCarro() {
               href={getWhatsAppLink(wppText)}
               target="_blank"
               rel="noopener noreferrer"
-              onClick={() => trackConversion('whatsapp')}
+              onClick={() => {
+                trackConversion('whatsapp')
+                trackGTMEvent('click_whatsapp_consignacao')
+              }}
             >
               QUERO CONSIGNAR MEU CARRO AGORA
             </a>
@@ -184,7 +187,10 @@ export default function ConsignarMeuCarro() {
                 href={getWhatsAppLink(wppText)}
                 target="_blank"
                 rel="noopener noreferrer"
-                onClick={() => trackConversion('whatsapp')}
+                onClick={() => {
+                  trackConversion('whatsapp')
+                  trackGTMEvent('click_whatsapp_consignacao')
+                }}
               >
                 AVALIAR MEU CARRO GRATUITAMENTE
               </a>
@@ -195,6 +201,8 @@ export default function ConsignarMeuCarro() {
               origem="LP - Consignar Meu Carro"
               title="Solicite uma avaliação"
               subtitle="Nossa equipe entrará em contato rapidamente."
+              campanha="consignacao"
+              whatsappText={wppText}
             />
           </div>
         </div>

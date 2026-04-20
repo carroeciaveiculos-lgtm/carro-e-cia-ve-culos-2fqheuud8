@@ -10,7 +10,7 @@ import {
 } from '@/components/ui/accordion'
 import { Button } from '@/components/ui/button'
 import { getWhatsAppLink } from '@/lib/whatsapp'
-import { trackConversion } from '@/lib/tracking'
+import { trackConversion, trackGTMEvent } from '@/lib/tracking'
 
 const team = [
   {
@@ -107,6 +107,7 @@ export default function Consignacao() {
           <div className="w-full max-w-md mx-auto lg:ml-auto">
             <LeadForm
               tipo="consignacao"
+              campanha="consignacao"
               buttonText="Quero Consignar Meu Carro Agora"
               whatsappText="Olá Luiz, quero consignar meu carro!"
             />
@@ -281,7 +282,10 @@ export default function Consignacao() {
                 target="_blank"
                 rel="noopener noreferrer"
                 data-event="clique_whatsapp"
-                onClick={() => trackConversion('whatsapp')}
+                onClick={() => {
+                  trackConversion('whatsapp')
+                  trackGTMEvent('click_whatsapp_consignacao')
+                }}
               >
                 Quero Consignar Meu Carro Agora
               </a>

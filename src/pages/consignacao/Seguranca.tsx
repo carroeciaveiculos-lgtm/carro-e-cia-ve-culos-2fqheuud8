@@ -3,7 +3,7 @@ import { CheckCircle2, XCircle } from 'lucide-react'
 import { SEO } from '@/components/SEO'
 import { Button } from '@/components/ui/button'
 import { getWhatsAppLink } from '@/lib/whatsapp'
-import { trackConversion } from '@/lib/tracking'
+import { trackConversion, trackGTMEvent } from '@/lib/tracking'
 
 export default function Seguranca() {
   const wppText = 'Olá Luiz! Quero vender meu carro com segurança. Pode me ajudar?'
@@ -34,7 +34,10 @@ export default function Seguranca() {
               href={getWhatsAppLink(wppText)}
               target="_blank"
               rel="noopener noreferrer"
-              onClick={() => trackConversion('whatsapp')}
+              onClick={() => {
+                trackConversion('whatsapp')
+                trackGTMEvent('click_whatsapp_venda_segura')
+              }}
             >
               QUERO VENDER MEU CARRO COM SEGURANÇA
             </a>
@@ -134,27 +137,45 @@ export default function Seguranca() {
       </section>
 
       <section className="py-20 px-4 bg-muted/20">
-        <div className="container max-w-4xl mx-auto text-center">
-          <h2 className="text-4xl font-bold mb-4">
-            Seu carro tem valor.
-            <br />
-            Sua segurança não tem preço.
-          </h2>
-          <div className="mt-10">
-            <Button
-              asChild
-              size="lg"
-              className="text-lg px-8 py-6 h-auto bg-red-600 hover:bg-red-700 text-white w-full sm:w-auto rounded-full font-bold shadow-lg"
-            >
-              <a
-                href={getWhatsAppLink(wppText)}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={() => trackConversion('whatsapp')}
+        <div className="container max-w-4xl mx-auto grid md:grid-cols-2 gap-12 items-center">
+          <div>
+            <h2 className="text-4xl font-bold mb-4">
+              Seu carro tem valor.
+              <br />
+              Sua segurança não tem preço.
+            </h2>
+            <p className="text-xl text-muted-foreground mb-8 mt-4">
+              Preencha o formulário e um especialista da nossa equipe fará uma avaliação gratuita do
+              seu veículo.
+            </p>
+            <div className="mt-6">
+              <Button
+                asChild
+                size="lg"
+                className="text-lg px-8 py-6 h-auto bg-red-600 hover:bg-red-700 text-white w-full rounded-full font-bold shadow-lg"
               >
-                QUERO VENDER COM SEGURANÇA AGORA
-              </a>
-            </Button>
+                <a
+                  href={getWhatsAppLink(wppText)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() => {
+                    trackConversion('whatsapp')
+                    trackGTMEvent('click_whatsapp_venda_segura')
+                  }}
+                >
+                  FALAR DIRETO NO WHATSAPP
+                </a>
+              </Button>
+            </div>
+          </div>
+          <div className="bg-card p-6 md:p-8 rounded-2xl shadow-xl border">
+            <ConsignacaoLPForm
+              origem="LP - Venda Segura"
+              title="Venda com Segurança"
+              subtitle="Receba uma avaliação do seu veículo"
+              campanha="venda_segura"
+              whatsappText={wppText}
+            />
           </div>
         </div>
       </section>

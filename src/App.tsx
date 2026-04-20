@@ -9,11 +9,8 @@ const DomainRedirect = () => {
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const hostname = window.location.hostname
-      // Evita redirecionar no ambiente de preview do Skip
-      if (
-        hostname === 'carroeciaveiculos.goskip.app' ||
-        hostname === 'www.carroeciamotors.com.br'
-      ) {
+      // Redireciona APENAS de www para sem www no domínio de produção
+      if (hostname === 'www.carroeciamotors.com.br') {
         window.location.replace(
           `https://carroeciamotors.com.br${window.location.pathname}${window.location.search}`,
         )

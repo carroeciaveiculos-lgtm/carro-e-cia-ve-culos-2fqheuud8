@@ -2,17 +2,19 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { trackConversion } from '@/lib/tracking'
+import { trackConversion, trackGTMEvent } from '@/lib/tracking'
 import { useToast } from '@/hooks/use-toast'
 import { supabase } from '@/lib/supabase/client'
+import { getWhatsAppLink } from '@/lib/whatsapp'
 
 interface LeadFormProps {
   tipo: string
   buttonText: string
   whatsappText: string
+  campanha?: string
 }
 
-export function LeadForm({ tipo, buttonText, whatsappText }: LeadFormProps) {
+export function LeadForm({ tipo, buttonText, whatsappText, campanha = 'geral' }: LeadFormProps) {
   const [loading, setLoading] = useState(false)
   const { toast } = useToast()
 
@@ -27,30 +29,41 @@ export function LeadForm({ tipo, buttonText, whatsappText }: LeadFormProps) {
     setLoading(true)
 
     try {
-      const { error } = await supabase.from('leads').insert({
-        nome: formData.nome,
-        telefone: formData.telefone,
-        email: formData.email,
-        tipo: 'vendedor',
-        origem: `Site - ${tipo}`,
-        status: 'novo',
-        temperatura: 'quente',
+      const { data, error } = await supabase.functions.invoke('lead-automation', {
+        body: {
+          nome: formData.nome,
+          email: formData.email,
+          whatsapp: formData.telefone,
+          campanha,
+          origem: `Site - ${tipo}`,
+        },
       })
 
       if (error) throw error
+      if (data?.error) throw new Error(data.error)
 
       trackConversion('formulario')
+      trackGTMEvent(`submit_form_${campanha}`, {
+        campaign: campanha,
+        email: formData.email,
+        lead_id: data?.lead_id,
+      })
 
       toast({
-        title: 'Dados enviados com sucesso!',
-        description: 'Nossa equipe entrará em contato em breve.',
+        title: 'Dados recebidos com sucesso!',
+        description: 'Você será redirecionado para o WhatsApp...',
       })
 
       setFormData({ nome: '', telefone: '', email: '' })
+
+      setTimeout(() => {
+        window.location.href = getWhatsAppLink(whatsappText)
+      }, 1500)
     } catch (err: any) {
+      console.error(err)
       toast({
         title: 'Erro ao enviar dados',
-        description: 'Tente novamente ou nos chame no WhatsApp.',
+        description: 'Tente novamente ou nos chame diretamente no WhatsApp.',
         variant: 'destructive',
       })
     } finally {

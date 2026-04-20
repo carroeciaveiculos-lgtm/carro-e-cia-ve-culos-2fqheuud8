@@ -3,7 +3,7 @@ import { CheckCircle2, XCircle } from 'lucide-react'
 import { SEO } from '@/components/SEO'
 import { Button } from '@/components/ui/button'
 import { getWhatsAppLink } from '@/lib/whatsapp'
-import { trackConversion } from '@/lib/tracking'
+import { trackConversion, trackGTMEvent } from '@/lib/tracking'
 
 export default function Troca() {
   const wppText = 'Olá Luiz! Quero trocar meu carro e saber sobre a Troca com Troco.'
@@ -33,7 +33,10 @@ export default function Troca() {
               href={getWhatsAppLink(wppText)}
               target="_blank"
               rel="noopener noreferrer"
-              onClick={() => trackConversion('whatsapp')}
+              onClick={() => {
+                trackConversion('whatsapp')
+                trackGTMEvent('click_whatsapp_troca_troco')
+              }}
             >
               QUERO TROCAR MEU CARRO AGORA
             </a>
@@ -130,27 +133,45 @@ export default function Troca() {
       </section>
 
       <section className="py-20 px-4 bg-muted/20">
-        <div className="container max-w-4xl mx-auto text-center">
-          <h2 className="text-4xl font-bold mb-4">
-            Troque de carro hoje.
-            <br />
-            Saia com o troco no bolso.
-          </h2>
-          <div className="mt-10">
-            <Button
-              asChild
-              size="lg"
-              className="text-lg px-8 py-6 h-auto bg-red-600 hover:bg-red-700 text-white w-full sm:w-auto rounded-full font-bold shadow-lg"
-            >
-              <a
-                href={getWhatsAppLink(wppText)}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={() => trackConversion('whatsapp')}
+        <div className="container max-w-4xl mx-auto grid md:grid-cols-2 gap-12 items-center">
+          <div>
+            <h2 className="text-4xl font-bold mb-4">
+              Troque de carro hoje.
+              <br />
+              Saia com o troco no bolso.
+            </h2>
+            <p className="text-xl text-muted-foreground mb-8 mt-4">
+              Preencha o formulário para iniciar a avaliação da sua troca. Nossa equipe retornará
+              rapidamente.
+            </p>
+            <div className="mt-6">
+              <Button
+                asChild
+                size="lg"
+                className="text-lg px-8 py-6 h-auto bg-red-600 hover:bg-red-700 text-white w-full rounded-full font-bold shadow-lg"
               >
-                QUERO FAZER MINHA TROCA AGORA
-              </a>
-            </Button>
+                <a
+                  href={getWhatsAppLink(wppText)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() => {
+                    trackConversion('whatsapp')
+                    trackGTMEvent('click_whatsapp_troca_troco')
+                  }}
+                >
+                  FALAR DIRETO NO WHATSAPP
+                </a>
+              </Button>
+            </div>
+          </div>
+          <div className="bg-card p-6 md:p-8 rounded-2xl shadow-xl border">
+            <ConsignacaoLPForm
+              origem="LP - Troca com Troco"
+              title="Troca com Troco"
+              subtitle="Faça uma avaliação do seu veículo atual"
+              campanha="troca_troco"
+              whatsappText={wppText}
+            />
           </div>
         </div>
       </section>
