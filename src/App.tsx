@@ -9,8 +9,8 @@ const DomainRedirect = () => {
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const hostname = window.location.hostname
-      // Redireciona APENAS de www para sem www no domínio de produção
-      if (hostname === 'www.carroeciamotors.com.br') {
+      // Redireciona de www e domínios temporários goskip para sem www no domínio de produção
+      if (hostname === 'www.carroeciamotors.com.br' || hostname.includes('goskip.app')) {
         window.location.replace(
           `https://carroeciamotors.com.br${window.location.pathname}${window.location.search}`,
         )

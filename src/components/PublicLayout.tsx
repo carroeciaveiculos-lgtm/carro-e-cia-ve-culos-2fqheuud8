@@ -1,6 +1,5 @@
 import { Outlet, Link } from 'react-router-dom'
 import { WhatsAppButton } from './WhatsAppButton'
-import { ExitIntentPopup } from './ExitIntentPopup'
 import { Menu, X, ChevronDown } from 'lucide-react'
 import { useState } from 'react'
 import { cn } from '@/lib/utils'
@@ -189,7 +188,6 @@ export default function PublicLayout() {
       </footer>
 
       <WhatsAppButton />
-      <ExitIntentPopup />
     </div>
   )
 }

@@ -1,6 +1,7 @@
 import { useLocation } from 'react-router-dom'
 import { MessageCircle, MapPin, Phone } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { SEO } from '@/components/SEO'
 
 export default function Obrigado() {
   const location = useLocation()
@@ -12,6 +13,11 @@ export default function Obrigado() {
 
   return (
     <div className="min-h-[calc(100vh-80px)] bg-muted/30 flex items-center justify-center py-20 px-4">
+      <SEO
+        title="Obrigado pelo Contato | Carro e Cia Veículos"
+        description="Recebemos suas informações. Nossa equipe especializada entrará em contato em breve para apresentar a melhor proposta para o seu veículo."
+        noindex={true}
+      />
       <div className="max-w-2xl w-full bg-card rounded-2xl shadow-xl p-8 md:p-12 text-center border border-border">
         <h1 className="text-4xl md:text-5xl font-display font-extrabold mb-4 text-foreground">
           Recebemos seu contato{nome ? `, ${nome.split(' ')[0]}` : ''}!
