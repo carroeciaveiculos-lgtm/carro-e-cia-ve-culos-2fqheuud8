@@ -68,7 +68,7 @@ export function LeadForm({
   return (
     <form
       onSubmit={handleSubmit}
-      className="space-y-4 bg-card p-6 rounded-xl border shadow-sm w-full text-left"
+      className="space-y-4 bg-card p-6 rounded-xl border shadow-sm w-full text-left box-border overflow-hidden"
     >
       <div className="space-y-2">
         <Label htmlFor="nome">Nome Completo *</Label>
@@ -113,7 +113,11 @@ export function LeadForm({
         />
       </div>
 
-      <Button type="submit" className="w-full h-12 text-lg font-bold mt-2" disabled={loading}>
+      <Button
+        type="submit"
+        className="w-full h-12 text-sm md:text-lg font-bold mt-2 whitespace-normal break-words leading-snug"
+        disabled={loading}
+      >
         {loading ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : null}
         {buttonText}
       </Button>

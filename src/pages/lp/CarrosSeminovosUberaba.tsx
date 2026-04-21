@@ -130,16 +130,21 @@ export default function CarrosSeminovosUberaba() {
               nosso estoque passa por avaliação rigorosa antes de ser anunciado. Aqui você não
               compra um carro — você compra tranquilidade.
             </p>
-            <Button size="lg" className="text-lg px-8 py-6 h-auto w-full sm:w-auto" asChild>
+            <Button
+              size="lg"
+              className="text-sm md:text-lg px-6 py-4 md:px-8 md:py-6 h-auto w-full sm:w-auto whitespace-normal break-words leading-snug"
+              asChild
+            >
               <a
                 href={getWhatsAppLink(
                   'Olá! Vi a página de carros seminovos e gostaria de ver o estoque.',
                 )}
                 target="_blank"
                 rel="noopener noreferrer"
+                aria-label="Falar com a Carro e Cia pelo WhatsApp"
                 onClick={() => trackConversion('whatsapp')}
               >
-                Fale com a Carro e Cia pelo WhatsApp — Clique Aqui
+                Fale com a Carro e Cia pelo WhatsApp
               </a>
             </Button>
           </div>
@@ -353,14 +358,19 @@ export default function CarrosSeminovosUberaba() {
               Quer reduzir o valor das parcelas? Fazemos a avaliação gratuita do seu veículo atual e
               você pode usar como parte do pagamento. Avaliação rápida, justa e sem compromisso.
             </p>
-            <Button asChild size="lg" className="w-full sm:w-auto h-14 text-lg px-8">
+            <Button
+              asChild
+              size="lg"
+              className="w-full sm:w-auto h-14 text-sm md:text-lg px-6 md:px-8 whitespace-normal break-words leading-snug"
+            >
               <a
                 href={getWhatsAppLink('Olá! Gostaria de avaliar meu carro para dar como entrada.')}
                 target="_blank"
                 rel="noopener noreferrer"
+                aria-label="Solicitar avaliação grátis pelo WhatsApp"
                 onClick={() => trackConversion('whatsapp')}
               >
-                Solicitar Avaliação Grátis pelo WhatsApp
+                Solicitar Avaliação Grátis
               </a>
             </Button>
           </div>

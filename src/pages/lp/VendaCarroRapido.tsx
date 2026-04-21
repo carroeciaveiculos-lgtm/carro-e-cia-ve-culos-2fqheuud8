@@ -71,17 +71,22 @@ export default function VendaCarroRapido() {
               Semanas ou meses perdidos. Paciência esgotada. Existe um jeito melhor. Na Carro e Cia
               Veículos, você consigna — e a gente vende por você.
             </p>
-            <Button size="lg" className="text-lg px-8 py-6 h-auto w-full sm:w-auto" asChild>
+            <Button
+              size="lg"
+              className="text-sm md:text-lg px-6 py-4 md:px-8 md:py-6 h-auto w-full sm:w-auto whitespace-normal break-words leading-snug"
+              asChild
+            >
               <a
                 href={getWhatsAppLink('Olá Luiz! Preciso vender meu carro rápido. Pode me ajudar?')}
                 target="_blank"
                 rel="noopener noreferrer"
+                aria-label="Vender meu carro pelo WhatsApp"
                 onClick={() => {
                   trackConversion('whatsapp')
                   trackGTMEvent('click_whatsapp_venda_rapida')
                 }}
               >
-                Quero Vender Meu Carro — Solicitar Avaliação Grátis
+                VENDER MEU CARRO
               </a>
             </Button>
           </div>
@@ -189,19 +194,24 @@ export default function VendaCarroRapido() {
                   Quer vender rápido e seguro? Nossa equipe tem dezenas de compradores esperando.
                   Preencha o formulário e nossa equipe entrará em contato em minutos.
                 </p>
-                <Button asChild size="lg" className="w-full sm:w-auto h-14 text-lg px-8">
+                <Button
+                  asChild
+                  size="lg"
+                  className="w-full sm:w-auto h-14 text-sm md:text-lg px-6 md:px-8 whitespace-normal break-words leading-snug"
+                >
                   <a
                     href={getWhatsAppLink(
                       'Olá Luiz! Preciso vender meu carro rápido. Pode me ajudar?',
                     )}
                     target="_blank"
                     rel="noopener noreferrer"
+                    aria-label="Falar direto no WhatsApp para venda rápida"
                     onClick={() => {
                       trackConversion('whatsapp')
                       trackGTMEvent('click_whatsapp_venda_rapida')
                     }}
                   >
-                    Falar Direto no WhatsApp
+                    VENDER MEU CARRO
                   </a>
                 </Button>
               </div>

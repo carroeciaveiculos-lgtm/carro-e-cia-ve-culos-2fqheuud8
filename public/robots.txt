@@ -2,5 +2,7 @@ User-agent: *
 Allow: /
 Disallow: /admin
 Disallow: /em-construcao
+Disallow: /obrigado
+Disallow: /api/
 
 Sitemap: https://carroeciamotors.com.br/sitemap.xml

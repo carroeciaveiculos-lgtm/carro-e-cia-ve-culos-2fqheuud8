@@ -27,18 +27,19 @@ export default function ConsignarMeuCarro() {
           <Button
             asChild
             size="lg"
-            className="text-lg px-8 py-6 h-auto bg-red-600 hover:bg-red-700 text-white w-full sm:w-auto rounded-full font-bold shadow-lg shadow-red-600/20"
+            className="text-sm md:text-lg px-6 py-4 md:px-8 md:py-6 h-auto bg-red-600 hover:bg-red-700 text-white w-full sm:w-auto rounded-full font-bold shadow-lg shadow-red-600/20 whitespace-normal break-words leading-snug"
           >
             <a
               href={getWhatsAppLink(wppText)}
               target="_blank"
               rel="noopener noreferrer"
+              aria-label="Falar no WhatsApp para consignar carro"
               onClick={() => {
                 trackConversion('whatsapp')
                 trackGTMEvent('click_whatsapp_consignacao')
               }}
             >
-              QUERO CONSIGNAR MEU CARRO AGORA
+              CONSIGNAR MEU CARRO
             </a>
           </Button>
 
@@ -181,18 +182,19 @@ export default function ConsignarMeuCarro() {
             <Button
               asChild
               size="lg"
-              className="text-lg px-8 py-6 h-auto bg-[#25D366] hover:bg-[#20bd5a] text-white w-full rounded-full font-bold"
+              className="text-sm md:text-lg px-6 py-4 md:px-8 md:py-6 h-auto bg-[#25D366] hover:bg-[#20bd5a] text-white w-full rounded-full font-bold whitespace-normal break-words leading-snug"
             >
               <a
                 href={getWhatsAppLink(wppText)}
                 target="_blank"
                 rel="noopener noreferrer"
+                aria-label="Avaliar carro gratuitamente pelo WhatsApp"
                 onClick={() => {
                   trackConversion('whatsapp')
                   trackGTMEvent('click_whatsapp_consignacao')
                 }}
               >
-                AVALIAR MEU CARRO GRATUITAMENTE
+                AVALIAR MEU CARRO
               </a>
             </Button>
           </div>

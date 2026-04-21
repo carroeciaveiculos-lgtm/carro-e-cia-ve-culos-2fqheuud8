@@ -42,12 +42,13 @@ export default function Obrigado() {
 
         <Button
           asChild
-          className="w-full h-16 text-sm md:text-xl font-bold bg-[#25D366] hover:bg-[#20bd5a] text-white shadow-lg animate-pulse whitespace-normal py-4 mb-8"
+          className="w-full h-auto min-h-[64px] text-sm md:text-xl font-bold bg-[#25D366] hover:bg-[#20bd5a] text-white shadow-lg animate-pulse whitespace-normal break-words leading-snug py-4 px-4 mb-8"
         >
           <a
             href={`https://wa.me/5534999484285?text=${wppText}`}
             target="_blank"
             rel="noopener noreferrer"
+            aria-label="Falar com o Luiz pelo WhatsApp agora"
             className="flex items-center justify-center gap-2"
           >
             <MessageCircle className="w-6 h-6 shrink-0" />

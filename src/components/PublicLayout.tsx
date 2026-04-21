@@ -88,6 +88,7 @@ export default function PublicLayout() {
               href={getWhatsAppLink(wppText)}
               target="_blank"
               rel="noopener noreferrer"
+              aria-label="Falar pelo WhatsApp"
               onClick={() => trackConversion('whatsapp')}
               className="bg-[#25D366] text-white px-4 py-2 rounded-full font-bold hover:bg-[#25D366]/90 transition-colors"
             >
@@ -97,11 +98,12 @@ export default function PublicLayout() {
 
           {/* Mobile Toggle */}
           <button
-            className="lg:hidden p-2"
+            className="lg:hidden p-2 text-foreground"
             onClick={() => setMenuOpen(!menuOpen)}
-            aria-label="Menu"
+            aria-label={menuOpen ? 'Fechar menu' : 'Abrir menu'}
+            aria-expanded={menuOpen}
           >
-            {menuOpen ? <X /> : <Menu />}
+            {menuOpen ? <X aria-hidden="true" /> : <Menu aria-hidden="true" />}
           </button>
         </div>
       </header>
@@ -168,6 +170,7 @@ export default function PublicLayout() {
               href={getWhatsAppLink(wppText)}
               target="_blank"
               rel="noopener noreferrer"
+              aria-label="Falar pelo WhatsApp"
               onClick={() => trackConversion('whatsapp')}
               className="bg-[#25D366] text-white px-4 py-3 rounded-full font-bold text-center block"
             >

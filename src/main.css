@@ -91,8 +91,9 @@
   * {
     @apply border-border;
   }
-  body {
-    @apply bg-background text-foreground font-sans antialiased;
+  body,
+  html {
+    @apply bg-background text-foreground font-sans antialiased overflow-x-hidden max-w-[100vw];
   }
   h1,
   h2,

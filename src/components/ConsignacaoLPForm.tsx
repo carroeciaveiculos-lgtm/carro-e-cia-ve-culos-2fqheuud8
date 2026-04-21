@@ -71,7 +71,7 @@ export function ConsignacaoLPForm({
         <p className="text-muted-foreground mt-2">{subtitle}</p>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-4 w-full box-border overflow-hidden">
         <div className="space-y-2">
           <Label htmlFor="nome_lp">Nome Completo *</Label>
           <Input
@@ -116,9 +116,13 @@ export function ConsignacaoLPForm({
           />
         </div>
 
-        <Button type="submit" className="w-full h-14 text-lg font-bold mt-4" disabled={loading}>
+        <Button
+          type="submit"
+          className="w-full h-14 text-sm md:text-lg font-bold mt-4 whitespace-normal break-words leading-snug"
+          disabled={loading}
+        >
           {loading ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : null}
-          Quero Avaliar Meu Carro
+          AVALIAR MEU CARRO
         </Button>
       </form>
     </div>

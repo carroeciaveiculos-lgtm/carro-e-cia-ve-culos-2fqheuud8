@@ -113,7 +113,9 @@ export default function Sobre() {
                 <div className="p-6 text-center">
                   <h3 className="font-bold text-xl mb-1 font-display">{member.name}</h3>
                   <p className="text-primary font-medium mb-4">{member.role}</p>
-                  <p className="text-sm text-muted-foreground leading-relaxed">{member.bio}</p>
+                  <p className="text-sm text-muted-foreground leading-relaxed whitespace-normal break-words">
+                    {member.bio}
+                  </p>
                 </div>
               </div>
             ))}
