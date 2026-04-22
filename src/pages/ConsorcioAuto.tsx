@@ -6,84 +6,99 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion'
-import { Shield, Car, Check, X, Star, CreditCard, Clock, RefreshCw } from 'lucide-react'
+import { Shield, Car, CreditCard, Clock, RefreshCw, Star } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
-export default function ConsorcioAuto() {
-  const schema = {
-    '@context': 'https://schema.org',
-    '@graph': [
-      {
-        '@type': 'Service',
-        name: 'Consórcio de Carro',
-        provider: {
-          '@type': 'LocalBusiness',
-          name: 'Km Zero Corretora de Seguros',
-          address: {
-            '@type': 'PostalAddress',
-            addressLocality: 'Uberaba',
-            addressRegion: 'MG',
-            addressCountry: 'BR',
-          },
-        },
-      },
-      {
-        '@type': 'Person',
-        name: 'Adriana Araújo',
-        jobTitle: 'Corretora Especialista em Consórcios',
-        worksFor: {
-          '@type': 'Organization',
-          name: 'Km Zero Corretora de Seguros',
-        },
-      },
-      {
-        '@type': 'FAQPage',
-        mainEntity: [
-          {
-            '@type': 'Question',
-            name: 'Consórcio de veículo tem juros?',
-            acceptedAnswer: {
-              '@type': 'Answer',
-              text: 'Não. O consórcio não tem juros. O custo é apenas a taxa de administração da administradora, diluída nas parcelas mensais. Em geral, essa taxa representa entre 15% e 20% do valor total do bem.',
-            },
-          },
-          {
-            '@type': 'Question',
-            name: 'Posso usar meu carro atual como lance no consórcio?',
-            acceptedAnswer: {
-              '@type': 'Answer',
-              text: 'Sim. Esse é um dos maiores diferenciais da parceria entre a Km Zero e a Carro e Cia. Seu veículo atual é avaliado pela loja e pode ser oferecido como lance, aumentando suas chances de contemplação antecipada.',
-            },
-          },
-          {
-            '@type': 'Question',
-            name: 'Quanto tempo leva para ser contemplado?',
-            acceptedAnswer: {
-              '@type': 'Answer',
-              text: 'Depende do grupo e da estratégia de lance. Por sorteio, a contemplação pode ocorrer em qualquer mês — do primeiro ao último. Com lance bem planejado pela Adriana, muitos clientes são contemplados nos primeiros meses do grupo.',
-            },
-          },
-          {
-            '@type': 'Question',
-            name: 'Qual o valor mínimo de parcela de um consórcio de carro?',
-            acceptedAnswer: {
-              '@type': 'Answer',
-              text: 'Depende do valor do bem e do prazo escolhido. Para veículos a partir de R$40.000, parcelas a partir de R$450/mês são possíveis em prazos de 80 a 100 meses. Adriana simula o cenário ideal para seu orçamento.',
-            },
-          },
-          {
-            '@type': 'Question',
-            name: 'Posso usar a carta de crédito para comprar um carro usado na Carro e Cia?',
-            acceptedAnswer: {
-              '@type': 'Answer',
-              text: 'Sim. A carta de crédito de consórcio pode ser usada para aquisição de veículos usados em lojas credenciadas. A Carro e Cia está preparada para receber cartas de crédito de consórcio — fale com o Luiz para verificar o veículo desejado no estoque.',
-            },
-          },
-        ],
-      },
-    ],
-  }
+const FAQ = [
+  {
+    q: 'Consórcio de carro tem juros?',
+    a: 'Não. O consórcio não cobra juros. O custo é apenas a taxa de administração (15% a 20% total), muito inferior ao financiamento convencional.',
+  },
+  {
+    q: 'Posso usar meu carro atual como lance no consórcio?',
+    a: 'Sim. A Carro e Cia avalia seu veículo e a Km Zero estrutura o lance para maximizar suas chances de contemplação.',
+  },
+  {
+    q: 'Quanto tempo leva para ser contemplado?',
+    a: 'Depende do grupo e da estratégia de lance. Por sorteio, a contemplação pode ocorrer em qualquer mês — do primeiro ao último. Com lance bem planejado pela Adriana, muitos clientes são contemplados nos primeiros meses do grupo.',
+  },
+  {
+    q: 'Qual o valor mínimo de parcela de um consórcio de carro?',
+    a: 'Depende do valor do bem e do prazo escolhido. Para veículos a partir de R$40.000, parcelas a partir de R$450/mês são possíveis em prazos de 80 a 100 meses. Adriana simula o cenário ideal para seu orçamento.',
+  },
+  {
+    q: 'Posso usar a carta de crédito para comprar um carro usado na Carro e Cia?',
+    a: 'Sim. A Carro e Cia aceita cartas de crédito de consórcio para aquisição de veículos usados do estoque.',
+  },
+]
 
+const SCHEMA = {
+  '@context': 'https://schema.org',
+  '@graph': [
+    {
+      '@type': 'Service',
+      name: 'Consórcio de Veículo em Uberaba',
+      description:
+        'Consultoria e contratação de consórcio automotivo em Uberaba MG pela Km Zero Corretora, com estratégia de lance usando veículo atual como oferta.',
+      provider: {
+        '@type': 'LocalBusiness',
+        name: 'Km Zero Corretora de Seguros e Consórcios',
+        address: {
+          '@type': 'PostalAddress',
+          addressLocality: 'Uberaba',
+          addressRegion: 'MG',
+          addressCountry: 'BR',
+        },
+        telephone: '+5534998037651',
+      },
+      areaServed: {
+        '@type': 'City',
+        name: 'Uberaba',
+      },
+      serviceType: 'Consórcio Automotivo',
+    },
+    {
+      '@type': 'Person',
+      name: 'Adriana Araújo',
+      jobTitle: 'Consultora de Consórcios',
+      description:
+        'Especialista em planejamento financeiro automotivo com 20+ anos ajudando famílias em Uberaba a conquistar veículos com inteligência e sem juros.',
+    },
+    {
+      '@type': 'FAQPage',
+      mainEntity: FAQ.map((f) => ({
+        '@type': 'Question',
+        name: f.q,
+        acceptedAnswer: { '@type': 'Answer', text: f.a },
+      })),
+    },
+    {
+      '@type': 'BreadcrumbList',
+      itemListElement: [
+        {
+          '@type': 'ListItem',
+          position: 1,
+          name: 'Início',
+          item: 'https://carroeciamotors.com.br',
+        },
+        {
+          '@type': 'ListItem',
+          position: 2,
+          name: 'Nossos Serviços',
+          item: 'https://carroeciamotors.com.br/#servicos',
+        },
+        {
+          '@type': 'ListItem',
+          position: 3,
+          name: 'Consórcio Auto',
+          item: 'https://carroeciamotors.com.br/consorcio-auto',
+        },
+      ],
+    },
+  ],
+}
+
+export default function ConsorcioAuto() {
   const adrianaWpp =
     'https://wa.me/5534998037651?text=Olá Adriana! Quero simular um consórcio de veículo e entender como usar meu carro atual como lance.'
 
@@ -91,10 +106,26 @@ export default function ConsorcioAuto() {
     <div className="min-h-screen bg-background flex flex-col">
       <SEO
         title="Consórcio de Carro em Uberaba | Km Zero Corretora"
-        description="Faça um consórcio de veículo em Uberaba sem juros e sem entrada. Adriana Araújo — especialista Km Zero. Simule agora e use seu carro atual como lance."
+        description="Faça seu consórcio de veículo em Uberaba sem juros. Adriana Araújo — Km Zero Corretora. Use seu carro atual como lance e realize seu próximo veículo com planejamento."
         canonical="https://carroeciamotors.com.br/consorcio-auto"
-        schema={schema}
+        image="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Fotos/Formato%20webp/Adriana-foto-profissional.webp"
+        schema={SCHEMA}
       />
+
+      {/* BREADCRUMB */}
+      <div className="bg-slate-100 py-3 px-4 border-b border-slate-200 hidden md:block">
+        <div className="container max-w-6xl mx-auto flex text-sm text-slate-500">
+          <Link to="/" className="hover:text-blue-600">
+            Início
+          </Link>
+          <span className="mx-2">›</span>
+          <Link to="/#servicos" className="hover:text-blue-600">
+            Nossos Serviços
+          </Link>
+          <span className="mx-2">›</span>
+          <span className="text-slate-800 font-medium">Consórcio Auto</span>
+        </div>
+      </div>
 
       {/* SEÇÃO 1 — HERO */}
       <section className="bg-slate-900 text-white py-16 md:py-24 px-4 text-center">
@@ -107,12 +138,22 @@ export default function ConsorcioAuto() {
             Troque de carro sem pagar juros.
             <br className="hidden md:block" /> Use o seu atual como lance.
           </h1>
-          <p className="text-lg md:text-xl text-slate-300 mb-10 max-w-2xl mx-auto leading-relaxed">
+          <p className="text-lg md:text-xl text-slate-300 mb-6 max-w-2xl mx-auto leading-relaxed">
             O consórcio é a forma mais inteligente de planejar o próximo veículo. Com a Adriana
             Araújo, você ainda pode usar seu carro atual como lance — e sair do grupo antes de todo
             mundo.
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto mb-12">
+
+          {/* NÚMEROS DE AUTORIDADE */}
+          <div className="flex flex-wrap justify-center gap-6 text-sm font-bold text-orange-200 mb-10">
+            <span>[20+] anos de experiência</span>
+            <span>|</span>
+            <span>[2] administradoras</span>
+            <span>|</span>
+            <span>[🚗 Lance] com seu carro atual</span>
+          </div>
+
+          <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto mb-2">
             <Button
               asChild
               size="lg"
@@ -123,7 +164,11 @@ export default function ConsorcioAuto() {
               </a>
             </Button>
           </div>
-          <div className="flex flex-wrap justify-center gap-x-8 gap-y-4 text-sm font-medium text-slate-400">
+          <p className="text-sm text-slate-400 mt-2">
+            ⚡ Tempo médio de resposta: menos de 10 minutos
+          </p>
+
+          <div className="flex flex-wrap justify-center gap-x-8 gap-y-4 text-sm font-medium text-slate-400 mt-10">
             <span className="flex items-center">
               <Car className="w-4 h-4 mr-2 text-blue-500" /> Sem juros
             </span>
@@ -145,9 +190,11 @@ export default function ConsorcioAuto() {
         <div className="container max-w-6xl mx-auto">
           <div className="text-center max-w-3xl mx-auto mb-16">
             <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4 leading-tight">
-              Consórcio não é financiamento.
-              <br />É planejamento inteligente.
+              O que é consórcio de veículo e como funciona
             </h2>
+            <p className="text-lg text-slate-600">
+              Consórcio não é financiamento. É planejamento inteligente.
+            </p>
           </div>
 
           <div className="grid md:grid-cols-3 gap-8">
@@ -195,7 +242,7 @@ export default function ConsorcioAuto() {
         <div className="container max-w-4xl mx-auto">
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4">
-              Financiamento ou Consórcio? Entenda a diferença antes de decidir.
+              Financiamento ou consórcio: qual é melhor para você?
             </h2>
           </div>
 
@@ -280,83 +327,44 @@ export default function ConsorcioAuto() {
         </div>
       </section>
 
-      {/* SEÇÃO 4 — COMO FUNCIONA O PROCESSO */}
-      <section className="py-20 px-4 bg-white">
-        <div className="container max-w-3xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4">
-              Do primeiro contato à chave na mão: como a Adriana cuida de tudo
-            </h2>
-          </div>
-
-          <div className="relative border-l-2 border-orange-200 ml-4 md:mx-auto md:max-w-2xl">
-            {/* 1 */}
-            <div className="mb-10 relative pl-8">
-              <div className="absolute -left-[17px] top-0 w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center text-white font-bold border-4 border-white shadow-sm">
-                1
+      {/* SEÇÃO 4 — COMO FUNCIONA */}
+      <section className="py-20 px-4 bg-white border-y border-slate-200">
+        <div className="container max-w-4xl mx-auto text-center">
+          <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-12">
+            Como funciona a contratação do consórcio
+          </h2>
+          <div className="grid md:grid-cols-3 gap-8">
+            {[
+              { num: 1, t: 'Adriana simula seu perfil' },
+              { num: 2, t: 'Escolhemos o grupo ideal' },
+              { num: 3, t: 'Você é contemplado e compra o veículo' },
+            ].map((s) => (
+              <div
+                key={s.num}
+                className="bg-slate-50 p-8 rounded-2xl shadow-sm border border-slate-100"
+              >
+                <div className="w-12 h-12 bg-orange-600 text-white rounded-full flex items-center justify-center font-bold text-xl mx-auto mb-4">
+                  {s.num}
+                </div>
+                <h3 className="font-bold text-lg mb-2 text-slate-800">{s.t}</h3>
               </div>
-              <h3 className="text-xl font-bold text-slate-900 mb-2">SIMULAÇÃO PERSONALIZADA</h3>
-              <p className="text-slate-600">
-                Adriana simula diferentes cenários de prazo, parcela e estratégia de lance conforme
-                o seu perfil e objetivo.
-              </p>
-            </div>
-            {/* 2 */}
-            <div className="mb-10 relative pl-8">
-              <div className="absolute -left-[17px] top-0 w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center text-white font-bold border-4 border-white shadow-sm">
-                2
-              </div>
-              <h3 className="text-xl font-bold text-slate-900 mb-2">ESCOLHA DO GRUPO</h3>
-              <p className="text-slate-600">
-                Seleção do grupo mais adequado: prazo, administradora, perfil dos participantes e
-                histórico de contemplação.
-              </p>
-            </div>
-            {/* 3 */}
-            <div className="mb-10 relative pl-8">
-              <div className="absolute -left-[17px] top-0 w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center text-white font-bold border-4 border-white shadow-sm">
-                3
-              </div>
-              <h3 className="text-xl font-bold text-slate-900 mb-2">ESTRATÉGIA DE LANCE</h3>
-              <p className="text-slate-600">
-                Se você tem veículo para dar como lance, a Carro e Cia avalia o bem e a Km Zero
-                estrutura o lance para maximizar suas chances de contemplação antecipada.
-              </p>
-            </div>
-            {/* 4 */}
-            <div className="mb-10 relative pl-8">
-              <div className="absolute -left-[17px] top-0 w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center text-white font-bold border-4 border-white shadow-sm">
-                4
-              </div>
-              <h3 className="text-xl font-bold text-slate-900 mb-2">CONTEMPLAÇÃO</h3>
-              <p className="text-slate-600">
-                Ao ser contemplado — por sorteio ou lance — a carta de crédito é liberada para
-                compra do veículo.
-              </p>
-            </div>
-            {/* 5 */}
-            <div className="relative pl-8">
-              <div className="absolute -left-[17px] top-0 w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center text-white font-bold border-4 border-white shadow-sm">
-                5
-              </div>
-              <h3 className="text-xl font-bold text-slate-900 mb-2">COMPRA COM PARCERIA</h3>
-              <p className="text-slate-600">
-                Use sua carta de crédito para adquirir um veículo do estoque da Carro e Cia com toda
-                a assessoria do Luiz Fernando.
-              </p>
-            </div>
+            ))}
           </div>
         </div>
       </section>
 
       {/* SEÇÃO 5 — QUEM É ADRIANA ARAÚJO */}
-      <section className="py-20 px-4 bg-slate-50 border-t border-slate-200">
+      <section className="py-20 px-4 bg-slate-50">
         <div className="container max-w-5xl mx-auto">
+          <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-12 text-center">
+            Quem cuida do seu consórcio — Km Zero Corretora
+          </h2>
           <div className="bg-white rounded-3xl overflow-hidden shadow-md flex flex-col md:flex-row border border-slate-100">
             <div className="md:w-5/12 bg-slate-200 aspect-square md:aspect-auto">
               <img
                 src="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Fotos/Formato%20webp/Adriana-foto-profissional.webp"
-                alt="Adriana Araújo - Especialista em Consórcios"
+                alt="Adriana Araújo — Corretora de Seguros SUSEP em Uberaba MG | Km Zero Corretora"
+                title="Adriana Araújo — Consultora de Consórcios em Uberaba"
                 loading="lazy"
                 width="600"
                 height="600"
@@ -364,9 +372,9 @@ export default function ConsorcioAuto() {
               />
             </div>
             <div className="md:w-7/12 p-8 md:p-12 flex flex-col justify-center">
-              <h2 className="text-3xl font-bold text-slate-900 mb-6 leading-tight">
+              <h3 className="text-2xl font-bold text-slate-900 mb-4 leading-tight">
                 20 anos ajudando Uberaba a fazer escolhas financeiras mais inteligentes
-              </h2>
+              </h3>
               <div className="space-y-4 text-slate-600 leading-relaxed mb-8">
                 <p>
                   Adriana Araújo é corretora habilitada pela SUSEP desde 2003 e especialista em
@@ -379,7 +387,7 @@ export default function ConsorcioAuto() {
                   sonho do carro novo com planejamento, sem comprometer a estabilidade financeira de
                   ninguém.
                 </p>
-                <p className="font-medium text-slate-800">
+                <p className="font-medium text-slate-800 italic">
                   "Quando você fala com a Adriana, você está falando com alguém que vai entender sua
                   vida — não só vender uma cota."
                 </p>
@@ -398,113 +406,133 @@ export default function ConsorcioAuto() {
         </div>
       </section>
 
-      {/* SEÇÃO 6 — PROVA SOCIAL */}
-      <section className="py-20 px-4 bg-white">
+      {/* SEÇÃO 6 — ADMINISTRADORAS PARCEIRAS */}
+      <section className="py-20 px-4 bg-white text-center">
         <div className="container max-w-4xl mx-auto">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4">
-              Quem planejou com a Adriana, realizou.
-            </h2>
-          </div>
-
-          <div className="bg-orange-50 p-8 md:p-10 rounded-2xl border border-orange-100 max-w-3xl mx-auto relative">
-            <div className="flex text-yellow-400 mb-6">
-              <Star className="w-5 h-5 fill-current" />
-              <Star className="w-5 h-5 fill-current" />
-              <Star className="w-5 h-5 fill-current" />
-              <Star className="w-5 h-5 fill-current" />
-              <Star className="w-5 h-5 fill-current" />
-            </div>
-            <p className="text-lg md:text-xl text-slate-800 mb-8 italic leading-relaxed">
-              "A Adriana me ofereceu o consórcio há um ano, adquiri um consórcio de imóvel para
-              comprar meu primeiro apartamento, foi a melhor decisão que já tomei"
-            </p>
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-orange-200 text-orange-800 rounded-full flex items-center justify-center font-bold text-xl">
-                A
+          <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-12">
+            Administradoras parceiras da Km Zero
+          </h2>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-6 justify-center items-center">
+            {['Porto Consorcios', 'Ademicon'].map((s) => (
+              <div
+                key={s}
+                className="bg-slate-50 p-4 rounded-lg border border-slate-100 flex items-center justify-center grayscale hover:grayscale-0 transition-all col-span-1"
+              >
+                <img
+                  src={`https://img.usecurling.com/i?q=${s}&shape=outline`}
+                  alt={`Logo ${s} — parceira Km Zero Corretora Uberaba MG`}
+                  title={`${s} — Consórcio em Uberaba`}
+                  className="max-h-12 object-contain"
+                  width="140"
+                  height="70"
+                  loading="lazy"
+                />
               </div>
-              <div>
-                <p className="font-bold text-slate-900">Ana Flavia de Santi</p>
-                <p className="text-sm text-slate-500">Cliente Km Zero</p>
-              </div>
-            </div>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* SEÇÃO 7 — FAQ */}
+      {/* SEÇÃO 7 — PROVA SOCIAL */}
       <section className="py-20 px-4 bg-slate-50 border-t border-slate-200">
-        <div className="container max-w-3xl mx-auto">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4">
-              Dúvidas sobre Consórcio de Veículo
-            </h2>
+        <div className="container max-w-5xl mx-auto text-center">
+          <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-12">
+            Prova social: quem planejou com a Adriana, realizou
+          </h2>
+          <div className="grid md:grid-cols-3 gap-6">
+            <div className="bg-white p-8 rounded-2xl border border-slate-100 shadow-sm md:col-start-2">
+              <div className="flex justify-center text-yellow-400 mb-4">
+                <Star className="w-5 h-5 fill-current" />
+                <Star className="w-5 h-5 fill-current" />
+                <Star className="w-5 h-5 fill-current" />
+                <Star className="w-5 h-5 fill-current" />
+                <Star className="w-5 h-5 fill-current" />
+              </div>
+              <p className="text-slate-700 mb-6 italic text-base leading-relaxed">
+                "A Adriana me ofereceu o consórcio há um ano, adquiri um consórcio para comprar meu
+                primeiro imóvel/veículo, foi a melhor decisão que já tomei"
+              </p>
+              <p className="font-bold text-slate-900 text-sm">Ana Flavia de Santi</p>
+              <p className="text-xs text-slate-500">Uberaba, MG</p>
+            </div>
           </div>
+          <div className="mt-8 text-center flex items-center justify-center gap-2 text-sm text-slate-500 font-medium">
+            <svg viewBox="0 0 24 24" width="20" height="20" xmlns="http://www.w3.org/2000/svg">
+              <path
+                d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                fill="#4285F4"
+              />
+              <path
+                d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                fill="#34A853"
+              />
+              <path
+                d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+                fill="#FBBC05"
+              />
+              <path
+                d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+                fill="#EA4335"
+              />
+            </svg>
+            Avaliações verificadas Google
+          </div>
+        </div>
+      </section>
 
+      {/* SEÇÃO 8 — FAQ */}
+      <section className="py-20 px-4 bg-white border-t border-slate-200">
+        <div className="container max-w-3xl mx-auto text-center">
+          <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-12">
+            Perguntas frequentes sobre consórcio de carro
+          </h2>
           <Accordion
             type="single"
             collapsible
-            className="w-full bg-white rounded-xl shadow-sm border border-slate-200"
+            className="w-full bg-slate-50 rounded-xl shadow-sm border border-slate-200 text-left"
           >
-            <AccordionItem value="item-1" className="border-b px-6">
-              <AccordionTrigger className="text-left font-bold text-slate-800 hover:no-underline py-5">
-                Consórcio de veículo tem juros?
-              </AccordionTrigger>
-              <AccordionContent className="text-slate-600 leading-relaxed pb-6">
-                Não. O consórcio não tem juros. O custo é apenas a taxa de administração da
-                administradora, diluída nas parcelas mensais. Em geral, essa taxa representa entre
-                15% e 20% do valor total do bem.
-              </AccordionContent>
-            </AccordionItem>
-
-            <AccordionItem value="item-2" className="border-b px-6">
-              <AccordionTrigger className="text-left font-bold text-slate-800 hover:no-underline py-5">
-                Posso usar meu carro atual como lance no consórcio?
-              </AccordionTrigger>
-              <AccordionContent className="text-slate-600 leading-relaxed pb-6">
-                Sim. Esse é um dos maiores diferenciais da parceria entre a Km Zero e a Carro e Cia.
-                Seu veículo atual é avaliado pela loja e pode ser oferecido como lance, aumentando
-                suas chances de contemplação antecipada.
-              </AccordionContent>
-            </AccordionItem>
-
-            <AccordionItem value="item-3" className="border-b px-6">
-              <AccordionTrigger className="text-left font-bold text-slate-800 hover:no-underline py-5">
-                Quanto tempo leva para ser contemplado?
-              </AccordionTrigger>
-              <AccordionContent className="text-slate-600 leading-relaxed pb-6">
-                Depende do grupo e da estratégia de lance. Por sorteio, a contemplação pode ocorrer
-                em qualquer mês — do primeiro ao último. Com lance bem planejado pela Adriana,
-                muitos clientes são contemplados nos primeiros meses do grupo.
-              </AccordionContent>
-            </AccordionItem>
-
-            <AccordionItem value="item-4" className="border-b px-6">
-              <AccordionTrigger className="text-left font-bold text-slate-800 hover:no-underline py-5">
-                Qual o valor mínimo de parcela de um consórcio de carro?
-              </AccordionTrigger>
-              <AccordionContent className="text-slate-600 leading-relaxed pb-6">
-                Depende do valor do bem e do prazo escolhido. Para veículos a partir de R$40.000,
-                parcelas a partir de R$450/mês são possíveis em prazos de 80 a 100 meses. Adriana
-                simula o cenário ideal para seu orçamento.
-              </AccordionContent>
-            </AccordionItem>
-
-            <AccordionItem value="item-5" className="border-none px-6">
-              <AccordionTrigger className="text-left font-bold text-slate-800 hover:no-underline py-5">
-                Posso usar a carta de crédito para comprar um carro usado na Carro e Cia?
-              </AccordionTrigger>
-              <AccordionContent className="text-slate-600 leading-relaxed pb-6">
-                Sim. A carta de crédito de consórcio pode ser usada para aquisição de veículos
-                usados em lojas credenciadas. A Carro e Cia está preparada para receber cartas de
-                crédito de consórcio — fale com o Luiz para verificar o veículo desejado no estoque.
-              </AccordionContent>
-            </AccordionItem>
+            {FAQ.map((f, i) => (
+              <AccordionItem key={i} value={`item-${i}`} className="border-b px-6">
+                <AccordionTrigger className="font-bold text-slate-800 hover:no-underline py-5">
+                  {f.q}
+                </AccordionTrigger>
+                <AccordionContent className="text-slate-600 leading-relaxed pb-6">
+                  {f.a}
+                </AccordionContent>
+              </AccordionItem>
+            ))}
           </Accordion>
         </div>
       </section>
 
-      {/* SEÇÃO 8 — CTA FINAL */}
+      {/* SEÇÃO 9 — CONHEÇA TAMBÉM */}
+      <section className="py-20 px-4 bg-slate-50">
+        <div className="container max-w-4xl mx-auto">
+          <h2 className="text-3xl font-bold text-slate-900 mb-8 text-center">Conheça também</h2>
+          <div className="grid sm:grid-cols-2 gap-6">
+            <Link
+              to="/seguro-auto"
+              className="block bg-white p-6 rounded-2xl border border-slate-200 hover:border-orange-500 transition-colors text-center sm:text-left shadow-sm"
+            >
+              <h3 className="font-bold text-lg text-slate-900 mb-2">🔒 Já tem seu veículo?</h3>
+              <p className="text-slate-600 text-sm">
+                Proteja com seguro auto em Uberaba pela Km Zero →
+              </p>
+            </Link>
+            <Link
+              to="/estoque"
+              className="block bg-white p-6 rounded-2xl border border-slate-200 hover:border-orange-500 transition-colors text-center sm:text-left shadow-sm"
+            >
+              <h3 className="font-bold text-lg text-slate-900 mb-2">🚗 Já foi contemplado?</h3>
+              <p className="text-slate-600 text-sm">
+                Encontre seu veículo no estoque de veículos disponíveis da Carro e Cia →
+              </p>
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* SEÇÃO 10 — CTA FINAL */}
       <section className="bg-orange-600 text-white py-20 px-4 text-center">
         <div className="container max-w-4xl mx-auto">
           <h2 className="text-3xl md:text-5xl font-extrabold mb-6 leading-tight">
@@ -513,7 +541,7 @@ export default function ConsorcioAuto() {
           <p className="text-xl text-orange-100 mb-10 max-w-2xl mx-auto">
             Simulação gratuita. Sem compromisso. Adriana responde no mesmo dia.
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
+          <div className="flex flex-col sm:flex-row gap-4 justify-center mb-4">
             <Button
               asChild
               size="lg"
@@ -532,6 +560,9 @@ export default function ConsorcioAuto() {
               <Link to="/estoque">Ver veículos disponíveis na Carro e Cia →</Link>
             </Button>
           </div>
+          <p className="text-sm text-orange-200 mb-8">
+            ⚡ Tempo médio de resposta: menos de 10 minutos
+          </p>
 
           <div className="mt-16 pt-8 border-t border-orange-500/50 flex flex-col md:flex-row justify-center gap-6 text-sm">
             <Link
@@ -547,10 +578,10 @@ export default function ConsorcioAuto() {
               ver estoque de veículos
             </Link>
             <Link
-              to="/blog/financiamento-veiculo-guia-completo"
+              to="/blog/emprestimo-com-garantia-veiculo"
               className="text-orange-100 hover:text-white underline underline-offset-4"
             >
-              diferença entre financiamento e consórcio
+              crédito com veículo de garantia
             </Link>
           </div>
         </div>
