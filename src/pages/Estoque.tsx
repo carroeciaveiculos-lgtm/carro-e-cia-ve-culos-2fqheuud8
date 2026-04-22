@@ -15,6 +15,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
 import { Slider } from '@/components/ui/slider'
 import { getMarcas, getModelos } from '@/services/fipe'
+import { cn } from '@/lib/utils'
 import { Filter, Search, LayoutGrid, List } from 'lucide-react'
 import {
   Drawer,
