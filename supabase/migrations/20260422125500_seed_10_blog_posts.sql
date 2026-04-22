@@ -106,7 +106,7 @@ BEGIN
   ]
 }
 </script>',
-    'https://img.usecurling.com/p/1200/630?q=car%20finance',
+    'https://img.usecurling.com/p/1200/630?q=dealership%20financing',
     'Carro e Cia Veículos',
     '8 min',
     ARRAY['consórcio ou financiamento', 'consórcio de carro', 'financiamento de veículo', 'qual é melhor consórcio ou financiamento', 'parcela de carro'],
@@ -213,7 +213,7 @@ BEGIN
   ]
 }
 </script>',
-    'https://img.usecurling.com/p/1200/630?q=car%20sale',
+    'https://img.usecurling.com/p/1200/630?q=handshake%20car',
     'Carro e Cia Veículos',
     '7 min',
     ARRAY['como vender carro rápido', 'vender carro Uberaba', 'consignar carro Uberaba', 'como vender carro usado', 'vender carro com segurança'],
@@ -310,7 +310,7 @@ BEGIN
   ]
 }
 </script>',
-    'https://img.usecurling.com/p/1200/630?q=dealership',
+    'https://img.usecurling.com/p/1200/630?q=new%20used%20car',
     'Carro e Cia Veículos',
     '8 min',
     ARRAY['carro usado ou novo', 'vale a pena comprar carro usado', 'diferença carro novo e usado', 'comprar carro usado 2026', 'vantagens carro seminovo'],
@@ -404,7 +404,7 @@ BEGIN
   ]
 }
 </script>',
-    'https://img.usecurling.com/p/1200/630?q=car%20showroom',
+    'https://img.usecurling.com/p/1200/630?q=car%20showroom%20professional',
     'Carro e Cia Veículos',
     '7 min',
     ARRAY['consignação de veículo', 'o que é consignação de carro', 'como funciona consignação', 'consignar carro em loja', 'vender carro consignado'],
@@ -501,7 +501,7 @@ BEGIN
   ]
 }
 </script>',
-    'https://img.usecurling.com/p/1200/630?q=credit%20score',
+    'https://img.usecurling.com/p/1200/630?q=financing%20approval',
     'Carro e Cia Veículos',
     '7 min',
     ARRAY['financiamento carro negativado', 'financiar carro com nome sujo', 'financiamento carro CPF negativado', 'banco que financia carro negativado'],
@@ -595,7 +595,7 @@ BEGIN
   ]
 }
 </script>',
-    'https://img.usecurling.com/p/1200/630?q=calculator',
+    'https://img.usecurling.com/p/1200/630?q=car%20calculator',
     'Carro e Cia Veículos',
     '6 min',
     ARRAY['quanto vale meu carro', 'tabela FIPE carro', 'como consultar tabela FIPE', 'valor do meu carro FIPE', 'precificar carro para vender'],
@@ -689,7 +689,7 @@ BEGIN
   ]
 }
 </script>',
-    'https://img.usecurling.com/p/1200/630?q=car%20insurance',
+    'https://img.usecurling.com/p/1200/630?q=car%20insurance%20document',
     'Carro e Cia Veículos',
     '8 min',
     ARRAY['seguro auto vale a pena', 'contratar seguro auto', 'seguro carro compensa', 'quanto custa seguro auto', 'seguro auto Uberaba'],
@@ -787,7 +787,7 @@ BEGIN
   ]
 }
 </script>',
-    'https://img.usecurling.com/p/1200/630?q=used%20car',
+    'https://img.usecurling.com/p/1200/630?q=used%20car%20keys',
     'Carro e Cia Veículos',
     '9 min',
     ARRAY['comprar carro usado Uberaba', 'onde comprar carro usado Uberaba', 'carro usado Uberaba MG', 'loja de carro usado Uberaba', 'comprar carro seminovo Uberaba'],
@@ -884,7 +884,7 @@ BEGIN
   ]
 }
 </script>',
-    'https://img.usecurling.com/p/1200/630?q=simulation',
+    'https://img.usecurling.com/p/1200/630?q=car%20laptop%20simulation',
     'Carro e Cia Veículos',
     '7 min',
     ARRAY['como simular financiamento veículo', 'simulação financiamento carro', 'calcular parcela financiamento', 'simulador financiamento auto 2026'],
@@ -981,7 +981,7 @@ BEGIN
   ]
 }
 </script>',
-    'https://img.usecurling.com/p/1200/630?q=car%20mechanic',
+    'https://img.usecurling.com/p/1200/630?q=car%20mechanic%20inspection',
     'Carro e Cia Veículos',
     '7 min',
     ARRAY['revisão carro antes de vender', 'preparar carro para venda', 'valorizar carro antes de vender', 'checklist venda carro usado', 'carro preparado venda'],

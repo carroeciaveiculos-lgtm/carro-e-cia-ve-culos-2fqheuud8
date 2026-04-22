@@ -18,6 +18,7 @@ export function Footer() {
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary hover:bg-primary hover:text-white transition-colors"
+                aria-label="Instagram Carro e Cia"
               >
                 <Instagram className="w-5 h-5" />
               </a>
@@ -26,6 +27,7 @@ export function Footer() {
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary hover:bg-primary hover:text-white transition-colors"
+                aria-label="Facebook Carro e Cia"
               >
                 <Facebook className="w-5 h-5" />
               </a>

@@ -418,15 +418,22 @@ export default function ConsorcioAuto() {
                 key={s}
                 className="bg-slate-50 p-4 rounded-lg border border-slate-100 flex items-center justify-center grayscale hover:grayscale-0 transition-all col-span-1"
               >
-                <img
-                  src={`https://img.usecurling.com/i?q=${s}&shape=outline`}
-                  alt={`Logo ${s} — parceira Km Zero Corretora Uberaba MG`}
-                  title={`${s} — Consórcio em Uberaba`}
-                  className="max-h-12 object-contain"
-                  width="140"
-                  height="70"
-                  loading="lazy"
-                />
+                <picture>
+                  <source
+                    srcSet={`https://img.usecurling.com/i?q=${s}&shape=outline`}
+                    type="image/webp"
+                  />
+                  <img
+                    src={`https://img.usecurling.com/i?q=${s}&shape=outline`}
+                    alt={`Logo ${s} — parceira Km Zero Corretora Uberaba MG`}
+                    title={`${s} — Consórcio em Uberaba`}
+                    className="max-h-12 object-contain"
+                    width="140"
+                    height="70"
+                    loading="lazy"
+                    decoding="async"
+                  />
+                </picture>
               </div>
             ))}
           </div>

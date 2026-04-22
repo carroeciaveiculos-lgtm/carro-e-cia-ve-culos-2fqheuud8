@@ -100,15 +100,18 @@ export default function Sobre() {
                 className="bg-card rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow border"
               >
                 <div className="aspect-square bg-muted">
-                  <img
-                    src={member.photo}
-                    alt={`Foto de ${member.name}, ${member.role} na Carro e Cia`}
-                    width="400"
-                    height="400"
-                    loading="lazy"
-                    decoding="async"
-                    className="w-full h-full object-cover object-top"
-                  />
+                  <picture>
+                    <source srcSet={member.photo} type="image/webp" />
+                    <img
+                      src={member.photo}
+                      alt={`Foto de ${member.name}, ${member.role} na Carro e Cia`}
+                      width="400"
+                      height="400"
+                      loading="lazy"
+                      decoding="async"
+                      className="w-full h-full object-cover object-top"
+                    />
+                  </picture>
                 </div>
                 <div className="p-6 text-center">
                   <h3 className="font-bold text-xl mb-1 font-display">{member.name}</h3>

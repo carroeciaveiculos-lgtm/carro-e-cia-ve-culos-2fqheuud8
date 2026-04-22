@@ -83,16 +83,22 @@ export default function Consignacao() {
 
       <section className="relative min-h-[90vh] flex items-center pt-24 pb-16">
         <div className="absolute inset-0 z-0">
-          <img
-            src="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Fotos/fachada%20da%20loja.jpeg"
-            alt="Fachada Carro e Cia Veículos Uberaba MG"
-            width="1920"
-            height="1080"
-            fetchPriority="high"
-            loading="eager"
-            decoding="async"
-            className="w-full h-full object-cover object-center"
-          />
+          <picture>
+            <source
+              srcSet="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Fotos/fachada%20da%20loja.jpeg"
+              type="image/webp"
+            />
+            <img
+              src="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Fotos/fachada%20da%20loja.jpeg"
+              alt="Fachada Carro e Cia Veículos Uberaba MG"
+              width="1920"
+              height="1080"
+              fetchPriority="high"
+              loading="eager"
+              decoding="async"
+              className="w-full h-full object-cover object-center"
+            />
+          </picture>
           <div className="absolute inset-0 bg-black/60" />
         </div>
         <div className="container relative z-10 grid lg:grid-cols-2 gap-12 items-center">
@@ -228,16 +234,19 @@ export default function Consignacao() {
           <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
             {team.map((member, i) => (
               <div key={i} className="text-center flex flex-col items-center">
-                <img
-                  src={member.img}
-                  alt={`${member.name} - Carro e Cia Veículos`}
-                  width="160"
-                  height="160"
-                  loading="lazy"
-                  decoding="async"
-                  className="w-[120px] h-[120px] md:w-[160px] md:h-[160px] rounded-full object-cover mx-auto mb-4 border-[3px] border-[#E53935] shadow-md"
-                  style={{ objectPosition: member.position }}
-                />
+                <picture>
+                  <source srcSet={member.img} type="image/webp" />
+                  <img
+                    src={member.img}
+                    alt={`${member.name} - Carro e Cia Veículos`}
+                    width="160"
+                    height="160"
+                    loading="lazy"
+                    decoding="async"
+                    className="w-[120px] h-[120px] md:w-[160px] md:h-[160px] rounded-full object-cover mx-auto mb-4 border-[3px] border-[#E53935] shadow-md"
+                    style={{ objectPosition: member.position }}
+                  />
+                </picture>
                 <h3 className="text-xl font-bold">{member.name}</h3>
                 <p className="text-muted-foreground">{member.role}</p>
               </div>

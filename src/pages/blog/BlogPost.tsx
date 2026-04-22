@@ -176,14 +176,22 @@ export default function BlogPost() {
           <h1 className="text-3xl md:text-5xl font-bold tracking-tight mb-6 leading-tight text-foreground">
             {post.title}
           </h1>
-          <img
-            src={post.image_url || `https://img.usecurling.com/p/800/400?q=car%20dealership`}
-            alt={`Capa do artigo: ${post.title}`}
-            width="800"
-            height="400"
-            loading="eager"
-            className="w-full aspect-video object-cover rounded-xl shadow-sm"
-          />
+          <picture>
+            <source
+              srcSet={post.image_url || `https://img.usecurling.com/p/1200/630?q=car%20dealership`}
+              type="image/webp"
+            />
+            <img
+              src={post.image_url || `https://img.usecurling.com/p/1200/630?q=car%20dealership`}
+              alt={`Capa do artigo: ${post.title}`}
+              width="1200"
+              height="630"
+              loading="eager"
+              fetchPriority="high"
+              decoding="async"
+              className="w-full aspect-video object-cover rounded-xl shadow-sm"
+            />
+          </picture>
         </header>
 
         {headings.length > 0 && (

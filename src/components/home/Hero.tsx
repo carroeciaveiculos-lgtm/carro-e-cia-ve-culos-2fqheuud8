@@ -89,16 +89,22 @@ export function Hero() {
     <>
       <section className="relative pt-24 pb-32 lg:pt-32 lg:pb-48 overflow-hidden">
         <div className="absolute inset-0 z-0">
-          <img
-            src="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Fotos/fachada%20da%20loja.jpeg"
-            alt="Fachada Carro e Cia Veículos Uberaba MG"
-            width="1920"
-            height="1080"
-            fetchPriority="high"
-            loading="eager"
-            decoding="async"
-            className="w-full h-full object-cover object-center"
-          />
+          <picture>
+            <source
+              srcSet="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Fotos/fachada%20da%20loja.jpeg"
+              type="image/webp"
+            />
+            <img
+              src="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Fotos/fachada%20da%20loja.jpeg"
+              alt="Fachada Carro e Cia Veículos Uberaba MG"
+              width="1920"
+              height="1080"
+              fetchPriority="high"
+              loading="eager"
+              decoding="async"
+              className="w-full h-full object-cover object-center"
+            />
+          </picture>
         </div>
         <div className="absolute inset-0 z-0 bg-black/50" />
 

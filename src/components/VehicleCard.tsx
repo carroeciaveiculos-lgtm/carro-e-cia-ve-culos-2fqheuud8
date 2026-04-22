@@ -31,11 +31,18 @@ export function VehicleCard({ vehicle, isList = false }: { vehicle: any; isList?
     return (
       <div className="group flex bg-card rounded-lg overflow-hidden border shadow-sm hover:shadow-md transition-shadow w-full">
         <div className="relative w-[140px] md:w-[240px] shrink-0 overflow-hidden bg-muted">
-          <img
-            src={coverImage}
-            alt={`${vehicle.marca} ${vehicle.modelo}`}
-            className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-500"
-          />
+          <picture>
+            <source srcSet={coverImage} type="image/webp" />
+            <img
+              src={coverImage}
+              alt={`${vehicle.marca} ${vehicle.modelo}`}
+              width="240"
+              height="180"
+              loading="lazy"
+              decoding="async"
+              className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-500"
+            />
+          </picture>
         </div>
         <div className="p-4 flex flex-col flex-grow">
           <h3 className="font-display font-bold text-base md:text-lg text-foreground line-clamp-1">

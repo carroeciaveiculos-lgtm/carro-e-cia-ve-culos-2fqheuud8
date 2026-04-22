@@ -246,14 +246,21 @@ export default function SeguroAuto() {
                 key={p.name}
                 className="flex flex-col sm:flex-row gap-6 bg-slate-50 rounded-2xl p-6 border border-slate-100"
               >
-                <img
-                  src={`https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Fotos/Formato%20webp/${p.img}`}
-                  alt={p.alt}
-                  width="160"
-                  height="160"
-                  className="w-32 h-32 sm:w-40 sm:h-40 object-cover object-top rounded-full shadow-md border-4 border-white mx-auto sm:mx-0"
-                  loading="lazy"
-                />
+                <picture>
+                  <source
+                    srcSet={`https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Fotos/Formato%20webp/${p.img}`}
+                    type="image/webp"
+                  />
+                  <img
+                    src={`https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Fotos/Formato%20webp/${p.img}`}
+                    alt={p.alt}
+                    width="160"
+                    height="160"
+                    className="w-32 h-32 sm:w-40 sm:h-40 object-cover object-top rounded-full shadow-md border-4 border-white mx-auto sm:mx-0"
+                    loading="lazy"
+                    decoding="async"
+                  />
+                </picture>
                 <div className="flex-1 text-center sm:text-left flex flex-col">
                   <h3 className="text-2xl font-bold text-slate-900">{p.name}</h3>
                   <p className="text-sm font-bold text-blue-600 mb-3">{p.title}</p>
@@ -317,15 +324,22 @@ export default function SeguroAuto() {
                 key={s}
                 className="bg-slate-50 p-4 rounded-lg border border-slate-100 flex items-center justify-center grayscale hover:grayscale-0 transition-all"
               >
-                <img
-                  src={`https://img.usecurling.com/i?q=${s}&shape=outline`}
-                  alt={`Logo ${s} — parceira Km Zero Corretora Uberaba MG`}
-                  title={`${s} — Seguro Auto em Uberaba`}
-                  className="max-h-10 object-contain"
-                  width="120"
-                  height="60"
-                  loading="lazy"
-                />
+                <picture>
+                  <source
+                    srcSet={`https://img.usecurling.com/i?q=${s}&shape=outline`}
+                    type="image/webp"
+                  />
+                  <img
+                    src={`https://img.usecurling.com/i?q=${s}&shape=outline`}
+                    alt={`Logo ${s} — parceira Km Zero Corretora Uberaba MG`}
+                    title={`${s} — Seguro Auto em Uberaba`}
+                    className="max-h-10 object-contain"
+                    width="120"
+                    height="60"
+                    loading="lazy"
+                    decoding="async"
+                  />
+                </picture>
               </div>
             ))}
           </div>

@@ -116,11 +116,23 @@ export default function BlogIndex() {
                 key={post.id}
                 className="flex flex-col h-full hover:shadow-md transition-shadow overflow-hidden"
               >
-                <img
-                  src={post.image_url || `https://img.usecurling.com/p/600/300?q=car&seed=${i}`}
-                  alt={post.title}
-                  className="w-full h-48 object-cover"
-                />
+                <picture>
+                  <source
+                    srcSet={
+                      post.image_url || `https://img.usecurling.com/p/600/300?q=car&seed=${i}`
+                    }
+                    type="image/webp"
+                  />
+                  <img
+                    src={post.image_url || `https://img.usecurling.com/p/600/300?q=car&seed=${i}`}
+                    alt={post.title}
+                    width="600"
+                    height="300"
+                    loading="lazy"
+                    decoding="async"
+                    className="w-full h-48 object-cover"
+                  />
+                </picture>
                 <CardHeader>
                   <div className="mb-3">
                     <Badge variant="secondary">{post.category}</Badge>

@@ -45,7 +45,7 @@ export function NavigationCards() {
                 <CardDescription className="text-base mt-2">{c.desc}</CardDescription>
               </CardHeader>
               <CardContent className="mt-auto w-full">
-                <Button asChild className="w-full" size="lg" aria-label={c.cta}>
+                <Button asChild className="w-full" size="lg" aria-label={`Navegar para ${c.title}`}>
                   <Link to={c.link} target="_self">
                     {c.cta}
                   </Link>

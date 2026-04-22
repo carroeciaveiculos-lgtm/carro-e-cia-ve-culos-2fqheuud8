@@ -96,6 +96,8 @@ export default function PublicLayout() {
               className="h-10 w-auto max-w-[140px] object-contain"
               width="140"
               height="40"
+              loading="eager"
+              fetchPriority="high"
             />
           </Link>
 
@@ -285,6 +287,7 @@ export default function PublicLayout() {
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center justify-center w-[56px] h-[56px] rounded-full bg-[#25D366] text-white shadow-lg border-4 border-background"
+              aria-label="Falar pelo WhatsApp"
             >
               <MessageCircle className="w-7 h-7" />
             </a>
