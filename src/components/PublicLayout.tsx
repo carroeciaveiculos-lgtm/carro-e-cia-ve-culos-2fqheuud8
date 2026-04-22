@@ -1,6 +1,17 @@
 import { Outlet, Link, useLocation } from 'react-router-dom'
 import { WhatsAppButton } from './WhatsAppButton'
-import { Menu, X, ChevronDown, Car, Home, MessageCircle, Handshake, ArrowUp } from 'lucide-react'
+import {
+  Menu,
+  X,
+  ChevronDown,
+  Car,
+  Home,
+  MessageCircle,
+  Handshake,
+  ArrowUp,
+  Shield,
+  CreditCard,
+} from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { cn } from '@/lib/utils'
 import { trackConversion } from '@/lib/tracking'
@@ -21,6 +32,8 @@ export default function PublicLayout() {
     { label: 'Consignação de Veículos', href: '/consignacao' },
     { label: 'Vender Meu Carro', href: '/vender-meu-carro' },
     { label: 'Financiamento Auto', href: '/financiamento-auto' },
+    { label: 'Seguro Auto', href: '/seguro-auto' },
+    { label: 'Consórcio Auto', href: '/consorcio-auto' },
   ]
 
   const rightLinks = [
@@ -33,7 +46,9 @@ export default function PublicLayout() {
     { label: 'Início', href: '/', icon: Home },
     { label: 'Nosso Estoque', href: '/estoque', icon: Car },
     { label: 'Consignação', href: '/consignacao', icon: Handshake },
-    { label: 'Financiamento', href: '/financiamento-auto', icon: MessageCircle },
+    { label: 'Financiamento', href: '/financiamento-auto', icon: CreditCard },
+    { label: 'Seguro Auto', href: '/seguro-auto', icon: Shield },
+    { label: 'Consórcio Auto', href: '/consorcio-auto', icon: Car },
     { label: 'Contato', href: '/contato', icon: MessageCircle },
     { label: 'Blog', href: '/blog', icon: Home },
   ]
