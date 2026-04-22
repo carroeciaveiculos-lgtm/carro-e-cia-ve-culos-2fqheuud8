@@ -476,4 +476,8 @@ export default function Estoque() {
               </Button>
             </div>
           )}
-        </di
+        </div>
+      </div>
+    </div>
+  )
+}
