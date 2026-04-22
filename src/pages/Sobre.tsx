@@ -7,28 +7,28 @@ export default function Sobre() {
       name: 'Luiz Fernando',
       role: 'CEO',
       photo:
-        'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Fotos/Luiz%20Fernando%20foto%20profissional.jpeg',
+        'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Fotos/Formato%20webp/Luiz-Fernando-foto-profissional.webp',
       bio: 'Com mais de 20 anos de experiência, Luiz é a alma da Carro e Cia. Sua paixão por veículos e seu carisma garantem a melhor experiência para cada cliente.',
     },
     {
-      name: 'Roberto Junior',
+      name: 'Gabriel',
       role: 'Vendedor',
       photo:
-        'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Fotos/Roberto%20Junior%20foto%20profissional.jpeg',
-      bio: 'Irmão de Luiz Fernando, Roberto é o braço direito nas vendas. Com sua energia e conhecimento, ele ajuda a encontrar o veículo perfeito para você.',
+        'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Fotos/Formato%20webp/Gabriel-foto-profissional.webp',
+      bio: 'Gabriel é o braço direito nas vendas. Com sua energia e conhecimento, ele ajuda a encontrar o veículo perfeito para você.',
     },
     {
       name: 'Jessica Germano',
       role: 'Financeiro',
       photo:
-        'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Fotos/Ljessica%20foto%20profissional.jpeg',
+        'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Fotos/Formato%20webp/Ljessica-foto-profissional.webp',
       bio: 'Jessica cuida de toda a parte financeira, garantindo que cada transação seja clara, segura e sem burocracia para nossos clientes.',
     },
     {
       name: 'Adriana Araújo',
       role: 'Administrativa',
       photo:
-        'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Fotos/Adriana%20foto%20profissional.jpeg',
+        'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Fotos/Formato%20webp/Adriana-foto-profissional.webp',
       bio: 'Com sua expertise administrativa, Adriana organiza e otimiza os processos internos, assegurando a eficiência e a qualidade do nosso atendimento.',
     },
   ]
@@ -40,7 +40,7 @@ export default function Sobre() {
         description="Conheça a Carro e Cia Veículos. Mais de 20 anos de experiência no mercado automóvel. Referência em confiança e qualidade em Uberaba."
       />
       <section className="relative pt-24 pb-32 overflow-hidden bg-secondary text-white">
-        <div className="absolute inset-0 z-0 opacity-40 bg-[url('https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Fotos/fachada%20da%20loja.jpeg')] bg-cover bg-center" />
+        <div className="absolute inset-0 z-0 opacity-40 bg-[url('https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Fotos/Formato%20webp/fachada-da-loja.webp')] bg-cover bg-center" />
         <div className="absolute inset-0 bg-gradient-to-t from-secondary via-secondary/90 to-secondary/40 z-10" />
         <div className="container relative z-20 text-center max-w-4xl">
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-display font-extrabold mb-6 leading-tight text-white">

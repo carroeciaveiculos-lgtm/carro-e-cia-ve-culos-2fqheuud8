@@ -38,7 +38,7 @@ export function SEO({
       '@type': 'Organization',
       name: 'Carro e Cia Veículos',
       url: 'https://carroeciamotors.com.br',
-      logo: 'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/logo-carro-e-cia.png',
+      logo: 'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Fotos/Formato%20webp/logo-carro-e-cia.webp',
       telephone: '+5534999484285',
       address: {
         '@type': 'PostalAddress',

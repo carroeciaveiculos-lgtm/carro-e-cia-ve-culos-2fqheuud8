@@ -90,10 +90,19 @@ export function Hero() {
       <section className="relative pt-24 pb-32 lg:pt-32 lg:pb-48 overflow-hidden">
         <div className="absolute inset-0 z-0">
           <picture>
+            {/* Mobile: Imagem específica para mobile (9:16) */}
             <source
-              srcSet="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Fotos/fachada%20da%20loja.jpeg"
+              media="(max-width: 768px)"
+              srcSet="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Fotos/Formato%20webp/fachada-mobile.webp"
               type="image/webp"
             />
+            {/* Desktop: Imagem original (16:9) */}
+            <source
+              media="(min-width: 769px)"
+              srcSet="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Fotos/Formato%20webp/fachada-da-loja.webp"
+              type="image/webp"
+            />
+            {/* Fallback final para navegadores antigos */}
             <img
               src="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Fotos/fachada%20da%20loja.jpeg"
               alt="Fachada Carro e Cia Veículos Uberaba MG"

@@ -292,7 +292,12 @@ export function Consignment() {
                   </SelectContent>
                 </Select>
               </div>
-              <Button type="submit" className="w-full h-14 text-lg font-bold" disabled={loading}>
+              <Button
+                type="submit"
+                className="w-full h-14 text-lg font-bold"
+                disabled={loading}
+                aria-label="Enviar solicitação de avaliação"
+              >
                 {loading ? 'Enviando Dados...' : 'Quero Consignar Agora'}
               </Button>
             </form>
