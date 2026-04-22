@@ -45,7 +45,7 @@ export function LatestPosts() {
                 />
                 <img
                   src={post.image_url || `https://img.usecurling.com/p/400/250?q=car`}
-                  alt={`Imagem de destaque: ${post.title}`}
+                  alt={`Imagem de destaque do artigo: ${post.title}`}
                   width="400"
                   height="250"
                   loading="lazy"

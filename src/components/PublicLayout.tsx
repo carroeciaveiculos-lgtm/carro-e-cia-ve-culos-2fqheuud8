@@ -90,15 +90,22 @@ export default function PublicLayout() {
       <header className="fixed top-0 left-0 right-0 z-[1000] h-[60px] bg-background shadow-[0_2px_8px_rgba(0,0,0,0.1)] flex items-center">
         <div className="container flex items-center justify-between w-full">
           <Link to="/" className="flex items-center" target="_self" aria-label="Página Inicial">
-            <img
-              src="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Logos/logo%20carro%20e%20cia.png"
-              alt="Carro e Cia Logo"
-              className="h-10 w-auto max-w-[140px] object-contain"
-              width="140"
-              height="40"
-              loading="eager"
-              fetchPriority="high"
-            />
+            <picture>
+              <source
+                srcSet="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Fotos/Formato%20webp/logo-carro-e-cia.webp"
+                type="image/webp"
+              />
+              <img
+                src="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Logos/logo%20carro%20e%20cia.png"
+                alt="Carro e Cia Logo Oficial"
+                className="h-10 w-auto max-w-[140px] object-contain"
+                width="140"
+                height="40"
+                loading="eager"
+                fetchPriority="high"
+                decoding="async"
+              />
+            </picture>
           </Link>
 
           {/* Desktop Menu */}
@@ -117,7 +124,12 @@ export default function PublicLayout() {
             ))}
 
             <div className="relative group">
-              <button className="flex items-center gap-1 transition-colors hover:text-primary text-foreground/80 py-2">
+              <button
+                className="flex items-center gap-1 transition-colors hover:text-primary text-foreground/80 py-2"
+                aria-expanded="false"
+                aria-haspopup="menu"
+                aria-label="Abrir menu de serviços"
+              >
                 Nossos Serviços <ChevronDown className="w-4 h-4" />
               </button>
               <div className="absolute top-full left-0 hidden group-hover:flex flex-col bg-card border shadow-lg rounded-md min-w-[240px] overflow-hidden">
@@ -307,6 +319,9 @@ export default function PublicLayout() {
           <button
             onClick={() => setMenuOpen(true)}
             className="flex flex-col items-center justify-center w-full h-full space-y-1 text-muted-foreground"
+            aria-expanded={menuOpen}
+            aria-haspopup="menu"
+            aria-label="Menu principal"
           >
             <Menu className="w-6 h-6" />
             <span className="text-[11px] font-medium">Menu</span>

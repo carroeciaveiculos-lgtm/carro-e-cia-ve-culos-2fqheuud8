@@ -108,7 +108,7 @@ export function Footer() {
         <div className="mb-12 border-t border-border/50 pt-12">
           <div className="rounded-xl overflow-hidden shadow-[0_4px_12px_rgba(0,0,0,0.1)] mb-6">
             <iframe
-              title="Mapa de Localização da Carro e Cia"
+              title="Mapa de Localização da Carro e Cia Veículos em Uberaba"
               src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3754.8879051323597!2d-47.93789018845835!3d-19.759916581513842!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x94bad1b54ff23a55%3A0x1d3108bae712d85d!2sCarro%20e%20Cia%20Com%C3%A9rcio%20de%20Ve%C3%ADculos!5e0!3m2!1spt-BR!2sbr!4v1776692231909!5m2!1spt-BR!2sbr"
               width="100%"
               height="280"

@@ -35,7 +35,7 @@ export function VehicleCard({ vehicle, isList = false }: { vehicle: any; isList?
             <source srcSet={coverImage} type="image/webp" />
             <img
               src={coverImage}
-              alt={`${vehicle.marca} ${vehicle.modelo}`}
+              alt={`${vehicle.marca} ${vehicle.modelo} à venda na Carro e Cia`}
               width="240"
               height="180"
               loading="lazy"
@@ -92,13 +92,13 @@ export function VehicleCard({ vehicle, isList = false }: { vehicle: any; isList?
           <source srcSet={coverImage} type="image/webp" />
           <img
             src={coverImage}
-            alt={`Foto do veículo ${vehicle.marca} ${vehicle.modelo} ${vehicle.ano_fabricacao} à venda`}
+            alt={`Foto do veículo ${vehicle.marca} ${vehicle.modelo} ${vehicle.ano_fabricacao} à venda em Uberaba`}
             width="400"
             height="300"
             loading="lazy"
             decoding="async"
             className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-500"
-          />
+          />{' '}
         </picture>
       </div>
       <div className="p-5 flex flex-col flex-grow">

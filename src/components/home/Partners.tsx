@@ -41,7 +41,7 @@ export function Partners() {
                 height="80"
                 loading="lazy"
                 decoding="async"
-                className="h-10 object-contain grayscale hover:grayscale-0 transition-all duration-300"
+                className="h-10 w-auto max-w-[200px] object-contain grayscale hover:grayscale-0 transition-all duration-300"
               />
             </picture>
           ))}
