@@ -122,7 +122,7 @@ const App = () => (
               <Route path="/blog" element={<BlogIndex />} />
               <Route path="/blog/:slug" element={<BlogPost />} />
 
-              {/* Pós-conversão e Serviços */}
+              {/* Pós-conversão e Serviços (RESTAURADOS) */}
               <Route path="/obrigado" element={<Obrigado />} />
               <Route path="/seguro-auto" element={<SeguroAuto />} />
               <Route path="/consorcio-auto" element={<ConsorcioAuto />} />
