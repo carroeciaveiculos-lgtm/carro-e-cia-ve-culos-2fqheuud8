@@ -15,7 +15,6 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
 import { Slider } from '@/components/ui/slider'
 import { getMarcas, getModelos } from '@/services/fipe'
-import { cn } from '@/lib/utils'
 import { Filter, Search, LayoutGrid, List } from 'lucide-react'
 import {
   Drawer,
@@ -426,20 +425,19 @@ export default function Estoque() {
               {[1, 2, 3, 4, 5, 6].map((i) => (
                 <div
                   key={i}
-                  className={cn(
-                    'animate-pulse bg-muted rounded-xl',
-                    viewMode === 'grid' ? 'h-[400px]' : 'h-[160px]',
-                  )}
+                  className={`animate-pulse bg-muted rounded-xl ${
+                    viewMode === 'grid' ? 'h-[400px]' : 'h-[160px]'
+                  }`}
                 />
               ))}
             </div>
           ) : vehicles.length > 0 ? (
             <div
-              className={cn(
+              className={
                 viewMode === 'grid'
                   ? 'grid gap-4 md:gap-6 grid-cols-1 sm:grid-cols-2 xl:grid-cols-3'
-                  : 'flex flex-col gap-4',
-              )}
+                  : 'flex flex-col gap-4'
+              }
             >
               {vehicles.map((v) => (
                 <div key={v.id} className={viewMode === 'list' ? 'md:max-w-3xl' : ''}>
