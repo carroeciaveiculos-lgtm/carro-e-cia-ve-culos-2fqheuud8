@@ -23,12 +23,12 @@ const DomainRedirect = () => {
 import PublicLayout from '@/components/PublicLayout'
 import { ProtectedRoute } from '@/components/ProtectedRoute'
 import NotFound from './pages/NotFound'
+import Index from './pages/Index'
 
 // Admin Layout lazy loaded to reduce unused JS in public routes
 const AdminLayout = lazy(() => import('@/components/AdminLayout'))
 
 // Public Pages (Lazy loaded for performance/code-splitting)
-const Index = lazy(() => import('./pages/Index'))
 const Estoque = lazy(() => import('./pages/Estoque'))
 const Veiculo = lazy(() => import('./pages/Veiculo'))
 const Consignacao = lazy(() => import('./pages/Consignacao'))
