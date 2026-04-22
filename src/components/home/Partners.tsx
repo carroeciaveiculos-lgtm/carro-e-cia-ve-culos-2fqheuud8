@@ -32,16 +32,18 @@ export function Partners() {
         <h2 className="text-3xl font-bold text-center mb-10">Nossos Parceiros Financeiros</h2>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-8 items-center justify-items-center opacity-70">
           {partners.map((p, i) => (
-            <img
-              key={i}
-              src={p.src}
-              alt={`${p.name} - Parceiro Carro e Cia`}
-              width="200"
-              height="80"
-              loading="lazy"
-              decoding="async"
-              className="h-10 object-contain grayscale hover:grayscale-0 transition-all duration-300"
-            />
+            <picture key={i}>
+              <source srcSet={p.src} type="image/webp" />
+              <img
+                src={p.src}
+                alt={`Logo do banco parceiro ${p.name} - Carro e Cia Veículos`}
+                width="200"
+                height="80"
+                loading="lazy"
+                decoding="async"
+                className="h-10 object-contain grayscale hover:grayscale-0 transition-all duration-300"
+              />
+            </picture>
           ))}
         </div>
       </div>

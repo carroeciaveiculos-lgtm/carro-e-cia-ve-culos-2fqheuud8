@@ -159,7 +159,12 @@ export default function ConsorcioAuto() {
               size="lg"
               className="text-base px-8 h-14 bg-[#25D366] hover:bg-[#20bd5a] text-white w-full sm:w-auto rounded-xl font-bold shadow-lg"
             >
-              <a href={adrianaWpp} target="_blank" rel="noopener noreferrer">
+              <a
+                href={adrianaWpp}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Simular consórcio pelo WhatsApp com a Adriana"
+              >
                 💬 Simular consórcio com a Adriana
               </a>
             </Button>
@@ -319,7 +324,12 @@ export default function ConsorcioAuto() {
               variant="outline"
               className="font-bold border-orange-200 text-orange-700 hover:bg-orange-50"
             >
-              <a href={adrianaWpp} target="_blank" rel="noopener noreferrer">
+              <a
+                href={adrianaWpp}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Pedir indicação de consórcio pelo WhatsApp"
+              >
                 Quero a indicação da Adriana →
               </a>
             </Button>

@@ -102,16 +102,28 @@ export function Hero() {
               srcSet="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Fotos/Formato%20webp/fachada-da-loja.webp"
               type="image/webp"
             />
+            {/* Mobile fallback JPEG */}
+            <source
+              media="(max-width: 768px)"
+              srcSet="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Fotos/fachada-mobile.jpg"
+              type="image/jpeg"
+            />
+            {/* Desktop fallback JPEG */}
+            <source
+              media="(min-width: 769px)"
+              srcSet="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Fotos/fachada%20da%20loja.jpeg"
+              type="image/jpeg"
+            />
             {/* Fallback final para navegadores antigos */}
             <img
               src="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Fotos/fachada%20da%20loja.jpeg"
-              alt="Fachada Carro e Cia Veículos Uberaba MG"
+              alt="Fachada da loja Carro e Cia em Uberaba - MG, localizada em avenida estratégica com múltiplos veículos de qualidade"
               width="1920"
               height="1080"
               fetchPriority="high"
               loading="eager"
               decoding="async"
-              className="w-full h-full object-cover object-center"
+              className="w-full h-full md:h-[630px] object-cover object-center"
             />
           </picture>
         </div>

@@ -76,20 +76,40 @@ export default function CarrosSeminovosUberaba() {
     setSelectedPreco('all')
   }
 
-  const schema = {
-    '@context': 'https://schema.org',
-    '@type': 'LocalBusiness',
-    name: 'Carro e Cia Veículos',
-    image: 'https://img.usecurling.com/p/800/600?q=car%20dealership',
-    description:
-      'Encontre os melhores carros seminovos em Uberaba MG com procedência, garantia e preço justo.',
-    address: {
-      '@type': 'PostalAddress',
-      addressLocality: 'Uberaba',
-      addressRegion: 'MG',
-      addressCountry: 'BR',
+  const schema = [
+    {
+      '@context': 'https://schema.org',
+      '@type': 'LocalBusiness',
+      name: 'Carro e Cia Veículos',
+      image: 'https://img.usecurling.com/p/800/600?q=car%20dealership',
+      description:
+        'Encontre os melhores carros seminovos em Uberaba MG com procedência, garantia e preço justo.',
+      address: {
+        '@type': 'PostalAddress',
+        addressLocality: 'Uberaba',
+        addressRegion: 'MG',
+        addressCountry: 'BR',
+      },
     },
-  }
+    {
+      '@context': 'https://schema.org',
+      '@type': 'BreadcrumbList',
+      itemListElement: [
+        {
+          '@type': 'ListItem',
+          position: 1,
+          name: 'Início',
+          item: 'https://carroeciamotors.com.br',
+        },
+        {
+          '@type': 'ListItem',
+          position: 2,
+          name: 'Carros Seminovos em Uberaba MG',
+          item: 'https://carroeciamotors.com.br/carros-seminovos-uberaba-mg',
+        },
+      ],
+    },
+  ]
 
   return (
     <main className="flex-1 bg-background">

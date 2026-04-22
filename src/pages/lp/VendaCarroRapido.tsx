@@ -22,17 +22,37 @@ import {
 } from '@/components/ui/table'
 
 export default function VendaCarroRapido() {
-  const schema = {
-    '@context': 'https://schema.org',
-    '@type': 'Service',
-    name: 'Consignação e Venda de Veículos',
-    provider: {
-      '@type': 'LocalBusiness',
-      name: 'Carro e Cia Veículos',
+  const schema = [
+    {
+      '@context': 'https://schema.org',
+      '@type': 'Service',
+      name: 'Consignação e Venda de Veículos',
+      provider: {
+        '@type': 'LocalBusiness',
+        name: 'Carro e Cia Veículos',
+      },
+      description:
+        'Quer vender seu carro rápido, sem estresse e pelo melhor preço? Consigne na Carro e Cia e deixe que a gente vende para você.',
     },
-    description:
-      'Quer vender seu carro rápido, sem estresse e pelo melhor preço? Consigne na Carro e Cia e deixe que a gente vende para você.',
-  }
+    {
+      '@context': 'https://schema.org',
+      '@type': 'BreadcrumbList',
+      itemListElement: [
+        {
+          '@type': 'ListItem',
+          position: 1,
+          name: 'Início',
+          item: 'https://carroeciamotors.com.br',
+        },
+        {
+          '@type': 'ListItem',
+          position: 2,
+          name: 'Venda Rápida',
+          item: 'https://carroeciamotors.com.br/venda-seu-carro-rapido-uberaba',
+        },
+      ],
+    },
+  ]
 
   return (
     <main className="flex-1 bg-background">

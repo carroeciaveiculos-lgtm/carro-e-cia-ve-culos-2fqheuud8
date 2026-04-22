@@ -97,16 +97,20 @@ export function TestimonialsAndLocation() {
                 target="_blank"
                 rel="noopener noreferrer"
                 className={`group relative flex items-center justify-center ${p.highlight ? 'w-48 h-24' : 'w-32 h-16'} grayscale hover:grayscale-0 transition-all duration-300 opacity-60 hover:opacity-100`}
+                aria-label={`Visitar site do parceiro ${p.name}`}
               >
-                <img
-                  src={p.logo}
-                  alt={`Logo do parceiro ${p.name}`}
-                  width="120"
-                  height="60"
-                  loading="lazy"
-                  decoding="async"
-                  className="w-full h-full object-contain mix-blend-multiply dark:mix-blend-normal"
-                />
+                <picture>
+                  <source srcSet={p.logo} type="image/webp" />
+                  <img
+                    src={p.logo}
+                    alt={`Logotipo oficial do parceiro ${p.name} - Carro e Cia`}
+                    width="120"
+                    height="60"
+                    loading="lazy"
+                    decoding="async"
+                    className="w-full h-full object-contain mix-blend-multiply dark:mix-blend-normal"
+                  />
+                </picture>
                 {p.highlight && (
                   <span className="absolute -bottom-8 left-1/2 -translate-x-1/2 w-max text-sm font-bold text-primary opacity-0 group-hover:opacity-100 transition-opacity">
                     Parceiro Oficial

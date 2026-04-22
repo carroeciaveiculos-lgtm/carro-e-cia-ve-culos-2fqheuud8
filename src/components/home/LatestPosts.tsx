@@ -32,12 +32,20 @@ export function LatestPosts() {
             >
               <picture>
                 <source
-                  srcSet={post.image_url || `https://img.usecurling.com/p/400/250?q=car`}
+                  srcSet={
+                    post.image_url
+                      ? post.image_url.replace(/\.(jpg|jpeg|png)$/, '.webp')
+                      : `https://img.usecurling.com/p/400/250?q=car`
+                  }
                   type="image/webp"
+                />
+                <source
+                  srcSet={post.image_url || `https://img.usecurling.com/p/400/250?q=car`}
+                  type="image/jpeg"
                 />
                 <img
                   src={post.image_url || `https://img.usecurling.com/p/400/250?q=car`}
-                  alt={post.title}
+                  alt={`Imagem de destaque: ${post.title}`}
                   width="400"
                   height="250"
                   loading="lazy"

@@ -104,7 +104,7 @@ export default function Sobre() {
                     <source srcSet={member.photo} type="image/webp" />
                     <img
                       src={member.photo}
-                      alt={`Foto de ${member.name}, ${member.role} na Carro e Cia`}
+                      alt={`Retrato profissional de ${member.name}, ${member.role} na equipe da Carro e Cia Veículos`}
                       width="400"
                       height="400"
                       loading="lazy"

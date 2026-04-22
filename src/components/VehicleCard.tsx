@@ -59,7 +59,12 @@ export function VehicleCard({ vehicle, isList = false }: { vehicle: any; isList?
           </div>
           <div className="flex gap-2 mt-3">
             <Button asChild variant="outline" className="w-full h-10 text-xs md:text-sm">
-              <Link to={`/estoque/${vehicle.id}`}>Detalhes</Link>
+              <Link
+                to={`/estoque/${vehicle.id}`}
+                aria-label={`Ver detalhes do ${vehicle.marca} ${vehicle.modelo}`}
+              >
+                Detalhes
+              </Link>
             </Button>
             <Button
               asChild
@@ -69,6 +74,7 @@ export function VehicleCard({ vehicle, isList = false }: { vehicle: any; isList?
                 href={`https://wa.me/5534999484285?text=${wppText}`}
                 target="_blank"
                 rel="noopener noreferrer"
+                aria-label={`Falar no WhatsApp sobre ${vehicle.marca} ${vehicle.modelo}`}
               >
                 Interesse
               </a>
@@ -82,15 +88,18 @@ export function VehicleCard({ vehicle, isList = false }: { vehicle: any; isList?
   return (
     <div className="group flex flex-col bg-card rounded-lg overflow-hidden border shadow-sm hover:shadow-md transition-shadow">
       <div className="relative aspect-[16/9] md:aspect-[4/3] overflow-hidden bg-muted">
-        <img
-          src={coverImage}
-          alt={`${vehicle.marca} ${vehicle.modelo} ${vehicle.ano_fabricacao}`}
-          width="400"
-          height="300"
-          loading="lazy"
-          decoding="async"
-          className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-500"
-        />
+        <picture>
+          <source srcSet={coverImage} type="image/webp" />
+          <img
+            src={coverImage}
+            alt={`Foto do veículo ${vehicle.marca} ${vehicle.modelo} ${vehicle.ano_fabricacao} à venda`}
+            width="400"
+            height="300"
+            loading="lazy"
+            decoding="async"
+            className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-500"
+          />
+        </picture>
       </div>
       <div className="p-5 flex flex-col flex-grow">
         <h3 className="font-display font-bold text-lg text-foreground line-clamp-1">
@@ -106,13 +115,19 @@ export function VehicleCard({ vehicle, isList = false }: { vehicle: any; isList?
         </div>
         <div className="grid grid-cols-2 gap-2 mt-4">
           <Button asChild variant="outline" className="w-full">
-            <Link to={`/estoque/${vehicle.id}`}>Detalhes</Link>
+            <Link
+              to={`/estoque/${vehicle.id}`}
+              aria-label={`Ver detalhes do ${vehicle.marca} ${vehicle.modelo}`}
+            >
+              Detalhes
+            </Link>
           </Button>
           <Button asChild className="w-full bg-[#25D366] hover:bg-[#20bd5a] text-white">
             <a
               href={`https://wa.me/5534999484285?text=${wppText}`}
               target="_blank"
               rel="noopener noreferrer"
+              aria-label={`Falar no WhatsApp sobre ${vehicle.marca} ${vehicle.modelo}`}
             >
               Tenho Interesse
             </a>

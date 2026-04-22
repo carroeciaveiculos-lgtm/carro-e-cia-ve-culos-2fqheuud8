@@ -171,7 +171,9 @@ export default function Contato() {
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-muted-foreground hover:text-primary transition-colors"
+                        aria-label="Chamar no WhatsApp"
                       >
+                        {' '}
                         (34) 99948-4285
                       </a>
                     </div>
@@ -185,6 +187,7 @@ export default function Contato() {
                       <a
                         href="mailto:lgacomerciodeveiculos@gmail.com"
                         className="text-muted-foreground hover:text-primary transition-colors text-sm break-all"
+                        aria-label="Enviar email para lgacomerciodeveiculos@gmail.com"
                       >
                         lgacomerciodeveiculos@gmail.com
                       </a>

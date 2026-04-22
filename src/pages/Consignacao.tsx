@@ -34,21 +34,50 @@ const team = [
 ]
 
 export default function Consignacao() {
-  const schema = {
-    '@context': 'https://schema.org',
-    '@type': 'AutoDealer',
-    name: 'Carro e Cia Veículos',
-    url: 'https://carroeciaveiculos.goskip.app',
-    telephone: '+5534999484285',
-    address: {
-      '@type': 'PostalAddress',
-      streetAddress: 'Av. Guilherme Ferreira, 1119',
-      addressLocality: 'Uberaba',
-      addressRegion: 'MG',
-      postalCode: '38022-200',
-      addressCountry: 'BR',
+  const schema = [
+    {
+      '@context': 'https://schema.org',
+      '@type': 'AutoDealer',
+      name: 'Carro e Cia Veículos',
+      url: 'https://carroeciamotors.com.br',
+      telephone: '+5534999484285',
+      address: {
+        '@type': 'PostalAddress',
+        streetAddress: 'Av. Guilherme Ferreira, 1119',
+        addressLocality: 'Uberaba',
+        addressRegion: 'MG',
+        postalCode: '38022-200',
+        addressCountry: 'BR',
+      },
     },
-  }
+    {
+      '@context': 'https://schema.org',
+      '@type': 'BreadcrumbList',
+      itemListElement: [
+        {
+          '@type': 'ListItem',
+          position: 1,
+          name: 'Início',
+          item: 'https://carroeciamotors.com.br',
+        },
+        {
+          '@type': 'ListItem',
+          position: 2,
+          name: 'Consignação',
+          item: 'https://carroeciamotors.com.br/consignacao',
+        },
+      ],
+    },
+    {
+      '@context': 'https://schema.org',
+      '@type': 'FAQPage',
+      mainEntity: faqs.map((f) => ({
+        '@type': 'Question',
+        name: f.q,
+        acceptedAnswer: { '@type': 'Answer', text: f.a },
+      })),
+    },
+  ]
 
   const faqs = [
     {
@@ -94,9 +123,19 @@ export default function Consignacao() {
               srcSet="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Fotos/Formato%20webp/fachada-da-loja.webp"
               type="image/webp"
             />
+            <source
+              media="(max-width: 768px)"
+              srcSet="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Fotos/fachada-mobile.jpg"
+              type="image/jpeg"
+            />
+            <source
+              media="(min-width: 769px)"
+              srcSet="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Fotos/fachada%20da%20loja.jpeg"
+              type="image/jpeg"
+            />
             <img
               src="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Fotos/fachada%20da%20loja.jpeg"
-              alt="Fachada Carro e Cia Veículos Uberaba MG"
+              alt="Fachada da loja Carro e Cia em Uberaba - MG, localizada em avenida estratégica com múltiplos veículos de qualidade"
               width="1920"
               height="1080"
               fetchPriority="high"
@@ -244,7 +283,7 @@ export default function Consignacao() {
                   <source srcSet={member.img} type="image/webp" />
                   <img
                     src={member.img}
-                    alt={`${member.name} - Carro e Cia Veículos`}
+                    alt={`Foto de ${member.name}, ${member.role} da equipe Carro e Cia Veículos`}
                     width="160"
                     height="160"
                     loading="lazy"

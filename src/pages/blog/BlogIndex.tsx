@@ -51,17 +51,37 @@ export default function BlogIndex() {
     fetchPosts()
   }, [])
 
-  const schema = {
-    '@context': 'https://schema.org',
-    '@type': 'Blog',
-    name: 'Blog Carro e Cia Veículos',
-    description:
-      'Tudo o que você precisa saber para fazer o melhor negócio no mercado automotivo de Uberaba.',
-    publisher: {
-      '@type': 'Organization',
-      name: 'Carro e Cia Veículos',
+  const schema = [
+    {
+      '@context': 'https://schema.org',
+      '@type': 'Blog',
+      name: 'Blog Carro e Cia Veículos',
+      description:
+        'Tudo o que você precisa saber para fazer o melhor negócio no mercado automotivo de Uberaba.',
+      publisher: {
+        '@type': 'Organization',
+        name: 'Carro e Cia Veículos',
+      },
     },
-  }
+    {
+      '@context': 'https://schema.org',
+      '@type': 'BreadcrumbList',
+      itemListElement: [
+        {
+          '@type': 'ListItem',
+          position: 1,
+          name: 'Início',
+          item: 'https://carroeciamotors.com.br',
+        },
+        {
+          '@type': 'ListItem',
+          position: 2,
+          name: 'Blog',
+          item: 'https://carroeciamotors.com.br/blog',
+        },
+      ],
+    },
+  ]
 
   return (
     <main className="flex-1 bg-muted/20 py-10">
@@ -119,16 +139,25 @@ export default function BlogIndex() {
                 <picture>
                   <source
                     srcSet={
-                      post.image_url || `https://img.usecurling.com/p/600/300?q=car&seed=${i}`
+                      post.image_url
+                        ? post.image_url.replace(/\.(jpg|jpeg|png)$/, '.webp')
+                        : `https://img.usecurling.com/p/600/300?q=car&seed=${i}`
                     }
                     type="image/webp"
                   />
+                  <source
+                    srcSet={
+                      post.image_url || `https://img.usecurling.com/p/600/300?q=car&seed=${i}`
+                    }
+                    type="image/jpeg"
+                  />
                   <img
                     src={post.image_url || `https://img.usecurling.com/p/600/300?q=car&seed=${i}`}
-                    alt={post.title}
+                    alt={`Imagem ilustrativa do artigo: ${post.title}`}
                     width="600"
                     height="300"
-                    loading="lazy"
+                    loading={i < 3 ? 'eager' : 'lazy'}
+                    fetchPriority={i < 3 ? 'high' : 'auto'}
                     decoding="async"
                     className="w-full h-48 object-cover"
                   />
@@ -150,6 +179,7 @@ export default function BlogIndex() {
                   <Link
                     to={`/blog/${post.slug}`}
                     className="text-primary font-medium hover:underline"
+                    aria-label={`Ler artigo completo: ${post.title}`}
                   >
                     Ler artigo &rarr;
                   </Link>

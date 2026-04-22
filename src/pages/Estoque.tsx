@@ -129,24 +129,44 @@ export default function Estoque() {
     }))
   }
 
-  const schema = {
-    '@context': 'https://schema.org',
-    '@type': 'AutoDealer',
-    name: 'Carro e Cia Veículos',
-    description:
-      'Estoque de carros usados e seminovos com procedência garantida em Uberaba MG. Financiamento facilitado.',
-    url: 'https://carroeciamotors.com.br/estoque',
-    telephone: '+5534999484285',
-    image:
-      'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Fotos/fachada%20da%20loja.jpeg',
-    address: {
-      '@type': 'PostalAddress',
-      streetAddress: 'Av. Guilherme Ferreira, 1119',
-      addressLocality: 'Uberaba',
-      addressRegion: 'MG',
-      addressCountry: 'BR',
+  const schema = [
+    {
+      '@context': 'https://schema.org',
+      '@type': 'AutoDealer',
+      name: 'Carro e Cia Veículos',
+      description:
+        'Estoque de carros usados e seminovos com procedência garantida em Uberaba MG. Financiamento facilitado.',
+      url: 'https://carroeciamotors.com.br/estoque',
+      telephone: '+5534999484285',
+      image:
+        'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Fotos/fachada%20da%20loja.jpeg',
+      address: {
+        '@type': 'PostalAddress',
+        streetAddress: 'Av. Guilherme Ferreira, 1119',
+        addressLocality: 'Uberaba',
+        addressRegion: 'MG',
+        addressCountry: 'BR',
+      },
     },
-  }
+    {
+      '@context': 'https://schema.org',
+      '@type': 'BreadcrumbList',
+      itemListElement: [
+        {
+          '@type': 'ListItem',
+          position: 1,
+          name: 'Início',
+          item: 'https://carroeciamotors.com.br',
+        },
+        {
+          '@type': 'ListItem',
+          position: 2,
+          name: 'Estoque',
+          item: 'https://carroeciamotors.com.br/estoque',
+        },
+      ],
+    },
+  ]
 
   const FilterSidebar = ({ isMobile = false }: { isMobile?: boolean }) => (
     <div className="space-y-8 pb-8">

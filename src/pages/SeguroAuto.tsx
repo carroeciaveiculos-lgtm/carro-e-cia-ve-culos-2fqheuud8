@@ -197,7 +197,12 @@ export default function SeguroAuto() {
               size="lg"
               className="text-base px-8 h-14 bg-[#25D366] hover:bg-[#20bd5a] text-white w-full sm:w-auto rounded-xl font-bold shadow-lg"
             >
-              <a href={gabrielWpp} target="_blank" rel="noopener noreferrer">
+              <a
+                href={gabrielWpp}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Cotar seguro com Gabriel pelo WhatsApp"
+              >
                 💬 Cotar seguro agora com Gabriel
               </a>
             </Button>
@@ -207,7 +212,12 @@ export default function SeguroAuto() {
               variant="outline"
               className="text-base px-8 h-14 border-slate-700 text-slate-300 hover:bg-slate-800 hover:text-white w-full sm:w-auto rounded-xl font-bold"
             >
-              <a href={adrianaWpp} target="_blank" rel="noopener noreferrer">
+              <a
+                href={adrianaWpp}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Falar com Adriana sobre seguros pelo WhatsApp"
+              >
                 Prefiro falar com a Adriana →
               </a>
             </Button>
@@ -270,7 +280,12 @@ export default function SeguroAuto() {
                     variant="outline"
                     className="w-full sm:w-auto self-start bg-white hover:bg-slate-100"
                   >
-                    <a href={p.link} target="_blank" rel="noopener noreferrer">
+                    <a
+                      href={p.link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label={`Entrar em contato com ${p.name.split(' ')[0]} via WhatsApp`}
+                    >
                       Falar com {p.name.split(' ')[0]} →
                     </a>
                   </Button>

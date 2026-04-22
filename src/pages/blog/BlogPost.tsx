@@ -92,16 +92,43 @@ export default function BlogPost() {
     )
   }
 
-  const schema = {
-    '@context': 'https://schema.org',
-    '@type': 'Article',
-    headline: post.title,
-    description: post.meta_description,
-    author: {
-      '@type': 'Organization',
-      name: post.author || 'Carro e Cia Veículos',
+  const schema = [
+    {
+      '@context': 'https://schema.org',
+      '@type': 'Article',
+      headline: post.title,
+      description: post.meta_description,
+      image: post.image_url || `https://img.usecurling.com/p/1200/630?q=car%20dealership`,
+      author: {
+        '@type': 'Organization',
+        name: post.author || 'Carro e Cia Veículos',
+      },
     },
-  }
+    {
+      '@context': 'https://schema.org',
+      '@type': 'BreadcrumbList',
+      itemListElement: [
+        {
+          '@type': 'ListItem',
+          position: 1,
+          name: 'Início',
+          item: 'https://carroeciamotors.com.br',
+        },
+        {
+          '@type': 'ListItem',
+          position: 2,
+          name: 'Blog',
+          item: 'https://carroeciamotors.com.br/blog',
+        },
+        {
+          '@type': 'ListItem',
+          position: 3,
+          name: post.title,
+          item: `https://carroeciamotors.com.br/blog/${post.slug}`,
+        },
+      ],
+    },
+  ]
 
   const shareUrl = window.location.href
   const fbShare = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`
@@ -178,8 +205,16 @@ export default function BlogPost() {
           </h1>
           <picture>
             <source
-              srcSet={post.image_url || `https://img.usecurling.com/p/1200/630?q=car%20dealership`}
+              srcSet={
+                post.image_url
+                  ? post.image_url.replace(/\.(jpg|jpeg|png)$/, '.webp')
+                  : `https://img.usecurling.com/p/1200/630?q=car%20dealership`
+              }
               type="image/webp"
+            />
+            <source
+              srcSet={post.image_url || `https://img.usecurling.com/p/1200/630?q=car%20dealership`}
+              type="image/jpeg"
             />
             <img
               src={post.image_url || `https://img.usecurling.com/p/1200/630?q=car%20dealership`}
