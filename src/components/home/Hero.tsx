@@ -90,7 +90,7 @@ export function Hero() {
 
   return (
     <>
-      <section className="relative pt-24 pb-32 lg:pt-32 lg:pb-48 overflow-hidden">
+      <section className="relative min-h-[100dvh] pt-28 pb-32 lg:pt-32 lg:pb-48 overflow-hidden flex items-center bg-[#1a1a1a]">
         <div className="absolute inset-0 z-0">
           <picture>
             <source
@@ -121,14 +121,26 @@ export function Hero() {
               fetchPriority="high"
               loading="eager"
               decoding="async"
-              className="w-full h-full md:h-[630px] object-cover object-center"
+              className="w-full h-full object-cover object-center"
             />
           </picture>
         </div>
         <div className="absolute inset-0 z-0 bg-black/50" />
 
         <div className="container relative z-10 grid lg:grid-cols-2 gap-12 items-center">
-          <div className="text-center lg:text-left">
+          <div className="text-center lg:text-left flex flex-col items-center lg:items-start mt-8 lg:mt-0">
+            <div className="inline-block mb-8 p-5 rounded-2xl bg-black/40 backdrop-blur-md border border-white/10 shadow-2xl">
+              <img
+                src="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Fotos/Formato%20webp/logo-carro-e-cia.webp"
+                alt="Logo Carro e Cia Veículos"
+                width="280"
+                height="90"
+                className="h-16 sm:h-20 w-auto object-contain"
+                fetchPriority="high"
+                loading="eager"
+                decoding="async"
+              />
+            </div>
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-display font-bold mb-6 leading-tight text-white drop-shadow-lg">
               Você tem um carro para vender. <br className="hidden lg:block" />
               <span className="text-primary">Nós temos os compradores esperando.</span>
