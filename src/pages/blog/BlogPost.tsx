@@ -15,6 +15,7 @@ import { supabase } from '@/lib/supabase/client'
 import { getWhatsAppLink } from '@/lib/whatsapp'
 import { Instagram } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
+import { cn } from '@/lib/utils'
 
 interface Post {
   id: string
@@ -50,6 +51,7 @@ export default function BlogPost() {
   const [post, setPost] = useState<Post | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
+  const [tocExpanded, setTocExpanded] = useState(false)
 
   useEffect(() => {
     const fetchPost = async () => {
@@ -127,8 +129,6 @@ export default function BlogPost() {
     const id = p1.toLowerCase().replace(/[^a-z0-9]+/g, '-')
     return `<h2 id="${id}">${p1}</h2>`
   })
-
-  const [tocExpanded, setTocExpanded] = useState(false)
 
   return (
     <main className="flex-1 bg-background py-10">
