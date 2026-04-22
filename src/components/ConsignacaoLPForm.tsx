@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label'
 import { supabase } from '@/lib/supabase/client'
 import { useToast } from '@/hooks/use-toast'
 import { Loader2 } from 'lucide-react'
+import { trackFormSubmission } from '@/lib/tracking'
 
 export function ConsignacaoLPForm({
   title = 'Solicite uma avaliação',
@@ -51,6 +52,7 @@ export function ConsignacaoLPForm({
 
       if (error) throw error
 
+      trackFormSubmission(formData.modelo_veiculo || 'N/A', campanha)
       navigate('/obrigado', { state: { nome: formData.nome } })
     } catch (err: any) {
       console.error(err)

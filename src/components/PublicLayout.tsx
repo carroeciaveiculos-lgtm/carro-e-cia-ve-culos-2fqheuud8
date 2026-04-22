@@ -14,7 +14,7 @@ import {
 } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { cn } from '@/lib/utils'
-import { trackConversion } from '@/lib/tracking'
+import { trackWhatsAppClick } from '@/lib/tracking'
 import { getWhatsAppLink } from '@/lib/whatsapp'
 import { Button } from './ui/button'
 
@@ -166,7 +166,7 @@ export default function PublicLayout() {
                 href={getWhatsAppLink(wppText)}
                 target="_blank"
                 rel="noopener noreferrer"
-                onClick={() => trackConversion('whatsapp')}
+                onClick={() => trackWhatsAppClick('Luiz', 'menu_desktop')}
               >
                 Falar pelo WhatsApp
               </a>
@@ -261,7 +261,7 @@ export default function PublicLayout() {
               href={getWhatsAppLink(wppText)}
               target="_blank"
               rel="noopener noreferrer"
-              onClick={() => trackConversion('whatsapp')}
+              onClick={() => trackWhatsAppClick('Luiz', 'menu_mobile')}
             >
               Falar com o Luiz
             </a>
@@ -298,6 +298,7 @@ export default function PublicLayout() {
               href={getWhatsAppLink(wppText)}
               target="_blank"
               rel="noopener noreferrer"
+              onClick={() => trackWhatsAppClick('Luiz', 'bottom_nav')}
               className="flex items-center justify-center w-[56px] h-[56px] rounded-full bg-[#25D366] text-white shadow-lg border-4 border-background"
               aria-label="Falar pelo WhatsApp"
             >

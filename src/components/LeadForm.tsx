@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label'
 import { supabase } from '@/lib/supabase/client'
 import { useToast } from '@/hooks/use-toast'
 import { Loader2 } from 'lucide-react'
+import { trackFormSubmission } from '@/lib/tracking'
 
 export function LeadForm({
   tipo = 'consignacao',
@@ -51,6 +52,7 @@ export function LeadForm({
 
       if (error) throw error
 
+      trackFormSubmission(formData.modelo_veiculo || 'N/A', campanha || tipo)
       navigate('/obrigado', { state: { nome: formData.nome } })
     } catch (err: any) {
       console.error(err)

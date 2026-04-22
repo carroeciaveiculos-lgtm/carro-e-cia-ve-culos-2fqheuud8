@@ -1,6 +1,6 @@
 import { MessageCircle } from 'lucide-react'
 import { getWhatsAppLink } from '@/lib/whatsapp'
-import { trackConversion } from '@/lib/tracking'
+import { trackWhatsAppClick } from '@/lib/tracking'
 
 export const WhatsAppButton = () => {
   const defaultMessage = 'Olá Luiz! Quero saber mais sobre a consignação.'
@@ -10,7 +10,7 @@ export const WhatsAppButton = () => {
       href={getWhatsAppLink(defaultMessage)}
       target="_blank"
       rel="noopener noreferrer"
-      onClick={() => trackConversion('whatsapp')}
+      onClick={() => trackWhatsAppClick('Luiz', 'bottom_nav')}
       className="fixed bottom-6 right-6 z-[9999] bg-[#25D366] text-white p-4 rounded-full shadow-lg hover:scale-110 transition-transform flex items-center justify-center group"
       aria-label="Falar com Luiz pelo WhatsApp"
       data-event="clique_whatsapp"

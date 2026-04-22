@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/select'
 import { useToast } from '@/hooks/use-toast'
 import { createLead } from '@/services/leads'
+import { trackFormSubmission } from '@/lib/tracking'
 
 const formSchema = z.object({
   nome: z.string().min(3, 'Nome é obrigatório'),
@@ -58,6 +59,8 @@ export function Hero() {
 
       if (error) throw error
 
+      trackFormSubmission(data.busca, 'contato_homepage')
+
       toast({
         title: 'Sucesso!',
         description: 'Recebemos sua solicitação! Em breve entraremos em contato via WhatsApp.',
@@ -90,31 +93,26 @@ export function Hero() {
       <section className="relative pt-24 pb-32 lg:pt-32 lg:pb-48 overflow-hidden">
         <div className="absolute inset-0 z-0">
           <picture>
-            {/* Mobile: Imagem específica para mobile (9:16) */}
             <source
               media="(max-width: 768px)"
               srcSet="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Fotos/Formato%20webp/fachada-mobile.webp"
               type="image/webp"
             />
-            {/* Desktop: Imagem original (16:9) */}
-            <source
-              media="(min-width: 769px)"
-              srcSet="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Fotos/Formato%20webp/fachada-da-loja.webp"
-              type="image/webp"
-            />
-            {/* Mobile fallback JPEG */}
             <source
               media="(max-width: 768px)"
               srcSet="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Fotos/fachada-mobile.jpg"
               type="image/jpeg"
             />
-            {/* Desktop fallback JPEG */}
+            <source
+              media="(min-width: 769px)"
+              srcSet="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Fotos/Formato%20webp/fachada-da-loja.webp"
+              type="image/webp"
+            />
             <source
               media="(min-width: 769px)"
               srcSet="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Fotos/fachada%20da%20loja.jpeg"
               type="image/jpeg"
             />
-            {/* Fallback final para navegadores antigos */}
             <img
               src="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Fotos/fachada%20da%20loja.jpeg"
               alt="Fachada da loja Carro e Cia em Uberaba - MG, localizada em avenida estratégica com múltiplos veículos de qualidade"

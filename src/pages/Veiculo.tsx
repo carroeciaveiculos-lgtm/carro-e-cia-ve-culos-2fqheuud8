@@ -32,6 +32,7 @@ import {
 } from 'lucide-react'
 import { VehicleCard } from '@/components/VehicleCard'
 import { Skeleton } from '@/components/ui/skeleton'
+import { trackVehicleView, trackWhatsAppClick, trackSimulation } from '@/lib/tracking'
 
 export default function Veiculo() {
   const { id } = useParams()
@@ -64,6 +65,16 @@ export default function Veiculo() {
     }
     fetchVehicle()
   }, [id])
+
+  useEffect(() => {
+    if (vehicle) {
+      trackVehicleView(
+        `${vehicle.marca} ${vehicle.modelo} ${vehicle.ano_fabricacao}`,
+        vehicle.preco_venda,
+        vehicle.categoria || 'Carro',
+      )
+    }
+  }, [vehicle])
 
   if (loading) {
     return (
@@ -103,6 +114,14 @@ export default function Veiculo() {
   const simValue = vehicle.preco_venda - (parseFloat(simEntrada) || 0)
   const simParcela = simValue > 0 ? (simValue * 1.5) / parseInt(simParcelas) : 0
   const wppSimText = `Olá! Tenho interesse em simular o financiamento do ${vehicle.marca} ${vehicle.modelo} ${vehicle.ano_fabricacao} com R$ ${simEntrada} de entrada e ${simParcelas} parcelas. Podem me ajudar com as condições?`
+
+  const handleSimulationWhatsApp = () => {
+    const entryPercent = vehicle.preco_venda
+      ? ((parseFloat(simEntrada) || 0) / vehicle.preco_venda) * 100
+      : 0
+    trackSimulation(vehicle.preco_venda, entryPercent, simParcelas)
+    trackWhatsAppClick('Luiz', 'simulacao_financiamento')
+  }
 
   return (
     <div className="bg-background min-h-screen pb-20">
@@ -297,7 +316,12 @@ export default function Veiculo() {
                   asChild
                   className="w-full bg-[#25D366] hover:bg-[#20bd5a] text-white h-14 text-lg"
                 >
-                  <a href={getWhatsAppLink(wppText)} target="_blank" rel="noopener noreferrer">
+                  <a
+                    href={getWhatsAppLink(wppText)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() => trackWhatsAppClick('Luiz', 'botao_veiculo')}
+                  >
                     Tenho Interesse
                   </a>
                 </Button>
@@ -372,6 +396,7 @@ export default function Veiculo() {
                           href={getWhatsAppLink(wppSimText)}
                           target="_blank"
                           rel="noopener noreferrer"
+                          onClick={handleSimulationWhatsApp}
                         >
                           Simule Agora
                         </a>
@@ -434,7 +459,12 @@ export default function Veiculo() {
           </a>
         </Button>
         <Button asChild className="h-12 bg-[#25D366] hover:bg-[#20bd5a] text-white">
-          <a href={getWhatsAppLink(wppText)} target="_blank" rel="noopener noreferrer">
+          <a
+            href={getWhatsAppLink(wppText)}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => trackWhatsAppClick('Luiz', 'bottom_nav_veiculo')}
+          >
             <MessageCircle className="w-4 h-4 mr-2" /> WhatsApp
           </a>
         </Button>
