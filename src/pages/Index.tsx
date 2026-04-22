@@ -6,6 +6,7 @@ import { SEO } from '@/components/SEO'
 import { NavigationCards } from '@/components/home/NavigationCards'
 import { Partners } from '@/components/home/Partners'
 import { LatestPosts } from '@/components/home/LatestPosts'
+import { QuickSearch } from '@/components/home/QuickSearch'
 
 export default function Index() {
   const schema = {
@@ -49,6 +50,7 @@ export default function Index() {
         schema={schema}
       />
       <Hero />
+      <QuickSearch />
       <NavigationCards />
       <Partners />
       <Consignment />

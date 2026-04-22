@@ -27,6 +27,8 @@ import {
   Fuel,
   DoorOpen,
   PaintBucket,
+  Phone,
+  MessageCircle,
 } from 'lucide-react'
 import { VehicleCard } from '@/components/VehicleCard'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -114,53 +116,85 @@ export default function Veiculo() {
 
         <div className="grid lg:grid-cols-[1.2fr_1fr] gap-10">
           <div className="space-y-4">
-            <div className="aspect-[4/3] rounded-xl overflow-hidden bg-muted relative group">
-              <img
-                src={
-                  photos[activePhoto]
-                    ? photos[activePhoto]
-                    : 'https://img.usecurling.com/p/800/600?q=car'
-                }
-                alt={`Foto principal do veículo ${vehicle.marca} ${vehicle.modelo}`}
-                width="800"
-                height="600"
-                loading="eager"
-                decoding="async"
-                className="w-full h-full object-cover"
-              />{' '}
-              {vehicle.is_consignado && (
-                <Badge className="absolute top-4 right-4 bg-primary text-primary-foreground border-none text-sm px-3 py-1">
-                  Consignado
-                </Badge>
-              )}
-              {!vehicle.is_consignado && (
-                <Badge className="absolute top-4 right-4 bg-secondary text-secondary-foreground border-none text-sm px-3 py-1">
-                  Próprio
-                </Badge>
-              )}
-            </div>
-
-            {photos.length > 1 && (
-              <div className="grid grid-cols-5 sm:grid-cols-6 gap-2">
-                {photos.map((p: string, i: number) => (
-                  <button
+            <div className="md:hidden flex overflow-x-auto snap-x snap-mandatory hide-scrollbar -mx-4 px-4 gap-4">
+              {photos.length > 0 ? (
+                photos.map((p: string, i: number) => (
+                  <div
                     key={i}
-                    onClick={() => setActivePhoto(i)}
-                    className={`aspect-video rounded-md overflow-hidden border-2 transition-all ${activePhoto === i ? 'border-primary' : 'border-transparent opacity-70 hover:opacity-100'}`}
+                    className="relative w-[85vw] shrink-0 snap-center aspect-[4/3] rounded-xl overflow-hidden bg-muted"
                   >
                     <img
                       src={p}
-                      alt={`Miniatura ${i + 1} do ${vehicle.modelo}`}
-                      width="160"
-                      height="90"
-                      loading="lazy"
-                      decoding="async"
+                      alt={`Foto ${i + 1} do veículo ${vehicle.marca} ${vehicle.modelo}`}
                       className="w-full h-full object-cover"
                     />
-                  </button>
-                ))}
+                    {vehicle.is_consignado && i === 0 && (
+                      <Badge className="absolute top-4 right-4 bg-primary text-primary-foreground">
+                        Consignado
+                      </Badge>
+                    )}
+                  </div>
+                ))
+              ) : (
+                <div className="relative w-full aspect-[4/3] rounded-xl overflow-hidden bg-muted">
+                  <img
+                    src="https://img.usecurling.com/p/800/600?q=car"
+                    alt="Sem foto"
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              )}
+            </div>
+
+            <div className="hidden md:block">
+              <div className="aspect-[4/3] rounded-xl overflow-hidden bg-muted relative group">
+                <img
+                  src={
+                    photos[activePhoto]
+                      ? photos[activePhoto]
+                      : 'https://img.usecurling.com/p/800/600?q=car'
+                  }
+                  alt={`Foto principal do veículo ${vehicle.marca} ${vehicle.modelo}`}
+                  width="800"
+                  height="600"
+                  loading="eager"
+                  decoding="async"
+                  className="w-full h-full object-cover"
+                />{' '}
+                {vehicle.is_consignado && (
+                  <Badge className="absolute top-4 right-4 bg-primary text-primary-foreground border-none text-sm px-3 py-1">
+                    Consignado
+                  </Badge>
+                )}
+                {!vehicle.is_consignado && (
+                  <Badge className="absolute top-4 right-4 bg-secondary text-secondary-foreground border-none text-sm px-3 py-1">
+                    Próprio
+                  </Badge>
+                )}
               </div>
-            )}
+
+              {photos.length > 1 && (
+                <div className="grid grid-cols-5 sm:grid-cols-6 gap-2 mt-4">
+                  {photos.map((p: string, i: number) => (
+                    <button
+                      key={i}
+                      onClick={() => setActivePhoto(i)}
+                      className={`aspect-video rounded-md overflow-hidden border-2 transition-all ${activePhoto === i ? 'border-primary' : 'border-transparent opacity-70 hover:opacity-100'}`}
+                    >
+                      <img
+                        src={p}
+                        alt={`Miniatura ${i + 1} do ${vehicle.modelo}`}
+                        width="160"
+                        height="90"
+                        loading="lazy"
+                        decoding="async"
+                        className="w-full h-full object-cover"
+                      />
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
 
             {vehicle.video_url && (
               <div className="mt-8 aspect-video rounded-xl overflow-hidden bg-black">
@@ -386,6 +420,24 @@ export default function Veiculo() {
             </div>
           </div>
         )}
+      </div>
+
+      {/* Fixed Bottom CTAs for Mobile */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-background border-t shadow-[0_-4px_12px_rgba(0,0,0,0.05)] p-3 grid grid-cols-2 gap-3 pb-safe">
+        <Button
+          asChild
+          variant="outline"
+          className="h-12 border-primary text-primary hover:bg-primary/5"
+        >
+          <a href="tel:+5534999484285">
+            <Phone className="w-4 h-4 mr-2" /> Ligar
+          </a>
+        </Button>
+        <Button asChild className="h-12 bg-[#25D366] hover:bg-[#20bd5a] text-white">
+          <a href={getWhatsAppLink(wppText)} target="_blank" rel="noopener noreferrer">
+            <MessageCircle className="w-4 h-4 mr-2" /> WhatsApp
+          </a>
+        </Button>
       </div>
     </div>
   )

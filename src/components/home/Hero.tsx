@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
-import { ShieldCheck, Megaphone, Clock, Send, Loader2 } from 'lucide-react'
+import { ShieldCheck, Megaphone, Clock, Send, Loader2, ChevronDown } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -213,9 +213,15 @@ export function Hero() {
             </form>
           </div>
         </div>
+
+        {/* Scroll Indicator Mobile */}
+        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 md:hidden flex flex-col items-center animate-bounce text-white/80">
+          <span className="text-xs font-medium mb-1">Role para ver mais</span>
+          <ChevronDown className="w-5 h-5" />
+        </div>
       </section>
 
-      <section className="py-16 bg-background relative z-20 -mt-16">
+      <section className="py-16 bg-background relative z-20 -mt-8 md:-mt-16">
         <div className="container">
           <div className="grid md:grid-cols-3 gap-8">
             {[

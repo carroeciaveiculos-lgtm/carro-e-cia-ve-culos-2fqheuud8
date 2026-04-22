@@ -24,9 +24,14 @@ export function RelatedPosts({ category, currentId }: { category: string; curren
   return (
     <div className="my-16 border-t pt-10">
       <h3 className="text-2xl font-bold mb-6">Continue lendo...</h3>
-      <div className="grid md:grid-cols-3 gap-6">
+      <div className="flex md:grid md:grid-cols-3 gap-4 md:gap-6 overflow-x-auto snap-x snap-mandatory hide-scrollbar pb-4 -mx-4 px-4 md:mx-0 md:px-0">
         {posts.map((post) => (
-          <Link key={post.id} to={`/blog/${post.slug}`} target="_self">
+          <Link
+            key={post.id}
+            to={`/blog/${post.slug}`}
+            target="_self"
+            className="shrink-0 w-[280px] md:w-auto snap-center"
+          >
             <Card className="h-full hover:shadow-lg transition-shadow overflow-hidden">
               <img
                 src={post.image_url || `https://img.usecurling.com/p/400/250?q=car`}

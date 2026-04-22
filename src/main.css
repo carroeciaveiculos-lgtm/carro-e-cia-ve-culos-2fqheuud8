@@ -91,9 +91,20 @@
   * {
     @apply border-border;
   }
+  html {
+    scroll-behavior: smooth;
+    scroll-padding-top: 72px;
+  }
   body,
   html {
     @apply bg-background text-foreground font-sans antialiased overflow-x-hidden max-w-[100vw];
+  }
+  a,
+  button,
+  input,
+  select,
+  textarea {
+    touch-action: manipulation;
   }
   h1,
   h2,
@@ -108,5 +119,18 @@
 @layer utilities {
   .glass {
     @apply bg-background/80 backdrop-blur-md border-b border-border/50;
+  }
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .hide-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .mb-safe {
+    margin-bottom: env(safe-area-inset-bottom);
   }
 }

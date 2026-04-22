@@ -41,12 +41,12 @@ export function StockAndFeatures() {
             </Button>
           </div>
 
-          <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-8">
+          <div className="flex sm:grid sm:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-8 overflow-x-auto snap-x snap-mandatory hide-scrollbar pb-4 -mx-4 px-4 md:mx-0 md:px-0">
             {loading ? (
               Array.from({ length: 6 }).map((_, i) => (
                 <div
                   key={i}
-                  className="flex flex-col space-y-3 bg-card rounded-lg overflow-hidden border p-0"
+                  className="flex flex-col space-y-3 bg-card rounded-lg overflow-hidden border p-0 shrink-0 w-[85vw] sm:w-auto snap-center"
                 >
                   <Skeleton className="h-[250px] w-full rounded-none" />
                   <div className="p-5 space-y-4 flex flex-col flex-grow">
@@ -67,7 +67,11 @@ export function StockAndFeatures() {
                 <p className="text-lg">Nenhum veículo encontrado no momento.</p>
               </div>
             ) : (
-              vehicles.map((v) => <VehicleCard key={v.id} vehicle={v} />)
+              vehicles.map((v) => (
+                <div key={v.id} className="shrink-0 w-[85vw] sm:w-auto snap-center">
+                  <VehicleCard vehicle={v} />
+                </div>
+              ))
             )}
           </div>
         </div>

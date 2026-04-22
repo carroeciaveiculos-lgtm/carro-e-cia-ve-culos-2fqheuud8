@@ -60,9 +60,12 @@ export function TestimonialsAndLocation() {
               A satisfação dos nossos clientes é a nossa maior conquista.
             </p>
           </div>
-          <div className="grid md:grid-cols-3 gap-8">
+          <div className="flex md:grid md:grid-cols-3 gap-4 md:gap-8 overflow-x-auto snap-x snap-mandatory hide-scrollbar pb-4 -mx-4 px-4 md:mx-0 md:px-0">
             {testimonials.map((t, i) => (
-              <div key={i} className="bg-card p-8 rounded-2xl border shadow-sm relative">
+              <div
+                key={i}
+                className="bg-card p-8 rounded-2xl border shadow-sm relative shrink-0 w-[85vw] md:w-auto snap-center"
+              >
                 <div className="flex gap-1 text-accent mb-6">
                   {[1, 2, 3, 4, 5].map((s) => (
                     <Star key={s} className="w-5 h-5 fill-current" />

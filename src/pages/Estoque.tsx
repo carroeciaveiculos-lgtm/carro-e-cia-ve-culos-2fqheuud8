@@ -15,11 +15,21 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
 import { Slider } from '@/components/ui/slider'
 import { getMarcas, getModelos } from '@/services/fipe'
-import { Filter, Search } from 'lucide-react'
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
+import { Filter, Search, LayoutGrid, List } from 'lucide-react'
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerTrigger,
+  DrawerFooter,
+  DrawerClose,
+} from '@/components/ui/drawer'
 import { SEO } from '@/components/SEO'
 
 export default function Estoque() {
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
+  const [searchQuery, setSearchQuery] = useState('')
   const [searchParams, setSearchParams] = useSearchParams()
   const [vehicles, setVehicles] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -71,7 +81,21 @@ export default function Estoque() {
     else query = query.order('created_at', { ascending: false })
 
     const { data } = await query
-    if (data) setVehicles(data)
+    if (data) {
+      if (searchQuery) {
+        const lowerQ = searchQuery.toLowerCase()
+        setVehicles(
+          data.filter(
+            (v) =>
+              v.marca.toLowerCase().includes(lowerQ) ||
+              v.modelo.toLowerCase().includes(lowerQ) ||
+              v.ano_fabricacao?.toString().includes(lowerQ),
+          ),
+        )
+      } else {
+        setVehicles(data)
+      }
+    }
     setLoading(false)
   }
 
@@ -94,7 +118,7 @@ export default function Estoque() {
     } else {
       setSearchParams({}, { replace: true })
     }
-  }, [filters])
+  }, [filters, searchQuery])
 
   const toggleArrayFilter = (key: 'cambio' | 'combustivel', value: string) => {
     setFilters((prev) => ({
@@ -124,8 +148,8 @@ export default function Estoque() {
     },
   }
 
-  const FilterSidebar = () => (
-    <div className="space-y-8">
+  const FilterSidebar = ({ isMobile = false }: { isMobile?: boolean }) => (
+    <div className="space-y-8 pb-8">
       <div>
         <h3 className="font-bold mb-4">Marca e Modelo</h3>
         <div className="space-y-4">
@@ -249,26 +273,28 @@ export default function Estoque() {
         </div>
       </div>
 
-      <Button
-        variant="outline"
-        className="w-full"
-        onClick={() =>
-          setFilters({
-            marca: '',
-            modelo: '',
-            precoMin: '',
-            precoMax: '',
-            anoMin: '',
-            anoMax: '',
-            cambio: [],
-            combustivel: [],
-            kmMax: 300000,
-            ordem: 'recentes',
-          })
-        }
-      >
-        Limpar Filtros
-      </Button>
+      {!isMobile && (
+        <Button
+          variant="outline"
+          className="w-full"
+          onClick={() =>
+            setFilters({
+              marca: '',
+              modelo: '',
+              precoMin: '',
+              precoMax: '',
+              anoMin: '',
+              anoMax: '',
+              cambio: [],
+              combustivel: [],
+              kmMax: 300000,
+              ordem: 'recentes',
+            })
+          }
+        >
+          Limpar Filtros
+        </Button>
+      )}
     </div>
   )
 
@@ -279,37 +305,102 @@ export default function Estoque() {
         description="Estoque de veículos usados - Carro e Cia. Confira nossa seleção de carros de qualidade. Filtros por marca, modelo e preço."
         schema={schema}
       />
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
-        <h1 className="text-3xl md:text-4xl font-display font-bold">Estoque de Veículos</h1>
+      <div className="flex flex-col mb-8">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h1 className="text-2xl md:text-4xl font-display font-bold">Nosso Estoque</h1>
+            <p className="text-sm text-muted-foreground">{vehicles.length} veículos disponíveis</p>
+          </div>
+          <div className="hidden md:flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => setViewMode('grid')}
+              className={viewMode === 'grid' ? 'bg-accent text-white' : ''}
+            >
+              <LayoutGrid className="w-4 h-4" />
+            </Button>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => setViewMode('list')}
+              className={viewMode === 'list' ? 'bg-accent text-white' : ''}
+            >
+              <List className="w-4 h-4" />
+            </Button>
+          </div>
+        </div>
 
-        <div className="flex items-center gap-4 w-full md:w-auto">
-          <div className="md:hidden">
-            <Sheet>
-              <SheetTrigger asChild>
-                <Button variant="outline" size="icon">
-                  <Filter className="w-4 h-4" />
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="left" className="overflow-y-auto">
-                <SheetHeader className="mb-6">
-                  <SheetTitle>Filtros</SheetTitle>
-                </SheetHeader>
-                <FilterSidebar />
-              </SheetContent>
-            </Sheet>
+        <div className="flex flex-col md:flex-row gap-4 w-full">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-5 h-5" />
+            <Input
+              placeholder="Buscar por modelo, marca ou ano..."
+              className="pl-10 h-12"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
           </div>
 
-          <Select value={filters.ordem} onValueChange={(v) => setFilters({ ...filters, ordem: v })}>
-            <SelectTrigger className="w-full md:w-[200px]">
-              <SelectValue placeholder="Ordenar por" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="recentes">Mais Recentes</SelectItem>
-              <SelectItem value="menor_preco">Menor Preço</SelectItem>
-              <SelectItem value="maior_preco">Maior Preço</SelectItem>
-              <SelectItem value="menor_km">Menor KM</SelectItem>
-            </SelectContent>
-          </Select>
+          <div className="flex items-center gap-3 w-full md:w-auto">
+            <div className="md:hidden flex-1">
+              <Drawer>
+                <DrawerTrigger asChild>
+                  <Button variant="outline" className="w-full h-12 flex gap-2">
+                    <Filter className="w-4 h-4" /> Filtrar
+                  </Button>
+                </DrawerTrigger>
+                <DrawerContent className="h-[85vh]">
+                  <DrawerHeader>
+                    <DrawerTitle>Filtros</DrawerTitle>
+                  </DrawerHeader>
+                  <div className="px-4 overflow-y-auto flex-1">
+                    <FilterSidebar isMobile={true} />
+                  </div>
+                  <DrawerFooter className="pt-2 border-t">
+                    <DrawerClose asChild>
+                      <Button className="w-full h-[52px]">Aplicar filtros</Button>
+                    </DrawerClose>
+                    <Button
+                      variant="outline"
+                      className="w-full h-[52px]"
+                      onClick={() =>
+                        setFilters({
+                          marca: '',
+                          modelo: '',
+                          precoMin: '',
+                          precoMax: '',
+                          anoMin: '',
+                          anoMax: '',
+                          cambio: [],
+                          combustivel: [],
+                          kmMax: 300000,
+                          ordem: 'recentes',
+                        })
+                      }
+                    >
+                      Limpar Filtros
+                    </Button>
+                  </DrawerFooter>
+                </DrawerContent>
+              </Drawer>
+            </div>
+
+            <Select
+              value={filters.ordem}
+              onValueChange={(v) => setFilters({ ...filters, ordem: v })}
+            >
+              <SelectTrigger className="w-[160px] md:w-[200px] h-12">
+                <SelectValue placeholder="Ordenar por" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="recentes">Mais Recentes</SelectItem>
+                <SelectItem value="menor_preco">Menor Preço</SelectItem>
+                <SelectItem value="maior_preco">Maior Preço</SelectItem>
+                <SelectItem value="menor_km">Menor KM</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
       </div>
 
@@ -324,15 +415,35 @@ export default function Estoque() {
 
         <div>
           {loading ? (
-            <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-6">
+            <div
+              className={
+                viewMode === 'grid'
+                  ? 'grid sm:grid-cols-2 xl:grid-cols-3 gap-6'
+                  : 'flex flex-col gap-4'
+              }
+            >
               {[1, 2, 3, 4, 5, 6].map((i) => (
-                <div key={i} className="animate-pulse bg-muted h-[400px] rounded-xl" />
+                <div
+                  key={i}
+                  className={cn(
+                    'animate-pulse bg-muted rounded-xl',
+                    viewMode === 'grid' ? 'h-[400px]' : 'h-[160px]',
+                  )}
+                />
               ))}
             </div>
           ) : vehicles.length > 0 ? (
-            <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-6">
+            <div
+              className={cn(
+                viewMode === 'grid'
+                  ? 'grid gap-4 md:gap-6 grid-cols-1 sm:grid-cols-2 xl:grid-cols-3'
+                  : 'flex flex-col gap-4',
+              )}
+            >
               {vehicles.map((v) => (
-                <VehicleCard key={v.id} vehicle={v} />
+                <div key={v.id} className={viewMode === 'list' ? 'md:max-w-3xl' : ''}>
+                  <VehicleCard vehicle={v} isList={viewMode === 'list'} />
+                </div>
               ))}
             </div>
           ) : (

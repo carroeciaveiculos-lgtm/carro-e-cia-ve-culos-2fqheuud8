@@ -115,10 +115,25 @@ export default function BlogPost() {
     })
   }
 
+  const headings =
+    post.content.match(/<h2[^>]*>(.*?)<\/h2>/g)?.map((h) => {
+      const text = h.replace(/<[^>]+>/g, '')
+      // create id from text
+      return { text, id: text.toLowerCase().replace(/[^a-z0-9]+/g, '-') }
+    }) || []
+
+  // Add IDs to h2 in content for the TOC to work
+  const contentWithIds = post.content.replace(/<h2[^>]*>(.*?)<\/h2>/g, (match, p1) => {
+    const id = p1.toLowerCase().replace(/[^a-z0-9]+/g, '-')
+    return `<h2 id="${id}">${p1}</h2>`
+  })
+
+  const [tocExpanded, setTocExpanded] = useState(false)
+
   return (
     <main className="flex-1 bg-background py-10">
       <div
-        className="fixed top-0 left-0 h-1 bg-primary z-50 transition-all duration-150"
+        className="fixed top-[60px] md:top-0 left-0 h-1 bg-primary z-[1001] transition-all duration-150"
         style={{ width: `${scrollProgress}%` }}
       />
       <SEO
@@ -171,9 +186,36 @@ export default function BlogPost() {
           />
         </header>
 
+        {headings.length > 0 && (
+          <div className="mb-10 bg-muted/30 rounded-xl border p-4 md:p-6">
+            <div
+              className="flex justify-between items-center cursor-pointer md:cursor-default"
+              onClick={() => setTocExpanded(!tocExpanded)}
+            >
+              <h3 className="font-bold text-lg">O que você vai encontrar neste artigo</h3>
+              <button className="md:hidden text-primary font-medium text-sm">
+                {tocExpanded ? 'Ocultar ▲' : 'Ver índice ▼'}
+              </button>
+            </div>
+
+            <div className={cn('mt-4 space-y-2', !tocExpanded && 'hidden md:block')}>
+              {headings.map((h, i) => (
+                <a
+                  key={i}
+                  href={`#${h.id}`}
+                  className="block text-muted-foreground hover:text-primary transition-colors py-1"
+                  onClick={() => setTocExpanded(false)}
+                >
+                  {i + 1}. {h.text}
+                </a>
+              ))}
+            </div>
+          </div>
+        )}
+
         <div
           className="prose prose-lg dark:prose-invert max-w-none prose-headings:font-bold prose-h2:text-3xl prose-h3:text-2xl prose-a:text-primary"
-          dangerouslySetInnerHTML={{ __html: post.content }}
+          dangerouslySetInnerHTML={{ __html: contentWithIds }}
         />
 
         <footer className="mt-16 pt-8 border-t">
