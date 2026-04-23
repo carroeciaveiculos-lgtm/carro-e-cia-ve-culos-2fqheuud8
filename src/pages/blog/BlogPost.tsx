@@ -98,7 +98,9 @@ export default function BlogPost() {
       '@type': 'Article',
       headline: post.title,
       description: post.meta_description,
-      image: post.image_url || `https://img.usecurling.com/p/1200/630?q=car%20dealership`,
+      image:
+        post.image_url ||
+        `https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/fotos/fachada-da-loja.webp`,
       author: {
         '@type': 'Organization',
         name: post.author || 'Carro e Cia Veículos',
@@ -209,19 +211,22 @@ export default function BlogPost() {
               srcSet={`${
                 post.image_url
                   ? post.image_url.replace(/\.(jpg|jpeg|png)$/, '.webp')
-                  : 'https://img.usecurling.com/p/1200/630?q=car%20dealership'
+                  : 'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/fotos/fachada-da-loja.webp'
               } 1200w`}
               sizes="(max-width: 768px) 100vw, 1200px"
               type="image/webp"
             />
             <source
-              srcSet={`${post.image_url || 'https://img.usecurling.com/p/1200/630?q=car%20dealership'} 1200w`}
+              srcSet={`${post.image_url || 'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/fotos/fachada-da-loja.webp'} 1200w`}
               sizes="(max-width: 768px) 100vw, 1200px"
               type="image/jpeg"
             />
             <img
-              src={post.image_url || `https://img.usecurling.com/p/1200/630?q=car%20dealership`}
-              srcSet={`${post.image_url || 'https://img.usecurling.com/p/1200/630?q=car%20dealership'} 1200w`}
+              src={
+                post.image_url ||
+                `https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/fotos/fachada-da-loja.webp`
+              }
+              srcSet={`${post.image_url || 'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/fotos/fachada-da-loja.webp'} 1200w`}
               sizes="(max-width: 768px) 100vw, 1200px"
               alt={`Capa do artigo: ${post.title}`}
               width="1200"
@@ -299,12 +304,71 @@ export default function BlogPost() {
 
           <RelatedPosts category={post.category || 'Novidade'} currentId={post.id} />
 
+          <div className="my-16 credibilidade-card bg-muted/30 p-8 rounded-2xl border text-center">
+            <h3 className="text-2xl font-display font-bold mb-8">Conheça Nossos Especialistas</h3>
+
+            <div className="grid md:grid-cols-2 gap-8 items-start max-w-3xl mx-auto">
+              <div className="flex flex-col items-center">
+                <img
+                  src="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/fotos/Luiz-Fernando-foto-profissional.webp"
+                  alt="Luiz Fernando, proprietário Carro e Cia com 20+ anos de experiência"
+                  loading="lazy"
+                  width="150"
+                  height="150"
+                  className="rounded-full mb-4 shadow-md object-cover w-[150px] h-[150px] border-4 border-background"
+                />
+                <h4 className="font-bold text-xl font-display">Luiz Fernando</h4>
+                <p className="text-muted-foreground mb-2">
+                  Proprietário Carro e Cia
+                  <br />
+                  20+ anos no mercado
+                </p>
+                <p className="text-sm italic">"Sua segurança é nossa prioridade"</p>
+              </div>
+
+              <div className="flex flex-col items-center">
+                <img
+                  src="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/fotos/Gabriel-foto-profissional.webp"
+                  alt="Gabriel Araújo, especialista Km Zero Seguros e financiamentos"
+                  loading="lazy"
+                  width="150"
+                  height="150"
+                  className="rounded-full mb-4 shadow-md object-cover w-[150px] h-[150px] border-4 border-background"
+                />
+                <h4 className="font-bold text-xl font-display">Gabriel Araújo</h4>
+                <p className="text-muted-foreground mb-2">
+                  Especialista Km Zero Seguros
+                  <br />
+                  Crédito e Financiamento
+                </p>
+                <p className="text-sm italic">"Melhor taxa, melhor cobertura"</p>
+              </div>
+            </div>
+
+            <div className="mt-10 pt-8 border-t border-border">
+              <p className="font-medium text-lg mb-4">
+                Precisa de uma avaliação ou cotação honesta?
+              </p>
+              <Button size="lg" asChild className="bg-[#25D366] hover:bg-[#20bd5a] text-white">
+                <a
+                  href={getWhatsAppLink(
+                    `Olá! Gostaria de falar com os especialistas sobre o artigo: ${post.title}`,
+                  )}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Falar no WhatsApp
+                </a>
+              </Button>
+            </div>
+          </div>
+
           <div className="my-16">
             <div className="bg-muted/30 p-8 rounded-2xl border text-center">
               <h3 className="text-2xl font-bold mb-2">💬 Deixe Seu Comentário</h3>
               <p className="text-muted-foreground mb-6 max-w-2xl mx-auto">
-                Dúvidas sobre o assunto? Compartilhe sua experiência ou faça uma pergunta. Nossos
-                especialistas vão analisar seu caso e responder!
+                Dúvidas sobre o assunto? Compartilhe sua experiência ou faça uma pergunta. Gabriel
+                (Km Zero) e nossa equipe podem analisar seu caso e responder!
               </p>
               <Button size="lg" asChild className="bg-[#25D366] hover:bg-[#20bd5a] text-white">
                 <a
@@ -323,11 +387,11 @@ export default function BlogPost() {
           <div className="bg-muted/50 rounded-2xl p-6 flex flex-col md:flex-row items-center md:items-start gap-6 border border-border/50">
             <picture>
               <source
-                srcSet="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Logos/logo-carro-e-cia.webp"
+                srcSet="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/logos/logo-carro-e-cia1.webp"
                 type="image/webp"
               />
               <img
-                src="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Logos/logo%20carro%20e%20cia.png"
+                src="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/logos/logo-carro-e-cia1.webp"
                 alt="Logo Carro e Cia"
                 width="64"
                 height="64"

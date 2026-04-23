@@ -16,7 +16,7 @@ export function SEO({
   description,
   schema,
   canonical,
-  image = 'https://img.usecurling.com/p/1200/630?q=car%20dealership',
+  image = 'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/fotos/fachada-da-loja.webp',
   type = 'website',
   noindex = false,
   keywords,
@@ -40,7 +40,7 @@ export function SEO({
       '@type': 'Organization',
       name: 'Carro e Cia Veículos',
       url: 'https://carroeciamotors.com.br',
-      logo: 'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Fotos/Formato%20webp/logo-carro-e-cia.webp',
+      logo: 'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/logos/logo-carro-e-cia1.webp',
       telephone: '+5534999484285',
       address: {
         '@type': 'PostalAddress',

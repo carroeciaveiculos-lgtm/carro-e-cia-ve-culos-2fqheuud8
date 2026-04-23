@@ -81,7 +81,8 @@ export default function CarrosSeminovosUberaba() {
       '@context': 'https://schema.org',
       '@type': 'LocalBusiness',
       name: 'Carro e Cia Veículos',
-      image: 'https://img.usecurling.com/p/800/600?q=car%20dealership',
+      image:
+        'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/fotos/fachada-da-loja.webp',
       description:
         'Encontre os melhores carros seminovos em Uberaba MG com procedência, garantia e preço justo.',
       address: {

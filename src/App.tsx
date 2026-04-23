@@ -161,6 +161,18 @@ const App = () => (
 
               {/* Blog */}
               <Route path="/blog" element={<BlogIndex />} />
+              <Route
+                path="/blog/financiamento-carro-cpf-negativado-versao-duplicada"
+                element={<Navigate to="/blog/financiamento-com-cpf-negativado" replace />}
+              />
+              <Route
+                path="/blog/seguro-auto-analise-honesta"
+                element={<Navigate to="/blog/seguro-auto-vale-a-pena" replace />}
+              />
+              <Route
+                path="/blog/consorcio-ou-financiamento-qual-escolher"
+                element={<Navigate to="/blog/consorcio-de-carro-vs-financiamento" replace />}
+              />
               <Route path="/blog/:slug" element={<BlogPost />} />
 
               {/* Pós-conversão e Serviços (RESTAURADOS) */}

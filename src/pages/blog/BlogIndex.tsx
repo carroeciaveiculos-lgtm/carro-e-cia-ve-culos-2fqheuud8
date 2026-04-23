@@ -141,18 +141,22 @@ export default function BlogIndex() {
                     srcSet={
                       post.image_url
                         ? post.image_url.replace(/\.(jpg|jpeg|png)$/, '.webp')
-                        : `https://img.usecurling.com/p/600/300?q=car&seed=${i}`
+                        : `https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/fotos/modelo-veiculo.webp`
                     }
                     type="image/webp"
                   />
                   <source
                     srcSet={
-                      post.image_url || `https://img.usecurling.com/p/600/300?q=car&seed=${i}`
+                      post.image_url ||
+                      `https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/fotos/modelo-veiculo.webp`
                     }
                     type="image/jpeg"
                   />
                   <img
-                    src={post.image_url || `https://img.usecurling.com/p/600/300?q=car&seed=${i}`}
+                    src={
+                      post.image_url ||
+                      `https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/fotos/modelo-veiculo.webp`
+                    }
                     alt={`Imagem ilustrativa do artigo: ${post.title}`}
                     width="600"
                     height="300"
