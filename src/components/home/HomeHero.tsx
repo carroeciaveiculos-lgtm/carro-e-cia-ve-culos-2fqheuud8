@@ -24,6 +24,28 @@ export function HomeHero() {
         <div className="absolute inset-0 bg-black/70" />
       </div>
       <div className="container relative z-10 text-center max-w-4xl mx-auto px-4">
+        <div className="text-center mb-8 animate-fade-in-up">
+          <picture className="inline-block bg-white/90 p-4 rounded-xl shadow-2xl">
+            <source
+              media="(max-width: 480px)"
+              srcSet="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/logos/logo-carro-e-cia1.webp"
+              type="image/webp"
+            />
+            <source
+              media="(min-width: 481px)"
+              srcSet="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/logos/logo-carro-e-cia1.webp"
+              type="image/webp"
+            />
+            <img
+              src="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/logos/logo-carro-e-cia1.webp"
+              alt="Carro e Cia"
+              loading="eager"
+              width="200"
+              height="80"
+              className="max-w-full h-auto object-contain"
+            />
+          </picture>
+        </div>
         <h1 className="text-4xl md:text-5xl lg:text-6xl font-display font-extrabold text-white mb-6 leading-tight animate-fade-in-up">
           Quer Vender Seu Carro? <span className="text-primary">A Solução Segura Está Aqui</span>
         </h1>

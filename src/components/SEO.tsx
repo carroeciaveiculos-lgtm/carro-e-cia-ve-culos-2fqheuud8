@@ -16,7 +16,7 @@ export function SEO({
   description,
   schema,
   canonical,
-  image = 'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/fotos/fachada-da-loja.webp',
+  image = 'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/logos/logo-carro-e-cia1.webp',
   type = 'website',
   noindex = false,
   keywords,

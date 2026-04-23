@@ -7,12 +7,27 @@ export function Footer() {
       <div className="container max-w-6xl mx-auto px-4">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-12 mb-12">
           <div>
-            <div className="mb-6">
-              <img
-                src="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/logos/logo-carro-e-cia1.webp"
-                alt="Logo Carro e Cia"
-                className="h-12 object-contain"
-              />
+            <div className="mb-6 text-left md:text-center">
+              <picture className="inline-block mb-2">
+                <source
+                  media="(max-width: 480px)"
+                  srcSet="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/logos/logo-carro-e-cia1.webp"
+                  type="image/webp"
+                />
+                <source
+                  media="(min-width: 481px)"
+                  srcSet="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/logos/logo-carro-e-cia1.webp"
+                  type="image/webp"
+                />
+                <img
+                  src="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/logos/logo-carro-e-cia1.webp"
+                  alt="Carro e Cia"
+                  loading="lazy"
+                  width="150"
+                  height="60"
+                  className="max-w-full h-12 md:h-16 object-contain"
+                />
+              </picture>
             </div>
             <p className="text-muted-foreground mb-6">
               Mais de 20 anos de experiência realizando sonhos e garantindo negócios seguros em

@@ -28,6 +28,28 @@ export default function Sobre() {
       <section className="container max-w-6xl mx-auto px-4 mb-20">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           <div className="space-y-6">
+            <div className="text-left mb-8">
+              <picture className="inline-block">
+                <source
+                  media="(max-width: 480px)"
+                  srcSet="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/logos/logo-carro-e-cia1.webp"
+                  type="image/webp"
+                />
+                <source
+                  media="(min-width: 481px)"
+                  srcSet="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/logos/logo-carro-e-cia1.webp"
+                  type="image/webp"
+                />
+                <img
+                  src="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/logos/logo-carro-e-cia1.webp"
+                  alt="Carro e Cia - 20+ anos"
+                  loading="eager"
+                  width="200"
+                  height="80"
+                  className="max-w-full h-auto object-contain"
+                />
+              </picture>
+            </div>
             <div className="inline-block bg-primary/10 text-primary px-4 py-1.5 rounded-full text-sm font-bold tracking-wide mb-2">
               A HISTÓRIA DE LUIZ FERNANDO
             </div>

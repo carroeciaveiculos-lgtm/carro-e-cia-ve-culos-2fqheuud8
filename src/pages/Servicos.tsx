@@ -58,6 +58,28 @@ export default function Servicos() {
               />
             </div>
             <div className="space-y-6">
+              <div className="text-left mb-2">
+                <picture className="inline-block">
+                  <source
+                    media="(max-width: 480px)"
+                    srcSet="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/logos/logo-carro-e-cia1.webp"
+                    type="image/webp"
+                  />
+                  <source
+                    media="(min-width: 481px)"
+                    srcSet="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/logos/logo-carro-e-cia1.webp"
+                    type="image/webp"
+                  />
+                  <img
+                    src="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/logos/logo-carro-e-cia1.webp"
+                    alt="Carro e Cia"
+                    loading="lazy"
+                    width="120"
+                    height="50"
+                    className="max-w-full h-auto object-contain block"
+                  />
+                </picture>
+              </div>
               <h2 className="text-3xl font-display font-bold">Consignação: Venda Segura</h2>
               <p className="text-lg text-muted-foreground">
                 Venda em dias, não em meses. Contrato protetor. Você não se preocupa.
