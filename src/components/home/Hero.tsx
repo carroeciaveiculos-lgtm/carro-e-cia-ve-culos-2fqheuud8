@@ -94,11 +94,14 @@ export function Hero() {
         <div className="absolute inset-0 z-0 w-full h-full bg-[#1a1a1a] bg-gradient-to-b from-[#2a2a2a] to-[#111111]">
           <picture className="w-full h-full block">
             <source
-              srcSet="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/fotos/fachada-da-loja.webp"
+              srcSet="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/fotos/fachada-da-loja.webp 1920w, https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/fotos/fachada-da-loja.webp 768w"
+              sizes="(max-width: 768px) 100vw, 1920px"
               type="image/webp"
             />
             <img
               src="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/fotos/fachada-da-loja.jpg"
+              srcSet="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/fotos/fachada-da-loja.jpg 1920w, https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/fotos/fachada-da-loja.jpg 768w"
+              sizes="(max-width: 768px) 100vw, 1920px"
               alt="Fachada da loja Carro e Cia em Uberaba - MG, localizada em avenida estratégica com múltiplos veículos de qualidade"
               width="1920"
               height="1080"

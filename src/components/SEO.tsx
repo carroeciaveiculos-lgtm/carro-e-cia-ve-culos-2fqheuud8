@@ -8,6 +8,7 @@ interface SEOProps {
   image?: string
   type?: string
   noindex?: boolean
+  keywords?: string
 }
 
 export function SEO({
@@ -18,6 +19,7 @@ export function SEO({
   image = 'https://img.usecurling.com/p/1200/630?q=car%20dealership',
   type = 'website',
   noindex = false,
+  keywords,
 }: SEOProps) {
   useEffect(() => {
     // Atualiza o título da página
@@ -110,6 +112,10 @@ export function SEO({
       { name: 'twitter:description', content: description },
       { name: 'twitter:image', content: image },
     ]
+
+    if (keywords) {
+      ogTags.push({ name: 'keywords', content: keywords } as any)
+    }
 
     ogTags.forEach((tag) => {
       const selector = tag.property

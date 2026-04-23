@@ -169,6 +169,7 @@ export default function BlogPost() {
         schema={schema}
         image={post.image_url}
         type="article"
+        keywords={post.tags?.join(', ')}
       />
       <article className="container max-w-3xl mx-auto px-4">
         <Breadcrumb className="mb-8">
@@ -205,19 +206,23 @@ export default function BlogPost() {
           </h1>
           <picture>
             <source
-              srcSet={
+              srcSet={`${
                 post.image_url
                   ? post.image_url.replace(/\.(jpg|jpeg|png)$/, '.webp')
-                  : `https://img.usecurling.com/p/1200/630?q=car%20dealership`
-              }
+                  : 'https://img.usecurling.com/p/1200/630?q=car%20dealership'
+              } 1200w`}
+              sizes="(max-width: 768px) 100vw, 1200px"
               type="image/webp"
             />
             <source
-              srcSet={post.image_url || `https://img.usecurling.com/p/1200/630?q=car%20dealership`}
+              srcSet={`${post.image_url || 'https://img.usecurling.com/p/1200/630?q=car%20dealership'} 1200w`}
+              sizes="(max-width: 768px) 100vw, 1200px"
               type="image/jpeg"
             />
             <img
               src={post.image_url || `https://img.usecurling.com/p/1200/630?q=car%20dealership`}
+              srcSet={`${post.image_url || 'https://img.usecurling.com/p/1200/630?q=car%20dealership'} 1200w`}
+              sizes="(max-width: 768px) 100vw, 1200px"
               alt={`Capa do artigo: ${post.title}`}
               width="1200"
               height="630"
@@ -293,6 +298,27 @@ export default function BlogPost() {
           </div>
 
           <RelatedPosts category={post.category || 'Novidade'} currentId={post.id} />
+
+          <div className="my-16">
+            <div className="bg-muted/30 p-8 rounded-2xl border text-center">
+              <h3 className="text-2xl font-bold mb-2">💬 Deixe Seu Comentário</h3>
+              <p className="text-muted-foreground mb-6 max-w-2xl mx-auto">
+                Dúvidas sobre o assunto? Compartilhe sua experiência ou faça uma pergunta. Nossos
+                especialistas vão analisar seu caso e responder!
+              </p>
+              <Button size="lg" asChild className="bg-[#25D366] hover:bg-[#20bd5a] text-white">
+                <a
+                  href={getWhatsAppLink(
+                    `Olá! Li o artigo "${post.title}" e gostaria de tirar uma dúvida.`,
+                  )}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Fazer Pergunta no WhatsApp
+                </a>
+              </Button>
+            </div>
+          </div>
 
           <div className="bg-muted/50 rounded-2xl p-6 flex flex-col md:flex-row items-center md:items-start gap-6 border border-border/50">
             <picture>
