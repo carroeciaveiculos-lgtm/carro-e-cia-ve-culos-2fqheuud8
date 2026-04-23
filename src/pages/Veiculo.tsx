@@ -145,8 +145,12 @@ export default function Veiculo() {
                     <img
                       src={p}
                       alt={`Foto ${i + 1} do veículo ${vehicle.marca} ${vehicle.modelo}`}
+                      width="800"
+                      height="600"
+                      loading="lazy"
+                      decoding="async"
                       className="w-full h-full object-cover"
-                    />
+                    />{' '}
                     {vehicle.is_consignado && i === 0 && (
                       <Badge className="absolute top-4 right-4 bg-primary text-primary-foreground">
                         Consignado
@@ -159,6 +163,10 @@ export default function Veiculo() {
                   <img
                     src="https://img.usecurling.com/p/800/600?q=car"
                     alt="Sem foto"
+                    width="800"
+                    height="600"
+                    loading="lazy"
+                    decoding="async"
                     className="w-full h-full object-cover"
                   />
                 </div>

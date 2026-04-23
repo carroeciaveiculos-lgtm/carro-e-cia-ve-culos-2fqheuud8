@@ -61,30 +61,43 @@ if (typeof window !== 'undefined') {
 
 export const trackGTMEvent = (eventName: string, data: Record<string, any> = {}) => {
   if (typeof window !== 'undefined') {
-    try {
-      const w = window as any
-      w.dataLayer = w.dataLayer || []
-      w.dataLayer.push({
-        event: eventName,
-        ...data,
-      })
-    } catch (e) {
-      // Falha tratada silenciosamente para evitar quebra de fluxo
-      console.debug('GTM event tracking silently failed')
+    const executeTrack = () => {
+      try {
+        const w = window as any
+        w.dataLayer = w.dataLayer || []
+        w.dataLayer.push({
+          event: eventName,
+          ...data,
+        })
+      } catch (e) {
+        console.debug('GTM event tracking silently failed')
+      }
+    }
+    if ('requestIdleCallback' in window) {
+      ;(window as any).requestIdleCallback(executeTrack)
+    } else {
+      setTimeout(executeTrack, 0)
     }
   }
 }
 
 export const trackMetaEvent = (eventName: string, data?: Record<string, any>) => {
   if (typeof window !== 'undefined' && (window as any).fbq) {
-    try {
-      if (data) {
-        ;(window as any).fbq('track', eventName, data)
-      } else {
-        ;(window as any).fbq('track', eventName)
+    const executeTrack = () => {
+      try {
+        if (data) {
+          ;(window as any).fbq('track', eventName, data)
+        } else {
+          ;(window as any).fbq('track', eventName)
+        }
+      } catch (e) {
+        console.debug('Meta event tracking silently failed')
       }
-    } catch (e) {
-      console.debug('Meta event tracking silently failed')
+    }
+    if ('requestIdleCallback' in window) {
+      ;(window as any).requestIdleCallback(executeTrack)
+    } else {
+      setTimeout(executeTrack, 0)
     }
   }
 }
@@ -92,17 +105,24 @@ export const trackMetaEvent = (eventName: string, data?: Record<string, any>) =>
 // Mantenho legacy trackConversion para retrocompatibilidade onde não atualizado
 export const trackConversion = (type: 'whatsapp' | 'ligar' | 'formulario') => {
   if (typeof window !== 'undefined' && (window as any).gtag) {
-    try {
-      const codes = {
-        whatsapp: 'AW-18085065720/whatsapp_click',
-        ligar: 'AW-18085065720/ligar_click',
-        formulario: 'AW-18085065720/form_submit',
+    const executeTrack = () => {
+      try {
+        const codes = {
+          whatsapp: 'AW-18085065720/whatsapp_click',
+          ligar: 'AW-18085065720/ligar_click',
+          formulario: 'AW-18085065720/form_submit',
+        }
+        ;(window as any).gtag('event', 'conversion', {
+          send_to: codes[type],
+        })
+      } catch (e) {
+        console.debug('Google Ads conversion tracking silently failed')
       }
-      ;(window as any).gtag('event', 'conversion', {
-        send_to: codes[type],
-      })
-    } catch (e) {
-      console.debug('Google Ads conversion tracking silently failed')
+    }
+    if ('requestIdleCallback' in window) {
+      ;(window as any).requestIdleCallback(executeTrack)
+    } else {
+      setTimeout(executeTrack, 0)
     }
   }
   if (type === 'whatsapp') {

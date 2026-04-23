@@ -5,6 +5,11 @@ import { Toaster as Sonner } from '@/components/ui/sonner'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { AuthProvider } from '@/hooks/use-auth'
 
+import PublicLayout from '@/components/PublicLayout'
+import { ProtectedRoute } from '@/components/ProtectedRoute'
+import NotFound from './pages/NotFound'
+import Index from './pages/Index'
+
 // Fix global para erro do html-to-image (e scripts de terceiros) ao ler cssRules cross-origin
 if (typeof window !== 'undefined' && typeof CSSStyleSheet !== 'undefined') {
   const originalCssRules = Object.getOwnPropertyDescriptor(CSSStyleSheet.prototype, 'cssRules')
@@ -40,11 +45,6 @@ const DomainRedirect = () => {
   }, [])
   return null
 }
-
-import PublicLayout from '@/components/PublicLayout'
-import { ProtectedRoute } from '@/components/ProtectedRoute'
-import NotFound from './pages/NotFound'
-import Index from './pages/Index'
 
 // Helper to handle dynamically imported module failures due to stale cache/deployments
 const lazyWithRetry = (componentImport: () => Promise<any>) =>

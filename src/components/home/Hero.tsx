@@ -118,7 +118,8 @@ export function Hero() {
               alt="Fachada da loja Carro e Cia em Uberaba - MG, localizada em avenida estratégica com múltiplos veículos de qualidade"
               width="1920"
               height="1080"
-              loading="lazy"
+              fetchPriority="high"
+              loading="eager"
               decoding="async"
               className="w-full h-full object-cover object-center"
               style={{ aspectRatio: '16/9' }}
