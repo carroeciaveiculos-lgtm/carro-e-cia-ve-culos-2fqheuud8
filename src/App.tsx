@@ -25,48 +25,68 @@ import { ProtectedRoute } from '@/components/ProtectedRoute'
 import NotFound from './pages/NotFound'
 import Index from './pages/Index'
 
+// Helper to handle dynamically imported module failures due to stale cache/deployments
+const lazyWithRetry = (componentImport: () => Promise<any>) =>
+  lazy(async () => {
+    const pageHasAlreadyBeenForceRefreshed = JSON.parse(
+      window.sessionStorage.getItem('page-has-been-force-refreshed') || 'false',
+    )
+    try {
+      const component = await componentImport()
+      window.sessionStorage.setItem('page-has-been-force-refreshed', 'false')
+      return component
+    } catch (error) {
+      if (!pageHasAlreadyBeenForceRefreshed) {
+        window.sessionStorage.setItem('page-has-been-force-refreshed', 'true')
+        window.location.reload()
+        return new Promise(() => {}) as Promise<any>
+      }
+      throw error
+    }
+  })
+
 // Admin Layout lazy loaded to reduce unused JS in public routes
-const AdminLayout = lazy(() => import('@/components/AdminLayout'))
+const AdminLayout = lazyWithRetry(() => import('@/components/AdminLayout'))
 
 // Public Pages (Lazy loaded for performance/code-splitting)
-const Estoque = lazy(() => import('./pages/Estoque'))
-const Veiculo = lazy(() => import('./pages/Veiculo'))
-const Consignacao = lazy(() => import('./pages/Consignacao'))
-const Sobre = lazy(() => import('./pages/Sobre'))
-const Contato = lazy(() => import('./pages/Contato'))
-const PoliticaPrivacidade = lazy(() => import('./pages/PoliticaPrivacidade'))
-const Seguranca = lazy(() => import('./pages/consignacao/Seguranca'))
-const Praticidade = lazy(() => import('./pages/consignacao/Praticidade'))
-const Troca = lazy(() => import('./pages/consignacao/Troca'))
-const Obrigado = lazy(() => import('./pages/Obrigado'))
-const SeguroAuto = lazy(() => import('./pages/SeguroAuto'))
-const ConsorcioAuto = lazy(() => import('./pages/ConsorcioAuto'))
-const ConsignarMeuCarro = lazy(() => import('./pages/ConsignarMeuCarro'))
-const ComoFuncionaConsignacao = lazy(() => import('./pages/ComoFuncionaConsignacao'))
-const FinanciamentoAuto = lazy(() => import('./pages/FinanciamentoAuto'))
+const Estoque = lazyWithRetry(() => import('./pages/Estoque'))
+const Veiculo = lazyWithRetry(() => import('./pages/Veiculo'))
+const Consignacao = lazyWithRetry(() => import('./pages/Consignacao'))
+const Sobre = lazyWithRetry(() => import('./pages/Sobre'))
+const Contato = lazyWithRetry(() => import('./pages/Contato'))
+const PoliticaPrivacidade = lazyWithRetry(() => import('./pages/PoliticaPrivacidade'))
+const Seguranca = lazyWithRetry(() => import('./pages/consignacao/Seguranca'))
+const Praticidade = lazyWithRetry(() => import('./pages/consignacao/Praticidade'))
+const Troca = lazyWithRetry(() => import('./pages/consignacao/Troca'))
+const Obrigado = lazyWithRetry(() => import('./pages/Obrigado'))
+const SeguroAuto = lazyWithRetry(() => import('./pages/SeguroAuto'))
+const ConsorcioAuto = lazyWithRetry(() => import('./pages/ConsorcioAuto'))
+const ConsignarMeuCarro = lazyWithRetry(() => import('./pages/ConsignarMeuCarro'))
+const ComoFuncionaConsignacao = lazyWithRetry(() => import('./pages/ComoFuncionaConsignacao'))
+const FinanciamentoAuto = lazyWithRetry(() => import('./pages/FinanciamentoAuto'))
 
 // Novas LPs e Blog
-const CarrosSeminovosUberaba = lazy(() => import('./pages/lp/CarrosSeminovosUberaba'))
-const VendaCarroRapido = lazy(() => import('./pages/lp/VendaCarroRapido'))
-const VenderMeuCarro = lazy(() => import('./pages/VenderMeuCarro'))
-const BlogIndex = lazy(() => import('./pages/blog/BlogIndex'))
-const BlogPost = lazy(() => import('./pages/blog/BlogPost'))
+const CarrosSeminovosUberaba = lazyWithRetry(() => import('./pages/lp/CarrosSeminovosUberaba'))
+const VendaCarroRapido = lazyWithRetry(() => import('./pages/lp/VendaCarroRapido'))
+const VenderMeuCarro = lazyWithRetry(() => import('./pages/VenderMeuCarro'))
+const BlogIndex = lazyWithRetry(() => import('./pages/blog/BlogIndex'))
+const BlogPost = lazyWithRetry(() => import('./pages/blog/BlogPost'))
 
 // Admin Pages (Lazy loaded)
-const Login = lazy(() => import('./pages/admin/Login'))
-const Dashboard = lazy(() => import('./pages/admin/Dashboard'))
-const AdminEstoque = lazy(() => import('./pages/admin/Estoque'))
-const AdminLeads = lazy(() => import('./pages/admin/Leads'))
-const Avaliacao = lazy(() => import('./pages/admin/Avaliacao'))
-const SiteManager = lazy(() => import('./pages/admin/SiteManager'))
-const Financiamento = lazy(() => import('./pages/admin/Financiamento'))
-const Administrativo = lazy(() => import('./pages/admin/Administrativo'))
-const Portais = lazy(() => import('./pages/admin/Portais'))
-const Relatorios = lazy(() => import('./pages/admin/Relatorios'))
-const Configuracoes = lazy(() => import('./pages/admin/Configuracoes'))
-const Usuarios = lazy(() => import('./pages/admin/Usuarios'))
-const EditUsuario = lazy(() => import('./pages/admin/EditUsuario'))
-const EmConstrucao = lazy(() => import('./pages/admin/EmConstrucao'))
+const Login = lazyWithRetry(() => import('./pages/admin/Login'))
+const Dashboard = lazyWithRetry(() => import('./pages/admin/Dashboard'))
+const AdminEstoque = lazyWithRetry(() => import('./pages/admin/Estoque'))
+const AdminLeads = lazyWithRetry(() => import('./pages/admin/Leads'))
+const Avaliacao = lazyWithRetry(() => import('./pages/admin/Avaliacao'))
+const SiteManager = lazyWithRetry(() => import('./pages/admin/SiteManager'))
+const Financiamento = lazyWithRetry(() => import('./pages/admin/Financiamento'))
+const Administrativo = lazyWithRetry(() => import('./pages/admin/Administrativo'))
+const Portais = lazyWithRetry(() => import('./pages/admin/Portais'))
+const Relatorios = lazyWithRetry(() => import('./pages/admin/Relatorios'))
+const Configuracoes = lazyWithRetry(() => import('./pages/admin/Configuracoes'))
+const Usuarios = lazyWithRetry(() => import('./pages/admin/Usuarios'))
+const EditUsuario = lazyWithRetry(() => import('./pages/admin/EditUsuario'))
+const EmConstrucao = lazyWithRetry(() => import('./pages/admin/EmConstrucao'))
 
 const PageLoader = () => (
   <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
