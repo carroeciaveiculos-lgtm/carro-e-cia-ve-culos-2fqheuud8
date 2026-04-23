@@ -1,6 +1,7 @@
 import { Button } from '@/components/ui/button'
 import { getWhatsAppLink } from '@/lib/whatsapp'
 import { MessageCircle, CarFront } from 'lucide-react'
+import { trackCTAClick } from '@/lib/tracking'
 
 export function HomeHero() {
   return (
@@ -50,7 +51,10 @@ export function HomeHero() {
             size="lg"
             className="h-16 text-lg px-8 bg-[#25D366] hover:bg-[#20bd5a] text-white"
           >
-            <a href="#contato">
+            <a
+              href="/consignacao"
+              onClick={() => trackCTAClick('Quero Consignar Meu Carro AGORA', '/')}
+            >
               <CarFront className="mr-2 h-6 w-6" /> Quero Consignar Meu Carro AGORA
             </a>
           </Button>
@@ -66,6 +70,7 @@ export function HomeHero() {
               )}
               target="_blank"
               rel="noopener noreferrer"
+              onClick={() => trackCTAClick('Falar com Luiz (WhatsApp)', '/')}
             >
               <MessageCircle className="mr-2 h-6 w-6" /> Falar com Luiz (WhatsApp)
             </a>

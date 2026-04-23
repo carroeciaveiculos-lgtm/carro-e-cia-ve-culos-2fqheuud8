@@ -418,6 +418,30 @@ export default function BlogPost() {
               </Button>
             </div>
           </div>
+
+          <div className="mt-16 bg-primary/10 border border-primary/20 rounded-2xl p-8 text-center">
+            <h3 className="text-2xl font-bold mb-4">Assine nossa Newsletter</h3>
+            <p className="text-muted-foreground mb-6">
+              Receba nossos próximos artigos e dicas direto no seu e-mail.
+            </p>
+            <form
+              className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto"
+              onSubmit={(e) => {
+                e.preventDefault()
+                toast({ title: 'Inscrito!', description: 'Obrigado por assinar nossa newsletter.' })
+              }}
+            >
+              <input
+                type="email"
+                placeholder="Seu melhor e-mail"
+                required
+                className="flex-1 rounded-md border border-input bg-background px-3 py-2 h-10"
+              />
+              <Button type="submit" className="h-10">
+                Inscrever
+              </Button>
+            </form>
+          </div>
         </footer>
       </article>
     </main>

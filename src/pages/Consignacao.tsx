@@ -1,269 +1,304 @@
 import { SEO } from '@/components/SEO'
-import { LeadForm } from '@/components/LeadForm'
-import { Partners } from '@/components/home/Partners'
-import { CheckCircle2 } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import {
   Accordion,
+  AccordionContent,
   AccordionItem,
   AccordionTrigger,
-  AccordionContent,
 } from '@/components/ui/accordion'
-import { Button } from '@/components/ui/button'
+import { Card, CardContent } from '@/components/ui/card'
+import { CheckCircle2, ShieldCheck, Clock, Megaphone, Calculator, Star, MapPin } from 'lucide-react'
 import { getWhatsAppLink } from '@/lib/whatsapp'
-import { trackConversion, trackGTMEvent } from '@/lib/tracking'
-
-const team = [
-  {
-    name: 'Luiz Fernando',
-    role: 'CEO',
-    img: 'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Fotos/Formato%20webp/Luiz-Fernando-foto-profissional.webp',
-    position: 'center 20%',
-  },
-  {
-    name: 'Gabriel',
-    role: 'Vendedor',
-    img: 'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Fotos/Formato%20webp/Gabriel-foto-profissional.webp',
-    position: 'center 15%',
-  },
-  {
-    name: 'Jessica Germano',
-    role: 'Financeiro',
-    img: 'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Fotos/Formato%20webp/Ljessica-foto-profissional.webp',
-    position: 'center 10%',
-  },
-]
+import { trackCTAClick } from '@/lib/tracking'
 
 export default function Consignacao() {
-  const faqs = [
-    {
-      q: 'Quanto tempo leva para vender?',
-      a: 'O tempo médio varia, mas com nossa divulgação profissional, muitos veículos são vendidos em menos de 30 dias.',
-    },
-    {
-      q: 'Qual é a comissão da loja?',
-      a: 'A comissão é transparente e fixada em contrato. Entre em contato para uma avaliação e detalhes dos valores.',
-    },
-    {
-      q: 'O veículo fica na loja?',
-      a: 'Sim, em pátio seguro e segurado, garantindo exposição máxima aos compradores.',
-    },
-    {
-      q: 'E se eu precisar do carro?',
-      a: 'Temos contratos flexíveis. Basta nos avisar com antecedência.',
-    },
-    {
-      q: 'A loja garante a venda?',
-      a: 'Fazemos todo o esforço de marketing, financiamento e negociação para viabilizar a venda o mais rápido possível.',
-    },
-  ]
-
-  const schema = [
-    {
-      '@context': 'https://schema.org',
-      '@type': 'AutoDealer',
-      name: 'Carro e Cia Veículos',
-      url: 'https://carroeciamotors.com.br',
-      telephone: '+5534999484285',
-      address: {
-        '@type': 'PostalAddress',
-        streetAddress: 'Av. Guilherme Ferreira, 1119',
-        addressLocality: 'Uberaba',
-        addressRegion: 'MG',
-        postalCode: '38022-200',
-        addressCountry: 'BR',
-      },
-    },
-    {
-      '@context': 'https://schema.org',
-      '@type': 'BreadcrumbList',
-      itemListElement: [
-        {
-          '@type': 'ListItem',
-          position: 1,
-          name: 'Início',
-          item: 'https://carroeciamotors.com.br',
-        },
-        {
-          '@type': 'ListItem',
-          position: 2,
-          name: 'Consignação',
-          item: 'https://carroeciamotors.com.br/consignacao',
-        },
-      ],
-    },
-    {
-      '@context': 'https://schema.org',
-      '@type': 'FAQPage',
-      mainEntity: faqs.map((f) => ({
-        '@type': 'Question',
-        name: f.q,
-        acceptedAnswer: { '@type': 'Answer', text: f.a },
-      })),
-    },
-  ]
+  const schema = {
+    '@context': 'https://schema.org',
+    '@type': 'WebPage',
+    name: 'Consignação de Veículos Segura em Uberaba',
+    description:
+      'Consignação segura em Uberaba. Venda seu carro em 15 dias. Contrato protetor, avaliação profissional, múltiplas plataformas. Carro e Cia.',
+  }
 
   return (
-    <div className="flex flex-col min-h-screen bg-background">
+    <main className="flex-1 bg-background pt-24 pb-16">
       <SEO
-        title="Consignação de Veículos em Uberaba MG | Carro e Cia Veículos"
-        description="Consigne seu veículo na Carro e Cia em Uberaba MG. Mais de 20 anos de mercado, contrato seguro, anúncios profissionais e venda garantida. Simule grátis!"
+        title="Consignação de Carro em Uberaba | Venda Rápida e Segura"
+        description="Consignação segura em Uberaba. Venda seu carro em 15 dias. Contrato protetor, avaliação profissional, múltiplas plataformas. Carro e Cia."
         schema={schema}
+        canonical="https://carroeciamotors.com.br/consignacao"
       />
 
-      <section className="relative min-h-[90vh] flex items-center pt-24 pb-16">
-        <div className="absolute inset-0 z-0">
-          <picture>
-            <source
-              media="(max-width: 768px)"
-              srcSet="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Fotos/Formato%20webp/fachada-mobile.webp"
-              type="image/webp"
-            />
-            <source
-              media="(min-width: 769px)"
-              srcSet="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Fotos/Formato%20webp/fachada-da-loja.webp"
-              type="image/webp"
-            />
-            <source
-              media="(max-width: 768px)"
-              srcSet="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Fotos/fachada-mobile.jpg"
-              type="image/jpeg"
-            />
-            <source
-              media="(min-width: 769px)"
-              srcSet="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Fotos/fachada%20da%20loja.jpeg"
-              type="image/jpeg"
-            />
-            <img
-              src="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Fotos/fachada%20da%20loja.jpeg"
-              alt="Fachada da loja Carro e Cia em Uberaba - MG, localizada em avenida estratégica com múltiplos veículos de qualidade"
-              width="1920"
-              height="1080"
-              fetchPriority="high"
-              loading="eager"
-              decoding="async"
-              className="w-full h-full object-cover object-center"
-            />
-          </picture>
-          <div className="absolute inset-0 bg-black/60" />
-        </div>
-        <div className="container relative z-10 grid lg:grid-cols-2 gap-12 items-center">
-          <div className="text-white text-center lg:text-left">
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 leading-tight">
-              Consignação de Veículos em Uberaba: A Forma Mais Inteligente de Vender Seu Carro
+      {/* Hero Section */}
+      <section className="container max-w-6xl mx-auto px-4 mb-20">
+        <div className="grid lg:grid-cols-2 gap-12 items-center">
+          <div className="space-y-6">
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-display font-extrabold leading-tight">
+              Consignação: A Solução <span className="text-primary">Segura</span> Para Vender Seu
+              Carro
             </h1>
-            <p className="text-xl text-gray-200">
-              20 anos de experiência. Contrato seguro. Você não faz nada — a gente vende pra você.
+            <p className="text-xl text-muted-foreground leading-relaxed">
+              Venda em dias, não em meses. Contrato protetor. Você não se preocupa.
             </p>
+            <div className="flex flex-col sm:flex-row gap-4 pt-4">
+              <Button
+                size="lg"
+                className="h-14 px-8 text-lg bg-[#25D366] hover:bg-[#20bd5a] text-white shadow-lg"
+                asChild
+              >
+                <a href="#processo" onClick={() => trackCTAClick('Como Funciona', '/consignacao')}>
+                  Como Funciona?
+                </a>
+              </Button>
+              <Button
+                size="lg"
+                variant="outline"
+                className="h-14 px-8 text-lg border-2 shadow-sm"
+                asChild
+              >
+                <a
+                  href={getWhatsAppLink('Olá Luiz, quero saber mais sobre consignação.')}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() => trackCTAClick('Falar com Luiz', '/consignacao')}
+                >
+                  Falar com Luiz
+                </a>
+              </Button>
+            </div>
           </div>
-          <div className="w-full max-w-md mx-auto lg:ml-auto">
-            <LeadForm
-              tipo="consignacao"
-              campanha="consignacao"
-              buttonText="Quero Consignar Meu Carro Agora"
-              whatsappText="Olá Luiz, quero consignar meu carro!"
+          <div className="relative">
+            <img
+              src="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/fotos/consignacao.webp"
+              alt="Consignação segura de veículos - solução profissional Carro e Cia"
+              width="800"
+              height="600"
+              className="rounded-2xl shadow-2xl object-cover w-full aspect-video"
+              loading="eager"
+              fetchPriority="high"
             />
           </div>
         </div>
       </section>
 
-      <section className="py-20">
-        <div className="container max-w-4xl text-center">
-          <h2 className="text-3xl md:text-4xl font-bold mb-8">
-            Por Que a Consignação é a Melhor Opção para Vender Seu Carro?
-          </h2>
-          <p className="text-lg text-muted-foreground leading-relaxed">
-            Vender um carro pode ser um processo demorado e estressante. Desde a preparação do
-            veículo, passando pela criação de anúncios, até a negociação com potenciais compradores
-            e a burocracia da transferência, cada etapa exige tempo e conhecimento. A consignação
-            surge como a alternativa inteligente, delegando todo esse trabalho a especialistas. Na
-            Carro e Cia, você conta com a expertise de 20 anos de mercado para vender seu veículo de
-            forma rápida, segura e pelo melhor preço, sem que você precise se preocupar com nada.
+      {/* O que é */}
+      <section className="bg-muted/30 py-20">
+        <div className="container max-w-4xl mx-auto px-4 text-center">
+          <h2 className="text-3xl md:text-4xl font-display font-bold mb-6">O Que é Consignação?</h2>
+          <p className="text-xl text-muted-foreground leading-relaxed">
+            Consignação é quando você deixa seu carro conosco para vender. Nós anunciamos,
+            negociamos, cuidamos de tudo. Você recebe quando o carro é vendido. Simples assim.
           </p>
         </div>
       </section>
 
-      <section className="py-20 bg-muted/30">
-        <div className="container max-w-5xl">
-          <h2 className="text-3xl font-bold text-center mb-12">
-            Nossos Diferenciais na Consignação
+      {/* Processo Passo a Passo */}
+      <section id="processo" className="py-20">
+        <div className="container max-w-6xl mx-auto px-4">
+          <h2 className="text-3xl md:text-4xl font-display font-bold text-center mb-16">
+            Processo Passo a Passo
           </h2>
-          <div className="grid md:grid-cols-2 gap-8">
+          <div className="grid md:grid-cols-4 gap-8">
             {[
               {
-                t: 'Segurança Jurídica',
-                d: 'Contrato claro e transparente que protege seus interesses.',
+                icon: '🚗',
+                title: '1. Você Traz Seu Carro',
+                desc: 'Agende visita. Leve seu veículo à loja.',
+                time: '30 min',
               },
               {
-                t: 'Avaliação Profissional',
-                d: 'Definimos o preço justo de mercado para seu veículo.',
+                icon: '📊',
+                title: '2. Avaliação Gratuita',
+                desc: 'Inspeção completa. Referência FIPE. Proposta honesta.',
+                time: '1 hr',
               },
               {
-                t: 'Marketing Abrangente',
-                d: 'Anunciamos seu carro nas maiores plataformas e redes sociais.',
+                icon: '📝',
+                title: '3. Assinamos o Contrato',
+                desc: 'Tudo transparente. Contato protetor assinado.',
+                time: '30 min',
               },
               {
-                t: 'Financiamento Facilitado',
-                d: 'Oferecemos opções de financiamento para o comprador, agilizando a venda.',
+                icon: '💰',
+                title: '4. Anunciamos e Você Recebe',
+                desc: 'iCarro, Web Motors. Você recebe quando vender!',
+                time: 'Média 15 dias',
               },
-              {
-                t: 'Zero Preocupação',
-                d: 'Cuidamos de toda a negociação, documentação e transferência.',
-              },
-            ].map((item, i) => (
-              <div
+            ].map((step, i) => (
+              <Card
                 key={i}
-                className="flex gap-4 items-start p-6 bg-background rounded-xl shadow-sm"
+                className="text-center p-6 hover:shadow-lg transition-shadow border-border/50 relative overflow-hidden"
               >
-                <CheckCircle2 className="w-8 h-8 text-primary shrink-0" aria-hidden="true" />
-                <div>
-                  <h3 className="font-bold text-xl mb-2">{item.t}</h3>
-                  <p className="text-muted-foreground">{item.d}</p>
+                <div className="text-5xl mb-4">{step.icon}</div>
+                <h3 className="font-bold text-xl mb-3">{step.title}</h3>
+                <p className="text-muted-foreground text-sm mb-4">{step.desc}</p>
+                <div className="absolute top-0 right-0 bg-primary text-white text-xs font-bold px-3 py-1 rounded-bl-lg">
+                  {step.time}
                 </div>
-              </div>
+              </Card>
             ))}
           </div>
         </div>
       </section>
 
-      <section className="py-20">
-        <div className="container max-w-4xl">
-          <h2 className="text-3xl font-bold text-center mb-10">
-            Consignação Carro e Cia: Transparência e Confiança
+      {/* Vantagens */}
+      <section className="bg-[#1A1A1A] text-white py-20">
+        <div className="container max-w-6xl mx-auto px-4">
+          <h2 className="text-3xl md:text-4xl font-display font-bold text-center mb-16">
+            Vantagens da Consignação
           </h2>
-          <div className="overflow-x-auto border rounded-xl shadow-sm">
-            <table className="w-full text-left border-collapse bg-card">
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div className="flex gap-4">
+              <Clock className="w-8 h-8 text-primary shrink-0" />
+              <div>
+                <h3 className="text-xl font-bold mb-2">Venda Rápida</h3>
+                <p className="text-gray-400">Tempo médio: 15 dias (vs 3-6 meses particular)</p>
+              </div>
+            </div>
+            <div className="flex gap-4">
+              <ShieldCheck className="w-8 h-8 text-primary shrink-0" />
+              <div>
+                <h3 className="text-xl font-bold mb-2">Segurança Jurídica</h3>
+                <p className="text-gray-400">
+                  Contrato protetor. Procedência verificada. Você protegido.
+                </p>
+              </div>
+            </div>
+            <div className="flex gap-4">
+              <CheckCircle2 className="w-8 h-8 text-primary shrink-0" />
+              <div>
+                <h3 className="text-xl font-bold mb-2">Zero Burocracia</h3>
+                <p className="text-gray-400">A gente cuida. Você só recebe o dinheiro.</p>
+              </div>
+            </div>
+            <div className="flex gap-4">
+              <Megaphone className="w-8 h-8 text-primary shrink-0" />
+              <div>
+                <h3 className="text-xl font-bold mb-2">Múltiplas Plataformas</h3>
+                <p className="text-gray-400">iCarro, Web Motors, Mercado Livre + loja física.</p>
+              </div>
+            </div>
+            <div className="flex gap-4">
+              <Calculator className="w-8 h-8 text-primary shrink-0" />
+              <div>
+                <h3 className="text-xl font-bold mb-2">Avaliação Profissional</h3>
+                <p className="text-gray-400">Tabela FIPE. Preço justo. Sem surpresas.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Diferenciais Carro e Cia */}
+      <section className="py-20">
+        <div className="container max-w-6xl mx-auto px-4">
+          <h2 className="text-3xl md:text-4xl font-display font-bold text-center mb-16">
+            Diferenciais Carro e Cia
+          </h2>
+          <div className="grid md:grid-cols-3 gap-8">
+            <Card className="overflow-hidden">
+              <img
+                src="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/fotos/fachada-da-loja.webp"
+                alt="Fachada"
+                className="w-full h-48 object-cover"
+                loading="lazy"
+              />
+              <CardContent className="p-6">
+                <h3 className="text-xl font-bold mb-2">20+ Anos de Mercado</h3>
+                <p className="text-muted-foreground">Solidez. Confiança. Referência em Uberaba.</p>
+              </CardContent>
+            </Card>
+            <Card className="overflow-hidden">
+              <img
+                src="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/fotos/Luiz-Fernando-foto-profissional.webp"
+                alt="Luiz Fernando"
+                className="w-full h-48 object-cover object-top"
+                loading="lazy"
+              />
+              <CardContent className="p-6">
+                <h3 className="text-xl font-bold mb-2">Luiz Fernando Pessoalmente</h3>
+                <p className="text-muted-foreground">
+                  CEO dedicado. Apaixonado por carros. Humanidade em cada transação.
+                </p>
+              </CardContent>
+            </Card>
+            <Card className="overflow-hidden bg-muted/20 flex flex-col items-center justify-center p-6 text-center">
+              <img
+                src="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/fotos/Logo-km-zero-fundo-transparente.webp"
+                alt="Km Zero"
+                className="w-32 h-32 object-contain mb-4"
+                loading="lazy"
+              />
+              <h3 className="text-xl font-bold mb-2">Parceiros Estratégicos</h3>
+              <p className="text-muted-foreground">
+                Financiamento Km Zero. Bancos de confiança. Seguro auto disponível.
+              </p>
+            </Card>
+          </div>
+        </div>
+      </section>
+
+      {/* Comparativo */}
+      <section className="bg-muted/30 py-20 border-y border-border/50">
+        <div className="container max-w-4xl mx-auto px-4">
+          <h2 className="text-3xl font-display font-bold text-center mb-10">
+            Consignação vs Venda Particular
+          </h2>
+          <div className="bg-card rounded-xl border shadow-sm overflow-x-auto">
+            <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="bg-muted/50 border-b">
-                  <th className="p-4 font-bold">Benefício</th>
-                  <th className="p-4 font-bold">Venda Particular</th>
-                  <th className="p-4 font-bold text-primary">Consignação Carro e Cia</th>
+                <tr className="bg-muted text-muted-foreground uppercase text-sm">
+                  <th className="p-4 border-b font-semibold">Critério</th>
+                  <th className="p-4 border-b font-semibold text-destructive">Venda Particular</th>
+                  <th className="p-4 border-b font-semibold text-primary">
+                    Consignação Carro e Cia
+                  </th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="text-sm md:text-base">
                 <tr className="border-b">
-                  <td className="p-4 font-medium">Preço de Venda</td>
-                  <td className="p-4 text-muted-foreground">Pode ser subvalorizado</td>
-                  <td className="p-4 font-medium text-primary">✅ Otimizado por especialistas</td>
+                  <td className="p-4 font-medium">Tempo</td>
+                  <td className="p-4 text-muted-foreground">3-6 meses</td>
+                  <td className="p-4 font-bold text-primary bg-primary/5">15 dias (média)</td>
                 </tr>
                 <tr className="border-b">
-                  <td className="p-4 font-medium">Tempo de Venda</td>
-                  <td className="p-4 text-muted-foreground">Longo e imprevisível</td>
-                  <td className="p-4 font-medium text-primary">✅ Mais rápido e eficiente</td>
-                </tr>
-                <tr className="border-b">
-                  <td className="p-4 font-medium">Exposição do Veículo</td>
-                  <td className="p-4 text-muted-foreground">Limitada a poucos canais</td>
-                  <td className="p-4 font-medium text-primary">✅ Ampla em plataformas premium</td>
+                  <td className="p-4 font-medium">Preço</td>
+                  <td className="p-4 text-muted-foreground">Risco de perder valor</td>
+                  <td className="p-4 font-bold text-primary bg-primary/5">Tabela FIPE protege</td>
                 </tr>
                 <tr className="border-b">
                   <td className="p-4 font-medium">Burocracia</td>
-                  <td className="p-4 text-muted-foreground">Totalmente sua responsabilidade</td>
-                  <td className="p-4 font-medium text-primary">✅ Cuidamos de tudo</td>
+                  <td className="p-4 text-muted-foreground">VOCÊ cuida</td>
+                  <td className="p-4 font-bold text-primary bg-primary/5">A GENTE cuida</td>
+                </tr>
+                <tr className="border-b">
+                  <td className="p-4 font-medium">Contato Estranhos</td>
+                  <td className="p-4 text-muted-foreground">Risco de golpe</td>
+                  <td className="p-4 font-bold text-primary bg-primary/5">Segurança total</td>
+                </tr>
+                <tr className="border-b">
+                  <td className="p-4 font-medium">Documentação</td>
+                  <td className="p-4 text-muted-foreground">Responsabilidade sua</td>
+                  <td className="p-4 font-bold text-primary bg-primary/5">
+                    Responsabilidade nossa
+                  </td>
+                </tr>
+                <tr className="border-b">
+                  <td className="p-4 font-medium">Fotos/Anúncios</td>
+                  <td className="p-4 text-muted-foreground">VOCÊ faz</td>
+                  <td className="p-4 font-bold text-primary bg-primary/5">A GENTE faz profissa</td>
+                </tr>
+                <tr className="border-b">
+                  <td className="p-4 font-medium">Negociação</td>
+                  <td className="p-4 text-muted-foreground">VOCÊ negocia</td>
+                  <td className="p-4 font-bold text-primary bg-primary/5">A GENTE negocia</td>
                 </tr>
                 <tr>
-                  <td className="p-4 font-medium">Suporte Financeiro</td>
-                  <td className="p-4 text-muted-foreground">Inexistente</td>
-                  <td className="p-4 font-medium text-primary">✅ Parcerias para o comprador</td>
+                  <td className="p-4 font-medium">Garantia</td>
+                  <td className="p-4 text-muted-foreground">Nenhuma</td>
+                  <td className="p-4 font-bold text-primary bg-primary/5">
+                    Procedência verificada
+                  </td>
                 </tr>
               </tbody>
             </table>
@@ -271,82 +306,155 @@ export default function Consignacao() {
         </div>
       </section>
 
-      <section className="py-20 bg-muted/30">
-        <div className="container">
-          <h2 className="text-3xl font-bold text-center mb-12">
-            Conheça Quem Vai Cuidar do Seu Veículo
-          </h2>
-          <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-            {team.map((member, i) => (
-              <div key={i} className="text-center flex flex-col items-center">
-                <picture>
-                  <source srcSet={member.img} type="image/webp" />
-                  <img
-                    src={member.img}
-                    alt={`Foto de ${member.name}, ${member.role} da equipe Carro e Cia Veículos`}
-                    width="160"
-                    height="160"
-                    loading="lazy"
-                    decoding="async"
-                    className="w-[120px] h-[120px] md:w-[160px] md:h-[160px] rounded-full object-cover mx-auto mb-4 border-[3px] border-primary shadow-md"
-                    style={{ objectPosition: member.position }}
-                  />
-                </picture>
-                <h3 className="text-xl font-bold">{member.name}</h3>
-                <p className="text-muted-foreground">{member.role}</p>
-              </div>
-            ))}
-          </div>
+      {/* Depoimentos */}
+      <section className="py-20 text-center container max-w-6xl mx-auto px-4">
+        <h2 className="text-3xl font-display font-bold mb-16">Depoimentos de Clientes</h2>
+        <div className="grid md:grid-cols-3 gap-8">
+          <Card className="p-6 text-left shadow-md">
+            <div className="flex text-yellow-500 mb-4">
+              <Star className="fill-current w-5 h-5" />
+              <Star className="fill-current w-5 h-5" />
+              <Star className="fill-current w-5 h-5" />
+              <Star className="fill-current w-5 h-5" />
+              <Star className="fill-current w-5 h-5" />
+            </div>
+            <p className="italic text-muted-foreground mb-4">
+              "Vendi meu carro em 12 dias! Luiz foi super profissional, tudo transparente. Antes eu
+              tentei vender sozinho por meses sem sucesso. Recomendo muito!"
+            </p>
+            <p className="font-bold">- João Silva, Uberaba</p>
+          </Card>
+          <Card className="p-6 text-left shadow-md">
+            <div className="flex text-yellow-500 mb-4">
+              <Star className="fill-current w-5 h-5" />
+              <Star className="fill-current w-5 h-5" />
+              <Star className="fill-current w-5 h-5" />
+              <Star className="fill-current w-5 h-5" />
+              <Star className="fill-current w-5 h-5" />
+            </div>
+            <p className="italic text-muted-foreground mb-4">
+              "Não queria mais me preocupar vendendo sozinho. Consignei na Carro e Cia, recebi em 20
+              dias e sem dor de cabeça. Serviço impecável."
+            </p>
+            <p className="font-bold">- Maria Santos, Uberlândia</p>
+          </Card>
+          <Card className="p-6 text-left shadow-md">
+            <div className="flex text-yellow-500 mb-4">
+              <Star className="fill-current w-5 h-5" />
+              <Star className="fill-current w-5 h-5" />
+              <Star className="fill-current w-5 h-5" />
+              <Star className="fill-current w-5 h-5" />
+              <Star className="fill-current w-5 h-5" />
+            </div>
+            <p className="italic text-muted-foreground mb-4">
+              "Luiz cuida do seu carro como se fosse dele. Profissionalismo de quem realmente ama
+              carros. Vendeu no preço que combinamos."
+            </p>
+            <p className="font-bold">- Carlos Oliveira, Uberaba</p>
+          </Card>
         </div>
       </section>
 
-      <Partners />
-
-      <section className="py-20 bg-muted/30 border-t">
-        <div className="container max-w-3xl">
-          <h2 className="text-3xl md:text-4xl font-bold mb-10 text-center">
-            Dúvidas Frequentes sobre Consignação
+      {/* FAQ */}
+      <section className="bg-muted/20 py-20 border-t border-border/50">
+        <div className="container max-w-3xl mx-auto px-4">
+          <h2 className="text-3xl font-display font-bold text-center mb-10">
+            Perguntas Frequentes
           </h2>
-          <Accordion
-            type="single"
-            collapsible
-            className="w-full bg-card rounded-xl border p-4 shadow-sm"
-          >
-            {faqs.map((faq, i) => (
-              <AccordionItem key={i} value={`item-${i}`} className="border-b last:border-0">
-                <AccordionTrigger className="text-left font-bold text-lg hover:text-primary transition-colors">
-                  {faq.q}
-                </AccordionTrigger>
-                <AccordionContent className="text-muted-foreground text-base leading-relaxed">
+          <Accordion type="single" collapsible className="w-full">
+            {[
+              {
+                q: 'Como funciona a consignação?',
+                a: 'Você deixa seu carro com a gente, assinamos um contrato definindo preço mínimo e prazo. Nós preparamos o carro, tiramos fotos profissionais e anunciamos em vários portais. Quando vendemos, você recebe o valor combinado.',
+              },
+              {
+                q: 'Qual é a taxa de consignação?',
+                a: 'Nossa taxa é negociada e transparente, geralmente um percentual sobre a venda ou um valor fixo acordado previamente. Não cobramos mensalidade para anunciar o seu veículo.',
+              },
+              {
+                q: 'Quanto tempo leva vender em consignação?',
+                a: 'Em média, nossos carros consignados são vendidos em 15 dias, graças ao nosso forte investimento em marketing e rede de clientes.',
+              },
+              {
+                q: 'Meu carro precisa estar em perfeito estado?',
+                a: 'Recomendamos que o carro esteja em bom estado, mas nós fazemos uma avaliação transparente e podemos orientar sobre pequenos reparos estéticos ou mecânicos que aumentam o valor de venda.',
+              },
+              {
+                q: 'Como é feita a avaliação?',
+                a: 'Avaliamos com base na Tabela FIPE, histórico do veículo (RENAVAM/Chassi), estado de conservação, quilometragem e demanda de mercado. Você recebe uma proposta honesta.',
+              },
+              {
+                q: 'O contrato protege a gente também?',
+                a: 'Sim, 100%. O contrato estipula suas garantias, responsabilidades da loja e protege o veículo em nosso pátio contra qualquer eventualidade.',
+              },
+              {
+                q: 'Posso retirar meu carro se não vender?',
+                a: 'Sim. O contrato possui regras claras para rescisão. Geralmente, basta um aviso prévio simples caso você mude de ideia ou acabe o prazo acordado sem venda.',
+              },
+              {
+                q: 'Como recebo o dinheiro?',
+                a: 'Assim que o financiamento do comprador for aprovado e pago, ou o pagamento à vista for compensado, o valor é transferido diretamente para a sua conta bancária de forma segura.',
+              },
+              {
+                q: 'Preciso estar presente na negociação?',
+                a: 'Não. Nós cuidamos de toda a demonstração, test drive, documentação e negociação com os interessados. Você só é chamado para assinar a transferência no final.',
+              },
+              {
+                q: 'E se o carro não vender em 30 dias?',
+                a: 'Nós reavaliamos as condições de mercado com você. Se o preço estiver alinhado, continuamos a publicidade. Caso contrário, podemos ajustar a estratégia juntos.',
+              },
+            ].map((faq, i) => (
+              <AccordionItem value={`item-${i}`} key={i}>
+                <AccordionTrigger className="text-left font-bold">{faq.q}</AccordionTrigger>
+                <AccordionContent className="text-muted-foreground leading-relaxed">
                   {faq.a}
                 </AccordionContent>
               </AccordionItem>
             ))}
           </Accordion>
+        </div>
+      </section>
 
-          <div className="mt-12 text-center">
+      {/* CTA Final */}
+      <section className="py-24 text-center bg-[#1A1A1A] text-white">
+        <div className="container max-w-4xl mx-auto px-4">
+          <h2 className="text-4xl font-display font-extrabold mb-4">
+            Seu Carro Vale Mais do Que Você Imagina
+          </h2>
+          <p className="text-xl text-gray-300 mb-10">
+            Pronto para consignar? Venda em dias com a Carro e Cia.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button
-              asChild
               size="lg"
-              className="w-full sm:w-auto h-14 px-8 text-lg bg-[#25D366] hover:bg-[#25D366]/90 text-white font-bold"
-              aria-label="Quero Consignar Meu Carro Agora"
+              className="h-16 px-10 text-lg bg-[#25D366] hover:bg-[#20bd5a] text-white"
+              asChild
             >
               <a
-                href={getWhatsAppLink('Olá Luiz! Quero saber mais sobre a consignação.')}
+                href="#processo"
+                onClick={() => trackCTAClick('Iniciar Consignação Agora', '/consignacao')}
+              >
+                Iniciar Consignação Agora
+              </a>
+            </Button>
+            <Button
+              size="lg"
+              variant="outline"
+              className="h-16 px-10 text-lg bg-white/10 hover:bg-white/20 text-white border-white/30 backdrop-blur-sm"
+              asChild
+            >
+              <a
+                href={getWhatsAppLink('Olá Luiz, estou pronto para consignar meu carro.')}
                 target="_blank"
                 rel="noopener noreferrer"
-                data-event="clique_whatsapp"
-                onClick={() => {
-                  trackConversion('whatsapp')
-                  trackGTMEvent('click_whatsapp_consignacao')
-                }}
+                onClick={() => trackCTAClick('Falar com Luiz CTA Final', '/consignacao')}
               >
-                Quero Consignar Meu Carro Agora
+                Falar com Luiz
               </a>
             </Button>
           </div>
         </div>
       </section>
-    </div>
+    </main>
   )
 }

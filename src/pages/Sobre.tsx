@@ -1,124 +1,142 @@
-import { Clock, Users, ShieldCheck, Target, Heart, Lightbulb } from 'lucide-react'
 import { SEO } from '@/components/SEO'
+import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
+import { getWhatsAppLink } from '@/lib/whatsapp'
+import { ShieldCheck, Eye, Heart, MapPin, Phone, Mail, Clock } from 'lucide-react'
+import { trackCTAClick } from '@/lib/tracking'
 
 export default function Sobre() {
-  const team = [
-    {
-      name: 'Luiz Fernando',
-      role: 'CEO',
-      photo:
-        'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/fotos/Luiz-Fernando-foto-profissional.webp',
-      bio: 'Com mais de 20 anos de experiência, Luiz é a alma da Carro e Cia. Sua paixão por veículos e seu carisma garantem a melhor experiência para cada cliente.',
+  const schema = {
+    '@context': 'https://schema.org',
+    '@type': 'AboutPage',
+    mainEntity: {
+      '@type': 'Organization',
+      name: 'Carro e Cia Veículos',
+      description: 'Mais de 20 anos de experiência em consignação e venda de veículos em Uberaba.',
     },
-    {
-      name: 'Gabriel',
-      role: 'Especialista',
-      photo:
-        'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/fotos/Gabriel-foto-profissional.webp',
-      bio: 'Gabriel é o braço direito nas vendas. Com sua energia e conhecimento, ele ajuda a encontrar o veículo perfeito para você.',
-    },
-    {
-      name: 'Jessica Germano',
-      role: 'Financeiro',
-      photo:
-        'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/fotos/Ljessica-foto-profissional.webp',
-      bio: 'Jessica cuida de toda a parte financeira, garantindo que cada transação seja clara, segura e sem burocracia para nossos clientes.',
-    },
-    {
-      name: 'Adriana Araújo',
-      role: 'Administrativa',
-      photo:
-        'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/fotos/Adriana-foto-profissional.webp',
-      bio: 'Com sua expertise administrativa, Adriana organiza e otimiza os processos internos, assegurando a eficiência e a qualidade do nosso atendimento.',
-    },
-  ]
+  }
 
   return (
-    <div className="flex flex-col min-h-screen bg-background">
+    <main className="flex-1 bg-background pt-24 pb-16">
       <SEO
-        title="Sobre Nós | Carro e Cia Veículos"
-        description="Conheça a Carro e Cia Veículos. Mais de 20 anos de experiência no mercado automóvel. Referência em confiança e qualidade em Uberaba."
+        title="Sobre Carro e Cia | A História de Luiz Fernando - 20+ Anos"
+        description="Conheça Luiz Fernando e a história da Carro e Cia. 20+ anos dedicados a consignação segura, transparência e confiança em Uberaba."
+        schema={schema}
+        canonical="https://carroeciamotors.com.br/sobre"
       />
-      <section className="relative pt-24 pb-32 overflow-hidden bg-secondary text-white">
-        <div className="absolute inset-0 z-0 opacity-40 bg-[url('https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/fotos/fachada-da-loja.webp')] bg-cover bg-center" />
-        <div className="absolute inset-0 bg-gradient-to-t from-secondary via-secondary/90 to-secondary/40 z-10" />
-        <div className="container relative z-20 text-center max-w-4xl">
-          <h1 className="text-4xl md:text-5xl lg:text-6xl font-display font-extrabold mb-6 leading-tight text-white">
-            Mais de 20 Anos de <span className="text-primary">Confiança em Uberaba</span>
-          </h1>
-          <p className="text-xl text-gray-100 font-medium">
-            Conheça a história da Carro e Cia Veículos e a equipe que faz a diferença.
-          </p>
-        </div>
-      </section>
 
-      <section className="py-20 bg-background">
-        <div className="container max-w-4xl">
-          <div className="flex items-center gap-4 mb-8">
-            <Clock className="w-8 h-8 text-primary" aria-hidden="true" />
-            <h2 className="text-3xl md:text-4xl font-display font-bold">
-              Nossa Trajetória: Paixão por Veículos e Pessoas
-            </h2>
+      <section className="container max-w-6xl mx-auto px-4 mb-20">
+        <div className="grid lg:grid-cols-2 gap-12 items-center">
+          <div className="space-y-6">
+            <div className="inline-block bg-primary/10 text-primary px-4 py-1.5 rounded-full text-sm font-bold tracking-wide mb-2">
+              A HISTÓRIA DE LUIZ FERNANDO
+            </div>
+            <h1 className="text-4xl md:text-5xl font-display font-extrabold leading-tight">
+              A Paixão Que Virou Profissão
+            </h1>
+            <div className="space-y-4 text-lg text-muted-foreground leading-relaxed">
+              <p>
+                Tudo começou em 2003. Luiz Fernando tinha uma paixão simples e pura: carros. Começou
+                como vendedor em uma loja por 4 anos. Aprendia cada dia, cada cliente, cada detalhe
+                de cada veículo.
+              </p>
+              <p>
+                A oportunidade bateu à porta quando foi convidado a ser sócio de uma nova loja. Luiz
+                não hesitou. Agarrou a chance. Desde então, dedicou 20+ anos construindo a Carro e
+                Cia com profissionalismo, humanidade e amor genuíno pelo que faz.
+              </p>
+              <p>
+                Hoje, Luiz não quer apenas vender carros. Ele quer ser referência no Brasil em
+                consignação segura, em soluções certas, em confiança. Seu objetivo: acolher cada
+                cliente, entender a dor de cada um, trazer a solução perfeita.
+              </p>
+            </div>
           </div>
-          <div className="prose prose-lg text-muted-foreground leading-relaxed">
-            <p>
-              Luiz Fernando, CEO da Carro e Cia Veículos, começou sua jornada no mundo automotivo há
-              mais de 20 anos, não como proprietário, mas como um vendedor apaixonado. Durante 4
-              anos, ele mergulhou no mercado, aprendendo cada detalhe e construindo uma reputação de
-              honestidade e dedicação.
-            </p>
-            <p>
-              A oportunidade de ser sócio em uma nova loja surgiu, e Luiz a abraçou com a mesma
-              paixão. Desde então, nunca mais deixou de trabalhar com veículos, transformando sua
-              expertise e carisma em um negócio sólido.
-            </p>
-            <p>
-              Hoje, Luiz Fernando lidera a Carro e Cia Veículos, sua própria loja em Uberaba, com a
-              missão de oferecer veículos de qualidade e procedência, e de conectar pessoas ao carro
-              certo, com segurança e confiança. Sua empresa é um reflexo de sua dedicação e do
-              brilho de um vendedor nato que entende e acolhe a dor de cada cliente, sempre buscando
-              a melhor solução.
-            </p>
+          <div className="relative">
+            <div className="absolute inset-0 bg-gradient-to-tr from-primary/20 to-transparent rounded-2xl transform translate-x-4 translate-y-4 -z-10"></div>
+            <img
+              src="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/fotos/Luiz-Fernando-foto-profissional.webp"
+              alt="Luiz Fernando, CEO Carro e Cia - 20+ anos dedicado ao mercado automotivo"
+              width="600"
+              height="800"
+              className="rounded-2xl shadow-2xl object-cover w-full aspect-[3/4]"
+            />
           </div>
         </div>
       </section>
 
-      <section className="py-20 bg-muted/50 border-y">
-        <div className="container">
-          <div className="text-center max-w-2xl mx-auto mb-14">
+      <section className="bg-muted/30 py-20">
+        <div className="container max-w-6xl mx-auto px-4">
+          <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-display font-bold mb-4">
-              Conheça Quem Faz a Carro e Cia Acontecer
+              Valores da Carro e Cia
             </h2>
-            <p className="text-muted-foreground text-lg">
-              Uma equipe dedicada a realizar o seu sonho com transparência e agilidade.
+            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+              Nossos pilares fundamentais que guiam cada transação há mais de duas décadas.
             </p>
           </div>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-8">
-            {team.map((member, i) => (
-              <div
-                key={i}
-                className="bg-card rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow border"
-              >
-                <div className="aspect-square bg-muted">
-                  <picture>
-                    <source srcSet={member.photo} type="image/webp" />
-                    <img
-                      src={member.photo}
-                      alt={`Retrato profissional de ${member.name}, ${member.role} na equipe da Carro e Cia Veículos`}
-                      width="400"
-                      height="400"
-                      loading="lazy"
-                      decoding="async"
-                      className="w-full h-full object-cover object-top"
-                    />
-                  </picture>
+          <div className="grid md:grid-cols-3 gap-8">
+            <Card className="p-8 text-center hover:shadow-lg transition-shadow border-border/50">
+              <ShieldCheck className="w-12 h-12 mx-auto mb-6 text-primary" />
+              <h3 className="text-2xl font-bold mb-4">Confiança é Tudo</h3>
+              <p className="text-muted-foreground">
+                20+ anos no mercado. Contrato protetor. Procedência verificada. Você está seguro
+                conosco.
+              </p>
+            </Card>
+            <Card className="p-8 text-center hover:shadow-lg transition-shadow border-border/50">
+              <Eye className="w-12 h-12 mx-auto mb-6 text-blue-500" />
+              <h3 className="text-2xl font-bold mb-4">Sem Surpresas</h3>
+              <p className="text-muted-foreground">
+                Tudo claro, tudo honesto, tudo explicado. Nenhuma burocracia, nenhum jogo. Você sabe
+                exatamente o que esperar.
+              </p>
+            </Card>
+            <Card className="p-8 text-center hover:shadow-lg transition-shadow border-border/50">
+              <Heart className="w-12 h-12 mx-auto mb-6 text-red-500" />
+              <h3 className="text-2xl font-bold mb-4">Você é Ouvido</h3>
+              <p className="text-muted-foreground">
+                Luiz acredita que cada cliente tem uma história, uma dor, uma solução. A gente
+                acolhe e oferece a melhor saída.
+              </p>
+            </Card>
+          </div>
+        </div>
+      </section>
+
+      <section className="py-20">
+        <div className="container max-w-5xl mx-auto px-4">
+          <h2 className="text-3xl md:text-4xl font-display font-bold text-center mb-16">
+            A Jornada de Luiz
+          </h2>
+          <div className="space-y-12">
+            {[
+              {
+                year: '2003',
+                title: 'Começou como Vendedor Apaixonado',
+                desc: 'Iniciou com um sonho de trabalhar com carros, aprendendo a base do atendimento e das vendas.',
+              },
+              {
+                year: '2007',
+                title: 'Tornando-se Sócio',
+                desc: 'A oportunidade de ser sócio de uma nova loja surgiu. Um risco calculado que mudou sua trajetória.',
+              },
+              {
+                year: 'Hoje',
+                title: 'CEO da Carro e Cia',
+                desc: '20+ anos de mercado, referência absoluta em Uberaba com o objetivo de ser referência no Brasil.',
+              },
+            ].map((item, i) => (
+              <div key={i} className="flex gap-6 md:gap-12 items-start">
+                <div className="w-24 md:w-32 shrink-0 text-right">
+                  <span className="text-2xl md:text-3xl font-extrabold text-primary">
+                    {item.year}
+                  </span>
                 </div>
-                <div className="p-6 text-center">
-                  <h3 className="font-bold text-xl mb-1 font-display">{member.name}</h3>
-                  <p className="text-primary font-medium mb-4">{member.role}</p>
-                  <p className="text-sm text-muted-foreground leading-relaxed whitespace-normal break-words">
-                    {member.bio}
-                  </p>
+                <div className="w-4 h-4 mt-2.5 rounded-full bg-primary shrink-0 relative z-10 shadow-[0_0_0_4px_hsl(var(--background)),0_0_0_8px_hsl(var(--primary)/0.2)]"></div>
+                <div className="flex-1 pb-12 border-l border-border/50 -ml-[27px] pl-10 md:pl-16 relative top-2.5">
+                  <h3 className="text-2xl font-bold mb-2">{item.title}</h3>
+                  <p className="text-muted-foreground text-lg">{item.desc}</p>
                 </div>
               </div>
             ))}
@@ -126,45 +144,185 @@ export default function Sobre() {
         </div>
       </section>
 
-      <section className="py-20 bg-background">
-        <div className="container">
-          <h2 className="text-3xl md:text-4xl font-display font-bold mb-14 text-center">
-            Nossos Pilares
+      <section className="bg-[#1A1A1A] text-white py-20">
+        <div className="container max-w-6xl mx-auto px-4">
+          <h2 className="text-3xl md:text-4xl font-display font-bold text-center mb-16">
+            Métricas Que Falam
           </h2>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
+            <div>
+              <div className="text-4xl md:text-5xl font-black text-primary mb-2">20+</div>
+              <p className="text-gray-400 font-medium">Anos de mercado</p>
+            </div>
+            <div>
+              <div className="text-4xl md:text-5xl font-black text-primary mb-2">1.000+</div>
+              <p className="text-gray-400 font-medium">Carros consignados</p>
+            </div>
+            <div>
+              <div className="text-4xl md:text-5xl font-black text-primary mb-2">95%+</div>
+              <p className="text-gray-400 font-medium">Clientes satisfeitos</p>
+            </div>
+            <div>
+              <div className="text-4xl md:text-5xl font-black text-primary mb-2">15</div>
+              <p className="text-gray-400 font-medium">Dias para vender (média)</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="py-20">
+        <div className="container max-w-6xl mx-auto px-4">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-4xl font-display font-bold mb-4">
+              O Time da Carro e Cia
+            </h2>
+            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+              Nossa equipe é formada por especialistas dedicados a oferecer a melhor solução.
+            </p>
+          </div>
           <div className="grid md:grid-cols-3 gap-8">
-            <div className="bg-card p-8 rounded-xl border text-center shadow-sm">
-              <div className="w-16 h-16 bg-primary/10 text-primary rounded-full flex items-center justify-center mx-auto mb-6">
-                <Target className="w-8 h-8" aria-hidden="true" />
+            <Card className="overflow-hidden border-border/50">
+              <img
+                src="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/fotos/Luiz-Fernando-foto-profissional.webp"
+                alt="Luiz Fernando"
+                className="w-full h-80 object-cover object-top"
+                loading="lazy"
+              />
+              <div className="p-6">
+                <h3 className="text-2xl font-bold font-display">Luiz Fernando</h3>
+                <p className="text-primary font-medium mb-4">CEO & Fundador</p>
+                <div className="text-sm font-semibold text-muted-foreground mb-3 uppercase tracking-wider">
+                  Apaixonado | Vendedor | Humanista
+                </div>
+                <p className="text-muted-foreground text-sm">
+                  Luiz é o coração da Carro e Cia. Com mais de 20 anos dedicados ao mercado
+                  automotivo, ele aprendeu que cada cliente merece ser ouvido, acolhido e ter a
+                  melhor solução. Sua missão é ser referência em consignação segura no Brasil.
+                </p>
               </div>
-              <h3 className="text-2xl font-bold font-display mb-4">Missão</h3>
-              <p className="text-muted-foreground leading-relaxed">
-                Conectar pessoas ao veículo ideal, oferecendo soluções completas de compra, venda e
-                consignação com segurança, transparência e excelência no atendimento.
+            </Card>
+            <Card className="overflow-hidden border-border/50">
+              <div className="w-full h-80 bg-muted flex items-center justify-center">
+                <span className="text-muted-foreground">Foto em breve</span>
+              </div>
+              <div className="p-6">
+                <h3 className="text-2xl font-bold font-display">Roberto Junior</h3>
+                <p className="text-primary font-medium mb-4">Vendedor Especialista</p>
+                <div className="text-sm font-semibold text-muted-foreground mb-3 uppercase tracking-wider">
+                  Vendas | Relacionamento | Expertise
+                </div>
+                <p className="text-muted-foreground text-sm">
+                  Irmão de Luiz, Roberto continua a tradição de excelência em vendas. Dedicado a
+                  oferecer atendimento personalizado e encontrar o carro certo para cada cliente.
+                </p>
+              </div>
+            </Card>
+            <Card className="overflow-hidden border-border/50">
+              <img
+                src="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/fotos/Ljessica-foto-profissional.webp"
+                alt="Jessica Germano"
+                className="w-full h-80 object-cover object-top"
+                loading="lazy"
+              />
+              <div className="p-6">
+                <h3 className="text-2xl font-bold font-display">Jessica Germano</h3>
+                <p className="text-primary font-medium mb-4">Assistente Financeira</p>
+                <div className="text-sm font-semibold text-muted-foreground mb-3 uppercase tracking-wider">
+                  Precisão | Transparência | Processamento
+                </div>
+                <p className="text-muted-foreground text-sm">
+                  Jessica é a responsável por garantir que cada transação seja transparente, precisa
+                  e ágil. Ela garante que nossas promessas se tornem realidade.
+                </p>
+              </div>
+            </Card>
+          </div>
+        </div>
+      </section>
+
+      <section className="bg-muted/30 py-20 border-y border-border/50">
+        <div className="container max-w-4xl mx-auto px-4 text-center">
+          <h2 className="text-3xl font-display font-bold mb-8">Depoimentos do Time</h2>
+          <div className="grid gap-6 md:grid-cols-2">
+            <Card className="p-6 text-left bg-background shadow-sm">
+              <p className="italic text-muted-foreground mb-4">
+                "Luiz é mais que meu irmão e chefe. É meu mentor. Aprendo com ele que vender é
+                acolher. Clientes não vêm aqui só comprar carro, vêm buscar solução. Isso Luiz
+                oferece melhor que ninguém."
+              </p>
+              <p className="font-bold">- Roberto Junior</p>
+            </Card>
+            <Card className="p-6 text-left bg-background shadow-sm">
+              <p className="italic text-muted-foreground mb-4">
+                "Trabalhar aqui muda sua perspectiva. A humanidade que Luiz coloca nas transações é
+                rara no mercado. A gente não vende carro. A gente resolve problema."
+              </p>
+              <p className="font-bold">- Jessica Germano</p>
+            </Card>
+          </div>
+        </div>
+      </section>
+
+      <section className="py-20 text-center">
+        <div className="container max-w-4xl mx-auto px-4">
+          <h2 className="text-3xl md:text-4xl font-display font-bold mb-6">Pronto Para Confiar?</h2>
+          <p className="text-xl text-muted-foreground mb-10">
+            Conheça Luiz e a Carro e Cia pessoalmente. Venha tomar um café com a gente.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
+            <Button size="lg" className="h-14 px-8 text-lg" asChild>
+              <a href="/contato" onClick={() => trackCTAClick('Visitar Loja', '/sobre')}>
+                <MapPin className="mr-2 w-5 h-5" /> Visitar Loja
+              </a>
+            </Button>
+            <Button size="lg" variant="outline" className="h-14 px-8 text-lg border-2" asChild>
+              <a
+                href={getWhatsAppLink(
+                  'Olá Luiz! Li sua história no site e quero conversar sobre negócios.',
+                )}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => trackCTAClick('Falar com Luiz via WhatsApp', '/sobre')}
+              >
+                <Phone className="mr-2 w-5 h-5 text-[#25D366]" /> Falar com Luiz via WhatsApp
+              </a>
+            </Button>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-6 max-w-3xl mx-auto text-left bg-card p-8 rounded-2xl border border-border/50 shadow-sm">
+            <div>
+              <h4 className="font-bold flex items-center gap-2 mb-2">
+                <MapPin className="w-4 h-4 text-primary" /> Endereço
+              </h4>
+              <p className="text-sm text-muted-foreground">
+                Av. Guilherme Ferreira, 1119
+                <br />
+                Uberaba - MG
               </p>
             </div>
-            <div className="bg-card p-8 rounded-xl border text-center shadow-sm">
-              <div className="w-16 h-16 bg-primary/10 text-primary rounded-full flex items-center justify-center mx-auto mb-6">
-                <Lightbulb className="w-8 h-8" aria-hidden="true" />
-              </div>
-              <h3 className="text-2xl font-bold font-display mb-4">Visão</h3>
-              <p className="text-muted-foreground leading-relaxed">
-                Ser a principal referência em veículos usados de qualidade e procedência em Uberaba
-                e região, expandindo nossa atuação e consolidando a confiança de nossos clientes.
+            <div>
+              <h4 className="font-bold flex items-center gap-2 mb-2">
+                <Mail className="w-4 h-4 text-primary" /> Contato
+              </h4>
+              <p className="text-sm text-muted-foreground">
+                contato@carroeciamotors.com.br
+                <br />
+                (34) 99948-4285
               </p>
             </div>
-            <div className="bg-card p-8 rounded-xl border text-center shadow-sm">
-              <div className="w-16 h-16 bg-primary/10 text-primary rounded-full flex items-center justify-center mx-auto mb-6">
-                <Heart className="w-8 h-8" aria-hidden="true" />
-              </div>
-              <h3 className="text-2xl font-bold font-display mb-4">Valores</h3>
-              <p className="text-muted-foreground leading-relaxed">
-                Confiança, Transparência, Respeito, Excelência, Inovação e Paixão por Veículos e por
-                Pessoas.
+            <div>
+              <h4 className="font-bold flex items-center gap-2 mb-2">
+                <Clock className="w-4 h-4 text-primary" /> Horário
+              </h4>
+              <p className="text-sm text-muted-foreground">
+                Seg-Sex: 9h - 18h
+                <br />
+                Sáb: 9h - 14h
               </p>
             </div>
           </div>
         </div>
       </section>
-    </div>
+    </main>
   )
 }

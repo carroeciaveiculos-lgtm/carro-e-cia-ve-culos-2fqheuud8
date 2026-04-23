@@ -95,6 +95,44 @@ export function Footer() {
           </div>
 
           <div>
+            <h3 className="font-display font-bold text-xl mb-6 text-white">Parceiros</h3>
+            <ul className="flex flex-wrap gap-4 items-center mb-6">
+              <li>
+                <img
+                  src="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/parceiros/Bradesco.webp"
+                  alt="Bradesco"
+                  className="h-6 filter grayscale invert opacity-70 hover:opacity-100 transition-opacity"
+                  loading="lazy"
+                />
+              </li>
+              <li>
+                <img
+                  src="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/parceiros/BV.webp"
+                  alt="BV"
+                  className="h-6 filter grayscale invert opacity-70 hover:opacity-100 transition-opacity"
+                  loading="lazy"
+                />
+              </li>
+              <li>
+                <img
+                  src="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/parceiros/Safra.webp"
+                  alt="Safra"
+                  className="h-6 filter grayscale invert opacity-70 hover:opacity-100 transition-opacity"
+                  loading="lazy"
+                />
+              </li>
+              <li>
+                <img
+                  src="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/parceiros/santander.webp"
+                  alt="Santander"
+                  className="h-6 filter grayscale invert opacity-70 hover:opacity-100 transition-opacity"
+                  loading="lazy"
+                />
+              </li>
+            </ul>
+          </div>
+
+          <div>
             <h3 className="font-display font-bold text-xl mb-6 text-white">Contato</h3>
             <ul className="space-y-4">
               <li className="flex gap-3">

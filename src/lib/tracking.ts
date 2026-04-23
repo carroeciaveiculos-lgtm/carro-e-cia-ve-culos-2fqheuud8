@@ -139,13 +139,35 @@ export const trackConversion = (type: 'whatsapp' | 'ligar' | 'formulario') => {
 export const trackWhatsAppClick = (contactPerson: string, trigger: string) => {
   trackGTMEvent('whatsapp_click', {
     contact_person: contactPerson,
+    whatsapp_number: '5534999484285',
     page_location: typeof window !== 'undefined' ? window.location.href : '',
-    page_title: typeof document !== 'undefined' ? document.title : '',
+    source_page: typeof document !== 'undefined' ? document.title : '',
     trigger: trigger,
   })
   trackMetaEvent('Lead', {
     content_name: 'WhatsApp Click',
     content_category: 'Contato',
+  })
+}
+
+export const trackCTAClick = (
+  buttonText: string,
+  pageLocation: string = typeof window !== 'undefined' ? window.location.href : '',
+) => {
+  trackGTMEvent('cta_click', {
+    button_text: buttonText,
+    page_location: pageLocation,
+    device_type:
+      typeof navigator !== 'undefined' && /mobile|tablet/i.test(navigator.userAgent)
+        ? 'mobile'
+        : 'desktop',
+  })
+}
+
+export const trackImageLoad = (imageName: string, loadTime: number) => {
+  trackGTMEvent('image_loaded', {
+    image_name: imageName,
+    load_time: loadTime,
   })
 }
 

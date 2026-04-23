@@ -1,61 +1,66 @@
-import { useState } from 'react'
-import { MapPin, Phone, Mail, Instagram, Facebook } from 'lucide-react'
+import { SEO } from '@/components/SEO'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Card } from '@/components/ui/card'
+import { getWhatsAppLink } from '@/lib/whatsapp'
+import { Phone, Mail, MessageCircle, MapPin, Clock, Instagram, Facebook } from 'lucide-react'
+import { useState } from 'react'
 import { useToast } from '@/hooks/use-toast'
+import { trackCTAClick, trackFormSubmission } from '@/lib/tracking'
 import { supabase } from '@/lib/supabase/client'
-import { SEO } from '@/components/SEO'
 
 export default function Contato() {
-  const [loading, setLoading] = useState(false)
   const { toast } = useToast()
+  const [loading, setLoading] = useState(false)
   const [formData, setFormData] = useState({
     nome: '',
     email: '',
     telefone: '',
     assunto: '',
     mensagem: '',
+    prefere_whatsapp: false,
   })
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
     try {
-      const { error } = await supabase.from('leads').insert([
-        {
-          nome: formData.nome,
-          email: formData.email,
-          telefone: formData.telefone,
-          tipo: 'contato',
-          origem: 'site',
-          observacoes: `Assunto: ${formData.assunto}\nMensagem: ${formData.mensagem}`,
-          status: 'novo',
-        },
-      ])
-
+      const { error } = await supabase.from('leads').insert({
+        nome: formData.nome,
+        email: formData.email,
+        telefone: formData.telefone.replace(/\D/g, ''),
+        tipo: 'contato',
+        origem: 'Página Contato',
+        observacoes: `Assunto: ${formData.assunto}\nPrefere WhatsApp: ${formData.prefere_whatsapp}\nMensagem: ${formData.mensagem}`,
+      })
       if (error) throw error
-
-      await supabase.functions.invoke('send-lead-email', {
-        body: {
-          nome: formData.nome,
-          telefone: formData.telefone,
-          email: formData.email,
-          veiculo: 'Contato Geral',
-          mensagem: `Assunto: ${formData.assunto}\nMensagem: ${formData.mensagem}`,
-          origem: 'Site - Contato',
-        },
-      })
-
+      trackFormSubmission(formData.assunto, 'formulario_contato')
       toast({
-        title: 'Mensagem Enviada!',
-        description: 'Sua mensagem foi enviada com sucesso! Em breve entraremos em contato.',
+        title: 'Mensagem enviada com sucesso!',
+        description: 'Obrigado! Entraremos em contato em até 2 horas.',
       })
-      setFormData({ nome: '', email: '', telefone: '', assunto: '', mensagem: '' })
+      setFormData({
+        nome: '',
+        email: '',
+        telefone: '',
+        assunto: '',
+        mensagem: '',
+        prefere_whatsapp: false,
+      })
     } catch (err) {
       toast({
         title: 'Erro ao enviar',
-        description: 'Não foi possível enviar sua mensagem. Tente novamente.',
+        description: 'Tente novamente ou chame no WhatsApp.',
         variant: 'destructive',
       })
     } finally {
@@ -64,186 +69,354 @@ export default function Contato() {
   }
 
   return (
-    <div className="flex flex-col min-h-screen bg-background">
+    <main className="flex-1 bg-background pt-24 pb-16">
       <SEO
-        title="Entre em Contato | Carro e Cia Veículos"
-        description="Entre em contato com a Carro e Cia Veículos. Telefone, WhatsApp e endereço. Estamos localizados em Uberaba, MG."
+        title="Contato Carro e Cia | WhatsApp, Email, Telefone - Uberaba"
+        description="Entre em contato com Carro e Cia. WhatsApp, email, telefone, mapa. Resposta rápida, atendimento humanizado, soluções certas."
+        canonical="https://carroeciamotors.com.br/contato"
       />
-      <section className="bg-secondary text-white py-20 text-center">
-        <div className="container">
-          <h1 className="text-4xl md:text-5xl font-display font-extrabold mb-6">Fale Conosco</h1>
-          <p className="text-lg text-gray-300 max-w-2xl mx-auto">
-            Estamos prontos para te atender. Envie sua mensagem ou entre em contato pelos nossos
-            canais diretos.
-          </p>
+
+      <section className="container max-w-5xl mx-auto px-4 mb-20 text-center">
+        <h1 className="text-4xl md:text-6xl font-display font-extrabold mb-4">Vamos Conversar?</h1>
+        <p className="text-xl text-muted-foreground mb-12">
+          Escolha o melhor jeito de entrar em contato conosco
+        </p>
+
+        <div className="grid md:grid-cols-3 gap-6">
+          <Button
+            size="lg"
+            className="h-20 text-lg bg-[#25D366] hover:bg-[#20bd5a] text-white flex flex-col gap-1 items-center justify-center p-4 h-auto"
+            asChild
+          >
+            <a
+              href={getWhatsAppLink('Olá, gostaria de falar com a Carro e Cia.')}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => trackCTAClick('WhatsApp Luiz', '/contato')}
+            >
+              <span className="flex items-center font-bold text-xl">
+                <MessageCircle className="mr-2 w-6 h-6" /> WhatsApp Luiz
+              </span>
+              <span className="text-sm font-normal opacity-90">
+                Resposta rápida (máximo 2 horas)
+              </span>
+            </a>
+          </Button>
+          <Button
+            size="lg"
+            className="h-20 text-lg flex flex-col gap-1 items-center justify-center p-4 h-auto"
+            asChild
+          >
+            <a
+              href="mailto:contato@carroeciamotors.com.br"
+              onClick={() => trackCTAClick('Enviar Email', '/contato')}
+            >
+              <span className="flex items-center font-bold text-xl">
+                <Mail className="mr-2 w-6 h-6" /> Enviar Email
+              </span>
+              <span className="text-sm font-normal opacity-90">
+                Consulta escrita + resposta em 24h
+              </span>
+            </a>
+          </Button>
+          <Button
+            size="lg"
+            variant="outline"
+            className="h-20 text-lg border-2 flex flex-col gap-1 items-center justify-center p-4 h-auto"
+            asChild
+          >
+            <a
+              href="tel:+5534999484285"
+              onClick={() => trackCTAClick('Ligação Direta', '/contato')}
+            >
+              <span className="flex items-center font-bold text-xl">
+                <Phone className="mr-2 w-6 h-6" /> Ligação Direta
+              </span>
+              <span className="text-sm font-normal opacity-90 text-muted-foreground">
+                Fale com Luiz agora
+              </span>
+            </a>
+          </Button>
         </div>
       </section>
 
-      <section className="py-20">
-        <div className="container">
-          <div className="grid lg:grid-cols-[1fr_400px] gap-12">
-            <div className="bg-card rounded-2xl p-8 border shadow-sm">
-              <h2 className="text-3xl font-display font-bold mb-8">Envie Sua Mensagem</h2>
-              <form onSubmit={handleSubmit} className="space-y-6" data-event="contato">
-                <div className="grid sm:grid-cols-2 gap-6">
-                  <div>
-                    <label className="text-sm font-medium mb-2 block">Nome completo *</label>
+      <section className="container max-w-6xl mx-auto px-4 mb-20">
+        <div className="grid lg:grid-cols-5 gap-12">
+          <div className="lg:col-span-2 space-y-6">
+            <h2 className="text-2xl font-display font-bold mb-6">Informações de Contato</h2>
+
+            <Card className="p-6 border-border/50 shadow-sm">
+              <h3 className="font-bold text-lg text-primary mb-1">Luiz Fernando</h3>
+              <p className="text-sm text-muted-foreground mb-4">Consignação e Vendas</p>
+              <ul className="space-y-3 text-sm">
+                <li className="flex items-center gap-2">
+                  <MessageCircle className="w-4 h-4 text-[#25D366]" />{' '}
+                  <a href="https://wa.me/5534999484285" className="hover:underline">
+                    (34) 99948-4285
+                  </a>
+                </li>
+                <li className="flex items-center gap-2">
+                  <Mail className="w-4 h-4" /> luiz@carroeciamotors.com.br
+                </li>
+                <li className="flex items-center gap-2">
+                  <Clock className="w-4 h-4" /> Seg-Sab, 9h-18h
+                </li>
+              </ul>
+            </Card>
+
+            <Card className="p-6 border-border/50 shadow-sm">
+              <h3 className="font-bold text-lg text-primary mb-1">Gabriel Araújo</h3>
+              <p className="text-sm text-muted-foreground mb-4">Seguros Km Zero e Financiamento</p>
+              <ul className="space-y-3 text-sm">
+                <li className="flex items-center gap-2">
+                  <MessageCircle className="w-4 h-4 text-[#25D366]" />{' '}
+                  <a href="https://wa.me/5534992000300" className="hover:underline">
+                    (34) 99200-0300
+                  </a>
+                </li>
+                <li className="flex items-center gap-2">
+                  <Mail className="w-4 h-4" /> gabriel@kmzero.com.br
+                </li>
+                <li className="flex items-center gap-2">
+                  <Clock className="w-4 h-4" /> Seg-Sex, 9h-18h
+                </li>
+              </ul>
+            </Card>
+
+            <Card className="p-6 border-border/50 shadow-sm">
+              <h3 className="font-bold text-lg text-primary mb-1">Jessica Germano</h3>
+              <p className="text-sm text-muted-foreground mb-4">Documentação e Financeiro</p>
+              <ul className="space-y-3 text-sm">
+                <li className="flex items-center gap-2">
+                  <MessageCircle className="w-4 h-4 text-[#25D366]" />{' '}
+                  <a href="https://wa.me/5534998037651" className="hover:underline">
+                    (34) 99803-7651
+                  </a>
+                </li>
+                <li className="flex items-center gap-2">
+                  <Mail className="w-4 h-4" /> jessica@carroeciamotors.com.br
+                </li>
+                <li className="flex items-center gap-2">
+                  <Clock className="w-4 h-4" /> Seg-Sex, 8h-17h
+                </li>
+              </ul>
+            </Card>
+          </div>
+
+          <div className="lg:col-span-3">
+            <Card className="p-8 shadow-lg border-border/50 bg-card h-full">
+              <h2 className="text-2xl font-display font-bold mb-6">Mande Sua Mensagem</h2>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="nome">Nome Completo *</Label>
                     <Input
+                      id="nome"
                       required
                       value={formData.nome}
                       onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
-                      className="h-12"
+                      placeholder="Seu nome"
                     />
                   </div>
-                  <div>
-                    <label className="text-sm font-medium mb-2 block">E-mail *</label>
+                  <div className="space-y-2">
+                    <Label htmlFor="telefone">Telefone/WhatsApp *</Label>
                     <Input
+                      id="telefone"
+                      required
+                      value={formData.telefone}
+                      onChange={(e) => setFormData({ ...formData, telefone: e.target.value })}
+                      placeholder="(34) 99999-9999"
+                    />
+                  </div>
+                </div>
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="email">E-mail *</Label>
+                    <Input
+                      id="email"
                       type="email"
                       required
                       value={formData.email}
                       onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                      className="h-12"
+                      placeholder="seu@email.com"
                     />
                   </div>
-                </div>
-                <div className="grid sm:grid-cols-2 gap-6">
-                  <div>
-                    <label className="text-sm font-medium mb-2 block">WhatsApp *</label>
-                    <Input
-                      required
-                      value={formData.telefone}
-                      onChange={(e) => setFormData({ ...formData, telefone: e.target.value })}
-                      className="h-12"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium mb-2 block">Assunto *</label>
-                    <Input
-                      required
+                  <div className="space-y-2">
+                    <Label htmlFor="assunto">Assunto *</Label>
+                    <Select
                       value={formData.assunto}
-                      onChange={(e) => setFormData({ ...formData, assunto: e.target.value })}
-                      className="h-12"
-                    />
+                      onValueChange={(v) => setFormData({ ...formData, assunto: v })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="consignar">Quero consignar meu carro</SelectItem>
+                        <SelectItem value="comprar">Quero comprar um carro</SelectItem>
+                        <SelectItem value="duvida">Tenho dúvida sobre consignação</SelectItem>
+                        <SelectItem value="parceria">Parceria / Negócio</SelectItem>
+                        <SelectItem value="outro">Outro</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
-                <div>
-                  <label className="text-sm font-medium mb-2 block">Mensagem *</label>
+                <div className="space-y-2">
+                  <Label htmlFor="mensagem">Sua Mensagem</Label>
                   <Textarea
-                    required
+                    id="mensagem"
+                    rows={4}
                     value={formData.mensagem}
                     onChange={(e) => setFormData({ ...formData, mensagem: e.target.value })}
-                    className="min-h-[150px] resize-none"
+                    placeholder="Como podemos ajudar?"
                   />
                 </div>
-                <Button type="submit" size="lg" className="w-full text-lg h-14" disabled={loading}>
+                <div className="flex items-center space-x-2 pt-2">
+                  <Checkbox
+                    id="whatsapp"
+                    checked={formData.prefere_whatsapp}
+                    onCheckedChange={(c) => setFormData({ ...formData, prefere_whatsapp: !!c })}
+                  />
+                  <Label htmlFor="whatsapp" className="text-sm font-normal">
+                    Prefiro que entrem em contato por WhatsApp
+                  </Label>
+                </div>
+                <Button
+                  type="submit"
+                  className="w-full h-12 text-lg mt-4 bg-[#25D366] hover:bg-[#20bd5a] text-white"
+                  disabled={loading}
+                >
                   {loading ? 'Enviando...' : 'Enviar Mensagem'}
                 </Button>
               </form>
-            </div>
-
-            <div className="space-y-8">
-              <div>
-                <h2 className="text-2xl font-display font-bold mb-6">Nossos Contatos</h2>
-                <div className="space-y-6">
-                  <div className="flex gap-4 items-start">
-                    <div className="w-12 h-12 shrink-0 bg-primary/10 rounded-full flex items-center justify-center text-primary">
-                      <MapPin className="w-6 h-6" />
-                    </div>
-                    <div>
-                      <h3 className="font-bold mb-1 text-base">Endereço</h3>
-                      <p className="text-muted-foreground text-sm leading-relaxed">
-                        Av. Guilherme Ferreira, 1119
-                        <br />
-                        São Benedito, Uberaba - MG
-                        <br />
-                        CEP: 38022-200
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex gap-4 items-start">
-                    <div className="w-12 h-12 shrink-0 bg-[#25D366]/10 rounded-full flex items-center justify-center text-[#25D366]">
-                      <Phone className="w-6 h-6" />
-                    </div>
-                    <div>
-                      <h3 className="font-bold mb-1 text-base">WhatsApp</h3>
-                      <a
-                        href="https://wa.me/5534999484285?text=Ol%C3%A1!%20Vim%20pelo%20site%20e%20gostaria%20de%20mais%20informa%C3%A7%C3%B5es."
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-muted-foreground hover:text-primary transition-colors"
-                        aria-label="Chamar no WhatsApp"
-                      >
-                        {' '}
-                        (34) 99948-4285
-                      </a>
-                    </div>
-                  </div>
-                  <div className="flex gap-4 items-start">
-                    <div className="w-12 h-12 shrink-0 bg-primary/10 rounded-full flex items-center justify-center text-primary">
-                      <Mail className="w-6 h-6" />
-                    </div>
-                    <div>
-                      <h3 className="font-bold mb-1 text-base">E-mail</h3>
-                      <a
-                        href="mailto:lgacomerciodeveiculos@gmail.com"
-                        className="text-muted-foreground hover:text-primary transition-colors text-sm break-all"
-                        aria-label="Enviar email para lgacomerciodeveiculos@gmail.com"
-                      >
-                        lgacomerciodeveiculos@gmail.com
-                      </a>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="pt-8 border-t">
-                <h2 className="text-xl font-display font-bold mb-4">Redes Sociais</h2>
-                <div className="flex gap-4">
-                  <a
-                    href="https://instagram.com/carroecia02"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    aria-label="Siga-nos no Instagram"
-                    className="w-12 h-12 bg-secondary text-secondary-foreground rounded-full flex items-center justify-center hover:bg-primary hover:text-primary-foreground transition-colors"
-                  >
-                    <Instagram className="w-5 h-5" aria-hidden="true" />
-                  </a>
-                  <a
-                    href="https://www.facebook.com/carroeciaosmelhoresveiculos"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    aria-label="Siga-nos no Facebook"
-                    className="w-12 h-12 bg-secondary text-secondary-foreground rounded-full flex items-center justify-center hover:bg-primary hover:text-primary-foreground transition-colors"
-                  >
-                    <Facebook className="w-5 h-5" aria-hidden="true" />
-                  </a>
-                </div>
-              </div>
-            </div>
+            </Card>
           </div>
+        </div>
+      </section>
 
-          <div className="mt-16 space-y-6">
-            <div className="rounded-xl overflow-hidden shadow-[0_4px_12px_rgba(0,0,0,0.1)]">
+      <section className="bg-muted/30 py-20 border-y border-border/50">
+        <div className="container max-w-6xl mx-auto px-4">
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            <div>
+              <h2 className="text-3xl font-display font-bold mb-6">Nossa Localização</h2>
+              <div className="bg-card p-6 rounded-xl border shadow-sm mb-6">
+                <div className="flex items-start gap-3 mb-4">
+                  <MapPin className="w-6 h-6 text-primary shrink-0 mt-1" />
+                  <div>
+                    <h3 className="font-bold text-lg">Carro e Cia Veículos</h3>
+                    <p className="text-muted-foreground">
+                      Av. Guilherme Ferreira, 1119
+                      <br />
+                      São Benedito, Uberaba - MG
+                      <br />
+                      CEP 38022-200
+                      <br />
+                      Brasil
+                    </p>
+                  </div>
+                </div>
+                <div className="flex gap-3">
+                  <Button variant="outline" asChild>
+                    <a
+                      href="https://maps.google.com/?q=Carro+e+Cia+Veículos+Uberaba"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      Ver no Google Maps
+                    </a>
+                  </Button>
+                </div>
+              </div>
+
+              <h3 className="font-bold text-xl mb-4">Horário de Funcionamento</h3>
+              <ul className="space-y-2 mb-6 text-muted-foreground">
+                <li className="flex justify-between">
+                  <span>Segunda a Sexta</span>{' '}
+                  <span className="font-medium text-foreground">9:00 - 18:00</span>
+                </li>
+                <li className="flex justify-between">
+                  <span>Sábado</span>{' '}
+                  <span className="font-medium text-foreground">9:00 - 14:00</span>
+                </li>
+                <li className="flex justify-between">
+                  <span>Domingo e Feriados</span>{' '}
+                  <span className="font-medium text-foreground">Fechado</span>
+                </li>
+              </ul>
+              <p className="text-sm bg-primary/10 text-primary p-3 rounded-lg">
+                <strong>Nota:</strong> Consultas após-horário? Mande um WhatsApp que respondemos
+                assim que possível!
+              </p>
+            </div>
+
+            <div className="h-[400px] rounded-2xl overflow-hidden shadow-lg">
               <iframe
-                title="Mapa interativo mostrando a localização da loja Carro e Cia Veículos"
+                title="Mapa Carro e Cia"
                 src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3754.8879051323597!2d-47.93789018845835!3d-19.759916581513842!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x94bad1b54ff23a55%3A0x1d3108bae712d85d!2sCarro%20e%20Cia%20Com%C3%A9rcio%20de%20Ve%C3%ADculos!5e0!3m2!1spt-BR!2sbr!4v1776692231909!5m2!1spt-BR!2sbr"
                 width="100%"
-                className="h-[280px] md:h-[420px] border-0"
-                allowFullScreen
+                height="100%"
+                className="border-0"
+                allowFullScreen={false}
                 loading="lazy"
                 referrerPolicy="no-referrer-when-downgrade"
               ></iframe>
             </div>
-            <div className="text-center text-muted-foreground bg-muted/30 p-6 rounded-xl border">
-              <p className="font-medium text-foreground mb-2">
-                📍 Av. Guilherme Ferreira, 1119 - São Benedito, Uberaba - MG · CEP 38022-200
-              </p>
-              <p className="mb-2">⏰ Seg a Sex: 8h às 18h | Sábado: 8h às 13h</p>
-              <p className="font-bold text-primary">📱 WhatsApp: (34) 99948-4285</p>
-            </div>
           </div>
         </div>
       </section>
-    </div>
+
+      <section className="py-20 text-center container max-w-4xl mx-auto px-4">
+        <h2 className="text-3xl font-display font-bold mb-6">Por Que Esperar?</h2>
+        <div className="flex flex-wrap justify-center gap-4 mb-10">
+          <Badge variant="secondary" className="text-sm py-2 px-4">
+            ✅ Resposta Rápida (Máx 2h)
+          </Badge>
+          <Badge variant="secondary" className="text-sm py-2 px-4">
+            ✅ Consulta Gratuita
+          </Badge>
+          <Badge variant="secondary" className="text-sm py-2 px-4">
+            ✅ Atendimento Humanizado
+          </Badge>
+          <Badge variant="secondary" className="text-sm py-2 px-4">
+            ✅ Soluções Certas
+          </Badge>
+        </div>
+        <Button
+          size="lg"
+          className="h-14 px-10 text-lg bg-[#25D366] hover:bg-[#20bd5a] text-white"
+          asChild
+        >
+          <a
+            href={getWhatsAppLink('Olá! Quero conhecer mais sobre os serviços da loja.')}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => trackCTAClick('Vamos lá, mande sua mensagem!', '/contato')}
+          >
+            Vamos lá, mande sua mensagem!
+          </a>
+        </Button>
+
+        <div className="mt-16 flex justify-center gap-6">
+          <a
+            href="https://www.instagram.com/carroecia02"
+            className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <Instagram /> Instagram
+          </a>
+          <a
+            href="https://www.facebook.com/carroeciaosmelhoresveiculos"
+            className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <Facebook /> Facebook
+          </a>
+        </div>
+        <p className="text-sm text-muted-foreground mt-4">
+          Dica: No Instagram você vê nossos carros em destaque!
+        </p>
+      </section>
+    </main>
   )
 }
