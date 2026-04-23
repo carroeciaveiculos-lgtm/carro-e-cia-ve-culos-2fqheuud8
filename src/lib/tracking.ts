@@ -1,3 +1,64 @@
+// Fix global para suprimir falhas de rede em integrações de tracking (AdBlockers/CORS)
+// impedindo que quebrem a UI no ambiente de preview ou gerem erros no console
+if (typeof window !== 'undefined') {
+  const isPreview = window.location.hostname.includes('goskip.app')
+
+  const originalFetch = window.fetch
+  window.fetch = async function (...args) {
+    const url =
+      typeof args[0] === 'string' ? args[0] : args[0] && 'url' in args[0] ? args[0].url : ''
+    const isTracker =
+      url &&
+      typeof url === 'string' &&
+      (url.includes('google.com/measurement') ||
+        url.includes('google-analytics.com') ||
+        url.includes('analytics.google.com') ||
+        url.includes('facebook.com/tr') ||
+        url.includes('googleadservices.com'))
+
+    if (isTracker) {
+      if (isPreview || !navigator.onLine) {
+        return new Response(JSON.stringify({ success: true }), { status: 200, statusText: 'OK' })
+      }
+      try {
+        const response = await originalFetch.apply(this, args)
+        if (!response.ok || response.status === 0) {
+          return new Response(JSON.stringify({ success: true }), { status: 200, statusText: 'OK' })
+        }
+        return response
+      } catch (e) {
+        console.debug('Tracking fetch silently failed')
+        return new Response(JSON.stringify({ success: true }), { status: 200, statusText: 'OK' })
+      }
+    }
+    return originalFetch.apply(this, args)
+  }
+
+  const originalSendBeacon = navigator.sendBeacon
+  if (navigator.sendBeacon) {
+    navigator.sendBeacon = function (url, data) {
+      const isTracker =
+        typeof url === 'string' &&
+        (url.includes('google.com/measurement') ||
+          url.includes('google-analytics.com') ||
+          url.includes('analytics.google.com') ||
+          url.includes('facebook.com/tr') ||
+          url.includes('googleadservices.com'))
+
+      if (isTracker) {
+        if (isPreview || !navigator.onLine) return true
+        try {
+          return originalSendBeacon.call(this, url, data)
+        } catch (e) {
+          console.debug('Tracking beacon silently failed')
+          return true
+        }
+      }
+      return originalSendBeacon.call(this, url, data)
+    }
+  }
+}
+
 export const trackGTMEvent = (eventName: string, data: Record<string, any> = {}) => {
   if (typeof window !== 'undefined') {
     try {
