@@ -1,20 +1,29 @@
 export const trackGTMEvent = (eventName: string, data: Record<string, any> = {}) => {
   if (typeof window !== 'undefined') {
-    const w = window as any
-    w.dataLayer = w.dataLayer || []
-    w.dataLayer.push({
-      event: eventName,
-      ...data,
-    })
+    try {
+      const w = window as any
+      w.dataLayer = w.dataLayer || []
+      w.dataLayer.push({
+        event: eventName,
+        ...data,
+      })
+    } catch (e) {
+      // Falha tratada silenciosamente para evitar quebra de fluxo
+      console.debug('GTM event tracking silently failed')
+    }
   }
 }
 
 export const trackMetaEvent = (eventName: string, data?: Record<string, any>) => {
   if (typeof window !== 'undefined' && (window as any).fbq) {
-    if (data) {
-      ;(window as any).fbq('track', eventName, data)
-    } else {
-      ;(window as any).fbq('track', eventName)
+    try {
+      if (data) {
+        ;(window as any).fbq('track', eventName, data)
+      } else {
+        ;(window as any).fbq('track', eventName)
+      }
+    } catch (e) {
+      console.debug('Meta event tracking silently failed')
     }
   }
 }
@@ -22,17 +31,25 @@ export const trackMetaEvent = (eventName: string, data?: Record<string, any>) =>
 // Mantenho legacy trackConversion para retrocompatibilidade onde não atualizado
 export const trackConversion = (type: 'whatsapp' | 'ligar' | 'formulario') => {
   if (typeof window !== 'undefined' && (window as any).gtag) {
-    const codes = {
-      whatsapp: 'AW-18085065720/whatsapp_click',
-      ligar: 'AW-18085065720/ligar_click',
-      formulario: 'AW-18085065720/form_submit',
+    try {
+      const codes = {
+        whatsapp: 'AW-18085065720/whatsapp_click',
+        ligar: 'AW-18085065720/ligar_click',
+        formulario: 'AW-18085065720/form_submit',
+      }
+      ;(window as any).gtag('event', 'conversion', {
+        send_to: codes[type],
+      })
+    } catch (e) {
+      console.debug('Google Ads conversion tracking silently failed')
     }
-    ;(window as any).gtag('event', 'conversion', {
-      send_to: codes[type],
-    })
   }
   if (type === 'whatsapp') {
-    trackWhatsAppClick('Luiz', 'legacy_button')
+    try {
+      trackWhatsAppClick('Luiz', 'legacy_button')
+    } catch (e) {
+      console.debug('WhatsApp click tracking silently failed')
+    }
   }
 }
 
@@ -82,15 +99,19 @@ export const trackSimulation = (
 }
 
 export const trackFormSubmission = (vehicleName: string, formType: string) => {
-  trackGTMEvent('formulario_interesse_enviado', {
-    vehicle_name: vehicleName,
-    form_type: formType,
-  })
-  trackMetaEvent('Contact')
+  try {
+    trackGTMEvent('formulario_interesse_enviado', {
+      vehicle_name: vehicleName,
+      form_type: formType,
+    })
+    trackMetaEvent('Contact')
 
-  // Disparo pro Google Ads também
-  if (typeof window !== 'undefined' && (window as any).gtag) {
-    ;(window as any).gtag('event', 'conversion', { send_to: 'AW-18085065720/form_submit' })
+    // Disparo pro Google Ads também
+    if (typeof window !== 'undefined' && (window as any).gtag) {
+      ;(window as any).gtag('event', 'conversion', { send_to: 'AW-18085065720/form_submit' })
+    }
+  } catch (e) {
+    console.debug('Google Ads form conversion tracking silently failed')
   }
 }
 
