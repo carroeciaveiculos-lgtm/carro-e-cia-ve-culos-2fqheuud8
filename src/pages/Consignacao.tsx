@@ -41,13 +41,12 @@ export default function Consignacao() {
             <p className="text-xl text-muted-foreground leading-relaxed">
               Venda em dias, não em meses. Contrato protetor. Você não se preocupa.
             </p>
-            </div>
           </div>
           <div className="relative z-10 w-full max-w-md mx-auto">
             <div className="bg-card border rounded-xl shadow-2xl p-8 text-left">
-              <ConsignacaoLPForm 
-                title="Venda seu carro mais rápido" 
-                subtitle="Deixe os detalhes com a gente. Preencha abaixo para uma avaliação sem compromisso." 
+              <ConsignacaoLPForm
+                title="Venda seu carro mais rápido"
+                subtitle="Deixe os detalhes com a gente. Preencha abaixo para uma avaliação sem compromisso."
               />
             </div>
           </div>
