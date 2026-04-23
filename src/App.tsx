@@ -5,6 +5,27 @@ import { Toaster as Sonner } from '@/components/ui/sonner'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { AuthProvider } from '@/hooks/use-auth'
 
+// Fix global para erro do html-to-image (e scripts de terceiros) ao ler cssRules cross-origin
+if (typeof window !== 'undefined' && typeof CSSStyleSheet !== 'undefined') {
+  const originalCssRules = Object.getOwnPropertyDescriptor(CSSStyleSheet.prototype, 'cssRules')
+  if (originalCssRules) {
+    Object.defineProperty(CSSStyleSheet.prototype, 'cssRules', {
+      get() {
+        try {
+          return originalCssRules.get ? originalCssRules.get.call(this) : []
+        } catch (e: any) {
+          if (e.name === 'SecurityError') {
+            return []
+          }
+          throw e
+        }
+      },
+      enumerable: originalCssRules.enumerable,
+      configurable: originalCssRules.configurable,
+    })
+  }
+}
+
 const DomainRedirect = () => {
   useEffect(() => {
     if (typeof window !== 'undefined') {
