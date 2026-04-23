@@ -71,16 +71,38 @@ export default function VenderMeuCarro() {
 
       <section className="relative min-h-[90vh] flex items-center pt-24 pb-16">
         <div className="absolute inset-0 z-0">
-          <img
-            src="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Fotos/fachada%20da%20loja.jpeg"
-            alt="Fachada Carro e Cia Veículos Uberaba MG"
-            width="1920"
-            height="1080"
-            fetchPriority="high"
-            loading="eager"
-            decoding="async"
-            className="w-full h-full object-cover object-center"
-          />
+          <picture className="w-full h-full block">
+            <source
+              media="(max-width: 768px)"
+              srcSet="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Fotos/Formato%20webp/fachada-mobile.webp"
+              type="image/webp"
+            />
+            <source
+              media="(max-width: 768px)"
+              srcSet="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Fotos/fachada-mobile.jpg"
+              type="image/jpeg"
+            />
+            <source
+              media="(min-width: 769px)"
+              srcSet="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Fotos/Formato%20webp/fachada-da-loja.webp"
+              type="image/webp"
+            />
+            <source
+              media="(min-width: 769px)"
+              srcSet="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Fotos/fachada%20da%20loja.jpeg"
+              type="image/jpeg"
+            />
+            <img
+              src="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Fotos/fachada%20da%20loja.jpeg"
+              alt="Fachada Carro e Cia Veículos Uberaba MG"
+              width="1920"
+              height="1080"
+              loading="lazy"
+              decoding="async"
+              className="w-full h-full object-cover object-center"
+              style={{ aspectRatio: '16/9' }}
+            />
+          </picture>
           <div className="absolute inset-0 bg-black/60" />
         </div>
         <div className="container relative z-10 grid lg:grid-cols-2 gap-12 items-center">
