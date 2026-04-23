@@ -12,7 +12,7 @@ BEGIN
     'consorcio-ou-financiamento-carro',
     'Financiamento',
     'Descubra as diferenças entre consórcio e financiamento de carro em 2026. Juros, prazos, lance e parcelas comparados. Guia completo da Carro e Cia Veículos em Uberaba.',
-    $$
+    '
 <p>Essa é a dúvida que mais paralisa quem está prestes a comprar um veículo: consórcio ou financiamento? Cada um tem vantagens reais — e a escolha errada pode custar até R$20.000 a mais ao longo dos anos.</p>
 <p>Neste artigo, a Carro e Cia Veículos — referência em Uberaba há mais de 20 anos — explica as diferenças de forma clara, com exemplos práticos e sem enrolação. Porque a melhor decisão é sempre a mais informada.</p>
 <p>Continue lendo e descubra qual opção combina com o seu momento financeiro em 2026.</p>
@@ -53,7 +53,7 @@ BEGIN
 <p>O consórcio é a escolha mais inteligente se você pode aguardar. É excelente para quem quer economizar no longo prazo fugindo dos juros, possui um veículo atual para dar como lance ou apenas planeja a troca de carro com bastante antecedência.</p>
 
 <h2>O papel da Carro e Cia e da Km Zero nessa decisão</h2>
-<p>Aqui, você tem orientação completa. O Luiz Fernando auxilia sobre financiamento, buscando aprovação rápida com as melhores taxas do mercado. Já a Adriana Araújo, da Km Zero Corretora, orienta sobre consórcio, formando a parceria perfeita sem nenhum conflito de interesse.</p>
+<p>Aqui, você tem orientação completa. O Luiz Fernando auxilia sobre financiamento, buscando aprovação rápida com as melhores taxas do mercado. Já a Adriana Araújo, da Km Zero Corretora, orienta sobre consórcio, forming a parceria perfeita sem nenhum conflito de interesse.</p>
 
 <h2>Como tomar a decisão certa para o seu caso?</h2>
 <p>Antes de decidir, responda: 1) Qual a minha real urgência para pegar o carro? 2) Quanto tenho disponível hoje para entrada ou lance? 3) Posso comprometer minha renda com parcelas maiores? 4) Estou disposto a pagar juros para ter o carro agora?</p>
@@ -152,7 +152,7 @@ BEGIN
   ]
 }
 </script>
-    $$,
+    ',
     'Carro e Cia Veículos — Uberaba MG',
     '8 min',
     'https://img.usecurling.com/p/1200/630?q=car%20financing',
@@ -169,7 +169,7 @@ BEGIN
     'como-vender-carro-rapido-uberaba',
     'Vender Carro',
     'Descubra como vender seu carro rápido em Uberaba com segurança. Consignação, documentação, precificação e dicas práticas da Carro e Cia Veículos.',
-    $$
+    '
 <p>Vender um carro sozinho parece simples — até você receber a primeira ligação de um desconhecido às 22h pedindo para testar o veículo na mesma hora. A realidade de quem tenta vender o próprio carro inclui golpes, perda de tempo e muita dificuldade em precificar.</p>
 <p>Existe um caminho mais seguro: a consignação de veículos com a Carro e Cia Veículos em Uberaba. Você entrega o carro para quem tem estrutura, clientes qualificados e experiência para vender por você — sem risco e com contrato.</p>
 <p>Neste guia, explicamos cada etapa do processo e por que a consignação é a escolha mais inteligente para quem quer vender rápido e bem.</p>
@@ -269,7 +269,7 @@ BEGIN
   ]
 }
 </script>
-    $$,
+    ',
     'Carro e Cia Veículos — Uberaba MG',
     '7 min',
     'https://img.usecurling.com/p/1200/630?q=selling%20car',
@@ -286,7 +286,7 @@ BEGIN
     'carro-usado-ou-novo',
     'Comprar Carro',
     'Carro usado ou novo? Descubra vantagens, desvantagens e custos reais de cada opção. Guia honesto da Carro e Cia Veículos para você tomar a melhor decisão.',
-    $$
+    '
 <p>Todo mundo opina. Seu cunhado diz que novo é melhor. Seu colega de trabalho jura que usado é mais esperto. E você fica no meio, sem saber em quem confiar. A verdade é que a resposta depende do seu perfil — e este artigo vai te ajudar a descobrir qual é o seu.</p>
 <p>Preparamos um guia definitivo mostrando a depreciação, as vantagens reais, os custos invisíveis e os perfis ideais para cada tipo de escolha. Sem enrolação e direto ao ponto.</p>
 
@@ -375,7 +375,7 @@ BEGIN
   ]
 }
 </script>
-    $$,
+    ',
     'Carro e Cia Veículos — Uberaba MG',
     '8 min',
     'https://img.usecurling.com/p/1200/630?q=new%20vs%20used%20car',
@@ -392,7 +392,7 @@ BEGIN
     'o-que-e-consignacao-de-veiculo',
     'Consignação',
     'Entenda o que é consignação de veículo, como funciona o contrato, quais são os riscos e vantagens de consignar seu carro na Carro e Cia em Uberaba.',
-    $$
+    '
 <p>Você já ouviu falar em consignação de veículo mas não entendeu exatamente como funciona? Você não está sozinho. Muita gente confunde com financiamento, com comodato ou simplesmente desconhece essa opção.</p>
 <p>A verdade é que a consignação pode ser a modalidade mais segura, prática e lucrativa para quem quer vender o carro sem dor de cabeça. Entenda o porquê.</p>
 
@@ -409,7 +409,7 @@ BEGIN
 <p>Antes de entregar as chaves, verifique a reputação da loja. Leia o contrato integralmente, confira se a loja tem um CNPJ ativo, espaço físico estruturado e boas avaliações reais de clientes no Google. Transparência na hora de combinar a comissão é fundamental.</p>
 
 <h2>Quanto tempo leva para vender um carro consignado?</h2>
-<p>O tempo varia conforme o apelo do modelo, a condição e o preço estipulado. Em médias de mercado, uma loja ativa com forte presença digital vende um veículo entre 15 a 45 dias. A Carro e Cia possui mais de 20 anos de clientes fidelizados, encurtando bastante essa espera.</p>
+<p>O tempo varia conforme o apelo do modelo, a condition e o preço estipulado. Em médias de mercado, uma loja ativa com forte presença digital vende um veículo entre 15 a 45 dias. A Carro e Cia possui mais de 20 anos de clientes fidelizados, encurtando bastante essa espera.</p>
 
 <h2>Consignação na Carro e Cia: diferenciais que fazem a diferença</h2>
 <p>Nossa loja possui localização estratégica em uma avenida de alto fluxo em Uberaba, garantindo visibilidade orgânica. A equipe de vendas é formada pelo Luiz, Roberto e Jéssica — profissionais gabaritados. O contrato é claro e mantemos o proprietário sempre informado sobre propostas e visitas.</p>
@@ -478,7 +478,7 @@ BEGIN
   ]
 }
 </script>
-    $$,
+    ',
     'Carro e Cia Veículos — Uberaba MG',
     '7 min',
     'https://img.usecurling.com/p/1200/630?q=car%20dealership',
@@ -495,7 +495,7 @@ BEGIN
     'financiamento-carro-cpf-negativado',
     'Financiamento',
     'Saiba se é possível financiar um carro com CPF negativado em 2026, quanto de entrada pedir e como aumentar as chances de aprovação em Uberaba.',
-    $$
+    '
 <p>Se você está com o nome negativado e precisa de um carro, a primeira reação costuma ser desistir antes mesmo de tentar. Mas a realidade do mercado de crédito em 2026 é bem diferente do que muita gente imagina.</p>
 <p>Financiar com CPF negativado é um desafio real, porém possível se você seguir as estratégias corretas e buscar as financeiras especializadas. Este artigo explica exatamente como aumentar suas chances.</p>
 
@@ -584,7 +584,7 @@ BEGIN
   ]
 }
 </script>
-    $$,
+    ',
     'Carro e Cia Veículos — Uberaba MG',
     '7 min',
     'https://img.usecurling.com/p/1200/630?q=car%20loan',
@@ -601,7 +601,7 @@ BEGIN
     'quanto-vale-meu-carro-tabela-fipe',
     'Vender Carro',
     'Descubra quanto vale seu carro pela tabela FIPE, como interpretar o resultado e como precificar seu veículo para vender rápido e pelo preço justo.',
-    $$
+    '
 <p>Todo mundo que vai vender o carro passa pelo mesmo dilema ansioso: pedir muito e o carro não sai da garagem, ou pedir pouco e rasgar dinheiro. A Tabela FIPE existe justamente para resolver esse problema e estabelecer um parâmetro.</p>
 <p>Entretanto, a tabela sozinha não é suficiente. Ela é o mapa, não o terreno. Este guia vai te ensinar a usá-la corretamente para precificar o seu veículo e garantir que ele venda rapidamente e com lucro justo.</p>
 
@@ -687,7 +687,7 @@ BEGIN
   ]
 }
 </script>
-    $$,
+    ',
     'Carro e Cia Veículos — Uberaba MG',
     '6 min',
     'https://img.usecurling.com/p/1200/630?q=car%20value',
@@ -704,7 +704,7 @@ BEGIN
     'seguro-auto-vale-a-pena',
     'Uberaba',
     'Seguro auto vale a pena? Descubra quando contratar, quanto custa, o que cobre e quando pode não compensar. Análise com a Km Zero Corretora.',
-    $$
+    '
 <p>A maioria dos artigos sobre seguro auto é escrita agressivamente por quem precisa bater metas. Este artigo é diferente. Vamos analisar racionalmente os casos em que o seguro auto vale muito a pena, e os cenários em que pode não ser a sua maior prioridade financeira.</p>
 <p>Com o auxílio da Km Zero Corretora (parceira oficial da Carro e Cia), entregamos as informações reais para que você decida com inteligência a melhor proteção para seu patrimônio.</p>
 
@@ -790,7 +790,7 @@ BEGIN
   ]
 }
 </script>
-    $$,
+    ',
     'Carro e Cia Veículos — Uberaba MG',
     '8 min',
     'https://img.usecurling.com/p/1200/630?q=car%20insurance',
@@ -807,7 +807,7 @@ BEGIN
     'comprar-carro-usado-uberaba',
     'Uberaba',
     'Guia completo para comprar carro usado em Uberaba com segurança. Checklist, documentação, laudo cautelar e dicas. Carro e Cia 20 anos.',
-    $$
+    '
 <p>Uberaba é uma das cidades com maior movimentação orgânica no mercado de veículos usados do Triângulo Mineiro. E com isso, inevitavelmente, vêm tanto ótimas oportunidades financeiras quanto armadilhas sérias para quem não sabe o que está fazendo.</p>
 <p>Este guia minucioso foi criado para te guiar do primeiro passo no garimpo digital até a assinatura definitiva e entrega da chave na mão, livre de estresses.</p>
 
@@ -905,7 +905,7 @@ BEGIN
   ]
 }
 </script>
-    $$,
+    ',
     'Carro e Cia Veículos — Uberaba MG',
     '9 min',
     'https://img.usecurling.com/p/1200/630?q=buying%20used%20car',
@@ -922,7 +922,7 @@ BEGIN
     'como-simular-financiamento-veiculo',
     'Financiamento',
     'Aprenda a simular o financiamento do seu veículo com exemplos reais de parcelas e taxas. Guia completo Carro e Cia Veículos Uberaba.',
-    $$
+    '
 <p>Você sabe exatamente quanto vai pagar de parcela antes de entrar na loja de carros? A maioria das pessoas descobre o valor real apenas na hora de assinar o pesado contrato — e acabam sainendo um tanto decepcionadas.</p>
 <p>Entender a matemática bancária através de simulações assertivas prévias evita surpresas colossais e te posiciona de maneira soberana na mesa de negociações. Aqui vai um guia transparente mostrando como operar isso.</p>
 
@@ -1015,7 +1015,7 @@ BEGIN
   ]
 }
 </script>
-    $$,
+    ',
     'Carro e Cia Veículos — Uberaba MG',
     '7 min',
     'https://img.usecurling.com/p/1200/630?q=car%20calculator',
@@ -1032,7 +1032,7 @@ BEGIN
     'revisao-carro-antes-de-vender',
     'Vender Carro',
     'Fazer revisão no carro antes de vender pode valorizar até 20% do preço. Descubra o checklist completo para vender mais rápido e pelo preço certo.',
-    $$
+    '
 <p>Imagine dois carros idênticos cruzando lado a lado as mesmas avenidas poeirentas, partilhando do mesmíssimo modelo, ano-base e painel ostentando milhas equivalentes. Mas, surpreendentemente, um deles flui do pátio para as ruas por R$48.000 sob olhar cobiçoso dos clientes, enquanto o outro rasteja encalhado batendo a cotação depreciada dos R$40.000.</p>
 <p>A brutal dicotomia tem nome e sobrenome: preparo cênico mercadológico. Este artigo não faz promessas irrealistas, e sim expõe a fórmula comprovada de preparação orgânica que garantirá saltos notáveis sobre suas avaliações de revenda.</p>
 
@@ -1136,7 +1136,7 @@ BEGIN
   ]
 }
 </script>
-    $$,
+    ',
     'Carro e Cia Veículos — Uberaba MG',
     '7 min',
     'https://img.usecurling.com/p/1200/630?q=car%20maintenance',
