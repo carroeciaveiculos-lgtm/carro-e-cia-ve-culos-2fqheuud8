@@ -1,20 +1,19 @@
-import { Hero } from '@/components/home/Hero'
-import { Consignment } from '@/components/home/Consignment'
-import { StockAndFeatures } from '@/components/home/StockAndFeatures'
-import { TestimonialsAndLocation } from '@/components/home/TestimonialsAndLocation'
 import { SEO } from '@/components/SEO'
-import { NavigationCards } from '@/components/home/NavigationCards'
-import { Partners } from '@/components/home/Partners'
-import { LatestPosts } from '@/components/home/LatestPosts'
-import { QuickSearch } from '@/components/home/QuickSearch'
+import { HomeHero } from '@/components/home/HomeHero'
+import { HomeInfo } from '@/components/home/HomeInfo'
+import { HomeFeatures } from '@/components/home/HomeFeatures'
+import { HomeSocial } from '@/components/home/HomeSocial'
+import { HomeFaqContact } from '@/components/home/HomeFaqContact'
 
 export default function Index() {
   const schema = {
     '@context': 'https://schema.org',
     '@type': 'LocalBusiness',
     name: 'Carro e Cia Veículos',
-    image: 'https://carroeciamotors.com.br/logo.png',
-    description: 'Loja de veículos usados com consignação de carros em Uberaba',
+    image:
+      'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/logos/logo-carro-e-cia1.webp',
+    description:
+      'Vender seu carro nunca foi tão fácil. Consignação segura, profissional, com contrato protetor. Carro e Cia: referência 20+ anos em Uberaba.',
     url: 'https://carroeciamotors.com.br',
     telephone: '+55 34 99948-4285',
     address: {
@@ -25,38 +24,21 @@ export default function Index() {
       postalCode: '38022-200',
       addressCountry: 'BR',
     },
-    geo: {
-      '@type': 'GeoCoordinates',
-      latitude: '-19.768100',
-      longitude: '-47.932688',
-    },
-    openingHoursSpecification: {
-      '@type': 'OpeningHoursSpecification',
-      dayOfWeek: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
-      opens: '08:00',
-      closes: '18:00',
-    },
-    sameAs: [
-      'https://www.facebook.com/carroeciaosmelhoresveiculos',
-      'https://instagram.com/carroecia02',
-    ],
   }
 
   return (
-    <div className="flex flex-col min-h-screen">
+    <div className="flex flex-col min-h-screen bg-background">
       <SEO
-        title="Compre ou Consigne Carros em Uberaba | Carro e Cia Veículos"
-        description="Carro e Cia Veículos - Compre ou consigne seu carro em Uberaba. Mais de 20 anos de confiança. Veículos de qualidade com procedência garantida."
+        title="Consigne Seu Carro em Uberaba | Carro e Cia Veículos - 20+ Anos"
+        description="Vender seu carro nunca foi tão fácil. Consignação segura, profissional, com contrato protetor. Carro e Cia: referência 20+ anos em Uberaba."
         schema={schema}
+        image="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/fotos/fachada-da-loja.webp"
       />
-      <Hero />
-      <QuickSearch />
-      <NavigationCards />
-      <Partners />
-      <Consignment />
-      <StockAndFeatures />
-      <TestimonialsAndLocation />
-      <LatestPosts />
+      <HomeHero />
+      <HomeInfo />
+      <HomeFeatures />
+      <HomeSocial />
+      <HomeFaqContact />
     </div>
   )
 }

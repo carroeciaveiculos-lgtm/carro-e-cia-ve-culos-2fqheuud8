@@ -7,14 +7,20 @@ export function Footer() {
       <div className="container max-w-6xl mx-auto px-4">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-12 mb-12">
           <div>
-            <h3 className="font-display font-bold text-xl mb-6">Carro e Cia Veículos</h3>
+            <div className="mb-6">
+              <img
+                src="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/logos/logo-carro-e-cia1.webp"
+                alt="Logo Carro e Cia"
+                className="h-12 object-contain"
+              />
+            </div>
             <p className="text-muted-foreground mb-6">
               Mais de 20 anos de experiência realizando sonhos e garantindo negócios seguros em
               Uberaba e região.
             </p>
             <div className="flex gap-4">
               <a
-                href="https://instagram.com/carroecia02"
+                href="https://www.instagram.com/carroecia02"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary hover:bg-primary hover:text-white transition-colors"
@@ -35,7 +41,7 @@ export function Footer() {
           </div>
 
           <div>
-            <h3 className="font-display font-bold text-xl mb-6">Links Rápidos</h3>
+            <h3 className="font-display font-bold text-xl mb-6 text-white">Links Rápidos</h3>
             <ul className="space-y-3">
               <li>
                 <Link
@@ -50,23 +56,31 @@ export function Footer() {
                   to="/consignacao"
                   className="text-muted-foreground hover:text-primary transition-colors"
                 >
-                  Consignação
+                  Consignação Segura
                 </Link>
               </li>
               <li>
                 <Link
-                  to="/financiamento-auto"
+                  to="/servicos"
                   className="text-muted-foreground hover:text-primary transition-colors"
                 >
-                  Financiamento
+                  Nossos Serviços
                 </Link>
               </li>
               <li>
                 <Link
-                  to="/seguro-auto"
+                  to="/blog"
                   className="text-muted-foreground hover:text-primary transition-colors"
                 >
-                  Seguro Auto
+                  Blog
+                </Link>
+              </li>
+              <li>
+                <Link
+                  to="/sobre"
+                  className="text-muted-foreground hover:text-primary transition-colors"
+                >
+                  A História de Luiz Fernando
                 </Link>
               </li>
               <li>
@@ -74,14 +88,14 @@ export function Footer() {
                   to="/contato"
                   className="text-muted-foreground hover:text-primary transition-colors"
                 >
-                  Contato
+                  Fale Conosco
                 </Link>
               </li>
             </ul>
           </div>
 
           <div>
-            <h3 className="font-display font-bold text-xl mb-6">Contato</h3>
+            <h3 className="font-display font-bold text-xl mb-6 text-white">Contato</h3>
             <ul className="space-y-4">
               <li className="flex gap-3">
                 <MapPin className="w-5 h-5 text-primary shrink-0" />
@@ -94,19 +108,41 @@ export function Footer() {
                 </span>
               </li>
               <li className="flex gap-3">
-                <Phone className="w-5 h-5 text-primary shrink-0" />
-                <span className="text-muted-foreground">WhatsApp: (34) 99948-4285</span>
+                <Phone className="w-5 h-5 text-[#25D366] shrink-0" />
+                <div className="flex flex-col text-muted-foreground">
+                  <a
+                    href="https://wa.me/5534999484285"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="hover:text-white"
+                  >
+                    Luiz (Vendas): (34) 99948-4285
+                  </a>
+                  <a
+                    href="https://wa.me/5534992000300"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="hover:text-white"
+                  >
+                    Gabriel (Seguros): (34) 99200-0300
+                  </a>
+                </div>
               </li>
               <li className="flex gap-3">
                 <Mail className="w-5 h-5 text-primary shrink-0" />
-                <span className="text-muted-foreground">contato@carroeciamotors.com.br</span>
+                <a
+                  href="mailto:contato@carroeciamotors.com.br"
+                  className="text-muted-foreground hover:text-white"
+                >
+                  contato@carroeciamotors.com.br
+                </a>
               </li>
             </ul>
           </div>
         </div>
 
         <div className="mb-12 border-t border-border/50 pt-12">
-          <div className="rounded-xl overflow-hidden shadow-[0_4px_12px_rgba(0,0,0,0.1)] mb-6">
+          <div className="rounded-xl overflow-hidden shadow-lg mb-6">
             <iframe
               title="Mapa de Localização da Carro e Cia Veículos em Uberaba"
               src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3754.8879051323597!2d-47.93789018845835!3d-19.759916581513842!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x94bad1b54ff23a55%3A0x1d3108bae712d85d!2sCarro%20e%20Cia%20Com%C3%A9rcio%20de%20Ve%C3%ADculos!5e0!3m2!1spt-BR!2sbr!4v1776692231909!5m2!1spt-BR!2sbr"
@@ -118,17 +154,17 @@ export function Footer() {
               referrerPolicy="no-referrer-when-downgrade"
             ></iframe>
           </div>
-          <div className="text-center text-muted-foreground text-sm space-y-2">
-            <p>📍 Av. Guilherme Ferreira, 1119 - São Benedito, Uberaba - MG · CEP 38022-200</p>
-            <p>⏰ Seg a Sex: 8h às 18h | Sábado: 8h às 13h</p>
-            <p className="font-medium text-primary">📱 WhatsApp: (34) 99948-4285</p>
-          </div>
         </div>
 
-        <div className="border-t border-border pt-8 text-center text-sm text-muted-foreground">
+        <div className="border-t border-border pt-8 flex flex-col md:flex-row items-center justify-between text-sm text-muted-foreground">
           <p>
             &copy; {new Date().getFullYear()} Carro e Cia Veículos. Todos os direitos reservados.
           </p>
+          <div className="flex gap-4 mt-4 md:mt-0">
+            <Link to="/politica-de-privacidade" className="hover:text-white">
+              Política de Privacidade
+            </Link>
+          </div>
         </div>
       </div>
     </footer>
