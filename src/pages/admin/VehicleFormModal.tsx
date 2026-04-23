@@ -270,7 +270,7 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
               if (blob) resolve(blob)
               else reject(new Error('Canvas to Blob failed'))
             },
-            'image/jpeg',
+            'image/webp',
             0.8,
           )
         }
@@ -285,10 +285,10 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
     for (const file of Array.from(e.target.files)) {
       try {
         const compressedBlob = await compressImage(file)
-        const compressedFile = new File([compressedBlob], file.name.replace(/\.[^/.]+$/, '.jpg'), {
-          type: 'image/jpeg',
+        const compressedFile = new File([compressedBlob], file.name.replace(/\.[^/.]+$/, '.webp'), {
+          type: 'image/webp',
         })
-        const filename = `${Math.random().toString(36).substring(2)}.jpg`
+        const filename = `${Math.random().toString(36).substring(2)}.webp`
         const { error } = await supabase.storage
           .from('veiculos-fotos')
           .upload(`fotos/${filename}`, compressedFile)

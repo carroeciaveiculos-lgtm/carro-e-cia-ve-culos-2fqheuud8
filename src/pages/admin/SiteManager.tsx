@@ -39,6 +39,7 @@ interface BlogPost {
 
 export default function SiteManager() {
   const [activeTab, setActiveTab] = useState('geral')
+  const [comments, setComments] = useState<any[]>([])
   const [searchQuery, setSearchQuery] = useState('')
   const [blogPosts, setBlogPosts] = useState<BlogPost[]>([])
   const { toast } = useToast()
@@ -46,8 +47,38 @@ export default function SiteManager() {
   useEffect(() => {
     if (activeTab === 'blog') {
       fetchBlogPosts()
+    } else if (activeTab === 'comentarios') {
+      fetchComments()
     }
   }, [activeTab])
+
+  const fetchComments = async () => {
+    const { data } = await supabase
+      .from('blog_comments')
+      .select('*, blog_posts(title, slug)')
+      .order('created_at', { ascending: false })
+    if (data) setComments(data)
+  }
+
+  const toggleCommentStatus = async (id: string, status: boolean) => {
+    const { error } = await supabase
+      .from('blog_comments')
+      .update({ publicado: !status })
+      .eq('id', id)
+    if (!error) {
+      toast({ title: 'Status do comentário atualizado' })
+      fetchComments()
+    }
+  }
+
+  const deleteComment = async (id: string) => {
+    if (!confirm('Deseja excluir este comentário permanentemente?')) return
+    const { error } = await supabase.from('blog_comments').delete().eq('id', id)
+    if (!error) {
+      toast({ title: 'Comentário excluído' })
+      fetchComments()
+    }
+  }
 
   const fetchBlogPosts = async () => {
     const { data } = await supabase
@@ -200,6 +231,13 @@ export default function SiteManager() {
               onClick={() => setActiveTab('depoimentos')}
             >
               Depoimentos
+            </Button>
+            <Button
+              variant={activeTab === 'comentarios' ? 'secondary' : 'ghost'}
+              className="justify-start"
+              onClick={() => setActiveTab('comentarios')}
+            >
+              Moderação Blog
             </Button>
             <Button
               variant={activeTab === 'scripts' ? 'secondary' : 'ghost'}
@@ -415,7 +453,7 @@ export default function SiteManager() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="border p-2 rounded-lg text-center">
                     <img
-                      src="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Logos/logo%20carro%20e%20cia.png"
+                      src="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/logos/logo%20carro%20e%20cia.png"
                       className="h-20 mx-auto object-contain mb-2"
                       alt="Logo"
                     />
@@ -490,6 +528,76 @@ export default function SiteManager() {
                   <div className="ml-auto text-amber-500 font-bold whitespace-nowrap">★★★★★</div>
                 </CardContent>
               </Card>
+            </div>
+          )}
+
+          {activeTab === 'comentarios' && (
+            <div className="space-y-6">
+              <div className="flex justify-between items-center">
+                <h3 className="font-bold text-lg flex items-center gap-2">
+                  <MessageSquare className="w-5 h-5" /> Moderação de Comentários do Blog
+                </h3>
+                <Button size="sm" variant="outline" onClick={fetchComments}>
+                  Atualizar
+                </Button>
+              </div>
+              <div className="grid gap-4">
+                {comments.length === 0 ? (
+                  <p className="text-muted-foreground text-center py-8">
+                    Nenhum comentário encontrado.
+                  </p>
+                ) : (
+                  comments.map((comment) => (
+                    <Card key={comment.id} className="p-4 flex flex-col gap-2">
+                      <div className="flex justify-between items-start gap-4">
+                        <div>
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="font-bold">{comment.autor_nome}</span>
+                            <span className="text-xs text-muted-foreground">
+                              ({comment.autor_email})
+                            </span>
+                          </div>
+                          <p className="text-sm text-slate-700 bg-slate-50 p-3 rounded-lg border">
+                            {comment.conteudo}
+                          </p>
+                          <div className="mt-2 text-xs text-muted-foreground">
+                            Artigo:{' '}
+                            <a
+                              href={`/blog/${comment.blog_posts?.slug}`}
+                              target="_blank"
+                              className="text-blue-600 hover:underline"
+                            >
+                              {comment.blog_posts?.title}
+                            </a>
+                            {' • '} Data: {new Date(comment.created_at).toLocaleDateString('pt-BR')}
+                          </div>
+                        </div>
+                        <div className="flex flex-col gap-2 shrink-0">
+                          <Button
+                            size="sm"
+                            variant={comment.publicado ? 'outline' : 'default'}
+                            className={
+                              comment.publicado
+                                ? 'text-amber-600 border-amber-200'
+                                : 'bg-green-600 hover:bg-green-700 text-white'
+                            }
+                            onClick={() => toggleCommentStatus(comment.id, comment.publicado)}
+                          >
+                            {comment.publicado ? 'Ocultar' : 'Aprovar'}
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={() => deleteComment(comment.id)}
+                          >
+                            Excluir
+                          </Button>
+                        </div>
+                      </div>
+                    </Card>
+                  ))
+                )}
+              </div>
             </div>
           )}
 

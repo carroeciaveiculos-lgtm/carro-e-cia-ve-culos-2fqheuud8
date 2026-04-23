@@ -10,6 +10,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { CheckCircle2, ShieldCheck, Clock, Megaphone, Calculator, Star, MapPin } from 'lucide-react'
 import { getWhatsAppLink } from '@/lib/whatsapp'
 import { trackCTAClick } from '@/lib/tracking'
+import { ConsignacaoLPForm } from '@/components/ConsignacaoLPForm'
 
 export default function Consignacao() {
   const schema = {
@@ -40,43 +41,15 @@ export default function Consignacao() {
             <p className="text-xl text-muted-foreground leading-relaxed">
               Venda em dias, não em meses. Contrato protetor. Você não se preocupa.
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 pt-4">
-              <Button
-                size="lg"
-                className="h-14 px-8 text-lg bg-[#25D366] hover:bg-[#20bd5a] text-white shadow-lg"
-                asChild
-              >
-                <a href="#processo" onClick={() => trackCTAClick('Como Funciona', '/consignacao')}>
-                  Como Funciona?
-                </a>
-              </Button>
-              <Button
-                size="lg"
-                variant="outline"
-                className="h-14 px-8 text-lg border-2 shadow-sm"
-                asChild
-              >
-                <a
-                  href={getWhatsAppLink('Olá Luiz, quero saber mais sobre consignação.')}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={() => trackCTAClick('Falar com Luiz', '/consignacao')}
-                >
-                  Falar com Luiz
-                </a>
-              </Button>
             </div>
           </div>
-          <div className="relative">
-            <img
-              src="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/fotos/consignacao.webp"
-              alt="Consignação segura de veículos - solução profissional Carro e Cia"
-              width="800"
-              height="600"
-              className="rounded-2xl shadow-2xl object-cover w-full aspect-video"
-              loading="eager"
-              fetchPriority="high"
-            />
+          <div className="relative z-10 w-full max-w-md mx-auto">
+            <div className="bg-card border rounded-xl shadow-2xl p-8 text-left">
+              <ConsignacaoLPForm 
+                title="Venda seu carro mais rápido" 
+                subtitle="Deixe os detalhes com a gente. Preencha abaixo para uma avaliação sem compromisso." 
+              />
+            </div>
           </div>
         </div>
       </section>

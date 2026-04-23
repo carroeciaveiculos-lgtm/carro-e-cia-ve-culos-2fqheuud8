@@ -38,6 +38,14 @@ const CATEGORY_COLORS: Record<string, string> = {
 
 const CATEGORIES = ['Todos', 'Consignação', 'Compra', 'Vender', 'Financiamento', 'Seminovos']
 
+const CATEGORY_IMAGES: Record<string, string> = {
+  Consignação: 'https://img.usecurling.com/p/600/338?q=safe%20contract&color=green',
+  Compra: 'https://img.usecurling.com/p/600/338?q=car%20keys&color=blue',
+  Vender: 'https://img.usecurling.com/p/600/338?q=deal%20marketing&color=orange',
+  Financiamento: 'https://img.usecurling.com/p/600/338?q=calculator%20money&color=purple',
+  Seminovos: 'https://img.usecurling.com/p/600/338?q=car%20dealership&color=red',
+}
+
 export default function BlogIndex() {
   const [posts, setPosts] = useState<BlogPost[]>([])
   const [loading, setLoading] = useState(true)
@@ -154,7 +162,11 @@ export default function BlogIndex() {
                       type="image/webp"
                     />
                     <img
-                      src={post.image_url || `https://img.usecurling.com/p/600/338?q=car`}
+                      src={
+                        post.image_url ||
+                        CATEGORY_IMAGES[post.category || ''] ||
+                        `https://img.usecurling.com/p/600/338?q=car`
+                      }
                       alt={post.title}
                       width="600"
                       height="338"

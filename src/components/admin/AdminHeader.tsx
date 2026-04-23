@@ -50,7 +50,7 @@ export function AdminHeader() {
       <div className="bg-[#0D47A1] text-white px-4 md:px-6 py-3 flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           <img
-            src="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Logos/logo%20carro%20e%20cia%20quadrado.png"
+            src="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/logos/logo%20carro%20e%20cia%20quadrado.png"
             alt="Logo Carro e Cia"
             className="h-12 w-12 rounded object-contain bg-white p-1 shadow-sm"
           />

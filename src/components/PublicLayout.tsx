@@ -92,11 +92,11 @@ export default function PublicLayout() {
           <Link to="/" className="flex items-center" target="_self" aria-label="Página Inicial">
             <picture>
               <source
-                srcSet="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Logos/logo-carro-e-cia.webp"
+                srcSet="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/logos/logo-carro-e-cia.webp"
                 type="image/webp"
               />
               <img
-                src="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Logos/logo%20carro%20e%20cia.png"
+                src="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/logos/logo%20carro%20e%20cia.png"
                 alt="Carro e Cia Logo Oficial"
                 className="h-10 w-auto max-w-[140px] object-contain"
                 width="140"

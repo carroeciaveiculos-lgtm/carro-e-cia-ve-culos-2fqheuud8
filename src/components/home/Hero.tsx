@@ -118,28 +118,6 @@ export function Hero() {
 
         <div className="container relative z-10 grid lg:grid-cols-2 gap-12 items-center">
           <div className="text-center lg:text-left flex flex-col items-center lg:items-start mt-8 lg:mt-0">
-            <div className="mb-8 animate-fade-in-up">
-              <picture className="inline-block bg-white/95 p-3 rounded-xl shadow-lg border border-white/20">
-                <source
-                  media="(max-width: 480px)"
-                  srcSet="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/logos/logo-carro-e-cia1.webp"
-                  type="image/webp"
-                />
-                <source
-                  media="(min-width: 481px)"
-                  srcSet="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/logos/logo-carro-e-cia1.webp"
-                  type="image/webp"
-                />
-                <img
-                  src="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/logos/logo-carro-e-cia1.webp"
-                  alt="Carro e Cia"
-                  loading="eager"
-                  width="200"
-                  height="80"
-                  className="max-w-full h-auto object-contain"
-                />
-              </picture>
-            </div>
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-display font-bold mb-6 leading-tight text-white drop-shadow-lg">
               Você tem um carro para vender. <br className="hidden lg:block" />
               <span className="text-primary">Nós temos os compradores esperando.</span>

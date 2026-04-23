@@ -52,6 +52,9 @@ export default function BlogPost() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
   const [tocExpanded, setTocExpanded] = useState(false)
+  const [comments, setComments] = useState<any[]>([])
+  const [newComment, setNewComment] = useState({ autor_nome: '', autor_email: '', conteudo: '' })
+  const [isSubmittingComment, setIsSubmittingComment] = useState(false)
 
   useEffect(() => {
     const fetchPost = async () => {
@@ -66,12 +69,46 @@ export default function BlogPost() {
         setError(true)
       } else {
         setPost(data)
+        fetchComments(data.id)
       }
       setLoading(false)
     }
 
+    const fetchComments = async (postId: string) => {
+      const { data } = await supabase
+        .from('blog_comments')
+        .select('*')
+        .eq('post_id', postId)
+        .eq('publicado', true)
+        .order('created_at', { ascending: false })
+      if (data) setComments(data)
+    }
+
     fetchPost()
   }, [slug])
+
+  const handleCommentSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!newComment.autor_nome || !newComment.autor_email || !newComment.conteudo || !post) return
+    setIsSubmittingComment(true)
+    const { error } = await supabase.from('blog_comments').insert({
+      post_id: post.id,
+      autor_nome: newComment.autor_nome,
+      autor_email: newComment.autor_email,
+      conteudo: newComment.conteudo,
+      publicado: false,
+    })
+    setIsSubmittingComment(false)
+    if (!error) {
+      toast({
+        title: 'Comentário enviado!',
+        description: 'Seu comentário será analisado pela nossa equipe antes de ser publicado.',
+      })
+      setNewComment({ autor_nome: '', autor_email: '', conteudo: '' })
+    } else {
+      toast({ title: 'Erro ao enviar comentário.', variant: 'destructive' })
+    }
+  }
 
   if (error) return <Navigate to="/blog" replace />
 
@@ -364,23 +401,103 @@ export default function BlogPost() {
           </div>
 
           <div className="my-16">
-            <div className="bg-muted/30 p-8 rounded-2xl border text-center">
-              <h3 className="text-2xl font-bold mb-2">💬 Deixe Seu Comentário</h3>
-              <p className="text-muted-foreground mb-6 max-w-2xl mx-auto">
-                Dúvidas sobre o assunto? Compartilhe sua experiência ou faça uma pergunta. Gabriel
-                (Km Zero) e nossa equipe podem analisar seu caso e responder!
+            <h3 className="text-2xl font-bold mb-8">Comentários ({comments.length})</h3>
+
+            {comments.length > 0 ? (
+              <div className="space-y-6 mb-12">
+                {comments.map((comment) => (
+                  <div key={comment.id} className="bg-muted/20 p-6 rounded-xl border">
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">
+                        {comment.autor_nome.charAt(0).toUpperCase()}
+                      </div>
+                      <div>
+                        <p className="font-bold">{comment.autor_nome}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {new Date(comment.created_at).toLocaleDateString('pt-BR')}
+                        </p>
+                      </div>
+                    </div>
+                    <p className="text-slate-700 mt-3">{comment.conteudo}</p>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-muted-foreground mb-12">
+                Nenhum comentário publicado ainda. Seja o primeiro!
               </p>
-              <Button size="lg" asChild className="bg-[#25D366] hover:bg-[#20bd5a] text-white">
-                <a
-                  href={getWhatsAppLink(
-                    `Olá! Li o artigo "${post.title}" e gostaria de tirar uma dúvida.`,
-                  )}
-                  target="_blank"
-                  rel="noopener noreferrer"
+            )}
+
+            <div className="bg-card p-6 md:p-8 rounded-2xl border shadow-sm">
+              <h3 className="text-2xl font-bold mb-2">💬 Deixe Seu Comentário</h3>
+              <p className="text-muted-foreground mb-6">
+                Dúvidas sobre o assunto? Compartilhe sua experiência ou faça uma pergunta.
+              </p>
+
+              <form onSubmit={handleCommentSubmit} className="space-y-4">
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Seu Nome</label>
+                    <input
+                      type="text"
+                      required
+                      value={newComment.autor_nome}
+                      onChange={(e) => setNewComment({ ...newComment, autor_nome: e.target.value })}
+                      className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                      placeholder="Como deseja ser chamado"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Seu E-mail (não será publicado)</label>
+                    <input
+                      type="email"
+                      required
+                      value={newComment.autor_email}
+                      onChange={(e) =>
+                        setNewComment({ ...newComment, autor_email: e.target.value })
+                      }
+                      className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                      placeholder="seu@email.com"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Sua Mensagem</label>
+                  <textarea
+                    required
+                    value={newComment.conteudo}
+                    onChange={(e) => setNewComment({ ...newComment, conteudo: e.target.value })}
+                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm min-h-[120px]"
+                    placeholder="Escreva seu comentário..."
+                  />
+                </div>
+                <Button
+                  type="submit"
+                  disabled={isSubmittingComment}
+                  className="w-full sm:w-auto px-8"
                 >
-                  Fazer Pergunta no WhatsApp
-                </a>
-              </Button>
+                  {isSubmittingComment ? 'Enviando...' : 'Publicar Comentário'}
+                </Button>
+              </form>
+
+              <div className="mt-8 pt-8 border-t flex flex-col md:flex-row items-center justify-between gap-4">
+                <p className="text-sm text-muted-foreground">Precisa de resposta rápida?</p>
+                <Button
+                  variant="outline"
+                  asChild
+                  className="text-[#25D366] border-[#25D366] hover:bg-[#25D366]/10"
+                >
+                  <a
+                    href={getWhatsAppLink(
+                      `Olá! Li o artigo "${post?.title}" e gostaria de tirar uma dúvida.`,
+                    )}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    Fazer Pergunta no WhatsApp
+                  </a>
+                </Button>
+              </div>
             </div>
           </div>
 
