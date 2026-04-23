@@ -92,7 +92,7 @@ export default function PublicLayout() {
           <Link to="/" className="flex items-center" target="_self" aria-label="Página Inicial">
             <picture>
               <source
-                srcSet="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Fotos/Formato%20webp/logo-carro-e-cia.webp"
+                srcSet="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Logos/logo-carro-e-cia.webp"
                 type="image/webp"
               />
               <img

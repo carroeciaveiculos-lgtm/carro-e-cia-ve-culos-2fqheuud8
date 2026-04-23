@@ -295,14 +295,20 @@ export default function BlogPost() {
           <RelatedPosts category={post.category || 'Novidade'} currentId={post.id} />
 
           <div className="bg-muted/50 rounded-2xl p-6 flex flex-col md:flex-row items-center md:items-start gap-6 border border-border/50">
-            <img
-              src="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Logos/logo%20carro%20e%20cia.png"
-              alt="Logo Carro e Cia"
-              width="64"
-              height="64"
-              loading="lazy"
-              className="w-16 h-16 rounded-full bg-white p-2 shadow-sm object-contain"
-            />
+            <picture>
+              <source
+                srcSet="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Logos/logo-carro-e-cia.webp"
+                type="image/webp"
+              />
+              <img
+                src="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Logos/logo%20carro%20e%20cia.png"
+                alt="Logo Carro e Cia"
+                width="64"
+                height="64"
+                loading="lazy"
+                className="w-16 h-16 rounded-full bg-white p-2 shadow-sm object-contain"
+              />
+            </picture>
             <div className="text-center md:text-left">
               <p className="font-bold text-xl mb-2">{post.author || 'Carro e Cia Veículos'}</p>
               <p className="text-muted-foreground leading-relaxed">

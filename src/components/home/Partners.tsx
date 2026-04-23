@@ -2,11 +2,11 @@ export function Partners() {
   const partners = [
     {
       name: 'Bradesco',
-      src: 'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Fotos/Formato%20webp/Bradesco.webp',
+      src: 'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Parceiros/Bradesco.webp',
     },
     {
       name: 'BV',
-      src: 'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Fotos/Formato%20webp/BV.webp',
+      src: 'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Parceiros/BV.webp',
     },
     {
       name: 'Porto Bank',
@@ -14,15 +14,15 @@ export function Partners() {
     },
     {
       name: 'Safra',
-      src: 'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Fotos/Formato%20webp/Safra.webp',
+      src: 'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Parceiros/Safra.webp',
     },
     {
       name: 'Santander',
-      src: 'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Fotos/Formato%20webp/santander.webp',
+      src: 'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Parceiros/santander.webp',
     },
     {
       name: 'Km Zero',
-      src: 'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Fotos/Formato%20webp/Logo-km-zero-fundo-transparente.webp',
+      src: 'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Parceiros/Logo-km-zero-fundo-transparente.webp',
     },
   ]
 

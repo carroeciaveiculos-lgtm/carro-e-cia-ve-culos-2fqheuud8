@@ -94,27 +94,11 @@ export function Hero() {
         <div className="absolute inset-0 z-0 w-full h-full bg-[#1a1a1a] bg-gradient-to-b from-[#2a2a2a] to-[#111111]">
           <picture className="w-full h-full block">
             <source
-              media="(max-width: 768px)"
-              srcSet="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Fotos/Formato%20webp/fachada-mobile.webp"
+              srcSet="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/fotos/fachada-da-loja.webp"
               type="image/webp"
-            />
-            <source
-              media="(max-width: 768px)"
-              srcSet="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Fotos/fachada-mobile.jpg"
-              type="image/jpeg"
-            />
-            <source
-              media="(min-width: 769px)"
-              srcSet="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Fotos/Formato%20webp/fachada-da-loja.webp"
-              type="image/webp"
-            />
-            <source
-              media="(min-width: 769px)"
-              srcSet="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Fotos/fachada%20da%20loja.jpeg"
-              type="image/jpeg"
             />
             <img
-              src="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Fotos/fachada%20da%20loja.jpeg"
+              src="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/fotos/fachada-da-loja.jpg"
               alt="Fachada da loja Carro e Cia em Uberaba - MG, localizada em avenida estratégica com múltiplos veículos de qualidade"
               width="1920"
               height="1080"

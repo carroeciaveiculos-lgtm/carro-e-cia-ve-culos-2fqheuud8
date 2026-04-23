@@ -154,7 +154,7 @@ export default function SeguroAuto() {
         title="Seguro Auto em Uberaba | Km Zero Corretora de Seguros"
         description="Cote seu seguro auto em Uberaba com a Km Zero Corretora. Adriana Araújo — SUSEP desde 2003, 20+ anos de experiência. Atendimento humanizado, cotação em minutos. Fale agora."
         canonical="https://carroeciamotors.com.br/seguro-auto"
-        image="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Fotos/Formato%20webp/Adriana-foto-profissional.webp"
+        image="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/fotos/Adriana-foto-profissional.webp"
         schema={SCHEMA}
       />
       <div className="bg-slate-100 py-3 px-4 border-b border-slate-200 hidden md:block">
@@ -258,11 +258,11 @@ export default function SeguroAuto() {
               >
                 <picture>
                   <source
-                    srcSet={`https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Fotos/Formato%20webp/${p.img}`}
+                    srcSet={`https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/fotos/${p.img}`}
                     type="image/webp"
                   />
                   <img
-                    src={`https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Fotos/Formato%20webp/${p.img}`}
+                    src={`https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/fotos/${p.img}`}
                     alt={p.alt}
                     width="160"
                     height="160"
@@ -324,30 +324,30 @@ export default function SeguroAuto() {
           </h2>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-6">
             {[
-              'Porto Seguro',
-              'Bradesco',
-              'Allianz',
-              'Tokio Marine',
-              'Mapfre',
-              'Azul',
-              'Yelum',
-              'HDI',
-              'Suhai',
-              'BP',
+              { name: 'Porto Seguro', file: 'Porto Seguro.webp' },
+              { name: 'Bradesco Seguros', file: 'Bradesco.webp' },
+              { name: 'Allianz', file: 'Allianz.webp' },
+              { name: 'Tokio Marine', file: 'Tokio Marine.webp' },
+              { name: 'Mapfre', file: 'Mapfre.webp' },
+              { name: 'Azul Seguros', file: 'Azul.webp' },
+              { name: 'Yelum', file: 'Yelum.webp' },
+              { name: 'HDI Seguros', file: 'HDI.webp' },
+              { name: 'Suhai Seguradora', file: 'Suhai.webp' },
+              { name: 'BP Seguros', file: 'BP Seguros.webp' },
             ].map((s) => (
               <div
-                key={s}
+                key={s.name}
                 className="bg-slate-50 p-4 rounded-lg border border-slate-100 flex items-center justify-center grayscale hover:grayscale-0 transition-all"
               >
                 <picture>
                   <source
-                    srcSet={`https://img.usecurling.com/i?q=${s}&shape=outline`}
+                    srcSet={`https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Parceiros/${s.file.replace(/ /g, '%20')}`}
                     type="image/webp"
                   />
                   <img
-                    src={`https://img.usecurling.com/i?q=${s}&shape=outline`}
-                    alt={`Logo ${s} — parceira Km Zero Corretora Uberaba MG`}
-                    title={`${s} — Seguro Auto em Uberaba`}
+                    src={`https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Parceiros/${s.file.replace(/ /g, '%20')}`}
+                    alt={`Logo ${s.name} — parceira Km Zero Corretora Uberaba MG`}
+                    title={`${s.name} — Seguro Auto em Uberaba`}
                     className="max-h-10 object-contain"
                     width="120"
                     height="60"
