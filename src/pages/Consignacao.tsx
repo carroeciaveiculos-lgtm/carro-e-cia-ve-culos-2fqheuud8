@@ -34,6 +34,29 @@ const team = [
 ]
 
 export default function Consignacao() {
+  const faqs = [
+    {
+      q: 'Quanto tempo leva para vender?',
+      a: 'O tempo médio varia, mas com nossa divulgação profissional, muitos veículos são vendidos em menos de 30 dias.',
+    },
+    {
+      q: 'Qual é a comissão da loja?',
+      a: 'A comissão é transparente e fixada em contrato. Entre em contato para uma avaliação e detalhes dos valores.',
+    },
+    {
+      q: 'O veículo fica na loja?',
+      a: 'Sim, em pátio seguro e segurado, garantindo exposição máxima aos compradores.',
+    },
+    {
+      q: 'E se eu precisar do carro?',
+      a: 'Temos contratos flexíveis. Basta nos avisar com antecedência.',
+    },
+    {
+      q: 'A loja garante a venda?',
+      a: 'Fazemos todo o esforço de marketing, financiamento e negociação para viabilizar a venda o mais rápido possível.',
+    },
+  ]
+
   const schema = [
     {
       '@context': 'https://schema.org',
@@ -76,29 +99,6 @@ export default function Consignacao() {
         name: f.q,
         acceptedAnswer: { '@type': 'Answer', text: f.a },
       })),
-    },
-  ]
-
-  const faqs = [
-    {
-      q: 'Quanto tempo leva para vender?',
-      a: 'O tempo médio varia, mas com nossa divulgação profissional, muitos veículos são vendidos em menos de 30 dias.',
-    },
-    {
-      q: 'Qual é a comissão da loja?',
-      a: 'A comissão é transparente e fixada em contrato. Entre em contato para uma avaliação e detalhes dos valores.',
-    },
-    {
-      q: 'O veículo fica na loja?',
-      a: 'Sim, em pátio seguro e segurado, garantindo exposição máxima aos compradores.',
-    },
-    {
-      q: 'E se eu precisar do carro?',
-      a: 'Temos contratos flexíveis. Basta nos avisar com antecedência.',
-    },
-    {
-      q: 'A loja garante a venda?',
-      a: 'Fazemos todo o esforço de marketing, financiamento e negociação para viabilizar a venda o mais rápido possível.',
     },
   ]
 
