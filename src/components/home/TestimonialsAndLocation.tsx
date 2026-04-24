@@ -3,19 +3,29 @@ import { Star, MapPin, Clock, Phone } from 'lucide-react'
 export function TestimonialsAndLocation() {
   const testimonials = [
     {
-      text: 'Vendi meu carro em menos de 2 semanas! Processo seguro e com muita transparência. O Luiz e a equipe são excelentes.',
-      author: 'Carlos H.',
-      city: 'Uberaba',
+      text: '5 estrelas . Ótimo atendimento. Lugar agradabilíssimo. Ar condicionado. Cafezinho. Água gelada. Tratamento vip.',
+      author: 'Jair Cachapuz',
+      city: 'Local Guide',
     },
     {
-      text: 'Comprei meu carro aqui e não me arrependo em nada. Procedência garantida e atendimento maravilhoso!',
-      author: 'Mariana S.',
-      city: 'Uberaba',
+      text: 'Excelente loja, pessoal muito educado e atenciosos.',
+      author: 'Rodrigo Carvalho Gomide',
+      city: 'Local Guide',
     },
     {
-      text: 'O Luiz é um profissional incrível. Recomendo sem hesitar para qualquer pessoa que queira negociar um veículo.',
-      author: 'Roberto M.',
-      city: 'Patos de Minas',
+      text: 'Produto de qualidade com um bom preço, atendimento vip Parabéns !!!',
+      author: 'Carlucio Amaral',
+      city: 'Local Guide',
+    },
+    {
+      text: 'Honestidade e bom atendimento e o forte desta casa',
+      author: 'Marlucio Macedo',
+      city: 'Local Guide',
+    },
+    {
+      text: 'Atendimento excelente... veículos de boa procedência.',
+      author: 'LFernando',
+      city: 'Local Guide',
     },
   ]
 

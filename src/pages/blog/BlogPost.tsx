@@ -129,15 +129,39 @@ export default function BlogPost() {
     )
   }
 
+  const getDynamicImageUrl = (postObj: Post) => {
+    if (
+      postObj?.image_url &&
+      !postObj.image_url.includes('modelo-veiculo') &&
+      !postObj.image_url.includes('consignacao')
+    ) {
+      return postObj.image_url.replace(/\.(jpg|jpeg|png)$/, '.webp')
+    }
+    const cleanTitle = (postObj?.title || 'car business')
+      .replace(/[^a-zA-Z0-9\s]/g, '')
+      .trim()
+      .split(' ')
+      .slice(0, 3)
+      .join(' ')
+    const query = encodeURIComponent(cleanTitle || 'car business')
+    let color = 'gray'
+    if (postObj?.category === 'Consignação') color = 'green'
+    else if (postObj?.category === 'Compra') color = 'blue'
+    else if (postObj?.category === 'Vender') color = 'orange'
+    else if (postObj?.category === 'Financiamento') color = 'purple'
+    else if (postObj?.category === 'Seminovos') color = 'red'
+    return `https://img.usecurling.com/p/1200/630?q=${query}&color=${color}`
+  }
+
+  const resolvedImageUrl = getDynamicImageUrl(post)
+
   const schema = [
     {
       '@context': 'https://schema.org',
       '@type': 'Article',
       headline: post.title,
       description: post.meta_description,
-      image:
-        post.image_url ||
-        `https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/fotos/fachada-da-loja.webp`,
+      image: resolvedImageUrl,
       author: {
         '@type': 'Organization',
         name: post.author || 'Carro e Cia Veículos',
@@ -206,7 +230,7 @@ export default function BlogPost() {
         title={`${post.title} | Carro e Cia Veículos`}
         description={post.meta_description}
         schema={schema}
-        image={post.image_url}
+        image={resolvedImageUrl}
         type="article"
         keywords={post.tags?.join(', ')}
       />
@@ -245,25 +269,13 @@ export default function BlogPost() {
           </h1>
           <picture>
             <source
-              srcSet={`${
-                post.image_url
-                  ? post.image_url.replace(/\.(jpg|jpeg|png)$/, '.webp')
-                  : 'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/fotos/fachada-da-loja.webp'
-              } 1200w`}
+              srcSet={`${resolvedImageUrl} 1200w`}
               sizes="(max-width: 768px) 100vw, 1200px"
               type="image/webp"
             />
-            <source
-              srcSet={`${post.image_url || 'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/fotos/fachada-da-loja.webp'} 1200w`}
-              sizes="(max-width: 768px) 100vw, 1200px"
-              type="image/jpeg"
-            />
             <img
-              src={
-                post.image_url ||
-                `https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/fotos/fachada-da-loja.webp`
-              }
-              srcSet={`${post.image_url || 'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/fotos/fachada-da-loja.webp'} 1200w`}
+              src={resolvedImageUrl}
+              srcSet={`${resolvedImageUrl} 1200w`}
               sizes="(max-width: 768px) 100vw, 1200px"
               alt={`Capa do artigo: ${post.title}`}
               width="1200"

@@ -202,59 +202,88 @@ export default function Sobre() {
               Nossa equipe é formada por especialistas dedicados a oferecer a melhor solução.
             </p>
           </div>
-          <div className="grid md:grid-cols-3 gap-8">
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
             <Card className="overflow-hidden border-border/50">
               <img
                 src="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/fotos/Luiz-Fernando-foto-profissional.webp"
                 alt="Luiz Fernando"
-                className="w-full h-80 object-cover object-top"
+                className="w-full h-64 object-cover object-top"
                 loading="lazy"
               />
               <div className="p-6">
-                <h3 className="text-2xl font-bold font-display">Luiz Fernando</h3>
-                <p className="text-primary font-medium mb-4">CEO & Fundador</p>
-                <div className="text-sm font-semibold text-muted-foreground mb-3 uppercase tracking-wider">
-                  Apaixonado | Vendedor | Humanista
+                <h3 className="text-xl font-bold font-display">Luiz Fernando</h3>
+                <p className="text-primary font-medium mb-3 text-sm">CEO & Fundador</p>
+                <div className="text-xs font-semibold text-muted-foreground mb-3 uppercase tracking-wider">
+                  Apaixonado | Vendedor
                 </div>
                 <p className="text-muted-foreground text-sm">
-                  Luiz é o coração da Carro e Cia. Com mais de 20 anos dedicados ao mercado
-                  automotivo, ele aprendeu que cada cliente merece ser ouvido, acolhido e ter a
-                  melhor solução. Sua missão é ser referência em consignação segura no Brasil.
-                </p>
-              </div>
-            </Card>
-            <Card className="overflow-hidden border-border/50">
-              <div className="w-full h-80 bg-muted flex items-center justify-center">
-                <span className="text-muted-foreground">Foto em breve</span>
-              </div>
-              <div className="p-6">
-                <h3 className="text-2xl font-bold font-display">Roberto Junior</h3>
-                <p className="text-primary font-medium mb-4">Vendedor Especialista</p>
-                <div className="text-sm font-semibold text-muted-foreground mb-3 uppercase tracking-wider">
-                  Vendas | Relacionamento | Expertise
-                </div>
-                <p className="text-muted-foreground text-sm">
-                  Irmão de Luiz, Roberto continua a tradição de excelência em vendas. Dedicado a
-                  oferecer atendimento personalizado e encontrar o carro certo para cada cliente.
+                  Luiz é o coração da Carro e Cia com mais de 20 anos dedicados ao mercado. Sua
+                  missão é ser referência em consignação segura, acolhendo cada cliente e buscando a
+                  melhor solução.
                 </p>
               </div>
             </Card>
             <Card className="overflow-hidden border-border/50">
               <img
-                src="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/fotos/Ljessica-foto-profissional.webp"
-                alt="Jessica Germano"
-                className="w-full h-80 object-cover object-top"
+                src="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/fotos/Adriana-foto-profissional.webp"
+                alt="Adriana Araújo"
+                className="w-full h-64 object-cover object-top"
                 loading="lazy"
               />
               <div className="p-6">
-                <h3 className="text-2xl font-bold font-display">Jessica Germano</h3>
-                <p className="text-primary font-medium mb-4">Assistente Financeira</p>
-                <div className="text-sm font-semibold text-muted-foreground mb-3 uppercase tracking-wider">
-                  Precisão | Transparência | Processamento
+                <h3 className="text-xl font-bold font-display">Adriana Araújo</h3>
+                <p className="text-primary font-medium mb-3 text-sm">Administradora</p>
+                <div className="text-xs font-semibold text-muted-foreground mb-3 uppercase tracking-wider">
+                  Organização | Transparência
                 </div>
                 <p className="text-muted-foreground text-sm">
-                  Jessica é a responsável por garantir que cada transação seja transparente, precisa
-                  e ágil. Ela garante que nossas promessas se tornem realidade.
+                  Esposa de Luiz e administradora da empresa, Adriana cuida de toda a parte
+                  administrativa e processos internos, garantindo segurança e transparência em todas
+                  as operações.
+                </p>
+              </div>
+            </Card>
+            <Card className="overflow-hidden border-border/50">
+              <img
+                src="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/fotos/Roberto-foto-profissional.webp"
+                alt="Roberto de Araújo Jr."
+                className="w-full h-64 object-cover object-top"
+                loading="lazy"
+                onError={(e) => {
+                  e.currentTarget.src =
+                    'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/fotos/Luiz-Fernando-foto-profissional.webp'
+                }}
+              />
+              <div className="p-6">
+                <h3 className="text-xl font-bold font-display">Roberto de Araújo Jr.</h3>
+                <p className="text-primary font-medium mb-3 text-sm">Vendas & Suporte Comercial</p>
+                <div className="text-xs font-semibold text-muted-foreground mb-3 uppercase tracking-wider">
+                  Vendas | Relacionamento
+                </div>
+                <p className="text-muted-foreground text-sm">
+                  Irmão de Luiz e responsável pelo setor de vendas e suporte comercial. Dedicado a
+                  oferecer atendimento personalizado e encontrar o veículo ideal para cada perfil de
+                  cliente.
+                </p>
+              </div>
+            </Card>
+            <Card className="overflow-hidden border-border/50">
+              <img
+                src="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/fotos/Gabriel-foto-profissional.webp"
+                alt="Gabriel Araújo"
+                className="w-full h-64 object-cover object-top"
+                loading="lazy"
+              />
+              <div className="p-6">
+                <h3 className="text-xl font-bold font-display">Gabriel Araújo</h3>
+                <p className="text-primary font-medium mb-3 text-sm">Especialista em Seguros</p>
+                <div className="text-xs font-semibold text-muted-foreground mb-3 uppercase tracking-wider">
+                  Proteção | Financiamentos
+                </div>
+                <p className="text-muted-foreground text-sm">
+                  Filho de Luiz e responsável pelo departamento de seguros e financiamentos através
+                  da parceria com a Km Zero, garantindo que você saia com total proteção e as
+                  melhores taxas.
                 </p>
               </div>
             </Card>
@@ -272,14 +301,15 @@ export default function Sobre() {
                 acolher. Clientes não vêm aqui só comprar carro, vêm buscar solução. Isso Luiz
                 oferece melhor que ninguém."
               </p>
-              <p className="font-bold">- Roberto Junior</p>
+              <p className="font-bold">- Roberto de Araújo Jr.</p>
             </Card>
             <Card className="p-6 text-left bg-background shadow-sm">
               <p className="italic text-muted-foreground mb-4">
-                "Trabalhar aqui muda sua perspectiva. A humanidade que Luiz coloca nas transações é
-                rara no mercado. A gente não vende carro. A gente resolve problema."
+                "Fazer parte da administração desta empresa em família me enche de orgulho. O nível
+                de compromisso e transparência que mantemos com cada cliente é o nosso verdadeiro
+                diferencial no mercado."
               </p>
-              <p className="font-bold">- Jessica Germano</p>
+              <p className="font-bold">- Adriana Araújo</p>
             </Card>
           </div>
         </div>

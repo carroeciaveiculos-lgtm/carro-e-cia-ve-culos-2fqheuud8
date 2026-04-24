@@ -291,10 +291,24 @@ export default function Consignacao() {
               <Star className="fill-current w-5 h-5" />
             </div>
             <p className="italic text-muted-foreground mb-4">
-              "Vendi meu carro em 12 dias! Luiz foi super profissional, tudo transparente. Antes eu
-              tentei vender sozinho por meses sem sucesso. Recomendo muito!"
+              "Ótimo atendimento e boa oferta de produtos."
             </p>
-            <p className="font-bold">- João Silva, Uberaba</p>
+            <p className="font-bold">- Paulo Sérgio Dias de Abreu</p>
+            <p className="text-xs text-muted-foreground">Local Guide</p>
+          </Card>
+          <Card className="p-6 text-left shadow-md">
+            <div className="flex text-yellow-500 mb-4">
+              <Star className="fill-current w-5 h-5" />
+              <Star className="fill-current w-5 h-5" />
+              <Star className="fill-current w-5 h-5" />
+              <Star className="fill-current w-5 h-5" />
+              <Star className="text-gray-300 w-5 h-5" />
+            </div>
+            <p className="italic text-muted-foreground mb-4">
+              "Atendimento, qualidade e confiança."
+            </p>
+            <p className="font-bold">- Milson Q10 Sorvetes</p>
+            <p className="text-xs text-muted-foreground">Local Guide</p>
           </Card>
           <Card className="p-6 text-left shadow-md">
             <div className="flex text-yellow-500 mb-4">
@@ -304,25 +318,9 @@ export default function Consignacao() {
               <Star className="fill-current w-5 h-5" />
               <Star className="fill-current w-5 h-5" />
             </div>
-            <p className="italic text-muted-foreground mb-4">
-              "Não queria mais me preocupar vendendo sozinho. Consignei na Carro e Cia, recebi em 20
-              dias e sem dor de cabeça. Serviço impecável."
-            </p>
-            <p className="font-bold">- Maria Santos, Uberlândia</p>
-          </Card>
-          <Card className="p-6 text-left shadow-md">
-            <div className="flex text-yellow-500 mb-4">
-              <Star className="fill-current w-5 h-5" />
-              <Star className="fill-current w-5 h-5" />
-              <Star className="fill-current w-5 h-5" />
-              <Star className="fill-current w-5 h-5" />
-              <Star className="fill-current w-5 h-5" />
-            </div>
-            <p className="italic text-muted-foreground mb-4">
-              "Luiz cuida do seu carro como se fosse dele. Profissionalismo de quem realmente ama
-              carros. Vendeu no preço que combinamos."
-            </p>
-            <p className="font-bold">- Carlos Oliveira, Uberaba</p>
+            <p className="italic text-muted-foreground mb-4">"Ótimo lugar bem atenciosos"</p>
+            <p className="font-bold">- rondineli oliveira</p>
+            <p className="text-xs text-muted-foreground">Local Guide</p>
           </Card>
         </div>
       </section>

@@ -38,12 +38,28 @@ const CATEGORY_COLORS: Record<string, string> = {
 
 const CATEGORIES = ['Todos', 'Consignação', 'Compra', 'Vender', 'Financiamento', 'Seminovos']
 
-const CATEGORY_IMAGES: Record<string, string> = {
-  Consignação: 'https://img.usecurling.com/p/600/338?q=safe%20contract&color=green',
-  Compra: 'https://img.usecurling.com/p/600/338?q=car%20keys&color=blue',
-  Vender: 'https://img.usecurling.com/p/600/338?q=deal%20marketing&color=orange',
-  Financiamento: 'https://img.usecurling.com/p/600/338?q=calculator%20money&color=purple',
-  Seminovos: 'https://img.usecurling.com/p/600/338?q=car%20dealership&color=red',
+const getDynamicImageUrl = (post: BlogPost) => {
+  if (
+    post?.image_url &&
+    !post.image_url.includes('modelo-veiculo') &&
+    !post.image_url.includes('consignacao')
+  ) {
+    return post.image_url.replace(/\.(jpg|jpeg|png)$/, '.webp')
+  }
+  const cleanTitle = (post?.title || 'car business')
+    .replace(/[^a-zA-Z0-9\s]/g, '')
+    .trim()
+    .split(' ')
+    .slice(0, 3)
+    .join(' ')
+  const query = encodeURIComponent(cleanTitle || 'car business')
+  let color = 'gray'
+  if (post?.category === 'Consignação') color = 'green'
+  else if (post?.category === 'Compra') color = 'blue'
+  else if (post?.category === 'Vender') color = 'orange'
+  else if (post?.category === 'Financiamento') color = 'purple'
+  else if (post?.category === 'Seminovos') color = 'red'
+  return `https://img.usecurling.com/p/600/338?q=${query}&color=${color}`
 }
 
 export default function BlogIndex() {
@@ -157,16 +173,9 @@ export default function BlogIndex() {
                   onClick={() => trackCTAClick(`Ler Artigo: ${post.title}`, window.location.href)}
                 >
                   <picture>
-                    <source
-                      srcSet={post.image_url?.replace(/\.(jpg|jpeg|png)$/, '.webp') || ''}
-                      type="image/webp"
-                    />
+                    <source srcSet={getDynamicImageUrl(post)} type="image/webp" />
                     <img
-                      src={
-                        post.image_url ||
-                        CATEGORY_IMAGES[post.category || ''] ||
-                        `https://img.usecurling.com/p/600/338?q=car`
-                      }
+                      src={getDynamicImageUrl(post)}
                       alt={post.title}
                       width="600"
                       height="338"
