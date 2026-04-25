@@ -30,6 +30,9 @@ export function LeadForm({
     email: '',
     whatsapp: '',
     modelo_veiculo: '',
+    ano_veiculo: '',
+    km: '',
+    condicao: '',
   })
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -84,17 +87,6 @@ export function LeadForm({
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="email">E-mail</Label>
-        <Input
-          id="email"
-          type="email"
-          value={formData.email}
-          onChange={(e) => setFormData((prev) => ({ ...prev, email: e.target.value }))}
-          placeholder="seu.email@exemplo.com"
-        />
-      </div>
-
-      <div className="space-y-2">
         <Label htmlFor="whatsapp">WhatsApp *</Label>
         <Input
           id="whatsapp"
@@ -106,18 +98,72 @@ export function LeadForm({
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="modelo_veiculo">Qual veículo quer vender?</Label>
+        <Label htmlFor="modelo_veiculo">Qual veículo quer vender? *</Label>
         <Input
           id="modelo_veiculo"
+          required
           value={formData.modelo_veiculo}
           onChange={(e) => setFormData((prev) => ({ ...prev, modelo_veiculo: e.target.value }))}
-          placeholder="Ex: Corolla 2020"
+          placeholder="Ex: Chevrolet Onix 2022"
         />
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="ano_veiculo">Ano do Veículo *</Label>
+        <select
+          id="ano_veiculo"
+          required
+          value={formData.ano_veiculo}
+          onChange={(e) => setFormData((prev) => ({ ...prev, ano_veiculo: e.target.value }))}
+          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          <option value="">Selecione o ano</option>
+          <option value="2025">2025</option>
+          <option value="2024">2024</option>
+          <option value="2023">2023</option>
+          <option value="2022">2022</option>
+          <option value="2021">2021</option>
+          <option value="2020">2020</option>
+          <option value="2019">2019</option>
+          <option value="2018">2018</option>
+          <option value="2017">2017</option>
+          <option value="2016">2016</option>
+          <option value="2015">2015</option>
+          <option value="Anterior">Anterior a 2015</option>
+        </select>
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="km">Quilometragem *</Label>
+        <Input
+          id="km"
+          type="number"
+          required
+          value={formData.km}
+          onChange={(e) => setFormData((prev) => ({ ...prev, km: e.target.value }))}
+          placeholder="Ex: 45000"
+        />
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="condicao">Condição do Veículo *</Label>
+        <select
+          id="condicao"
+          required
+          value={formData.condicao}
+          onChange={(e) => setFormData((prev) => ({ ...prev, condicao: e.target.value }))}
+          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          <option value="">Selecione</option>
+          <option value="excelente">Excelente (sem problemas)</option>
+          <option value="bom">Bom (pequenos detalhes)</option>
+          <option value="regular">Regular (necessita reparos)</option>
+        </select>
       </div>
 
       <Button
         type="submit"
-        className="w-full h-12 text-sm md:text-lg font-bold mt-2 whitespace-normal break-words leading-snug"
+        className="w-full h-12 text-sm md:text-lg font-bold mt-2 whitespace-normal break-words leading-snug btn-cta"
         disabled={loading}
       >
         {loading ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : null}

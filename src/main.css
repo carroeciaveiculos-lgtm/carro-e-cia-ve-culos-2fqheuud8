@@ -100,10 +100,16 @@
     overflow-x: hidden !important;
     max-width: 100vw !important;
     width: 100%;
+    box-sizing: border-box;
+  }
+  *,
+  *::before,
+  *::after {
+    box-sizing: inherit;
   }
   img {
     max-width: 100% !important;
-    height: auto;
+    height: auto !important;
     display: block;
   }
   a,
@@ -139,5 +145,17 @@
   }
   .mb-safe {
     margin-bottom: env(safe-area-inset-bottom);
+  }
+  @media (max-width: 768px) {
+    .btn-cta,
+    button[class*='btn'],
+    a[class*='btn'] {
+      font-size: 14px !important;
+      padding: 12px 20px !important;
+      white-space: normal !important;
+      word-break: break-word !important;
+      line-height: 1.4 !important;
+      max-width: 100% !important;
+    }
   }
 }
