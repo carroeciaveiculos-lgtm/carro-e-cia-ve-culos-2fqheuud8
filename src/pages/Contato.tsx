@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/select'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Card } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
 import { getWhatsAppLink } from '@/lib/whatsapp'
 import { Phone, Mail, MessageCircle, MapPin, Clock, Instagram, Facebook } from 'lucide-react'
 import { useState } from 'react'
