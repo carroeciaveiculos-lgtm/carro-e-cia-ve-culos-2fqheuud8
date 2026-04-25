@@ -13,7 +13,6 @@ export function VehicleCard({ vehicle, isList = false }: { vehicle: any; isList?
 
   const getOptimizedUrl = (url: string) => {
     if (!url) return 'https://img.usecurling.com/p/400/300?q=car'
-    // Remover uso do render transform do Supabase (causando quebra de imagem sem o plano PRO)
     if (url.includes('supabase.co/storage/v1/render/image/public/')) {
       return url
         .replace('/storage/v1/render/image/public/', '/storage/v1/object/public/')
@@ -45,12 +44,15 @@ export function VehicleCard({ vehicle, isList = false }: { vehicle: any; isList?
           </picture>
         </div>
         <div className="p-4 flex flex-col flex-grow">
-          <h3 className="font-display font-bold text-base md:text-lg text-foreground line-clamp-1">
+          <h3 className="font-display font-bold text-base md:text-lg text-foreground line-clamp-1 mb-2">
             {vehicle.marca} {vehicle.modelo}
           </h3>
-          <p className="text-muted-foreground text-xs md:text-sm mb-2">
-            {vehicle.ano_fabricacao} • {vehicle.quilometragem?.toLocaleString('pt-BR') || 0} km •{' '}
-            {vehicle.cambio}
+          <p className="text-[13px] text-muted-foreground mb-1">
+            Ano: {vehicle.ano_fabricacao} | Combustível: {vehicle.combustivel || 'N/I'} | Cor:{' '}
+            {vehicle.cor || 'N/I'}
+          </p>
+          <p className="text-[13px] text-muted-foreground mb-2">
+            Quilometragem: {vehicle.quilometragem?.toLocaleString('pt-BR') || 0} km
           </p>
           <div className="mt-auto">
             <span className="font-bold text-primary text-lg md:text-xl">
@@ -97,7 +99,7 @@ export function VehicleCard({ vehicle, isList = false }: { vehicle: any; isList?
             height="300"
             loading="lazy"
             decoding="async"
-            className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-500"
+            className="object-cover w-full h-[300px] md:h-full group-hover:scale-105 transition-transform duration-500"
           />{' '}
         </picture>
       </div>
@@ -113,7 +115,7 @@ export function VehicleCard({ vehicle, isList = false }: { vehicle: any; isList?
           Quilometragem: {vehicle.quilometragem?.toLocaleString('pt-BR') || 0} km
         </p>
 
-        <div className="bg-muted/30 p-3 rounded-lg mb-4 mt-auto">
+        <div className="bg-[#f5f5f5] dark:bg-muted/30 p-3 rounded-lg mb-4 mt-auto">
           <p className="text-2xl font-bold text-[#25D366] m-0">
             {formatCurrency(vehicle.preco_venda || 0)}
           </p>

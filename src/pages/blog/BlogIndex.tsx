@@ -1,18 +1,11 @@
 import { useState, useEffect, useMemo } from 'react'
 import { SEO } from '@/components/SEO'
 import { Link } from 'react-router-dom'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-  CardFooter,
-} from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
-import { Search, Mail, Clock } from 'lucide-react'
+import { Search, Clock } from 'lucide-react'
 import { supabase } from '@/lib/supabase/client'
 import { useToast } from '@/hooks/use-toast'
 import { cn } from '@/lib/utils'
@@ -29,11 +22,12 @@ interface BlogPost {
 }
 
 const CATEGORY_COLORS: Record<string, string> = {
-  Consignação: 'bg-[#22c55e] hover:bg-[#22c55e]/90 text-white',
-  Compra: 'bg-[#3b82f6] hover:bg-[#3b82f6]/90 text-white',
-  Vender: 'bg-[#f97316] hover:bg-[#f97316]/90 text-white',
-  Financiamento: 'bg-[#a855f7] hover:bg-[#a855f7]/90 text-white',
-  Seminovos: 'bg-[#ef4444] hover:bg-[#ef4444]/90 text-white',
+  Consignação: 'bg-[#FF6B6B] text-white',
+  Compra: 'bg-[#3b82f6] text-white',
+  Vender: 'bg-[#4ECDC4] text-white',
+  Financiamento: 'bg-[#a855f7] text-white',
+  Empréstimo: 'bg-[#25D366] text-white',
+  Seminovos: 'bg-[#ef4444] text-white',
 }
 
 const CATEGORIES = ['Todos', 'Consignação', 'Compra', 'Vender', 'Financiamento', 'Seminovos']
@@ -149,19 +143,19 @@ export default function BlogIndex() {
         </div>
 
         {loading ? (
-          <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
             {[1, 2, 3, 4, 5, 6].map((i) => (
-              <Card key={i} className="animate-pulse border-border/50 shadow-sm">
+              <Card key={i} className="animate-pulse border-border/50 shadow-sm h-80">
                 <div className="h-48 bg-muted"></div>
-                <CardHeader>
-                  <div className="h-6 w-24 bg-muted mb-2 rounded-md"></div>
-                  <div className="h-8 w-full bg-muted rounded-md"></div>
-                </CardHeader>
+                <div className="p-4 space-y-3">
+                  <div className="h-4 w-24 bg-muted rounded-md"></div>
+                  <div className="h-6 w-full bg-muted rounded-md"></div>
+                </div>
               </Card>
             ))}
           </div>
         ) : (
-          <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
             {filteredPosts.map((post) => (
               <Card
                 key={post.id}
@@ -169,7 +163,7 @@ export default function BlogIndex() {
               >
                 <Link
                   to={`/blog/${post.slug}`}
-                  className="block relative overflow-hidden"
+                  className="block relative overflow-hidden w-full h-[200px]"
                   onClick={() => trackCTAClick(`Ler Artigo: ${post.title}`, window.location.href)}
                 >
                   <picture>
@@ -180,25 +174,25 @@ export default function BlogIndex() {
                       width="600"
                       height="338"
                       loading="lazy"
-                      className="w-full h-[250px] object-cover group-hover:scale-105 transition-transform duration-500"
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                     />
                   </picture>
                 </Link>
                 <CardContent className="p-6 flex-1 flex flex-col">
-                  <div className="mb-4">
+                  <div className="mb-3">
                     <Badge
                       className={cn(
                         'text-[11px] font-bold tracking-wider px-3 py-1 uppercase rounded-full',
-                        CATEGORY_COLORS[post.category || ''] || 'bg-primary',
+                        CATEGORY_COLORS[post.category || ''] || 'bg-primary text-white',
                       )}
                     >
                       {post.category || 'Novidade'}
                     </Badge>
                   </div>
-                  <h3 className="font-display font-bold text-xl leading-snug mb-3 group-hover:text-primary transition-colors line-clamp-2">
+                  <h3 className="font-display font-bold text-lg leading-snug mb-3 group-hover:text-primary transition-colors line-clamp-2">
                     <Link to={`/blog/${post.slug}`}>{post.title}</Link>
                   </h3>
-                  <p className="line-clamp-3 text-sm text-slate-600 mb-6">
+                  <p className="line-clamp-2 text-sm text-slate-600 mb-6">
                     {post.meta_description}
                   </p>
 
@@ -210,7 +204,7 @@ export default function BlogIndex() {
                       className="bg-[#25D366] hover:bg-[#128C7E] text-white font-bold text-xs h-9 px-4 rounded-md"
                       asChild
                     >
-                      <Link to={`/blog/${post.slug}`}>Ler Artigo →</Link>
+                      <Link to={`/blog/${post.slug}`}>Ler Artigo Completo →</Link>
                     </Button>
                   </div>
                 </CardContent>
@@ -235,12 +229,12 @@ export default function BlogIndex() {
           </div>
         )}
 
-        <div className="mt-20 bg-gradient-to-br from-[#25D366] to-[#128C7E] text-white rounded-2xl p-8 md:p-12 text-center max-w-4xl mx-auto shadow-xl">
+        <div className="mt-20 bg-gradient-to-br from-[#25D366] to-[#128C7E] text-white rounded-xl p-10 text-center max-w-4xl mx-auto shadow-xl">
           <div className="text-5xl mb-4">📧</div>
-          <h2 className="text-3xl font-display font-bold mb-4">
+          <h2 className="text-2xl md:text-3xl font-display font-bold mb-4">
             Receba Dicas Exclusivas Semanalmente
           </h2>
-          <p className="text-white/90 mb-8 max-w-lg mx-auto text-base md:text-lg">
+          <p className="text-white/90 mb-8 max-w-lg mx-auto text-sm md:text-base">
             Junte-se a mais de 5.000 pessoas que recebem estratégias comprovadas para não perder
             dinheiro com veículos.
           </p>
@@ -254,16 +248,16 @@ export default function BlogIndex() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="bg-white text-slate-800 placeholder:text-slate-400 h-12 focus-visible:ring-white border-0"
+              className="bg-white text-slate-800 placeholder:text-slate-400 h-12 focus-visible:ring-white border-0 w-full"
             />
             <Button
               type="submit"
-              className="h-12 font-bold px-8 bg-slate-900 hover:bg-slate-800 text-white"
+              className="h-12 font-bold px-8 bg-white text-[#25D366] hover:bg-slate-50 w-full sm:w-auto whitespace-nowrap"
             >
               Inscrever Agora
             </Button>
           </form>
-          <p className="text-xs text-white/70 mt-6 font-medium">
+          <p className="text-xs text-white/80 mt-6 font-medium">
             ✓ Sem spam | ✓ Cancele a qualquer momento | ✓ 100% gratuito
           </p>
         </div>

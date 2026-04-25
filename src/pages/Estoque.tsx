@@ -13,11 +13,10 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Slider } from '@/components/ui/slider'
-import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
 import { supabase } from '@/lib/supabase/client'
-import { Filter, Search, Car, Calendar, Gauge, Fuel } from 'lucide-react'
+import { Filter, Search, Car } from 'lucide-react'
 import { trackCTAClick } from '@/lib/tracking'
 
 export default function Estoque() {
@@ -25,6 +24,7 @@ export default function Estoque() {
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [marca, setMarca] = useState('Todas')
+  const [ano, setAno] = useState('Todos')
   const [maxPrice, setMaxPrice] = useState([300000])
 
   useEffect(() => {
@@ -43,14 +43,28 @@ export default function Estoque() {
   }, [])
 
   const marcas = ['Todas', ...Array.from(new Set(veiculos.map((v) => v.marca)))]
+  const anos = [
+    'Todos',
+    ...Array.from(new Set(veiculos.map((v) => v.ano_fabricacao?.toString()).filter(Boolean)))
+      .sort()
+      .reverse(),
+  ]
 
   const filteredVeiculos = veiculos.filter((v) => {
     const s = searchTerm.toLowerCase()
     const matchSearch = v.marca.toLowerCase().includes(s) || v.modelo.toLowerCase().includes(s)
     const matchMarca = marca === 'Todas' || v.marca === marca
+    const matchAno = ano === 'Todos' || v.ano_fabricacao?.toString() === ano
     const matchPrice = (v.preco_venda || 0) <= maxPrice[0]
-    return matchSearch && matchMarca && matchPrice
+    return matchSearch && matchMarca && matchAno && matchPrice
   })
+
+  const clearFilters = () => {
+    setMarca('Todas')
+    setAno('Todos')
+    setMaxPrice([300000])
+    setSearchTerm('')
+  }
 
   const FiltersContent = () => (
     <div className="space-y-6">
@@ -70,19 +84,25 @@ export default function Estoque() {
         </Select>
       </div>
       <div className="space-y-2">
+        <Label>Ano</Label>
+        <Select value={ano} onValueChange={setAno}>
+          <SelectTrigger>
+            <SelectValue placeholder="Todos" />
+          </SelectTrigger>
+          <SelectContent>
+            {anos.map((a) => (
+              <SelectItem key={a} value={a}>
+                {a}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+      <div className="space-y-2">
         <Label>Preço Máximo: R$ {maxPrice[0].toLocaleString('pt-BR')}</Label>
         <Slider value={maxPrice} onValueChange={setMaxPrice} max={500000} step={10000} />
       </div>
-      {/* Mais filtros podem ser adicionados aqui conforme PROMPT 27 */}
-      <Button
-        variant="outline"
-        className="w-full"
-        onClick={() => {
-          setMarca('Todas')
-          setMaxPrice([300000])
-          setSearchTerm('')
-        }}
-      >
+      <Button variant="outline" className="w-full" onClick={clearFilters}>
         Limpar Filtros
       </Button>
     </div>
@@ -106,7 +126,6 @@ export default function Estoque() {
         </div>
 
         <div className="flex flex-col md:flex-row gap-8 items-start">
-          {/* Desktop Filters */}
           <aside className="hidden md:block w-72 shrink-0 bg-card p-6 rounded-xl border shadow-sm sticky top-[100px]">
             <h2 className="font-bold text-lg mb-6 flex items-center gap-2">
               <Filter className="w-5 h-5" /> Filtros
@@ -133,9 +152,9 @@ export default function Estoque() {
                   <Button
                     variant="outline"
                     size="sm"
-                    className="rounded-full whitespace-nowrap border-border/50 shadow-sm text-xs"
+                    className="rounded-full whitespace-nowrap border-border/50 shadow-sm text-xs px-4"
                   >
-                    Filtrar por Preço
+                    Preço
                   </Button>
                 </SheetTrigger>
                 <SheetContent side="bottom" className="h-[80vh]">
@@ -150,9 +169,26 @@ export default function Estoque() {
                   <Button
                     variant="outline"
                     size="sm"
-                    className="rounded-full whitespace-nowrap border-border/50 shadow-sm text-xs"
+                    className="rounded-full whitespace-nowrap border-border/50 shadow-sm text-xs px-4"
                   >
-                    Filtrar por Marca
+                    Marca
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="bottom" className="h-[80vh]">
+                  <SheetHeader className="mb-6">
+                    <SheetTitle>Filtros</SheetTitle>
+                  </SheetHeader>
+                  <FiltersContent />
+                </SheetContent>
+              </Sheet>
+              <Sheet>
+                <SheetTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="rounded-full whitespace-nowrap border-border/50 shadow-sm text-xs px-4"
+                  >
+                    Ano
                   </Button>
                 </SheetTrigger>
                 <SheetContent side="bottom" className="h-[80vh]">
@@ -165,12 +201,8 @@ export default function Estoque() {
               <Button
                 variant="outline"
                 size="sm"
-                className="rounded-full whitespace-nowrap border-border/50 shadow-sm text-xs"
-                onClick={() => {
-                  setMarca('Todas')
-                  setMaxPrice([300000])
-                  setSearchTerm('')
-                }}
+                className="rounded-full whitespace-nowrap border-border/50 shadow-sm text-xs px-4"
+                onClick={clearFilters}
               >
                 Limpar
               </Button>
@@ -193,15 +225,7 @@ export default function Estoque() {
                 <p className="text-muted-foreground mb-6">
                   Tente ajustar seus filtros ou limpar a busca.
                 </p>
-                <Button
-                  onClick={() => {
-                    setMarca('Todas')
-                    setMaxPrice([300000])
-                    setSearchTerm('')
-                  }}
-                >
-                  Limpar Filtros
-                </Button>
+                <Button onClick={clearFilters}>Limpar Filtros</Button>
               </div>
             ) : (
               <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -213,7 +237,7 @@ export default function Estoque() {
                   return (
                     <Card
                       key={v.id}
-                      className="overflow-hidden hover:shadow-lg transition-shadow border-border/50 group flex flex-col"
+                      className="overflow-hidden hover:shadow-lg transition-shadow border-border/50 group flex flex-col w-full"
                     >
                       <Link
                         to={`/estoque/${v.id}`}
@@ -232,7 +256,7 @@ export default function Estoque() {
                           loading="lazy"
                         />
                       </Link>
-                      <CardContent className="p-4 md:p-5 flex-1 flex flex-col">
+                      <CardContent className="p-4 flex-1 flex flex-col">
                         <div className="mb-3">
                           <h3 className="font-bold text-base md:text-lg leading-tight group-hover:text-primary transition-colors line-clamp-1 mb-2">
                             {v.marca} {v.modelo}
@@ -246,7 +270,7 @@ export default function Estoque() {
                           </p>
                         </div>
 
-                        <div className="bg-muted/30 p-3 rounded-lg mb-4 mt-auto">
+                        <div className="bg-[#f5f5f5] dark:bg-muted/30 p-3 rounded-lg mb-4 mt-auto">
                           <p className="text-2xl font-bold text-[#25D366] m-0">
                             {v.preco_venda
                               ? `R$ ${v.preco_venda.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
@@ -256,7 +280,7 @@ export default function Estoque() {
 
                         <Button
                           asChild
-                          className="w-full h-12 bg-[#25D366] hover:bg-[#20bd5a] text-white font-bold text-sm"
+                          className="w-full h-12 bg-[#25D366] hover:bg-[#20bd5a] text-white font-bold text-sm rounded-lg"
                         >
                           <a
                             href={`https://wa.me/5534999484285?text=${encodeURIComponent(`Olá! Vi o ${v.marca} ${v.modelo} no site por R$ ${v.preco_venda}. Ainda está disponível?`)}`}

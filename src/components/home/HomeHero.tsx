@@ -52,7 +52,7 @@ export function HomeHero() {
               className="h-14 text-sm md:text-base px-6 bg-[#25D366] hover:bg-[#20bd5a] text-white w-full sm:w-auto whitespace-nowrap"
             >
               <a href="/consignacao" onClick={() => trackCTAClick('CONSIGNAR AGORA', '/')}>
-                <CarFront className="mr-2 h-5 w-5" /> CONSIGNAR AGORA
+                CONSIGNAR AGORA
               </a>
             </Button>
             <Button

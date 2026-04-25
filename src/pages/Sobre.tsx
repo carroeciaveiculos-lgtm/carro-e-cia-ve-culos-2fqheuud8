@@ -1,9 +1,7 @@
 import { SEO } from '@/components/SEO'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
-import { getWhatsAppLink } from '@/lib/whatsapp'
-import { MapPin, Phone, Mail, Clock, MessageCircle } from 'lucide-react'
-import { trackCTAClick } from '@/lib/tracking'
+import { MapPin, Mail, Clock, MessageCircle } from 'lucide-react'
 
 export default function Sobre() {
   const schema = {
@@ -25,7 +23,7 @@ export default function Sobre() {
         canonical="https://carroeciamotors.com.br/sobre"
       />
 
-      <section className="container max-w-6xl mx-auto px-4 mb-20">
+      <section className="container max-w-6xl mx-auto px-4 mb-16">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           <div className="space-y-6">
             <div className="text-left mb-8">
@@ -66,28 +64,38 @@ export default function Sobre() {
                       transação.
                     </p>
                   </div>
+
+                  <div className="flex flex-col gap-2 mt-6">
+                    <div className="text-[13px] text-[#25D366] font-bold">
+                      ✓ 20+ Anos de Mercado
+                    </div>
+                    <div className="text-[13px] text-[#25D366] font-bold">
+                      ✓ 5.000+ Clientes Satisfeitos
+                    </div>
+                    <div className="text-[13px] text-[#25D366] font-bold">
+                      ✓ Referência em Uberaba
+                    </div>
+                  </div>
                 </div>
               </div>
+            </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-8 bg-muted/30 p-4 rounded-xl">
-                <div className="text-center">
-                  <div className="text-2xl font-black text-primary mb-1">20+</div>
-                  <p className="text-xs text-muted-foreground font-medium uppercase">
-                    Anos de Mercado
-                  </p>
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl font-black text-primary mb-1">5.000+</div>
-                  <p className="text-xs text-muted-foreground font-medium uppercase">
-                    Clientes Satisfeitos
-                  </p>
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl font-black text-primary mb-1">100%</div>
-                  <p className="text-xs text-muted-foreground font-medium uppercase">
-                    Transparência
-                  </p>
-                </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-8 bg-[#f5f5f5] dark:bg-muted/30 p-6 rounded-xl">
+              <div className="text-center">
+                <div className="text-2xl font-black text-[#25D366] mb-1">20+</div>
+                <p className="text-xs text-muted-foreground font-medium uppercase">
+                  Anos de Mercado
+                </p>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-black text-[#25D366] mb-1">5.000+</div>
+                <p className="text-xs text-muted-foreground font-medium uppercase">
+                  Clientes Satisfeitos
+                </p>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-black text-[#25D366] mb-1">100%</div>
+                <p className="text-xs text-muted-foreground font-medium uppercase">Transparência</p>
               </div>
             </div>
           </div>
@@ -97,13 +105,13 @@ export default function Sobre() {
             <img
               src="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/fotos/fachada-da-loja.webp"
               alt="Showroom Carro e Cia Veículos"
-              className="rounded-2xl shadow-2xl object-cover w-full h-[250px] md:h-[500px]"
+              className="rounded-2xl shadow-2xl object-cover w-full h-[200px] md:h-[400px]"
             />
           </div>
         </div>
       </section>
 
-      <section className="bg-muted/30 py-20 border-y border-border/50">
+      <section className="bg-muted/30 py-16 border-y border-border/50">
         <div className="container max-w-5xl mx-auto px-4">
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-display font-bold mb-4">
@@ -120,21 +128,21 @@ export default function Sobre() {
                 "Vendi meu carro em menos de uma semana. O Luiz cuidou de tudo com extrema
                 transparência. Não precisei me preocupar com nada."
               </p>
-              <p className="font-bold text-sm">- João Silva</p>
+              <p className="font-bold text-sm text-[#666] mt-auto">- João Silva</p>
             </Card>
             <Card className="p-6 bg-background shadow-sm border-l-4 border-l-[#25D366]">
               <p className="italic text-slate-700 text-sm mb-4 leading-relaxed">
                 "Comprei um seminovo com eles e a qualidade e procedência são garantidas. O
                 atendimento do Gabriel no financiamento foi excepcional."
               </p>
-              <p className="font-bold text-sm">- Maria Santos</p>
+              <p className="font-bold text-sm text-[#666] mt-auto">- Maria Santos</p>
             </Card>
             <Card className="p-6 bg-background shadow-sm border-l-4 border-l-[#25D366]">
               <p className="italic text-slate-700 text-sm mb-4 leading-relaxed">
                 "Confiança é tudo na hora de trocar de carro. A equipe da Carro e Cia me deu toda a
                 segurança que eu precisava."
               </p>
-              <p className="font-bold text-sm">- Carlos Eduardo</p>
+              <p className="font-bold text-sm text-[#666] mt-auto">- Carlos Eduardo</p>
             </Card>
           </div>
 
@@ -144,7 +152,7 @@ export default function Sobre() {
               Fale com o Luiz e descubra como podemos ajudar você a fazer o melhor negócio.
             </p>
             <Button
-              className="w-full sm:w-auto bg-white text-[#25D366] hover:bg-slate-50 font-bold px-8 h-14"
+              className="w-full bg-white text-[#25D366] hover:bg-slate-50 font-bold px-8 h-14"
               asChild
             >
               <a
@@ -170,7 +178,7 @@ export default function Sobre() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             <Card className="overflow-hidden border-border/50 flex flex-col">
               <img
                 src="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/fotos/Luiz-Fernando-foto-profissional.webp"
@@ -188,7 +196,10 @@ export default function Sobre() {
                   Luiz é o coração da Carro e Cia com mais de 20 anos dedicados ao mercado. Sua
                   missão é ser referência em consignação segura.
                 </p>
-                <Button className="w-full bg-[#25D366] hover:bg-[#128C7E] text-white" asChild>
+                <Button
+                  className="w-full bg-[#25D366] hover:bg-[#128C7E] text-white mt-auto"
+                  asChild
+                >
                   <a
                     href="https://wa.me/5534999484285?text=Olá Luiz, gostaria de falar sobre consignação!"
                     target="_blank"
@@ -219,7 +230,7 @@ export default function Sobre() {
                 </p>
                 <Button
                   variant="outline"
-                  className="w-full border-[#25D366] text-[#25D366] hover:bg-[#25D366]/10"
+                  className="w-full border-[#25D366] text-[#25D366] hover:bg-[#25D366]/10 mt-auto"
                   asChild
                 >
                   <a href="https://wa.me/5534999484285" target="_blank" rel="noopener noreferrer">
@@ -235,10 +246,6 @@ export default function Sobre() {
                 alt="Roberto de Araújo Jr."
                 className="w-full h-[250px] object-cover object-top"
                 loading="lazy"
-                onError={(e) => {
-                  e.currentTarget.src =
-                    'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/fotos/Luiz-Fernando-foto-profissional.webp'
-                }}
               />
               <div className="p-6 flex flex-col flex-1">
                 <h3 className="text-xl font-bold font-display">Roberto de Araújo Jr.</h3>
@@ -250,7 +257,10 @@ export default function Sobre() {
                   Responsável pelo setor de vendas e suporte comercial. Dedicado a encontrar o
                   veículo ideal para cada perfil de cliente.
                 </p>
-                <Button className="w-full bg-[#25D366] hover:bg-[#128C7E] text-white" asChild>
+                <Button
+                  className="w-full bg-[#25D366] hover:bg-[#128C7E] text-white mt-auto"
+                  asChild
+                >
                   <a
                     href="https://wa.me/5534999484285?text=Olá Roberto, gostaria de falar sobre um veículo!"
                     target="_blank"
@@ -279,7 +289,10 @@ export default function Sobre() {
                   Especialista no departamento de seguros e financiamentos, garantindo que você saia
                   com total proteção e as melhores taxas.
                 </p>
-                <Button className="w-full bg-[#25D366] hover:bg-[#128C7E] text-white" asChild>
+                <Button
+                  className="w-full bg-[#25D366] hover:bg-[#128C7E] text-white mt-auto"
+                  asChild
+                >
                   <a
                     href="https://wa.me/5534992000300?text=Olá Gabriel, gostaria de falar sobre financiamento e seguros!"
                     target="_blank"
@@ -297,10 +310,6 @@ export default function Sobre() {
                 alt="Jessica Germano"
                 className="w-full h-[250px] object-cover object-top"
                 loading="lazy"
-                onError={(e) => {
-                  e.currentTarget.src =
-                    'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/fotos/Luiz-Fernando-foto-profissional.webp'
-                }}
               />
               <div className="p-6 flex flex-col flex-1">
                 <h3 className="text-xl font-bold font-display">Jessica Germano</h3>
@@ -312,7 +321,10 @@ export default function Sobre() {
                   Jessica é responsável pela gestão financeira da Carro e Cia. Com atenção aos
                   detalhes, garante transparência e segurança em cada transação.
                 </p>
-                <Button className="w-full bg-[#25D366] hover:bg-[#128C7E] text-white" asChild>
+                <Button
+                  className="w-full bg-[#25D366] hover:bg-[#128C7E] text-white mt-auto"
+                  asChild
+                >
                   <a
                     href="https://wa.me/5534999484285?text=Olá Jessica, gostaria de falar sobre assuntos financeiros!"
                     target="_blank"
