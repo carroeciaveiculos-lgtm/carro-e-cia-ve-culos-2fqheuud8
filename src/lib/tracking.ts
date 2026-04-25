@@ -108,9 +108,9 @@ export const trackConversion = (type: 'whatsapp' | 'ligar' | 'formulario') => {
     const executeTrack = () => {
       try {
         const codes = {
-          whatsapp: 'AW-18085065720/whatsapp_click',
-          ligar: 'AW-18085065720/ligar_click',
-          formulario: 'AW-18085065720/form_submit',
+          whatsapp: 'AW-869570436/whatsapp_click',
+          ligar: 'AW-869570436/ligar_click',
+          formulario: 'AW-869570436/form_submit',
         }
         ;(window as any).gtag('event', 'conversion', {
           send_to: codes[type],
@@ -148,6 +148,13 @@ export const trackWhatsAppClick = (contactPerson: string, trigger: string) => {
     content_name: 'WhatsApp Click',
     content_category: 'Contato',
   })
+
+  if (typeof window !== 'undefined' && (window as any).gtag) {
+    ;(window as any).gtag('event', 'whatsapp_click', {
+      button_name: trigger || 'whatsapp',
+      page_path: window.location.pathname,
+    })
+  }
 }
 
 export const trackCTAClick = (
@@ -162,6 +169,13 @@ export const trackCTAClick = (
         ? 'mobile'
         : 'desktop',
   })
+
+  if (typeof window !== 'undefined' && (window as any).gtag) {
+    ;(window as any).gtag('event', 'cta_click', {
+      cta_name: buttonText,
+      page_path: window.location.pathname,
+    })
+  }
 }
 
 export const trackImageLoad = (imageName: string, loadTime: number) => {
@@ -209,9 +223,15 @@ export const trackFormSubmission = (vehicleName: string, formType: string) => {
     })
     trackMetaEvent('Contact')
 
-    // Disparo pro Google Ads também
     if (typeof window !== 'undefined' && (window as any).gtag) {
-      ;(window as any).gtag('event', 'conversion', { send_to: 'AW-18085065720/form_submit' })
+      // Disparo de Evento GA4
+      ;(window as any).gtag('event', 'form_submit', {
+        form_name: formType || 'geral',
+        form_id: 'form-' + (formType || 'geral'),
+        page_path: window.location.pathname,
+      })
+      // Disparo pro Google Ads
+      ;(window as any).gtag('event', 'conversion', { send_to: 'AW-869570436/form_submit' })
     }
   } catch (e) {
     console.debug('Google Ads form conversion tracking silently failed')

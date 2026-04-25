@@ -108,7 +108,35 @@ export default function PoliticaPrivacidade() {
           </section>
 
           <section>
-            <h2 className="text-2xl font-semibold text-foreground mb-4">6. Contato</h2>
+            <h2 className="text-2xl font-semibold text-foreground mb-4">
+              6. Rastreamento com Microsoft Clarity
+            </h2>
+            <p className="leading-relaxed mb-4">
+              Este site utiliza Microsoft Clarity para análise de comportamento do usuário. Clarity
+              coleta dados sobre como você interage com o site, incluindo:
+            </p>
+            <ul className="list-disc pl-6 space-y-3 mb-4">
+              <li>Cliques e movimentos do mouse</li>
+              <li>Rolagem de página</li>
+              <li>Interações com elementos do site</li>
+            </ul>
+            <p className="leading-relaxed">
+              Estes dados são anonimizados e não identificam você pessoalmente. Para segurança
+              adicional, o sistema mascara campos de preenchimento de formulário e dados sensíveis.
+              Você pode optar por não participar visitando:{' '}
+              <a
+                href="https://clarity.microsoft.com/opt-out"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-primary hover:underline"
+              >
+                https://clarity.microsoft.com/opt-out
+              </a>
+            </p>
+          </section>
+
+          <section>
+            <h2 className="text-2xl font-semibold text-foreground mb-4">7. Contato</h2>
             <p className="leading-relaxed">
               Para quaisquer questões relacionadas a esta Política de Privacidade ou solicitações
               sobre seus dados, entre em contato conosco através dos nossos canais de atendimento

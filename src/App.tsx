@@ -7,6 +7,8 @@ import { AuthProvider } from '@/hooks/use-auth'
 
 import PublicLayout from '@/components/PublicLayout'
 import { ProtectedRoute } from '@/components/ProtectedRoute'
+import { CookieConsent } from '@/components/CookieConsent'
+import { useScrollTracking } from '@/hooks/use-scroll-tracking'
 import NotFound from './pages/NotFound'
 import Index from './pages/Index'
 
@@ -117,13 +119,20 @@ const PageLoader = () => (
   </div>
 )
 
+const GlobalHooks = () => {
+  useScrollTracking()
+  return null
+}
+
 const App = () => (
   <AuthProvider>
     <BrowserRouter>
       <DomainRedirect />
+      <GlobalHooks />
       <TooltipProvider>
         <Toaster />
         <Sonner />
+        <CookieConsent />
         <Suspense fallback={<PageLoader />}>
           <Routes>
             {/* Public Routes */}
