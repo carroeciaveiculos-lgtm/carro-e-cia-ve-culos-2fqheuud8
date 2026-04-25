@@ -10,8 +10,8 @@ export function HomeHero() {
       <div className="absolute inset-0 z-0">
         <picture>
           <source
-            srcSet="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/fotos/fachada-mobile.webp 480w, https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/fotos/fachada-da-loja.webp 1200w"
-            sizes="(max-width: 768px) 100vw, 100vw"
+            media="(max-width: 768px)"
+            srcSet="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/fotos/fachada-mobile.webp"
             type="image/webp"
           />
           <img
@@ -19,52 +19,47 @@ export function HomeHero() {
             alt="Carro e Cia Veículos - 20+ anos de referência em Uberaba"
             width="1920"
             height="1080"
-            className="w-full h-full object-cover object-center"
+            className="w-full h-[400px] md:h-full object-cover object-center"
+            style={{ filter: 'brightness(0.8)' }}
           />
         </picture>
-        <div className="absolute inset-0 bg-black/70" />
+        <div className="absolute inset-0 bg-black/60" />
       </div>
       <div className="container relative z-10 mx-auto px-4 grid lg:grid-cols-2 gap-12 items-center">
         <div className="text-center lg:text-left flex flex-col items-center lg:items-start">
-          <h1 className="text-4xl md:text-5xl lg:text-6xl font-display font-extrabold text-white mb-6 leading-tight animate-fade-in-up">
+          <img
+            src="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/fotos/Luiz-Fernando-foto-profissional.webp"
+            alt="Luiz Fernando"
+            className="w-32 h-32 md:w-40 md:h-40 rounded-full object-cover object-top border-4 border-white shadow-[0_4px_12px_rgba(0,0,0,0.3)] mx-auto lg:mx-0 mb-6"
+          />
+          <h1 className="text-4xl md:text-5xl lg:text-6xl font-display font-extrabold text-white mb-6 leading-tight animate-fade-in-up drop-shadow-md">
             Quer Vender Seu Carro? <span className="text-primary">A Solução Segura Está Aqui</span>
           </h1>
           <p
-            className="text-xl md:text-2xl text-gray-200 mb-8 animate-fade-in-up"
+            className="text-lg md:text-xl text-gray-100 mb-8 max-w-3xl mx-auto lg:mx-0 animate-fade-in-up drop-shadow-sm"
             style={{ animationDelay: '100ms' }}
           >
-            Consignação profissional, contrato protetor, você não se preocupa com nada. Há 20 anos,
-            Luiz Fernando oferece transparência e confiança.
-          </p>
-          <p
-            className="text-lg text-gray-300 mb-10 max-w-3xl mx-auto animate-fade-in-up"
-            style={{ animationDelay: '200ms' }}
-          >
-            Você tem um carro para vender e está cansado de se preocupar? Consigne com a Carro e
-            Cia. Nosso time cuida de TUDO: avaliação profissional, múltiplos anúncios, negociação
-            segura. Venda em dias, não em meses. Transparência garantida.
+            Consignação profissional, contrato protegido. Há 20 anos, Luiz Fernando oferece
+            transparência e confiança.
           </p>
           <div
-            className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start animate-fade-in-up"
-            style={{ animationDelay: '300ms' }}
+            className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start w-full sm:w-auto animate-fade-in-up"
+            style={{ animationDelay: '200ms' }}
           >
             <Button
               asChild
               size="lg"
-              className="h-16 text-lg px-8 bg-[#25D366] hover:bg-[#20bd5a] text-white"
+              className="h-14 text-sm md:text-base px-6 bg-[#25D366] hover:bg-[#20bd5a] text-white w-full sm:w-auto whitespace-nowrap"
             >
-              <a
-                href="/consignacao"
-                onClick={() => trackCTAClick('Quero Consignar Meu Carro AGORA', '/')}
-              >
-                <CarFront className="mr-2 h-6 w-6" /> Quero Consignar Meu Carro AGORA
+              <a href="/consignacao" onClick={() => trackCTAClick('CONSIGNAR AGORA', '/')}>
+                <CarFront className="mr-2 h-5 w-5" /> CONSIGNAR AGORA
               </a>
             </Button>
             <Button
               asChild
               size="lg"
               variant="outline"
-              className="h-16 text-lg px-8 bg-white/10 hover:bg-white/20 text-white border-white/30 backdrop-blur-sm"
+              className="h-14 text-sm md:text-base px-6 bg-white/10 hover:bg-white/20 text-white border-white/30 backdrop-blur-sm w-full sm:w-auto whitespace-nowrap"
             >
               <a
                 href={getWhatsAppLink(
@@ -72,9 +67,9 @@ export function HomeHero() {
                 )}
                 target="_blank"
                 rel="noopener noreferrer"
-                onClick={() => trackCTAClick('Falar com Luiz (WhatsApp)', '/')}
+                onClick={() => trackCTAClick('FALAR COM LUIZ (WHATSAPP)', '/')}
               >
-                <MessageCircle className="mr-2 h-6 w-6" /> Falar com Luiz (WhatsApp)
+                <MessageCircle className="mr-2 h-5 w-5" /> FALAR COM LUIZ
               </a>
             </Button>
           </div>

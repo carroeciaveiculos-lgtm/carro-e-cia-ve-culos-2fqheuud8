@@ -101,38 +101,37 @@ export function VehicleCard({ vehicle, isList = false }: { vehicle: any; isList?
           />{' '}
         </picture>
       </div>
-      <div className="p-5 flex flex-col flex-grow">
-        <h3 className="font-display font-bold text-lg text-foreground line-clamp-1">
-          {vehicle.marca} {vehicle.modelo} {vehicle.ano_fabricacao}
+      <div className="p-4 md:p-5 flex flex-col flex-grow">
+        <h3 className="font-display font-bold text-base md:text-lg text-foreground line-clamp-1 mb-2">
+          {vehicle.marca} {vehicle.modelo}
         </h3>
-        <p className="text-muted-foreground text-sm mb-4">
-          {vehicle.quilometragem?.toLocaleString('pt-BR') || 0} km • {vehicle.cambio}
+        <p className="text-[13px] text-muted-foreground mb-1">
+          Ano: {vehicle.ano_fabricacao} | Combustível: {vehicle.combustivel || 'N/I'} | Cor:{' '}
+          {vehicle.cor || 'N/I'}
         </p>
-        <div className="mt-auto flex items-center justify-between">
-          <span className="font-bold text-primary text-xl">
+        <p className="text-[13px] text-muted-foreground mb-4">
+          Quilometragem: {vehicle.quilometragem?.toLocaleString('pt-BR') || 0} km
+        </p>
+
+        <div className="bg-muted/30 p-3 rounded-lg mb-4 mt-auto">
+          <p className="text-2xl font-bold text-[#25D366] m-0">
             {formatCurrency(vehicle.preco_venda || 0)}
-          </span>
+          </p>
         </div>
-        <div className="grid grid-cols-2 gap-2 mt-4">
-          <Button asChild variant="outline" className="w-full">
-            <Link
-              to={`/estoque/${vehicle.id}`}
-              aria-label={`Ver detalhes do ${vehicle.marca} ${vehicle.modelo}`}
-            >
-              Detalhes
-            </Link>
-          </Button>
-          <Button asChild className="w-full bg-[#25D366] hover:bg-[#20bd5a] text-white">
-            <a
-              href={`https://wa.me/5534999484285?text=${wppText}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label={`Falar no WhatsApp sobre ${vehicle.marca} ${vehicle.modelo}`}
-            >
-              Tenho Interesse
-            </a>
-          </Button>
-        </div>
+
+        <Button
+          asChild
+          className="w-full h-12 bg-[#25D366] hover:bg-[#20bd5a] text-white font-bold text-sm"
+        >
+          <a
+            href={`https://wa.me/5534999484285?text=${wppText}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label={`Falar no WhatsApp sobre ${vehicle.marca} ${vehicle.modelo}`}
+          >
+            CHAMAR VENDEDOR NO WHATSAPP
+          </a>
+        </Button>
       </div>
     </div>
   )

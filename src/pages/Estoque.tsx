@@ -125,22 +125,58 @@ export default function Estoque() {
                   className="pl-9 h-12"
                 />
               </div>
+            </div>
+
+            <div className="flex gap-2 overflow-x-auto pb-2 mb-6 md:hidden hide-scrollbar">
               <Sheet>
                 <SheetTrigger asChild>
-                  <Button variant="outline" className="h-12 md:hidden">
-                    <Filter className="w-4 h-4 mr-2" /> Filtros
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="rounded-full whitespace-nowrap border-border/50 shadow-sm text-xs"
+                  >
+                    Filtrar por Preço
                   </Button>
                 </SheetTrigger>
-                <SheetContent>
+                <SheetContent side="bottom" className="h-[80vh]">
                   <SheetHeader className="mb-6">
                     <SheetTitle>Filtros</SheetTitle>
                   </SheetHeader>
                   <FiltersContent />
                 </SheetContent>
               </Sheet>
+              <Sheet>
+                <SheetTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="rounded-full whitespace-nowrap border-border/50 shadow-sm text-xs"
+                  >
+                    Filtrar por Marca
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="bottom" className="h-[80vh]">
+                  <SheetHeader className="mb-6">
+                    <SheetTitle>Filtros</SheetTitle>
+                  </SheetHeader>
+                  <FiltersContent />
+                </SheetContent>
+              </Sheet>
+              <Button
+                variant="outline"
+                size="sm"
+                className="rounded-full whitespace-nowrap border-border/50 shadow-sm text-xs"
+                onClick={() => {
+                  setMarca('Todas')
+                  setMaxPrice([300000])
+                  setSearchTerm('')
+                }}
+              >
+                Limpar
+              </Button>
             </div>
 
-            <div className="mb-6 text-sm text-muted-foreground font-medium">
+            <div className="mb-4 text-sm text-muted-foreground font-medium">
               Mostrando {filteredVeiculos.length} carros
             </div>
 
@@ -181,7 +217,7 @@ export default function Estoque() {
                     >
                       <Link
                         to={`/estoque/${v.id}`}
-                        className="block relative aspect-[4/3] overflow-hidden bg-muted"
+                        className="block relative w-full h-[300px] overflow-hidden bg-muted"
                         onClick={() =>
                           trackCTAClick(`Ver Veiculo: ${v.marca} ${v.modelo}`, '/estoque')
                         }
@@ -196,35 +232,40 @@ export default function Estoque() {
                           loading="lazy"
                         />
                       </Link>
-                      <CardContent className="p-5 flex-1 flex flex-col">
+                      <CardContent className="p-4 md:p-5 flex-1 flex flex-col">
                         <div className="mb-3">
-                          <h3 className="font-bold text-lg leading-tight group-hover:text-primary transition-colors line-clamp-1">
+                          <h3 className="font-bold text-base md:text-lg leading-tight group-hover:text-primary transition-colors line-clamp-1 mb-2">
                             {v.marca} {v.modelo}
                           </h3>
-                          <p className="text-sm text-muted-foreground line-clamp-1">{v.versao}</p>
+                          <p className="text-[13px] text-muted-foreground line-clamp-1 mb-1">
+                            Ano: {v.ano_fabricacao} | Combustível: {v.combustivel || 'N/I'} | Cor:{' '}
+                            {v.cor || 'N/I'}
+                          </p>
+                          <p className="text-[13px] text-muted-foreground line-clamp-1">
+                            Quilometragem: {v.quilometragem?.toLocaleString('pt-BR') || 0} km
+                          </p>
                         </div>
-                        <div className="grid grid-cols-2 gap-y-2 text-xs text-muted-foreground mb-4 mt-auto">
-                          <div className="flex items-center gap-1.5">
-                            <Calendar className="w-3.5 h-3.5" /> {v.ano_fabricacao}/{v.ano_modelo}
-                          </div>
-                          <div className="flex items-center gap-1.5">
-                            <Gauge className="w-3.5 h-3.5" />{' '}
-                            {v.quilometragem?.toLocaleString('pt-BR') || 0} km
-                          </div>
-                          <div className="flex items-center gap-1.5">
-                            <Fuel className="w-3.5 h-3.5" /> {v.combustivel || 'N/I'}
-                          </div>
-                          <div className="flex items-center gap-1.5 truncate text-ellipsis">
-                            C: {v.cor || 'N/I'}
-                          </div>
-                        </div>
-                        <div className="pt-4 border-t border-border/50 flex items-center justify-between mt-auto">
-                          <div className="font-bold text-xl text-primary">
+
+                        <div className="bg-muted/30 p-3 rounded-lg mb-4 mt-auto">
+                          <p className="text-2xl font-bold text-[#25D366] m-0">
                             {v.preco_venda
                               ? `R$ ${v.preco_venda.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
                               : 'Consulte'}
-                          </div>
+                          </p>
                         </div>
+
+                        <Button
+                          asChild
+                          className="w-full h-12 bg-[#25D366] hover:bg-[#20bd5a] text-white font-bold text-sm"
+                        >
+                          <a
+                            href={`https://wa.me/5534999484285?text=${encodeURIComponent(`Olá! Vi o ${v.marca} ${v.modelo} no site por R$ ${v.preco_venda}. Ainda está disponível?`)}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            CHAMAR VENDEDOR NO WHATSAPP
+                          </a>
+                        </Button>
                       </CardContent>
                     </Card>
                   )

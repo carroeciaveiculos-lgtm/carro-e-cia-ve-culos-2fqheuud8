@@ -88,6 +88,7 @@
 @layer base {
   * {
     @apply border-border;
+    box-sizing: border-box;
   }
   html {
     scroll-behavior: smooth;
@@ -96,6 +97,12 @@
   body,
   html {
     @apply bg-background text-foreground font-sans antialiased overflow-x-hidden max-w-[100vw];
+    width: 100%;
+  }
+  img {
+    max-width: 100% !important;
+    height: auto;
+    display: block;
   }
   a,
   button,

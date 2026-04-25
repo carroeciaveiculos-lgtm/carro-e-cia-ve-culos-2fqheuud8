@@ -2,7 +2,7 @@ import { SEO } from '@/components/SEO'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { getWhatsAppLink } from '@/lib/whatsapp'
-import { ShieldCheck, Eye, Heart, MapPin, Phone, Mail, Clock } from 'lucide-react'
+import { MapPin, Phone, Mail, Clock, MessageCircle } from 'lucide-react'
 import { trackCTAClick } from '@/lib/tracking'
 
 export default function Sobre() {
@@ -35,159 +35,126 @@ export default function Sobre() {
                   srcSet="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/logos/logo-carro-e-cia1.webp"
                   type="image/webp"
                 />
-                <source
-                  media="(min-width: 481px)"
-                  srcSet="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/logos/logo-carro-e-cia1.webp"
-                  type="image/webp"
-                />
                 <img
                   src="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/logos/logo-carro-e-cia1.webp"
                   alt="Carro e Cia - 20+ anos"
                   loading="eager"
-                  width="200"
-                  height="80"
-                  className="max-w-full h-auto object-contain"
+                  className="max-w-full h-auto object-contain w-48"
                 />
               </picture>
             </div>
-            <div className="inline-block bg-primary/10 text-primary px-4 py-1.5 rounded-full text-sm font-bold tracking-wide mb-2">
-              A HISTÓRIA DE LUIZ FERNANDO
-            </div>
-            <h1 className="text-4xl md:text-5xl font-display font-extrabold leading-tight">
-              A Paixão Que Virou Profissão
-            </h1>
-            <div className="space-y-4 text-lg text-muted-foreground leading-relaxed">
-              <p>
-                Tudo começou em 2003. Luiz Fernando tinha uma paixão simples e pura: carros. Começou
-                como vendedor em uma loja por 4 anos. Aprendia cada dia, cada cliente, cada detalhe
-                de cada veículo.
-              </p>
-              <p>
-                A oportunidade bateu à porta quando foi convidado a ser sócio de uma nova loja. Luiz
-                não hesitou. Agarrou a chance. Desde então, dedicou 20+ anos construindo a Carro e
-                Cia com profissionalismo, humanidade e amor genuíno pelo que faz.
-              </p>
-              <p>
-                Hoje, Luiz não quer apenas vender carros. Ele quer ser referência no Brasil em
-                consignação segura, em soluções certas, em confiança. Seu objetivo: acolher cada
-                cliente, entender a dor de cada um, trazer a solução perfeita.
-              </p>
+
+            <div className="bg-card p-6 md:p-8 rounded-2xl shadow-sm border border-border/50 text-center md:text-left">
+              <div className="flex flex-col md:flex-row gap-6 items-center md:items-start">
+                <img
+                  src="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/fotos/Luiz-Fernando-foto-profissional.webp"
+                  alt="Luiz Fernando, CEO Carro e Cia"
+                  className="w-40 h-40 md:w-48 md:h-48 rounded-full object-cover shadow-lg border-4 border-white"
+                />
+                <div>
+                  <h1 className="text-3xl md:text-4xl font-display font-extrabold text-slate-800">
+                    Luiz Fernando
+                  </h1>
+                  <p className="text-primary font-bold text-sm uppercase tracking-wider mb-4">
+                    CEO & Fundador
+                  </p>
+
+                  <div className="text-sm md:text-base text-muted-foreground leading-relaxed space-y-3">
+                    <p>
+                      Há mais de 20 anos apaixonado por carros. Começou como vendedor, tornou-se
+                      sócio, e hoje lidera a Carro e Cia com dedicação e humanidade em cada
+                      transação.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-8 bg-muted/30 p-4 rounded-xl">
+                <div className="text-center">
+                  <div className="text-2xl font-black text-primary mb-1">20+</div>
+                  <p className="text-xs text-muted-foreground font-medium uppercase">
+                    Anos de Mercado
+                  </p>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-black text-primary mb-1">5.000+</div>
+                  <p className="text-xs text-muted-foreground font-medium uppercase">
+                    Clientes Satisfeitos
+                  </p>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-black text-primary mb-1">100%</div>
+                  <p className="text-xs text-muted-foreground font-medium uppercase">
+                    Transparência
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
+
           <div className="relative">
             <div className="absolute inset-0 bg-gradient-to-tr from-primary/20 to-transparent rounded-2xl transform translate-x-4 translate-y-4 -z-10"></div>
             <img
-              src="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/fotos/Luiz-Fernando-foto-profissional.webp"
-              alt="Luiz Fernando, CEO Carro e Cia - 20+ anos dedicado ao mercado automotivo"
-              width="600"
-              height="800"
-              className="rounded-2xl shadow-2xl object-cover w-full aspect-[3/4]"
+              src="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/fotos/fachada-da-loja.webp"
+              alt="Showroom Carro e Cia Veículos"
+              className="rounded-2xl shadow-2xl object-cover w-full h-[250px] md:h-[500px]"
             />
           </div>
         </div>
       </section>
 
-      <section className="bg-muted/30 py-20">
-        <div className="container max-w-6xl mx-auto px-4">
-          <div className="text-center mb-16">
+      <section className="bg-muted/30 py-20 border-y border-border/50">
+        <div className="container max-w-5xl mx-auto px-4">
+          <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-display font-bold mb-4">
-              Valores da Carro e Cia
+              O Que Nossos Clientes Dizem
             </h2>
-            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              Nossos pilares fundamentais que guiam cada transação há mais de duas décadas.
+            <p className="text-muted-foreground">
+              Depoimentos reais de quem confiou na Carro e Cia.
             </p>
           </div>
-          <div className="grid md:grid-cols-3 gap-8">
-            <Card className="p-8 text-center hover:shadow-lg transition-shadow border-border/50">
-              <ShieldCheck className="w-12 h-12 mx-auto mb-6 text-primary" />
-              <h3 className="text-2xl font-bold mb-4">Confiança é Tudo</h3>
-              <p className="text-muted-foreground">
-                20+ anos no mercado. Contrato protetor. Procedência verificada. Você está seguro
-                conosco.
+
+          <div className="grid md:grid-cols-3 gap-6">
+            <Card className="p-6 bg-background shadow-sm border-l-4 border-l-[#25D366]">
+              <p className="italic text-slate-700 text-sm mb-4 leading-relaxed">
+                "Vendi meu carro em menos de uma semana. O Luiz cuidou de tudo com extrema
+                transparência. Não precisei me preocupar com nada."
               </p>
+              <p className="font-bold text-sm">- João Silva</p>
             </Card>
-            <Card className="p-8 text-center hover:shadow-lg transition-shadow border-border/50">
-              <Eye className="w-12 h-12 mx-auto mb-6 text-blue-500" />
-              <h3 className="text-2xl font-bold mb-4">Sem Surpresas</h3>
-              <p className="text-muted-foreground">
-                Tudo claro, tudo honesto, tudo explicado. Nenhuma burocracia, nenhum jogo. Você sabe
-                exatamente o que esperar.
+            <Card className="p-6 bg-background shadow-sm border-l-4 border-l-[#25D366]">
+              <p className="italic text-slate-700 text-sm mb-4 leading-relaxed">
+                "Comprei um seminovo com eles e a qualidade e procedência são garantidas. O
+                atendimento do Gabriel no financiamento foi excepcional."
               </p>
+              <p className="font-bold text-sm">- Maria Santos</p>
             </Card>
-            <Card className="p-8 text-center hover:shadow-lg transition-shadow border-border/50">
-              <Heart className="w-12 h-12 mx-auto mb-6 text-red-500" />
-              <h3 className="text-2xl font-bold mb-4">Você é Ouvido</h3>
-              <p className="text-muted-foreground">
-                Luiz acredita que cada cliente tem uma história, uma dor, uma solução. A gente
-                acolhe e oferece a melhor saída.
+            <Card className="p-6 bg-background shadow-sm border-l-4 border-l-[#25D366]">
+              <p className="italic text-slate-700 text-sm mb-4 leading-relaxed">
+                "Confiança é tudo na hora de trocar de carro. A equipe da Carro e Cia me deu toda a
+                segurança que eu precisava."
               </p>
+              <p className="font-bold text-sm">- Carlos Eduardo</p>
             </Card>
           </div>
-        </div>
-      </section>
 
-      <section className="py-20">
-        <div className="container max-w-5xl mx-auto px-4">
-          <h2 className="text-3xl md:text-4xl font-display font-bold text-center mb-16">
-            A Jornada de Luiz
-          </h2>
-          <div className="space-y-12">
-            {[
-              {
-                year: '2003',
-                title: 'Começou como Vendedor Apaixonado',
-                desc: 'Iniciou com um sonho de trabalhar com carros, aprendendo a base do atendimento e das vendas.',
-              },
-              {
-                year: '2007',
-                title: 'Tornando-se Sócio',
-                desc: 'A oportunidade de ser sócio de uma nova loja surgiu. Um risco calculado que mudou sua trajetória.',
-              },
-              {
-                year: 'Hoje',
-                title: 'CEO da Carro e Cia',
-                desc: '20+ anos de mercado, referência absoluta em Uberaba com o objetivo de ser referência no Brasil.',
-              },
-            ].map((item, i) => (
-              <div key={i} className="flex gap-6 md:gap-12 items-start">
-                <div className="w-24 md:w-32 shrink-0 text-right">
-                  <span className="text-2xl md:text-3xl font-extrabold text-primary">
-                    {item.year}
-                  </span>
-                </div>
-                <div className="w-4 h-4 mt-2.5 rounded-full bg-primary shrink-0 relative z-10 shadow-[0_0_0_4px_hsl(var(--background)),0_0_0_8px_hsl(var(--primary)/0.2)]"></div>
-                <div className="flex-1 pb-12 border-l border-border/50 -ml-[27px] pl-10 md:pl-16 relative top-2.5">
-                  <h3 className="text-2xl font-bold mb-2">{item.title}</h3>
-                  <p className="text-muted-foreground text-lg">{item.desc}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section className="bg-[#1A1A1A] text-white py-20">
-        <div className="container max-w-6xl mx-auto px-4">
-          <h2 className="text-3xl md:text-4xl font-display font-bold text-center mb-16">
-            Métricas Que Falam
-          </h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
-            <div>
-              <div className="text-4xl md:text-5xl font-black text-primary mb-2">20+</div>
-              <p className="text-gray-400 font-medium">Anos de mercado</p>
-            </div>
-            <div>
-              <div className="text-4xl md:text-5xl font-black text-primary mb-2">1.000+</div>
-              <p className="text-gray-400 font-medium">Carros consignados</p>
-            </div>
-            <div>
-              <div className="text-4xl md:text-5xl font-black text-primary mb-2">95%+</div>
-              <p className="text-gray-400 font-medium">Clientes satisfeitos</p>
-            </div>
-            <div>
-              <div className="text-4xl md:text-5xl font-black text-primary mb-2">15</div>
-              <p className="text-gray-400 font-medium">Dias para vender (média)</p>
-            </div>
+          <div className="mt-12 max-w-2xl mx-auto text-center bg-gradient-to-br from-[#25D366] to-[#128C7E] p-8 rounded-2xl text-white shadow-xl">
+            <h3 className="text-2xl font-bold mb-3">Pronto para Vender ou Comprar?</h3>
+            <p className="mb-6 opacity-90">
+              Fale com o Luiz e descubra como podemos ajudar você a fazer o melhor negócio.
+            </p>
+            <Button
+              className="w-full sm:w-auto bg-white text-[#25D366] hover:bg-slate-50 font-bold px-8 h-14"
+              asChild
+            >
+              <a
+                href="https://wa.me/5534999484285?text=Olá Luiz! Quero saber mais sobre como fazer um bom negócio."
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                CHAMAR LUIZ NO WHATSAPP
+              </a>
+            </Button>
           </div>
         </div>
       </section>
@@ -202,144 +169,171 @@ export default function Sobre() {
               Nossa equipe é formada por especialistas dedicados a oferecer a melhor solução.
             </p>
           </div>
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-            <Card className="overflow-hidden border-border/50">
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+            <Card className="overflow-hidden border-border/50 flex flex-col">
               <img
                 src="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/fotos/Luiz-Fernando-foto-profissional.webp"
                 alt="Luiz Fernando"
-                className="w-full h-64 object-cover object-top"
+                className="w-full h-[250px] object-cover object-top"
                 loading="lazy"
               />
-              <div className="p-6">
+              <div className="p-6 flex flex-col flex-1">
                 <h3 className="text-xl font-bold font-display">Luiz Fernando</h3>
-                <p className="text-primary font-medium mb-3 text-sm">CEO & Fundador</p>
-                <div className="text-xs font-semibold text-muted-foreground mb-3 uppercase tracking-wider">
+                <p className="text-xs text-muted-foreground italic mb-2">CEO & Fundador</p>
+                <div className="text-xs font-semibold text-primary mb-3 uppercase tracking-wider">
                   Apaixonado | Vendedor
                 </div>
-                <p className="text-muted-foreground text-sm">
+                <p className="text-slate-600 text-sm mb-6 flex-1">
                   Luiz é o coração da Carro e Cia com mais de 20 anos dedicados ao mercado. Sua
-                  missão é ser referência em consignação segura, acolhendo cada cliente e buscando a
-                  melhor solução.
+                  missão é ser referência em consignação segura.
                 </p>
+                <Button className="w-full bg-[#25D366] hover:bg-[#128C7E] text-white" asChild>
+                  <a
+                    href="https://wa.me/5534999484285?text=Olá Luiz, gostaria de falar sobre consignação!"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <MessageCircle className="w-4 h-4 mr-2" /> Falar com Luiz
+                  </a>
+                </Button>
               </div>
             </Card>
-            <Card className="overflow-hidden border-border/50">
+
+            <Card className="overflow-hidden border-border/50 flex flex-col">
               <img
                 src="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/fotos/Adriana-foto-profissional.webp"
                 alt="Adriana Araújo"
-                className="w-full h-64 object-cover object-top"
+                className="w-full h-[250px] object-cover object-top"
                 loading="lazy"
               />
-              <div className="p-6">
+              <div className="p-6 flex flex-col flex-1">
                 <h3 className="text-xl font-bold font-display">Adriana Araújo</h3>
-                <p className="text-primary font-medium mb-3 text-sm">Administradora</p>
-                <div className="text-xs font-semibold text-muted-foreground mb-3 uppercase tracking-wider">
-                  Organização | Transparência
+                <p className="text-xs text-muted-foreground italic mb-2">Esposa de Luiz Fernando</p>
+                <div className="text-xs font-semibold text-primary mb-3 uppercase tracking-wider">
+                  Administradora
                 </div>
-                <p className="text-muted-foreground text-sm">
-                  Esposa de Luiz e administradora da empresa, Adriana cuida de toda a parte
-                  administrativa e processos internos, garantindo segurança e transparência em todas
-                  as operações.
+                <p className="text-slate-600 text-sm mb-6 flex-1">
+                  Cuida de toda a parte administrativa e processos internos, garantindo segurança e
+                  transparência em todas as operações.
                 </p>
+                <Button
+                  variant="outline"
+                  className="w-full border-[#25D366] text-[#25D366] hover:bg-[#25D366]/10"
+                  asChild
+                >
+                  <a href="https://wa.me/5534999484285" target="_blank" rel="noopener noreferrer">
+                    <MessageCircle className="w-4 h-4 mr-2" /> Contato Administrativo
+                  </a>
+                </Button>
               </div>
             </Card>
-            <Card className="overflow-hidden border-border/50">
+
+            <Card className="overflow-hidden border-border/50 flex flex-col">
               <img
-                src="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/fotos/Roberto-foto-profissional.webp"
+                src="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/fotos/Roberto-Junior-foto-profissional.webp"
                 alt="Roberto de Araújo Jr."
-                className="w-full h-64 object-cover object-top"
+                className="w-full h-[250px] object-cover object-top"
                 loading="lazy"
                 onError={(e) => {
                   e.currentTarget.src =
                     'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/fotos/Luiz-Fernando-foto-profissional.webp'
                 }}
               />
-              <div className="p-6">
+              <div className="p-6 flex flex-col flex-1">
                 <h3 className="text-xl font-bold font-display">Roberto de Araújo Jr.</h3>
-                <p className="text-primary font-medium mb-3 text-sm">Vendas & Suporte Comercial</p>
-                <div className="text-xs font-semibold text-muted-foreground mb-3 uppercase tracking-wider">
+                <p className="text-xs text-muted-foreground italic mb-2">Irmão de Luiz Fernando</p>
+                <div className="text-xs font-semibold text-primary mb-3 uppercase tracking-wider">
                   Vendas | Relacionamento
                 </div>
-                <p className="text-muted-foreground text-sm">
-                  Irmão de Luiz e responsável pelo setor de vendas e suporte comercial. Dedicado a
-                  oferecer atendimento personalizado e encontrar o veículo ideal para cada perfil de
-                  cliente.
+                <p className="text-slate-600 text-sm mb-6 flex-1">
+                  Responsável pelo setor de vendas e suporte comercial. Dedicado a encontrar o
+                  veículo ideal para cada perfil de cliente.
                 </p>
+                <Button className="w-full bg-[#25D366] hover:bg-[#128C7E] text-white" asChild>
+                  <a
+                    href="https://wa.me/5534999484285?text=Olá Roberto, gostaria de falar sobre um veículo!"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <MessageCircle className="w-4 h-4 mr-2" /> Falar com Roberto
+                  </a>
+                </Button>
               </div>
             </Card>
-            <Card className="overflow-hidden border-border/50">
+
+            <Card className="overflow-hidden border-border/50 flex flex-col">
               <img
                 src="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/fotos/Gabriel-foto-profissional.webp"
                 alt="Gabriel Araújo"
-                className="w-full h-64 object-cover object-top"
+                className="w-full h-[250px] object-cover object-top"
                 loading="lazy"
               />
-              <div className="p-6">
+              <div className="p-6 flex flex-col flex-1">
                 <h3 className="text-xl font-bold font-display">Gabriel Araújo</h3>
-                <p className="text-primary font-medium mb-3 text-sm">Especialista em Seguros</p>
-                <div className="text-xs font-semibold text-muted-foreground mb-3 uppercase tracking-wider">
+                <p className="text-xs text-muted-foreground italic mb-2">Filho de Luiz Fernando</p>
+                <div className="text-xs font-semibold text-primary mb-3 uppercase tracking-wider">
                   Proteção | Financiamentos
                 </div>
-                <p className="text-muted-foreground text-sm">
-                  Filho de Luiz e responsável pelo departamento de seguros e financiamentos através
-                  da parceria com a Km Zero, garantindo que você saia com total proteção e as
-                  melhores taxas.
+                <p className="text-slate-600 text-sm mb-6 flex-1">
+                  Especialista no departamento de seguros e financiamentos, garantindo que você saia
+                  com total proteção e as melhores taxas.
                 </p>
+                <Button className="w-full bg-[#25D366] hover:bg-[#128C7E] text-white" asChild>
+                  <a
+                    href="https://wa.me/5534992000300?text=Olá Gabriel, gostaria de falar sobre financiamento e seguros!"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <MessageCircle className="w-4 h-4 mr-2" /> Falar com Gabriel
+                  </a>
+                </Button>
+              </div>
+            </Card>
+
+            <Card className="overflow-hidden border-border/50 flex flex-col">
+              <img
+                src="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/fotos/Jessica-foto-profissional.webp"
+                alt="Jessica Germano"
+                className="w-full h-[250px] object-cover object-top"
+                loading="lazy"
+                onError={(e) => {
+                  e.currentTarget.src =
+                    'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/fotos/Luiz-Fernando-foto-profissional.webp'
+                }}
+              />
+              <div className="p-6 flex flex-col flex-1">
+                <h3 className="text-xl font-bold font-display">Jessica Germano</h3>
+                <p className="text-xs text-muted-foreground italic mb-2">Assistente Financeira</p>
+                <div className="text-xs font-semibold text-primary mb-3 uppercase tracking-wider">
+                  Organização | Precisão
+                </div>
+                <p className="text-slate-600 text-sm mb-6 flex-1">
+                  Jessica é responsável pela gestão financeira da Carro e Cia. Com atenção aos
+                  detalhes, garante transparência e segurança em cada transação.
+                </p>
+                <Button className="w-full bg-[#25D366] hover:bg-[#128C7E] text-white" asChild>
+                  <a
+                    href="https://wa.me/5534999484285?text=Olá Jessica, gostaria de falar sobre assuntos financeiros!"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <MessageCircle className="w-4 h-4 mr-2" /> Falar com Jessica
+                  </a>
+                </Button>
               </div>
             </Card>
           </div>
         </div>
       </section>
 
-      <section className="bg-muted/30 py-20 border-y border-border/50">
-        <div className="container max-w-4xl mx-auto px-4 text-center">
-          <h2 className="text-3xl font-display font-bold mb-8">Depoimentos do Time</h2>
-          <div className="grid gap-6 md:grid-cols-2">
-            <Card className="p-6 text-left bg-background shadow-sm">
-              <p className="italic text-muted-foreground mb-4">
-                "Luiz é mais que meu irmão e chefe. É meu mentor. Aprendo com ele que vender é
-                acolher. Clientes não vêm aqui só comprar carro, vêm buscar solução. Isso Luiz
-                oferece melhor que ninguém."
-              </p>
-              <p className="font-bold">- Roberto de Araújo Jr.</p>
-            </Card>
-            <Card className="p-6 text-left bg-background shadow-sm">
-              <p className="italic text-muted-foreground mb-4">
-                "Fazer parte da administração desta empresa em família me enche de orgulho. O nível
-                de compromisso e transparência que mantemos com cada cliente é o nosso verdadeiro
-                diferencial no mercado."
-              </p>
-              <p className="font-bold">- Adriana Araújo</p>
-            </Card>
-          </div>
-        </div>
-      </section>
-
-      <section className="py-20 text-center">
+      <section className="py-20 text-center bg-slate-50">
         <div className="container max-w-4xl mx-auto px-4">
-          <h2 className="text-3xl md:text-4xl font-display font-bold mb-6">Pronto Para Confiar?</h2>
+          <h2 className="text-3xl md:text-4xl font-display font-bold mb-6">Venha Nos Visitar</h2>
           <p className="text-xl text-muted-foreground mb-10">
-            Conheça Luiz e a Carro e Cia pessoalmente. Venha tomar um café com a gente.
+            Conheça nossa equipe pessoalmente. Tomar um café e conversar sobre o seu próximo
+            veículo.
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
-            <Button size="lg" className="h-14 px-8 text-lg" asChild>
-              <a href="/contato" onClick={() => trackCTAClick('Visitar Loja', '/sobre')}>
-                <MapPin className="mr-2 w-5 h-5" /> Visitar Loja
-              </a>
-            </Button>
-            <Button size="lg" variant="outline" className="h-14 px-8 text-lg border-2" asChild>
-              <a
-                href={getWhatsAppLink(
-                  'Olá Luiz! Li sua história no site e quero conversar sobre negócios.',
-                )}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={() => trackCTAClick('Falar com Luiz via WhatsApp', '/sobre')}
-              >
-                <Phone className="mr-2 w-5 h-5 text-[#25D366]" /> Falar com Luiz via WhatsApp
-              </a>
-            </Button>
-          </div>
 
           <div className="grid md:grid-cols-3 gap-6 max-w-3xl mx-auto text-left bg-card p-8 rounded-2xl border border-border/50 shadow-sm">
             <div>

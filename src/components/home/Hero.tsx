@@ -127,8 +127,8 @@ export function Hero() {
             </p>
           </div>
 
-          <div className="bg-background rounded-xl p-6 sm:p-8 shadow-2xl w-full max-w-md mx-auto lg:ml-auto border border-border/50 animate-fade-in-up box-border overflow-hidden">
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <div className="bg-background rounded-xl p-5 sm:p-8 shadow-2xl w-full max-w-full sm:max-w-md mx-auto lg:ml-auto border border-border/50 animate-fade-in-up box-border overflow-hidden">
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 w-full">
               <div style={{ display: 'none' }} aria-hidden="true">
                 <Input
                   type="text"

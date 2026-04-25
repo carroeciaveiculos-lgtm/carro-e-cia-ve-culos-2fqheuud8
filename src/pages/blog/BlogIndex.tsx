@@ -165,7 +165,7 @@ export default function BlogIndex() {
             {filteredPosts.map((post) => (
               <Card
                 key={post.id}
-                className="flex flex-col h-full hover:shadow-lg transition-all duration-300 overflow-hidden border-border/50 group"
+                className="flex flex-col h-full hover:shadow-xl transition-all duration-300 overflow-hidden border-border/50 group rounded-xl"
               >
                 <Link
                   to={`/blog/${post.slug}`}
@@ -180,42 +180,40 @@ export default function BlogIndex() {
                       width="600"
                       height="338"
                       loading="lazy"
-                      className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-500"
+                      className="w-full h-[250px] object-cover group-hover:scale-105 transition-transform duration-500"
                     />
                   </picture>
                 </Link>
-                <CardHeader className="p-5 pb-3">
-                  <div className="mb-3">
+                <CardContent className="p-6 flex-1 flex flex-col">
+                  <div className="mb-4">
                     <Badge
                       className={cn(
-                        'text-xs',
+                        'text-[11px] font-bold tracking-wider px-3 py-1 uppercase rounded-full',
                         CATEGORY_COLORS[post.category || ''] || 'bg-primary',
                       )}
                     >
                       {post.category || 'Novidade'}
                     </Badge>
                   </div>
-                  <CardTitle className="line-clamp-2 hover:text-primary transition-colors text-xl leading-tight font-display">
+                  <h3 className="font-display font-bold text-xl leading-snug mb-3 group-hover:text-primary transition-colors line-clamp-2">
                     <Link to={`/blog/${post.slug}`}>{post.title}</Link>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="p-5 pt-0 flex-1">
-                  <CardDescription className="line-clamp-3 text-base text-muted-foreground/80">
+                  </h3>
+                  <p className="line-clamp-3 text-sm text-slate-600 mb-6">
                     {post.meta_description}
-                  </CardDescription>
+                  </p>
+
+                  <div className="mt-auto flex items-center justify-between border-t border-slate-100 pt-4">
+                    <span className="text-xs text-slate-500 flex items-center gap-1 font-medium">
+                      <Clock className="w-3.5 h-3.5" /> {post.read_time || '5 min'}
+                    </span>
+                    <Button
+                      className="bg-[#25D366] hover:bg-[#128C7E] text-white font-bold text-xs h-9 px-4 rounded-md"
+                      asChild
+                    >
+                      <Link to={`/blog/${post.slug}`}>Ler Artigo →</Link>
+                    </Button>
+                  </div>
                 </CardContent>
-                <CardFooter className="p-5 pt-0 flex justify-between items-center mt-auto">
-                  <span className="text-sm text-muted-foreground flex items-center gap-1">
-                    <Clock className="w-4 h-4" /> {post.read_time || '5 min'}
-                  </span>
-                  <Button
-                    variant="ghost"
-                    className="text-primary font-bold p-0 hover:bg-transparent hover:text-primary/80"
-                    asChild
-                  >
-                    <Link to={`/blog/${post.slug}`}>Ler Artigo &rarr;</Link>
-                  </Button>
-                </CardFooter>
               </Card>
             ))}
             {filteredPosts.length === 0 && (
@@ -237,12 +235,14 @@ export default function BlogIndex() {
           </div>
         )}
 
-        <div className="mt-20 bg-primary text-primary-foreground rounded-2xl p-8 md:p-12 text-center max-w-4xl mx-auto shadow-xl">
-          <Mail className="w-12 h-12 mx-auto mb-6 opacity-80" />
-          <h2 className="text-3xl font-display font-bold mb-4">Receba Nossas Dicas no E-mail</h2>
-          <p className="text-primary-foreground/80 mb-8 max-w-lg mx-auto text-lg">
-            Junte-se a mais de 5.000 pessoas que recebem semanalmente nossas dicas exclusivas para
-            não perder dinheiro com veículos.
+        <div className="mt-20 bg-gradient-to-br from-[#25D366] to-[#128C7E] text-white rounded-2xl p-8 md:p-12 text-center max-w-4xl mx-auto shadow-xl">
+          <div className="text-5xl mb-4">📧</div>
+          <h2 className="text-3xl font-display font-bold mb-4">
+            Receba Dicas Exclusivas Semanalmente
+          </h2>
+          <p className="text-white/90 mb-8 max-w-lg mx-auto text-base md:text-lg">
+            Junte-se a mais de 5.000 pessoas que recebem estratégias comprovadas para não perder
+            dinheiro com veículos.
           </p>
           <form
             onSubmit={handleSubscribe}
@@ -254,12 +254,18 @@ export default function BlogIndex() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="bg-white/10 border-white/20 text-white placeholder:text-white/50 h-12 focus-visible:ring-white"
+              className="bg-white text-slate-800 placeholder:text-slate-400 h-12 focus-visible:ring-white border-0"
             />
-            <Button type="submit" variant="secondary" className="h-12 font-bold px-8">
-              Inscrever
+            <Button
+              type="submit"
+              className="h-12 font-bold px-8 bg-slate-900 hover:bg-slate-800 text-white"
+            >
+              Inscrever Agora
             </Button>
           </form>
+          <p className="text-xs text-white/70 mt-6 font-medium">
+            ✓ Sem spam | ✓ Cancele a qualquer momento | ✓ 100% gratuito
+          </p>
         </div>
       </div>
     </main>

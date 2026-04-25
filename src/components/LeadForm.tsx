@@ -70,7 +70,7 @@ export function LeadForm({
   return (
     <form
       onSubmit={handleSubmit}
-      className="space-y-4 bg-card p-6 rounded-xl border shadow-sm w-full text-left box-border overflow-hidden"
+      className="space-y-4 bg-card p-5 md:p-6 rounded-xl border shadow-sm w-full text-left box-border overflow-hidden"
     >
       <div className="space-y-2">
         <Label htmlFor="nome">Nome Completo *</Label>
