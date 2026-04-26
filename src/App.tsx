@@ -111,6 +111,8 @@ const Configuracoes = lazyWithRetry(() => import('./pages/admin/Configuracoes'))
 const Usuarios = lazyWithRetry(() => import('./pages/admin/Usuarios'))
 const EditUsuario = lazyWithRetry(() => import('./pages/admin/EditUsuario'))
 const EmConstrucao = lazyWithRetry(() => import('./pages/admin/EmConstrucao'))
+const RedesSociais = lazyWithRetry(() => import('./pages/admin/RedesSociais'))
+const Conteudo = lazyWithRetry(() => import('./pages/admin/Conteudo'))
 
 const PageLoader = () => (
   <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
@@ -226,6 +228,9 @@ const App = () => (
                 <Route path="portais" element={<Portais />} />
                 <Route path="relatorios" element={<Relatorios />} />
                 <Route path="configuracoes" element={<Configuracoes />} />
+
+                <Route path="redes-sociais" element={<RedesSociais />} />
+                <Route path="conteudo" element={<Conteudo />} />
 
                 {/* Controle de Acesso */}
                 <Route path="usuarios" element={<Usuarios />} />

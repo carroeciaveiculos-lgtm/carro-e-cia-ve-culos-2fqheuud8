@@ -51,6 +51,8 @@ const HIERARCHY = {
     { label: 'Controle de Despesas', path: '/admin/administrativo/despesas' },
     { label: 'Relatórios Financeiros', path: '/admin/administrativo/relatorios' },
   ],
+  'redes-sociais': [{ label: 'Calendário de Posts', path: '/admin/redes-sociais' }],
+  conteudo: [{ label: 'Páginas e Artigos', path: '/admin/conteudo' }],
 }
 
 export default function AdminLayout() {
