@@ -1,11 +1,17 @@
 // AVOID UPDATING THIS FILE DIRECTLY. It is automatically generated.
-export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[]
+export type Json =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: Json | undefined }
+  | Json[]
 
 export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: '14.5'
+    PostgrestVersion: "14.5"
   }
   public: {
     Tables: {
@@ -33,13 +39,255 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: 'access_log_usuario_id_fkey'
-            columns: ['usuario_id']
+            foreignKeyName: "access_log_usuario_id_fkey"
+            columns: ["usuario_id"]
             isOneToOne: false
-            referencedRelation: 'usuarios'
-            referencedColumns: ['id']
+            referencedRelation: "usuarios"
+            referencedColumns: ["id"]
           },
         ]
+      }
+      article_versions: {
+        Row: {
+          acao: string | null
+          article_id: string
+          artigo_pillar: boolean | null
+          artigos_relacionados: Json | null
+          autor_convidado: string | null
+          autor_id: string | null
+          canonical_url: string | null
+          categoria: string | null
+          categoria_secundaria: string | null
+          conteudo: string | null
+          criado_em: string | null
+          data_agendamento: string | null
+          destaque: boolean | null
+          h1_artigo: string | null
+          id: string
+          imagem_destaque_url: string | null
+          indice_google: boolean | null
+          meta_description: string | null
+          meta_title: string | null
+          og_description: string | null
+          og_image_url: string | null
+          og_title: string | null
+          palavras_chave_principais: Json | null
+          palavras_chave_secundarias: Json | null
+          permitir_comentarios: boolean | null
+          proximo_artigo_sugerido: string | null
+          resumo: string | null
+          resumo_mudancas: Json | null
+          robots_meta: string | null
+          schema_markup: string | null
+          seo_score: number | null
+          slug: string | null
+          status_publicacao: string | null
+          tags: Json | null
+          tempo_leitura: number | null
+          titulo: string | null
+          url_fonte_externa: string | null
+        }
+        Insert: {
+          acao?: string | null
+          article_id: string
+          artigo_pillar?: boolean | null
+          artigos_relacionados?: Json | null
+          autor_convidado?: string | null
+          autor_id?: string | null
+          canonical_url?: string | null
+          categoria?: string | null
+          categoria_secundaria?: string | null
+          conteudo?: string | null
+          criado_em?: string | null
+          data_agendamento?: string | null
+          destaque?: boolean | null
+          h1_artigo?: string | null
+          id?: string
+          imagem_destaque_url?: string | null
+          indice_google?: boolean | null
+          meta_description?: string | null
+          meta_title?: string | null
+          og_description?: string | null
+          og_image_url?: string | null
+          og_title?: string | null
+          palavras_chave_principais?: Json | null
+          palavras_chave_secundarias?: Json | null
+          permitir_comentarios?: boolean | null
+          proximo_artigo_sugerido?: string | null
+          resumo?: string | null
+          resumo_mudancas?: Json | null
+          robots_meta?: string | null
+          schema_markup?: string | null
+          seo_score?: number | null
+          slug?: string | null
+          status_publicacao?: string | null
+          tags?: Json | null
+          tempo_leitura?: number | null
+          titulo?: string | null
+          url_fonte_externa?: string | null
+        }
+        Update: {
+          acao?: string | null
+          article_id?: string
+          artigo_pillar?: boolean | null
+          artigos_relacionados?: Json | null
+          autor_convidado?: string | null
+          autor_id?: string | null
+          canonical_url?: string | null
+          categoria?: string | null
+          categoria_secundaria?: string | null
+          conteudo?: string | null
+          criado_em?: string | null
+          data_agendamento?: string | null
+          destaque?: boolean | null
+          h1_artigo?: string | null
+          id?: string
+          imagem_destaque_url?: string | null
+          indice_google?: boolean | null
+          meta_description?: string | null
+          meta_title?: string | null
+          og_description?: string | null
+          og_image_url?: string | null
+          og_title?: string | null
+          palavras_chave_principais?: Json | null
+          palavras_chave_secundarias?: Json | null
+          permitir_comentarios?: boolean | null
+          proximo_artigo_sugerido?: string | null
+          resumo?: string | null
+          resumo_mudancas?: Json | null
+          robots_meta?: string | null
+          schema_markup?: string | null
+          seo_score?: number | null
+          slug?: string | null
+          status_publicacao?: string | null
+          tags?: Json | null
+          tempo_leitura?: number | null
+          titulo?: string | null
+          url_fonte_externa?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "article_versions_article_id_fkey"
+            columns: ["article_id"]
+            isOneToOne: false
+            referencedRelation: "articles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      articles: {
+        Row: {
+          artigo_pillar: boolean | null
+          artigos_relacionados: Json | null
+          atualizado_em: string | null
+          autor_convidado: string | null
+          autor_id: string | null
+          canonical_url: string | null
+          categoria: string | null
+          categoria_secundaria: string | null
+          conteudo: string | null
+          criado_em: string | null
+          data_agendamento: string | null
+          destaque: boolean | null
+          h1_artigo: string | null
+          id: string
+          imagem_destaque_url: string | null
+          indice_google: boolean | null
+          meta_description: string | null
+          meta_title: string | null
+          og_description: string | null
+          og_image_url: string | null
+          og_title: string | null
+          palavras_chave_principais: Json | null
+          palavras_chave_secundarias: Json | null
+          permitir_comentarios: boolean | null
+          proximo_artigo_sugerido: string | null
+          resumo: string | null
+          robots_meta: string | null
+          schema_markup: string | null
+          seo_score: number | null
+          slug: string
+          status_publicacao: string | null
+          tags: Json | null
+          tempo_leitura: number | null
+          titulo: string
+          url_fonte_externa: string | null
+        }
+        Insert: {
+          artigo_pillar?: boolean | null
+          artigos_relacionados?: Json | null
+          atualizado_em?: string | null
+          autor_convidado?: string | null
+          autor_id?: string | null
+          canonical_url?: string | null
+          categoria?: string | null
+          categoria_secundaria?: string | null
+          conteudo?: string | null
+          criado_em?: string | null
+          data_agendamento?: string | null
+          destaque?: boolean | null
+          h1_artigo?: string | null
+          id?: string
+          imagem_destaque_url?: string | null
+          indice_google?: boolean | null
+          meta_description?: string | null
+          meta_title?: string | null
+          og_description?: string | null
+          og_image_url?: string | null
+          og_title?: string | null
+          palavras_chave_principais?: Json | null
+          palavras_chave_secundarias?: Json | null
+          permitir_comentarios?: boolean | null
+          proximo_artigo_sugerido?: string | null
+          resumo?: string | null
+          robots_meta?: string | null
+          schema_markup?: string | null
+          seo_score?: number | null
+          slug: string
+          status_publicacao?: string | null
+          tags?: Json | null
+          tempo_leitura?: number | null
+          titulo: string
+          url_fonte_externa?: string | null
+        }
+        Update: {
+          artigo_pillar?: boolean | null
+          artigos_relacionados?: Json | null
+          atualizado_em?: string | null
+          autor_convidado?: string | null
+          autor_id?: string | null
+          canonical_url?: string | null
+          categoria?: string | null
+          categoria_secundaria?: string | null
+          conteudo?: string | null
+          criado_em?: string | null
+          data_agendamento?: string | null
+          destaque?: boolean | null
+          h1_artigo?: string | null
+          id?: string
+          imagem_destaque_url?: string | null
+          indice_google?: boolean | null
+          meta_description?: string | null
+          meta_title?: string | null
+          og_description?: string | null
+          og_image_url?: string | null
+          og_title?: string | null
+          palavras_chave_principais?: Json | null
+          palavras_chave_secundarias?: Json | null
+          permitir_comentarios?: boolean | null
+          proximo_artigo_sugerido?: string | null
+          resumo?: string | null
+          robots_meta?: string | null
+          schema_markup?: string | null
+          seo_score?: number | null
+          slug?: string
+          status_publicacao?: string | null
+          tags?: Json | null
+          tempo_leitura?: number | null
+          titulo?: string
+          url_fonte_externa?: string | null
+        }
+        Relationships: []
       }
       assinatura_historico: {
         Row: {
@@ -65,11 +313,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: 'assinatura_historico_contrato_id_fkey'
-            columns: ['contrato_id']
+            foreignKeyName: "assinatura_historico_contrato_id_fkey"
+            columns: ["contrato_id"]
             isOneToOne: false
-            referencedRelation: 'contratos_consignacao'
-            referencedColumns: ['id']
+            referencedRelation: "contratos_consignacao"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -136,11 +384,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: 'avaliacoes_lead_id_fkey'
-            columns: ['lead_id']
+            foreignKeyName: "avaliacoes_lead_id_fkey"
+            columns: ["lead_id"]
             isOneToOne: false
-            referencedRelation: 'leads'
-            referencedColumns: ['id']
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -174,11 +422,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: 'blog_comments_post_id_fkey'
-            columns: ['post_id']
+            foreignKeyName: "blog_comments_post_id_fkey"
+            columns: ["post_id"]
             isOneToOne: false
-            referencedRelation: 'blog_posts'
-            referencedColumns: ['id']
+            referencedRelation: "blog_posts"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -227,6 +475,36 @@ export type Database = {
           tags?: string[] | null
           title?: string
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      chatbot_history: {
+        Row: {
+          criado_em: string | null
+          editor_id: string | null
+          id: string
+          pergunta: string | null
+          resposta: string | null
+          tipo_editor: string | null
+          usuario_id: string | null
+        }
+        Insert: {
+          criado_em?: string | null
+          editor_id?: string | null
+          id?: string
+          pergunta?: string | null
+          resposta?: string | null
+          tipo_editor?: string | null
+          usuario_id?: string | null
+        }
+        Update: {
+          criado_em?: string | null
+          editor_id?: string | null
+          id?: string
+          pergunta?: string | null
+          resposta?: string | null
+          tipo_editor?: string | null
+          usuario_id?: string | null
         }
         Relationships: []
       }
@@ -305,18 +583,18 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: 'consignacoes_lead_id_fkey'
-            columns: ['lead_id']
+            foreignKeyName: "consignacoes_lead_id_fkey"
+            columns: ["lead_id"]
             isOneToOne: false
-            referencedRelation: 'leads'
-            referencedColumns: ['id']
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'consignacoes_veiculo_id_fkey'
-            columns: ['veiculo_id']
+            foreignKeyName: "consignacoes_veiculo_id_fkey"
+            columns: ["veiculo_id"]
             isOneToOne: false
-            referencedRelation: 'veiculos'
-            referencedColumns: ['id']
+            referencedRelation: "veiculos"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -374,11 +652,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: 'contratos_consignacao_veiculo_id_fkey'
-            columns: ['veiculo_id']
+            foreignKeyName: "contratos_consignacao_veiculo_id_fkey"
+            columns: ["veiculo_id"]
             isOneToOne: false
-            referencedRelation: 'veiculos'
-            referencedColumns: ['id']
+            referencedRelation: "veiculos"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -448,11 +726,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: 'documentos_veiculo_id_fkey'
-            columns: ['veiculo_id']
+            foreignKeyName: "documentos_veiculo_id_fkey"
+            columns: ["veiculo_id"]
             isOneToOne: false
-            referencedRelation: 'veiculos'
-            referencedColumns: ['id']
+            referencedRelation: "veiculos"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -579,11 +857,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: 'fipe_modelos_marca_codigo_fkey'
-            columns: ['marca_codigo']
+            foreignKeyName: "fipe_modelos_marca_codigo_fkey"
+            columns: ["marca_codigo"]
             isOneToOne: false
-            referencedRelation: 'fipe_marcas'
-            referencedColumns: ['codigo']
+            referencedRelation: "fipe_marcas"
+            referencedColumns: ["codigo"]
           },
         ]
       }
@@ -617,18 +895,18 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: 'followups_lead_id_fkey'
-            columns: ['lead_id']
+            foreignKeyName: "followups_lead_id_fkey"
+            columns: ["lead_id"]
             isOneToOne: false
-            referencedRelation: 'leads'
-            referencedColumns: ['id']
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'followups_responsavel_id_fkey'
-            columns: ['responsavel_id']
+            foreignKeyName: "followups_responsavel_id_fkey"
+            columns: ["responsavel_id"]
             isOneToOne: false
-            referencedRelation: 'usuarios'
-            referencedColumns: ['id']
+            referencedRelation: "usuarios"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -662,20 +940,47 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: 'interacoes_lead_id_fkey'
-            columns: ['lead_id']
+            foreignKeyName: "interacoes_lead_id_fkey"
+            columns: ["lead_id"]
             isOneToOne: false
-            referencedRelation: 'leads'
-            referencedColumns: ['id']
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'interacoes_usuario_id_fkey'
-            columns: ['usuario_id']
+            foreignKeyName: "interacoes_usuario_id_fkey"
+            columns: ["usuario_id"]
             isOneToOne: false
-            referencedRelation: 'usuarios'
-            referencedColumns: ['id']
+            referencedRelation: "usuarios"
+            referencedColumns: ["id"]
           },
         ]
+      }
+      keywords: {
+        Row: {
+          categoria: string | null
+          criado_em: string | null
+          dificuldade: string | null
+          id: string
+          palavra_chave: string | null
+          volume_busca: number | null
+        }
+        Insert: {
+          categoria?: string | null
+          criado_em?: string | null
+          dificuldade?: string | null
+          id?: string
+          palavra_chave?: string | null
+          volume_busca?: number | null
+        }
+        Update: {
+          categoria?: string | null
+          criado_em?: string | null
+          dificuldade?: string | null
+          id?: string
+          palavra_chave?: string | null
+          volume_busca?: number | null
+        }
+        Relationships: []
       }
       landing_pages: {
         Row: {
@@ -746,11 +1051,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: 'lead_automations_lead_id_fkey'
-            columns: ['lead_id']
+            foreignKeyName: "lead_automations_lead_id_fkey"
+            columns: ["lead_id"]
             isOneToOne: false
-            referencedRelation: 'leads'
-            referencedColumns: ['id']
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -784,11 +1089,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: 'lead_eventos_gtm_lead_id_fkey'
-            columns: ['lead_id']
+            foreignKeyName: "lead_eventos_gtm_lead_id_fkey"
+            columns: ["lead_id"]
             isOneToOne: false
-            referencedRelation: 'leads'
-            referencedColumns: ['id']
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -825,11 +1130,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: 'lead_integracao_log_lead_id_fkey'
-            columns: ['lead_id']
+            foreignKeyName: "lead_integracao_log_lead_id_fkey"
+            columns: ["lead_id"]
             isOneToOne: false
-            referencedRelation: 'leads'
-            referencedColumns: ['id']
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -944,18 +1249,18 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: 'leads_responsavel_id_fkey'
-            columns: ['responsavel_id']
+            foreignKeyName: "leads_responsavel_id_fkey"
+            columns: ["responsavel_id"]
             isOneToOne: false
-            referencedRelation: 'usuarios'
-            referencedColumns: ['id']
+            referencedRelation: "usuarios"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'leads_veiculo_id_fkey'
-            columns: ['veiculo_id']
+            foreignKeyName: "leads_veiculo_id_fkey"
+            columns: ["veiculo_id"]
             isOneToOne: false
-            referencedRelation: 'veiculos'
-            referencedColumns: ['id']
+            referencedRelation: "veiculos"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -1070,11 +1375,193 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: 'notas_fiscais_veiculo_id_fkey'
-            columns: ['veiculo_id']
+            foreignKeyName: "notas_fiscais_veiculo_id_fkey"
+            columns: ["veiculo_id"]
             isOneToOne: false
-            referencedRelation: 'veiculos'
-            referencedColumns: ['id']
+            referencedRelation: "veiculos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pages: {
+        Row: {
+          atualizado_em: string | null
+          autor_id: string | null
+          canonical_url: string | null
+          conteudo: string | null
+          criado_em: string | null
+          data_agendamento: string | null
+          descricao_interna: string | null
+          h1_pagina: string | null
+          id: string
+          imagem_destaque_url: string | null
+          indice_google: boolean | null
+          meta_description: string | null
+          meta_title: string | null
+          og_description: string | null
+          og_image_url: string | null
+          og_title: string | null
+          ordem_menu: number | null
+          palavras_chave_principais: Json | null
+          robots_meta: string | null
+          schema_markup: string | null
+          slug: string
+          status_publicacao: string | null
+          template: string | null
+          titulo: string
+          visibilidade: string | null
+        }
+        Insert: {
+          atualizado_em?: string | null
+          autor_id?: string | null
+          canonical_url?: string | null
+          conteudo?: string | null
+          criado_em?: string | null
+          data_agendamento?: string | null
+          descricao_interna?: string | null
+          h1_pagina?: string | null
+          id?: string
+          imagem_destaque_url?: string | null
+          indice_google?: boolean | null
+          meta_description?: string | null
+          meta_title?: string | null
+          og_description?: string | null
+          og_image_url?: string | null
+          og_title?: string | null
+          ordem_menu?: number | null
+          palavras_chave_principais?: Json | null
+          robots_meta?: string | null
+          schema_markup?: string | null
+          slug: string
+          status_publicacao?: string | null
+          template?: string | null
+          titulo: string
+          visibilidade?: string | null
+        }
+        Update: {
+          atualizado_em?: string | null
+          autor_id?: string | null
+          canonical_url?: string | null
+          conteudo?: string | null
+          criado_em?: string | null
+          data_agendamento?: string | null
+          descricao_interna?: string | null
+          h1_pagina?: string | null
+          id?: string
+          imagem_destaque_url?: string | null
+          indice_google?: boolean | null
+          meta_description?: string | null
+          meta_title?: string | null
+          og_description?: string | null
+          og_image_url?: string | null
+          og_title?: string | null
+          ordem_menu?: number | null
+          palavras_chave_principais?: Json | null
+          robots_meta?: string | null
+          schema_markup?: string | null
+          slug?: string
+          status_publicacao?: string | null
+          template?: string | null
+          titulo?: string
+          visibilidade?: string | null
+        }
+        Relationships: []
+      }
+      pages_versions: {
+        Row: {
+          acao: string | null
+          autor_id: string | null
+          canonical_url: string | null
+          conteudo: string | null
+          criado_em: string | null
+          data_agendamento: string | null
+          descricao_interna: string | null
+          h1_pagina: string | null
+          id: string
+          imagem_destaque_url: string | null
+          indice_google: boolean | null
+          meta_description: string | null
+          meta_title: string | null
+          og_description: string | null
+          og_image_url: string | null
+          og_title: string | null
+          ordem_menu: number | null
+          page_id: string
+          palavras_chave_principais: Json | null
+          resumo_mudancas: Json | null
+          robots_meta: string | null
+          schema_markup: string | null
+          slug: string | null
+          status_publicacao: string | null
+          template: string | null
+          titulo: string | null
+          visibilidade: string | null
+        }
+        Insert: {
+          acao?: string | null
+          autor_id?: string | null
+          canonical_url?: string | null
+          conteudo?: string | null
+          criado_em?: string | null
+          data_agendamento?: string | null
+          descricao_interna?: string | null
+          h1_pagina?: string | null
+          id?: string
+          imagem_destaque_url?: string | null
+          indice_google?: boolean | null
+          meta_description?: string | null
+          meta_title?: string | null
+          og_description?: string | null
+          og_image_url?: string | null
+          og_title?: string | null
+          ordem_menu?: number | null
+          page_id: string
+          palavras_chave_principais?: Json | null
+          resumo_mudancas?: Json | null
+          robots_meta?: string | null
+          schema_markup?: string | null
+          slug?: string | null
+          status_publicacao?: string | null
+          template?: string | null
+          titulo?: string | null
+          visibilidade?: string | null
+        }
+        Update: {
+          acao?: string | null
+          autor_id?: string | null
+          canonical_url?: string | null
+          conteudo?: string | null
+          criado_em?: string | null
+          data_agendamento?: string | null
+          descricao_interna?: string | null
+          h1_pagina?: string | null
+          id?: string
+          imagem_destaque_url?: string | null
+          indice_google?: boolean | null
+          meta_description?: string | null
+          meta_title?: string | null
+          og_description?: string | null
+          og_image_url?: string | null
+          og_title?: string | null
+          ordem_menu?: number | null
+          page_id?: string
+          palavras_chave_principais?: Json | null
+          resumo_mudancas?: Json | null
+          robots_meta?: string | null
+          schema_markup?: string | null
+          slug?: string | null
+          status_publicacao?: string | null
+          template?: string | null
+          titulo?: string | null
+          visibilidade?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pages_versions_page_id_fkey"
+            columns: ["page_id"]
+            isOneToOne: false
+            referencedRelation: "pages"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -1150,11 +1637,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: 'simulacoes_veiculo_id_fkey'
-            columns: ['veiculo_id']
+            foreignKeyName: "simulacoes_veiculo_id_fkey"
+            columns: ["veiculo_id"]
             isOneToOne: false
-            referencedRelation: 'veiculos'
-            referencedColumns: ['id']
+            referencedRelation: "veiculos"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -1248,6 +1735,36 @@ export type Database = {
           texto?: string | null
           tipo?: string | null
           verificado?: boolean | null
+        }
+        Relationships: []
+      }
+      social_posts: {
+        Row: {
+          criado_em: string | null
+          data_agendamento: string | null
+          id: string
+          imagem: string | null
+          redes: Json
+          status: string | null
+          texto: string | null
+        }
+        Insert: {
+          criado_em?: string | null
+          data_agendamento?: string | null
+          id?: string
+          imagem?: string | null
+          redes: Json
+          status?: string | null
+          texto?: string | null
+        }
+        Update: {
+          criado_em?: string | null
+          data_agendamento?: string | null
+          id?: string
+          imagem?: string | null
+          redes?: Json
+          status?: string | null
+          texto?: string | null
         }
         Relationships: []
       }
@@ -1440,11 +1957,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: 'veiculos_responsavel_id_fkey'
-            columns: ['responsavel_id']
+            foreignKeyName: "veiculos_responsavel_id_fkey"
+            columns: ["responsavel_id"]
             isOneToOne: false
-            referencedRelation: 'usuarios'
-            referencedColumns: ['id']
+            referencedRelation: "usuarios"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -1464,31 +1981,33 @@ export type Database = {
   }
 }
 
-type DatabaseWithoutInternals = Omit<Database, '__InternalSupabase'>
+type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
 
-type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, 'public'>]
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
 
 export type Tables<
   DefaultSchemaTableNameOrOptions extends
-    | keyof (DefaultSchema['Tables'] & DefaultSchema['Views'])
+    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'] &
-        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Views'])
+    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
     : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
-  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'] &
-      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Views'])[TableName] extends {
+  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
       Row: infer R
     }
     ? R
     : never
-  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema['Tables'] & DefaultSchema['Views'])
-    ? (DefaultSchema['Tables'] & DefaultSchema['Views'])[DefaultSchemaTableNameOrOptions] extends {
+  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])
+    ? (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
         Row: infer R
       }
       ? R
@@ -1497,23 +2016,23 @@ export type Tables<
 
 export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema['Tables']
+    | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables']
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
     : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
-  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'][TableName] extends {
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
       Insert: infer I
     }
     ? I
     : never
-  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema['Tables']
-    ? DefaultSchema['Tables'][DefaultSchemaTableNameOrOptions] extends {
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
         Insert: infer I
       }
       ? I
@@ -1522,23 +2041,23 @@ export type TablesInsert<
 
 export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema['Tables']
+    | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables']
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
     : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
-  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'][TableName] extends {
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
       Update: infer U
     }
     ? U
     : never
-  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema['Tables']
-    ? DefaultSchema['Tables'][DefaultSchemaTableNameOrOptions] extends {
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
         Update: infer U
       }
       ? U
@@ -1547,36 +2066,36 @@ export type TablesUpdate<
 
 export type Enums<
   DefaultSchemaEnumNameOrOptions extends
-    | keyof DefaultSchema['Enums']
+    | keyof DefaultSchema["Enums"]
     | { schema: keyof DatabaseWithoutInternals },
   EnumName extends DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions['schema']]['Enums']
+    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
     : never = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
-  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions['schema']]['Enums'][EnumName]
-  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema['Enums']
-    ? DefaultSchema['Enums'][DefaultSchemaEnumNameOrOptions]
+  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
+  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
+    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
     : never
 
 export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
-    | keyof DefaultSchema['CompositeTypes']
+    | keyof DefaultSchema["CompositeTypes"]
     | { schema: keyof DatabaseWithoutInternals },
   CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions['schema']]['CompositeTypes']
+    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
     : never = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
-  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions['schema']]['CompositeTypes'][CompositeTypeName]
-  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema['CompositeTypes']
-    ? DefaultSchema['CompositeTypes'][PublicCompositeTypeNameOrOptions]
+  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
+  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
+    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
     : never
 
 export const Constants = {
@@ -1584,6 +2103,7 @@ export const Constants = {
     Enums: {},
   },
 } as const
+
 
 // ====== DATABASE EXTENDED CONTEXT (auto-generated) ======
 // This section contains actual PostgreSQL column types, constraints, RLS policies,
@@ -1601,6 +2121,80 @@ export const Constants = {
 //   modulo: text (nullable)
 //   acao: text (nullable)
 //   timestamp: timestamp without time zone (nullable, default: now())
+// Table: article_versions
+//   id: uuid (not null, default: gen_random_uuid())
+//   article_id: uuid (not null)
+//   titulo: character varying (nullable)
+//   slug: character varying (nullable)
+//   categoria: character varying (nullable)
+//   tags: jsonb (nullable)
+//   resumo: character varying (nullable)
+//   meta_title: character varying (nullable)
+//   meta_description: character varying (nullable)
+//   h1_artigo: character varying (nullable)
+//   palavras_chave_principais: jsonb (nullable)
+//   palavras_chave_secundarias: jsonb (nullable)
+//   canonical_url: text (nullable)
+//   og_title: character varying (nullable)
+//   og_description: character varying (nullable)
+//   og_image_url: text (nullable)
+//   schema_markup: character varying (nullable)
+//   indice_google: boolean (nullable)
+//   robots_meta: character varying (nullable)
+//   conteudo: text (nullable)
+//   imagem_destaque_url: text (nullable)
+//   tempo_leitura: integer (nullable)
+//   categoria_secundaria: character varying (nullable)
+//   autor_convidado: character varying (nullable)
+//   url_fonte_externa: text (nullable)
+//   artigo_pillar: boolean (nullable)
+//   artigos_relacionados: jsonb (nullable)
+//   proximo_artigo_sugerido: uuid (nullable)
+//   permitir_comentarios: boolean (nullable)
+//   destaque: boolean (nullable)
+//   status_publicacao: character varying (nullable)
+//   data_agendamento: timestamp with time zone (nullable)
+//   seo_score: integer (nullable)
+//   autor_id: uuid (nullable)
+//   acao: character varying (nullable)
+//   resumo_mudancas: jsonb (nullable)
+//   criado_em: timestamp with time zone (nullable, default: now())
+// Table: articles
+//   id: uuid (not null, default: gen_random_uuid())
+//   titulo: character varying (not null)
+//   slug: character varying (not null)
+//   categoria: character varying (nullable)
+//   tags: jsonb (nullable)
+//   resumo: character varying (nullable)
+//   meta_title: character varying (nullable)
+//   meta_description: character varying (nullable)
+//   h1_artigo: character varying (nullable)
+//   palavras_chave_principais: jsonb (nullable)
+//   palavras_chave_secundarias: jsonb (nullable)
+//   canonical_url: text (nullable)
+//   og_title: character varying (nullable)
+//   og_description: character varying (nullable)
+//   og_image_url: text (nullable)
+//   schema_markup: character varying (nullable)
+//   indice_google: boolean (nullable, default: true)
+//   robots_meta: character varying (nullable, default: 'index, follow'::character varying)
+//   conteudo: text (nullable)
+//   imagem_destaque_url: text (nullable)
+//   tempo_leitura: integer (nullable)
+//   categoria_secundaria: character varying (nullable)
+//   autor_convidado: character varying (nullable)
+//   url_fonte_externa: text (nullable)
+//   artigo_pillar: boolean (nullable, default: false)
+//   artigos_relacionados: jsonb (nullable)
+//   proximo_artigo_sugerido: uuid (nullable)
+//   permitir_comentarios: boolean (nullable, default: false)
+//   destaque: boolean (nullable, default: false)
+//   status_publicacao: character varying (nullable, default: 'Rascunho'::character varying)
+//   data_agendamento: timestamp with time zone (nullable)
+//   seo_score: integer (nullable, default: 0)
+//   autor_id: uuid (nullable)
+//   criado_em: timestamp with time zone (nullable, default: now())
+//   atualizado_em: timestamp with time zone (nullable, default: now())
 // Table: assinatura_historico
 //   id: uuid (not null, default: gen_random_uuid())
 //   contrato_id: uuid (nullable)
@@ -1648,6 +2242,14 @@ export const Constants = {
 //   published: boolean (nullable, default: true)
 //   created_at: timestamp with time zone (nullable, default: now())
 //   updated_at: timestamp with time zone (nullable, default: now())
+// Table: chatbot_history
+//   id: uuid (not null, default: gen_random_uuid())
+//   usuario_id: uuid (nullable)
+//   tipo_editor: character varying (nullable)
+//   editor_id: uuid (nullable)
+//   pergunta: text (nullable)
+//   resposta: text (nullable)
+//   criado_em: timestamp with time zone (nullable, default: now())
 // Table: configuracoes_api
 //   id: uuid (not null, default: gen_random_uuid())
 //   portal: text (not null)
@@ -1752,6 +2354,13 @@ export const Constants = {
 //   canal: text (nullable)
 //   descricao: text (nullable)
 //   created_at: timestamp without time zone (nullable, default: now())
+// Table: keywords
+//   id: uuid (not null, default: gen_random_uuid())
+//   palavra_chave: character varying (nullable)
+//   categoria: character varying (nullable)
+//   volume_busca: integer (nullable)
+//   dificuldade: character varying (nullable)
+//   criado_em: timestamp with time zone (nullable, default: now())
 // Table: landing_pages
 //   id: uuid (not null, default: gen_random_uuid())
 //   title: text (not null)
@@ -1854,6 +2463,60 @@ export const Constants = {
 //   status: text (nullable, default: 'Emitida'::text)
 //   pdf_url: text (nullable)
 //   created_at: timestamp with time zone (nullable, default: now())
+// Table: pages
+//   id: uuid (not null, default: gen_random_uuid())
+//   titulo: character varying (not null)
+//   slug: character varying (not null)
+//   meta_title: character varying (nullable)
+//   meta_description: character varying (nullable)
+//   h1_pagina: character varying (nullable)
+//   palavras_chave_principais: jsonb (nullable)
+//   canonical_url: text (nullable)
+//   og_title: character varying (nullable)
+//   og_description: character varying (nullable)
+//   og_image_url: text (nullable)
+//   schema_markup: character varying (nullable)
+//   indice_google: boolean (nullable, default: true)
+//   robots_meta: character varying (nullable, default: 'index, follow'::character varying)
+//   conteudo: text (nullable)
+//   imagem_destaque_url: text (nullable)
+//   template: character varying (nullable)
+//   ordem_menu: integer (nullable)
+//   visibilidade: character varying (nullable, default: 'Pública'::character varying)
+//   status_publicacao: character varying (nullable, default: 'Rascunho'::character varying)
+//   data_agendamento: timestamp with time zone (nullable)
+//   descricao_interna: character varying (nullable)
+//   autor_id: uuid (nullable)
+//   criado_em: timestamp with time zone (nullable, default: now())
+//   atualizado_em: timestamp with time zone (nullable, default: now())
+// Table: pages_versions
+//   id: uuid (not null, default: gen_random_uuid())
+//   page_id: uuid (not null)
+//   titulo: character varying (nullable)
+//   slug: character varying (nullable)
+//   meta_title: character varying (nullable)
+//   meta_description: character varying (nullable)
+//   h1_pagina: character varying (nullable)
+//   palavras_chave_principais: jsonb (nullable)
+//   canonical_url: text (nullable)
+//   og_title: character varying (nullable)
+//   og_description: character varying (nullable)
+//   og_image_url: text (nullable)
+//   schema_markup: character varying (nullable)
+//   indice_google: boolean (nullable)
+//   robots_meta: character varying (nullable)
+//   conteudo: text (nullable)
+//   imagem_destaque_url: text (nullable)
+//   template: character varying (nullable)
+//   ordem_menu: integer (nullable)
+//   visibilidade: character varying (nullable)
+//   status_publicacao: character varying (nullable)
+//   data_agendamento: timestamp with time zone (nullable)
+//   descricao_interna: character varying (nullable)
+//   autor_id: uuid (nullable)
+//   acao: character varying (nullable)
+//   resumo_mudancas: jsonb (nullable)
+//   criado_em: timestamp with time zone (nullable, default: now())
 // Table: parametros_avaliacao
 //   id: uuid (not null, default: gen_random_uuid())
 //   parametro: text (not null)
@@ -1899,6 +2562,14 @@ export const Constants = {
 //   publicado: boolean (nullable, default: false)
 //   verificado: boolean (nullable, default: true)
 //   created_at: timestamp with time zone (nullable, default: now())
+// Table: social_posts
+//   id: uuid (not null, default: gen_random_uuid())
+//   redes: jsonb (not null)
+//   texto: text (nullable)
+//   imagem: text (nullable)
+//   data_agendamento: timestamp with time zone (nullable)
+//   status: character varying (nullable, default: 'Agendado'::character varying)
+//   criado_em: timestamp with time zone (nullable, default: now())
 // Table: usuarios
 //   id: uuid (not null, default: gen_random_uuid())
 //   nome: text (not null)
@@ -1963,6 +2634,14 @@ export const Constants = {
 // Table: access_log
 //   PRIMARY KEY access_log_pkey: PRIMARY KEY (id)
 //   FOREIGN KEY access_log_usuario_id_fkey: FOREIGN KEY (usuario_id) REFERENCES usuarios(id)
+// Table: article_versions
+//   FOREIGN KEY article_versions_article_id_fkey: FOREIGN KEY (article_id) REFERENCES articles(id) ON DELETE CASCADE
+//   FOREIGN KEY article_versions_autor_id_fkey: FOREIGN KEY (autor_id) REFERENCES auth.users(id)
+//   PRIMARY KEY article_versions_pkey: PRIMARY KEY (id)
+// Table: articles
+//   FOREIGN KEY articles_autor_id_fkey: FOREIGN KEY (autor_id) REFERENCES auth.users(id)
+//   PRIMARY KEY articles_pkey: PRIMARY KEY (id)
+//   UNIQUE articles_slug_key: UNIQUE (slug)
 // Table: assinatura_historico
 //   FOREIGN KEY assinatura_historico_contrato_id_fkey: FOREIGN KEY (contrato_id) REFERENCES contratos_consignacao(id) ON DELETE CASCADE
 //   PRIMARY KEY assinatura_historico_pkey: PRIMARY KEY (id)
@@ -1975,6 +2654,9 @@ export const Constants = {
 // Table: blog_posts
 //   PRIMARY KEY blog_posts_pkey: PRIMARY KEY (id)
 //   UNIQUE blog_posts_slug_key: UNIQUE (slug)
+// Table: chatbot_history
+//   PRIMARY KEY chatbot_history_pkey: PRIMARY KEY (id)
+//   FOREIGN KEY chatbot_history_usuario_id_fkey: FOREIGN KEY (usuario_id) REFERENCES auth.users(id)
 // Table: configuracoes_api
 //   PRIMARY KEY configuracoes_api_pkey: PRIMARY KEY (id)
 //   UNIQUE configuracoes_api_portal_key: UNIQUE (portal)
@@ -2011,6 +2693,9 @@ export const Constants = {
 //   FOREIGN KEY interacoes_lead_id_fkey: FOREIGN KEY (lead_id) REFERENCES leads(id)
 //   PRIMARY KEY interacoes_pkey: PRIMARY KEY (id)
 //   FOREIGN KEY interacoes_usuario_id_fkey: FOREIGN KEY (usuario_id) REFERENCES usuarios(id)
+// Table: keywords
+//   UNIQUE keywords_palavra_chave_key: UNIQUE (palavra_chave)
+//   PRIMARY KEY keywords_pkey: PRIMARY KEY (id)
 // Table: landing_pages
 //   PRIMARY KEY landing_pages_pkey: PRIMARY KEY (id)
 //   UNIQUE landing_pages_slug_key: UNIQUE (slug)
@@ -2034,6 +2719,14 @@ export const Constants = {
 // Table: notas_fiscais
 //   PRIMARY KEY notas_fiscais_pkey: PRIMARY KEY (id)
 //   FOREIGN KEY notas_fiscais_veiculo_id_fkey: FOREIGN KEY (veiculo_id) REFERENCES veiculos(id)
+// Table: pages
+//   FOREIGN KEY pages_autor_id_fkey: FOREIGN KEY (autor_id) REFERENCES auth.users(id)
+//   PRIMARY KEY pages_pkey: PRIMARY KEY (id)
+//   UNIQUE pages_slug_key: UNIQUE (slug)
+// Table: pages_versions
+//   FOREIGN KEY pages_versions_autor_id_fkey: FOREIGN KEY (autor_id) REFERENCES auth.users(id)
+//   FOREIGN KEY pages_versions_page_id_fkey: FOREIGN KEY (page_id) REFERENCES pages(id) ON DELETE CASCADE
+//   PRIMARY KEY pages_versions_pkey: PRIMARY KEY (id)
 // Table: parametros_avaliacao
 //   PRIMARY KEY parametros_avaliacao_pkey: PRIMARY KEY (id)
 // Table: simulacoes
@@ -2046,6 +2739,8 @@ export const Constants = {
 //   PRIMARY KEY site_configuracoes_pkey: PRIMARY KEY (id)
 // Table: site_depoimentos
 //   PRIMARY KEY site_depoimentos_pkey: PRIMARY KEY (id)
+// Table: social_posts
+//   PRIMARY KEY social_posts_pkey: PRIMARY KEY (id)
 // Table: usuarios
 //   UNIQUE usuarios_email_key: UNIQUE (email)
 //   PRIMARY KEY usuarios_pkey: PRIMARY KEY (id)
@@ -2056,6 +2751,14 @@ export const Constants = {
 // --- ROW LEVEL SECURITY POLICIES ---
 // Table: access_log
 //   Policy "allow_auth_all_access_log" (ALL, PERMISSIVE) roles={authenticated}
+//     USING: true
+//     WITH CHECK: true
+// Table: article_versions
+//   Policy "allow_auth_all_article_versions" (ALL, PERMISSIVE) roles={authenticated}
+//     USING: true
+//     WITH CHECK: true
+// Table: articles
+//   Policy "allow_auth_all_articles" (ALL, PERMISSIVE) roles={authenticated}
 //     USING: true
 //     WITH CHECK: true
 // Table: assinatura_historico
@@ -2080,6 +2783,10 @@ export const Constants = {
 //     WITH CHECK: true
 //   Policy "allow_public_read_blog" (SELECT, PERMISSIVE) roles={public}
 //     USING: (published = true)
+// Table: chatbot_history
+//   Policy "allow_auth_all_chatbot_history" (ALL, PERMISSIVE) roles={authenticated}
+//     USING: true
+//     WITH CHECK: true
 // Table: configuracoes_api
 //   Policy "allow_auth_all_configuracoes_api" (ALL, PERMISSIVE) roles={authenticated}
 //     USING: true
@@ -2098,6 +2805,10 @@ export const Constants = {
 //     WITH CHECK: true
 // Table: documentos
 //   Policy "allow_auth_all_documentos" (ALL, PERMISSIVE) roles={authenticated}
+//     USING: true
+//     WITH CHECK: true
+// Table: keywords
+//   Policy "allow_auth_all_keywords" (ALL, PERMISSIVE) roles={authenticated}
 //     USING: true
 //     WITH CHECK: true
 // Table: landing_pages
@@ -2132,6 +2843,14 @@ export const Constants = {
 //   Policy "allow_auth_all_notas_fiscais" (ALL, PERMISSIVE) roles={authenticated}
 //     USING: true
 //     WITH CHECK: true
+// Table: pages
+//   Policy "allow_auth_all_pages" (ALL, PERMISSIVE) roles={authenticated}
+//     USING: true
+//     WITH CHECK: true
+// Table: pages_versions
+//   Policy "allow_auth_all_pages_versions" (ALL, PERMISSIVE) roles={authenticated}
+//     USING: true
+//     WITH CHECK: true
 // Table: parametros_avaliacao
 //   Policy "allow_auth_all_parametros" (ALL, PERMISSIVE) roles={authenticated}
 //     USING: true
@@ -2158,6 +2877,10 @@ export const Constants = {
 //   Policy "allow_all_depoimentos_select" (SELECT, PERMISSIVE) roles={public}
 //     USING: true
 //   Policy "allow_auth_depoimentos_all" (ALL, PERMISSIVE) roles={authenticated}
+//     USING: true
+//     WITH CHECK: true
+// Table: social_posts
+//   Policy "allow_auth_all_social" (ALL, PERMISSIVE) roles={authenticated}
 //     USING: true
 //     WITH CHECK: true
 // Table: usuarios
@@ -2215,7 +2938,77 @@ export const Constants = {
 //     END LOOP;
 //   END;
 //   $function$
-//
+//   
+// FUNCTION trigger_articles_version_insert()
+//   CREATE OR REPLACE FUNCTION public.trigger_articles_version_insert()
+//    RETURNS trigger
+//    LANGUAGE plpgsql
+//    SECURITY DEFINER
+//   AS $function$
+//   BEGIN
+//     INSERT INTO public.article_versions (
+//       article_id, titulo, slug, categoria, tags, resumo, meta_title, meta_description,
+//       h1_artigo, palavras_chave_principais, palavras_chave_secundarias, canonical_url,
+//       og_title, og_description, og_image_url, schema_markup, indice_google, robots_meta,
+//       conteudo, imagem_destaque_url, tempo_leitura, categoria_secundaria, autor_convidado,
+//       url_fonte_externa, artigo_pillar, artigos_relacionados, proximo_artigo_sugerido,
+//       permitir_comentarios, destaque, status_publicacao, data_agendamento, seo_score,
+//       autor_id, acao, criado_em
+//     ) VALUES (
+//       NEW.id, NEW.titulo, NEW.slug, NEW.categoria, NEW.tags, NEW.resumo, NEW.meta_title, NEW.meta_description,
+//       NEW.h1_artigo, NEW.palavras_chave_principais, NEW.palavras_chave_secundarias, NEW.canonical_url,
+//       NEW.og_title, NEW.og_description, NEW.og_image_url, NEW.schema_markup, NEW.indice_google, NEW.robots_meta,
+//       NEW.conteudo, NEW.imagem_destaque_url, NEW.tempo_leitura, NEW.categoria_secundaria, NEW.autor_convidado,
+//       NEW.url_fonte_externa, NEW.artigo_pillar, NEW.artigos_relacionados, NEW.proximo_artigo_sugerido,
+//       NEW.permitir_comentarios, NEW.destaque, NEW.status_publicacao, NEW.data_agendamento, NEW.seo_score,
+//       NEW.autor_id, 
+//       CASE WHEN TG_OP = 'INSERT' THEN 'Criado' ELSE 'Editado' END, now()
+//     );
+//     
+//     -- Cleanup old versions
+//     DELETE FROM public.article_versions
+//     WHERE article_id = NEW.id
+//     AND id NOT IN (
+//       SELECT id FROM public.article_versions WHERE article_id = NEW.id ORDER BY criado_em DESC LIMIT 50
+//     );
+//     
+//     RETURN NEW;
+//   END;
+//   $function$
+//   
+// FUNCTION trigger_pages_version_insert()
+//   CREATE OR REPLACE FUNCTION public.trigger_pages_version_insert()
+//    RETURNS trigger
+//    LANGUAGE plpgsql
+//    SECURITY DEFINER
+//   AS $function$
+//   BEGIN
+//     INSERT INTO public.pages_versions (
+//       page_id, titulo, slug, meta_title, meta_description, h1_pagina,
+//       palavras_chave_principais, canonical_url, og_title, og_description,
+//       og_image_url, schema_markup, indice_google, robots_meta, conteudo,
+//       imagem_destaque_url, template, ordem_menu, visibilidade, status_publicacao,
+//       data_agendamento, descricao_interna, autor_id, acao, criado_em
+//     ) VALUES (
+//       NEW.id, NEW.titulo, NEW.slug, NEW.meta_title, NEW.meta_description, NEW.h1_pagina,
+//       NEW.palavras_chave_principais, NEW.canonical_url, NEW.og_title, NEW.og_description,
+//       NEW.og_image_url, NEW.schema_markup, NEW.indice_google, NEW.robots_meta, NEW.conteudo,
+//       NEW.imagem_destaque_url, NEW.template, NEW.ordem_menu, NEW.visibilidade, NEW.status_publicacao,
+//       NEW.data_agendamento, NEW.descricao_interna, NEW.autor_id, 
+//       CASE WHEN TG_OP = 'INSERT' THEN 'Criado' ELSE 'Editado' END, now()
+//     );
+//     
+//     -- Cleanup old versions (keep last 50)
+//     DELETE FROM public.pages_versions
+//     WHERE page_id = NEW.id
+//     AND id NOT IN (
+//       SELECT id FROM public.pages_versions WHERE page_id = NEW.id ORDER BY criado_em DESC LIMIT 50
+//     );
+//     
+//     RETURN NEW;
+//   END;
+//   $function$
+//   
 // FUNCTION update_timestamp_column()
 //   CREATE OR REPLACE FUNCTION public.update_timestamp_column()
 //    RETURNS trigger
@@ -2226,7 +3019,7 @@ export const Constants = {
 //     RETURN NEW;
 //   END;
 //   $function$
-//
+//   
 // FUNCTION update_veiculo_status_on_nf()
 //   CREATE OR REPLACE FUNCTION public.update_veiculo_status_on_nf()
 //    RETURNS trigger
@@ -2239,17 +3032,26 @@ export const Constants = {
 //     RETURN NEW;
 //   END;
 //   $function$
-//
+//   
 
 // --- TRIGGERS ---
+// Table: articles
+//   on_articles_version_insert: CREATE TRIGGER on_articles_version_insert AFTER INSERT OR UPDATE ON public.articles FOR EACH ROW EXECUTE FUNCTION trigger_articles_version_insert()
 // Table: blog_posts
 //   update_blog_posts_updated_at: CREATE TRIGGER update_blog_posts_updated_at BEFORE UPDATE ON public.blog_posts FOR EACH ROW EXECUTE FUNCTION update_timestamp_column()
 // Table: landing_pages
 //   update_landing_pages_updated_at: CREATE TRIGGER update_landing_pages_updated_at BEFORE UPDATE ON public.landing_pages FOR EACH ROW EXECUTE FUNCTION update_timestamp_column()
 // Table: notas_fiscais
 //   trg_update_veiculo_status: CREATE TRIGGER trg_update_veiculo_status AFTER INSERT OR UPDATE ON public.notas_fiscais FOR EACH ROW EXECUTE FUNCTION update_veiculo_status_on_nf()
+// Table: pages
+//   on_pages_version_insert: CREATE TRIGGER on_pages_version_insert AFTER INSERT OR UPDATE ON public.pages FOR EACH ROW EXECUTE FUNCTION trigger_pages_version_insert()
 
 // --- INDEXES ---
+// Table: article_versions
+//   CREATE INDEX idx_article_versions_article_id ON public.article_versions USING btree (article_id)
+//   CREATE INDEX idx_article_versions_criado_em ON public.article_versions USING btree (criado_em DESC)
+// Table: articles
+//   CREATE UNIQUE INDEX articles_slug_key ON public.articles USING btree (slug)
 // Table: blog_posts
 //   CREATE UNIQUE INDEX blog_posts_slug_key ON public.blog_posts USING btree (slug)
 // Table: configuracoes_api
@@ -2260,9 +3062,17 @@ export const Constants = {
 //   CREATE UNIQUE INDEX fipe_marcas_codigo_key ON public.fipe_marcas USING btree (codigo)
 // Table: fipe_modelos
 //   CREATE UNIQUE INDEX fipe_modelos_codigo_marca_codigo_key ON public.fipe_modelos USING btree (codigo, marca_codigo)
+// Table: keywords
+//   CREATE UNIQUE INDEX keywords_palavra_chave_key ON public.keywords USING btree (palavra_chave)
 // Table: landing_pages
 //   CREATE UNIQUE INDEX landing_pages_slug_key ON public.landing_pages USING btree (slug)
+// Table: pages
+//   CREATE UNIQUE INDEX pages_slug_key ON public.pages USING btree (slug)
+// Table: pages_versions
+//   CREATE INDEX idx_pages_versions_criado_em ON public.pages_versions USING btree (criado_em DESC)
+//   CREATE INDEX idx_pages_versions_page_id ON public.pages_versions USING btree (page_id)
 // Table: site_configuracoes
 //   CREATE UNIQUE INDEX site_configuracoes_chave_key ON public.site_configuracoes USING btree (chave)
 // Table: usuarios
 //   CREATE UNIQUE INDEX usuarios_email_key ON public.usuarios USING btree (email)
+
