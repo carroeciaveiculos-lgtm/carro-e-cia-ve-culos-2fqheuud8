@@ -20,7 +20,7 @@
     <link rel="preconnect" href="https://htpcqdbhktmvppfemnad.supabase.co" crossorigin />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link rel="preload" as="image" href="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/fotos/fachada-da-loja.webp" />
+    <link rel="preload" as="image" href="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Fotos/fachada%20da%20loja.jpeg" />
     <!-- Google Tag Manager -->
     <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
     new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
@@ -40,52 +40,5 @@
     <script defer src="https://goskip.dev/skip.js"></script>
     <!-- @skip-protected: Do not remove. App entrypoint. -->
     <script type="module" src="/src/main.tsx"></script>
-    <script>
-      // Tracking Events
-      document.addEventListener('DOMContentLoaded', function() {
-        // Sitelink Tracking
-        document.body.addEventListener('click', function(e) {
-          const link = e.target.closest('a');
-          if (!link) return;
-          const href = link.getAttribute('href');
-          if (!href) return;
-          
-          if (href.includes('/estoque')) {
-            window.gtag && window.gtag('event', 'sitelink_click', { 'sitelink_name': 'Ver Estoque', 'page_path': window.location.pathname });
-          } else if (href.includes('/vender-meu-carro')) {
-            window.gtag && window.gtag('event', 'sitelink_click', { 'sitelink_name': 'Vender Meu Carro', 'page_path': window.location.pathname });
-          } else if (href.includes('/financiamento')) {
-            window.gtag && window.gtag('event', 'sitelink_click', { 'sitelink_name': 'Financiamento', 'page_path': window.location.pathname });
-          }
-        });
-        
-        // Form Submit Tracking
-        document.body.addEventListener('submit', function(e) {
-          const form = e.target;
-          window.gtag && window.gtag('event', 'form_submit', {
-            'form_name': form.id || 'formulario_site',
-            'page_path': window.location.pathname
-          });
-        });
-        
-        // Helper global method backward compatibility
-        window.getWhatsappLink = function() {
-          const phone = "5534999484285";
-          const message = "Olá, gostaria de saber mais informações";
-          return `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
-        };
-
-        // Button CTA Tracking
-        document.body.addEventListener('click', function(e) {
-          const btn = e.target.closest('.btn-cta');
-          if (btn) {
-            window.gtag && window.gtag('event', 'cta_click', {
-              'cta_name': btn.innerText.trim(),
-              'page_path': window.location.pathname
-            });
-          }
-        });
-      });
-    </script>
   </body>
 </html>
