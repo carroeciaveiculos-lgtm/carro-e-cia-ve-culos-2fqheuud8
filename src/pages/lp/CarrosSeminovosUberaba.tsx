@@ -19,7 +19,7 @@ import {
 } from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
 import { getWhatsAppLink } from '@/lib/whatsapp'
-import { trackConversion } from '@/lib/tracking'
+import { trackConversion, trackCTAClick } from '@/lib/tracking'
 import { supabase } from '@/lib/supabase/client'
 import { VehicleCard } from '@/components/VehicleCard'
 import { CheckCircle2, FilterX, Search } from 'lucide-react'
@@ -84,7 +84,7 @@ export default function CarrosSeminovosUberaba() {
       image:
         'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/fotos/fachada-da-loja.webp',
       description:
-        'Encontre os melhores carros seminovos em Uberaba MG com procedência, garantia e preço justo.',
+        'Encontre carros seminovos de qualidade em Uberaba. Consignação segura com garantia de procedência. Avaliação grátis.',
       address: {
         '@type': 'PostalAddress',
         addressLocality: 'Uberaba',
@@ -105,7 +105,7 @@ export default function CarrosSeminovosUberaba() {
         {
           '@type': 'ListItem',
           position: 2,
-          name: 'Carros Seminovos em Uberaba MG',
+          name: 'Carros Seminovos em Uberaba',
           item: 'https://carroeciamotors.com.br/carros-seminovos-uberaba-mg',
         },
       ],
@@ -115,8 +115,8 @@ export default function CarrosSeminovosUberaba() {
   return (
     <main className="flex-1 bg-background">
       <SEO
-        title="Carros Seminovos em Uberaba MG | Carro e Cia Veículos"
-        description="Encontre os melhores carros seminovos em Uberaba MG com procedência, garantia e preço justo. Mais de 20 anos no mercado. Venha conhecer!"
+        title="Carros Seminovos em Uberaba | Qualidade e Confiança"
+        description="Encontre carros seminovos de qualidade em Uberaba. Consignação segura com garantia de procedência. Avaliação grátis na Carro e Cia."
         schema={schema}
       />
 
@@ -131,41 +131,43 @@ export default function CarrosSeminovosUberaba() {
               </BreadcrumbItem>
               <BreadcrumbSeparator />
               <BreadcrumbItem>
-                <BreadcrumbPage>Carros Seminovos em Uberaba MG</BreadcrumbPage>
+                <BreadcrumbPage>Carros Seminovos em Uberaba</BreadcrumbPage>
               </BreadcrumbItem>
             </BreadcrumbList>
           </Breadcrumb>
 
           <div className="max-w-4xl">
             <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-foreground mb-6 leading-tight">
-              Carros Seminovos em Uberaba MG — Com Procedência, Garantia e Preço Justo
+              Carros Seminovos em Uberaba — Qualidade e Confiança
             </h1>
             <p className="text-xl text-muted-foreground mb-6 leading-relaxed">
-              Você está procurando carros seminovos em Uberaba MG com segurança, procedência e preço
-              justo? Na Carro e Cia Veículos você encontra exatamente o que precisa — sem surpresas,
-              sem estresse e sem enrolação.
+              Você está procurando um carro seminovo de qualidade em Uberaba? A Carro e Cia Veículos
+              é a sua solução completa para encontrar o veículo perfeito com segurança,
+              transparência e confiança.
             </p>
             <p className="text-lg text-muted-foreground mb-10 leading-relaxed">
-              Com mais de 20 anos de experiência no mercado de veículos usados em Uberaba e região,
-              somos referência em qualidade, transparência e atendimento humanizado. Cada carro do
-              nosso estoque passa por avaliação rigorosa antes de ser anunciado. Aqui você não
-              compra um carro — você compra tranquilidade.
+              Com mais de 20 anos de experiência no mercado de veículos usados, mantemos um estoque
+              de dezenas de veículos selecionados, garantindo a melhor relação custo-benefício. Aqui
+              você não compra um carro — você compra tranquilidade.
             </p>
             <Button
               size="lg"
-              className="text-sm md:text-lg px-6 py-4 md:px-8 md:py-6 h-auto w-full sm:w-auto whitespace-normal break-words leading-snug"
+              className="text-sm md:text-lg px-6 py-4 md:px-8 md:py-6 h-auto w-full sm:w-auto whitespace-normal break-words leading-snug btn-cta"
               asChild
             >
               <a
                 href={getWhatsAppLink(
-                  'Olá! Vi a página de carros seminovos e gostaria de ver o estoque.',
+                  'Olá! Vi a página de carros seminovos e gostaria de ver as opções disponíveis.',
                 )}
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label="Falar com a Carro e Cia pelo WhatsApp"
-                onClick={() => trackConversion('whatsapp')}
+                onClick={() => {
+                  trackConversion('whatsapp')
+                  trackCTAClick('Fale com Especialistas', window.location.pathname)
+                }}
               >
-                Fale com a Carro e Cia pelo WhatsApp
+                Fale com Nossos Especialistas
               </a>
             </Button>
           </div>
@@ -177,9 +179,12 @@ export default function CarrosSeminovosUberaba() {
         <div className="container">
           <div className="flex flex-col md:flex-row justify-between items-end mb-10 gap-6">
             <div>
-              <h2 className="text-3xl font-display font-bold mb-4">Nosso Estoque de Seminovos</h2>
+              <h2 className="text-3xl font-display font-bold mb-4">
+                Estoque Diversificado em Uberaba
+              </h2>
               <p className="text-muted-foreground">
-                Encontre o carro perfeito para você com filtros fáceis de usar.
+                De SUVs a hatchbacks econômicos. Utilize os filtros abaixo para encontrar o seu
+                próximo carro.
               </p>
             </div>
           </div>
@@ -306,21 +311,22 @@ export default function CarrosSeminovosUberaba() {
 
       <section className="py-16 md:py-24 container max-w-4xl border-t">
         <div className="prose prose-lg dark:prose-invert max-w-none prose-headings:font-bold prose-h2:text-3xl prose-h3:text-2xl">
-          <h2>Por que Comprar Seminovo na Carro e Cia Veículos?</h2>
+          <h2>Por Que Escolher Carros Seminovos?</h2>
           <p>
-            Existem dezenas de opções para comprar carros usados em Uberaba MG. Mas existem poucos
-            lugares onde você sai com a certeza de ter feito um bom negócio. A Carro e Cia é um
-            desses lugares.
+            Os carros seminovos oferecem a melhor relação custo-benefício do mercado. Você adquire
+            um veículo com tecnologia moderna, menor preço que um carro zero km e ainda mantém a
+            qualidade e a segurança.
           </p>
 
           <div className="bg-muted/30 border border-border/50 rounded-2xl p-8 my-10 shadow-sm">
+            <h3 className="mt-0 mb-4">Vantagens dos Carros Seminovos:</h3>
             <ul className="space-y-4 m-0 p-0 list-none">
               {[
-                'Veículos com histórico verificado — sem passado escondido',
-                'Documentação 100% regularizada — transferência sem burocracia',
-                'Financiamento facilitado — inclusive na modalidade consignada',
-                'Atendimento personalizado, sem pressão de venda',
-                'Mais de 20 anos de confiança consolidada em Uberaba MG',
+                'Preço 30-40% menor que o modelo zero km',
+                'Menor depreciação após a compra',
+                'Garantia de procedência e inspeção de qualidade',
+                'Documentação 100% regularizada — sem burocracias pesadas',
+                'Financiamento flexível em até 60 meses',
               ].map((item, i) => (
                 <li key={i} className="flex items-start gap-4 m-0">
                   <CheckCircle2
@@ -333,56 +339,35 @@ export default function CarrosSeminovosUberaba() {
             </ul>
           </div>
 
+          <h2>Processo Transparente e Seguro</h2>
           <p>
-            Quando você compra na Carro e Cia, você está comprando de quem conhece o mercado local
-            de dentro para fora.
+            Diferente de comprar de particulares, na Carro e Cia você tem a segurança de um contrato
+            protegido. Nós cuidamos da transferência, realizamos a inspeção mecânica completa e
+            garantimos a melhor negociação.
           </p>
 
-          <h2>Carros Usados à Venda em Uberaba MG — Estoque Sempre Renovado</h2>
-          <p>
-            Nosso estoque é renovado constantemente com as melhores oportunidades da região. De
-            hatches econômicos a SUVs e utilitários, você encontra o carro certo para o seu perfil e
-            o seu bolso.
-          </p>
-          <p>Todos os nossos veículos passam por:</p>
+          <h2>Por Que Somos Referência em Uberaba?</h2>
           <ul>
-            <li>Vistoria técnica completa</li>
-            <li>Verificação de histórico de sinistros</li>
-            <li>Conferência de documentação e multas</li>
-            <li>Higienização e preparação para entrega</li>
+            <li>Mais de 20 anos de experiência consolidada no mercado.</li>
+            <li>Mais de 5.000 clientes satisfeitos na região do Triângulo Mineiro.</li>
+            <li>Localização estratégica e equipe familiar especializada em gerar confiança.</li>
           </ul>
-          <p>
-            Procurando um modelo específico? Entre em contato agora e nossa equipe te avisa assim
-            que chegar no estoque.
-          </p>
-
-          <h2>Carros Semi Novos em Uberaba — Como Funciona a Compra?</h2>
-          <p>Comprar um carro seminovo na Carro e Cia é simples, rápido e sem complicação:</p>
-          <ol>
-            <li>Você escolhe o veículo — presencialmente na loja ou pelo nosso site</li>
-            <li>Nossa equipe apresenta toda a documentação e histórico do veículo</li>
-            <li>
-              Simulamos o financiamento nas melhores condições disponíveis — inclusive consignado
-            </li>
-            <li>Transferência rápida, segura e sem burocracia</li>
-            <li>Você sai com o carro e a tranquilidade de ter feito um bom negócio</li>
-          </ol>
 
           <div className="mt-16 p-10 bg-primary/5 border border-primary/20 rounded-2xl text-center shadow-sm">
             <h2 className="text-3xl font-bold mb-4 mt-0 text-foreground">
               Tem um Carro Para Dar Como Entrada?
             </h2>
             <h3 className="text-xl mb-6 text-foreground font-medium">
-              Faça sua Avaliação Gratuita!
+              Fazemos a avaliação gratuita sem compromisso!
             </h3>
             <p className="mb-8 text-muted-foreground">
-              Quer reduzir o valor das parcelas? Fazemos a avaliação gratuita do seu veículo atual e
-              você pode usar como parte do pagamento. Avaliação rápida, justa e sem compromisso.
+              Se você quer trocar seu carro seminovo por outro do nosso estoque, oferecemos
+              avaliação grátis e pagamos o melhor preço para facilitar a sua troca.
             </p>
             <Button
               asChild
               size="lg"
-              className="w-full sm:w-auto h-14 text-sm md:text-lg px-6 md:px-8 whitespace-normal break-words leading-snug"
+              className="w-full sm:w-auto h-14 text-sm md:text-lg px-6 md:px-8 whitespace-normal break-words leading-snug btn-cta"
             >
               <a
                 href={getWhatsAppLink('Olá! Gostaria de avaliar meu carro para dar como entrada.')}

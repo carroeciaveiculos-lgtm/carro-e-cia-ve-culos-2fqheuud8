@@ -306,7 +306,7 @@ export default function Sobre() {
 
             <Card className="overflow-hidden border-border/50 flex flex-col">
               <img
-                src="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/fotos/Jessica-foto-profissional.webp"
+                src="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/fotos/Ljessica-foto-profissional.webp"
                 alt="Jessica Germano"
                 className="w-full h-[250px] object-cover object-top"
                 loading="lazy"

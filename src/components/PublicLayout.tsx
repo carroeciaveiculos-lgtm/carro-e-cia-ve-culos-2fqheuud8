@@ -84,9 +84,11 @@ export default function PublicLayout() {
     }
   }, [menuOpen])
 
+  const isObrigado = location.pathname === '/obrigado'
+
   return (
-    <div className="flex flex-col min-h-screen md:pb-0 pb-[80px]">
-      {/* Navbar Desktop & Mobile */}
+    <div className={cn('flex flex-col min-h-screen', !isObrigado ? 'md:pb-0 pb-[80px]' : '')}>
+      {/* Navbar Desktop & Mobile */}{' '}
       <header className="fixed top-0 left-0 right-0 z-[1000] h-[60px] bg-background shadow-[0_2px_8px_rgba(0,0,0,0.1)] flex items-center">
         <div className="container flex items-center justify-between w-full">
           <Link to="/" className="flex items-center" target="_self" aria-label="Página Inicial">
@@ -183,20 +185,24 @@ export default function PublicLayout() {
           </button>
         </div>
       </header>
-
       {/* Main Content Padding */}
       <div className="pt-[60px] flex-1 flex flex-col">
         <main className="flex-1 flex flex-col">
           <Outlet />
         </main>
 
-        <footer className="py-8 border-t bg-muted/30 text-center text-sm text-muted-foreground mt-auto pb-safe">
-          <div className="container">
+        <footer className="py-8 border-t bg-muted/30 text-center text-sm text-muted-foreground mt-auto pb-safe md:pb-24">
+          <div className="container flex flex-col items-center justify-center gap-2">
             <p>© {new Date().getFullYear()} Carro e Cia Veículos. Todos os direitos reservados.</p>
+            <Link
+              to="/politica-de-privacidade"
+              className="hover:text-primary transition-colors underline underline-offset-2"
+            >
+              Política de Privacidade
+            </Link>
           </div>
         </footer>
       </div>
-
       {/* Mobile Menu Overlay */}
       {menuOpen && (
         <div
@@ -204,7 +210,6 @@ export default function PublicLayout() {
           onClick={() => setMenuOpen(false)}
         />
       )}
-
       {/* Mobile Menu Drawer */}
       <div
         className={cn(
@@ -268,69 +273,70 @@ export default function PublicLayout() {
           </Button>
         </div>
       </div>
-
       {/* Bottom Nav (Mobile Only) */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-background border-t shadow-[0_-2px_10px_rgba(0,0,0,0.05)] z-[999] pb-safe">
-        <div className="flex items-center justify-around h-[64px] px-2">
-          <Link
-            to="/"
-            className={cn(
-              'flex flex-col items-center justify-center w-full h-full space-y-1',
-              location.pathname === '/' ? 'text-primary' : 'text-muted-foreground',
-            )}
-          >
-            <Home className="w-6 h-6" />
-            <span className="text-[11px] font-medium">Início</span>
-          </Link>
-          <Link
-            to="/estoque"
-            className={cn(
-              'flex flex-col items-center justify-center w-full h-full space-y-1',
-              location.pathname === '/estoque' ? 'text-primary' : 'text-muted-foreground',
-            )}
-          >
-            <Car className="w-6 h-6" />
-            <span className="text-[11px] font-medium">Estoque</span>
-          </Link>
-
-          <div className="flex flex-col items-center justify-center w-full h-full relative -top-3">
-            <a
-              href={getWhatsAppLink(wppText)}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={() => trackWhatsAppClick('Luiz', 'bottom_nav')}
-              className="flex items-center justify-center w-[56px] h-[56px] rounded-full bg-[#25D366] text-white shadow-lg border-4 border-background"
-              aria-label="Falar pelo WhatsApp"
+      {!isObrigado && (
+        <div className="md:hidden fixed bottom-0 left-0 right-0 bg-background border-t shadow-[0_-2px_10px_rgba(0,0,0,0.05)] z-[999] pb-safe">
+          {' '}
+          <div className="flex items-center justify-around h-[64px] px-2">
+            <Link
+              to="/"
+              className={cn(
+                'flex flex-col items-center justify-center w-full h-full space-y-1',
+                location.pathname === '/' ? 'text-primary' : 'text-muted-foreground',
+              )}
             >
-              <MessageCircle className="w-7 h-7" />
-            </a>
-            <span className="text-[11px] font-medium text-muted-foreground mt-1">WhatsApp</span>
+              <Home className="w-6 h-6" />
+              <span className="text-[11px] font-medium">Início</span>
+            </Link>
+            <Link
+              to="/estoque"
+              className={cn(
+                'flex flex-col items-center justify-center w-full h-full space-y-1',
+                location.pathname === '/estoque' ? 'text-primary' : 'text-muted-foreground',
+              )}
+            >
+              <Car className="w-6 h-6" />
+              <span className="text-[11px] font-medium">Estoque</span>
+            </Link>
+
+            <div className="flex flex-col items-center justify-center w-full h-full relative -top-3">
+              <a
+                href={getWhatsAppLink(wppText)}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => trackWhatsAppClick('Luiz', 'bottom_nav')}
+                className="flex items-center justify-center w-[56px] h-[56px] rounded-full bg-[#25D366] text-white shadow-lg border-4 border-background"
+                aria-label="Falar pelo WhatsApp"
+              >
+                <MessageCircle className="w-7 h-7" />
+              </a>
+              <span className="text-[11px] font-medium text-muted-foreground mt-1">WhatsApp</span>
+            </div>
+
+            <Link
+              to="/consignacao"
+              className={cn(
+                'flex flex-col items-center justify-center w-full h-full space-y-1',
+                location.pathname === '/consignacao' ? 'text-primary' : 'text-muted-foreground',
+              )}
+            >
+              <Handshake className="w-6 h-6" />
+              <span className="text-[11px] font-medium">Consignar</span>
+            </Link>
+            <button
+              onClick={() => setMenuOpen(true)}
+              className="flex flex-col items-center justify-center w-full h-full space-y-1 text-muted-foreground"
+              aria-expanded={menuOpen}
+              aria-haspopup="menu"
+              aria-label="Menu principal"
+            >
+              <Menu className="w-6 h-6" />
+              <span className="text-[11px] font-medium">Menu</span>
+            </button>
           </div>
-
-          <Link
-            to="/consignacao"
-            className={cn(
-              'flex flex-col items-center justify-center w-full h-full space-y-1',
-              location.pathname === '/consignacao' ? 'text-primary' : 'text-muted-foreground',
-            )}
-          >
-            <Handshake className="w-6 h-6" />
-            <span className="text-[11px] font-medium">Consignar</span>
-          </Link>
-          <button
-            onClick={() => setMenuOpen(true)}
-            className="flex flex-col items-center justify-center w-full h-full space-y-1 text-muted-foreground"
-            aria-expanded={menuOpen}
-            aria-haspopup="menu"
-            aria-label="Menu principal"
-          >
-            <Menu className="w-6 h-6" />
-            <span className="text-[11px] font-medium">Menu</span>
-          </button>
         </div>
-      </div>
-
-      {/* Back to Top Button */}
+      )}
+      {/* Back to Top Button */}{' '}
       {showBackToTop && (
         <button
           onClick={scrollToTop}
@@ -340,11 +346,12 @@ export default function PublicLayout() {
           <ArrowUp className="w-5 h-5" />
         </button>
       )}
-
       {/* Desktop WhatsApp Button */}
-      <div className="hidden md:block">
-        <WhatsAppButton />
-      </div>
+      {!isObrigado && (
+        <div className="hidden md:block">
+          <WhatsAppButton />
+        </div>
+      )}
     </div>
   )
 }

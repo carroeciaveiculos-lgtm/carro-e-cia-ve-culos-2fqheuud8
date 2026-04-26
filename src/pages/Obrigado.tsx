@@ -12,7 +12,7 @@ export default function Obrigado() {
   )
 
   return (
-    <div className="min-h-[calc(100vh-80px)] bg-muted/30 flex items-center justify-center py-20 px-4">
+    <div className="min-h-screen bg-muted/30 flex items-center justify-center py-10 md:py-20 px-4">
       <SEO
         title="Obrigado pelo Contato | Carro e Cia Veículos"
         description="Recebemos suas informações. Nossa equipe especializada entrará em contato em breve para apresentar a melhor proposta para o seu veículo."
@@ -31,9 +31,9 @@ export default function Obrigado() {
         <div className="bg-muted p-6 rounded-xl mb-8 flex flex-col items-center">
           <div className="w-24 h-24 rounded-full overflow-hidden mb-4 border-4 border-background shadow-md">
             <img
-              src="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Fotos/Luiz%20Fernando%20foto%20profissional.jpeg"
+              src="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/fotos/Luiz-Fernando-foto-profissional.webp"
               alt="Luiz Fernando"
-              className="w-full h-full object-cover"
+              className="w-full h-full object-cover object-top"
             />
           </div>
           <h3 className="font-bold text-lg">Luiz Fernando</h3>

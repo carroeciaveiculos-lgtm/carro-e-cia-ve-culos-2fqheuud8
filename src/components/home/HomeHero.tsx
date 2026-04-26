@@ -30,8 +30,8 @@ export function HomeHero() {
           <img
             src="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/fotos/Luiz-Fernando-foto-profissional.webp"
             alt="Luiz Fernando"
-            className="w-32 h-32 md:w-40 md:h-40 rounded-full object-cover object-top border-4 border-white shadow-[0_4px_12px_rgba(0,0,0,0.3)] mx-auto lg:mx-0 mb-6"
-          />
+            className="w-24 h-24 md:w-32 md:h-32 lg:w-40 lg:h-40 rounded-full object-cover object-top border-4 border-white/90 shadow-[0_4px_12px_rgba(0,0,0,0.3)] mx-auto lg:mx-0 mb-6 -mt-8 lg:mt-0 relative z-20"
+          />{' '}
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-display font-extrabold text-white mb-6 leading-tight animate-fade-in-up drop-shadow-md">
             Quer Vender Seu Carro? <span className="text-primary">A Solução Segura Está Aqui</span>
           </h1>
@@ -75,11 +75,12 @@ export function HomeHero() {
           </div>
         </div>
         <div
-          className="w-full max-w-md mx-auto animate-fade-in-up"
+          className="w-full max-w-md mx-auto animate-fade-in-up relative z-20"
           style={{ animationDelay: '400ms' }}
         >
-          <div className="bg-white rounded-xl shadow-2xl overflow-hidden p-6 border-t-4 border-[#25D366]">
-            <div className="mb-6 text-center">
+          <div className="bg-white/85 dark:bg-card/85 backdrop-blur-md rounded-xl shadow-2xl overflow-hidden p-5 md:p-6 border-t-4 border-[#25D366]">
+            <div className="mb-5 text-center">
+              {' '}
               <h3 className="text-2xl font-bold text-slate-800">Avaliação Gratuita</h3>
               <p className="text-sm text-slate-500">
                 Deixe seus dados e entramos em contato rápido.

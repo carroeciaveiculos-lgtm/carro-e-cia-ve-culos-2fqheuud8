@@ -73,86 +73,105 @@ export function LeadForm({
   return (
     <form
       onSubmit={handleSubmit}
-      className="space-y-4 bg-card p-5 md:p-6 rounded-xl border shadow-sm w-full text-left box-border overflow-hidden"
+      className="space-y-3 bg-transparent w-full text-left box-border overflow-hidden"
     >
-      <div className="space-y-2">
-        <Label htmlFor="nome">Nome Completo *</Label>
+      <div className="space-y-1.5">
+        <Label htmlFor="nome" className="text-sm font-semibold">
+          Nome Completo *
+        </Label>
         <Input
           id="nome"
           required
           value={formData.nome}
           onChange={(e) => setFormData((prev) => ({ ...prev, nome: e.target.value }))}
           placeholder="Seu nome"
+          className="bg-background/90"
         />
       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="whatsapp">WhatsApp *</Label>
-        <Input
-          id="whatsapp"
-          required
-          value={formData.whatsapp}
-          onChange={(e) => setFormData((prev) => ({ ...prev, whatsapp: e.target.value }))}
-          placeholder="(34) 99999-9999"
-        />
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="space-y-1.5">
+          <Label htmlFor="whatsapp" className="text-sm font-semibold">
+            WhatsApp *
+          </Label>
+          <Input
+            id="whatsapp"
+            required
+            value={formData.whatsapp}
+            onChange={(e) => setFormData((prev) => ({ ...prev, whatsapp: e.target.value }))}
+            placeholder="(34) 99999-9999"
+            className="bg-background/90"
+          />
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="modelo_veiculo" className="text-sm font-semibold">
+            Qual veículo? *
+          </Label>
+          <Input
+            id="modelo_veiculo"
+            required
+            value={formData.modelo_veiculo}
+            onChange={(e) => setFormData((prev) => ({ ...prev, modelo_veiculo: e.target.value }))}
+            placeholder="Ex: Onix 2022"
+            className="bg-background/90"
+          />
+        </div>
       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="modelo_veiculo">Qual veículo quer vender? *</Label>
-        <Input
-          id="modelo_veiculo"
-          required
-          value={formData.modelo_veiculo}
-          onChange={(e) => setFormData((prev) => ({ ...prev, modelo_veiculo: e.target.value }))}
-          placeholder="Ex: Chevrolet Onix 2022"
-        />
+      <div className="grid grid-cols-2 gap-3">
+        <div className="space-y-1.5">
+          <Label htmlFor="ano_veiculo" className="text-sm font-semibold">
+            Ano *
+          </Label>
+          <select
+            id="ano_veiculo"
+            required
+            value={formData.ano_veiculo}
+            onChange={(e) => setFormData((prev) => ({ ...prev, ano_veiculo: e.target.value }))}
+            className="flex h-10 w-full rounded-md border border-input bg-background/90 px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <option value="">Selecione</option>
+            <option value="2025">2025</option>
+            <option value="2024">2024</option>
+            <option value="2023">2023</option>
+            <option value="2022">2022</option>
+            <option value="2021">2021</option>
+            <option value="2020">2020</option>
+            <option value="2019">2019</option>
+            <option value="2018">2018</option>
+            <option value="2017">2017</option>
+            <option value="2016">2016</option>
+            <option value="2015">2015</option>
+            <option value="Anterior">Anterior a 2015</option>
+          </select>
+        </div>
+
+        <div className="space-y-1.5">
+          <Label htmlFor="km" className="text-sm font-semibold">
+            KM *
+          </Label>
+          <Input
+            id="km"
+            type="number"
+            required
+            value={formData.km}
+            onChange={(e) => setFormData((prev) => ({ ...prev, km: e.target.value }))}
+            placeholder="Ex: 45000"
+            className="bg-background/90"
+          />
+        </div>
       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="ano_veiculo">Ano do Veículo *</Label>
-        <select
-          id="ano_veiculo"
-          required
-          value={formData.ano_veiculo}
-          onChange={(e) => setFormData((prev) => ({ ...prev, ano_veiculo: e.target.value }))}
-          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          <option value="">Selecione o ano</option>
-          <option value="2025">2025</option>
-          <option value="2024">2024</option>
-          <option value="2023">2023</option>
-          <option value="2022">2022</option>
-          <option value="2021">2021</option>
-          <option value="2020">2020</option>
-          <option value="2019">2019</option>
-          <option value="2018">2018</option>
-          <option value="2017">2017</option>
-          <option value="2016">2016</option>
-          <option value="2015">2015</option>
-          <option value="Anterior">Anterior a 2015</option>
-        </select>
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="km">Quilometragem *</Label>
-        <Input
-          id="km"
-          type="number"
-          required
-          value={formData.km}
-          onChange={(e) => setFormData((prev) => ({ ...prev, km: e.target.value }))}
-          placeholder="Ex: 45000"
-        />
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="condicao">Condição do Veículo *</Label>
+      <div className="space-y-1.5">
+        <Label htmlFor="condicao" className="text-sm font-semibold">
+          Condição do Veículo *
+        </Label>
         <select
           id="condicao"
           required
           value={formData.condicao}
           onChange={(e) => setFormData((prev) => ({ ...prev, condicao: e.target.value }))}
-          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+          className="flex h-10 w-full rounded-md border border-input bg-background/90 px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
         >
           <option value="">Selecione</option>
           <option value="excelente">Excelente (sem problemas)</option>
