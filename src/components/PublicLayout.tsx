@@ -92,22 +92,16 @@ export default function PublicLayout() {
       <header className="fixed top-0 left-0 right-0 z-[1000] h-[60px] bg-background shadow-[0_2px_8px_rgba(0,0,0,0.1)] flex items-center">
         <div className="container flex items-center justify-between w-full">
           <Link to="/" className="flex items-center" target="_self" aria-label="Página Inicial">
-            <picture>
-              <source
-                srcSet="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/logos/logo-carro-e-cia1.webp"
-                type="image/webp"
-              />
-              <img
-                src="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/logos/logo-carro-e-cia1.webp"
-                alt="Carro e Cia Logo Oficial"
-                className="h-10 w-auto max-w-[140px] object-contain"
-                width="140"
-                height="40"
-                loading="eager"
-                fetchPriority="high"
-                decoding="async"
-              />
-            </picture>
+            <img
+              src="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/logos/logo-carro-e-cia1.webp"
+              alt="Carro e Cia Logo Oficial"
+              className="h-10 w-auto max-w-[140px] object-contain"
+              width="140"
+              height="40"
+              loading="eager"
+              fetchPriority="high"
+              decoding="async"
+            />
           </Link>
 
           {/* Desktop Menu */}

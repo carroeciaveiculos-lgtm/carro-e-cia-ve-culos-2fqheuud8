@@ -11,7 +11,7 @@ export const WhatsAppButton = () => {
       target="_blank"
       rel="noopener noreferrer"
       onClick={() => trackWhatsAppClick('Luiz', 'bottom_nav')}
-      className="fixed bottom-6 right-6 z-[9999] bg-[#25D366] text-white p-4 rounded-full shadow-lg hover:scale-110 transition-transform flex items-center justify-center group"
+      className="fixed bottom-[120px] right-5 z-[999] bg-[#25D366] text-white p-4 rounded-full shadow-lg hover:scale-110 transition-transform flex items-center justify-center group"
       aria-label="Falar com Luiz pelo WhatsApp"
       data-event="clique_whatsapp"
     >

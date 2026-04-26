@@ -30,10 +30,10 @@ export function HomeHero() {
           <img
             src="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/fotos/Luiz-Fernando-foto-profissional.webp"
             alt="Luiz Fernando"
-            className="w-24 h-24 md:w-32 md:h-32 lg:w-40 lg:h-40 rounded-full object-cover object-top border-4 border-white/90 shadow-[0_4px_12px_rgba(0,0,0,0.3)] mx-auto lg:mx-0 mb-6 -mt-8 lg:mt-0 relative z-20"
+            className="w-[140px] h-[140px] rounded-full object-cover object-top border-2 border-[#e0e0e0] shadow-[0_2px_8px_rgba(0,0,0,0.1)] mx-auto lg:mx-0 mb-6 relative z-20"
           />{' '}
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-display font-extrabold text-white mb-6 leading-tight animate-fade-in-up drop-shadow-md">
-            Quer Vender Seu Carro? <span className="text-primary">A Solução Segura Está Aqui</span>
+            Venda Seu Veículo em Até 48 Horas
           </h1>
           <p
             className="text-lg md:text-xl text-gray-100 mb-8 max-w-3xl mx-auto lg:mx-0 animate-fade-in-up drop-shadow-sm"

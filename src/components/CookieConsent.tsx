@@ -24,7 +24,7 @@ export function CookieConsent() {
   if (!show) return null
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 w-full bg-slate-900 text-white p-4 z-[9999] flex flex-col sm:flex-row items-center justify-between gap-4 shadow-2xl border-t border-slate-700 animate-in slide-in-from-bottom-5 fade-in duration-500">
+    <div className="fixed bottom-0 left-0 right-0 w-full bg-slate-900 text-white p-4 z-[1000] flex flex-col sm:flex-row items-center justify-between gap-4 shadow-2xl border-t border-slate-700 animate-in slide-in-from-bottom-5 fade-in duration-500">
       <div className="flex flex-col">
         <p className="text-sm font-medium text-slate-100 m-0">
           Sua privacidade é importante para nós

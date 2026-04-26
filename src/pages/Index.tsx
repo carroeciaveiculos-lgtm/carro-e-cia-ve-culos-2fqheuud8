@@ -29,8 +29,8 @@ export default function Index() {
   return (
     <div className="flex flex-col min-h-screen bg-background">
       <SEO
-        title="Consigne Seu Carro em Uberaba | Carro e Cia Veículos - 20+ Anos"
-        description="Vender seu carro nunca foi tão fácil. Consignação segura, profissional, com contrato protetor. Carro e Cia: referência 20+ anos em Uberaba."
+        title="Venda Seu Veículo em 48 Horas | Consignação Segura em Uberaba"
+        description="Venda seu carro em até 48 horas com consignação segura. Avaliação grátis, contrato protegido, transparência total."
         schema={schema}
         image="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/fotos/fachada-da-loja.webp"
       />
