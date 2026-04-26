@@ -9,6 +9,7 @@ import PublicLayout from '@/components/PublicLayout'
 import { ProtectedRoute } from '@/components/ProtectedRoute'
 import { CookieConsent } from '@/components/CookieConsent'
 import { useScrollTracking } from '@/hooks/use-scroll-tracking'
+import { useLocation } from 'react-router-dom'
 import NotFound from './pages/NotFound'
 import Index from './pages/Index'
 
@@ -123,6 +124,17 @@ const PageLoader = () => (
 
 const GlobalHooks = () => {
   useScrollTracking()
+  const location = useLocation()
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && (window as any).dataLayer) {
+      ;(window as any).dataLayer.push({
+        event: 'page_view',
+        page_path: location.pathname + location.search,
+      })
+    }
+  }, [location])
+
   return null
 }
 

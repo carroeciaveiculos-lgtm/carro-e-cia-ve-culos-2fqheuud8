@@ -35,25 +35,37 @@ const CATEGORIES = ['Todos', 'Consignação', 'Compra', 'Vender', 'Financiamento
 const getDynamicImageUrl = (post: BlogPost) => {
   if (
     post?.image_url &&
+    post.image_url.trim() !== '' &&
     !post.image_url.includes('modelo-veiculo') &&
     !post.image_url.includes('consignacao')
   ) {
     return post.image_url.replace(/\.(jpg|jpeg|png)$/, '.webp')
   }
-  const cleanTitle = (post?.title || 'car business')
+  // Generate highly contextual fallback image based on category and title
+  const titleWords = (post?.title || '')
     .replace(/[^a-zA-Z0-9\s]/g, '')
     .trim()
     .split(' ')
-    .slice(0, 3)
-    .join(' ')
-  const query = encodeURIComponent(cleanTitle || 'car business')
+  let searchContext = 'car dealership'
+
+  if (post?.category === 'Consignação' || post?.title.toLowerCase().includes('consigna'))
+    searchContext = 'car handshake agreement'
+  else if (post?.category === 'Financiamento' || post?.title.toLowerCase().includes('financ'))
+    searchContext = 'car finance money'
+  else if (post?.category === 'Segurança' || post?.title.toLowerCase().includes('segur'))
+    searchContext = 'car security shield'
+  else if (post?.category === 'Documentação' || post?.title.toLowerCase().includes('document'))
+    searchContext = 'car documents signature'
+  else if (titleWords.length > 0) searchContext = `car ${titleWords.slice(0, 2).join(' ')}`
+
+  const query = encodeURIComponent(searchContext)
   let color = 'gray'
   if (post?.category === 'Consignação') color = 'green'
   else if (post?.category === 'Compra') color = 'blue'
   else if (post?.category === 'Vender') color = 'orange'
   else if (post?.category === 'Financiamento') color = 'purple'
   else if (post?.category === 'Seminovos') color = 'red'
-  return `https://img.usecurling.com/p/600/338?q=${query}&color=${color}`
+  return `https://img.usecurling.com/p/600/338?q=${query}&color=${color}&dpr=2`
 }
 
 export default function BlogIndex() {

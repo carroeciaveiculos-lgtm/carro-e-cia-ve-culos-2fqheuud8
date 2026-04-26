@@ -88,6 +88,20 @@ export default function PublicLayout() {
 
   return (
     <div className={cn('flex flex-col min-h-screen', !isObrigado ? 'md:pb-0 pb-[80px]' : '')}>
+      <style
+        dangerouslySetInnerHTML={{
+          __html: `
+        .whatsapp-floating-button, #whatsapp-button {
+          bottom: 120px !important;
+          right: 20px !important;
+          z-index: 999 !important;
+        }
+        .privacy-banner, #cookie-consent {
+          z-index: 1000 !important;
+        }
+      `,
+        }}
+      />
       {/* Navbar Desktop & Mobile */}{' '}
       <header className="fixed top-0 left-0 right-0 z-[1000] h-[60px] bg-background shadow-[0_2px_8px_rgba(0,0,0,0.1)] flex items-center">
         <div className="container flex items-center justify-between w-full">

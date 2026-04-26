@@ -8,8 +8,23 @@ export function TestimonialsAndLocation() {
       city: 'Local Guide',
     },
     {
-      text: 'Excelente loja, pessoal muito educado e atenciosos.',
-      author: 'Rodrigo Carvalho Gomide',
+      text: 'Ótimo atendimento e boa oferta de produtos.',
+      author: 'Paulo Sérgio Dias de Abreu',
+      city: 'Local Guide',
+    },
+    {
+      text: 'Ótimo lugar bem atenciosos',
+      author: 'rondineli oliveira',
+      city: 'Local Guide',
+    },
+    {
+      text: 'Atendimento excelente... veículos de boa procedência.',
+      author: 'LFernando',
+      city: 'Local Guide',
+    },
+    {
+      text: 'Atendimento, qualidade e confiança.',
+      author: 'Milson Q10 Sorvetes',
       city: 'Local Guide',
     },
     {
@@ -18,13 +33,13 @@ export function TestimonialsAndLocation() {
       city: 'Local Guide',
     },
     {
-      text: 'Honestidade e bom atendimento e o forte desta casa',
-      author: 'Marlucio Macedo',
+      text: 'Excelente loja, pessoal muito educado e atenciosos.',
+      author: 'Rodrigo Carvalho Gomide',
       city: 'Local Guide',
     },
     {
-      text: 'Atendimento excelente... veículos de boa procedência.',
-      author: 'LFernando',
+      text: 'Honestidade e bom atendimento e o forte desta casa',
+      author: 'Marlucio Macedo',
       city: 'Local Guide',
     },
   ]

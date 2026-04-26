@@ -132,25 +132,44 @@ export default function BlogPost() {
   const getDynamicImageUrl = (postObj: Post) => {
     if (
       postObj?.image_url &&
+      postObj.image_url.trim() !== '' &&
       !postObj.image_url.includes('modelo-veiculo') &&
       !postObj.image_url.includes('consignacao')
     ) {
       return postObj.image_url.replace(/\.(jpg|jpeg|png)$/, '.webp')
     }
-    const cleanTitle = (postObj?.title || 'car business')
+
+    // Generate highly contextual fallback image based on category and title
+    const titleWords = (postObj?.title || '')
       .replace(/[^a-zA-Z0-9\s]/g, '')
       .trim()
       .split(' ')
-      .slice(0, 3)
-      .join(' ')
-    const query = encodeURIComponent(cleanTitle || 'car business')
+    let searchContext = 'car dealership'
+
+    if (postObj?.category === 'Consignação' || postObj?.title.toLowerCase().includes('consigna'))
+      searchContext = 'car handshake agreement'
+    else if (
+      postObj?.category === 'Financiamento' ||
+      postObj?.title.toLowerCase().includes('financ')
+    )
+      searchContext = 'car finance money'
+    else if (postObj?.category === 'Segurança' || postObj?.title.toLowerCase().includes('segur'))
+      searchContext = 'car security shield'
+    else if (
+      postObj?.category === 'Documentação' ||
+      postObj?.title.toLowerCase().includes('document')
+    )
+      searchContext = 'car documents signature'
+    else if (titleWords.length > 0) searchContext = `car ${titleWords.slice(0, 2).join(' ')}`
+
+    const query = encodeURIComponent(searchContext)
     let color = 'gray'
     if (postObj?.category === 'Consignação') color = 'green'
     else if (postObj?.category === 'Compra') color = 'blue'
     else if (postObj?.category === 'Vender') color = 'orange'
     else if (postObj?.category === 'Financiamento') color = 'purple'
     else if (postObj?.category === 'Seminovos') color = 'red'
-    return `https://img.usecurling.com/p/1200/630?q=${query}&color=${color}`
+    return `https://img.usecurling.com/p/1200/630?q=${query}&color=${color}&dpr=2`
   }
 
   const resolvedImageUrl = getDynamicImageUrl(post)
@@ -362,9 +381,9 @@ export default function BlogPost() {
                   src="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/fotos/Luiz-Fernando-foto-profissional.webp"
                   alt="Luiz Fernando, proprietário Carro e Cia com 20+ anos de experiência"
                   loading="lazy"
-                  width="150"
-                  height="150"
-                  className="rounded-full mb-4 shadow-md object-cover w-[150px] h-[150px] border-4 border-background"
+                  width="140"
+                  height="140"
+                  className="rounded-full mb-4 shadow-md object-cover object-top w-[140px] h-[140px] border-4 border-background aspect-square flex-shrink-0"
                 />
                 <h4 className="font-bold text-xl font-display">Luiz Fernando</h4>
                 <p className="text-muted-foreground mb-2">
