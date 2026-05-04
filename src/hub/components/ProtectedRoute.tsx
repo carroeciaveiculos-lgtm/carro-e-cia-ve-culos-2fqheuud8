@@ -3,6 +3,8 @@ import { useAuth } from '@/hooks/use-auth'
 
 export function HubProtectedRoute() {
   const { session, loading } = useAuth()
+  const isSubdomain = typeof window !== 'undefined' && window.location.hostname.startsWith('hub.')
+  const basePath = isSubdomain ? '' : '/hub'
 
   if (loading) {
     return (
@@ -16,7 +18,7 @@ export function HubProtectedRoute() {
   }
 
   if (!session) {
-    return <Navigate to="/login" replace />
+    return <Navigate to={`${basePath}/login`} replace />
   }
 
   return <Outlet />

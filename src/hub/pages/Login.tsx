@@ -15,7 +15,10 @@ export default function LoginPage() {
     if (signInError) {
       setError(signInError.message)
     } else {
-      navigate('/')
+      const isSubdomain =
+        typeof window !== 'undefined' && window.location.hostname.startsWith('hub.')
+      const basePath = isSubdomain ? '/' : '/hub/'
+      navigate(basePath)
     }
   }
 
