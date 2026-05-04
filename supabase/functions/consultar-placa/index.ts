@@ -72,8 +72,6 @@ Deno.serve(async (req) => {
         (hash % 99999).toString().padStart(5, '0')
       const renavam = (Math.random() * 100000000000).toFixed(0).padStart(11, '0')
 
-      const precoMock = 40000 + (hash % 100) * 1000
-
       const response = {
         placa: cleanPlaca,
         chassi: chassi,
@@ -84,17 +82,7 @@ Deno.serve(async (req) => {
         ano_modelo: anoMod,
         combustivel: hash % 2 === 0 ? 'Flex' : 'Gasolina',
         cor: hash % 3 === 0 ? 'Prata' : hash % 2 === 0 ? 'Preta' : 'Branca',
-        preco_fipe: precoMock,
-        codigo_fipe: `00${hash % 999}-1`,
-        url_fipe: `http://veiculos.fipe.org.br/?carro/${marca.toLowerCase()}/${codigo_fipe}`,
-        historico_fipe: Array.from({ length: 12 }).map((_, i) => {
-          const d = new Date()
-          d.setMonth(d.getMonth() - i)
-          return {
-            mes: `${d.getFullYear()}-${(d.getMonth() + 1).toString().padStart(2, '0')}`,
-            valor: precoMock + (Math.random() * 2000 - 1000),
-          }
-        }),
+        preco_fipe: 40000 + (hash % 100) * 1000,
         mock: true,
       }
 
@@ -171,9 +159,6 @@ Deno.serve(async (req) => {
       cor: veiculoData?.cor || '',
       preco_fipe: veiculoData?.valor || veiculoData?.preco_fipe || veiculoData?.fipe?.valor || 0,
       mes_referencia: veiculoData?.mesReferencia || '',
-      codigo_fipe: veiculoData?.codigoFipe || '',
-      url_fipe: veiculoData?.url || '',
-      historico_fipe: veiculoData?.historico || [],
     }
 
     return new Response(JSON.stringify({ success: true, data: result }), {
