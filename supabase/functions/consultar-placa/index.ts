@@ -92,7 +92,7 @@ Deno.serve(async (req) => {
         (hash % 99999).toString().padStart(5, '0')
       const renavam = (Math.random() * 100000000000).toFixed(0).padStart(11, '0')
 
-      const precoMock = 40000 + (hash % 100) * 1000
+      const precoMock = 40000 + (hash % 100) * 1000;
 
       result = {
         placa: cleanPlaca,
@@ -113,9 +113,9 @@ Deno.serve(async (req) => {
           { mes: '04-2024', valor: precoMock * 1.01 },
           { mes: '03-2024', valor: precoMock * 1.02 },
           { mes: '02-2024', valor: precoMock * 1.04 },
-          { mes: '01-2024', valor: precoMock * 1.05 },
+          { mes: '01-2024', valor: precoMock * 1.05 }
         ],
-        categoria: 'Carro',
+        categoria: 'Carro'
       }
 
       await new Promise((resolve) => setTimeout(resolve, 800))
@@ -176,36 +176,27 @@ Deno.serve(async (req) => {
         renavam: veiculoData?.renavam || '',
         marca: veiculoData?.marca || '',
         modelo: veiculoData?.modelo || '',
-        ano_fab:
-          veiculoData?.anoFabricacao?.toString() || veiculoData?.ano_fabricacao?.toString() || '',
+        ano_fab: veiculoData?.anoFabricacao?.toString() || veiculoData?.ano_fabricacao?.toString() || '',
         ano_modelo: veiculoData?.anoModelo?.toString() || veiculoData?.ano_modelo?.toString() || '',
         combustivel: veiculoData?.combustivel || '',
         cor: veiculoData?.cor || '',
         preco_fipe: veiculoData?.valor || veiculoData?.preco_fipe || veiculoData?.fipe?.valor || 0,
         mes_referencia: veiculoData?.mesReferencia || '',
-        codigo_fipe:
-          veiculoData?.codigoFipe || veiculoData?.fipe?.codigo || veiculoData?.codigo_fipe || '',
+        codigo_fipe: veiculoData?.codigoFipe || veiculoData?.fipe?.codigo || veiculoData?.codigo_fipe || '',
         url_fipe: veiculoData?.url || veiculoData?.fipe?.url || '',
-        historico_fipe: veiculoData?.historico ||
-          veiculoData?.fipe?.historico || [
-            { mes: 'Mês Atual', valor: veiculoData?.valor || veiculoData?.preco_fipe || 0 },
-            {
-              mes: 'Mês Anterior',
-              valor: (veiculoData?.valor || veiculoData?.preco_fipe || 0) * 1.01,
-            },
-            {
-              mes: '2 Meses Atrás',
-              valor: (veiculoData?.valor || veiculoData?.preco_fipe || 0) * 1.02,
-            },
-          ],
-        categoria: veiculoData?.categoria || 'Carro',
+        historico_fipe: veiculoData?.historico || veiculoData?.fipe?.historico || [
+          { mes: 'Mês Atual', valor: veiculoData?.valor || veiculoData?.preco_fipe || 0 },
+          { mes: 'Mês Anterior', valor: (veiculoData?.valor || veiculoData?.preco_fipe || 0) * 1.01 },
+          { mes: '2 Meses Atrás', valor: (veiculoData?.valor || veiculoData?.preco_fipe || 0) * 1.02 }
+        ],
+        categoria: veiculoData?.categoria || 'Carro'
       }
     }
 
     // Sincronização Automática (Upsert) no Cache
     await supabase.from('veiculos_cache').upsert({
       ...result,
-      updated_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
     })
 
     return new Response(JSON.stringify({ success: true, data: result }), {
