@@ -18,6 +18,8 @@ import { useToast } from '@/hooks/use-toast'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { CurrencyInput } from '@/components/ui/currency-input'
 import { CpfInput } from '@/components/ui/cpf-input'
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart'
+import { Line, LineChart, CartesianGrid, XAxis, YAxis } from 'recharts'
 import {
   Camera,
   Search,
@@ -25,16 +27,14 @@ import {
   Send,
   Car,
   Settings,
-  Loader2,
-  DollarSign,
-  LineChart,
+  LineChart as ChartIcon,
   Users,
   QrCode,
   FileCheck,
   ImageIcon,
   Sparkles,
+  ExternalLink,
 } from 'lucide-react'
-import ContratoDocxGenerator from '@/components/ContratoDocxGenerator'
 
 const CHECKLIST_INSPECAO = [
   'Chave Reserva',
@@ -76,6 +76,13 @@ const OPCIONAIS_LIST = [
   'Vidros elétricos',
 ]
 
+const chartConfig = {
+  valor: {
+    label: 'Valor FIPE',
+    color: 'hsl(var(--primary))',
+  },
+}
+
 export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess }: any) {
   const { toast } = useToast()
   const [loading, setLoading] = useState(false)
@@ -110,6 +117,7 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
     diferenciais: [],
     caracteristicas: [],
     fotos: [],
+    info_personalizadas: {},
     publicado_olx: false,
     publicado_webmotors: false,
     publicado_icarros: false,
@@ -129,7 +137,11 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
           .single()
           .then(({ data }) => {
             if (data)
-              setFormData({ ...data, tipo_entrada: data.is_consignado ? 'consignacao' : 'proprio' })
+              setFormData({
+                ...data,
+                tipo_entrada: data.is_consignado ? 'consignacao' : 'proprio',
+                info_personalizadas: data.info_personalizadas || {},
+              })
           })
         supabase
           .from('leads')
@@ -149,6 +161,7 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
           caracteristicas: [],
           fotos: [],
           diferenciais: [],
+          info_personalizadas: {},
         })
         setLeadsCount(0)
         setDespesas([])
@@ -170,8 +183,19 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
         body: { placa: formData.placa },
       })
       if (error || !data.success) throw new Error(data?.error || error?.message)
-      setFormData((p: any) => ({ ...p, ...data.data, valor_fipe: data.data.preco_fipe }))
-      toast({ title: 'Dados importados!' })
+      setFormData((p: any) => ({
+        ...p,
+        ...data.data,
+        valor_fipe: data.data.preco_fipe,
+        info_personalizadas: {
+          ...(p.info_personalizadas || {}),
+          codigo_fipe: data.data.codigo_fipe,
+          url_fipe: data.data.url_fipe,
+          historico_fipe: data.data.historico_fipe,
+          categoria_detalhada: data.data.categoria,
+        },
+      }))
+      toast({ title: 'Dados de inteligência importados!' })
     } catch (err: any) {
       toast({ title: 'Erro', description: err.message, variant: 'destructive' })
     } finally {
@@ -205,7 +229,6 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
   const gerarDescricaoIA = async () => {
     setLoading(true)
     try {
-      // Simula uma chamada inteligente de IA utilizando os dados preenchidos
       await new Promise((r) => setTimeout(r, 1200))
 
       const { marca, modelo, ano_fabricacao, ano_modelo, quilometragem, diferenciais } = formData
@@ -243,6 +266,11 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
   const custoCompra = formData.is_consignado ? 0 : Number(formData.valor_fipe) * 0.8 || 0
   const totalDespesas = despesas.reduce((a, c) => a + (Number(c.valor) || 0), 0)
   const margemLucro = (Number(formData.preco_venda) || 0) - (custoCompra + totalDespesas)
+  const historicoFipeData =
+    formData.info_personalizadas?.historico_fipe &&
+    Array.isArray(formData.info_personalizadas.historico_fipe)
+      ? [...formData.info_personalizadas.historico_fipe].reverse()
+      : []
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -278,7 +306,7 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
               value="financeiro"
               className="data-[state=active]:border-b-2 border-blue-600 rounded-none shadow-none"
             >
-              <LineChart className="w-4 h-4 mr-2" /> ROI & Despesas
+              <ChartIcon className="w-4 h-4 mr-2" /> ROI & Histórico
             </TabsTrigger>
             <TabsTrigger
               value="performance"
@@ -298,13 +326,20 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
                   className="uppercase max-w-xs font-mono"
                 />
                 <Button onClick={consultarAPIPlaca} disabled={loadingPlaca}>
-                  <Search className="w-4 h-4 mr-2" /> Consultar Denatran
+                  <Search className="w-4 h-4 mr-2" /> Consultar Placa Inteligente
                 </Button>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-white p-6 rounded-lg border">
                 <div className="space-y-4">
-                  <h3 className="font-bold border-b pb-2">Dados do Veículo</h3>
+                  <h3 className="font-bold border-b pb-2 flex justify-between">
+                    Dados do Veículo
+                    {formData.info_personalizadas?.codigo_fipe && (
+                      <span className="text-xs font-mono text-slate-400 bg-slate-100 px-2 py-0.5 rounded">
+                        FIPE: {formData.info_personalizadas.codigo_fipe}
+                      </span>
+                    )}
+                  </h3>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <Label>Marca</Label>
@@ -367,7 +402,19 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
                 <div className="space-y-4">
                   <h3 className="font-bold border-b pb-2">Preços e Valores</h3>
                   <div>
-                    <Label>Valor FIPE</Label>
+                    <div className="flex justify-between items-center mb-1">
+                      <Label>Valor FIPE</Label>
+                      {formData.info_personalizadas?.url_fipe && (
+                        <a
+                          href={formData.info_personalizadas.url_fipe}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-xs text-blue-600 hover:underline flex items-center bg-blue-50 px-1.5 py-0.5 rounded"
+                        >
+                          Ver Tabela Oficial <ExternalLink className="w-3 h-3 ml-1" />
+                        </a>
+                      )}
+                    </div>
                     <CurrencyInput
                       value={formData.valor_fipe || ''}
                       onChange={(v) => setFormData({ ...formData, valor_fipe: v })}
@@ -479,8 +526,14 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
 
             <TabsContent value="inspecao" className="m-0 space-y-6">
               <div className="bg-white p-6 rounded-lg border">
-                <h3 className="font-bold border-b pb-2 mb-4">
+                <h3 className="font-bold border-b pb-2 mb-4 flex items-center justify-between">
                   Checklist Digital & Características
+                  {formData.combustivel?.toLowerCase() === 'híbrido' ||
+                  formData.combustivel?.toLowerCase() === 'elétrico' ? (
+                    <span className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded">
+                      Sugerido para veículos Ecológicos
+                    </span>
+                  ) : null}
                 </h3>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   {CARACTERISTICAS_LIST.map((c) => (
@@ -492,6 +545,18 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
                       {c}
                     </label>
                   ))}
+                  {(formData.combustivel?.toLowerCase() === 'híbrido' ||
+                    formData.combustivel?.toLowerCase() === 'elétrico') && (
+                    <label className="flex items-center gap-2 text-sm text-green-700 font-medium">
+                      <Checkbox
+                        checked={(formData.caracteristicas || []).includes('Cabo de Carregamento')}
+                        onCheckedChange={() =>
+                          toggleArray('caracteristicas', 'Cabo de Carregamento')
+                        }
+                      />{' '}
+                      Cabo de Carregamento
+                    </label>
+                  )}
                 </div>
               </div>
               <div className="bg-white p-6 rounded-lg border">
@@ -589,30 +654,83 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
                     </div>
                   </div>
                 </div>
-                <div className="bg-white p-6 rounded-lg border shadow-sm col-span-2">
-                  <h3 className="font-bold text-slate-800 mb-4">Despesas Vinculadas</h3>
-                  {despesas.length === 0 ? (
-                    <div className="text-center text-slate-500 py-8 bg-slate-50 rounded-lg">
-                      Nenhuma despesa lançada para este veículo.
-                    </div>
-                  ) : (
-                    <div className="space-y-2">
-                      {despesas.map((d) => (
-                        <div
-                          key={d.id}
-                          className="flex justify-between items-center p-3 border rounded-lg"
+                <div className="bg-white p-6 rounded-lg border shadow-sm col-span-2 space-y-6">
+                  <div>
+                    <h3 className="font-bold text-slate-800 mb-4 flex items-center justify-between">
+                      Evolução de Mercado FIPE
+                      {historicoFipeData.length > 0 && (
+                        <span className="text-xs font-normal text-slate-500 bg-slate-100 px-2 py-1 rounded">
+                          Últimos {historicoFipeData.length} meses
+                        </span>
+                      )}
+                    </h3>
+                    {historicoFipeData.length > 0 ? (
+                      <ChartContainer config={chartConfig} className="h-48 w-full">
+                        <LineChart
+                          data={historicoFipeData}
+                          margin={{ top: 5, right: 10, left: 10, bottom: 0 }}
                         >
-                          <div>
-                            <p className="font-medium">{d.descricao || d.categoria}</p>
-                            <p className="text-xs text-slate-500">{d.data_despesa}</p>
+                          <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                          <XAxis
+                            dataKey="mes"
+                            tickLine={false}
+                            axisLine={false}
+                            tickMargin={8}
+                            tickFormatter={(v) => v.split('-').reverse().join('/')}
+                          />
+                          <YAxis
+                            domain={['auto', 'auto']}
+                            tickLine={false}
+                            axisLine={false}
+                            tickFormatter={(v) => `R$ ${(v / 1000).toFixed(0)}k`}
+                            width={60}
+                          />
+                          <ChartTooltip content={<ChartTooltipContent />} />
+                          <Line
+                            type="monotone"
+                            dataKey="valor"
+                            stroke="var(--color-valor)"
+                            strokeWidth={2}
+                            dot={{ r: 3 }}
+                            activeDot={{ r: 5 }}
+                          />
+                        </LineChart>
+                      </ChartContainer>
+                    ) : (
+                      <div className="text-center text-slate-500 py-8 bg-slate-50 rounded-lg flex flex-col items-center justify-center">
+                        <ChartIcon className="w-8 h-8 mb-2 opacity-50" />
+                        <p>
+                          Realize a consulta inteligente da placa para carregar a curva de
+                          desvalorização histórica.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-slate-800 mb-4">Despesas Vinculadas</h3>
+                    {despesas.length === 0 ? (
+                      <div className="text-center text-slate-500 py-8 bg-slate-50 rounded-lg">
+                        Nenhuma despesa lançada para este veículo.
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        {despesas.map((d) => (
+                          <div
+                            key={d.id}
+                            className="flex justify-between items-center p-3 border rounded-lg"
+                          >
+                            <div>
+                              <p className="font-medium">{d.descricao || d.categoria}</p>
+                              <p className="text-xs text-slate-500">{d.data_despesa}</p>
+                            </div>
+                            <div className="font-bold text-red-500">
+                              R$ {Number(d.valor).toLocaleString('pt-BR')}
+                            </div>
                           </div>
-                          <div className="font-bold text-red-500">
-                            R$ {Number(d.valor).toLocaleString('pt-BR')}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             </TabsContent>
@@ -664,7 +782,7 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
               disabled={loading}
               className="bg-blue-600 hover:bg-blue-700 text-white font-bold"
             >
-              <Send className="w-4 h-4 mr-2" /> Salvar Veículo
+              <Send className="w-4 h-4 mr-2" /> Salvar Veículo Ativo
             </Button>
           </div>
         </Tabs>

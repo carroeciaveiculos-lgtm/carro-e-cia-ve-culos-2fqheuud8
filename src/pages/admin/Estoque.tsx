@@ -21,7 +21,7 @@ import {
 import {
   Edit2,
   ExternalLink,
-  Trash2,
+  Archive,
   Share2,
   Plus,
   Printer,
@@ -69,7 +69,11 @@ export default function AdminEstoque() {
         if (statusFilter === 'ativos') query = query.in('status', ['disponivel', 'consignado'])
         if (statusFilter === 'inativos')
           query = query.in('status', ['vendido', 'reservado', 'inativo'])
+        if (statusFilter === 'arquivados') query = query.eq('status', 'arquivado')
+      } else {
+        query = query.neq('status', 'arquivado')
       }
+
       if (diasFilter !== 'todos') {
         const dateLimit = new Date()
         dateLimit.setDate(dateLimit.getDate() - parseInt(diasFilter))
@@ -96,12 +100,13 @@ export default function AdminEstoque() {
     loadVehicles()
   }, [debouncedSearch, sortBy, statusFilter, diasFilter, page])
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Tem certeza que deseja excluir este veículo?')) return
-    const { error } = await supabase.from('veiculos').delete().eq('id', id)
-    if (error) toast({ title: 'Erro ao excluir', variant: 'destructive' })
+  const handleArchive = async (id: string) => {
+    if (!confirm('Tem certeza que deseja arquivar este veículo? Ele será movido para o histórico.'))
+      return
+    const { error } = await supabase.from('veiculos').update({ status: 'arquivado' }).eq('id', id)
+    if (error) toast({ title: 'Erro ao arquivar', variant: 'destructive' })
     else {
-      toast({ title: 'Veículo excluído' })
+      toast({ title: 'Veículo arquivado no histórico' })
       loadVehicles()
     }
   }
@@ -119,10 +124,14 @@ export default function AdminEstoque() {
     switch (status) {
       case 'disponivel':
         return <Badge className="bg-green-600">Ativo</Badge>
+      case 'consignado':
+        return <Badge className="bg-purple-600">Consignado</Badge>
       case 'reservado':
         return <Badge className="bg-amber-500">Reservado</Badge>
       case 'vendido':
         return <Badge className="bg-slate-500">Vendido</Badge>
+      case 'arquivado':
+        return <Badge className="bg-slate-300 text-slate-700">Arquivado</Badge>
       case 'inativo':
         return (
           <Badge variant="outline" className="text-slate-400">
@@ -140,7 +149,7 @@ export default function AdminEstoque() {
 
   const ShareModal = () => {
     if (!shareVehicle) return null
-    const text = `🚗 ${shareVehicle.marca} ${shareVehicle.modelo}\n💰 ${formatCurrency(shareVehicle.preco_venda)}\n🔗 https://carroeciaveiculos.goskip.app/estoque/${shareVehicle.id}`
+    const text = `🚗 ${shareVehicle.marca} ${shareVehicle.modelo}\n💰 ${formatCurrency(shareVehicle.preco_venda)}\n🔗 ${import.meta.env.VITE_SITE_URL || 'https://carroeciaveiculos.goskip.app'}/estoque/${shareVehicle.id}`
     return (
       <Dialog open={!!shareVehicle} onOpenChange={() => setShareVehicle(null)}>
         <DialogContent className="max-w-md">
@@ -172,7 +181,7 @@ export default function AdminEstoque() {
             <Car className="w-6 h-6 text-blue-600" /> Estoque e Integrador
           </h1>
           <p className="text-sm text-slate-500 mt-1">
-            Gerencie seus veículos e a integração com portais.
+            Gerencie seus veículos, arquive vendas passadas e organize os portais.
           </p>
         </div>
         <div className="flex gap-2">
@@ -211,13 +220,14 @@ export default function AdminEstoque() {
             </SelectContent>
           </Select>
           <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-[140px]">
+            <SelectTrigger className="w-[180px]">
               <SelectValue placeholder="Status" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="todos">Todos</SelectItem>
-              <SelectItem value="ativos">Ativos</SelectItem>
-              <SelectItem value="inativos">Inativos</SelectItem>
+              <SelectItem value="todos">Todos Ativos</SelectItem>
+              <SelectItem value="ativos">Disponíveis</SelectItem>
+              <SelectItem value="inativos">Vendidos/Inativos</SelectItem>
+              <SelectItem value="arquivados">Histórico (Arquivados)</SelectItem>
             </SelectContent>
           </Select>
           <Select value={sortBy} onValueChange={setSortBy}>
@@ -252,7 +262,10 @@ export default function AdminEstoque() {
               const poucaVisibilidade = v.visualizacoes_site < 50 && dias > 30
 
               return (
-                <TableRow key={v.id} className="hover:bg-slate-50/50">
+                <TableRow
+                  key={v.id}
+                  className={`hover:bg-slate-50/50 ${v.status === 'arquivado' ? 'opacity-60' : ''}`}
+                >
                   <TableCell>
                     <div className="w-16 h-12 bg-slate-100 rounded-md border overflow-hidden">
                       {v.fotos?.[0] ? (
@@ -272,7 +285,7 @@ export default function AdminEstoque() {
                     <div className="text-xs text-slate-500 font-mono">
                       {v.placa || 'SEM PLACA'} • {v.ano_fabricacao} • {v.cor}
                     </div>
-                    {(isEncalhado || poucaVisibilidade) && (
+                    {(isEncalhado || poucaVisibilidade) && v.status === 'disponivel' && (
                       <div className="mt-1 flex flex-col gap-1">
                         {isEncalhado && (
                           <span className="text-[10px] text-red-600 bg-red-50 px-1.5 py-0.5 rounded flex items-center w-fit">
@@ -341,6 +354,7 @@ export default function AdminEstoque() {
                           setIsModalOpen(true)
                         }}
                         className="text-blue-600"
+                        title="Editar Veículo"
                       >
                         <Edit2 className="w-4 h-4" />
                       </Button>
@@ -349,17 +363,21 @@ export default function AdminEstoque() {
                         size="icon"
                         onClick={() => setShareVehicle(v)}
                         className="text-pink-600"
+                        title="Compartilhar"
                       >
                         <Share2 className="w-4 h-4" />
                       </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleDelete(v.id)}
-                        className="text-red-600"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
+                      {v.status !== 'arquivado' && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleArchive(v.id)}
+                          className="text-slate-500 hover:text-slate-700"
+                          title="Arquivar (Remover do estoque ativo)"
+                        >
+                          <Archive className="w-4 h-4" />
+                        </Button>
+                      )}
                     </div>
                   </TableCell>
                 </TableRow>
