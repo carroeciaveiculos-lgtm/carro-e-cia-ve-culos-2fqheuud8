@@ -72,6 +72,7 @@ Deno.serve(async (req) => {
         (hash % 99999).toString().padStart(5, '0')
       const renavam = (Math.random() * 100000000000).toFixed(0).padStart(11, '0')
 
+      const precoMock = 40000 + (hash % 100) * 1000
       const response = {
         placa: cleanPlaca,
         chassi: chassi,
@@ -82,8 +83,18 @@ Deno.serve(async (req) => {
         ano_modelo: anoMod,
         combustivel: hash % 2 === 0 ? 'Flex' : 'Gasolina',
         cor: hash % 3 === 0 ? 'Prata' : hash % 2 === 0 ? 'Preta' : 'Branca',
-        preco_fipe: 40000 + (hash % 100) * 1000,
+        preco_fipe: precoMock,
         mock: true,
+        codigo_fipe: '001' + (hash % 999).toString().padStart(4, '0') + '-1',
+        url_fipe: 'https://veiculos.fipe.org.br',
+        historico_fipe: [
+          { mes: '05-2024', valor: precoMock },
+          { mes: '04-2024', valor: precoMock * 1.01 },
+          { mes: '03-2024', valor: precoMock * 1.02 },
+          { mes: '02-2024', valor: precoMock * 1.04 },
+          { mes: '01-2024', valor: precoMock * 1.05 },
+        ],
+        categoria: 'Carro',
       }
 
       // Simular latência de rede para maior realismo
@@ -159,6 +170,17 @@ Deno.serve(async (req) => {
       cor: veiculoData?.cor || '',
       preco_fipe: veiculoData?.valor || veiculoData?.preco_fipe || veiculoData?.fipe?.valor || 0,
       mes_referencia: veiculoData?.mesReferencia || '',
+      codigo_fipe: veiculoData?.fipe?.codigo || veiculoData?.codigo_fipe || '',
+      url_fipe: veiculoData?.fipe?.url || '',
+      historico_fipe: veiculoData?.fipe?.historico || [
+        { mes: 'Mês Atual', valor: veiculoData?.valor || veiculoData?.preco_fipe || 0 },
+        { mes: 'Mês Anterior', valor: (veiculoData?.valor || veiculoData?.preco_fipe || 0) * 1.01 },
+        {
+          mes: '2 Meses Atrás',
+          valor: (veiculoData?.valor || veiculoData?.preco_fipe || 0) * 1.02,
+        },
+      ],
+      categoria: veiculoData?.categoria || 'Carro',
     }
 
     return new Response(JSON.stringify({ success: true, data: result }), {

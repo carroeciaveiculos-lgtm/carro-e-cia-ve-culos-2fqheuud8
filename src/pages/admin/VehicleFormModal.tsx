@@ -91,6 +91,7 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
   const [leadsCount, setLeadsCount] = useState(0)
   const [despesas, setDespesas] = useState<any[]>([])
   const [mediaAssets, setMediaAssets] = useState<any[]>([])
+  const [cpfInfo, setCpfInfo] = useState<any>(null)
 
   const [formData, setFormData] = useState<any>({
     categoria: 'Carro',
@@ -263,6 +264,50 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
 
   const handleMediaSelect = (url: string) =>
     setFormData((p: any) => ({ ...p, fotos: [...(p.fotos || []), url] }))
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files
+    if (!files || files.length === 0) return
+
+    setLoading(true)
+    toast({ title: 'Enviando imagens...', description: 'Processando upload para o banco de mídias.' })
+
+    try {
+      const newUrls = []
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i]
+        const fileName = `${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.]/g, '')}`
+        const { error } = await supabase.storage.from('logos-e-imagens').upload(`veiculos/${fileName}`, file)
+        if (error) throw error
+
+        const { data: publicUrlData } = supabase.storage.from('logos-e-imagens').getPublicUrl(`veiculos/${fileName}`)
+        const url = publicUrlData.publicUrl
+
+        await supabase.from('media_assets').insert({
+          file_name: fileName,
+          file_path: url,
+          mime_type: file.type,
+          folder: 'veiculos',
+        })
+
+        newUrls.push(url)
+      }
+
+      setFormData((p: any) => ({ ...p, fotos: [...(p.fotos || []), ...newUrls] }))
+      toast({ title: 'Imagens importadas e salvas com sucesso!' })
+
+      supabase
+        .from('media_assets')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(20)
+        .then(({ data }) => setMediaAssets(data || []))
+    } catch (err: any) {
+      toast({ title: 'Erro no upload', description: err.message, variant: 'destructive' })
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const custoCompra = formData.is_consignado ? 0 : Number(formData.valor_fipe) * 0.8 || 0
   const totalDespesas = despesas.reduce((a, c) => a + (Number(c.valor) || 0), 0)
@@ -499,10 +544,14 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
                       />
                     </div>
                     <div>
-                      <Label>CPF</Label>
+                      <Label>CPF do Proprietário</Label>
                       <CpfInput
                         value={formData.proprietario_cpf || ''}
                         onChange={(v) => setFormData({ ...formData, proprietario_cpf: v })}
+                        onNameFound={(name, data) => {
+                          setFormData((p: any) => ({ ...p, proprietario_nome: name }))
+                          if (data) setCpfInfo(data)
+                        }}
                         className="bg-white"
                       />
                     </div>
@@ -527,6 +576,17 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
                       />
                     </div>
                   </div>
+                  {cpfInfo && (
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4 bg-white p-4 rounded border text-xs">
+                      <div><span className="font-bold text-slate-500 block mb-1">Nascimento</span> {cpfInfo.data_nascimento || '-'}</div>
+                      <div><span className="font-bold text-slate-500 block mb-1">Gênero</span> {cpfInfo.sexo || '-'}</div>
+                      <div><span className="font-bold text-slate-500 block mb-1">Mãe</span> {cpfInfo.nome_mae || '-'}</div>
+                      <div>
+                        <span className="font-bold text-slate-500 block mb-1">Situação (Receita)</span>
+                        <span className="bg-green-100 text-green-800 px-2 py-0.5 rounded font-bold">{cpfInfo.situacao || 'REGULAR'}</span>
+                      </div>
+                    </div>
+                  )}
                 )}
               </div>
             </TabsContent>
@@ -584,10 +644,27 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
 
             <TabsContent value="midia" className="m-0 space-y-6">
               <div className="bg-white p-6 rounded-lg border">
-                <h3 className="font-bold border-b pb-2 mb-4 flex items-center gap-2">
-                  <ImageIcon className="w-5 h-5 text-blue-600" /> Selecionar do Media Center
-                </h3>
-                <div className="flex gap-2 overflow-x-auto pb-4">
+                <div className="flex justify-between items-center border-b pb-2 mb-4">
+                  <h3 className="font-bold flex items-center gap-2">
+                    <ImageIcon className="w-5 h-5 text-blue-600" /> Fotos do Veículo
+                  </h3>
+                  <div className="relative">
+                    <Button size="sm" className="bg-blue-600 hover:bg-blue-700">
+                      <Camera className="w-4 h-4 mr-2" />
+                      Enviar Novas Fotos
+                    </Button>
+                    <input 
+                      type="file" 
+                      multiple 
+                      accept="image/*" 
+                      className="absolute inset-0 opacity-0 cursor-pointer" 
+                      onChange={handleFileUpload}
+                      disabled={loading}
+                    />
+                  </div>
+                </div>
+                <h4 className="text-sm font-semibold mb-2 text-slate-500">Selecionar do Banco de Mídias Existente</h4>
+                <div className="flex gap-2 overflow-x-auto pb-4 mb-6">
                   {mediaAssets.map((asset) => (
                     <div
                       key={asset.id}

@@ -43,6 +43,7 @@ export default function SiteManager() {
   const [comments, setComments] = useState<any[]>([])
   const [searchQuery, setSearchQuery] = useState('')
   const [blogPosts, setBlogPosts] = useState<BlogPost[]>([])
+  const [systemLogs, setSystemLogs] = useState<any[]>([])
   const { toast } = useToast()
 
   useEffect(() => {
@@ -50,8 +51,19 @@ export default function SiteManager() {
       fetchBlogPosts()
     } else if (activeTab === 'comentarios') {
       fetchComments()
+    } else if (activeTab === 'logs') {
+      fetchLogs()
     }
   }, [activeTab])
+
+  const fetchLogs = async () => {
+    const { data } = await supabase
+      .from('logs_integracao')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(50)
+    if (data) setSystemLogs(data)
+  }
 
   const fetchComments = async () => {
     const { data } = await supabase
@@ -687,34 +699,34 @@ export default function SiteManager() {
                 Resend).
               </p>
               <div className="border rounded-lg bg-slate-900 text-slate-300 font-mono text-xs p-4 h-64 overflow-y-auto space-y-2">
-                <div className="flex gap-4">
-                  <span className="text-slate-500">
-                    [{new Date().toISOString().split('T')[0]} 10:23]
-                  </span>
-                  <span className="text-green-400">[INFO]</span>
-                  <span>Webhook Portais: Lead recebido com sucesso (Portal - Webmotors)</span>
-                </div>
-                <div className="flex gap-4">
-                  <span className="text-slate-500">
-                    [{new Date().toISOString().split('T')[0]} 09:15]
-                  </span>
-                  <span className="text-yellow-400">[WARN]</span>
-                  <span>Sync Estoque: Portal iCarros demorou &gt; 2000ms para responder</span>
-                </div>
-                <div className="flex gap-4">
-                  <span className="text-slate-500">
-                    [{new Date().toISOString().split('T')[0]} 08:00]
-                  </span>
-                  <span className="text-red-400">[ERROR]</span>
-                  <span>Autentique: Falha ao enviar contrato (ID_123) - Token Expirado</span>
-                </div>
-                <div className="flex gap-4">
-                  <span className="text-slate-500">
-                    [{new Date().toISOString().split('T')[0]} 07:45]
-                  </span>
-                  <span className="text-green-400">[INFO]</span>
-                  <span>Email Resend: Proposta enviada para joao@email.com</span>
-                </div>
+                {systemLogs.length > 0 ? (
+                  systemLogs.map((log) => (
+                    <div key={log.id} className="flex gap-4 border-b border-slate-800 pb-1">
+                      <span className="text-slate-500 shrink-0">
+                        [{new Date(log.created_at).toLocaleString('pt-BR')}]
+                      </span>
+                      <span
+                        className={
+                          log.status === 'falha'
+                            ? 'text-red-400 shrink-0'
+                            : 'text-green-400 shrink-0'
+                        }
+                      >
+                        [{log.status === 'falha' ? 'ERROR' : 'INFO'}]
+                      </span>
+                      <span className="break-words">
+                        Integração {log.portal}:{' '}
+                        {log.status === 'falha'
+                          ? JSON.stringify(log.payload_erro)
+                          : 'Sincronizado com sucesso'}
+                      </span>
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-slate-500 italic">
+                    Nenhum log registrado recentemente. Monitorando...
+                  </div>
+                )}
               </div>
               <Button variant="outline" size="sm">
                 Baixar Logs Completos

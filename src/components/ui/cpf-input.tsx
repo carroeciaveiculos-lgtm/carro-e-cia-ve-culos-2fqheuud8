@@ -35,7 +35,7 @@ export function formatCpf(cpf: string): string {
 export interface CpfInputProps extends Omit<React.ComponentProps<'input'>, 'onChange'> {
   value: string
   onChange: (value: string) => void
-  onNameFound?: (name: string) => void
+  onNameFound?: (name: string, data?: any) => void
   buttonClassName?: string
 }
 
@@ -67,8 +67,8 @@ export const CpfInput = React.forwardRef<HTMLInputElement, CpfInputProps>(
         if (!data.success) throw new Error(data.error || 'Falha ao consultar CPF')
 
         if (data.data?.nome) {
-          toast({ title: 'Sucesso!', description: 'Nome importado com sucesso.' })
-          if (onNameFound) onNameFound(data.data.nome)
+          toast({ title: 'Sucesso!', description: 'Dados cadastrais importados com sucesso.' })
+          if (onNameFound) onNameFound(data.data.nome, data.data)
         } else {
           toast({
             title: 'Aviso',

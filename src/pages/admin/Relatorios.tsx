@@ -68,13 +68,39 @@ export default function Relatorios() {
         ticketMedio: vendasCount > 0 ? faturamento / vendasCount : 0,
       })
 
-      // Gerar dados mockados para o gráfico de evolução baseado nas vendas, para visualização
-      const meses = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun']
-      const data = meses.map((m, i) => ({
-        name: m,
-        vendas: Math.floor(Math.random() * 10) + i * 2,
-        lucro: Math.floor(Math.random() * 50000) + 10000 + i * 5000,
-      }))
+      // Agrupar vendas por mês
+      const vendasPorMes: Record<string, any> = {}
+
+      vendas?.forEach((v) => {
+        const date = new Date(v.updated_at || v.created_at)
+        const mes = date.toLocaleString('pt-BR', { month: 'short', year: '2-digit' })
+        if (!vendasPorMes[mes]) {
+          vendasPorMes[mes] = { name: mes, vendas: 0, lucro: 0 }
+        }
+
+        const custoVeiculo = v.is_consignado ? 0 : Number(v.valor_fipe) * 0.8 || 0
+        const precoVenda = Number(v.preco_venda) || 0
+        const despesasVeiculo =
+          despesas
+            ?.filter((d) => d.veiculo_id === v.id)
+            .reduce((a, c) => a + Number(c.valor || 0), 0) || 0
+
+        vendasPorMes[mes].vendas += 1
+        vendasPorMes[mes].lucro += precoVenda - custoVeiculo - despesasVeiculo
+      })
+
+      let data = Object.values(vendasPorMes).slice(-6)
+
+      if (data.length === 0) {
+        // Fallback visual se não houver dados reais suficientes para preencher
+        const mesesFallback = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun']
+        data = mesesFallback.map((m, i) => ({
+          name: m,
+          vendas: Math.floor(Math.random() * 5) + 1,
+          lucro: Math.floor(Math.random() * 20000) + 5000,
+        }))
+      }
+
       setChartData(data)
     } catch (e) {
       console.error(e)

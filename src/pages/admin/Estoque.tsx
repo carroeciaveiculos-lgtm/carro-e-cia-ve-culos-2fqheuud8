@@ -31,6 +31,7 @@ import {
   AlertTriangle,
   Eye,
   MessageCircle,
+  CheckCircle,
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
@@ -107,6 +108,21 @@ export default function AdminEstoque() {
     if (error) toast({ title: 'Erro ao arquivar', variant: 'destructive' })
     else {
       toast({ title: 'Veículo arquivado no histórico' })
+      loadVehicles()
+    }
+  }
+
+  const handleSell = async (id: string) => {
+    if (
+      !confirm(
+        'Confirmar venda deste veículo? Ele será marcado como VENDIDO e sairá da vitrine pública.',
+      )
+    )
+      return
+    const { error } = await supabase.from('veiculos').update({ status: 'vendido' }).eq('id', id)
+    if (error) toast({ title: 'Erro ao registrar venda', variant: 'destructive' })
+    else {
+      toast({ title: 'Venda registrada com sucesso! 🎉' })
       loadVehicles()
     }
   }
@@ -382,13 +398,24 @@ export default function AdminEstoque() {
                       >
                         <Share2 className="w-4 h-4" />
                       </Button>
+                      {(v.status === 'disponivel' || v.status === 'consignado') && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleSell(v.id)}
+                          className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                          title="Marcar como Vendido"
+                        >
+                          <CheckCircle className="w-4 h-4" />
+                        </Button>
+                      )}
                       {v.status !== 'arquivado' && (
                         <Button
                           variant="ghost"
                           size="icon"
                           onClick={() => handleArchive(v.id)}
                           className="text-slate-500 hover:text-slate-700"
-                          title="Arquivar Venda (Manter histórico)"
+                          title="Mover para Histórico Arquivado"
                         >
                           <Archive className="w-4 h-4" />
                         </Button>

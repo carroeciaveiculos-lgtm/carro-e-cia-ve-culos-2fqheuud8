@@ -71,6 +71,10 @@ Deno.serve(async (req) => {
             nome: nome,
             cpf: cleanCpf,
             mock: true,
+            data_nascimento: '15/08/1985',
+            sexo: hash % 2 === 0 ? 'M' : 'F',
+            nome_mae: 'Mãe Silva',
+            situacao: 'REGULAR',
           },
         }),
         {
@@ -113,6 +117,10 @@ Deno.serve(async (req) => {
     const result = {
       cpf: cleanCpf,
       nome: nomeEncontrado || '',
+      data_nascimento: data.dataNascimento || data.data_nascimento || '',
+      sexo: data.sexo || data.genero || '',
+      nome_mae: data.mae || data.nome_mae || '',
+      situacao: data.situacao || data.situacao_cadastral || 'REGULAR',
     }
 
     return new Response(JSON.stringify({ success: true, data: result }), {

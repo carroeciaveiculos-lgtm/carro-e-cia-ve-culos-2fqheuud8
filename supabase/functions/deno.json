@@ -5,10 +5,10 @@
     "sync-estoque": 27,
     "webhook-portais": 28,
     "on-lead-created": 28,
-    "consultar-placa": 33,
+    "consultar-placa": 34,
     "enviar-para-assinatura": 29,
     "webhook-autentique": 26,
-    "consultar-cpf": 22,
+    "consultar-cpf": 23,
     "gerar-pdf-contrato": 15,
     "lead-automation": 4
   }
