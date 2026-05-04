@@ -119,6 +119,9 @@ const Conteudo = lazyWithRetry(() => import('./pages/admin/Conteudo'))
 const HubLogin = lazyWithRetry(() => import('./hub/pages/Login'))
 const HubLogout = lazyWithRetry(() => import('./hub/pages/Logout'))
 const HubDashboard = lazyWithRetry(() => import('./hub/pages/Dashboard'))
+const HubBranding = lazyWithRetry(() => import('./hub/pages/Branding'))
+const HubScripts = lazyWithRetry(() => import('./hub/pages/Scripts'))
+const HubMediaCenter = lazyWithRetry(() => import('./hub/pages/MediaCenter'))
 const HubLayout = lazyWithRetry(() => import('./hub/components/Layout'))
 import { HubProtectedRoute } from './hub/components/ProtectedRoute'
 
@@ -262,6 +265,9 @@ const HubApp = () => (
     <Route element={<HubProtectedRoute />}>
       <Route element={<HubLayout />}>
         <Route index element={<HubDashboard />} />
+        <Route path="branding" element={<HubBranding />} />
+        <Route path="scripts" element={<HubScripts />} />
+        <Route path="media" element={<HubMediaCenter />} />
       </Route>
     </Route>
     <Route path="*" element={<Navigate to="/" replace />} />

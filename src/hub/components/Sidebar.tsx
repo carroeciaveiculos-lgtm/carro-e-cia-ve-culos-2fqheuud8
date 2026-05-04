@@ -1,14 +1,62 @@
+import { Link, useLocation } from 'react-router-dom'
+import { LayoutDashboard, Palette, Code, Image as ImageIcon, LogOut } from 'lucide-react'
+import { cn } from '@/lib/utils'
+
 export function Sidebar() {
+  const location = useLocation()
+
+  const links = [
+    { label: 'Visão Geral', href: '/', icon: LayoutDashboard },
+    { label: 'Branding e Identidade', href: '/branding', icon: Palette },
+    { label: 'Gestor de Scripts', href: '/scripts', icon: Code },
+    { label: 'Media Center', href: '/media', icon: ImageIcon },
+  ]
+
   return (
-    <aside className="w-64 bg-gray-800 text-white p-4 h-screen flex flex-col">
-      <h3 className="text-xl font-bold mb-6">Sidebar MotoresHub</h3>
-      <nav className="flex-1">
+    <aside className="w-64 bg-[#1A1A1A] text-white flex flex-col min-h-screen shadow-lg flex-shrink-0 z-10 relative">
+      <div className="p-6 border-b border-white/10 flex items-center justify-center">
+        <h2 className="text-2xl font-bold text-white tracking-tight">
+          HUB <span className="text-[#CC0000]">C&C</span>
+        </h2>
+      </div>
+
+      <nav className="flex-1 py-6 px-4 overflow-y-auto">
         <ul className="space-y-2">
-          <li>
-            <div className="px-3 py-2 rounded bg-gray-700 cursor-pointer">Início</div>
-          </li>
+          {links.map((link) => {
+            const isActive =
+              location.pathname === link.href ||
+              (link.href !== '/' && location.pathname.startsWith(link.href))
+            return (
+              <li key={link.href}>
+                <Link
+                  to={link.href}
+                  className={cn(
+                    'flex items-center px-4 py-3 rounded-lg transition-all duration-200 font-medium',
+                    isActive
+                      ? 'bg-[#CC0000] text-white shadow-md'
+                      : 'text-gray-300 hover:bg-white/10 hover:text-white',
+                  )}
+                >
+                  <link.icon
+                    className={cn('w-5 h-5 mr-3', isActive ? 'text-white' : 'text-gray-400')}
+                  />
+                  {link.label}
+                </Link>
+              </li>
+            )
+          })}
         </ul>
       </nav>
+
+      <div className="p-4 border-t border-white/10">
+        <Link
+          to="/logout"
+          className="flex items-center px-4 py-3 rounded-lg text-gray-300 hover:bg-white/10 hover:text-red-400 transition-colors"
+        >
+          <LogOut className="w-5 h-5 mr-3" />
+          Sair do Painel
+        </Link>
+      </div>
     </aside>
   )
 }
