@@ -455,6 +455,38 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
                         }
                       />
                     </div>
+                    <div>
+                      <Label>Chassi</Label>
+                      <Input
+                        value={formData.chassi || ''}
+                        onChange={(e) => setFormData({ ...formData, chassi: e.target.value })}
+                        className="uppercase font-mono"
+                      />
+                    </div>
+                    <div>
+                      <Label>Renavam</Label>
+                      <Input
+                        value={formData.renavam || ''}
+                        onChange={(e) => setFormData({ ...formData, renavam: e.target.value })}
+                        className="font-mono"
+                      />
+                    </div>
+                    <div className="col-span-2">
+                      <Label>Código FIPE</Label>
+                      <Input
+                        value={formData.info_personalizadas?.codigo_fipe || ''}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            info_personalizadas: {
+                              ...(formData.info_personalizadas || {}),
+                              codigo_fipe: e.target.value,
+                            },
+                          })
+                        }
+                        className="font-mono"
+                      />
+                    </div>
                   </div>
                 </div>
 
@@ -538,77 +570,125 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
                     Próprio
                   </label>
                 </div>
-                {formData.tipo_entrada === 'consignacao' && (
-                  <>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <Label>Nome</Label>
-                        <Input
-                          value={formData.proprietario_nome || ''}
-                          onChange={(e) =>
-                            setFormData({ ...formData, proprietario_nome: e.target.value })
-                          }
-                          className="bg-white"
-                        />
-                      </div>
-                      <div>
-                        <Label>CPF do Proprietário</Label>
-                        <CpfInput
-                          value={formData.proprietario_cpf || ''}
-                          onChange={(v) => setFormData({ ...formData, proprietario_cpf: v })}
-                          onNameFound={(name, data) => {
-                            setFormData((p: any) => ({ ...p, proprietario_nome: name }))
-                            if (data) setCpfInfo(data)
-                          }}
-                          className="bg-white"
-                        />
-                      </div>
-                      <div>
-                        <Label>Telefone</Label>
-                        <Input
-                          value={formData.proprietario_telefone || ''}
-                          onChange={(e) =>
-                            setFormData({ ...formData, proprietario_telefone: e.target.value })
-                          }
-                          className="bg-white"
-                        />
-                      </div>
-                      <div>
-                        <Label>Email</Label>
-                        <Input
-                          value={formData.proprietario_email || ''}
-                          onChange={(e) =>
-                            setFormData({ ...formData, proprietario_email: e.target.value })
-                          }
-                          className="bg-white"
-                        />
-                      </div>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="col-span-2">
+                    <Label>Nome</Label>
+                    <Input
+                      value={formData.proprietario_nome || ''}
+                      onChange={(e) =>
+                        setFormData({ ...formData, proprietario_nome: e.target.value })
+                      }
+                      className="bg-white"
+                    />
+                  </div>
+                  <div className="col-span-2">
+                    <Label>CPF do Proprietário</Label>
+                    <CpfInput
+                      value={formData.proprietario_cpf || ''}
+                      onChange={(v) => setFormData({ ...formData, proprietario_cpf: v })}
+                      onNameFound={(name, data) => {
+                        setFormData((p: any) => ({
+                          ...p,
+                          proprietario_nome: name,
+                          proprietario_rg: data?.rg || p.proprietario_rg,
+                          proprietario_data_nascimento:
+                            data?.data_nascimento || p.proprietario_data_nascimento,
+                          proprietario_idade: data?.idade || p.proprietario_idade,
+                          proprietario_sexo: data?.sexo || p.proprietario_sexo,
+                          proprietario_mae: data?.nome_mae || p.proprietario_mae,
+                          proprietario_situacao_receita:
+                            data?.situacao_receita || p.proprietario_situacao_receita,
+                          proprietario_situacao_receita_data:
+                            data?.situacao_receita_data || p.proprietario_situacao_receita_data,
+                        }))
+                        if (data) setCpfInfo(data)
+                      }}
+                      className="bg-white"
+                    />
+                  </div>
+                  <div className="col-span-2">
+                    <Label>Telefone</Label>
+                    <Input
+                      value={formData.proprietario_telefone || ''}
+                      onChange={(e) =>
+                        setFormData({ ...formData, proprietario_telefone: e.target.value })
+                      }
+                      className="bg-white"
+                    />
+                  </div>
+                  <div className="col-span-2">
+                    <Label>Email</Label>
+                    <Input
+                      value={formData.proprietario_email || ''}
+                      onChange={(e) =>
+                        setFormData({ ...formData, proprietario_email: e.target.value })
+                      }
+                      className="bg-white"
+                    />
+                  </div>
+                  <div>
+                    <Label>RG</Label>
+                    <Input
+                      value={formData.proprietario_rg || ''}
+                      onChange={(e) =>
+                        setFormData({ ...formData, proprietario_rg: e.target.value })
+                      }
+                      className="bg-white"
+                    />
+                  </div>
+                  <div>
+                    <Label>Data de Nasc.</Label>
+                    <Input
+                      value={formData.proprietario_data_nascimento || ''}
+                      onChange={(e) =>
+                        setFormData({ ...formData, proprietario_data_nascimento: e.target.value })
+                      }
+                      className="bg-white"
+                    />
+                  </div>
+                  <div>
+                    <Label>Idade</Label>
+                    <Input
+                      value={formData.proprietario_idade || ''}
+                      onChange={(e) =>
+                        setFormData({ ...formData, proprietario_idade: e.target.value })
+                      }
+                      className="bg-white"
+                    />
+                  </div>
+                  <div>
+                    <Label>Situação Receita Data</Label>
+                    <Input
+                      value={formData.proprietario_situacao_receita_data || ''}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          proprietario_situacao_receita_data: e.target.value,
+                        })
+                      }
+                      className="bg-white"
+                    />
+                  </div>
+                </div>
+                {(cpfInfo || formData.proprietario_mae) && (
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4 bg-white p-4 rounded border text-xs">
+                    <div>
+                      <span className="font-bold text-slate-500 block mb-1">Mãe</span>{' '}
+                      {formData.proprietario_mae || cpfInfo?.nome_mae || '-'}
                     </div>
-                    {cpfInfo && (
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4 bg-white p-4 rounded border text-xs">
-                        <div>
-                          <span className="font-bold text-slate-500 block mb-1">Nascimento</span>{' '}
-                          {cpfInfo.data_nascimento || '-'}
-                        </div>
-                        <div>
-                          <span className="font-bold text-slate-500 block mb-1">Gênero</span>{' '}
-                          {cpfInfo.sexo || '-'}
-                        </div>
-                        <div>
-                          <span className="font-bold text-slate-500 block mb-1">Mãe</span>{' '}
-                          {cpfInfo.nome_mae || '-'}
-                        </div>
-                        <div>
-                          <span className="font-bold text-slate-500 block mb-1">
-                            Situação (Receita)
-                          </span>
-                          <span className="bg-green-100 text-green-800 px-2 py-0.5 rounded font-bold">
-                            {cpfInfo.situacao || 'REGULAR'}
-                          </span>
-                        </div>
-                      </div>
-                    )}
-                  </>
+                    <div>
+                      <span className="font-bold text-slate-500 block mb-1">Gênero</span>{' '}
+                      {formData.proprietario_sexo || cpfInfo?.sexo || '-'}
+                    </div>
+                    <div>
+                      <span className="font-bold text-slate-500 block mb-1">
+                        Situação (Receita)
+                      </span>
+                      <span className="bg-green-100 text-green-800 px-2 py-0.5 rounded font-bold">
+                        {formData.proprietario_situacao_receita || cpfInfo?.situacao || 'REGULAR'}
+                      </span>
+                    </div>
+                  </div>
                 )}
               </div>
             </TabsContent>
