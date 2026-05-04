@@ -269,6 +269,9 @@ const HubApp = () => {
       <Route path={`${basePath}`} element={<HubProtectedRoute />}>
         <Route element={<HubLayout />}>
           <Route index element={<HubDashboard />} />
+          <Route path="estoque" element={<AdminEstoque />} />
+          <Route path="site" element={<SiteManager />} />
+          <Route path="conteudo" element={<Conteudo />} />
           <Route path="branding" element={<HubBranding />} />
           <Route path="scripts" element={<HubScripts />} />
           <Route path="media" element={<HubMediaCenter />} />

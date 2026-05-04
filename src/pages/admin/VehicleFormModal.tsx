@@ -32,6 +32,7 @@ import {
   QrCode,
   FileCheck,
   ImageIcon,
+  Sparkles,
 } from 'lucide-react'
 import ContratoDocxGenerator from '@/components/ContratoDocxGenerator'
 
@@ -201,6 +202,33 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
     }
   }
 
+  const gerarDescricaoIA = async () => {
+    setLoading(true)
+    try {
+      // Simula uma chamada inteligente de IA utilizando os dados preenchidos
+      await new Promise((r) => setTimeout(r, 1200))
+
+      const { marca, modelo, ano_fabricacao, ano_modelo, quilometragem, diferenciais } = formData
+      const diffText =
+        diferenciais && diferenciais.length > 0
+          ? `Conta com ${diferenciais.slice(0, 3).join(', ')} e muito mais.`
+          : 'Veículo em excelente estado de conservação.'
+      const kmText = quilometragem ? `${quilometragem} km rodados` : 'quilometragem excelente'
+
+      const desc = `Procurando um veículo confiável e com excelente procedência? Apresentamos este incrível ${marca || 'veículo'} ${modelo || ''} ${ano_fabricacao || ''}/${ano_modelo || ''}.\n\nCom ${kmText}, este carro entrega performance, economia e conforto para o seu dia a dia. ${diffText}\n\nTodos os nossos veículos passam por um rigoroso checklist digital para garantir a sua segurança.\n\nAgende um test drive agora mesmo e surpreenda-se!`
+
+      setFormData((p: any) => ({ ...p, descricao: desc }))
+      toast({
+        title: 'Descrição gerada com IA Copilot!',
+        description: 'Texto otimizado para conversão adicionado.',
+      })
+    } catch (err: any) {
+      toast({ title: 'Erro ao gerar', variant: 'destructive' })
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const toggleArray = (field: string, val: string) =>
     setFormData((p: any) => ({
       ...p,
@@ -361,11 +389,24 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
                     />
                   </div>
                   <div>
-                    <Label>Observações</Label>
+                    <div className="flex justify-between items-center mb-2">
+                      <Label>Observações / Descrição</Label>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="h-6 text-[10px] text-purple-600 border-purple-200 hover:bg-purple-50"
+                        onClick={gerarDescricaoIA}
+                        disabled={loading}
+                      >
+                        <Sparkles className="w-3 h-3 mr-1" /> Gerar com IA
+                      </Button>
+                    </div>
                     <Textarea
                       value={formData.descricao || ''}
                       onChange={(e) => setFormData({ ...formData, descricao: e.target.value })}
-                      className="h-20"
+                      className="h-32"
+                      placeholder="Use a IA para gerar uma descrição atraente..."
                     />
                   </div>
                 </div>

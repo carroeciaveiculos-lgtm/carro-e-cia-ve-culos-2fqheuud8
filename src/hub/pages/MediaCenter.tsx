@@ -11,16 +11,20 @@ import {
   Copy,
   Folder,
   FolderOpen,
+  Plus,
+  ChevronRight,
+  FolderPlus,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
-const FOLDERS = ['Geral', 'Veículos', 'Fotos', 'Equipe', 'Logos Parceiros']
+const INITIAL_FOLDERS = ['Geral', 'Veículos', 'Fotos', 'Equipe', 'Logos Parceiros']
 
 export default function MediaCenterPage() {
   const [assets, setAssets] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [uploading, setUploading] = useState(false)
   const [activeFolder, setActiveFolder] = useState('Geral')
+  const [customFolders, setCustomFolders] = useState<string[]>([])
   const { toast } = useToast()
 
   const loadAssets = async () => {
@@ -143,7 +147,26 @@ export default function MediaCenterPage() {
     toast({ title: 'URL Copiada!' })
   }
 
+  const handleCreateFolder = () => {
+    const name = prompt('Nome da nova pasta ou subpasta:')
+    if (!name) return
+    const newPath = activeFolder !== 'Geral' ? `${activeFolder}/${name}` : name
+    if (!customFolders.includes(newPath)) {
+      setCustomFolders([...customFolders, newPath])
+    }
+    setActiveFolder(newPath)
+    toast({
+      title: 'Pasta criada!',
+      description: `A pasta ${newPath} está pronta para receber arquivos.`,
+    })
+  }
+
   const filteredAssets = assets.filter((a) => (a.folder || 'Geral') === activeFolder)
+
+  // Compute all unique folders
+  const allFolders = Array.from(
+    new Set([...INITIAL_FOLDERS, ...customFolders, ...assets.map((a) => a.folder || 'Geral')]),
+  ).sort()
 
   return (
     <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-6 animate-fade-in-up">
@@ -184,38 +207,76 @@ export default function MediaCenterPage() {
       </div>
 
       <div className="flex flex-col md:flex-row gap-6">
-        <div className="w-full md:w-64 shrink-0 bg-white rounded-xl shadow-sm border p-4">
-          <h2 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4">Pastas</h2>
-          <nav className="space-y-1">
-            {FOLDERS.map((folder) => (
-              <button
-                key={folder}
-                onClick={() => setActiveFolder(folder)}
-                className={cn(
-                  'w-full flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg transition-colors',
-                  activeFolder === folder
-                    ? 'bg-red-50 text-[#CC0000]'
-                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900',
-                )}
-              >
-                {activeFolder === folder ? (
-                  <FolderOpen className="w-5 h-5" />
-                ) : (
-                  <Folder className="w-5 h-5 text-gray-400" />
-                )}
-                {folder}
-                <span className="ml-auto bg-white border px-2 py-0.5 rounded-full text-xs text-gray-500">
-                  {assets.filter((a) => (a.folder || 'Geral') === folder).length}
-                </span>
-              </button>
-            ))}
+        <div className="w-full md:w-64 shrink-0 bg-white rounded-xl shadow-sm border p-4 flex flex-col h-full max-h-[80vh] overflow-hidden">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xs font-bold text-gray-400 uppercase tracking-wider">Pastas</h2>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-6 w-6 text-gray-500 hover:text-[#CC0000]"
+              onClick={handleCreateFolder}
+              title="Nova Pasta"
+            >
+              <FolderPlus className="w-4 h-4" />
+            </Button>
+          </div>
+          <nav className="space-y-1 overflow-y-auto flex-1 pr-2 custom-scrollbar">
+            {allFolders.map((folder) => {
+              const depth = folder.split('/').length - 1
+              const folderName = folder.split('/').pop()
+
+              return (
+                <button
+                  key={folder}
+                  onClick={() => setActiveFolder(folder)}
+                  style={{ paddingLeft: `${depth * 12 + 12}px` }}
+                  className={cn(
+                    'w-full flex items-center gap-2 py-2 pr-3 text-sm font-medium rounded-lg transition-colors text-left',
+                    activeFolder === folder
+                      ? 'bg-red-50 text-[#CC0000]'
+                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900',
+                  )}
+                  title={folder}
+                >
+                  {depth > 0 && <ChevronRight className="w-3 h-3 text-gray-300 shrink-0" />}
+                  {activeFolder === folder ? (
+                    <FolderOpen
+                      className={cn(
+                        'w-4 h-4 shrink-0',
+                        depth === 0 ? 'text-[#CC0000]' : 'text-gray-400',
+                      )}
+                    />
+                  ) : (
+                    <Folder className="w-4 h-4 text-gray-400 shrink-0" />
+                  )}
+                  <span className="truncate flex-1">{folderName}</span>
+                  <span className="ml-auto bg-white border px-1.5 py-0.5 rounded-full text-[10px] text-gray-500 shrink-0">
+                    {assets.filter((a) => (a.folder || 'Geral') === folder).length}
+                  </span>
+                </button>
+              )
+            })}
           </nav>
         </div>
 
         <div className="flex-1 bg-white rounded-xl shadow-sm border p-6 min-h-[500px]">
-          <h2 className="text-xl font-semibold mb-6 flex items-center gap-2">
-            <FolderOpen className="w-5 h-5 text-gray-400" /> {activeFolder}
-          </h2>
+          <div className="flex items-center justify-between mb-6 border-b pb-4">
+            <h2 className="text-xl font-semibold flex items-center gap-2 text-slate-800">
+              <FolderOpen className="w-5 h-5 text-gray-400" />
+              {activeFolder.split('/').map((part, idx, arr) => (
+                <span key={idx} className="flex items-center gap-2">
+                  {idx > 0 && <ChevronRight className="w-4 h-4 text-gray-300" />}
+                  <span className={idx === arr.length - 1 ? 'text-[#CC0000]' : 'text-slate-500'}>
+                    {part}
+                  </span>
+                </span>
+              ))}
+            </h2>
+            <Button variant="outline" size="sm" onClick={handleCreateFolder} className="text-xs">
+              <FolderPlus className="w-4 h-4 mr-2" />
+              Criar Subpasta
+            </Button>
+          </div>
 
           {loading ? (
             <div className="flex justify-center p-12">

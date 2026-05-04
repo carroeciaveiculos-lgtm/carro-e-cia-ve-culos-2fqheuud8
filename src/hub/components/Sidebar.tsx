@@ -1,5 +1,14 @@
 import { Link, useLocation } from 'react-router-dom'
-import { LayoutDashboard, Palette, Code, Image as ImageIcon, LogOut } from 'lucide-react'
+import {
+  LayoutDashboard,
+  Palette,
+  Code,
+  Image as ImageIcon,
+  LogOut,
+  Car,
+  LayoutTemplate,
+  FileText,
+} from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 export function Sidebar() {
@@ -10,9 +19,12 @@ export function Sidebar() {
 
   const links = [
     { label: 'Visão Geral', href: `${basePath}/`, icon: LayoutDashboard },
+    { label: 'Estoque', href: `${basePath}/estoque`, icon: Car },
+    { label: 'CMS & Site', href: `${basePath}/site`, icon: LayoutTemplate },
+    { label: 'Blog & Conteúdo', href: `${basePath}/conteudo`, icon: FileText },
+    { label: 'Media Center', href: `${basePath}/media`, icon: ImageIcon },
     { label: 'Branding e Identidade', href: `${basePath}/branding`, icon: Palette },
     { label: 'Gestor de Scripts', href: `${basePath}/scripts`, icon: Code },
-    { label: 'Media Center', href: `${basePath}/media`, icon: ImageIcon },
   ]
 
   return (

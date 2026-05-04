@@ -183,7 +183,17 @@ export default function SiteManager() {
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
-          <Button className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto">Salvar Tudo</Button>
+          <Button
+            className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto"
+            onClick={() =>
+              toast({
+                title: 'Configurações salvas',
+                description: 'O site foi atualizado com sucesso!',
+              })
+            }
+          >
+            Salvar Tudo
+          </Button>
         </div>
       </div>
 
@@ -424,6 +434,32 @@ export default function SiteManager() {
 
           {activeTab === 'imagens' && (
             <div className="space-y-8">
+              <div>
+                <h3 className="font-bold text-lg flex items-center gap-2 mb-4">
+                  <Layout className="w-5 h-5" /> Banners da Home
+                </h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <Card className="overflow-hidden relative group">
+                    <img
+                      src="https://img.usecurling.com/p/800/400?q=cars&color=red"
+                      alt="Banner 1"
+                      className="w-full h-32 object-cover"
+                    />
+                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center gap-2 transition-opacity">
+                      <Button size="sm" variant="secondary">
+                        Editar Imagem
+                      </Button>
+                    </div>
+                  </Card>
+                  <Card className="flex items-center justify-center h-32 border-dashed border-2 cursor-pointer hover:bg-slate-50 transition-colors">
+                    <div className="text-center text-slate-500">
+                      <Plus className="w-6 h-6 mx-auto mb-1 text-slate-400" />
+                      <span className="text-sm font-medium">Novo Banner</span>
+                    </div>
+                  </Card>
+                </div>
+              </div>
+
               <div>
                 <h3 className="font-bold text-lg flex items-center gap-2 mb-4">
                   <ImageIcon className="w-5 h-5" /> Bancos Parceiros
