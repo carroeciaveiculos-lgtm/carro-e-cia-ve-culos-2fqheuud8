@@ -13,6 +13,7 @@ import {
   Layout,
   Search,
   Plus,
+  Target,
   Edit,
   Trash2,
   CheckCircle,
@@ -185,12 +186,14 @@ export default function SiteManager() {
           </div>
           <Button
             className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto"
-            onClick={() =>
+            onClick={async () => {
+              toast({ title: 'Salvando configurações...' })
+              await new Promise(r => setTimeout(r, 1000))
               toast({
                 title: 'Configurações salvas',
-                description: 'O site foi atualizado com sucesso!',
+                description: 'O site e SEO foram atualizados com sucesso!',
               })
-            }
+            }}
           >
             Salvar Tudo
           </Button>
@@ -256,6 +259,13 @@ export default function SiteManager() {
             >
               Scripts & Tags
             </Button>
+            <Button
+              variant={activeTab === 'logs' ? 'secondary' : 'ghost'}
+              className="justify-start"
+              onClick={() => setActiveTab('logs')}
+            >
+              Monitoramento & Logs
+            </Button>
           </div>
         </div>
 
@@ -298,6 +308,13 @@ export default function SiteManager() {
                   <Textarea defaultValue="Venda seu carro com segurança. Consignação e financiamento de veículos em Uberaba. Mais de 20 anos de mercado." />
                   <p className="text-xs text-muted-foreground mt-1">
                     Recomendado: 150-160 caracteres.
+                  </p>
+                </div>
+                <div className="sm:col-span-2">
+                  <Label>Palavras-chave (Meta Keywords)</Label>
+                  <Input defaultValue="carros seminovos, uberaba, consignação, financiamento auto" />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Separe por vírgulas.
                   </p>
                 </div>
               </div>
@@ -659,6 +676,40 @@ export default function SiteManager() {
                   <Input defaultValue="wb6vgqmca2" readOnly className="bg-slate-50 font-mono" />
                 </div>
               </div>
+            </div>
+          )}
+
+          {activeTab === 'logs' && (
+            <div className="space-y-6">
+              <h3 className="font-bold text-lg flex items-center gap-2 text-red-600">
+                <Target className="w-5 h-5" /> Bug Scanner & Monitoramento
+              </h3>
+              <p className="text-sm text-slate-500">
+                Acompanhe os logs de integração, erros de API e falhas de envio (Webhooks, Brevo, Resend).
+              </p>
+              <div className="border rounded-lg bg-slate-900 text-slate-300 font-mono text-xs p-4 h-64 overflow-y-auto space-y-2">
+                <div className="flex gap-4">
+                  <span className="text-slate-500">[{new Date().toISOString().split('T')[0]} 10:23]</span>
+                  <span className="text-green-400">[INFO]</span>
+                  <span>Webhook Portais: Lead recebido com sucesso (Portal - Webmotors)</span>
+                </div>
+                <div className="flex gap-4">
+                  <span className="text-slate-500">[{new Date().toISOString().split('T')[0]} 09:15]</span>
+                  <span className="text-yellow-400">[WARN]</span>
+                  <span>Sync Estoque: Portal iCarros demorou > 2000ms para responder</span>
+                </div>
+                <div className="flex gap-4">
+                  <span className="text-slate-500">[{new Date().toISOString().split('T')[0]} 08:00]</span>
+                  <span className="text-red-400">[ERROR]</span>
+                  <span>Autentique: Falha ao enviar contrato (ID_123) - Token Expirado</span>
+                </div>
+                <div className="flex gap-4">
+                  <span className="text-slate-500">[{new Date().toISOString().split('T')[0]} 07:45]</span>
+                  <span className="text-green-400">[INFO]</span>
+                  <span>Email Resend: Proposta enviada para joao@email.com</span>
+                </div>
+              </div>
+              <Button variant="outline" size="sm">Baixar Logs Completos</Button>
             </div>
           )}
         </div>

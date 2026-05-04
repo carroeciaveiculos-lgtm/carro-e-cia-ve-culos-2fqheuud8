@@ -34,6 +34,7 @@ import {
   ImageIcon,
   Sparkles,
   ExternalLink,
+  Plus,
 } from 'lucide-react'
 
 const CHECKLIST_INSPECAO = [
@@ -313,6 +314,12 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
               className="data-[state=active]:border-b-2 border-blue-600 rounded-none shadow-none"
             >
               <Users className="w-4 h-4 mr-2" /> Leads & QR
+            </TabsTrigger>
+            <TabsTrigger
+              value="documentos"
+              className="data-[state=active]:border-b-2 border-blue-600 rounded-none shadow-none"
+            >
+              <FileCheck className="w-4 h-4 mr-2" /> Documentos & Contrato
             </TabsTrigger>
           </TabsList>
 
@@ -767,6 +774,109 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
                   </p>
                 </div>
               </div>
+            </TabsContent>
+
+            <TabsContent value="documentos" className="m-0 space-y-6">
+              <div className="bg-white p-6 rounded-lg border">
+                <h3 className="font-bold border-b pb-2 mb-4 flex items-center justify-between">
+                  Anexos e Documentos
+                  <Button size="sm" variant="outline">
+                    <Plus className="w-4 h-4 mr-2" /> Novo Documento
+                  </Button>
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="border p-4 rounded flex items-center justify-between bg-slate-50">
+                    <div className="flex items-center gap-3">
+                      <FileCheck className="w-6 h-6 text-blue-600" />
+                      <div>
+                        <p className="font-semibold text-sm">CRLV 2024</p>
+                        <p className="text-xs text-slate-500">
+                          Adicionado em {new Date().toLocaleDateString('pt-BR')}
+                        </p>
+                      </div>
+                    </div>
+                    <Button variant="ghost" size="icon" className="text-red-500">
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                  <div className="border p-4 rounded flex items-center justify-between bg-slate-50">
+                    <div className="flex items-center gap-3">
+                      <FileCheck className="w-6 h-6 text-blue-600" />
+                      <div>
+                        <p className="font-semibold text-sm">CNH do Proprietário</p>
+                        <p className="text-xs text-slate-500">
+                          Adicionado em {new Date().toLocaleDateString('pt-BR')}
+                        </p>
+                      </div>
+                    </div>
+                    <Button variant="ghost" size="icon" className="text-red-500">
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+              </div>
+
+              {formData.tipo_entrada === 'consignacao' && (
+                <div className="bg-white p-6 rounded-lg border">
+                  <h3 className="font-bold border-b pb-2 mb-4">Automação de Contrato</h3>
+                  <p className="text-sm text-slate-600 mb-4">
+                    Gere e envie o contrato de consignação automaticamente para o cliente assinar
+                    via Autentique.
+                  </p>
+                  <div className="flex flex-wrap gap-4">
+                    <Button
+                      onClick={async () => {
+                        toast({ title: 'Gerando PDF...', description: 'Aguarde um instante.' })
+                        const res = await supabase.functions.invoke('gerar-pdf-contrato', {
+                          body: {
+                            proprietario: {
+                              nome: formData.proprietario_nome,
+                              cpf: formData.proprietario_cpf,
+                              email: formData.proprietario_email,
+                            },
+                            veiculo: {
+                              marca: formData.marca,
+                              modelo: formData.modelo,
+                              placa: formData.placa,
+                            },
+                            loja: { razaoSocial: 'Carro e Cia Veículos' },
+                            condicoesComerciais: { precoVendaSugerido: formData.preco_venda },
+                          },
+                        })
+                        if (res.data) {
+                          toast({ title: 'Contrato gerado com sucesso!' })
+                        } else {
+                          toast({ title: 'Erro ao gerar', variant: 'destructive' })
+                        }
+                      }}
+                    >
+                      Gerar Minuta (PDF)
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      className="bg-green-600 hover:bg-green-700 text-white"
+                      onClick={async () => {
+                        toast({ title: 'Enviando para Autentique...' })
+                        const res = await supabase.functions.invoke('enviar-para-assinatura', {
+                          body: {
+                            contrato_id: vehicleId,
+                            email_cliente: formData.proprietario_email,
+                            nome_cliente: formData.proprietario_nome,
+                            pdf_url: 'https://exemplo.com/contrato.pdf',
+                          },
+                        })
+                        if (res.data) {
+                          toast({ title: 'Enviado para assinatura!' })
+                        } else {
+                          toast({ title: 'Erro ao enviar', variant: 'destructive' })
+                        }
+                      }}
+                    >
+                      Enviar para Assinatura (Autentique)
+                    </Button>
+                  </div>
+                </div>
+              )}
             </TabsContent>
           </ScrollArea>
 

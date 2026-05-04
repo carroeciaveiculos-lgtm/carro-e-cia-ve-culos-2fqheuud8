@@ -111,6 +111,21 @@ export default function AdminEstoque() {
     }
   }
 
+  const handleDeleteHard = async (id: string) => {
+    if (
+      !confirm(
+        'EXCLUSÃO PERMANENTE: Tem certeza que deseja apagar este veículo do banco de dados? Use apenas para erros de cadastro.',
+      )
+    )
+      return
+    const { error } = await supabase.from('veiculos').delete().eq('id', id)
+    if (error) toast({ title: 'Erro ao excluir', variant: 'destructive' })
+    else {
+      toast({ title: 'Veículo excluído permanentemente' })
+      loadVehicles()
+    }
+  }
+
   const formatCurrency = (val: number) =>
     val ? new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val) : '-'
 
@@ -373,9 +388,20 @@ export default function AdminEstoque() {
                           size="icon"
                           onClick={() => handleArchive(v.id)}
                           className="text-slate-500 hover:text-slate-700"
-                          title="Arquivar (Remover do estoque ativo)"
+                          title="Arquivar Venda (Manter histórico)"
                         >
                           <Archive className="w-4 h-4" />
+                        </Button>
+                      )}
+                      {v.status === 'arquivado' && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleDeleteHard(v.id)}
+                          className="text-red-500 hover:text-red-700"
+                          title="Excluir Permanentemente"
+                        >
+                          <AlertTriangle className="w-4 h-4" />
                         </Button>
                       )}
                     </div>

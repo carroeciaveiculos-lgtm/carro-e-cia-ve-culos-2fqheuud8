@@ -226,7 +226,6 @@ export default function AdminLeads() {
                 </Button>
               </div>
             </div>
-
             {/* Timeline / Chat */}
             <ScrollArea className="flex-1 bg-[#E5DDD5]/20 p-4">
               <div className="max-w-3xl mx-auto space-y-6">
@@ -279,29 +278,52 @@ export default function AdminLeads() {
                 </div>
               </div>
             </ScrollArea>
-
             {/* Input Area */}
-            <div className="p-4 bg-white border-t flex gap-2 items-center">
-              <Button variant="ghost" size="icon" className="text-slate-400">
-                <Paperclip className="w-5 h-5" />
-              </Button>
-              <Input
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-                placeholder="Digite uma mensagem para o cliente..."
-                className="flex-1 bg-slate-50 border-slate-200"
-                onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
-              />
-              {message ? (
-                <Button onClick={sendMessage} className="bg-blue-600 hover:bg-blue-700">
-                  <Send className="w-4 h-4" />
+            <div className="bg-white border-t flex flex-col">
+              <div className="flex gap-2 p-2 px-4 border-b bg-slate-50 overflow-x-auto text-xs">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-7 text-[10px]"
+                  onClick={async () => {
+                    toast({ title: 'Enviando proposta por e-mail...' })
+                    await supabase.functions.invoke('send-lead-email', {
+                      body: {
+                        nome: selectedLead.nome,
+                        email: selectedLead.email,
+                        telefone: selectedLead.telefone,
+                        mensagem: 'Proposta gerada automaticamente pelo sistema',
+                        veiculo: selectedLead.carro_modelo || selectedLead.veiculo_interesse,
+                      },
+                    })
+                    toast({ title: 'Proposta enviada ao e-mail do cliente!' })
+                  }}
+                >
+                  <Mail className="w-3 h-3 mr-1" /> Enviar Proposta E-mail
                 </Button>
-              ) : (
+              </div>
+              <div className="p-4 flex gap-2 items-center">
                 <Button variant="ghost" size="icon" className="text-slate-400">
-                  <Mic className="w-5 h-5" />
+                  <Paperclip className="w-5 h-5" />
                 </Button>
-              )}
-            </div>
+                <Input
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
+                  placeholder="Digite uma mensagem para o cliente..."
+                  className="flex-1 bg-slate-50 border-slate-200"
+                  onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
+                />
+                {message ? (
+                  <Button onClick={sendMessage} className="bg-blue-600 hover:bg-blue-700">
+                    <Send className="w-4 h-4" />
+                  </Button>
+                ) : (
+                  <Button variant="ghost" size="icon" className="text-slate-400">
+                    <Mic className="w-5 h-5" />
+                  </Button>
+                )}
+              </div>
+            </div>{' '}
           </>
         ) : (
           <div className="flex-1 flex items-center justify-center text-slate-400 flex-col gap-4">
