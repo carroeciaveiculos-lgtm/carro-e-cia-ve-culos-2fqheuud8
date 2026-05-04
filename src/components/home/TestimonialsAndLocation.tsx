@@ -1,48 +1,33 @@
+import { useState, useEffect } from 'react'
 import { Star, MapPin, Clock, Phone } from 'lucide-react'
+import { supabase } from '@/lib/supabase/client'
 
 export function TestimonialsAndLocation() {
-  const testimonials = [
-    {
-      text: '5 estrelas . Ótimo atendimento. Lugar agradabilíssimo. Ar condicionado. Cafezinho. Água gelada. Tratamento vip.',
-      author: 'Jair Cachapuz',
-      city: 'Local Guide',
-    },
-    {
-      text: 'Ótimo atendimento e boa oferta de produtos.',
-      author: 'Paulo Sérgio Dias de Abreu',
-      city: 'Local Guide',
-    },
-    {
-      text: 'Ótimo lugar bem atenciosos',
-      author: 'rondineli oliveira',
-      city: 'Local Guide',
-    },
-    {
-      text: 'Atendimento excelente... veículos de boa procedência.',
-      author: 'LFernando',
-      city: 'Local Guide',
-    },
-    {
-      text: 'Atendimento, qualidade e confiança.',
-      author: 'Milson Q10 Sorvetes',
-      city: 'Local Guide',
-    },
-    {
-      text: 'Produto de qualidade com um bom preço, atendimento vip Parabéns !!!',
-      author: 'Carlucio Amaral',
-      city: 'Local Guide',
-    },
-    {
-      text: 'Excelente loja, pessoal muito educado e atenciosos.',
-      author: 'Rodrigo Carvalho Gomide',
-      city: 'Local Guide',
-    },
-    {
-      text: 'Honestidade e bom atendimento e o forte desta casa',
-      author: 'Marlucio Macedo',
-      city: 'Local Guide',
-    },
-  ]
+  const [testimonials, setTestimonials] = useState<any[]>([])
+
+  useEffect(() => {
+    supabase
+      .from('site_depoimentos')
+      .select('*')
+      .eq('publicado', true)
+      .order('created_at', { ascending: false })
+      .limit(10)
+      .then(({ data }) => {
+        if (data && data.length > 0) {
+          setTestimonials(data)
+        } else {
+          // Fallback if none exist yet
+          setTestimonials([
+            {
+              texto: 'Excelente loja, pessoal muito educado e atenciosos.',
+              nome_cliente: 'Rodrigo Carvalho Gomide',
+              tipo: 'Local Guide',
+              estrelas: 5,
+            },
+          ])
+        }
+      })
+  }, [])
 
   const partners = [
     {
@@ -85,23 +70,36 @@ export function TestimonialsAndLocation() {
               A satisfação dos nossos clientes é a nossa maior conquista.
             </p>
           </div>
-          <div className="flex md:grid md:grid-cols-3 gap-4 md:gap-8 overflow-x-auto snap-x snap-mandatory hide-scrollbar pb-4 -mx-4 px-4 md:mx-0 md:px-0">
+          <div className="flex gap-4 md:gap-8 overflow-x-auto snap-x snap-mandatory hide-scrollbar pb-4 -mx-4 px-4 md:mx-0 md:px-0">
             {testimonials.map((t, i) => (
               <div
                 key={i}
-                className="bg-card p-8 rounded-2xl border shadow-sm relative shrink-0 w-[85vw] md:w-auto snap-center"
+                className="bg-card p-8 rounded-2xl border shadow-sm relative shrink-0 w-[85vw] md:w-[350px] snap-center flex flex-col"
               >
                 <div className="flex gap-1 text-accent mb-6">
-                  {[1, 2, 3, 4, 5].map((s) => (
+                  {Array.from({ length: t.estrelas || 5 }).map((_, s) => (
                     <Star key={s} className="w-5 h-5 fill-current" />
                   ))}
                 </div>
-                <p className="text-lg italic text-muted-foreground mb-8 leading-relaxed">
-                  "{t.text}"
+                <p className="text-lg italic text-muted-foreground mb-8 leading-relaxed flex-1">
+                  "{t.texto}"
                 </p>
-                <div className="mt-auto">
-                  <p className="font-bold text-foreground">{t.author}</p>
-                  <p className="text-sm text-muted-foreground">{t.city}</p>
+                <div className="mt-auto flex items-center gap-3">
+                  {t.foto_url ? (
+                    <img
+                      src={t.foto_url}
+                      alt={t.nome_cliente}
+                      className="w-10 h-10 rounded-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">
+                      {t.nome_cliente?.charAt(0)}
+                    </div>
+                  )}
+                  <div>
+                    <p className="font-bold text-foreground">{t.nome_cliente}</p>
+                    <p className="text-sm text-muted-foreground">{t.tipo}</p>
+                  </div>
                 </div>
               </div>
             ))}

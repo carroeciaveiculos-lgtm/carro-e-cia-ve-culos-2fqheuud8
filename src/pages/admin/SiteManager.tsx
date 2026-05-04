@@ -44,6 +44,7 @@ export default function SiteManager() {
   const [searchQuery, setSearchQuery] = useState('')
   const [blogPosts, setBlogPosts] = useState<BlogPost[]>([])
   const [systemLogs, setSystemLogs] = useState<any[]>([])
+  const [depoimentos, setDepoimentos] = useState<any[]>([])
   const { toast } = useToast()
 
   useEffect(() => {
@@ -53,8 +54,32 @@ export default function SiteManager() {
       fetchComments()
     } else if (activeTab === 'logs') {
       fetchLogs()
+    } else if (activeTab === 'depoimentos') {
+      fetchDepoimentos()
     }
   }, [activeTab])
+
+  const fetchDepoimentos = async () => {
+    const { data } = await supabase
+      .from('site_depoimentos')
+      .select('*')
+      .order('created_at', { ascending: false })
+    if (data) setDepoimentos(data)
+  }
+
+  const toggleDepoimento = async (id: string, current: boolean) => {
+    const { error } = await supabase
+      .from('site_depoimentos')
+      .update({ publicado: !current })
+      .eq('id', id)
+    if (!error) fetchDepoimentos()
+  }
+
+  const deleteDepoimento = async (id: string) => {
+    if (!confirm('Excluir este depoimento?')) return
+    const { error } = await supabase.from('site_depoimentos').delete().eq('id', id)
+    if (!error) fetchDepoimentos()
+  }
 
   const fetchLogs = async () => {
     const { data } = await supabase
@@ -572,25 +597,75 @@ export default function SiteManager() {
                 <h3 className="font-bold text-lg flex items-center gap-2">
                   <MessageSquare className="w-5 h-5" /> Depoimentos de Clientes
                 </h3>
-                <Button size="sm">Adicionar Depoimento</Button>
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    toast({
+                      title: 'Adicionar depoimento',
+                      description: 'Funcionalidade em desenvolvimento.',
+                    })
+                  }}
+                >
+                  <Plus className="w-4 h-4 mr-2" /> Adicionar Depoimento
+                </Button>
               </div>
-              <Card>
-                <CardContent className="p-4 flex gap-4 items-center">
-                  <div className="w-12 h-12 rounded-full bg-slate-200 shrink-0 overflow-hidden">
-                    <img
-                      src="https://img.usecurling.com/ppl/thumbnail?seed=1&gender=female"
-                      alt="Avatar"
-                    />
-                  </div>
-                  <div>
-                    <p className="font-bold">Maria Oliveira</p>
-                    <p className="text-sm text-slate-600">
-                      "Vendi meu carro em menos de uma semana! Equipe nota 10."
-                    </p>
-                  </div>
-                  <div className="ml-auto text-amber-500 font-bold whitespace-nowrap">★★★★★</div>
-                </CardContent>
-              </Card>
+              <div className="grid gap-4">
+                {depoimentos.length === 0 ? (
+                  <p className="text-center py-8 text-slate-500">Nenhum depoimento encontrado.</p>
+                ) : (
+                  depoimentos.map((dep) => (
+                    <Card key={dep.id}>
+                      <CardContent className="p-4 flex gap-4 items-center">
+                        <div className="w-12 h-12 rounded-full bg-slate-200 shrink-0 overflow-hidden flex items-center justify-center font-bold text-slate-500">
+                          {dep.foto_url ? (
+                            <img
+                              src={dep.foto_url}
+                              alt={dep.nome_cliente}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            dep.nome_cliente?.charAt(0)
+                          )}
+                        </div>
+                        <div className="flex-1">
+                          <p className="font-bold flex items-center gap-2">
+                            {dep.nome_cliente}
+                            <Badge
+                              variant={dep.publicado ? 'default' : 'secondary'}
+                              className="text-[10px] h-5"
+                            >
+                              {dep.publicado ? 'Visível no Site' : 'Oculto'}
+                            </Badge>
+                          </p>
+                          <p className="text-sm text-slate-600 mt-1">"{dep.texto}"</p>
+                        </div>
+                        <div className="ml-auto flex flex-col items-end gap-2">
+                          <div className="text-amber-500 font-bold whitespace-nowrap text-sm">
+                            {'★'.repeat(dep.estrelas || 5)}
+                          </div>
+                          <div className="flex gap-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => toggleDepoimento(dep.id, dep.publicado)}
+                            >
+                              {dep.publicado ? 'Ocultar' : 'Publicar'}
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                              onClick={() => deleteDepoimento(dep.id)}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))
+                )}
+              </div>
             </div>
           )}
 

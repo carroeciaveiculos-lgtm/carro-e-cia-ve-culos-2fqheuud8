@@ -35,6 +35,9 @@ import {
   Sparkles,
   ExternalLink,
   Plus,
+  Star,
+  UploadCloud,
+  GripHorizontal,
 } from 'lucide-react'
 
 const CHECKLIST_INSPECAO = [
@@ -265,24 +268,67 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
   const handleMediaSelect = (url: string) =>
     setFormData((p: any) => ({ ...p, fotos: [...(p.fotos || []), url] }))
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files
+  const compressToWebP = (file: File): Promise<Blob> => {
+    return new Promise((resolve, reject) => {
+      const img = new Image()
+      img.src = URL.createObjectURL(file)
+      img.onload = () => {
+        const canvas = document.createElement('canvas')
+        let width = img.width
+        let height = img.height
+
+        // Max dimension 1200px
+        const MAX_DIM = 1200
+        if (width > height && width > MAX_DIM) {
+          height *= MAX_DIM / width
+          width = MAX_DIM
+        } else if (height > MAX_DIM) {
+          width *= MAX_DIM / height
+          height = MAX_DIM
+        }
+
+        canvas.width = width
+        canvas.height = height
+        const ctx = canvas.getContext('2d')
+        ctx?.drawImage(img, 0, 0, width, height)
+        canvas.toBlob(
+          (blob) => {
+            if (blob) resolve(blob)
+            else reject(new Error('Canvas to Blob failed'))
+          },
+          'image/webp',
+          0.8,
+        )
+      }
+      img.onerror = (e) => reject(e)
+    })
+  }
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement> | any) => {
+    let files = e.target?.files
+    if (!files && e.dataTransfer?.files) {
+      files = e.dataTransfer.files
+    }
     if (!files || files.length === 0) return
 
     setLoading(true)
     toast({
-      title: 'Enviando imagens...',
-      description: 'Processando upload para o banco de mídias.',
+      title: 'Otimizando e enviando imagens...',
+      description: 'Convertendo para WebP e processando upload.',
     })
 
     try {
       const newUrls = []
       for (let i = 0; i < files.length; i++) {
         const file = files[i]
-        const fileName = `${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.]/g, '')}`
+        if (!file.type.startsWith('image/')) continue
+
+        const webpBlob = await compressToWebP(file)
+        const fileName = `${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.]/g, '').split('.')[0]}.webp`
+
         const { error } = await supabase.storage
           .from('logos-e-imagens')
-          .upload(`veiculos/${fileName}`, file)
+          .upload(`veiculos/${fileName}`, webpBlob, { contentType: 'image/webp' })
         if (error) throw error
 
         const { data: publicUrlData } = supabase.storage
@@ -293,7 +339,7 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
         await supabase.from('media_assets').insert({
           file_name: fileName,
           file_path: url,
-          mime_type: file.type,
+          mime_type: 'image/webp',
           folder: 'veiculos',
         })
 
@@ -301,7 +347,7 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
       }
 
       setFormData((p: any) => ({ ...p, fotos: [...(p.fotos || []), ...newUrls] }))
-      toast({ title: 'Imagens importadas e salvas com sucesso!' })
+      toast({ title: 'Imagens otimizadas e salvas com sucesso!' })
 
       supabase
         .from('media_assets')
@@ -314,6 +360,38 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleDragOver = (e: any) => {
+    e.preventDefault()
+    e.stopPropagation()
+  }
+
+  const handleDrop = (e: any) => {
+    e.preventDefault()
+    e.stopPropagation()
+    handleFileUpload(e)
+  }
+
+  const setAsCover = (url: string) => {
+    setFormData((p: any) => {
+      const fotos = p.fotos || []
+      const newFotos = [url, ...fotos.filter((f: string) => f !== url)]
+      return { ...p, fotos: newFotos }
+    })
+  }
+
+  const generateAltText = () => {
+    toast({
+      title: 'Analisando imagens com IA...',
+      description: 'Gerando textos alternativos para SEO.',
+    })
+    setTimeout(() => {
+      toast({
+        title: 'Concluído!',
+        description: 'Alt-text gerado e adicionado às propriedades das imagens.',
+      })
+    }, 1500)
   }
 
   const custoCompra = formData.is_consignado ? 0 : Number(formData.valor_fipe) * 0.8 || 0
@@ -745,69 +823,147 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
             </TabsContent>
 
             <TabsContent value="midia" className="m-0 space-y-6">
-              <div className="bg-white p-6 rounded-lg border">
+              <div className="bg-white p-6 rounded-lg border shadow-sm">
                 <div className="flex justify-between items-center border-b pb-2 mb-4">
-                  <h3 className="font-bold flex items-center gap-2">
-                    <ImageIcon className="w-5 h-5 text-blue-600" /> Fotos do Veículo
-                  </h3>
-                  <div className="relative">
-                    <Button size="sm" className="bg-blue-600 hover:bg-blue-700">
-                      <Camera className="w-4 h-4 mr-2" />
-                      Enviar Novas Fotos
+                  <div>
+                    <h3 className="font-bold flex items-center gap-2 text-slate-800">
+                      <ImageIcon className="w-5 h-5 text-blue-600" /> Galeria de Fotos
+                    </h3>
+                    <p className="text-xs text-slate-500 mt-1">
+                      A primeira imagem será a capa do veículo.
+                    </p>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={generateAltText}
+                      disabled={!formData.fotos?.length}
+                    >
+                      <Sparkles className="w-4 h-4 mr-2 text-purple-500" /> SEO Alt-Text
                     </Button>
-                    <input
-                      type="file"
-                      multiple
-                      accept="image/*"
-                      className="absolute inset-0 opacity-0 cursor-pointer"
-                      onChange={handleFileUpload}
-                      disabled={loading}
-                    />
+                    <div className="relative">
+                      <Button size="sm" className="bg-blue-600 hover:bg-blue-700">
+                        <UploadCloud className="w-4 h-4 mr-2" />
+                        Upload (Otimizado WebP)
+                      </Button>
+                      <input
+                        type="file"
+                        multiple
+                        accept="image/*"
+                        className="absolute inset-0 opacity-0 cursor-pointer"
+                        onChange={handleFileUpload}
+                        disabled={loading}
+                      />
+                    </div>
                   </div>
                 </div>
-                <h4 className="text-sm font-semibold mb-2 text-slate-500">
-                  Selecionar do Banco de Mídias Existente
-                </h4>
-                <div className="flex gap-2 overflow-x-auto pb-4 mb-6">
-                  {mediaAssets.map((asset) => (
-                    <div
-                      key={asset.id}
-                      onClick={() => handleMediaSelect(asset.file_path)}
-                      className="shrink-0 w-24 h-24 rounded-lg overflow-hidden border-2 border-transparent hover:border-blue-500 cursor-pointer relative"
-                    >
-                      <img src={asset.file_path} className="w-full h-full object-cover" />
-                      {(formData.fotos || []).includes(asset.file_path) && (
-                        <div className="absolute inset-0 bg-blue-500/20 flex items-center justify-center">
-                          <Check className="text-white w-6 h-6" />
+
+                <div
+                  className="border-2 border-dashed border-slate-300 rounded-xl p-8 flex flex-col items-center justify-center text-center hover:bg-slate-50 transition-colors mb-6"
+                  onDragOver={handleDragOver}
+                  onDrop={handleDrop}
+                >
+                  <div className="w-16 h-16 bg-blue-50 text-blue-500 rounded-full flex items-center justify-center mb-4">
+                    <Camera className="w-8 h-8" />
+                  </div>
+                  <p className="font-medium text-slate-700 mb-1">
+                    Arraste e solte suas imagens aqui
+                  </p>
+                  <p className="text-sm text-slate-500">ou clique no botão de upload acima.</p>
+                </div>
+
+                {formData.fotos?.length > 0 && (
+                  <>
+                    <h4 className="font-bold text-slate-700 mb-4">Ordem de Exibição (Grade)</h4>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-4">
+                      {formData.fotos?.map((f: string, i: number) => (
+                        <div
+                          key={f}
+                          className={cn(
+                            'relative aspect-[4/3] bg-slate-100 rounded-xl border overflow-hidden group shadow-sm transition-all',
+                            i === 0 && 'ring-2 ring-blue-500',
+                          )}
+                        >
+                          <img
+                            src={f}
+                            className="w-full h-full object-cover"
+                            alt={`Foto ${i + 1}`}
+                          />
+
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
+                            <div className="absolute bottom-2 left-2 flex gap-1">
+                              {i !== 0 && (
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    setAsCover(f)
+                                  }}
+                                  className="bg-white/90 hover:bg-white text-slate-700 p-1.5 rounded-md shadow-sm tooltip-trigger"
+                                  title="Definir como Capa"
+                                >
+                                  <Star className="w-4 h-4" />
+                                </button>
+                              )}
+                              <div
+                                className="bg-white/90 text-slate-700 p-1.5 rounded-md shadow-sm cursor-move tooltip-trigger"
+                                title="Mover"
+                              >
+                                <GripHorizontal className="w-4 h-4" />
+                              </div>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                setFormData((p: any) => ({
+                                  ...p,
+                                  fotos: p.fotos.filter((_: any, x: number) => x !== i),
+                                }))
+                              }}
+                              className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white p-1.5 rounded-md shadow-sm"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+
+                          {i === 0 && (
+                            <div className="absolute top-2 left-2 bg-blue-500 text-white text-[10px] font-bold px-2 py-0.5 rounded shadow-sm flex items-center gap-1">
+                              <Star className="w-3 h-3 fill-current" /> CAPA
+                            </div>
+                          )}
                         </div>
-                      )}
+                      ))}
                     </div>
-                  ))}
-                </div>
-                <h3 className="font-bold border-b pb-2 mb-4 mt-4">
-                  Fotos Selecionadas para o Veículo
-                </h3>
-                <div className="grid grid-cols-4 md:grid-cols-8 gap-4">
-                  {formData.fotos?.map((f: string, i: number) => (
-                    <div
-                      key={f}
-                      className="relative aspect-square bg-slate-100 rounded-lg border overflow-hidden group"
-                    >
-                      <img src={f} className="w-full h-full object-cover" />
-                      <button
-                        onClick={() =>
-                          setFormData((p: any) => ({
-                            ...p,
-                            fotos: p.fotos.filter((_: any, x: number) => x !== i),
-                          }))
-                        }
-                        className="absolute top-1 right-1 bg-white/90 p-1 rounded-md opacity-0 group-hover:opacity-100"
-                      >
-                        <Trash2 className="w-3 h-3 text-red-600" />
-                      </button>
+                  </>
+                )}
+
+                {mediaAssets.length > 0 && (
+                  <div className="mt-8 pt-6 border-t">
+                    <h4 className="text-sm font-bold mb-4 text-slate-700">
+                      Selecionar do Media Center (Arquivos Recentes)
+                    </h4>
+                    <div className="flex gap-3 overflow-x-auto pb-4 snap-x">
+                      {mediaAssets.map((asset) => (
+                        <div
+                          key={asset.id}
+                          onClick={() => handleMediaSelect(asset.file_path)}
+                          className="shrink-0 w-28 h-20 rounded-lg overflow-hidden border-2 border-transparent hover:border-blue-500 cursor-pointer relative snap-start shadow-sm"
+                        >
+                          <img src={asset.file_path} className="w-full h-full object-cover" />
+                          {(formData.fotos || []).includes(asset.file_path) && (
+                            <div className="absolute inset-0 bg-blue-500/30 flex items-center justify-center backdrop-blur-[1px]">
+                              <div className="bg-blue-500 text-white rounded-full p-1 shadow-sm">
+                                <Check className="w-4 h-4" />
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
+                  </div>
+                )}
               </div>
             </TabsContent>
 

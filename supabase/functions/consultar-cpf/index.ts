@@ -9,9 +9,16 @@ const corsHeaders = {
 }
 
 function findNome(obj: any): string {
+  if (obj?.nome?.conteudo?.nome) return obj.nome.conteudo.nome
+  if (obj?.nome_razao_social) return obj.nome_razao_social
+  if (typeof obj?.nome === 'string') return obj.nome
+  if (typeof obj?.razaosocial === 'string') return obj.razaosocial
+
   if (!obj || typeof obj !== 'object') return ''
   for (const key of Object.keys(obj)) {
     const k = key.toLowerCase()
+    if (k === 'mae' || k === 'pai') continue
+
     if (
       k === 'nome' ||
       k === 'nomerazaosocial' ||
@@ -24,6 +31,9 @@ function findNome(obj: any): string {
     }
   }
   for (const key of Object.keys(obj)) {
+    const k = key.toLowerCase()
+    if (k === 'mae' || k === 'pai') continue
+
     if (typeof obj[key] === 'object') {
       const res = findNome(obj[key])
       if (res) return res
@@ -93,7 +103,7 @@ Deno.serve(async (req) => {
         sexo: hash % 2 === 0 ? 'M' : 'F',
         nome_mae: 'Mãe Silva',
         situacao_receita: 'REGULAR',
-        situacao_receita_data: '2023-11-01'
+        situacao_receita_data: '2023-11-01',
       }
     } else {
       const res = await fetch('https://gateway.apibrasil.io/api/v2/consulta/cpf/credits', {
@@ -131,20 +141,31 @@ Deno.serve(async (req) => {
         cpf: cleanCpf,
         nome: nomeEncontrado || '',
         rg: data?.outros_documentos?.rg || '',
-        data_nascimento: data?.nome?.conteudo?.data_nascimento || data.dataNascimento || data.data_nascimento || '',
+        data_nascimento:
+          data?.nome?.conteudo?.data_nascimento ||
+          data.dataNascimento ||
+          data.data_nascimento ||
+          '',
         idade: data?.nome?.conteudo?.idade || '',
         sexo: data?.nome?.conteudo?.sexo || data.sexo || data.genero || '',
         nome_mae: data?.nome?.conteudo?.mae || data.mae || data.nome_mae || '',
-        situacao_receita: data?.nome?.conteudo?.situacao_receita || data.situacao || data.situacao_cadastral || 'REGULAR',
-        situacao_receita_data: data?.nome?.conteudo?.situacao_receita_data || ''
+        situacao_receita:
+          data?.nome?.conteudo?.situacao_receita ||
+          data.situacao ||
+          data.situacao_cadastral ||
+          'REGULAR',
+        situacao_receita_data: data?.nome?.conteudo?.situacao_receita_data || '',
       }
     }
 
     // Sincronização Automática (Upsert)
-    await supabase.from('clientes').upsert({
-      ...result,
-      updated_at: new Date().toISOString()
-    }, { onConflict: 'cpf' })
+    await supabase.from('clientes').upsert(
+      {
+        ...result,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: 'cpf' },
+    )
 
     return new Response(JSON.stringify({ success: true, data: result }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
