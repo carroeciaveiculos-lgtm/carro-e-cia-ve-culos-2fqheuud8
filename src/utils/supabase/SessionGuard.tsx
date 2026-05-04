@@ -29,8 +29,11 @@ export default function SessionGuard({ children }: Props) {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-50">
-        <div className="text-lg font-medium text-gray-900">Verificando autenticação...</div>
+      <div className="flex flex-col items-center justify-center min-h-screen bg-background w-full gap-4">
+        <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+        <p className="text-muted-foreground font-medium animate-pulse">
+          Verificando autenticação...
+        </p>
       </div>
     )
   }

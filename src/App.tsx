@@ -38,8 +38,8 @@ const DomainRedirect = () => {
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const hostname = window.location.hostname
-      // Redireciona de www e domínios temporários goskip para sem www no domínio de produção
-      if (hostname === 'www.carroeciamotors.com.br' || hostname.includes('goskip.app')) {
+      // Redireciona de www para sem www no domínio de produção (evita reload e tela branca no preview)
+      if (hostname === 'www.carroeciamotors.com.br') {
         window.location.replace(
           `https://carroeciamotors.com.br${window.location.pathname}${window.location.search}`,
         )
@@ -123,7 +123,7 @@ const HubLayout = lazyWithRetry(() => import('./hub/components/Layout'))
 import { HubProtectedRoute } from './hub/components/ProtectedRoute'
 
 const PageLoader = () => (
-  <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
+  <div className="flex flex-col items-center justify-center min-h-screen bg-background w-full gap-4">
     <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
     <p className="text-muted-foreground font-medium animate-pulse">Carregando...</p>
   </div>
