@@ -72,7 +72,7 @@ Deno.serve(async (req) => {
         (hash % 99999).toString().padStart(5, '0')
       const renavam = (Math.random() * 100000000000).toFixed(0).padStart(11, '0')
 
-      const precoMock = 40000 + (hash % 100) * 1000
+      const precoMock = 40000 + (hash % 100) * 1000;
       const response = {
         placa: cleanPlaca,
         chassi: chassi,
@@ -92,9 +92,9 @@ Deno.serve(async (req) => {
           { mes: '04-2024', valor: precoMock * 1.01 },
           { mes: '03-2024', valor: precoMock * 1.02 },
           { mes: '02-2024', valor: precoMock * 1.04 },
-          { mes: '01-2024', valor: precoMock * 1.05 },
+          { mes: '01-2024', valor: precoMock * 1.05 }
         ],
-        categoria: 'Carro',
+        categoria: 'Carro'
       }
 
       // Simular latência de rede para maior realismo
@@ -175,12 +175,9 @@ Deno.serve(async (req) => {
       historico_fipe: veiculoData?.fipe?.historico || [
         { mes: 'Mês Atual', valor: veiculoData?.valor || veiculoData?.preco_fipe || 0 },
         { mes: 'Mês Anterior', valor: (veiculoData?.valor || veiculoData?.preco_fipe || 0) * 1.01 },
-        {
-          mes: '2 Meses Atrás',
-          valor: (veiculoData?.valor || veiculoData?.preco_fipe || 0) * 1.02,
-        },
+        { mes: '2 Meses Atrás', valor: (veiculoData?.valor || veiculoData?.preco_fipe || 0) * 1.02 }
       ],
-      categoria: veiculoData?.categoria || 'Carro',
+      categoria: veiculoData?.categoria || 'Carro'
     }
 
     return new Response(JSON.stringify({ success: true, data: result }), {

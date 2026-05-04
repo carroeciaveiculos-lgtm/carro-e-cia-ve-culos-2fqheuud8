@@ -74,7 +74,7 @@ Deno.serve(async (req) => {
             data_nascimento: '15/08/1985',
             sexo: hash % 2 === 0 ? 'M' : 'F',
             nome_mae: 'Mãe Silva',
-            situacao: 'REGULAR',
+            situacao: 'REGULAR'
           },
         }),
         {
