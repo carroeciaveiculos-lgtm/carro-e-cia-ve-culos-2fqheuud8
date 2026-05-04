@@ -5,11 +5,14 @@ import { cn } from '@/lib/utils'
 export function Sidebar() {
   const location = useLocation()
 
+  const isSubdomain = typeof window !== 'undefined' && window.location.hostname.startsWith('hub.')
+  const basePath = isSubdomain ? '' : '/hub'
+
   const links = [
-    { label: 'Visão Geral', href: '/', icon: LayoutDashboard },
-    { label: 'Branding e Identidade', href: '/branding', icon: Palette },
-    { label: 'Gestor de Scripts', href: '/scripts', icon: Code },
-    { label: 'Media Center', href: '/media', icon: ImageIcon },
+    { label: 'Visão Geral', href: `${basePath}/`, icon: LayoutDashboard },
+    { label: 'Branding e Identidade', href: `${basePath}/branding`, icon: Palette },
+    { label: 'Gestor de Scripts', href: `${basePath}/scripts`, icon: Code },
+    { label: 'Media Center', href: `${basePath}/media`, icon: ImageIcon },
   ]
 
   return (
@@ -25,7 +28,7 @@ export function Sidebar() {
           {links.map((link) => {
             const isActive =
               location.pathname === link.href ||
-              (link.href !== '/' && location.pathname.startsWith(link.href))
+              (link.href !== `${basePath}/` && location.pathname.startsWith(link.href))
             return (
               <li key={link.href}>
                 <Link
@@ -50,7 +53,7 @@ export function Sidebar() {
 
       <div className="p-4 border-t border-white/10">
         <Link
-          to="/logout"
+          to={`${basePath}/logout`}
           className="flex items-center px-4 py-3 rounded-lg text-gray-300 hover:bg-white/10 hover:text-red-400 transition-colors"
         >
           <LogOut className="w-5 h-5 mr-3" />

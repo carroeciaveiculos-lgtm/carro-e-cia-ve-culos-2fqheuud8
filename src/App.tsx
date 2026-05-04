@@ -258,24 +258,31 @@ const MainApp = () => (
   </Routes>
 )
 
-const HubApp = () => (
-  <Routes>
-    <Route path="/login" element={<HubLogin />} />
-    <Route path="/logout" element={<HubLogout />} />
-    <Route element={<HubProtectedRoute />}>
-      <Route element={<HubLayout />}>
-        <Route index element={<HubDashboard />} />
-        <Route path="branding" element={<HubBranding />} />
-        <Route path="scripts" element={<HubScripts />} />
-        <Route path="media" element={<HubMediaCenter />} />
+const HubApp = () => {
+  const isSubdomain = typeof window !== 'undefined' && window.location.hostname.startsWith('hub.')
+  const basePath = isSubdomain ? '' : '/hub'
+
+  return (
+    <Routes>
+      <Route path={`${basePath}/login`} element={<HubLogin />} />
+      <Route path={`${basePath}/logout`} element={<HubLogout />} />
+      <Route path={`${basePath}`} element={<HubProtectedRoute />}>
+        <Route element={<HubLayout />}>
+          <Route index element={<HubDashboard />} />
+          <Route path="branding" element={<HubBranding />} />
+          <Route path="scripts" element={<HubScripts />} />
+          <Route path="media" element={<HubMediaCenter />} />
+        </Route>
       </Route>
-    </Route>
-    <Route path="*" element={<Navigate to="/" replace />} />
-  </Routes>
-)
+      <Route path="*" element={<Navigate to={`${basePath}/`} replace />} />
+    </Routes>
+  )
+}
 
 const App = () => {
-  const isHub = typeof window !== 'undefined' && window.location.hostname.startsWith('hub.')
+  const isSubdomain = typeof window !== 'undefined' && window.location.hostname.startsWith('hub.')
+  const isHubPath = typeof window !== 'undefined' && window.location.pathname.startsWith('/hub')
+  const isHub = isSubdomain || isHubPath
 
   return (
     <AuthProvider>

@@ -1,87 +1,231 @@
+import { useState, useEffect } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
-import { Image as ImageIcon, UploadCloud, Settings, Database, ArrowRight } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { useToast } from '@/hooks/use-toast'
+import { supabase } from '@/lib/supabase/client'
+import { Image as ImageIcon, UploadCloud, Trash2, Loader2, Copy } from 'lucide-react'
 
 export default function MediaCenterPage() {
+  const [assets, setAssets] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [uploading, setUploading] = useState(false)
+  const { toast } = useToast()
+
+  const loadAssets = async () => {
+    setLoading(true)
+    const { data, error } = await supabase
+      .from('media_assets')
+      .select('*')
+      .order('created_at', { ascending: false })
+
+    if (error) {
+      toast({ title: 'Erro ao carregar mídia', description: error.message, variant: 'destructive' })
+    } else {
+      setAssets(data || [])
+    }
+    setLoading(false)
+  }
+
+  useEffect(() => {
+    loadAssets()
+  }, [])
+
+  const compressImage = (file: File): Promise<Blob> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.readAsDataURL(file)
+      reader.onload = (event) => {
+        const img = new Image()
+        img.src = event.target?.result as string
+        img.onload = () => {
+          const canvas = document.createElement('canvas')
+          const MAX_WIDTH = 1920
+          const MAX_HEIGHT = 1080
+          let width = img.width
+          let height = img.height
+
+          if (width > height) {
+            if (width > MAX_WIDTH) {
+              height *= MAX_WIDTH / width
+              width = MAX_WIDTH
+            }
+          } else {
+            if (height > MAX_HEIGHT) {
+              width *= MAX_HEIGHT / height
+              height = MAX_HEIGHT
+            }
+          }
+          canvas.width = width
+          canvas.height = height
+          const ctx = canvas.getContext('2d')
+          ctx?.drawImage(img, 0, 0, width, height)
+          canvas.toBlob(
+            (blob) => (blob ? resolve(blob) : reject(new Error('Falha no canvas'))),
+            'image/webp',
+            0.8,
+          )
+        }
+      }
+    })
+  }
+
+  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0) return
+    setUploading(true)
+
+    try {
+      for (const file of Array.from(e.target.files)) {
+        const compressedBlob = await compressImage(file)
+        const compressedFile = new File([compressedBlob], file.name.replace(/\.[^/.]+$/, '.webp'), {
+          type: 'image/webp',
+        })
+        const filename = `media/${Date.now()}_${Math.random().toString(36).substring(2)}.webp`
+
+        const { error: uploadError } = await supabase.storage
+          .from('veiculos-fotos')
+          .upload(filename, compressedFile)
+        if (uploadError) throw uploadError
+
+        const {
+          data: { publicUrl },
+        } = supabase.storage.from('veiculos-fotos').getPublicUrl(filename)
+
+        await supabase.from('media_assets').insert({
+          file_name: compressedFile.name,
+          file_path: publicUrl,
+          file_size: compressedFile.size,
+          mime_type: 'image/webp',
+        })
+      }
+
+      toast({ title: 'Upload concluído!', description: 'Imagens foram otimizadas e salvas.' })
+      loadAssets()
+    } catch (err: any) {
+      toast({ title: 'Erro no upload', description: err.message, variant: 'destructive' })
+    } finally {
+      setUploading(false)
+      e.target.value = ''
+    }
+  }
+
+  const handleDelete = async (id: string, url: string) => {
+    if (!confirm('Deseja realmente excluir esta imagem?')) return
+    try {
+      const path = url.split('/veiculos-fotos/')[1]
+      if (path) await supabase.storage.from('veiculos-fotos').remove([path])
+      await supabase.from('media_assets').delete().eq('id', id)
+
+      toast({ title: 'Imagem excluída' })
+      setAssets(assets.filter((a) => a.id !== id))
+    } catch (err: any) {
+      toast({ title: 'Erro ao excluir', description: err.message, variant: 'destructive' })
+    }
+  }
+
+  const copyUrl = (url: string) => {
+    navigator.clipboard.writeText(url)
+    toast({ title: 'URL Copiada!' })
+  }
+
   return (
-    <div className="p-8 max-w-5xl mx-auto space-y-8 animate-fade-in-up">
-      <div>
-        <h1 className="text-3xl font-bold text-[#1A1A1A]">Media Center Inteligente</h1>
-        <p className="mt-2 text-gray-500 text-lg">
-          A nova geração de armazenamento otimizado do seu ecossistema digital.
-        </p>
+    <div className="p-8 max-w-6xl mx-auto space-y-8 animate-fade-in-up">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-[#1A1A1A]">Media Center</h1>
+          <p className="mt-2 text-gray-500 text-lg">
+            Gerencie, otimize e reutilize imagens em todo o seu ecossistema.
+          </p>
+        </div>
+        <div>
+          <input
+            type="file"
+            id="upload-media"
+            multiple
+            accept="image/*"
+            className="hidden"
+            onChange={handleUpload}
+            disabled={uploading}
+          />
+          <label htmlFor="upload-media">
+            <Button
+              asChild
+              disabled={uploading}
+              className="bg-[#CC0000] hover:bg-red-700 cursor-pointer"
+            >
+              <span>
+                {uploading ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <UploadCloud className="w-4 h-4 mr-2" />
+                )}
+                Fazer Upload (WebP)
+              </span>
+            </Button>
+          </label>
+        </div>
       </div>
 
-      <Card className="border-dashed border-[3px] border-gray-200 bg-gray-50/50 shadow-none overflow-hidden relative">
-        <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-gray-300 via-gray-400 to-gray-300 opacity-50"></div>
-
-        <CardContent className="flex flex-col items-center justify-center py-20 px-6 text-center space-y-6">
-          <div className="relative">
-            <div className="w-24 h-24 bg-white rounded-2xl flex items-center justify-center shadow-lg border border-gray-100 z-10 relative">
-              <ImageIcon className="w-12 h-12 text-[#CC0000]" />
-            </div>
-            <div className="absolute -top-2 -right-2 w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center border border-blue-200 animate-pulse">
-              <Settings className="w-4 h-4 text-blue-600" />
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <span className="inline-block px-3 py-1 bg-gray-200 text-gray-700 text-sm font-bold uppercase tracking-wider rounded-full mb-2">
-              Fase 2 em preparação
-            </span>
-            <h2 className="text-3xl font-bold text-gray-900 tracking-tight">
-              Otimização Automática a Caminho
-            </h2>
-            <p className="text-gray-500 max-w-2xl mx-auto text-lg leading-relaxed">
-              Já construímos a infraestrutura de dados. Em breve, envios para este painel serão
-              convertidos automaticamente para o formato WebP, oferecendo máxima performance sem
-              perda de qualidade visual.
+      {loading ? (
+        <div className="flex justify-center p-12">
+          <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
+        </div>
+      ) : assets.length === 0 ? (
+        <Card className="border-dashed border-[3px] border-gray-200 bg-gray-50/50 shadow-none">
+          <CardContent className="flex flex-col items-center justify-center py-20 px-6 text-center">
+            <ImageIcon className="w-16 h-16 text-gray-300 mb-4" />
+            <h3 className="text-xl font-bold text-gray-600">Nenhuma mídia encontrada</h3>
+            <p className="text-gray-400 mt-2">
+              Faça o upload da sua primeira imagem para o Media Center.
             </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 pt-10 w-full max-w-4xl">
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col items-center text-center hover:border-gray-300 transition-colors">
-              <div className="bg-gray-50 p-3 rounded-full mb-4">
-                <UploadCloud className="w-6 h-6 text-[#1A1A1A]" />
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+          {assets.map((asset) => (
+            <div
+              key={asset.id}
+              className="group relative rounded-xl border border-gray-200 overflow-hidden bg-white hover:border-[#CC0000] transition-colors"
+            >
+              <div className="aspect-square bg-gray-100 relative">
+                <img
+                  src={asset.file_path}
+                  alt={asset.file_name}
+                  className="w-full h-full object-cover"
+                  loading="lazy"
+                />
+                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                  <Button
+                    size="icon"
+                    variant="secondary"
+                    onClick={() => copyUrl(asset.file_path)}
+                    className="h-8 w-8 rounded-full"
+                    title="Copiar URL"
+                  >
+                    <Copy className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    size="icon"
+                    variant="destructive"
+                    onClick={() => handleDelete(asset.id, asset.file_path)}
+                    className="h-8 w-8 rounded-full"
+                    title="Excluir"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </div>
               </div>
-              <h3 className="font-bold text-gray-900 mb-2">Gestão Centralizada</h3>
-              <p className="text-sm text-gray-500">
-                Faça o upload de banners, fotos de veículos e ativos do blog em uma única biblioteca
-                acessível.
-              </p>
-            </div>
-
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col items-center text-center hover:border-[#CC0000] transition-colors group relative overflow-hidden">
-              <div className="absolute inset-0 bg-[#CC0000]/5 translate-y-[100%] group-hover:translate-y-0 transition-transform duration-300 ease-in-out"></div>
-              <div className="bg-red-50 p-3 rounded-full mb-4 relative z-10">
-                <Settings className="w-6 h-6 text-[#CC0000]" />
+              <div className="p-2">
+                <p className="text-xs text-gray-600 truncate font-medium" title={asset.file_name}>
+                  {asset.file_name}
+                </p>
+                <p className="text-[10px] text-gray-400">
+                  {asset.file_size ? (asset.file_size / 1024).toFixed(1) + ' KB' : 'WebP'}
+                </p>
               </div>
-              <h3 className="font-bold text-gray-900 mb-2 relative z-10">Conversão WebP (Edge)</h3>
-              <p className="text-sm text-gray-500 relative z-10">
-                Ao fazer o upload, a imagem será processada em background (edge functions) para
-                gerar versões leves instantaneamente.
-              </p>
             </div>
-
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col items-center text-center hover:border-gray-300 transition-colors">
-              <div className="bg-gray-50 p-3 rounded-full mb-4">
-                <Database className="w-6 h-6 text-[#1A1A1A]" />
-              </div>
-              <h3 className="font-bold text-gray-900 mb-2">Reaproveitamento</h3>
-              <p className="text-sm text-gray-500">
-                Economize seu storage do Supabase utilizando as mesmas imagens já tratadas em
-                diversas páginas do seu site.
-              </p>
-            </div>
-          </div>
-
-          <div className="pt-8 flex items-center text-sm font-medium text-gray-400 group">
-            <span className="mr-2">
-              A infraestrutura de tabelas já está rodando no banco de dados
-            </span>
-            <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-          </div>
-        </CardContent>
-      </Card>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
