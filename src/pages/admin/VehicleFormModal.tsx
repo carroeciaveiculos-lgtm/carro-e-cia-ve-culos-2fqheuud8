@@ -270,17 +270,24 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
     if (!files || files.length === 0) return
 
     setLoading(true)
-    toast({ title: 'Enviando imagens...', description: 'Processando upload para o banco de mídias.' })
+    toast({
+      title: 'Enviando imagens...',
+      description: 'Processando upload para o banco de mídias.',
+    })
 
     try {
       const newUrls = []
       for (let i = 0; i < files.length; i++) {
         const file = files[i]
         const fileName = `${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.]/g, '')}`
-        const { error } = await supabase.storage.from('logos-e-imagens').upload(`veiculos/${fileName}`, file)
+        const { error } = await supabase.storage
+          .from('logos-e-imagens')
+          .upload(`veiculos/${fileName}`, file)
         if (error) throw error
 
-        const { data: publicUrlData } = supabase.storage.from('logos-e-imagens').getPublicUrl(`veiculos/${fileName}`)
+        const { data: publicUrlData } = supabase.storage
+          .from('logos-e-imagens')
+          .getPublicUrl(`veiculos/${fileName}`)
         const url = publicUrlData.publicUrl
 
         await supabase.from('media_assets').insert({
@@ -532,61 +539,76 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
                   </label>
                 </div>
                 {formData.tipo_entrada === 'consignacao' && (
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label>Nome</Label>
-                      <Input
-                        value={formData.proprietario_nome || ''}
-                        onChange={(e) =>
-                          setFormData({ ...formData, proprietario_nome: e.target.value })
-                        }
-                        className="bg-white"
-                      />
-                    </div>
-                    <div>
-                      <Label>CPF do Proprietário</Label>
-                      <CpfInput
-                        value={formData.proprietario_cpf || ''}
-                        onChange={(v) => setFormData({ ...formData, proprietario_cpf: v })}
-                        onNameFound={(name, data) => {
-                          setFormData((p: any) => ({ ...p, proprietario_nome: name }))
-                          if (data) setCpfInfo(data)
-                        }}
-                        className="bg-white"
-                      />
-                    </div>
-                    <div>
-                      <Label>Telefone</Label>
-                      <Input
-                        value={formData.proprietario_telefone || ''}
-                        onChange={(e) =>
-                          setFormData({ ...formData, proprietario_telefone: e.target.value })
-                        }
-                        className="bg-white"
-                      />
-                    </div>
-                    <div>
-                      <Label>Email</Label>
-                      <Input
-                        value={formData.proprietario_email || ''}
-                        onChange={(e) =>
-                          setFormData({ ...formData, proprietario_email: e.target.value })
-                        }
-                        className="bg-white"
-                      />
-                    </div>
-                  </div>
-                  {cpfInfo && (
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4 bg-white p-4 rounded border text-xs">
-                      <div><span className="font-bold text-slate-500 block mb-1">Nascimento</span> {cpfInfo.data_nascimento || '-'}</div>
-                      <div><span className="font-bold text-slate-500 block mb-1">Gênero</span> {cpfInfo.sexo || '-'}</div>
-                      <div><span className="font-bold text-slate-500 block mb-1">Mãe</span> {cpfInfo.nome_mae || '-'}</div>
+                  <>
+                    <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <span className="font-bold text-slate-500 block mb-1">Situação (Receita)</span>
-                        <span className="bg-green-100 text-green-800 px-2 py-0.5 rounded font-bold">{cpfInfo.situacao || 'REGULAR'}</span>
+                        <Label>Nome</Label>
+                        <Input
+                          value={formData.proprietario_nome || ''}
+                          onChange={(e) =>
+                            setFormData({ ...formData, proprietario_nome: e.target.value })
+                          }
+                          className="bg-white"
+                        />
+                      </div>
+                      <div>
+                        <Label>CPF do Proprietário</Label>
+                        <CpfInput
+                          value={formData.proprietario_cpf || ''}
+                          onChange={(v) => setFormData({ ...formData, proprietario_cpf: v })}
+                          onNameFound={(name, data) => {
+                            setFormData((p: any) => ({ ...p, proprietario_nome: name }))
+                            if (data) setCpfInfo(data)
+                          }}
+                          className="bg-white"
+                        />
+                      </div>
+                      <div>
+                        <Label>Telefone</Label>
+                        <Input
+                          value={formData.proprietario_telefone || ''}
+                          onChange={(e) =>
+                            setFormData({ ...formData, proprietario_telefone: e.target.value })
+                          }
+                          className="bg-white"
+                        />
+                      </div>
+                      <div>
+                        <Label>Email</Label>
+                        <Input
+                          value={formData.proprietario_email || ''}
+                          onChange={(e) =>
+                            setFormData({ ...formData, proprietario_email: e.target.value })
+                          }
+                          className="bg-white"
+                        />
                       </div>
                     </div>
-                  )}
+                    {cpfInfo && (
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4 bg-white p-4 rounded border text-xs">
+                        <div>
+                          <span className="font-bold text-slate-500 block mb-1">Nascimento</span>{' '}
+                          {cpfInfo.data_nascimento || '-'}
+                        </div>
+                        <div>
+                          <span className="font-bold text-slate-500 block mb-1">Gênero</span>{' '}
+                          {cpfInfo.sexo || '-'}
+                        </div>
+                        <div>
+                          <span className="font-bold text-slate-500 block mb-1">Mãe</span>{' '}
+                          {cpfInfo.nome_mae || '-'}
+                        </div>
+                        <div>
+                          <span className="font-bold text-slate-500 block mb-1">
+                            Situação (Receita)
+                          </span>
+                          <span className="bg-green-100 text-green-800 px-2 py-0.5 rounded font-bold">
+                            {cpfInfo.situacao || 'REGULAR'}
+                          </span>
+                        </div>
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             </TabsContent>
@@ -653,17 +675,19 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
                       <Camera className="w-4 h-4 mr-2" />
                       Enviar Novas Fotos
                     </Button>
-                    <input 
-                      type="file" 
-                      multiple 
-                      accept="image/*" 
-                      className="absolute inset-0 opacity-0 cursor-pointer" 
+                    <input
+                      type="file"
+                      multiple
+                      accept="image/*"
+                      className="absolute inset-0 opacity-0 cursor-pointer"
                       onChange={handleFileUpload}
                       disabled={loading}
                     />
                   </div>
                 </div>
-                <h4 className="text-sm font-semibold mb-2 text-slate-500">Selecionar do Banco de Mídias Existente</h4>
+                <h4 className="text-sm font-semibold mb-2 text-slate-500">
+                  Selecionar do Banco de Mídias Existente
+                </h4>
                 <div className="flex gap-2 overflow-x-auto pb-4 mb-6">
                   {mediaAssets.map((asset) => (
                     <div
