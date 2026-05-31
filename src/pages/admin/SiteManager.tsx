@@ -27,6 +27,8 @@ import {
 import { supabase } from '@/lib/supabase/client'
 import { useToast } from '@/hooks/use-toast'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Sparkles } from 'lucide-react'
+import { GeradorIAModal } from '@/components/admin/GeradorIAModal'
 
 interface BlogPost {
   id: string
@@ -177,6 +179,7 @@ export default function SiteManager() {
 
   const [editingPost, setEditingPost] = useState<BlogPost | null>(null)
   const [isSocialHubOpen, setIsSocialHubOpen] = useState(false)
+  const [iaModalOpen, setIaModalOpen] = useState(false)
 
   const copyForInstagram = (post: BlogPost) => {
     const url = `${import.meta.env.VITE_SITE_URL || 'https://www.carroeciamotors.com.br'}/blog/${post.slug}`
@@ -362,21 +365,40 @@ export default function SiteManager() {
                 <h3 className="font-bold text-lg flex items-center gap-2">
                   <FileText className="w-5 h-5" /> Gestão Centralizada de Conteúdo
                 </h3>
-                <Button
-                  size="sm"
-                  className="gap-1"
-                  onClick={() =>
-                    setEditingPost({
-                      id: 'new',
-                      title: '',
-                      slug: '',
-                      published: false,
-                      category: '',
-                    })
-                  }
-                >
-                  <Plus className="w-4 h-4" /> Novo Post
-                </Button>
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="gap-1 bg-purple-50 hover:bg-purple-100 text-purple-700 border-purple-200"
+                    onClick={() => {
+                      setEditingPost({
+                        id: 'new',
+                        title: '',
+                        slug: '',
+                        published: false,
+                        category: '',
+                      })
+                      setIaModalOpen(true)
+                    }}
+                  >
+                    <Sparkles className="w-4 h-4" /> Gerar com IA
+                  </Button>
+                  <Button
+                    size="sm"
+                    className="gap-1"
+                    onClick={() =>
+                      setEditingPost({
+                        id: 'new',
+                        title: '',
+                        slug: '',
+                        published: false,
+                        category: '',
+                      })
+                    }
+                  >
+                    <Plus className="w-4 h-4" /> Novo Post
+                  </Button>
+                </div>
               </div>
               <div className="grid gap-4">
                 {filteredPosts.map((post) => (
@@ -913,27 +935,71 @@ export default function SiteManager() {
                 </div>
               ) : (
                 <div className="space-y-4">
+                  <div className="flex justify-between items-center mb-2">
+                    <h4 className="font-medium text-slate-700 flex items-center gap-2">
+                      Informações do Post
+                      {(editingPost as any).ia_generated && (
+                        <Badge
+                          variant="secondary"
+                          className="bg-purple-100 text-purple-700 text-xs"
+                        >
+                          <Sparkles className="w-3 h-3 mr-1" /> Gerado por IA (Revisão:{' '}
+                          {(editingPost as any).requires_review ? 'Pendente' : 'Concluída'})
+                        </Badge>
+                      )}
+                    </h4>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-purple-600 hover:text-purple-700 hover:bg-purple-50"
+                      onClick={() => setIaModalOpen(true)}
+                    >
+                      <Sparkles className="w-4 h-4 mr-2" />
+                      Refazer com IA
+                    </Button>
+                  </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="col-span-2">
                       <Label>Título</Label>
-                      <Input defaultValue={editingPost.title} />
+                      <Input
+                        value={editingPost.title}
+                        onChange={(e) => setEditingPost({ ...editingPost, title: e.target.value })}
+                      />
                     </div>
                     <div>
                       <Label>Slug (URL)</Label>
-                      <Input defaultValue={editingPost.slug} />
+                      <Input
+                        value={editingPost.slug}
+                        onChange={(e) => setEditingPost({ ...editingPost, slug: e.target.value })}
+                      />
                     </div>
                     <div>
                       <Label>Categoria</Label>
-                      <Input defaultValue={editingPost.category} />
+                      <Input
+                        value={editingPost.category}
+                        onChange={(e) =>
+                          setEditingPost({ ...editingPost, category: e.target.value })
+                        }
+                      />
                     </div>
                     <div className="col-span-2">
                       <Label>Meta Description</Label>
-                      <Textarea defaultValue={editingPost.meta_description} className="h-20" />
+                      <Textarea
+                        value={editingPost.meta_description || ''}
+                        onChange={(e) =>
+                          setEditingPost({ ...editingPost, meta_description: e.target.value })
+                        }
+                        className="h-20"
+                      />
                     </div>
                     <div className="col-span-2">
                       <Label>Conteúdo (HTML)</Label>
                       <Textarea
-                        defaultValue="<p>Escreva seu post aqui...</p>"
+                        value={(editingPost as any).content || ''}
+                        onChange={(e) =>
+                          setEditingPost({ ...editingPost, content: e.target.value } as any)
+                        }
+                        placeholder="<p>Escreva seu post aqui...</p>"
                         className="h-64 font-mono text-sm"
                       />
                     </div>
@@ -942,7 +1008,15 @@ export default function SiteManager() {
                     <Button variant="outline" onClick={() => setEditingPost(null)}>
                       Cancelar
                     </Button>
-                    <Button>Salvar Post</Button>
+                    <Button
+                      onClick={async () => {
+                        toast({ title: 'Salvando post...' })
+                        await fetchBlogPosts()
+                        setEditingPost(null)
+                      }}
+                    >
+                      Salvar Post
+                    </Button>
                   </div>
                 </div>
               )}
@@ -950,6 +1024,29 @@ export default function SiteManager() {
           )}
         </DialogContent>
       </Dialog>
+      <GeradorIAModal
+        open={iaModalOpen}
+        onOpenChange={setIaModalOpen}
+        onSuccess={(generated) => {
+          if (editingPost) {
+            setEditingPost({
+              ...editingPost,
+              title: generated.titulo,
+              slug: generated.slug,
+              meta_description: generated.meta_description,
+              content: generated.conteudo,
+              image_url: generated.image_url || editingPost.image_url,
+              ia_generated: true,
+              requires_review: true,
+              ia_confidence: generated.ia_confidence,
+            } as any)
+          }
+          toast({
+            title: 'Post Gerado com Sucesso',
+            description: 'O conteúdo foi preenchido. Revise antes de salvar.',
+          })
+        }}
+      />
     </div>
   )
 }

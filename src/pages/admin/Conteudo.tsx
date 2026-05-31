@@ -17,6 +17,8 @@ import { Input } from '@/components/ui/input'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useToast } from '@/components/ui/use-toast'
 import { cn } from '@/lib/utils'
+import { Sparkles } from 'lucide-react'
+import { GeradorIAModal } from '@/components/admin/GeradorIAModal'
 
 interface PageItem {
   id: string
@@ -163,6 +165,7 @@ export default function Conteudo() {
 function PageEditor({ id, onBack }: { id: string | null; onBack: () => void }) {
   const [data, setData] = useState<any>({ titulo: '', status_publicacao: 'Rascunho' })
   const [activeTab, setActiveTab] = useState('geral')
+  const [iaModalOpen, setIaModalOpen] = useState(false)
   const { toast } = useToast()
 
   useEffect(() => {
@@ -337,6 +340,14 @@ function PageEditor({ id, onBack }: { id: string | null; onBack: () => void }) {
           >
             Img
           </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="bg-purple-600 text-white border-0 hover:bg-purple-700 h-8 ml-auto flex items-center gap-1"
+            onClick={() => setIaModalOpen(true)}
+          >
+            <Sparkles className="w-3 h-3" /> Gerar com IA
+          </Button>
         </div>
         <textarea
           className="flex-1 bg-transparent text-slate-200 p-6 font-mono text-sm resize-none focus:outline-none pb-24"
@@ -367,6 +378,28 @@ function PageEditor({ id, onBack }: { id: string | null; onBack: () => void }) {
       </div>
 
       <ChatbotIA contextData={data} type="page" />
+      <GeradorIAModal
+        open={iaModalOpen}
+        onOpenChange={setIaModalOpen}
+        onSuccess={(generated) => {
+          setData({
+            ...data,
+            titulo: generated.titulo,
+            slug: generated.slug,
+            meta_description: generated.meta_description,
+            conteudo: generated.conteudo,
+            keyword: generated.keyword,
+            ia_confidence: generated.ia_confidence,
+            imagem_destaque_url: generated.image_url || data.imagem_destaque_url,
+            ia_generated: true,
+            requires_review: true,
+          })
+          toast({
+            title: 'Conteúdo Gerado com Sucesso',
+            description: 'Revisão recomendada antes da publicação.',
+          })
+        }}
+      />
     </div>
   )
 }
@@ -374,6 +407,7 @@ function PageEditor({ id, onBack }: { id: string | null; onBack: () => void }) {
 function ArticleEditor({ id, onBack }: { id: string | null; onBack: () => void }) {
   const [data, setData] = useState<any>({ titulo: '', status_publicacao: 'Rascunho', seo_score: 0 })
   const [activeTab, setActiveTab] = useState('geral')
+  const [iaModalOpen, setIaModalOpen] = useState(false)
   const { toast } = useToast()
 
   useEffect(() => {
@@ -594,6 +628,14 @@ function ArticleEditor({ id, onBack }: { id: string | null; onBack: () => void }
           >
             Inserir CTA
           </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="bg-purple-600 text-white border-0 hover:bg-purple-700 h-8 ml-2 flex items-center gap-1"
+            onClick={() => setIaModalOpen(true)}
+          >
+            <Sparkles className="w-3 h-3" /> Gerar com IA
+          </Button>
         </div>
         <textarea
           className="flex-1 bg-transparent text-slate-200 p-6 font-mono text-sm resize-none focus:outline-none pb-24"
@@ -623,6 +665,30 @@ function ArticleEditor({ id, onBack }: { id: string | null; onBack: () => void }
       </div>
 
       <ChatbotIA contextData={data} type="article" />
+      <GeradorIAModal
+        open={iaModalOpen}
+        onOpenChange={setIaModalOpen}
+        onSuccess={(generated) => {
+          setData({
+            ...data,
+            titulo: generated.titulo,
+            h1_artigo: generated.titulo,
+            slug: generated.slug,
+            meta_description: generated.meta_description,
+            conteudo: generated.conteudo,
+            keyword: generated.keyword,
+            ia_confidence: generated.ia_confidence,
+            imagem_destaque_url: generated.image_url || data.imagem_destaque_url,
+            ia_generated: true,
+            requires_review: true,
+            seo_score: 95,
+          })
+          toast({
+            title: 'Artigo Gerado com Sucesso',
+            description: 'Revisão recomendada antes da publicação.',
+          })
+        }}
+      />
     </div>
   )
 }
