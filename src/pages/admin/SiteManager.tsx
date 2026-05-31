@@ -179,8 +179,8 @@ export default function SiteManager() {
   const [isSocialHubOpen, setIsSocialHubOpen] = useState(false)
 
   const copyForInstagram = (post: BlogPost) => {
-    const url = `${import.meta.env.VITE_SITE_URL || 'https://carroeciaveiculos.goskip.app'}/blog/${post.slug}`
-    const text = `Confira nosso novo artigo: ${post.title}\n\n${post.meta_description || ''}\n\nLeia mais no link da bio! 🚗💨\n\n#CarroECia #Uberaba #Seminovos`
+    const url = `${import.meta.env.VITE_SITE_URL || 'https://www.carroeciamotors.com.br'}/blog/${post.slug}`
+    const text = `Confira nosso novo artigo: ${post.title}\n\n${post.meta_description || ''}\n\nAcesse pelo link da bio! 🚗💨\n${url}\n\n#CarroECia #Uberaba #Seminovos`
     navigator.clipboard.writeText(text)
     toast({
       title: 'Copiado para o Instagram!',
@@ -895,7 +895,7 @@ export default function SiteManager() {
                       />
                       <div className="p-4 bg-slate-100">
                         <p className="text-xs text-slate-500 uppercase tracking-wider mb-1">
-                          carroeciaveiculos.goskip.app
+                          carroeciamotors.com.br
                         </p>
                         <h5 className="font-bold text-slate-900 line-clamp-1">
                           {editingPost.title}

@@ -104,6 +104,8 @@ Deno.serve(async (req) => {
         nome_mae: 'Mãe Silva',
         situacao_receita: 'REGULAR',
         situacao_receita_data: '2023-11-01',
+        telefone: '(34) 99999-9999',
+        email: 'mock@exemplo.com',
       }
     } else {
       const res = await fetch('https://gateway.apibrasil.io/api/v2/consulta/cpf/credits', {
@@ -135,26 +137,40 @@ Deno.serve(async (req) => {
         )
       }
 
-      const nomeEncontrado = findNome(data)
+      // Extração robusta conforme Acceptance Criteria
+      const contentNome = data?.nome?.conteudo || {}
+      const nomeEncontrado = contentNome.nome || findNome(data)
+
+      const telefonesContent = data?.pesquisa_telefones?.conteudo
+      const telefoneStr = Array.isArray(telefonesContent)
+        ? telefonesContent[0]
+        : typeof telefonesContent === 'string'
+          ? telefonesContent
+          : ''
+
+      const emailsContent = data?.emails?.conteudo
+      const emailStr = Array.isArray(emailsContent)
+        ? emailsContent[0]
+        : typeof emailsContent === 'string'
+          ? emailsContent
+          : ''
+
+      const outrosDocs = data?.outros_documentos || {}
 
       result = {
         cpf: cleanCpf,
         nome: nomeEncontrado || '',
-        rg: data?.outros_documentos?.rg || '',
+        telefone: telefoneStr,
+        email: emailStr,
+        rg: outrosDocs.rg || data?.rg || '',
         data_nascimento:
-          data?.nome?.conteudo?.data_nascimento ||
-          data.dataNascimento ||
-          data.data_nascimento ||
-          '',
-        idade: data?.nome?.conteudo?.idade || '',
-        sexo: data?.nome?.conteudo?.sexo || data.sexo || data.genero || '',
-        nome_mae: data?.nome?.conteudo?.mae || data.mae || data.nome_mae || '',
+          contentNome.data_nascimento || data.dataNascimento || data.data_nascimento || '',
+        idade: contentNome.idade || '',
+        sexo: contentNome.sexo || data.sexo || data.genero || '',
+        nome_mae: contentNome.mae || data.mae || data.nome_mae || '',
         situacao_receita:
-          data?.nome?.conteudo?.situacao_receita ||
-          data.situacao ||
-          data.situacao_cadastral ||
-          'REGULAR',
-        situacao_receita_data: data?.nome?.conteudo?.situacao_receita_data || '',
+          contentNome.situacao_receita || data.situacao || data.situacao_cadastral || 'REGULAR',
+        situacao_receita_data: contentNome.situacao_receita_data || '',
       }
     }
 

@@ -95,6 +95,7 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
   const [despesas, setDespesas] = useState<any[]>([])
   const [mediaAssets, setMediaAssets] = useState<any[]>([])
   const [cpfInfo, setCpfInfo] = useState<any>(null)
+  const [isMediaCenterOpen, setIsMediaCenterOpen] = useState(false)
 
   const [formData, setFormData] = useState<any>({
     categoria: 'Carro',
@@ -678,6 +679,8 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
                             data?.situacao_receita || p.proprietario_situacao_receita,
                           proprietario_situacao_receita_data:
                             data?.situacao_receita_data || p.proprietario_situacao_receita_data,
+                          proprietario_telefone: data?.telefone || p.proprietario_telefone,
+                          proprietario_email: data?.email || p.proprietario_email,
                         }))
                         if (data) setCpfInfo(data)
                       }}
@@ -833,7 +836,11 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
                       A primeira imagem será a capa do veículo.
                     </p>
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 flex-wrap justify-end">
+                    <Button variant="outline" size="sm" onClick={() => setIsMediaCenterOpen(true)}>
+                      <ImageIcon className="w-4 h-4 mr-2 text-blue-600" /> Selecionar do Media
+                      Center
+                    </Button>
                     <Button
                       variant="outline"
                       size="sm"
@@ -860,7 +867,7 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
                 </div>
 
                 <div
-                  className="border-2 border-dashed border-slate-300 rounded-xl p-8 flex flex-col items-center justify-center text-center hover:bg-slate-50 transition-colors mb-6"
+                  className="border-2 border-dashed border-slate-300 rounded-xl p-8 flex flex-col items-center justify-center text-center hover:bg-slate-50 transition-colors mb-6 bg-slate-50/50"
                   onDragOver={handleDragOver}
                   onDrop={handleDrop}
                 >
@@ -875,94 +882,76 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
 
                 {formData.fotos?.length > 0 && (
                   <>
-                    <h4 className="font-bold text-slate-700 mb-4">Ordem de Exibição (Grade)</h4>
-                    <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-4">
+                    <h4 className="font-bold text-slate-700 mb-4">Ordem de Exibição</h4>
+                    <div className="flex flex-col gap-3">
                       {formData.fotos?.map((f: string, i: number) => (
                         <div
                           key={f}
                           className={cn(
-                            'relative aspect-[4/3] bg-slate-100 rounded-xl border overflow-hidden group shadow-sm transition-all',
-                            i === 0 && 'ring-2 ring-blue-500',
+                            'flex items-center gap-4 bg-white p-3 rounded-xl border shadow-sm transition-all',
+                            i === 0 && 'ring-1 ring-blue-500 border-blue-200',
                           )}
                         >
-                          <img
-                            src={f}
-                            className="w-full h-full object-cover"
-                            alt={`Foto ${i + 1}`}
-                          />
-
-                          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
-                            <div className="absolute bottom-2 left-2 flex gap-1">
-                              {i !== 0 && (
-                                <button
-                                  type="button"
-                                  onClick={(e) => {
-                                    e.stopPropagation()
-                                    setAsCover(f)
-                                  }}
-                                  className="bg-white/90 hover:bg-white text-slate-700 p-1.5 rounded-md shadow-sm tooltip-trigger"
-                                  title="Definir como Capa"
-                                >
-                                  <Star className="w-4 h-4" />
-                                </button>
-                              )}
-                              <div
-                                className="bg-white/90 text-slate-700 p-1.5 rounded-md shadow-sm cursor-move tooltip-trigger"
-                                title="Mover"
-                              >
-                                <GripHorizontal className="w-4 h-4" />
+                          <div className="relative w-24 h-16 rounded-md overflow-hidden shrink-0 bg-slate-100">
+                            <img
+                              src={f}
+                              className="w-full h-full object-cover"
+                              alt={`Foto ${i + 1}`}
+                            />
+                            {i === 0 && (
+                              <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end">
+                                <span className="text-[10px] font-bold text-white p-1 flex items-center gap-1 w-full justify-center">
+                                  <Star className="w-3 h-3 fill-current" /> CAPA
+                                </span>
                               </div>
+                            )}
+                          </div>
+
+                          <div className="flex-1 min-w-0">
+                            <p
+                              className="text-sm font-medium text-slate-700 truncate"
+                              title={f.split('/').pop()}
+                            >
+                              {f.split('/').pop()}
+                            </p>
+                            <p className="text-xs text-slate-400">Imagem {i + 1}</p>
+                          </div>
+
+                          <div className="flex items-center gap-2 shrink-0">
+                            {i !== 0 && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setAsCover(f)}
+                                className="hidden sm:flex"
+                              >
+                                <Star className="w-4 h-4 mr-2" /> Tornar Capa
+                              </Button>
+                            )}
+                            <div
+                              className="bg-slate-50 border text-slate-500 p-2 rounded-md cursor-move hover:bg-slate-100 transition-colors"
+                              title="Reordenar (Arraste)"
+                            >
+                              <GripHorizontal className="w-4 h-4" />
                             </div>
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation()
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="text-red-500 hover:bg-red-50 hover:text-red-600"
+                              onClick={() => {
                                 setFormData((p: any) => ({
                                   ...p,
                                   fotos: p.fotos.filter((_: any, x: number) => x !== i),
                                 }))
                               }}
-                              className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white p-1.5 rounded-md shadow-sm"
                             >
                               <Trash2 className="w-4 h-4" />
-                            </button>
+                            </Button>
                           </div>
-
-                          {i === 0 && (
-                            <div className="absolute top-2 left-2 bg-blue-500 text-white text-[10px] font-bold px-2 py-0.5 rounded shadow-sm flex items-center gap-1">
-                              <Star className="w-3 h-3 fill-current" /> CAPA
-                            </div>
-                          )}
                         </div>
                       ))}
                     </div>
                   </>
-                )}
-
-                {mediaAssets.length > 0 && (
-                  <div className="mt-8 pt-6 border-t">
-                    <h4 className="text-sm font-bold mb-4 text-slate-700">
-                      Selecionar do Media Center (Arquivos Recentes)
-                    </h4>
-                    <div className="flex gap-3 overflow-x-auto pb-4 snap-x">
-                      {mediaAssets.map((asset) => (
-                        <div
-                          key={asset.id}
-                          onClick={() => handleMediaSelect(asset.file_path)}
-                          className="shrink-0 w-28 h-20 rounded-lg overflow-hidden border-2 border-transparent hover:border-blue-500 cursor-pointer relative snap-start shadow-sm"
-                        >
-                          <img src={asset.file_path} className="w-full h-full object-cover" />
-                          {(formData.fotos || []).includes(asset.file_path) && (
-                            <div className="absolute inset-0 bg-blue-500/30 flex items-center justify-center backdrop-blur-[1px]">
-                              <div className="bg-blue-500 text-white rounded-full p-1 shadow-sm">
-                                <Check className="w-4 h-4" />
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
                 )}
               </div>
             </TabsContent>
@@ -1233,6 +1222,50 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
             </Button>
           </div>
         </Tabs>
+
+        <Dialog open={isMediaCenterOpen} onOpenChange={setIsMediaCenterOpen}>
+          <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <ImageIcon className="w-5 h-5 text-blue-600" />
+                Media Center
+              </DialogTitle>
+            </DialogHeader>
+            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-4 p-2 mt-4">
+              {mediaAssets.map((asset) => (
+                <div
+                  key={asset.id}
+                  onClick={() => {
+                    handleMediaSelect(asset.file_path)
+                    toast({ title: 'Imagem importada do Media Center.' })
+                  }}
+                  className="relative aspect-square rounded-lg overflow-hidden border-2 border-transparent hover:border-blue-500 cursor-pointer shadow-sm group bg-slate-100"
+                >
+                  <img src={asset.file_path} className="w-full h-full object-cover" />
+                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white">
+                    <Plus className="w-6 h-6" />
+                  </div>
+                  {(formData.fotos || []).includes(asset.file_path) && (
+                    <div className="absolute inset-0 bg-blue-500/30 flex items-center justify-center backdrop-blur-[1px]">
+                      <div className="bg-blue-500 text-white rounded-full p-1 shadow-sm">
+                        <Check className="w-4 h-4" />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+              {mediaAssets.length === 0 && (
+                <div className="col-span-full py-12 text-center text-slate-500">
+                  <ImageIcon className="w-12 h-12 mx-auto text-slate-300 mb-2" />
+                  <p>Nenhuma imagem no Media Center.</p>
+                </div>
+              )}
+            </div>
+            <div className="flex justify-end pt-4 border-t">
+              <Button onClick={() => setIsMediaCenterOpen(false)}>Concluir Seleção</Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </DialogContent>
     </Dialog>
   )
