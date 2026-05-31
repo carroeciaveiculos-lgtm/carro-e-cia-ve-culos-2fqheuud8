@@ -34,21 +34,6 @@ if (typeof window !== 'undefined' && typeof CSSStyleSheet !== 'undefined') {
   }
 }
 
-const DomainRedirect = () => {
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const hostname = window.location.hostname
-      // Redireciona de www para sem www no domínio de produção (evita reload e tela branca no preview)
-      if (hostname === 'www.carroeciamotors.com.br') {
-        window.location.replace(
-          `https://carroeciamotors.com.br${window.location.pathname}${window.location.search}`,
-        )
-      }
-    }
-  }, [])
-  return null
-}
-
 // Helper to handle dynamically imported module failures due to stale cache/deployments
 const lazyWithRetry = (componentImport: () => Promise<any>) =>
   lazy(async () => {
@@ -290,7 +275,6 @@ const App = () => {
   return (
     <AuthProvider>
       <BrowserRouter>
-        {!isHub && <DomainRedirect />}
         <GlobalHooks />
         <TooltipProvider>
           <Toaster />

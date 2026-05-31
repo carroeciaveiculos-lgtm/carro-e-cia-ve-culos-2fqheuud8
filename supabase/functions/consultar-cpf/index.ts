@@ -138,39 +138,63 @@ Deno.serve(async (req) => {
       }
 
       // Extração robusta conforme Acceptance Criteria
-      const contentNome = data?.nome?.conteudo || {}
-      const nomeEncontrado = contentNome.nome || findNome(data)
+      const responseContent = data?.content || data?.conteudo || data
+      const contentNome =
+        responseContent?.nome?.conteudo ||
+        responseContent?.nome?.content ||
+        responseContent?.nome ||
+        responseContent
+      const nomeEncontrado = contentNome.nome || findNome(responseContent)
 
-      const telefonesContent = data?.pesquisa_telefones?.conteudo
-      const telefoneStr = Array.isArray(telefonesContent)
-        ? telefonesContent[0]
-        : typeof telefonesContent === 'string'
-          ? telefonesContent
+      const telefonesArray =
+        responseContent?.pesquisa_telefones?.conteudo ||
+        responseContent?.pesquisa_telefones?.content ||
+        responseContent?.telefones ||
+        []
+      const telefoneStr = Array.isArray(telefonesArray)
+        ? telefonesArray.join(', ')
+        : typeof telefonesArray === 'string'
+          ? telefonesArray
           : ''
 
-      const emailsContent = data?.emails?.conteudo
-      const emailStr = Array.isArray(emailsContent)
-        ? emailsContent[0]
-        : typeof emailsContent === 'string'
-          ? emailsContent
+      const emailsArray =
+        responseContent?.emails?.conteudo ||
+        responseContent?.emails?.content ||
+        responseContent?.emails ||
+        []
+      const emailStr = Array.isArray(emailsArray)
+        ? emailsArray.join(', ')
+        : typeof emailsArray === 'string'
+          ? emailsArray
           : ''
 
-      const outrosDocs = data?.outros_documentos || {}
+      const outrosDocs =
+        responseContent?.outros_documentos?.conteudo ||
+        responseContent?.outros_documentos?.content ||
+        responseContent?.outros_documentos ||
+        responseContent
 
       result = {
         cpf: cleanCpf,
         nome: nomeEncontrado || '',
         telefone: telefoneStr,
         email: emailStr,
-        rg: outrosDocs.rg || data?.rg || '',
+        rg: outrosDocs.rg || responseContent?.rg || '',
         data_nascimento:
-          contentNome.data_nascimento || data.dataNascimento || data.data_nascimento || '',
-        idade: contentNome.idade || '',
-        sexo: contentNome.sexo || data.sexo || data.genero || '',
-        nome_mae: contentNome.mae || data.mae || data.nome_mae || '',
+          contentNome.data_nascimento ||
+          responseContent.dataNascimento ||
+          responseContent.data_nascimento ||
+          '',
+        idade: contentNome.idade || responseContent.idade || '',
+        sexo: contentNome.sexo || responseContent.sexo || responseContent.genero || '',
+        nome_mae: contentNome.mae || responseContent.mae || responseContent.nome_mae || '',
         situacao_receita:
-          contentNome.situacao_receita || data.situacao || data.situacao_cadastral || 'REGULAR',
-        situacao_receita_data: contentNome.situacao_receita_data || '',
+          contentNome.situacao_receita ||
+          responseContent.situacao ||
+          responseContent.situacao_cadastral ||
+          'REGULAR',
+        situacao_receita_data:
+          contentNome.situacao_receita_data || responseContent.situacao_receita_data || '',
       }
     }
 

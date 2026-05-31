@@ -347,8 +347,7 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
         newUrls.push(url)
       }
 
-      setFormData((p: any) => ({ ...p, fotos: [...(p.fotos || []), ...newUrls] }))
-      toast({ title: 'Imagens otimizadas e salvas com sucesso!' })
+      toast({ title: 'Imagens otimizadas e adicionadas ao Media Center!' })
 
       supabase
         .from('media_assets')
@@ -849,38 +848,10 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
                     >
                       <Sparkles className="w-4 h-4 mr-2 text-purple-500" /> SEO Alt-Text
                     </Button>
-                    <div className="relative">
-                      <Button size="sm" className="bg-blue-600 hover:bg-blue-700">
-                        <UploadCloud className="w-4 h-4 mr-2" />
-                        Upload (Otimizado WebP)
-                      </Button>
-                      <input
-                        type="file"
-                        multiple
-                        accept="image/*"
-                        className="absolute inset-0 opacity-0 cursor-pointer"
-                        onChange={handleFileUpload}
-                        disabled={loading}
-                      />
-                    </div>
                   </div>
                 </div>
 
-                <div
-                  className="border-2 border-dashed border-slate-300 rounded-xl p-8 flex flex-col items-center justify-center text-center hover:bg-slate-50 transition-colors mb-6 bg-slate-50/50"
-                  onDragOver={handleDragOver}
-                  onDrop={handleDrop}
-                >
-                  <div className="w-16 h-16 bg-blue-50 text-blue-500 rounded-full flex items-center justify-center mb-4">
-                    <Camera className="w-8 h-8" />
-                  </div>
-                  <p className="font-medium text-slate-700 mb-1">
-                    Arraste e solte suas imagens aqui
-                  </p>
-                  <p className="text-sm text-slate-500">ou clique no botão de upload acima.</p>
-                </div>
-
-                {formData.fotos?.length > 0 && (
+                {formData.fotos?.length > 0 ? (
                   <>
                     <h4 className="font-bold text-slate-700 mb-4">Ordem de Exibição</h4>
                     <div className="flex flex-col gap-3">
@@ -888,11 +859,11 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
                         <div
                           key={f}
                           className={cn(
-                            'flex items-center gap-4 bg-white p-3 rounded-xl border shadow-sm transition-all',
+                            'flex flex-col sm:flex-row items-start sm:items-center gap-4 bg-white p-3 rounded-xl border shadow-sm transition-all',
                             i === 0 && 'ring-1 ring-blue-500 border-blue-200',
                           )}
                         >
-                          <div className="relative w-24 h-16 rounded-md overflow-hidden shrink-0 bg-slate-100">
+                          <div className="relative w-full sm:w-24 h-32 sm:h-16 rounded-md overflow-hidden shrink-0 bg-slate-100">
                             <img
                               src={f}
                               className="w-full h-full object-cover"
@@ -907,7 +878,7 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
                             )}
                           </div>
 
-                          <div className="flex-1 min-w-0">
+                          <div className="flex-1 min-w-0 w-full sm:w-auto">
                             <p
                               className="text-sm font-medium text-slate-700 truncate"
                               title={f.split('/').pop()}
@@ -917,19 +888,19 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
                             <p className="text-xs text-slate-400">Imagem {i + 1}</p>
                           </div>
 
-                          <div className="flex items-center gap-2 shrink-0">
+                          <div className="flex items-center gap-2 shrink-0 w-full sm:w-auto justify-end sm:justify-start mt-2 sm:mt-0">
                             {i !== 0 && (
                               <Button
                                 variant="outline"
                                 size="sm"
                                 onClick={() => setAsCover(f)}
-                                className="hidden sm:flex"
+                                className="flex-1 sm:flex-none"
                               >
                                 <Star className="w-4 h-4 mr-2" /> Tornar Capa
                               </Button>
                             )}
                             <div
-                              className="bg-slate-50 border text-slate-500 p-2 rounded-md cursor-move hover:bg-slate-100 transition-colors"
+                              className="bg-slate-50 border text-slate-500 p-2 rounded-md cursor-move hover:bg-slate-100 transition-colors flex items-center justify-center"
                               title="Reordenar (Arraste)"
                             >
                               <GripHorizontal className="w-4 h-4" />
@@ -952,6 +923,16 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
                       ))}
                     </div>
                   </>
+                ) : (
+                  <div className="border-2 border-dashed border-slate-300 rounded-xl p-8 flex flex-col items-center justify-center text-center bg-slate-50/50 mb-6">
+                    <div className="w-16 h-16 bg-blue-50 text-blue-500 rounded-full flex items-center justify-center mb-4">
+                      <Camera className="w-8 h-8" />
+                    </div>
+                    <p className="font-medium text-slate-700 mb-1">Nenhuma imagem selecionada</p>
+                    <p className="text-sm text-slate-500">
+                      Clique em "Selecionar do Media Center" para adicionar fotos.
+                    </p>
+                  </div>
                 )}
               </div>
             </TabsContent>
@@ -1225,11 +1206,25 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
 
         <Dialog open={isMediaCenterOpen} onOpenChange={setIsMediaCenterOpen}>
           <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
+            <DialogHeader className="flex flex-row items-center justify-between">
+              <DialogTitle className="flex items-center gap-2 mt-2">
                 <ImageIcon className="w-5 h-5 text-blue-600" />
                 Media Center
               </DialogTitle>
+              <div className="relative mr-6">
+                <Button size="sm" className="bg-blue-600 hover:bg-blue-700">
+                  <UploadCloud className="w-4 h-4 mr-2" />
+                  Upload de Imagens
+                </Button>
+                <input
+                  type="file"
+                  multiple
+                  accept="image/*"
+                  className="absolute inset-0 opacity-0 cursor-pointer"
+                  onChange={handleFileUpload}
+                  disabled={loading}
+                />
+              </div>
             </DialogHeader>
             <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-4 p-2 mt-4">
               {mediaAssets.map((asset) => (
