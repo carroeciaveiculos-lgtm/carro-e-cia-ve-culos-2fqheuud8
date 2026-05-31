@@ -184,9 +184,13 @@ export type Database = {
           data_agendamento: string | null
           destaque: boolean | null
           h1_artigo: string | null
+          ia_confidence: string | null
+          ia_generated: boolean | null
           id: string
+          image_prompt: string | null
           imagem_destaque_url: string | null
           indice_google: boolean | null
+          keyword: string | null
           meta_description: string | null
           meta_title: string | null
           og_description: string | null
@@ -196,6 +200,7 @@ export type Database = {
           palavras_chave_secundarias: Json | null
           permitir_comentarios: boolean | null
           proximo_artigo_sugerido: string | null
+          requires_review: boolean | null
           resumo: string | null
           robots_meta: string | null
           schema_markup: string | null
@@ -206,6 +211,7 @@ export type Database = {
           tempo_leitura: number | null
           titulo: string
           url_fonte_externa: string | null
+          url_path: string | null
         }
         Insert: {
           artigo_pillar?: boolean | null
@@ -221,9 +227,13 @@ export type Database = {
           data_agendamento?: string | null
           destaque?: boolean | null
           h1_artigo?: string | null
+          ia_confidence?: string | null
+          ia_generated?: boolean | null
           id?: string
+          image_prompt?: string | null
           imagem_destaque_url?: string | null
           indice_google?: boolean | null
+          keyword?: string | null
           meta_description?: string | null
           meta_title?: string | null
           og_description?: string | null
@@ -233,6 +243,7 @@ export type Database = {
           palavras_chave_secundarias?: Json | null
           permitir_comentarios?: boolean | null
           proximo_artigo_sugerido?: string | null
+          requires_review?: boolean | null
           resumo?: string | null
           robots_meta?: string | null
           schema_markup?: string | null
@@ -243,6 +254,7 @@ export type Database = {
           tempo_leitura?: number | null
           titulo: string
           url_fonte_externa?: string | null
+          url_path?: string | null
         }
         Update: {
           artigo_pillar?: boolean | null
@@ -258,9 +270,13 @@ export type Database = {
           data_agendamento?: string | null
           destaque?: boolean | null
           h1_artigo?: string | null
+          ia_confidence?: string | null
+          ia_generated?: boolean | null
           id?: string
+          image_prompt?: string | null
           imagem_destaque_url?: string | null
           indice_google?: boolean | null
+          keyword?: string | null
           meta_description?: string | null
           meta_title?: string | null
           og_description?: string | null
@@ -270,6 +286,7 @@ export type Database = {
           palavras_chave_secundarias?: Json | null
           permitir_comentarios?: boolean | null
           proximo_artigo_sugerido?: string | null
+          requires_review?: boolean | null
           resumo?: string | null
           robots_meta?: string | null
           schema_markup?: string | null
@@ -280,6 +297,7 @@ export type Database = {
           tempo_leitura?: number | null
           titulo?: string
           url_fonte_externa?: string | null
+          url_path?: string | null
         }
         Relationships: []
       }
@@ -430,45 +448,63 @@ export type Database = {
           category: string | null
           content: string
           created_at: string | null
+          ia_confidence: string | null
+          ia_generated: boolean | null
           id: string
+          image_prompt: string | null
           image_url: string | null
+          keyword: string | null
           meta_description: string | null
           published: boolean | null
           read_time: string | null
+          requires_review: boolean | null
           slug: string
           tags: string[] | null
           title: string
           updated_at: string | null
+          url_path: string | null
         }
         Insert: {
           author?: string | null
           category?: string | null
           content: string
           created_at?: string | null
+          ia_confidence?: string | null
+          ia_generated?: boolean | null
           id?: string
+          image_prompt?: string | null
           image_url?: string | null
+          keyword?: string | null
           meta_description?: string | null
           published?: boolean | null
           read_time?: string | null
+          requires_review?: boolean | null
           slug: string
           tags?: string[] | null
           title: string
           updated_at?: string | null
+          url_path?: string | null
         }
         Update: {
           author?: string | null
           category?: string | null
           content?: string
           created_at?: string | null
+          ia_confidence?: string | null
+          ia_generated?: boolean | null
           id?: string
+          image_prompt?: string | null
           image_url?: string | null
+          keyword?: string | null
           meta_description?: string | null
           published?: boolean | null
           read_time?: string | null
+          requires_review?: boolean | null
           slug?: string
           tags?: string[] | null
           title?: string
           updated_at?: string | null
+          url_path?: string | null
         }
         Relationships: []
       }
@@ -1320,6 +1356,48 @@ export type Database = {
           },
         ]
       }
+      logs_ia: {
+        Row: {
+          acao: string
+          alertas: Json | null
+          certeza_reportada: string | null
+          created_at: string
+          id: string
+          modelo: string
+          provider: string
+          status: string
+          tokens_input: number | null
+          tokens_output: number | null
+          usuario_id: string | null
+        }
+        Insert: {
+          acao: string
+          alertas?: Json | null
+          certeza_reportada?: string | null
+          created_at?: string
+          id?: string
+          modelo: string
+          provider: string
+          status: string
+          tokens_input?: number | null
+          tokens_output?: number | null
+          usuario_id?: string | null
+        }
+        Update: {
+          acao?: string
+          alertas?: Json | null
+          certeza_reportada?: string | null
+          created_at?: string
+          id?: string
+          modelo?: string
+          provider?: string
+          status?: string
+          tokens_input?: number | null
+          tokens_output?: number | null
+          usuario_id?: string | null
+        }
+        Relationships: []
+      }
       logs_integracao: {
         Row: {
           created_at: string | null
@@ -1494,9 +1572,13 @@ export type Database = {
           data_agendamento: string | null
           descricao_interna: string | null
           h1_pagina: string | null
+          ia_confidence: string | null
+          ia_generated: boolean | null
           id: string
+          image_prompt: string | null
           imagem_destaque_url: string | null
           indice_google: boolean | null
+          keyword: string | null
           meta_description: string | null
           meta_title: string | null
           og_description: string | null
@@ -1504,12 +1586,14 @@ export type Database = {
           og_title: string | null
           ordem_menu: number | null
           palavras_chave_principais: Json | null
+          requires_review: boolean | null
           robots_meta: string | null
           schema_markup: string | null
           slug: string
           status_publicacao: string | null
           template: string | null
           titulo: string
+          url_path: string | null
           visibilidade: string | null
         }
         Insert: {
@@ -1521,9 +1605,13 @@ export type Database = {
           data_agendamento?: string | null
           descricao_interna?: string | null
           h1_pagina?: string | null
+          ia_confidence?: string | null
+          ia_generated?: boolean | null
           id?: string
+          image_prompt?: string | null
           imagem_destaque_url?: string | null
           indice_google?: boolean | null
+          keyword?: string | null
           meta_description?: string | null
           meta_title?: string | null
           og_description?: string | null
@@ -1531,12 +1619,14 @@ export type Database = {
           og_title?: string | null
           ordem_menu?: number | null
           palavras_chave_principais?: Json | null
+          requires_review?: boolean | null
           robots_meta?: string | null
           schema_markup?: string | null
           slug: string
           status_publicacao?: string | null
           template?: string | null
           titulo: string
+          url_path?: string | null
           visibilidade?: string | null
         }
         Update: {
@@ -1548,9 +1638,13 @@ export type Database = {
           data_agendamento?: string | null
           descricao_interna?: string | null
           h1_pagina?: string | null
+          ia_confidence?: string | null
+          ia_generated?: boolean | null
           id?: string
+          image_prompt?: string | null
           imagem_destaque_url?: string | null
           indice_google?: boolean | null
+          keyword?: string | null
           meta_description?: string | null
           meta_title?: string | null
           og_description?: string | null
@@ -1558,12 +1652,14 @@ export type Database = {
           og_title?: string | null
           ordem_menu?: number | null
           palavras_chave_principais?: Json | null
+          requires_review?: boolean | null
           robots_meta?: string | null
           schema_markup?: string | null
           slug?: string
           status_publicacao?: string | null
           template?: string | null
           titulo?: string
+          url_path?: string | null
           visibilidade?: string | null
         }
         Relationships: []
@@ -2374,6 +2470,12 @@ export const Constants = {
 //   autor_id: uuid (nullable)
 //   criado_em: timestamp with time zone (nullable, default: now())
 //   atualizado_em: timestamp with time zone (nullable, default: now())
+//   keyword: text (nullable)
+//   url_path: text (nullable)
+//   image_prompt: text (nullable)
+//   ia_confidence: text (nullable)
+//   ia_generated: boolean (nullable, default: false)
+//   requires_review: boolean (nullable, default: true)
 // Table: assinatura_historico
 //   id: uuid (not null, default: gen_random_uuid())
 //   contrato_id: uuid (nullable)
@@ -2421,6 +2523,12 @@ export const Constants = {
 //   published: boolean (nullable, default: true)
 //   created_at: timestamp with time zone (nullable, default: now())
 //   updated_at: timestamp with time zone (nullable, default: now())
+//   keyword: text (nullable)
+//   url_path: text (nullable)
+//   image_prompt: text (nullable)
+//   ia_confidence: text (nullable)
+//   ia_generated: boolean (nullable, default: false)
+//   requires_review: boolean (nullable, default: true)
 // Table: chatbot_history
 //   id: uuid (not null, default: gen_random_uuid())
 //   usuario_id: uuid (nullable)
@@ -2627,6 +2735,18 @@ export const Constants = {
 //   utm_medium: text (nullable)
 //   utm_campaign: text (nullable)
 //   notas_internas: text (nullable)
+// Table: logs_ia
+//   id: uuid (not null, default: gen_random_uuid())
+//   usuario_id: uuid (nullable)
+//   acao: text (not null)
+//   provider: text (not null)
+//   modelo: text (not null)
+//   tokens_input: integer (nullable)
+//   tokens_output: integer (nullable)
+//   status: text (not null)
+//   alertas: jsonb (nullable)
+//   certeza_reportada: text (nullable)
+//   created_at: timestamp with time zone (not null, default: now())
 // Table: logs_integracao
 //   id: uuid (not null, default: gen_random_uuid())
 //   veiculo_id: uuid (nullable)
@@ -2697,6 +2817,12 @@ export const Constants = {
 //   autor_id: uuid (nullable)
 //   criado_em: timestamp with time zone (nullable, default: now())
 //   atualizado_em: timestamp with time zone (nullable, default: now())
+//   keyword: text (nullable)
+//   url_path: text (nullable)
+//   image_prompt: text (nullable)
+//   ia_confidence: text (nullable)
+//   ia_generated: boolean (nullable, default: false)
+//   requires_review: boolean (nullable, default: true)
 // Table: pages_versions
 //   id: uuid (not null, default: gen_random_uuid())
 //   page_id: uuid (not null)
@@ -2949,6 +3075,9 @@ export const Constants = {
 //   PRIMARY KEY leads_pkey: PRIMARY KEY (id)
 //   FOREIGN KEY leads_responsavel_id_fkey: FOREIGN KEY (responsavel_id) REFERENCES usuarios(id)
 //   FOREIGN KEY leads_veiculo_id_fkey: FOREIGN KEY (veiculo_id) REFERENCES veiculos(id)
+// Table: logs_ia
+//   PRIMARY KEY logs_ia_pkey: PRIMARY KEY (id)
+//   FOREIGN KEY logs_ia_usuario_id_fkey: FOREIGN KEY (usuario_id) REFERENCES auth.users(id) ON DELETE SET NULL
 // Table: logs_integracao
 //   PRIMARY KEY logs_integracao_pkey: PRIMARY KEY (id)
 // Table: media_assets
@@ -3079,6 +3208,10 @@ export const Constants = {
 //   Policy "allow_anon_insert_leads" (INSERT, PERMISSIVE) roles={public}
 //     WITH CHECK: true
 //   Policy "allow_auth_all_leads" (ALL, PERMISSIVE) roles={authenticated}
+//     USING: true
+//     WITH CHECK: true
+// Table: logs_ia
+//   Policy "allow_auth_all_logs_ia" (ALL, PERMISSIVE) roles={authenticated}
 //     USING: true
 //     WITH CHECK: true
 // Table: logs_integracao
