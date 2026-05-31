@@ -33,6 +33,7 @@ import {
 import { VehicleCard } from '@/components/VehicleCard'
 import { Skeleton } from '@/components/ui/skeleton'
 import { trackVehicleView, trackWhatsAppClick, trackSimulation } from '@/lib/tracking'
+import { SEO } from '@/components/SEO'
 
 export default function Veiculo() {
   const { id } = useParams()
@@ -123,8 +124,32 @@ export default function Veiculo() {
     trackWhatsAppClick('Luiz', 'simulacao_financiamento')
   }
 
+  const schema = {
+    '@context': 'https://schema.org',
+    '@type': 'Product',
+    name: `${vehicle.marca} ${vehicle.modelo} ${vehicle.versao}`,
+    image: photos.length > 0 ? photos[0] : undefined,
+    description: vehicle.descricao || `Compre ${vehicle.marca} ${vehicle.modelo} na Carro e Cia.`,
+    offers: {
+      '@type': 'Offer',
+      priceCurrency: 'BRL',
+      price: vehicle.preco_venda || 0,
+      availability: 'https://schema.org/InStock',
+      seller: {
+        '@type': 'Organization',
+        name: 'Carro e Cia Veículos',
+      },
+    },
+  }
+
   return (
     <div className="bg-background min-h-screen pb-20">
+      <SEO
+        title={`${vehicle.marca} ${vehicle.modelo} ${vehicle.ano_fabricacao} | Carro e Cia`}
+        description={`Confira este ${vehicle.marca} ${vehicle.modelo} ${vehicle.ano_fabricacao} por ${formatCurrency(vehicle.preco_venda || 0)}. Veículo revisado e com garantia.`}
+        image={photos.length > 0 ? photos[0] : undefined}
+        schema={schema}
+      />
       <div className="container py-6">
         <Link
           to="/estoque"

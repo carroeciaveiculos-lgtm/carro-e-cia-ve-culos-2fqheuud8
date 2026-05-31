@@ -5,4 +5,4 @@ Disallow: /em-construcao
 Disallow: /obrigado
 Disallow: /api/
 
-Sitemap: https://carroeciamotors.com.br/sitemap.xml
+Sitemap: https://www.carroeciamotors.com.br/sitemap.xml

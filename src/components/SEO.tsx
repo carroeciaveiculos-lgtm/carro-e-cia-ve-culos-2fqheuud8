@@ -145,6 +145,17 @@ export function SEO({
         : 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1',
     )
 
+    // Adiciona link para sitemap
+    let linkSitemap = document.querySelector('link[rel="sitemap"]')
+    if (!linkSitemap) {
+      linkSitemap = document.createElement('link')
+      linkSitemap.setAttribute('rel', 'sitemap')
+      linkSitemap.setAttribute('type', 'application/xml')
+      linkSitemap.setAttribute('title', 'Sitemap')
+      linkSitemap.setAttribute('href', 'https://www.carroeciamotors.com.br/sitemap.xml')
+      document.head.appendChild(linkSitemap)
+    }
+
     // Cleanup para remover o schema e limpar ao trocar de página
     return () => {
       if (script && document.head.contains(script)) {
