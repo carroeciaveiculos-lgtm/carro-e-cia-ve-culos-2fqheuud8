@@ -9,16 +9,16 @@ export function Partners() {
       src: 'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/parceiros/BV.webp',
     },
     {
-      name: 'Safra',
-      src: 'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/parceiros/Safra.webp',
+      name: 'Km Zero',
+      src: 'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/parceiros/Logo-km-zero-fundo-transparente.webp',
     },
     {
       name: 'Santander',
       src: 'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/parceiros/santander.webp',
     },
     {
-      name: 'Km Zero',
-      src: 'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/parceiros/Logo-km-zero-fundo-transparente.webp',
+      name: 'Safra',
+      src: 'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/parceiros/Safra.webp',
     },
   ]
 
@@ -26,7 +26,7 @@ export function Partners() {
     <section className="py-16 bg-background border-t border-b">
       <div className="container">
         <h2 className="text-3xl font-bold text-center mb-10">Nossos Parceiros Financeiros</h2>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-8 items-center justify-items-center opacity-70">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-8 items-center justify-items-center opacity-70">
           {partners.map((p, i) => (
             <picture key={i}>
               <source srcSet={p.src} type="image/webp" />

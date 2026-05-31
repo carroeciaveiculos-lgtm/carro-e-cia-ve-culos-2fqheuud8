@@ -341,11 +341,11 @@ export default function SeguroAuto() {
               >
                 <picture>
                   <source
-                    srcSet={`https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Parceiros/${s.file.replace(/ /g, '%20')}`}
+                    srcSet={`https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Seguradoras/${s.file.replace(/ /g, '%20')}`}
                     type="image/webp"
                   />
                   <img
-                    src={`https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Parceiros/${s.file.replace(/ /g, '%20')}`}
+                    src={`https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Seguradoras/${s.file.replace(/ /g, '%20')}`}
                     alt={`Logo ${s.name} — parceira Km Zero Corretora Uberaba MG`}
                     title={`${s.name} — Seguro Auto em Uberaba`}
                     className="max-h-10 object-contain"

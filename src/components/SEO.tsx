@@ -16,7 +16,7 @@ export function SEO({
   description,
   schema,
   canonical,
-  image = 'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/logos/logo-carro-e-cia1.webp',
+  image = 'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/logos/logo-carro-e-cia.webp',
   type = 'website',
   noindex = false,
   keywords,
@@ -40,7 +40,7 @@ export function SEO({
       '@type': 'Organization',
       name: 'Carro e Cia Veículos',
       url: 'https://carroeciamotors.com.br',
-      logo: 'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/logos/logo-carro-e-cia1.webp',
+      logo: 'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/logos/logo-carro-e-cia.webp',
       telephone: '+5534999484285',
       address: {
         '@type': 'PostalAddress',
@@ -152,7 +152,7 @@ export function SEO({
       linkSitemap.setAttribute('rel', 'sitemap')
       linkSitemap.setAttribute('type', 'application/xml')
       linkSitemap.setAttribute('title', 'Sitemap')
-      linkSitemap.setAttribute('href', 'https://www.carroeciamotors.com.br/sitemap.xml')
+      linkSitemap.setAttribute('href', '/sitemap.xml')
       document.head.appendChild(linkSitemap)
     }
 

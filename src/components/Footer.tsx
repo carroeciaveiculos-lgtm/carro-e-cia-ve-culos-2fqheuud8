@@ -11,16 +11,16 @@ export function Footer() {
               <picture className="inline-block mb-2">
                 <source
                   media="(max-width: 480px)"
-                  srcSet="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/logos/logo-carro-e-cia1.webp"
+                  srcSet="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/logos/logo-carro-e-cia.webp"
                   type="image/webp"
                 />
                 <source
                   media="(min-width: 481px)"
-                  srcSet="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/logos/logo-carro-e-cia1.webp"
+                  srcSet="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/logos/logo-carro-e-cia.webp"
                   type="image/webp"
                 />
                 <img
-                  src="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/logos/logo-carro-e-cia1.webp"
+                  src="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/logos/logo-carro-e-cia.webp"
                   alt="Carro e Cia"
                   loading="lazy"
                   width="150"
@@ -130,8 +130,8 @@ export function Footer() {
               </li>
               <li>
                 <img
-                  src="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/parceiros/Safra.webp"
-                  alt="Safra"
+                  src="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/parceiros/Logo-km-zero-fundo-transparente.webp"
+                  alt="Km Zero"
                   className="h-6 filter grayscale invert opacity-70 hover:opacity-100 transition-opacity"
                   loading="lazy"
                 />
@@ -140,6 +140,14 @@ export function Footer() {
                 <img
                   src="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/parceiros/santander.webp"
                   alt="Santander"
+                  className="h-6 filter grayscale invert opacity-70 hover:opacity-100 transition-opacity"
+                  loading="lazy"
+                />
+              </li>
+              <li>
+                <img
+                  src="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/parceiros/Safra.webp"
+                  alt="Safra"
                   className="h-6 filter grayscale invert opacity-70 hover:opacity-100 transition-opacity"
                   loading="lazy"
                 />

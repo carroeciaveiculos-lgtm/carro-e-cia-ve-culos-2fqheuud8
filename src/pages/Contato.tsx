@@ -98,9 +98,7 @@ export default function Contato() {
               <span className="flex items-center font-bold text-xl">
                 <MessageCircle className="mr-2 w-6 h-6" /> WhatsApp Luiz
               </span>
-              <span className="text-sm font-normal opacity-90">
-                Resposta rápida (máximo 2 horas)
-              </span>
+              <span className="text-sm font-normal opacity-90">Fale com a nossa equipe)</span>
             </a>
           </Button>
           <Button
@@ -160,7 +158,7 @@ export default function Contato() {
                   <Mail className="w-4 h-4" /> luiz@carroeciamotors.com.br
                 </li>
                 <li className="flex items-center gap-2">
-                  <Clock className="w-4 h-4" /> Seg-Sab, 9h-18h
+                  <Clock className="w-4 h-4" /> Seg-Sex, 9h-18h / Sab 8h - 12h
                 </li>
               </ul>
             </Card>
@@ -176,7 +174,7 @@ export default function Contato() {
                   </a>
                 </li>
                 <li className="flex items-center gap-2">
-                  <Mail className="w-4 h-4" /> gabriel@kmzero.com.br
+                  <Mail className="w-4 h-4" /> gabrielaraujo@kmzero.com.br
                 </li>
                 <li className="flex items-center gap-2">
                   <Clock className="w-4 h-4" /> Seg-Sex, 9h-18h
