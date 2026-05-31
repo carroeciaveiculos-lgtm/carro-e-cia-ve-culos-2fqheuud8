@@ -145,7 +145,7 @@ export default function Contato() {
             <h2 className="text-2xl font-display font-bold mb-6">Informações de Contato</h2>
 
             <Card className="p-6 border-border/50 shadow-sm">
-              <h3 className="font-bold text-lg text-primary mb-1">Luiz Fernando</h3>
+              <h3 className="font-bold text-lg text-primary mb-1">Luiz Fernando e Roberto Jr.</h3>
               <p className="text-sm text-muted-foreground mb-4">Consignação e Vendas</p>
               <ul className="space-y-3 text-sm">
                 <li className="flex items-center gap-2">
