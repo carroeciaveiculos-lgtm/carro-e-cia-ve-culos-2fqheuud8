@@ -7,7 +7,6 @@ export function useGerarConteudo() {
   const { toast } = useToast()
 
   const gerarConteudo = async (tema: string, palavraChave: string, tom: string) => {
-    setIsGenerating(true)
     try {
       const {
         data: { session },
@@ -25,13 +24,10 @@ export function useGerarConteudo() {
     } catch (err: any) {
       toast({ title: 'Erro ao gerar conteúdo', description: err.message, variant: 'destructive' })
       return null
-    } finally {
-      setIsGenerating(false)
     }
   }
 
   const gerarImagem = async (prompt: string) => {
-    setIsGenerating(true)
     try {
       const {
         data: { session },
@@ -49,10 +45,8 @@ export function useGerarConteudo() {
     } catch (err: any) {
       toast({ title: 'Erro ao gerar imagem', description: err.message, variant: 'destructive' })
       return null
-    } finally {
-      setIsGenerating(false)
     }
   }
 
-  return { gerarConteudo, gerarImagem, isGenerating }
+  return { gerarConteudo, gerarImagem, isGenerating, setIsGenerating }
 }

@@ -44,15 +44,20 @@ Deno.serve(async (req) => {
         prompt: `Uma foto profissional para blog de loja de carros sobre: ${prompt}. Estilo realista, editorial, sem texto na imagem.`,
         n: 1,
         size: '1024x1024',
-        response_format: 'b64_json',
       }),
     })
 
     const data = await res.json()
     if (!res.ok) throw new Error(data.error?.message || 'OpenAI error')
 
-    const b64Json = data.data[0].b64_json
-    const bytes = Uint8Array.from(atob(b64Json), (c) => c.charCodeAt(0))
+    const imageUrl = data.data[0].url
+    if (!imageUrl) throw new Error('Nenhuma URL de imagem foi retornada pelo provedor')
+
+    const imageRes = await fetch(imageUrl)
+    if (!imageRes.ok) throw new Error('Falha ao baixar a imagem gerada')
+
+    const arrayBuffer = await imageRes.arrayBuffer()
+    const bytes = new Uint8Array(arrayBuffer)
 
     const supabaseService = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',

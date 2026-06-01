@@ -40,19 +40,24 @@ export function GeradorIAModal({ open, onOpenChange, onSuccess }: GeradorIAModal
   const [tom, setTom] = useState('Conversacional')
   const [gerarCapa, setGerarCapa] = useState(false)
 
-  const { gerarConteudo, gerarImagem, isGenerating } = useGerarConteudo()
+  const { gerarConteudo, gerarImagem, isGenerating, setIsGenerating } = useGerarConteudo()
 
   const handleGenerate = async () => {
     if (!tema || !palavraChave) return
+    setIsGenerating(true)
 
     const content = await gerarConteudo(tema, palavraChave, tom)
-    if (!content) return
+    if (!content) {
+      setIsGenerating(false)
+      return
+    }
 
     let image_url
     if (gerarCapa) {
       image_url = await gerarImagem(tema)
     }
 
+    setIsGenerating(false)
     onSuccess({
       titulo: content.titulo,
       slug: content.slug,
