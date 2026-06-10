@@ -39,8 +39,18 @@ export function AssinaturaDialog({
   const [signingLink, setSigningLink] = useState<string | null>(null)
   const { toast } = useToast()
 
+  const [emailInput, setEmailInput] = useState(emailCliente)
+  const [telefoneInput, setTelefoneInput] = useState(proprietarioTelefone || '')
+
+  React.useEffect(() => {
+    if (isOpen) {
+      setEmailInput(emailCliente || '')
+      setTelefoneInput(proprietarioTelefone || '')
+    }
+  }, [isOpen, emailCliente, proprietarioTelefone])
+
   const handleSendToAutentique = async (mode: 'link' | 'email') => {
-    if (!contratoId || !emailCliente || !nomeCliente) {
+    if (!contratoId || !emailInput || !nomeCliente) {
       toast({
         title: 'Dados Incompletos',
         description: 'Faltam dados do cliente (Nome/E-mail) para enviar o contrato.',
@@ -75,9 +85,9 @@ export function AssinaturaDialog({
       const { data, error } = await supabase.functions.invoke('enviar-para-assinatura', {
         body: {
           contrato_id: contratoId,
-          email_cliente: emailCliente,
+          email_cliente: emailInput,
           nome_cliente: nomeCliente,
-          proprietario_telefone: proprietarioTelefone,
+          proprietario_telefone: telefoneInput,
           proprietario_cpf: proprietarioCpf,
           numero_contrato: numeroContrato,
           pdf_url: finalPdfUrl,
@@ -182,7 +192,27 @@ export function AssinaturaDialog({
 
         <div className="flex flex-col space-y-5 py-2">
           <div className="flex flex-col space-y-3">
-            <h4 className="text-sm font-semibold text-slate-700">1. Assinatura Digital</h4>
+            <h4 className="text-sm font-semibold text-slate-700">1. Dados do Destinatário</h4>
+            <div className="grid grid-cols-1 gap-3">
+              <div>
+                <label className="text-xs text-slate-500 mb-1 block">E-mail do Cliente</label>
+                <Input
+                  value={emailInput}
+                  onChange={(e) => setEmailInput(e.target.value)}
+                  placeholder="email@exemplo.com"
+                />
+              </div>
+              <div>
+                <label className="text-xs text-slate-500 mb-1 block">Telefone / WhatsApp</label>
+                <Input
+                  value={telefoneInput}
+                  onChange={(e) => setTelefoneInput(e.target.value)}
+                  placeholder="(11) 99999-9999"
+                />
+              </div>
+            </div>
+
+            <h4 className="text-sm font-semibold text-slate-700 mt-2">2. Assinatura Digital</h4>
             <div className="flex gap-2">
               <Button
                 variant="outline"
@@ -230,7 +260,7 @@ export function AssinaturaDialog({
           <div className="border-t border-slate-100"></div>
 
           <div className="flex flex-col space-y-2">
-            <h4 className="text-sm font-semibold text-slate-700">2. Assinatura Física</h4>
+            <h4 className="text-sm font-semibold text-slate-700">3. Assinatura Física</h4>
             <p className="text-xs text-slate-500 mb-2">
               Baixe o contrato em PDF para imprimir e assinar presencialmente com as partes.
             </p>

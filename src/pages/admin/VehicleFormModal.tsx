@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { AssinaturaDialog } from '@/components/consignacao/AssinaturaDialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -95,8 +96,13 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
   const [leadsCount, setLeadsCount] = useState(0)
   const [despesas, setDespesas] = useState<any[]>([])
   const [mediaAssets, setMediaAssets] = useState<any[]>([])
+  const [documentos, setDocumentos] = useState<any[]>([])
+  const [contrato, setContrato] = useState<any>(null)
   const [cpfInfo, setCpfInfo] = useState<any>(null)
   const [isMediaCenterOpen, setIsMediaCenterOpen] = useState(false)
+  const [newCaracteristica, setNewCaracteristica] = useState('')
+  const [newOpcional, setNewOpcional] = useState('')
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const [formData, setFormData] = useState<any>({
     categoria: 'Carro',
@@ -160,6 +166,19 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
           .select('*')
           .eq('veiculo_id', vehicleId)
           .then(({ data }) => setDespesas(data || []))
+        supabase
+          .from('documentos')
+          .select('*')
+          .eq('veiculo_id', vehicleId)
+          .then(({ data }) => setDocumentos(data || []))
+        supabase
+          .from('contratos_consignacao')
+          .select('*')
+          .eq('veiculo_id', vehicleId)
+          .single()
+          .then(({ data }) => {
+            if (data) setContrato(data)
+          })
       } else {
         setFormData({
           categoria: 'Carro',
@@ -172,6 +191,8 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
         })
         setLeadsCount(0)
         setDespesas([])
+        setDocumentos([])
+        setContrato(null)
       }
       supabase
         .from('media_assets')
@@ -213,12 +234,38 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
   const save = async (status = 'disponivel') => {
     setLoading(true)
     try {
+      const sanitizeNumber = (val: any) => {
+        if (val === '' || val === null || val === undefined) return null
+        if (typeof val === 'string') {
+          let clean = val.toString()
+          if (clean.includes(',')) {
+            clean = clean.replace(/\./g, '').replace(',', '.')
+          }
+          const num = parseFloat(clean.replace(/[^\d.-]/g, ''))
+          return isNaN(num) ? null : num
+        }
+        const num = Number(val)
+        return isNaN(num) ? null : num
+      }
+
       const payload = {
         ...formData,
+        ano_fabricacao: sanitizeNumber(formData.ano_fabricacao),
+        ano_modelo: sanitizeNumber(formData.ano_modelo),
+        quilometragem: sanitizeNumber(formData.quilometragem),
+        valor_fipe: sanitizeNumber(formData.valor_fipe),
+        preco_venda: sanitizeNumber(formData.preco_venda),
+        preco_minimo: sanitizeNumber(formData.preco_minimo),
+        preco_classificados: sanitizeNumber(formData.preco_classificados),
         is_consignado: formData.tipo_entrada === 'consignacao',
         status,
+        updated_at: new Date().toISOString(),
       }
       delete payload.tipo_entrada
+      if (!payload.id) {
+        delete payload.id
+      }
+
       const { error } = payload.id
         ? await supabase.from('veiculos').update(payload).eq('id', payload.id)
         : await supabase.from('veiculos').insert([payload])
@@ -230,6 +277,51 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
       toast({ title: 'Erro ao salvar', description: err.message, variant: 'destructive' })
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleDocumentFile = async (e: any) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (!vehicleId) {
+      toast({ title: 'Salve o veículo primeiro', variant: 'destructive' })
+      return
+    }
+    setLoading(true)
+    try {
+      const ext = file.name.split('.').pop()
+      const fileName = `${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.]/g, '')}`
+      const filePath = `${vehicleId}/${fileName}`
+      const { error: uploadError } = await supabase.storage
+        .from('documentos-veiculos')
+        .upload(filePath, file)
+      if (uploadError) throw uploadError
+
+      const { data: publicUrlData } = supabase.storage
+        .from('documentos-veiculos')
+        .getPublicUrl(filePath)
+
+      const { data, error } = await supabase
+        .from('documentos')
+        .insert([
+          {
+            veiculo_id: vehicleId,
+            nome_documento: file.name,
+            tipo: file.type,
+            tamanho: file.size,
+            url_documento: publicUrlData.publicUrl,
+          },
+        ])
+        .select()
+      if (error) throw error
+
+      setDocumentos((p) => [...p, data[0]])
+      toast({ title: 'Documento anexado.' })
+    } catch (err: any) {
+      toast({ title: 'Erro ao enviar', description: err.message, variant: 'destructive' })
+    } finally {
+      setLoading(false)
+      if (fileInputRef.current) fileInputRef.current.value = ''
     }
   }
 
@@ -403,6 +495,11 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
     Array.isArray(formData.info_personalizadas.historico_fipe)
       ? [...formData.info_personalizadas.historico_fipe].reverse()
       : []
+
+  const allCaracteristicas = Array.from(
+    new Set([...CARACTERISTICAS_LIST, ...(formData.caracteristicas || [])]),
+  )
+  const allOpcionais = Array.from(new Set([...OPCIONAIS_LIST, ...(formData.diferenciais || [])]))
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -786,7 +883,7 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
                   ) : null}
                 </h3>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  {CARACTERISTICAS_LIST.map((c) => (
+                  {allCaracteristicas.map((c: string) => (
                     <label key={c} className="flex items-center gap-2 text-sm">
                       <Checkbox
                         checked={(formData.caracteristicas || []).includes(c)}
@@ -808,11 +905,32 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
                     </label>
                   )}
                 </div>
+                <div className="flex gap-2 mt-4 items-center">
+                  <Input
+                    placeholder="Nova Característica..."
+                    value={newCaracteristica}
+                    onChange={(e) => setNewCaracteristica(e.target.value)}
+                    className="max-w-xs h-8 text-sm"
+                  />
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    type="button"
+                    onClick={() => {
+                      if (newCaracteristica.trim()) {
+                        toggleArray('caracteristicas', newCaracteristica.trim())
+                        setNewCaracteristica('')
+                      }
+                    }}
+                  >
+                    <Plus className="w-4 h-4 mr-1" /> Adicionar
+                  </Button>
+                </div>
               </div>
               <div className="bg-white p-6 rounded-lg border">
                 <h3 className="font-bold border-b pb-2 mb-4">Opcionais</h3>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  {OPCIONAIS_LIST.map((o) => (
+                  {allOpcionais.map((o: string) => (
                     <label key={o} className="flex items-center gap-2 text-sm">
                       <Checkbox
                         checked={(formData.diferenciais || []).includes(o)}
@@ -821,6 +939,27 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
                       {o}
                     </label>
                   ))}
+                </div>
+                <div className="flex gap-2 mt-4 items-center">
+                  <Input
+                    placeholder="Novo Opcional..."
+                    value={newOpcional}
+                    onChange={(e) => setNewOpcional(e.target.value)}
+                    className="max-w-xs h-8 text-sm"
+                  />
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    type="button"
+                    onClick={() => {
+                      if (newOpcional.trim()) {
+                        toggleArray('diferenciais', newOpcional.trim())
+                        setNewOpcional('')
+                      }
+                    }}
+                  >
+                    <Plus className="w-4 h-4 mr-1" /> Adicionar
+                  </Button>
                 </div>
               </div>
             </TabsContent>
@@ -1088,39 +1227,83 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
               <div className="bg-white p-6 rounded-lg border">
                 <h3 className="font-bold border-b pb-2 mb-4 flex items-center justify-between">
                   Anexos e Documentos
-                  <Button size="sm" variant="outline">
-                    <Plus className="w-4 h-4 mr-2" /> Novo Documento
-                  </Button>
+                  <div>
+                    <input
+                      type="file"
+                      className="hidden"
+                      ref={fileInputRef}
+                      onChange={handleDocumentFile}
+                    />
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        if (!vehicleId)
+                          return toast({
+                            title: 'Salve o veículo antes de adicionar documentos',
+                            variant: 'destructive',
+                          })
+                        fileInputRef.current?.click()
+                      }}
+                    >
+                      <Plus className="w-4 h-4 mr-2" /> Novo Documento
+                    </Button>
+                  </div>
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="border p-4 rounded flex items-center justify-between bg-slate-50">
-                    <div className="flex items-center gap-3">
-                      <FileCheck className="w-6 h-6 text-blue-600" />
-                      <div>
-                        <p className="font-semibold text-sm">CRLV 2024</p>
-                        <p className="text-xs text-slate-500">
-                          Adicionado em {new Date().toLocaleDateString('pt-BR')}
-                        </p>
-                      </div>
+                  {documentos.length === 0 ? (
+                    <div className="col-span-full py-8 text-center text-slate-500 bg-slate-50 rounded-lg">
+                      Nenhum documento anexado.
                     </div>
-                    <Button variant="ghost" size="icon" className="text-red-500">
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </div>
-                  <div className="border p-4 rounded flex items-center justify-between bg-slate-50">
-                    <div className="flex items-center gap-3">
-                      <FileCheck className="w-6 h-6 text-blue-600" />
-                      <div>
-                        <p className="font-semibold text-sm">CNH do Proprietário</p>
-                        <p className="text-xs text-slate-500">
-                          Adicionado em {new Date().toLocaleDateString('pt-BR')}
-                        </p>
+                  ) : (
+                    documentos.map((doc) => (
+                      <div
+                        key={doc.id}
+                        className="border p-4 rounded flex items-center justify-between bg-slate-50"
+                      >
+                        <div
+                          className="flex items-center gap-3 cursor-pointer"
+                          onClick={() => window.open(doc.url_documento, '_blank')}
+                        >
+                          <FileCheck className="w-6 h-6 text-blue-600 shrink-0" />
+                          <div className="overflow-hidden">
+                            <p
+                              className="font-semibold text-sm hover:underline truncate"
+                              title={doc.nome_documento}
+                            >
+                              {doc.nome_documento}
+                            </p>
+                            <p className="text-xs text-slate-500">
+                              {new Date(doc.created_at).toLocaleDateString('pt-BR')}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex gap-1 shrink-0">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => window.open(doc.url_documento, '_blank')}
+                            title="Preview"
+                          >
+                            <ExternalLink className="w-4 h-4 text-blue-500" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="text-red-500"
+                            onClick={async () => {
+                              if (confirm('Remover este documento?')) {
+                                await supabase.from('documentos').delete().eq('id', doc.id)
+                                setDocumentos((p) => p.filter((d) => d.id !== doc.id))
+                              }
+                            }}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
                       </div>
-                    </div>
-                    <Button variant="ghost" size="icon" className="text-red-500">
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </div>
+                    ))
+                  )}
                 </div>
               </div>
 
@@ -1131,58 +1314,131 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
                     Gere e envie o contrato de consignação automaticamente para o cliente assinar
                     via Autentique.
                   </p>
-                  <div className="flex flex-wrap gap-4">
-                    <Button
-                      onClick={async () => {
-                        toast({ title: 'Gerando PDF...', description: 'Aguarde um instante.' })
-                        const res = await supabase.functions.invoke('gerar-pdf-contrato', {
-                          body: {
-                            proprietario: {
-                              nome: formData.proprietario_nome,
-                              cpf: formData.proprietario_cpf,
-                              email: formData.proprietario_email,
-                            },
-                            veiculo: {
-                              marca: formData.marca,
-                              modelo: formData.modelo,
-                              placa: formData.placa,
-                            },
-                            loja: { razaoSocial: 'Carro e Cia Veículos' },
-                            condicoesComerciais: { precoVendaSugerido: formData.preco_venda },
-                          },
-                        })
-                        if (res.data) {
-                          toast({ title: 'Contrato gerado com sucesso!' })
-                        } else {
-                          toast({ title: 'Erro ao gerar', variant: 'destructive' })
-                        }
-                      }}
-                    >
-                      Gerar Minuta (PDF)
-                    </Button>
-                    <Button
-                      variant="secondary"
-                      className="bg-green-600 hover:bg-green-700 text-white"
-                      onClick={async () => {
-                        toast({ title: 'Enviando para Autentique...' })
-                        const res = await supabase.functions.invoke('enviar-para-assinatura', {
-                          body: {
-                            contrato_id: vehicleId,
-                            email_cliente: formData.proprietario_email,
-                            nome_cliente: formData.proprietario_nome,
-                            pdf_url: 'https://exemplo.com/contrato.pdf',
-                          },
-                        })
-                        if (res.data) {
-                          toast({ title: 'Enviado para assinatura!' })
-                        } else {
-                          toast({ title: 'Erro ao enviar', variant: 'destructive' })
-                        }
-                      }}
-                    >
-                      Enviar para Assinatura (Autentique)
-                    </Button>
-                  </div>
+
+                  {!contrato ? (
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 bg-slate-50 p-4 rounded-lg border">
+                      <p className="text-sm text-slate-500 flex-1">Nenhum contrato gerado ainda.</p>
+                      <Button
+                        onClick={async () => {
+                          if (!vehicleId)
+                            return toast({
+                              title: 'Salve o veículo primeiro',
+                              variant: 'destructive',
+                            })
+                          toast({ title: 'Gerando Minuta...', description: 'Aguarde um instante.' })
+                          try {
+                            const res = await supabase.functions.invoke('gerar-pdf-contrato', {
+                              body: {
+                                contrato_id: vehicleId,
+                                proprietario: {
+                                  nome: formData.proprietario_nome,
+                                  cpf: formData.proprietario_cpf,
+                                  email: formData.proprietario_email,
+                                },
+                                veiculo: {
+                                  marca: formData.marca,
+                                  modelo: formData.modelo,
+                                  placa: formData.placa,
+                                },
+                                loja: { razaoSocial: 'Carro e Cia Veículos' },
+                                condicoesComerciais: { precoVendaSugerido: formData.preco_venda },
+                              },
+                            })
+                            if (res.data?.success && res.data?.pdf_url) {
+                              const { data: novoContrato, error } = await supabase
+                                .from('contratos_consignacao')
+                                .insert({
+                                  veiculo_id: vehicleId,
+                                  pdf_url: res.data.pdf_url,
+                                  proprietario_nome: formData.proprietario_nome,
+                                  proprietario_email: formData.proprietario_email,
+                                  proprietario_cpf: formData.proprietario_cpf,
+                                  proprietario_telefone: formData.proprietario_telefone,
+                                  numero_contrato: `CNS-${vehicleId.split('-')[0].toUpperCase()}`,
+                                })
+                                .select('*')
+                                .single()
+                              if (error) throw error
+                              setContrato(novoContrato)
+                              toast({ title: 'Minuta gerada com sucesso!' })
+                            } else {
+                              throw new Error(res.data?.error || 'Erro desconhecido na geração')
+                            }
+                          } catch (err: any) {
+                            toast({
+                              title: 'Erro ao gerar',
+                              description: err.message,
+                              variant: 'destructive',
+                            })
+                          }
+                        }}
+                      >
+                        Gerar Minuta de Contrato
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col sm:flex-row gap-4 items-center bg-blue-50/50 p-4 rounded-lg border border-blue-100">
+                      <div className="flex-1 space-y-1 w-full">
+                        <p className="text-sm font-semibold text-slate-800">
+                          Contrato Gerado{' '}
+                          <span className="text-xs text-slate-500 font-normal">
+                            ({contrato.numero_contrato || 'S/N'})
+                          </span>
+                        </p>
+                        <p className="text-xs text-slate-500">
+                          Status da Assinatura:{' '}
+                          <span className="font-bold text-blue-600 uppercase">
+                            {contrato.assinatura_status || 'NÃO ENVIADO'}
+                          </span>
+                        </p>
+                      </div>
+                      <div className="flex gap-2 w-full sm:w-auto flex-wrap sm:flex-nowrap">
+                        {contrato.pdf_url && (
+                          <Button
+                            variant="outline"
+                            className="flex-1 sm:flex-none bg-white"
+                            onClick={() => window.open(contrato.pdf_url, '_blank')}
+                          >
+                            <ExternalLink className="w-4 h-4 mr-2" /> Visualizar Minuta
+                          </Button>
+                        )}
+                        <AssinaturaDialog
+                          contratoId={contrato.id}
+                          emailCliente={contrato.proprietario_email}
+                          nomeCliente={contrato.proprietario_nome}
+                          proprietarioTelefone={contrato.proprietario_telefone}
+                          proprietarioCpf={contrato.proprietario_cpf}
+                          numeroContrato={contrato.numero_contrato}
+                          pdfUrl={contrato.pdf_url}
+                        />
+                      </div>
+                    </div>
+                  )}
+                  {contrato?.assinatura_link && (
+                    <div className="mt-4 flex flex-col gap-2 bg-green-50 p-3 rounded-md border border-green-200">
+                      <p className="text-xs font-semibold text-green-800">
+                        Link de Assinatura Manual (Copie e envie no WhatsApp)
+                      </p>
+                      <div className="flex gap-2 items-center">
+                        <Input
+                          value={contrato.assinatura_link}
+                          readOnly
+                          className="h-8 text-xs bg-white flex-1"
+                        />
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          className="h-8 shrink-0 bg-white hover:bg-slate-100"
+                          onClick={() => {
+                            navigator.clipboard.writeText(contrato.assinatura_link)
+                            toast({ title: 'Link copiado!' })
+                          }}
+                        >
+                          Copiar Link
+                        </Button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </TabsContent>
