@@ -540,14 +540,21 @@ export type Database = {
       }
       clientes: {
         Row: {
+          bairro: string | null
+          cep: string | null
+          cidade: string | null
+          complemento: string | null
           cpf: string
           created_at: string
           data_nascimento: string | null
           email: string | null
+          estado: string | null
           id: string
           idade: string | null
+          logradouro: string | null
           nome: string
           nome_mae: string | null
+          numero: string | null
           rg: string | null
           sexo: string | null
           situacao_receita: string | null
@@ -556,14 +563,21 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          bairro?: string | null
+          cep?: string | null
+          cidade?: string | null
+          complemento?: string | null
           cpf: string
           created_at?: string
           data_nascimento?: string | null
           email?: string | null
+          estado?: string | null
           id?: string
           idade?: string | null
+          logradouro?: string | null
           nome: string
           nome_mae?: string | null
+          numero?: string | null
           rg?: string | null
           sexo?: string | null
           situacao_receita?: string | null
@@ -572,14 +586,21 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          bairro?: string | null
+          cep?: string | null
+          cidade?: string | null
+          complemento?: string | null
           cpf?: string
           created_at?: string
           data_nascimento?: string | null
           email?: string | null
+          estado?: string | null
           id?: string
           idade?: string | null
+          logradouro?: string | null
           nome?: string
           nome_mae?: string | null
+          numero?: string | null
           rg?: string | null
           sexo?: string | null
           situacao_receita?: string | null
@@ -2033,12 +2054,19 @@ export type Database = {
           preco_classificados: number | null
           preco_minimo: number | null
           preco_venda: number | null
+          proprietario_bairro: string | null
+          proprietario_cep: string | null
+          proprietario_cidade: string | null
+          proprietario_complemento: string | null
           proprietario_cpf: string | null
           proprietario_data_nascimento: string | null
           proprietario_email: string | null
+          proprietario_estado: string | null
           proprietario_idade: string | null
+          proprietario_logradouro: string | null
           proprietario_mae: string | null
           proprietario_nome: string | null
+          proprietario_numero: string | null
           proprietario_rg: string | null
           proprietario_sexo: string | null
           proprietario_situacao_receita: string | null
@@ -2090,12 +2118,19 @@ export type Database = {
           preco_classificados?: number | null
           preco_minimo?: number | null
           preco_venda?: number | null
+          proprietario_bairro?: string | null
+          proprietario_cep?: string | null
+          proprietario_cidade?: string | null
+          proprietario_complemento?: string | null
           proprietario_cpf?: string | null
           proprietario_data_nascimento?: string | null
           proprietario_email?: string | null
+          proprietario_estado?: string | null
           proprietario_idade?: string | null
+          proprietario_logradouro?: string | null
           proprietario_mae?: string | null
           proprietario_nome?: string | null
+          proprietario_numero?: string | null
           proprietario_rg?: string | null
           proprietario_sexo?: string | null
           proprietario_situacao_receita?: string | null
@@ -2147,12 +2182,19 @@ export type Database = {
           preco_classificados?: number | null
           preco_minimo?: number | null
           preco_venda?: number | null
+          proprietario_bairro?: string | null
+          proprietario_cep?: string | null
+          proprietario_cidade?: string | null
+          proprietario_complemento?: string | null
           proprietario_cpf?: string | null
           proprietario_data_nascimento?: string | null
           proprietario_email?: string | null
+          proprietario_estado?: string | null
           proprietario_idade?: string | null
+          proprietario_logradouro?: string | null
           proprietario_mae?: string | null
           proprietario_nome?: string | null
+          proprietario_numero?: string | null
           proprietario_rg?: string | null
           proprietario_sexo?: string | null
           proprietario_situacao_receita?: string | null
@@ -2552,6 +2594,13 @@ export const Constants = {
 //   situacao_receita_data: text (nullable)
 //   created_at: timestamp with time zone (not null, default: now())
 //   updated_at: timestamp with time zone (not null, default: now())
+//   cep: text (nullable)
+//   logradouro: text (nullable)
+//   numero: text (nullable)
+//   complemento: text (nullable)
+//   bairro: text (nullable)
+//   cidade: text (nullable)
+//   estado: text (nullable)
 // Table: configuracoes_api
 //   id: uuid (not null, default: gen_random_uuid())
 //   portal: text (not null)
@@ -2970,6 +3019,13 @@ export const Constants = {
 //   proprietario_mae: text (nullable)
 //   proprietario_situacao_receita: text (nullable)
 //   proprietario_situacao_receita_data: text (nullable)
+//   proprietario_cep: text (nullable)
+//   proprietario_logradouro: text (nullable)
+//   proprietario_numero: text (nullable)
+//   proprietario_complemento: text (nullable)
+//   proprietario_bairro: text (nullable)
+//   proprietario_cidade: text (nullable)
+//   proprietario_estado: text (nullable)
 // Table: veiculos_cache
 //   placa: text (not null)
 //   chassi: text (nullable)

@@ -11,7 +11,7 @@ export default function Index() {
     '@type': 'LocalBusiness',
     name: 'Carro e Cia Veículos',
     image:
-      'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/logos/logo-carro-e-cia1.webp',
+      'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/logos/logo-carro-e-cia.webp',
     description:
       'Vender seu carro nunca foi tão fácil. Consignação segura, profissional, com contrato protetor. Carro e Cia: referência 20+ anos em Uberaba.',
     url: 'https://carroeciamotors.com.br',

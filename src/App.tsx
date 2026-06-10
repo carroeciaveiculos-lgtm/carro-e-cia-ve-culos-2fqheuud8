@@ -13,6 +13,31 @@ import { useLocation } from 'react-router-dom'
 import NotFound from './pages/NotFound'
 import Index from './pages/Index'
 
+// Fallback global para imagens quebradas para não quebrar a UI e bibliotecas como html-to-image
+if (typeof window !== 'undefined') {
+  window.addEventListener(
+    'error',
+    (e) => {
+      const target = e.target as HTMLElement
+      if (target && target.tagName === 'IMG') {
+        const img = target as HTMLImageElement
+        if (!img.dataset.fallbackApplied) {
+          img.dataset.fallbackApplied = 'true'
+          // Substitui por logo oficial em caso de falha
+          img.src =
+            'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/logos/logo-carro-e-cia.webp'
+        } else if (img.dataset.fallbackApplied === 'true') {
+          // Se o fallback também falhar, renderiza um pixel transparente em base64
+          img.dataset.fallbackApplied = 'failed'
+          img.src =
+            'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxIiBoZWlnaHQ9IjEiPjwvc3ZnPg=='
+        }
+      }
+    },
+    true,
+  )
+}
+
 // Fix global para erro do html-to-image (e scripts de terceiros) ao ler cssRules cross-origin
 if (typeof window !== 'undefined' && typeof CSSStyleSheet !== 'undefined') {
   const originalCssRules = Object.getOwnPropertyDescriptor(CSSStyleSheet.prototype, 'cssRules')
