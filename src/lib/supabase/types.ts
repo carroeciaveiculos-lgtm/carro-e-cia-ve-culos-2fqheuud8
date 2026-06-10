@@ -772,6 +772,7 @@ export type Database = {
           forma_pagamento: string | null
           id: string
           registrada_por: string | null
+          responsabilidade: string | null
           valor: number | null
           veiculo_id: string | null
         }
@@ -784,6 +785,7 @@ export type Database = {
           forma_pagamento?: string | null
           id?: string
           registrada_por?: string | null
+          responsabilidade?: string | null
           valor?: number | null
           veiculo_id?: string | null
         }
@@ -796,6 +798,7 @@ export type Database = {
           forma_pagamento?: string | null
           id?: string
           registrada_por?: string | null
+          responsabilidade?: string | null
           valor?: number | null
           veiculo_id?: string | null
         }
@@ -2230,9 +2233,12 @@ export type Database = {
           ano_fab: string | null
           ano_modelo: string | null
           categoria: string | null
+          categoria_sintetica: string | null
           chassi: string | null
+          chassi_completo: string | null
           codigo_fipe: string | null
           combustivel: string | null
+          combustivel_sintetico: string | null
           cor: string | null
           created_at: string
           historico_fipe: Json | null
@@ -2249,9 +2255,12 @@ export type Database = {
           ano_fab?: string | null
           ano_modelo?: string | null
           categoria?: string | null
+          categoria_sintetica?: string | null
           chassi?: string | null
+          chassi_completo?: string | null
           codigo_fipe?: string | null
           combustivel?: string | null
+          combustivel_sintetico?: string | null
           cor?: string | null
           created_at?: string
           historico_fipe?: Json | null
@@ -2268,9 +2277,12 @@ export type Database = {
           ano_fab?: string | null
           ano_modelo?: string | null
           categoria?: string | null
+          categoria_sintetica?: string | null
           chassi?: string | null
+          chassi_completo?: string | null
           codigo_fipe?: string | null
           combustivel?: string | null
+          combustivel_sintetico?: string | null
           cor?: string | null
           created_at?: string
           historico_fipe?: Json | null
@@ -2649,6 +2661,7 @@ export const Constants = {
 //   registrada_por: uuid (nullable)
 //   created_at: timestamp with time zone (nullable, default: now())
 //   veiculo_id: uuid (nullable)
+//   responsabilidade: text (nullable, default: 'loja'::text)
 // Table: documentos
 //   id: uuid (not null, default: gen_random_uuid())
 //   nome_documento: text (nullable)
@@ -3044,6 +3057,9 @@ export const Constants = {
 //   categoria: text (nullable)
 //   created_at: timestamp with time zone (not null, default: now())
 //   updated_at: timestamp with time zone (not null, default: now())
+//   combustivel_sintetico: text (nullable)
+//   categoria_sintetica: text (nullable)
+//   chassi_completo: text (nullable)
 
 // --- CONSTRAINTS ---
 // Table: access_log
