@@ -47,7 +47,10 @@ export default function AdminEstoque() {
   const [sortBy, setSortBy] = useState('recentes')
   const [statusFilter, setStatusFilter] = useState('todos')
   const [diasFilter, setDiasFilter] = useState('todos')
+  const [combustivelFilter, setCombustivelFilter] = useState('todos')
   const [page, setPage] = useState(0)
+
+  const combustiveis = ['Flex', 'Gasolina', 'Álcool', 'Diesel', 'Híbrido', 'Elétrico']
   const [totalCount, setTotalCount] = useState(0)
   const pageSize = 10
   const [shareVehicle, setShareVehicle] = useState<any>(null)
@@ -81,6 +84,10 @@ export default function AdminEstoque() {
         query = query.lte('created_at', dateLimit.toISOString())
       }
 
+      if (combustivelFilter !== 'todos') {
+        query = query.eq('combustivel', combustivelFilter)
+      }
+
       if (sortBy === 'recentes') query = query.order('created_at', { ascending: false })
       if (sortBy === 'antigos') query = query.order('created_at', { ascending: true })
       if (sortBy === 'menor_preco') query = query.order('preco_venda', { ascending: true })
@@ -99,7 +106,7 @@ export default function AdminEstoque() {
 
   useEffect(() => {
     loadVehicles()
-  }, [debouncedSearch, sortBy, statusFilter, diasFilter, page])
+  }, [debouncedSearch, sortBy, statusFilter, diasFilter, combustivelFilter, page])
 
   const handleArchive = async (id: string) => {
     if (!confirm('Tem certeza que deseja arquivar este veículo? Ele será movido para o histórico.'))
@@ -239,6 +246,19 @@ export default function AdminEstoque() {
           />
         </div>
         <div className="flex flex-wrap gap-4">
+          <Select value={combustivelFilter} onValueChange={setCombustivelFilter}>
+            <SelectTrigger className="w-[140px]">
+              <SelectValue placeholder="Combustível" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="todos">Todos</SelectItem>
+              {combustiveis.map((c) => (
+                <SelectItem key={c} value={c}>
+                  {c}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           <Select value={diasFilter} onValueChange={setDiasFilter}>
             <SelectTrigger className="w-[140px]">
               <SelectValue placeholder="Tempo Estoque" />

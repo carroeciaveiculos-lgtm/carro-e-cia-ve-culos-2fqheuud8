@@ -103,6 +103,7 @@ Deno.serve(async (req) => {
         ano_fab: anoFab.toString(),
         ano_modelo: anoMod.toString(),
         combustivel: hash % 2 === 0 ? 'Flex' : 'Gasolina',
+        combustivel_sintetico: hash % 2 === 0 ? 'Álcool/Gasolina' : 'Gasolina',
         cor: hash % 3 === 0 ? 'Prata' : hash % 2 === 0 ? 'Preta' : 'Branca',
         preco_fipe: precoMock,
         mes_referencia: 'Mês Atual',
@@ -116,6 +117,8 @@ Deno.serve(async (req) => {
           { mes: '01-2024', valor: precoMock * 1.05 },
         ],
         categoria: 'Carro',
+        categoria_sintetica: 'Automóvel Leve',
+        chassi_completo: chassi,
       }
 
       await new Promise((resolve) => setTimeout(resolve, 800))
@@ -180,6 +183,7 @@ Deno.serve(async (req) => {
           veiculoData?.anoFabricacao?.toString() || veiculoData?.ano_fabricacao?.toString() || '',
         ano_modelo: veiculoData?.anoModelo?.toString() || veiculoData?.ano_modelo?.toString() || '',
         combustivel: veiculoData?.combustivel || '',
+        combustivel_sintetico: veiculoData?.extra?.combustivel?.sintetico || '',
         cor: veiculoData?.cor || '',
         preco_fipe: veiculoData?.valor || veiculoData?.preco_fipe || veiculoData?.fipe?.valor || 0,
         mes_referencia: veiculoData?.mesReferencia || '',
@@ -199,6 +203,9 @@ Deno.serve(async (req) => {
             },
           ],
         categoria: veiculoData?.categoria || 'Carro',
+        categoria_sintetica:
+          veiculoData?.extra?.categoria?.descricao || veiculoData?.categoria || '',
+        chassi_completo: veiculoData?.chassi || '',
       }
     }
 

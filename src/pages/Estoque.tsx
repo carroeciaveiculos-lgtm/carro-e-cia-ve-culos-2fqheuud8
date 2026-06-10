@@ -25,13 +25,15 @@ export default function Estoque() {
   const [searchTerm, setSearchTerm] = useState('')
   const [marca, setMarca] = useState('Todas')
   const [ano, setAno] = useState('Todos')
+  const [combustivel, setCombustivel] = useState('Todos')
+  const [categoria, setCategoria] = useState('Todas')
   const [maxPrice, setMaxPrice] = useState([300000])
 
   useEffect(() => {
     supabase
       .from('veiculos')
       .select(
-        'id, marca, modelo, versao, ano_fabricacao, ano_modelo, preco_venda, quilometragem, combustivel, cor, fotos, is_zero_km, status',
+        'id, marca, modelo, versao, ano_fabricacao, ano_modelo, preco_venda, quilometragem, combustivel, cor, fotos, is_zero_km, status, categoria',
       )
       .eq('status', 'disponivel')
       .order('destaque', { ascending: false })
@@ -49,19 +51,31 @@ export default function Estoque() {
       .sort()
       .reverse(),
   ]
+  const combustiveis = [
+    'Todos',
+    ...Array.from(new Set(veiculos.map((v) => v.combustivel).filter(Boolean))),
+  ]
+  const categorias = [
+    'Todas',
+    ...Array.from(new Set(veiculos.map((v) => v.categoria).filter(Boolean))),
+  ]
 
   const filteredVeiculos = veiculos.filter((v) => {
     const s = searchTerm.toLowerCase()
     const matchSearch = v.marca.toLowerCase().includes(s) || v.modelo.toLowerCase().includes(s)
     const matchMarca = marca === 'Todas' || v.marca === marca
     const matchAno = ano === 'Todos' || v.ano_fabricacao?.toString() === ano
+    const matchCombustivel = combustivel === 'Todos' || v.combustivel === combustivel
+    const matchCategoria = categoria === 'Todas' || v.categoria === categoria
     const matchPrice = (v.preco_venda || 0) <= maxPrice[0]
-    return matchSearch && matchMarca && matchAno && matchPrice
+    return matchSearch && matchMarca && matchAno && matchCombustivel && matchCategoria && matchPrice
   })
 
   const clearFilters = () => {
     setMarca('Todas')
     setAno('Todos')
+    setCombustivel('Todos')
+    setCategoria('Todas')
     setMaxPrice([300000])
     setSearchTerm('')
   }
@@ -93,6 +107,36 @@ export default function Estoque() {
             {anos.map((a) => (
               <SelectItem key={a} value={a}>
                 {a}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+      <div className="space-y-2">
+        <Label>Combustível</Label>
+        <Select value={combustivel} onValueChange={setCombustivel}>
+          <SelectTrigger>
+            <SelectValue placeholder="Todos" />
+          </SelectTrigger>
+          <SelectContent>
+            {combustiveis.map((c) => (
+              <SelectItem key={c} value={c}>
+                {c}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+      <div className="space-y-2">
+        <Label>Categoria</Label>
+        <Select value={categoria} onValueChange={setCategoria}>
+          <SelectTrigger>
+            <SelectValue placeholder="Todas" />
+          </SelectTrigger>
+          <SelectContent>
+            {categorias.map((c) => (
+              <SelectItem key={c} value={c}>
+                {c}
               </SelectItem>
             ))}
           </SelectContent>
@@ -189,6 +233,23 @@ export default function Estoque() {
                     className="rounded-full whitespace-nowrap border-border/50 shadow-sm text-xs px-4"
                   >
                     Ano
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="bottom" className="h-[80vh]">
+                  <SheetHeader className="mb-6">
+                    <SheetTitle>Filtros</SheetTitle>
+                  </SheetHeader>
+                  <FiltersContent />
+                </SheetContent>
+              </Sheet>
+              <Sheet>
+                <SheetTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="rounded-full whitespace-nowrap border-border/50 shadow-sm text-xs px-4"
+                  >
+                    Combustível
                   </Button>
                 </SheetTrigger>
                 <SheetContent side="bottom" className="h-[80vh]">

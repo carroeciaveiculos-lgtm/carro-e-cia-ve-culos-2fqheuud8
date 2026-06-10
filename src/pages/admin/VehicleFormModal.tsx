@@ -40,6 +40,7 @@ import {
   Star,
   UploadCloud,
   GripHorizontal,
+  Eye,
 } from 'lucide-react'
 
 const CHECKLIST_INSPECAO = [
@@ -104,11 +105,14 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
   const [newOpcional, setNewOpcional] = useState('')
   const fileInputRef = useRef<HTMLInputElement>(null)
 
+  const [previewDoc, setPreviewDoc] = useState<any>(null)
+
   const [novaDespesa, setNovaDespesa] = useState({
     categoria: 'Mecânica',
     descricao: '',
     valor: '',
     data_despesa: new Date().toISOString().split('T')[0],
+    responsabilidade: 'loja',
   })
 
   const [formData, setFormData] = useState<any>({
@@ -247,6 +251,7 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
         descricao: novaDespesa.descricao,
         valor: Number(novaDespesa.valor),
         data_despesa: novaDespesa.data_despesa,
+        responsabilidade: novaDespesa.responsabilidade,
       }
       const { data, error } = await supabase.from('despesas').insert([payload]).select()
       if (error) throw error
@@ -256,6 +261,7 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
         descricao: '',
         valor: '',
         data_despesa: new Date().toISOString().split('T')[0],
+        responsabilidade: 'loja',
       })
       toast({ title: 'Despesa lançada com sucesso!' })
     } catch (err: any) {
@@ -360,7 +366,8 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
             codigo_fipe: data.data.codigo_fipe,
             url_fipe: data.data.url_fipe,
             historico_fipe: data.data.historico_fipe,
-            categoria_detalhada: data.data.categoria,
+            categoria_detalhada: data.data.categoria_sintetica || data.data.categoria,
+            combustivel_sintetico: data.data.combustivel_sintetico,
           },
         }
       })
@@ -649,6 +656,38 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
   )
   const allOpcionais = Array.from(new Set([...OPCIONAIS_LIST, ...(formData.diferenciais || [])]))
 
+  const [adKitContent, setAdKitContent] = useState<string | null>(null)
+  const [loadingAdKit, setLoadingAdKit] = useState(false)
+
+  const handleGerarAdKit = async () => {
+    if (!vehicleId) return toast({ title: 'Salve o veículo primeiro', variant: 'destructive' })
+    setLoadingAdKit(true)
+    try {
+      const tema = `Kit de divulgação para redes sociais e portais (Instagram, WhatsApp, OLX)`
+      const palavraChave = `${formData.marca} ${formData.modelo} ${formData.ano_fabricacao}`
+      const { data, error } = await supabase.functions.invoke('gerar-conteudo', {
+        body: {
+          tema:
+            tema +
+            `. Veículo: ${formData.marca} ${formData.modelo} ${formData.ano_fabricacao}, Cor: ${formData.cor}, Combustível: ${formData.combustivel}, Preço: R$ ${formData.preco_venda}. Opcionais: ${(formData.diferenciais || []).join(', ')}. Crie 3 seções: Instagram, WhatsApp e OLX.`,
+          palavraChave,
+          tom: 'Persuasivo',
+        },
+      })
+      if (error) throw error
+      if (data?.success && data?.data?.texto_html) {
+        setAdKitContent(data.data.texto_html)
+        toast({ title: 'Kit de divulgação gerado!' })
+      } else {
+        throw new Error('Falha na geração')
+      }
+    } catch (err: any) {
+      toast({ title: 'Erro ao gerar', description: err.message, variant: 'destructive' })
+    } finally {
+      setLoadingAdKit(false)
+    }
+  }
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-6xl h-[95vh] flex flex-col p-0 bg-slate-50 gap-0">
@@ -697,6 +736,12 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
             >
               <FileCheck className="w-4 h-4 mr-2" /> Documentos & Contrato
             </TabsTrigger>
+            <TabsTrigger
+              value="marketing"
+              className="data-[state=active]:border-b-2 border-blue-600 rounded-none shadow-none"
+            >
+              <Sparkles className="w-4 h-4 mr-2" /> Marketing IA
+            </TabsTrigger>
           </TabsList>
 
           <ScrollArea className="flex-1 p-6">
@@ -715,14 +760,7 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-white p-6 rounded-lg border">
                 <div className="space-y-4">
-                  <h3 className="font-bold border-b pb-2 flex justify-between">
-                    Dados do Veículo
-                    {formData.info_personalizadas?.codigo_fipe && (
-                      <span className="text-xs font-mono text-slate-400 bg-slate-100 px-2 py-0.5 rounded">
-                        FIPE: {formData.info_personalizadas.codigo_fipe}
-                      </span>
-                    )}
-                  </h3>
+                  <h3 className="font-bold border-b pb-2 flex justify-between">Dados Básicos</h3>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <Label>Marca</Label>
@@ -795,8 +833,35 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
                         className="font-mono"
                       />
                     </div>
+                  </div>
+
+                  <h3 className="font-bold border-b pb-2 mt-6 text-slate-700 flex justify-between items-center">
+                    Dados Técnicos (Auto)
+                    {formData.info_personalizadas?.codigo_fipe && (
+                      <span className="text-xs font-mono text-slate-400 bg-slate-100 px-2 py-0.5 rounded">
+                        FIPE: {formData.info_personalizadas.codigo_fipe}
+                      </span>
+                    )}
+                  </h3>
+                  <div className="grid grid-cols-2 gap-4 bg-slate-50 p-3 rounded-lg border">
+                    <div>
+                      <Label className="text-xs">Categoria</Label>
+                      <Input
+                        value={formData.categoria || ''}
+                        onChange={(e) => setFormData({ ...formData, categoria: e.target.value })}
+                        className="h-8 text-sm bg-white"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs">Combust. Sintético</Label>
+                      <Input
+                        value={formData.info_personalizadas?.combustivel_sintetico || ''}
+                        readOnly
+                        className="h-8 text-sm bg-slate-100"
+                      />
+                    </div>
                     <div className="col-span-2">
-                      <Label>Código FIPE</Label>
+                      <Label className="text-xs">Código FIPE</Label>
                       <Input
                         value={formData.info_personalizadas?.codigo_fipe || ''}
                         onChange={(e) =>
@@ -808,7 +873,7 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
                             },
                           })
                         }
-                        className="font-mono"
+                        className="font-mono h-8 text-sm bg-white"
                       />
                     </div>
                   </div>
@@ -1435,6 +1500,23 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
                             className="bg-white"
                           />
                         </div>
+                        <div className="md:col-span-2">
+                          <Label className="text-xs">Resp.</Label>
+                          <Select
+                            value={novaDespesa.responsabilidade}
+                            onValueChange={(v) =>
+                              setNovaDespesa({ ...novaDespesa, responsabilidade: v })
+                            }
+                          >
+                            <SelectTrigger className="bg-white">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="loja">Loja</SelectItem>
+                              <SelectItem value="cliente">Cliente</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
                         <div className="md:col-span-1">
                           <Button
                             onClick={handleAddDespesa}
@@ -1446,6 +1528,11 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
                           </Button>
                         </div>
                       </div>
+                      <p className="text-[10px] text-slate-500 mt-2">
+                        * <strong className="text-slate-700">Loja</strong>: Reduz margem de lucro.{' '}
+                        <strong className="text-slate-700">Cliente</strong>: Descontado no acerto de
+                        consignação.
+                      </p>
                     </div>
 
                     {despesas.length === 0 ? (
@@ -1460,7 +1547,17 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
                             className="flex justify-between items-center p-3 border rounded-lg"
                           >
                             <div>
-                              <p className="font-medium">{d.descricao || d.categoria}</p>
+                              <div className="flex items-center gap-2">
+                                <p className="font-medium">{d.descricao || d.categoria}</p>
+                                <Badge
+                                  variant={
+                                    d.responsabilidade === 'cliente' ? 'secondary' : 'outline'
+                                  }
+                                  className="text-[9px] h-4 px-1"
+                                >
+                                  {d.responsabilidade === 'cliente' ? 'Cliente' : 'Loja'}
+                                </Badge>
+                              </div>
                               <p className="text-xs text-slate-500">{d.data_despesa}</p>
                             </div>
                             <div className="font-bold text-red-500">
@@ -1548,13 +1645,13 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
                         className="border p-4 rounded flex items-center justify-between bg-slate-50"
                       >
                         <div
-                          className="flex items-center gap-3 cursor-pointer"
-                          onClick={() => window.open(doc.url_documento, '_blank')}
+                          className="flex items-center gap-3 cursor-pointer group"
+                          onClick={() => setPreviewDoc(doc)}
                         >
                           <FileCheck className="w-6 h-6 text-blue-600 shrink-0" />
                           <div className="overflow-hidden">
                             <p
-                              className="font-semibold text-sm hover:underline truncate"
+                              className="font-semibold text-sm group-hover:underline truncate"
                               title={doc.nome_documento}
                             >
                               {doc.nome_documento}
@@ -1568,10 +1665,18 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
                           <Button
                             variant="ghost"
                             size="icon"
-                            onClick={() => window.open(doc.url_documento, '_blank')}
-                            title="Preview"
+                            onClick={() => setPreviewDoc(doc)}
+                            title="Preview no App"
                           >
-                            <ExternalLink className="w-4 h-4 text-blue-500" />
+                            <Eye className="w-4 h-4 text-blue-500" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => window.open(doc.url_documento, '_blank')}
+                            title="Abrir em Nova Guia"
+                          >
+                            <ExternalLink className="w-4 h-4 text-slate-400" />
                           </Button>
                           <Button
                             variant="ghost"
@@ -1728,7 +1833,68 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
                 </div>
               )}
             </TabsContent>
+            <TabsContent value="marketing" className="m-0 space-y-6">
+              <div className="bg-white p-6 rounded-lg border shadow-sm">
+                <div className="flex items-center justify-between mb-4 border-b pb-4">
+                  <div>
+                    <h3 className="font-bold flex items-center gap-2 text-slate-800">
+                      <Sparkles className="w-5 h-5 text-purple-600" /> Kit de Divulgação (IA)
+                    </h3>
+                    <p className="text-xs text-slate-500 mt-1">
+                      Gere automaticamente descrições focadas para Instagram, WhatsApp e Portais
+                      (OLX).
+                    </p>
+                  </div>
+                  <Button
+                    onClick={handleGerarAdKit}
+                    disabled={loadingAdKit || !vehicleId}
+                    className="bg-purple-600 hover:bg-purple-700"
+                  >
+                    {loadingAdKit ? 'Gerando...' : 'Gerar Kit com IA'}
+                  </Button>
+                </div>
+                {adKitContent ? (
+                  <div
+                    className="prose prose-sm max-w-none text-slate-700"
+                    dangerouslySetInnerHTML={{ __html: adKitContent }}
+                  />
+                ) : (
+                  <div className="text-center py-12 bg-slate-50 border border-dashed rounded-lg text-slate-500">
+                    <Sparkles className="w-8 h-8 mx-auto mb-2 opacity-30" />
+                    <p>Nenhum conteúdo gerado ainda.</p>
+                    <p className="text-xs">Clique no botão acima para criar o seu kit.</p>
+                  </div>
+                )}
+              </div>
+            </TabsContent>
           </ScrollArea>
+
+          {previewDoc && (
+            <Dialog open={!!previewDoc} onOpenChange={() => setPreviewDoc(null)}>
+              <DialogContent className="max-w-4xl h-[85vh] p-0 flex flex-col bg-slate-100">
+                <DialogHeader className="p-4 border-b bg-white shrink-0">
+                  <DialogTitle className="text-sm font-medium break-all">
+                    {previewDoc.nome_documento}
+                  </DialogTitle>
+                </DialogHeader>
+                <div className="flex-1 overflow-auto flex items-center justify-center p-4">
+                  {previewDoc.tipo?.includes('image') ? (
+                    <img
+                      src={previewDoc.url_documento}
+                      className="max-w-full max-h-full object-contain shadow-sm bg-white"
+                      alt="Preview"
+                    />
+                  ) : (
+                    <iframe
+                      src={previewDoc.url_documento}
+                      className="w-full h-full bg-white shadow-sm"
+                      title="Preview PDF"
+                    />
+                  )}
+                </div>
+              </DialogContent>
+            </Dialog>
+          )}
 
           <div className="px-6 py-4 border-t bg-white shrink-0 flex justify-end gap-3 shadow-md">
             <Button variant="outline" onClick={onClose}>

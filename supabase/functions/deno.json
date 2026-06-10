@@ -5,13 +5,14 @@
     "sync-estoque": 30,
     "webhook-portais": 31,
     "on-lead-created": 31,
-    "consultar-placa": 38,
+    "consultar-placa": 39,
     "enviar-para-assinatura": 32,
     "webhook-autentique": 29,
     "consultar-cpf": 31,
     "gerar-pdf-contrato": 18,
     "lead-automation": 7,
     "gerar-conteudo": 3,
-    "gerar-imagem": 2
+    "gerar-imagem": 2,
+    "public-inventory-feed": 1
   }
 }
