@@ -22,3 +22,13 @@ export const createVeiculo = async (
   const { data, error } = await supabase.from('veiculos').insert([veiculo]).select().single()
   return { data, error }
 }
+
+export const getContratoByVeiculoId = async (veiculoId: string) => {
+  const { data, error } = await supabase
+    .from('contratos_consignacao')
+    .select('*')
+    .eq('veiculo_id', veiculoId)
+    .maybeSingle()
+
+  return { data, error }
+}
