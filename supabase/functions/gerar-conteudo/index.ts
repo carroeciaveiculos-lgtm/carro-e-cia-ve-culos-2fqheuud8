@@ -4,38 +4,44 @@ import { createClient } from 'jsr:@supabase/supabase-js@2'
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, x-supabase-client-platform, apikey, content-type',
+  'Access-Control-Allow-Headers':
+    'authorization, x-client-info, x-supabase-client-platform, apikey, content-type',
 }
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
-  
+
   try {
     const authHeader = req.headers.get('Authorization')
     if (!authHeader) throw new Error('No authorization header')
-    
+
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      { global: { headers: { Authorization: authHeader } } }
+      { global: { headers: { Authorization: authHeader } } },
     )
-    
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
+
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser()
     if (authError || !user) throw new Error('Unauthorized')
 
     const { tema, palavraChave, tom } = await req.json()
-    
+
     const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY')
     const GROQ_API_KEY = Deno.env.get('GROQ_API_KEY')
 
     const supabaseService = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
     )
 
     // Grounding: Fetch company info to avoid hallucinations
     const { data: configData } = await supabaseService.from('site_configuracoes').select('*')
-    const configString = configData ? JSON.stringify(configData) : 'Carro e Cia Veículos, mais de 20 anos de mercado em Uberaba, MG.'
+    const configString = configData
+      ? JSON.stringify(configData)
+      : 'Carro e Cia Veículos, mais de 20 anos de mercado em Uberaba, MG.'
 
     const prompt = `Você é um "Master Arquiteto de Conteúdo" especialista em veículos seminovos.
 Contexto real da empresa: ${configString}.
@@ -96,8 +102,12 @@ Responda APENAS com um objeto JSON válido, sem formatação markdown:
 }`
 
     const messages = [
-      { role: 'system', content: 'Você é um assistente especializado que gera JSONs perfeitos estruturados conforme solicitado.' },
-      { role: 'user', content: prompt }
+      {
+        role: 'system',
+        content:
+          'Você é um assistente especializado que gera JSONs perfeitos estruturados conforme solicitado.',
+      },
+      { role: 'user', content: prompt },
     ]
 
     let resultJson = null
@@ -112,16 +122,16 @@ Responda APENAS com um objeto JSON válido, sem formatação markdown:
         const openAiRes = await fetch('https://api.openai.com/v1/chat/completions', {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${OPENAI_API_KEY}`,
-            'Content-Type': 'application/json'
+            Authorization: `Bearer ${OPENAI_API_KEY}`,
+            'Content-Type': 'application/json',
           },
           body: JSON.stringify({
             model: 'gpt-4o-mini',
             messages,
             response_format: { type: 'json_object' },
             temperature: 0.3,
-            top_p: 0.2
-          })
+            top_p: 0.2,
+          }),
         })
 
         const data = await openAiRes.json()
@@ -129,7 +139,10 @@ Responda APENAS com um objeto JSON válido, sem formatação markdown:
 
         let content = data.choices[0].message.content
         if (content.includes('```json')) {
-          content = content.replace(/```json/g, '').replace(/```/g, '').trim()
+          content = content
+            .replace(/```json/g, '')
+            .replace(/```/g, '')
+            .trim()
         }
 
         resultJson = JSON.parse(content)
@@ -137,7 +150,7 @@ Responda APENAS com um objeto JSON válido, sem formatação markdown:
         usedModel = data.model || 'gpt-4o-mini'
         usageTokens = {
           input: data.usage?.prompt_tokens || 0,
-          output: data.usage?.completion_tokens || 0
+          output: data.usage?.completion_tokens || 0,
         }
       } catch (err: any) {
         errorDetails.push({ provider: 'openai', error: err.message })
@@ -153,16 +166,16 @@ Responda APENAS com um objeto JSON válido, sem formatação markdown:
         const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${GROQ_API_KEY}`,
-            'Content-Type': 'application/json'
+            Authorization: `Bearer ${GROQ_API_KEY}`,
+            'Content-Type': 'application/json',
           },
           body: JSON.stringify({
             model: 'llama-3.3-70b-versatile',
             messages,
             response_format: { type: 'json_object' },
             temperature: 0.3,
-            top_p: 0.2
-          })
+            top_p: 0.2,
+          }),
         })
 
         const data = await groqRes.json()
@@ -170,15 +183,18 @@ Responda APENAS com um objeto JSON válido, sem formatação markdown:
 
         let content = data.choices[0].message.content
         if (content.includes('```json')) {
-          content = content.replace(/```json/g, '').replace(/```/g, '').trim()
+          content = content
+            .replace(/```json/g, '')
+            .replace(/```/g, '')
+            .trim()
         }
-        
+
         resultJson = JSON.parse(content)
         usedProvider = 'groq'
         usedModel = data.model || 'llama-3.3-70b-versatile'
         usageTokens = {
           input: data.usage?.prompt_tokens || 0,
-          output: data.usage?.completion_tokens || 0
+          output: data.usage?.completion_tokens || 0,
         }
       } catch (err: any) {
         errorDetails.push({ provider: 'groq', error: err.message })
@@ -196,17 +212,20 @@ Responda APENAS com um objeto JSON válido, sem formatação markdown:
         provider: 'fallback_chain',
         modelo: 'multiple',
         status: 'erro',
-        alertas: errorDetails
+        alertas: errorDetails,
       })
 
-      return new Response(JSON.stringify({ 
-        sucesso: false, 
-        erro: 'IA temporariamente indisponível (limites de cota atingidos ou erro de API)', 
-        detalhes: errorDetails 
-      }), {
-        status: 503,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      })
+      return new Response(
+        JSON.stringify({
+          sucesso: false,
+          erro: 'IA temporariamente indisponível (limites de cota atingidos ou erro de API)',
+          detalhes: errorDetails,
+        }),
+        {
+          status: 503,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        },
+      )
     }
 
     // Convert new JSON schema to HTML for frontend compatibility
@@ -215,32 +234,32 @@ Responda APENAS com um objeto JSON válido, sem formatação markdown:
       for (const secao of resultJson.secoes) {
         const secaoClass = secao.nome_da_secao?.toLowerCase().replace(/\s+/g, '-') || 'geral'
         htmlOutput += `\n<section class="secao-${secaoClass}">\n`
-        
+
         if (secao.conteudo && Array.isArray(secao.conteudo)) {
           for (const item of secao.conteudo) {
             const tag = item.tipo_elemento?.toLowerCase() || 'p'
             let contentStr = item.texto || ''
-            
+
             if (item.estilo_sugerido === 'bold') contentStr = `<strong>${contentStr}</strong>`
-            
+
             if (tag === 'cta') {
               htmlOutput += `  <a href="#" class="cta-button">${contentStr}</a>\n`
             } else if (tag === 'card') {
               htmlOutput += `  <div class="card-item">${contentStr}</div>\n`
-            } else if (['h1','h2','h3','h4','h5','h6','p','ul','li'].includes(tag)) {
+            } else if (['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'ul', 'li'].includes(tag)) {
               htmlOutput += `  <${tag}>${contentStr}</${tag}>\n`
             } else {
               htmlOutput += `  <p>${contentStr}</p>\n`
             }
           }
         }
-        
+
         if (secao.midia && Array.isArray(secao.midia)) {
           for (const media of secao.midia) {
             htmlOutput += `  <!-- Image IA Prompt: ${media.prompt_geracao_ia_ingles} | Aspect: ${media.formato_aspecto} -->\n`
           }
         }
-        
+
         htmlOutput += `</section>\n`
       }
     } else if (resultJson.texto_html) {
@@ -261,13 +280,16 @@ Responda APENAS com um objeto JSON válido, sem formatação markdown:
       tokens_output: usageTokens.output,
       status: 'sucesso',
       certeza_reportada: resultJson.certeza || 'nao_informado',
-      alertas: { secoes_geradas: resultJson.secoes?.length || 0 }
+      alertas: { secoes_geradas: resultJson.secoes?.length || 0 },
     })
 
     return new Response(JSON.stringify({ success: true, data: resultJson }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
   } catch (err: any) {
-    return new Response(JSON.stringify({ error: err.message }), { status: 400, headers: corsHeaders })
+    return new Response(JSON.stringify({ error: err.message }), {
+      status: 400,
+      headers: corsHeaders,
+    })
   }
 })

@@ -20,6 +20,7 @@ import { CurrencyInput } from '@/components/ui/currency-input'
 import { CpfInput } from '@/components/ui/cpf-input'
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart'
 import { Line, LineChart, CartesianGrid, XAxis, YAxis } from 'recharts'
+import { cn } from '@/lib/utils'
 import {
   Camera,
   Search,
