@@ -29,6 +29,7 @@ import {
   PaintBucket,
   Phone,
   MessageCircle,
+  Share2,
 } from 'lucide-react'
 import { VehicleCard } from '@/components/VehicleCard'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -122,6 +123,38 @@ export default function Veiculo() {
       : 0
     trackSimulation(vehicle.preco_venda, entryPercent, simParcelas)
     trackWhatsAppClick('Luiz', 'simulacao_financiamento')
+  }
+
+  const getShareText = () => {
+    const price = formatCurrency(vehicle.preco_venda || 0)
+    const km = vehicle.quilometragem
+      ? `${vehicle.quilometragem.toLocaleString('pt-BR')} km`
+      : 'Excelente km'
+    const diffs =
+      vehicle.diferenciais?.length > 0
+        ? `\n✨ Destaques: ${vehicle.diferenciais.slice(0, 3).join(', ')}`
+        : ''
+
+    return `*Oportunidade Imperdível!*\n\n🚗 *${vehicle.marca} ${vehicle.modelo} ${vehicle.versao || ''}*\n📅 Ano: ${vehicle.ano_fabricacao}/${vehicle.ano_modelo}\n🛣️ ${km}${diffs}\n\n💰 Por apenas *${price}*\n\nConfira todos os detalhes e fotos no nosso site:\n${window.location.href}`
+  }
+
+  const handleShare = async () => {
+    const text = getShareText()
+    const url = window.location.href
+    const title = `${vehicle.marca} ${vehicle.modelo}`
+
+    if (navigator.share) {
+      try {
+        await navigator.share({ title, text, url })
+        trackCTAClick('Compartilhar Veículo (Nativo)', '/veiculo')
+      } catch (err) {
+        console.error('Error sharing', err)
+      }
+    } else {
+      navigator.clipboard.writeText(text)
+      trackCTAClick('Compartilhar Veículo (Copiado)', '/veiculo')
+      alert('Texto copiado para a área de transferência!')
+    }
   }
 
   const schema = {
@@ -345,19 +378,30 @@ export default function Veiculo() {
               </div>
 
               <div className="space-y-3">
-                <Button
-                  asChild
-                  className="w-full bg-[#25D366] hover:bg-[#20bd5a] text-white h-14 text-lg"
-                >
-                  <a
-                    href={getWhatsAppLink(wppText)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={() => trackWhatsAppClick('Luiz', 'botao_veiculo')}
+                <div className="flex gap-2">
+                  <Button
+                    asChild
+                    className="flex-1 bg-[#25D366] hover:bg-[#20bd5a] text-white h-14 text-lg"
                   >
-                    Tenho Interesse
-                  </a>
-                </Button>
+                    <a
+                      href={`https://wa.me/5534999484285?text=${encodeURIComponent(wppText)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={() => trackWhatsAppClick('Luiz', 'botao_veiculo')}
+                    >
+                      Tenho Interesse
+                    </a>
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="h-14 w-14 shrink-0 text-primary border-primary/20 hover:bg-primary/5"
+                    onClick={handleShare}
+                    title="Compartilhar"
+                  >
+                    <Share2 className="w-5 h-5" />
+                  </Button>
+                </div>
 
                 <Dialog>
                   <DialogTrigger asChild>
@@ -426,7 +470,7 @@ export default function Veiculo() {
                         className="w-full h-14 text-lg font-bold bg-[#25D366] hover:bg-[#20bd5a] text-white uppercase tracking-wide"
                       >
                         <a
-                          href={getWhatsAppLink(wppSimText)}
+                          href={`https://wa.me/5534999484285?text=${encodeURIComponent(wppSimText)}`}
                           target="_blank"
                           rel="noopener noreferrer"
                           onClick={handleSimulationWhatsApp}
@@ -493,7 +537,7 @@ export default function Veiculo() {
         </Button>
         <Button asChild className="h-12 bg-[#25D366] hover:bg-[#20bd5a] text-white">
           <a
-            href={getWhatsAppLink(wppText)}
+            href={`https://wa.me/5534999484285?text=${encodeURIComponent(wppText)}`}
             target="_blank"
             rel="noopener noreferrer"
             onClick={() => trackWhatsAppClick('Luiz', 'bottom_nav_veiculo')}

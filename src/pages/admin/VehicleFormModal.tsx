@@ -115,6 +115,36 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
     responsabilidade: 'loja',
   })
 
+  const maskPhone = (v: string) => {
+    if (!v) return ''
+    const r = v.replace(/\D/g, '')
+    if (r.length > 10) return r.replace(/^(\d\d)(\d{5})(\d{4}).*/, '($1) $2-$3')
+    if (r.length > 5) return r.replace(/^(\d\d)(\d{4})(\d{0,4}).*/, '($1) $2-$3')
+    if (r.length > 2) return r.replace(/^(\d\d)(\d{0,5})/, '($1) $2')
+    return r.replace(/^(\d*)/, '($1')
+  }
+
+  const maskDate = (v: string) => {
+    if (!v) return ''
+    const r = v.replace(/\D/g, '')
+    if (r.length > 4) return r.replace(/^(\d\d)(\d\d)(\d{0,4}).*/, '$1/$2/$3')
+    if (r.length > 2) return r.replace(/^(\d\d)(\d{0,2}).*/, '$1/$2')
+    return r
+  }
+
+  const calculateAge = (dateStr: string) => {
+    if (!dateStr || dateStr.length < 10) return ''
+    const [d, m, y] = dateStr.split('/')
+    const birthDate = new Date(`${y}-${m}-${d}`)
+    const today = new Date()
+    let age = today.getFullYear() - birthDate.getFullYear()
+    const mDiff = today.getMonth() - birthDate.getMonth()
+    if (mDiff < 0 || (mDiff === 0 && today.getDate() < birthDate.getDate())) {
+      age--
+    }
+    return `${age} anos`
+  }
+
   const [formData, setFormData] = useState<any>({
     categoria: 'Carro',
     placa: '',
@@ -136,6 +166,8 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
     tipo_entrada: 'consignacao',
     proprietario_nome: '',
     proprietario_telefone: '',
+    proprietario_telefone_residencial: '',
+    proprietario_telefone_trabalho: '',
     proprietario_email: '',
     proprietario_cpf: '',
     diferenciais: [],
@@ -165,6 +197,10 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
             ...p,
             proprietario_nome: res.nome || p.proprietario_nome,
             proprietario_telefone: res.telefone || p.proprietario_telefone,
+            proprietario_telefone_residencial:
+              res.telefone_residencial || p.proprietario_telefone_residencial,
+            proprietario_telefone_trabalho:
+              res.telefone_trabalho || p.proprietario_telefone_trabalho,
             proprietario_email: res.email || p.proprietario_email,
             proprietario_rg: res.rg || p.proprietario_rg,
             proprietario_data_nascimento: res.data_nascimento || p.proprietario_data_nascimento,
@@ -984,23 +1020,59 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
                       maxLength={18}
                     />
                   </div>
-                  <div className="col-span-2">
-                    <Label>Telefone</Label>
-                    <Input
-                      value={formData.proprietario_telefone || ''}
-                      onChange={(e) =>
-                        setFormData({ ...formData, proprietario_telefone: e.target.value })
-                      }
-                      className="bg-white"
-                    />
+                  <div className="col-span-2 md:col-span-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <Label>Celular</Label>
+                      <Input
+                        value={maskPhone(formData.proprietario_telefone || '')}
+                        onChange={(e) =>
+                          setFormData({ ...formData, proprietario_telefone: e.target.value })
+                        }
+                        placeholder="(00) 00000-0000"
+                        className="bg-white"
+                        maxLength={15}
+                      />
+                    </div>
+                    <div>
+                      <Label>Tel. Residencial</Label>
+                      <Input
+                        value={maskPhone(formData.proprietario_telefone_residencial || '')}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            proprietario_telefone_residencial: e.target.value,
+                          })
+                        }
+                        placeholder="(00) 0000-0000"
+                        className="bg-white"
+                        maxLength={15}
+                      />
+                    </div>
+                    <div>
+                      <Label>Tel. Trabalho</Label>
+                      <Input
+                        value={maskPhone(formData.proprietario_telefone_trabalho || '')}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            proprietario_telefone_trabalho: e.target.value,
+                          })
+                        }
+                        placeholder="(00) 0000-0000"
+                        className="bg-white"
+                        maxLength={15}
+                      />
+                    </div>
                   </div>
                   <div className="col-span-2">
                     <Label>Email</Label>
                     <Input
+                      type="email"
                       value={formData.proprietario_email || ''}
                       onChange={(e) =>
                         setFormData({ ...formData, proprietario_email: e.target.value })
                       }
+                      placeholder="exemplo@email.com"
                       className="bg-white"
                     />
                   </div>
@@ -1017,11 +1089,17 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
                   <div>
                     <Label>Data de Nasc.</Label>
                     <Input
-                      value={formData.proprietario_data_nascimento || ''}
+                      value={maskDate(formData.proprietario_data_nascimento || '')}
                       onChange={(e) =>
                         setFormData({ ...formData, proprietario_data_nascimento: e.target.value })
                       }
+                      onBlur={(e) => {
+                        const age = calculateAge(e.target.value)
+                        if (age) setFormData((p: any) => ({ ...p, proprietario_idade: age }))
+                      }}
+                      placeholder="DD/MM/AAAA"
                       className="bg-white"
+                      maxLength={10}
                     />
                   </div>
                   <div>

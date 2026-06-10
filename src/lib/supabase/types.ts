@@ -2032,9 +2032,12 @@ export type Database = {
           cambio: string | null
           caracteristicas: Json | null
           categoria: string | null
+          categoria_sintetica: string | null
           chassi: string | null
+          chassi_completo: string | null
           cliques_whatsapp: number | null
           combustivel: string | null
+          combustivel_sintetico: string | null
           cor: string | null
           created_at: string | null
           descricao: string | null
@@ -2096,9 +2099,12 @@ export type Database = {
           cambio?: string | null
           caracteristicas?: Json | null
           categoria?: string | null
+          categoria_sintetica?: string | null
           chassi?: string | null
+          chassi_completo?: string | null
           cliques_whatsapp?: number | null
           combustivel?: string | null
+          combustivel_sintetico?: string | null
           cor?: string | null
           created_at?: string | null
           descricao?: string | null
@@ -2160,9 +2166,12 @@ export type Database = {
           cambio?: string | null
           caracteristicas?: Json | null
           categoria?: string | null
+          categoria_sintetica?: string | null
           chassi?: string | null
+          chassi_completo?: string | null
           cliques_whatsapp?: number | null
           combustivel?: string | null
+          combustivel_sintetico?: string | null
           cor?: string | null
           created_at?: string | null
           descricao?: string | null
@@ -3039,6 +3048,9 @@ export const Constants = {
 //   proprietario_bairro: text (nullable)
 //   proprietario_cidade: text (nullable)
 //   proprietario_estado: text (nullable)
+//   combustivel_sintetico: text (nullable)
+//   categoria_sintetica: text (nullable)
+//   chassi_completo: text (nullable)
 // Table: veiculos_cache
 //   placa: text (not null)
 //   chassi: text (nullable)

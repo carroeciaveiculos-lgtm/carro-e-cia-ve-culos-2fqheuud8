@@ -144,11 +144,35 @@ Deno.serve(async (req) => {
 
       const telefonesArray = responseContent?.pesquisa_telefones?.conteudo || []
       let telefoneStr = ''
+      let telefoneResidencial = ''
+      let telefoneTrabalho = ''
+
       if (Array.isArray(telefonesArray)) {
-        const telAlta = telefonesArray.find((t) => String(t?.prioridade).toLowerCase() === 'alta')
-        if (telAlta && (telAlta.telefone || telAlta.numero)) {
-          telefoneStr = String(telAlta.telefone || telAlta.numero)
-        } else if (telefonesArray.length > 0) {
+        telefonesArray.forEach((t) => {
+          const num = String(t?.telefone || t?.numero || '')
+          const tipo = String(t?.tipo || t?.classificacao || '').toLowerCase()
+          if (!num) return
+
+          if (
+            (tipo.includes('celular') || String(t?.prioridade).toLowerCase() === 'alta') &&
+            !telefoneStr
+          ) {
+            telefoneStr = num
+          } else if (
+            (tipo.includes('fixo') || tipo.includes('residencial')) &&
+            !telefoneResidencial
+          ) {
+            telefoneResidencial = num
+          } else if (
+            (tipo.includes('comercial') || tipo.includes('trabalho')) &&
+            !telefoneTrabalho
+          ) {
+            telefoneTrabalho = num
+          }
+        })
+
+        // Fallbacks
+        if (!telefoneStr && telefonesArray.length > 0) {
           telefoneStr = String(
             telefonesArray[0]?.telefone || telefonesArray[0]?.numero || telefonesArray[0] || '',
           )
@@ -171,6 +195,8 @@ Deno.serve(async (req) => {
         cpf: cleanCpf,
         nome: nomeEncontrado,
         telefone: telefoneStr,
+        telefone_residencial: telefoneResidencial,
+        telefone_trabalho: telefoneTrabalho,
         email: emailStr,
         rg: outrosDocs.rg || responseContent?.rg || '',
         data_nascimento: contentNome.data_nascimento || responseContent?.data_nascimento || '',

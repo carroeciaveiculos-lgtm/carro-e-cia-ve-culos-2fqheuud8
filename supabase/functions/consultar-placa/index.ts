@@ -183,7 +183,8 @@ Deno.serve(async (req) => {
           veiculoData?.anoFabricacao?.toString() || veiculoData?.ano_fabricacao?.toString() || '',
         ano_modelo: veiculoData?.anoModelo?.toString() || veiculoData?.ano_modelo?.toString() || '',
         combustivel: veiculoData?.combustivel || '',
-        combustivel_sintetico: veiculoData?.extra?.combustivel?.sintetico || '',
+        combustivel_sintetico:
+          veiculoData?.extra?.combustivel?.sintetico || veiculoData?.sintetico || '',
         cor: veiculoData?.cor || '',
         preco_fipe: veiculoData?.valor || veiculoData?.preco_fipe || veiculoData?.fipe?.valor || 0,
         mes_referencia: veiculoData?.mesReferencia || '',
@@ -207,8 +208,18 @@ Deno.serve(async (req) => {
           veiculoData?.extra?.categoria?.descricao || veiculoData?.categoria || '',
         chassi_completo: veiculoData?.chassi || '',
       }
-    }
 
+      // Correção de Mapeamento (Combustível vs Categoria)
+      if (result.combustivel_sintetico) {
+        const lowerSint = result.combustivel_sintetico.toLowerCase()
+        if (
+          ['carro', 'moto', 'caminhão', 'caminhao', 'utilitário', 'utilitario'].includes(lowerSint)
+        ) {
+          result.categoria_sintetica = result.combustivel_sintetico
+          result.combustivel_sintetico = ''
+        }
+      }
+    }
     // Sincronização Automática (Upsert) no Cache
     await supabase.from('veiculos_cache').upsert({
       ...result,
