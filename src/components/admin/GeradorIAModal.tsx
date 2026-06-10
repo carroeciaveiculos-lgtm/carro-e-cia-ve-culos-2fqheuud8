@@ -54,7 +54,19 @@ export function GeradorIAModal({ open, onOpenChange, onSuccess }: GeradorIAModal
 
     let image_url
     if (gerarCapa) {
-      image_url = await gerarImagem(tema)
+      let imagePrompt = tema
+      if (content.secoes && Array.isArray(content.secoes)) {
+        for (const secao of content.secoes) {
+          if (secao.midia && Array.isArray(secao.midia)) {
+            const firstMedia = secao.midia.find((m: any) => m.prompt_geracao_ia_ingles)
+            if (firstMedia) {
+              imagePrompt = firstMedia.prompt_geracao_ia_ingles
+              break
+            }
+          }
+        }
+      }
+      image_url = await gerarImagem(imagePrompt)
     }
 
     setIsGenerating(false)
