@@ -211,18 +211,34 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
         body: { placa: formData.placa },
       })
       if (error || !data.success) throw new Error(data?.error || error?.message)
-      setFormData((p: any) => ({
-        ...p,
-        ...data.data,
-        valor_fipe: data.data.preco_fipe,
-        info_personalizadas: {
-          ...(p.info_personalizadas || {}),
-          codigo_fipe: data.data.codigo_fipe,
-          url_fipe: data.data.url_fipe,
-          historico_fipe: data.data.historico_fipe,
-          categoria_detalhada: data.data.categoria,
-        },
-      }))
+      setFormData((p: any) => {
+        const newData = { ...data.data }
+
+        const mappedData = {
+          ...newData,
+          ano_fabricacao: newData.ano_fab || p.ano_fabricacao,
+          valor_fipe: newData.preco_fipe || p.valor_fipe,
+        }
+
+        delete mappedData.ano_fab
+        delete mappedData.preco_fipe
+        delete mappedData.historico_fipe
+        delete mappedData.url_fipe
+        delete mappedData.codigo_fipe
+        delete mappedData.mes_referencia
+
+        return {
+          ...p,
+          ...mappedData,
+          info_personalizadas: {
+            ...(p.info_personalizadas || {}),
+            codigo_fipe: data.data.codigo_fipe,
+            url_fipe: data.data.url_fipe,
+            historico_fipe: data.data.historico_fipe,
+            categoria_detalhada: data.data.categoria,
+          },
+        }
+      })
       toast({ title: 'Dados de inteligência importados!' })
     } catch (err: any) {
       toast({ title: 'Erro', description: err.message, variant: 'destructive' })
@@ -250,7 +266,7 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
 
       const payload = {
         ...formData,
-        ano_fabricacao: sanitizeNumber(formData.ano_fabricacao),
+        ano_fabricacao: sanitizeNumber(formData.ano_fabricacao || formData.ano_fab),
         ano_modelo: sanitizeNumber(formData.ano_modelo),
         quilometragem: sanitizeNumber(formData.quilometragem),
         valor_fipe: sanitizeNumber(formData.valor_fipe),
@@ -262,6 +278,13 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
         updated_at: new Date().toISOString(),
       }
       delete payload.tipo_entrada
+      delete payload.ano_fab
+      delete payload.preco_fipe
+      delete payload.historico_fipe
+      delete payload.url_fipe
+      delete payload.codigo_fipe
+      delete payload.mes_referencia
+
       if (!payload.id) {
         delete payload.id
       }
