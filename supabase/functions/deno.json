@@ -8,9 +8,10 @@
     "consultar-placa": 38,
     "enviar-para-assinatura": 32,
     "webhook-autentique": 29,
-    "consultar-cpf": 30,
+    "consultar-cpf": 31,
     "gerar-pdf-contrato": 18,
     "lead-automation": 7,
-    "gerar-conteudo": 3
+    "gerar-conteudo": 3,
+    "gerar-imagem": 2
   }
 }

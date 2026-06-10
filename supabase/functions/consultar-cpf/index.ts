@@ -139,62 +139,51 @@ Deno.serve(async (req) => {
 
       // Extração robusta conforme Acceptance Criteria
       const responseContent = data?.content || data?.conteudo || data
-      const contentNome =
-        responseContent?.nome?.conteudo ||
-        responseContent?.nome?.content ||
-        responseContent?.nome ||
-        responseContent
-      const nomeEncontrado = contentNome.nome || findNome(responseContent)
+      const contentNome = responseContent?.nome?.conteudo || {}
+      const nomeEncontrado = contentNome.nome || findNome(responseContent) || ''
 
-      const telefonesArray =
-        responseContent?.pesquisa_telefones?.conteudo ||
-        responseContent?.pesquisa_telefones?.content ||
-        responseContent?.telefones ||
-        []
-      const telefoneStr = Array.isArray(telefonesArray)
-        ? telefonesArray.join(', ')
-        : typeof telefonesArray === 'string'
-          ? telefonesArray
-          : ''
+      const telefonesArray = responseContent?.pesquisa_telefones?.conteudo || []
+      let telefoneStr = ''
+      if (Array.isArray(telefonesArray)) {
+        const telAlta = telefonesArray.find((t) => String(t?.prioridade).toLowerCase() === 'alta')
+        if (telAlta && (telAlta.telefone || telAlta.numero)) {
+          telefoneStr = String(telAlta.telefone || telAlta.numero)
+        } else if (telefonesArray.length > 0) {
+          telefoneStr = String(
+            telefonesArray[0]?.telefone || telefonesArray[0]?.numero || telefonesArray[0] || '',
+          )
+        }
+      } else if (typeof telefonesArray === 'string') {
+        telefoneStr = telefonesArray
+      }
 
-      const emailsArray =
-        responseContent?.emails?.conteudo ||
-        responseContent?.emails?.content ||
-        responseContent?.emails ||
-        []
-      const emailStr = Array.isArray(emailsArray)
-        ? emailsArray.join(', ')
-        : typeof emailsArray === 'string'
-          ? emailsArray
-          : ''
+      const emailsArray = responseContent?.emails?.conteudo || []
+      let emailStr = ''
+      if (Array.isArray(emailsArray) && emailsArray.length > 0) {
+        emailStr = typeof emailsArray[0] === 'string' ? emailsArray[0] : emailsArray[0]?.email || ''
+      } else if (typeof emailsArray === 'string') {
+        emailStr = emailsArray
+      }
 
-      const outrosDocs =
-        responseContent?.outros_documentos?.conteudo ||
-        responseContent?.outros_documentos?.content ||
-        responseContent?.outros_documentos ||
-        responseContent
+      const outrosDocs = responseContent?.outros_documentos || {}
 
       result = {
         cpf: cleanCpf,
-        nome: nomeEncontrado || '',
+        nome: nomeEncontrado,
         telefone: telefoneStr,
         email: emailStr,
         rg: outrosDocs.rg || responseContent?.rg || '',
-        data_nascimento:
-          contentNome.data_nascimento ||
-          responseContent.dataNascimento ||
-          responseContent.data_nascimento ||
-          '',
-        idade: contentNome.idade || responseContent.idade || '',
-        sexo: contentNome.sexo || responseContent.sexo || responseContent.genero || '',
-        nome_mae: contentNome.mae || responseContent.mae || responseContent.nome_mae || '',
+        data_nascimento: contentNome.data_nascimento || responseContent?.data_nascimento || '',
+        idade: contentNome.idade || responseContent?.idade || '',
+        sexo: contentNome.sexo || responseContent?.sexo || responseContent?.genero || '',
+        nome_mae: contentNome.mae || responseContent?.mae || responseContent?.nome_mae || '',
         situacao_receita:
           contentNome.situacao_receita ||
-          responseContent.situacao ||
-          responseContent.situacao_cadastral ||
+          responseContent?.situacao ||
+          responseContent?.situacao_cadastral ||
           'REGULAR',
         situacao_receita_data:
-          contentNome.situacao_receita_data || responseContent.situacao_receita_data || '',
+          contentNome.situacao_receita_data || responseContent?.situacao_receita_data || '',
       }
     }
 

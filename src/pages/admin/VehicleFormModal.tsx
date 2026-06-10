@@ -104,6 +104,13 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
   const [newOpcional, setNewOpcional] = useState('')
   const fileInputRef = useRef<HTMLInputElement>(null)
 
+  const [novaDespesa, setNovaDespesa] = useState({
+    categoria: 'Mecânica',
+    descricao: '',
+    valor: '',
+    data_despesa: new Date().toISOString().split('T')[0],
+  })
+
   const [formData, setFormData] = useState<any>({
     categoria: 'Carro',
     placa: '',
@@ -139,6 +146,124 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
     versao: '',
     descricao: '',
   })
+
+  const handleDocumentoSearch = async (doc: string) => {
+    const cleanDoc = doc.replace(/\D/g, '')
+    if (cleanDoc.length === 11) {
+      setLoading(true)
+      try {
+        const { data, error } = await supabase.functions.invoke('consultar-cpf', {
+          body: { cpf: cleanDoc },
+        })
+        if (data?.success) {
+          const res = data.data
+          setFormData((p: any) => ({
+            ...p,
+            proprietario_nome: res.nome || p.proprietario_nome,
+            proprietario_telefone: res.telefone || p.proprietario_telefone,
+            proprietario_email: res.email || p.proprietario_email,
+            proprietario_rg: res.rg || p.proprietario_rg,
+            proprietario_data_nascimento: res.data_nascimento || p.proprietario_data_nascimento,
+            proprietario_idade: res.idade || p.proprietario_idade,
+            proprietario_sexo: res.sexo || p.proprietario_sexo,
+            proprietario_mae: res.nome_mae || p.proprietario_mae,
+            proprietario_situacao_receita: res.situacao_receita || p.proprietario_situacao_receita,
+            proprietario_situacao_receita_data:
+              res.situacao_receita_data || p.proprietario_situacao_receita_data,
+          }))
+          toast({ title: 'Dados do CPF importados!' })
+        }
+      } catch (e: any) {
+        console.error(e)
+      } finally {
+        setLoading(false)
+      }
+    } else if (cleanDoc.length === 14) {
+      setLoading(true)
+      try {
+        const res = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${cleanDoc}`)
+        const data = await res.json()
+        if (data.razao_social) {
+          setFormData((p: any) => ({
+            ...p,
+            proprietario_nome: data.razao_social,
+            proprietario_telefone: data.ddd_telefone_1 || p.proprietario_telefone,
+            proprietario_email: data.email || p.proprietario_email,
+            proprietario_cep: data.cep || p.proprietario_cep,
+            proprietario_logradouro: data.logradouro || p.proprietario_logradouro,
+            proprietario_numero: data.numero || p.proprietario_numero,
+            proprietario_complemento: data.complemento || p.proprietario_complemento,
+            proprietario_bairro: data.bairro || p.proprietario_bairro,
+            proprietario_cidade: data.municipio || p.proprietario_cidade,
+            proprietario_estado: data.uf || p.proprietario_estado,
+          }))
+          toast({ title: 'Dados do CNPJ importados!' })
+        }
+      } catch (e) {
+        console.error(e)
+      } finally {
+        setLoading(false)
+      }
+    }
+  }
+
+  const handleCepBlur = async (cep: string) => {
+    if (!cep) return
+    const cleanCep = cep.replace(/\D/g, '')
+    if (cleanCep.length === 8) {
+      try {
+        const res = await fetch(`https://viacep.com.br/ws/${cleanCep}/json/`)
+        const data = await res.json()
+        if (!data.erro) {
+          setFormData((p: any) => ({
+            ...p,
+            proprietario_logradouro: data.logradouro || p.proprietario_logradouro,
+            proprietario_bairro: data.bairro || p.proprietario_bairro,
+            proprietario_cidade: data.localidade || p.proprietario_cidade,
+            proprietario_estado: data.uf || p.proprietario_estado,
+          }))
+          toast({ title: 'Endereço importado com sucesso!' })
+        }
+      } catch (err) {
+        console.error(err)
+      }
+    }
+  }
+
+  const handleAddDespesa = async () => {
+    if (!vehicleId)
+      return toast({
+        title: 'Salve o veículo primeiro antes de lançar despesas',
+        variant: 'destructive',
+      })
+    if (!novaDespesa.valor)
+      return toast({ title: 'Informe o valor da despesa', variant: 'destructive' })
+
+    setLoading(true)
+    try {
+      const payload = {
+        veiculo_id: vehicleId,
+        categoria: novaDespesa.categoria,
+        descricao: novaDespesa.descricao,
+        valor: Number(novaDespesa.valor),
+        data_despesa: novaDespesa.data_despesa,
+      }
+      const { data, error } = await supabase.from('despesas').insert([payload]).select()
+      if (error) throw error
+      setDespesas((p) => [...p, data[0]])
+      setNovaDespesa({
+        categoria: 'Mecânica',
+        descricao: '',
+        valor: '',
+        data_despesa: new Date().toISOString().split('T')[0],
+      })
+      toast({ title: 'Despesa lançada com sucesso!' })
+    } catch (err: any) {
+      toast({ title: 'Erro ao lançar despesa', description: err.message, variant: 'destructive' })
+    } finally {
+      setLoading(false)
+    }
+  }
 
   useEffect(() => {
     if (isOpen) {
@@ -510,7 +635,7 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
     }, 1500)
   }
 
-  const custoCompra = formData.is_consignado ? 0 : Number(formData.valor_fipe) * 0.8 || 0
+  const custoCompra = Number(formData.valor_fipe) || 0
   const totalDespesas = despesas.reduce((a, c) => a + (Number(c.valor) || 0), 0)
   const margemLucro = (Number(formData.preco_venda) || 0) - (custoCompra + totalDespesas)
   const historicoFipeData =
@@ -781,30 +906,17 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
                     />
                   </div>
                   <div className="col-span-2">
-                    <Label>CPF do Proprietário</Label>
-                    <CpfInput
+                    <Label>CPF / CNPJ</Label>
+                    <Input
                       value={formData.proprietario_cpf || ''}
-                      onChange={(v) => setFormData({ ...formData, proprietario_cpf: v })}
-                      onNameFound={(name, data) => {
-                        setFormData((p: any) => ({
-                          ...p,
-                          proprietario_nome: name,
-                          proprietario_rg: data?.rg || p.proprietario_rg,
-                          proprietario_data_nascimento:
-                            data?.data_nascimento || p.proprietario_data_nascimento,
-                          proprietario_idade: data?.idade || p.proprietario_idade,
-                          proprietario_sexo: data?.sexo || p.proprietario_sexo,
-                          proprietario_mae: data?.nome_mae || p.proprietario_mae,
-                          proprietario_situacao_receita:
-                            data?.situacao_receita || p.proprietario_situacao_receita,
-                          proprietario_situacao_receita_data:
-                            data?.situacao_receita_data || p.proprietario_situacao_receita_data,
-                          proprietario_telefone: data?.telefone || p.proprietario_telefone,
-                          proprietario_email: data?.email || p.proprietario_email,
-                        }))
-                        if (data) setCpfInfo(data)
+                      onChange={(e) => {
+                        const v = e.target.value.replace(/[^\d./-]/g, '')
+                        setFormData({ ...formData, proprietario_cpf: v })
                       }}
-                      className="bg-white"
+                      onBlur={(e) => handleDocumentoSearch(e.target.value)}
+                      placeholder="Somente números (CPF ou CNPJ)"
+                      className="bg-white font-mono"
+                      maxLength={18}
                     />
                   </div>
                   <div className="col-span-2">
@@ -869,6 +981,87 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
                       }
                       className="bg-white"
                     />
+                  </div>
+
+                  <div className="col-span-2 md:col-span-4 mt-2">
+                    <h4 className="font-bold text-sm border-b pb-2 mb-3 text-slate-700">
+                      Endereço
+                    </h4>
+                    <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
+                      <div className="col-span-2 md:col-span-1">
+                        <Label>CEP</Label>
+                        <Input
+                          value={formData.proprietario_cep || ''}
+                          onChange={(e) =>
+                            setFormData({ ...formData, proprietario_cep: e.target.value })
+                          }
+                          onBlur={(e) => handleCepBlur(e.target.value)}
+                          className="bg-white"
+                          maxLength={9}
+                        />
+                      </div>
+                      <div className="col-span-2 md:col-span-3">
+                        <Label>Logradouro</Label>
+                        <Input
+                          value={formData.proprietario_logradouro || ''}
+                          onChange={(e) =>
+                            setFormData({ ...formData, proprietario_logradouro: e.target.value })
+                          }
+                          className="bg-white"
+                        />
+                      </div>
+                      <div className="col-span-1">
+                        <Label>Número</Label>
+                        <Input
+                          value={formData.proprietario_numero || ''}
+                          onChange={(e) =>
+                            setFormData({ ...formData, proprietario_numero: e.target.value })
+                          }
+                          className="bg-white"
+                        />
+                      </div>
+                      <div className="col-span-1">
+                        <Label>Complemento</Label>
+                        <Input
+                          value={formData.proprietario_complemento || ''}
+                          onChange={(e) =>
+                            setFormData({ ...formData, proprietario_complemento: e.target.value })
+                          }
+                          className="bg-white"
+                        />
+                      </div>
+                      <div className="col-span-2">
+                        <Label>Bairro</Label>
+                        <Input
+                          value={formData.proprietario_bairro || ''}
+                          onChange={(e) =>
+                            setFormData({ ...formData, proprietario_bairro: e.target.value })
+                          }
+                          className="bg-white"
+                        />
+                      </div>
+                      <div className="col-span-2 md:col-span-3">
+                        <Label>Cidade</Label>
+                        <Input
+                          value={formData.proprietario_cidade || ''}
+                          onChange={(e) =>
+                            setFormData({ ...formData, proprietario_cidade: e.target.value })
+                          }
+                          className="bg-white"
+                        />
+                      </div>
+                      <div className="col-span-2 md:col-span-1">
+                        <Label>UF</Label>
+                        <Input
+                          value={formData.proprietario_estado || ''}
+                          onChange={(e) =>
+                            setFormData({ ...formData, proprietario_estado: e.target.value })
+                          }
+                          className="bg-white uppercase"
+                          maxLength={2}
+                        />
+                      </div>
+                    </div>
                   </div>
                 </div>
                 {(cpfInfo || formData.proprietario_mae) && (
@@ -1106,8 +1299,10 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
                   <h3 className="font-bold text-slate-800 mb-4">Resumo ROI</h3>
                   <div className="space-y-4">
                     <div className="flex justify-between border-b pb-2">
-                      <span className="text-slate-500">Custo Base (Est.)</span>
-                      <span className="font-medium">R$ {custoCompra.toLocaleString('pt-BR')}</span>
+                      <span className="text-slate-500">Custo Base (FIPE)</span>
+                      <span className="font-medium">
+                        R$ {custoCompra.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                      </span>
                     </div>
                     <div className="flex justify-between border-b pb-2">
                       <span className="text-slate-500">Total Despesas</span>
@@ -1185,8 +1380,76 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
                   </div>
                   <div>
                     <h3 className="font-bold text-slate-800 mb-4">Despesas Vinculadas</h3>
+
+                    <div className="bg-slate-50 p-4 rounded-lg border mb-4 shadow-sm">
+                      <h4 className="font-bold text-sm mb-3 flex items-center gap-2">
+                        <Plus className="w-4 h-4 text-blue-600" /> Lançar Nova Despesa
+                      </h4>
+                      <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
+                        <div className="md:col-span-3">
+                          <Label className="text-xs">Categoria</Label>
+                          <Select
+                            value={novaDespesa.categoria}
+                            onValueChange={(v) => setNovaDespesa({ ...novaDespesa, categoria: v })}
+                          >
+                            <SelectTrigger className="bg-white">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="Mecânica">Mecânica</SelectItem>
+                              <SelectItem value="Estética">Estética</SelectItem>
+                              <SelectItem value="Documentação">Documentação</SelectItem>
+                              <SelectItem value="Impostos">Impostos</SelectItem>
+                              <SelectItem value="Transporte">Transporte</SelectItem>
+                              <SelectItem value="Outros">Outros</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="md:col-span-4">
+                          <Label className="text-xs">Descrição</Label>
+                          <Input
+                            value={novaDespesa.descricao}
+                            onChange={(e) =>
+                              setNovaDespesa({ ...novaDespesa, descricao: e.target.value })
+                            }
+                            className="bg-white"
+                            placeholder="Ex: Troca de óleo"
+                          />
+                        </div>
+                        <div className="md:col-span-2">
+                          <Label className="text-xs">Data</Label>
+                          <Input
+                            type="date"
+                            value={novaDespesa.data_despesa}
+                            onChange={(e) =>
+                              setNovaDespesa({ ...novaDespesa, data_despesa: e.target.value })
+                            }
+                            className="bg-white"
+                          />
+                        </div>
+                        <div className="md:col-span-2">
+                          <Label className="text-xs">Valor</Label>
+                          <CurrencyInput
+                            value={novaDespesa.valor}
+                            onChange={(v) => setNovaDespesa({ ...novaDespesa, valor: v })}
+                            className="bg-white"
+                          />
+                        </div>
+                        <div className="md:col-span-1">
+                          <Button
+                            onClick={handleAddDespesa}
+                            disabled={loading}
+                            className="w-full h-9 p-0"
+                            variant="secondary"
+                          >
+                            Salvar
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+
                     {despesas.length === 0 ? (
-                      <div className="text-center text-slate-500 py-8 bg-slate-50 rounded-lg">
+                      <div className="text-center text-slate-500 py-8 bg-slate-50 rounded-lg border border-dashed">
                         Nenhuma despesa lançada para este veículo.
                       </div>
                     ) : (
