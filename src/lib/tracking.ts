@@ -3,6 +3,36 @@
 if (typeof window !== 'undefined') {
   const isPreview = window.location.hostname.includes('goskip.app')
 
+  // Error suppression for 3rd party tracker scripts
+  window.addEventListener(
+    'error',
+    (e) => {
+      const filename = e.filename || ''
+      if (
+        filename.includes('googletagmanager.com') ||
+        filename.includes('google.com/pagead') ||
+        filename.includes('googleadservices.com')
+      ) {
+        e.preventDefault()
+      }
+    },
+    true,
+  )
+
+  window.addEventListener('unhandledrejection', (e) => {
+    const reason = e.reason
+    const msg = reason instanceof Error ? reason.message : typeof reason === 'string' ? reason : ''
+    if (
+      msg.includes('google.com/pagead') ||
+      msg.includes('googletagmanager.com') ||
+      msg.includes('googleadservices.com') ||
+      msg.includes('net::ERR_BLOCKED_BY_CLIENT') ||
+      msg.includes('net::ERR_CONNECTION_REFUSED')
+    ) {
+      e.preventDefault()
+    }
+  })
+
   const originalFetch = window.fetch
   window.fetch = async function (...args) {
     const url =
@@ -11,6 +41,8 @@ if (typeof window !== 'undefined') {
       url &&
       typeof url === 'string' &&
       (url.includes('google.com/measurement') ||
+        url.includes('google.com/pagead') ||
+        url.includes('googletagmanager.com') ||
         url.includes('google-analytics.com') ||
         url.includes('analytics.google.com') ||
         url.includes('facebook.com/tr') ||
@@ -40,6 +72,8 @@ if (typeof window !== 'undefined') {
       const isTracker =
         typeof url === 'string' &&
         (url.includes('google.com/measurement') ||
+          url.includes('google.com/pagead') ||
+          url.includes('googletagmanager.com') ||
           url.includes('google-analytics.com') ||
           url.includes('analytics.google.com') ||
           url.includes('facebook.com/tr') ||
@@ -55,6 +89,44 @@ if (typeof window !== 'undefined') {
         }
       }
       return originalSendBeacon.call(this, url, data)
+    }
+  }
+
+  // Intercept XHR to suppress tracking errors (like HTTP 0 from ad blockers)
+  if (typeof XMLHttpRequest !== 'undefined') {
+    const originalXHROpen = XMLHttpRequest.prototype.open
+    const originalXHRSend = XMLHttpRequest.prototype.send
+
+    XMLHttpRequest.prototype.open = function (method: string, url: string | URL, ...args: any[]) {
+      const urlStr = typeof url === 'string' ? url : url?.toString() || ''
+      if (
+        urlStr.includes('google.com/measurement') ||
+        urlStr.includes('google.com/pagead') ||
+        urlStr.includes('googletagmanager.com') ||
+        urlStr.includes('google-analytics.com') ||
+        urlStr.includes('analytics.google.com') ||
+        urlStr.includes('facebook.com/tr') ||
+        urlStr.includes('googleadservices.com')
+      ) {
+        ;(this as any)._isTracker = true
+      }
+      return originalXHROpen.apply(this, [method, url, ...args] as any)
+    }
+
+    XMLHttpRequest.prototype.send = function (body?: Document | XMLHttpRequestBodyInit | null) {
+      if ((this as any)._isTracker) {
+        this.addEventListener('error', (e) => {
+          e.preventDefault()
+          e.stopPropagation()
+        })
+        try {
+          return originalXHRSend.call(this, body)
+        } catch (e) {
+          console.debug('Tracking XHR silently failed')
+        }
+      } else {
+        return originalXHRSend.call(this, body)
+      }
     }
   }
 }
