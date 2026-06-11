@@ -1,7 +1,7 @@
 {
   "_versions": {
     "send-lead-email": 45,
-    "receive-leads": 48,
+    "receive-leads": 49,
     "sync-estoque": 44,
     "webhook-portais": 45,
     "on-lead-created": 45,

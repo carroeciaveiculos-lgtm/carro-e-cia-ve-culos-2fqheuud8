@@ -18,7 +18,7 @@ const waToken = Deno.env.get('META_WHATSAPP_ACCESS_TOKEN')!
 const waPhoneId = Deno.env.get('META_PHONE_NUMBER_ID')!
 const waVerifyToken = Deno.env.get('WHATSAPP_VERIFY_TOKEN')!
 
-const SYSTEM_PROMPT = `Você é o Pedro, SDR digital da Carro e Cia Motors.
+const SYSTEM_PROMPT = `Você é o Luiz, SDR digital da Carro e Cia Motors.
 Identidade: SDR consultivo e simpático da Carro e Cia.
 Estilo: Mensagens curtas (máximo 3 linhas), objetivas, amigáveis, usando emojis mínimos. MÁXIMO DE UMA PERGUNTA POR MENSAGEM.
 Regra: Foco exclusivo em agendar visitas à loja física ou iniciar simulação de financiamento. NUNCA ofereça descontos diretos.
@@ -59,12 +59,24 @@ async function runGemini(history: any[]) {
     contents: history,
     tools: [{ functionDeclarations: tools }],
   }
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(reqBody),
-  })
-  return res.json()
+
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(reqBody),
+    })
+
+    if (!res.ok) {
+      console.error('Gemini API Error:', await res.text())
+      return {}
+    }
+
+    return await res.json()
+  } catch (error) {
+    console.error('Gemini API Fetch Exception:', error)
+    return {}
+  }
 }
 
 async function handleFunctionCall(call: any, leadId: string) {
@@ -73,52 +85,80 @@ async function handleFunctionCall(call: any, leadId: string) {
   if (call.name === 'consultar_estoque') {
     let query = supabase
       .from('veiculos')
-      .select('marca, modelo, preco_venda, ano_fabricacao, is_consignado, fotos')
+      .select('marca, modelo, preco_venda, ano_fabricacao, is_consignado')
       .eq('status', 'disponivel')
     if (args.marca) query = query.ilike('marca', `%${args.marca}%`)
     if (args.modelo) query = query.ilike('modelo', `%${args.modelo}%`)
     if (args.preco_maximo) query = query.lte('preco_venda', args.preco_maximo)
 
-    const { data } = await query.limit(5)
+    const { data, error } = await query.limit(5)
+
+    if (error) {
+      console.error('DB Error on consultar_estoque:', error)
+      return { error: 'Failed to query database' }
+    }
+
     return { result: data || [] }
   }
 
   if (call.name === 'agendar_visita') {
-    const { data: users } = await supabase
+    const { data: users, error: usersError } = await supabase
       .from('usuarios')
       .select('id')
       .ilike('nome', '%Roberto Junior%')
       .limit(1)
+
+    if (usersError) {
+      console.error('DB Error fetching user for agendar_visita:', usersError)
+    }
+
     const responsavel_id = users?.[0]?.id || null
     const data_agendada = `${args.data}T${args.hora}:00`
 
-    await supabase.from('followups').insert({
+    const { error: insertError } = await supabase.from('followups').insert({
       lead_id: leadId,
       responsavel_id: responsavel_id,
       data_agendada: data_agendada,
-      lembrete: 'Visita agendada via IA SDR',
+      lembrete: 'Visita agendada via IA SDR (Luiz)',
       concluido: false,
     })
 
-    return { result: 'Visita agendada com sucesso. O vendedor Roberto Junior foi notificado.' }
+    if (insertError) {
+      console.error('DB Error inserting followup:', insertError)
+      return { error: 'Falha ao agendar visita' }
+    }
+
+    return { result: 'Visita agendada com sucesso. O vendedor responsável foi notificado.' }
   }
 
   return { error: 'Função não encontrada.' }
 }
 
 async function sendWhatsApp(to: string, text: string) {
-  if (!waToken) return console.log('Mocked WA to:', to, 'Msg:', text)
-  await fetch(`https://graph.facebook.com/v18.0/${waPhoneId}/messages`, {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${waToken}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      messaging_product: 'whatsapp',
-      recipient_type: 'individual',
-      to: to.replace(/\D/g, ''),
-      type: 'text',
-      text: { body: text },
-    }),
-  })
+  if (!waToken) {
+    console.log('Mocked WA to:', to, 'Msg:', text)
+    return
+  }
+
+  try {
+    const res = await fetch(`https://graph.facebook.com/v18.0/${waPhoneId}/messages`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${waToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        messaging_product: 'whatsapp',
+        recipient_type: 'individual',
+        to: to.replace(/\D/g, ''),
+        type: 'text',
+        text: { body: text },
+      }),
+    })
+
+    if (!res.ok) {
+      console.error('Meta API Error:', await res.text())
+    }
+  } catch (error) {
+    console.error('Meta API Fetch Exception:', error)
+  }
 }
 
 Deno.serve(async (req) => {
@@ -136,7 +176,13 @@ Deno.serve(async (req) => {
     return new Response('Token de verificação inválido', { status: 403 })
   }
 
-  const body = await req.json()
+  let body
+  try {
+    body = await req.json()
+  } catch (e) {
+    console.error('Invalid JSON payload')
+    return new Response('bad request', { status: 400 })
+  }
 
   // 1. Webhook do WhatsApp (Mensagem do Cliente)
   if (body.object === 'whatsapp_business_account') {
@@ -152,7 +198,7 @@ Deno.serve(async (req) => {
     if (!phone || !text) return new Response('ok')
 
     // Buscar Lead
-    let { data: lead } = await supabase
+    let { data: lead, error: leadError } = await supabase
       .from('leads')
       .select('*')
       .eq('telefone', phone)
@@ -160,8 +206,12 @@ Deno.serve(async (req) => {
       .limit(1)
       .single()
 
+    if (leadError && leadError.code !== 'PGRST116') {
+      console.error('DB Error fetching lead:', leadError)
+    }
+
     if (!lead) {
-      const { data: newLead } = await supabase
+      const { data: newLead, error: insertLeadError } = await supabase
         .from('leads')
         .insert({
           nome: profileName,
@@ -173,24 +223,35 @@ Deno.serve(async (req) => {
         })
         .select()
         .single()
+
+      if (insertLeadError) {
+        console.error('DB Error inserting lead:', insertLeadError)
+        return new Response('ok')
+      }
       lead = newLead
     }
 
     if (!lead) return new Response('ok')
 
     // Salvar mensagem do cliente
-    await supabase
-      .from('conversation_history')
-      .insert({ lead_id: lead.id, sender: 'client', message_text: text })
+    const { error: histError } = await supabase.from('conversation_history').insert({
+      lead_id: lead.id,
+      sender: 'client',
+      message_text: text,
+    })
+
+    if (histError) console.error('DB Error saving client msg:', histError)
 
     // Montar histórico para o Gemini
-    const { data: history } = await supabase
+    const { data: history, error: fetchHistError } = await supabase
       .from('conversation_history')
       .select('*')
       .eq('lead_id', lead.id)
       .order('created_at', { ascending: true })
 
-    const geminiHistory = history!.map((m) => ({
+    if (fetchHistError) console.error('DB Error fetching history:', fetchHistError)
+
+    const geminiHistory = (history || []).map((m) => ({
       role: m.sender === 'bot' ? 'model' : 'user',
       parts: [{ text: m.message_text }],
     }))
@@ -218,9 +279,14 @@ Deno.serve(async (req) => {
     }
 
     // Salvar resposta e enviar
-    await supabase
-      .from('conversation_history')
-      .insert({ lead_id: lead.id, sender: 'bot', message_text: responseText })
+    const { error: botHistError } = await supabase.from('conversation_history').insert({
+      lead_id: lead.id,
+      sender: 'bot',
+      message_text: responseText,
+    })
+
+    if (botHistError) console.error('DB Error saving bot msg:', botHistError)
+
     await sendWhatsApp(phone, responseText)
 
     return new Response('ok', { headers: corsHeaders })
@@ -232,7 +298,7 @@ Deno.serve(async (req) => {
   const source = body.origem || 'site'
   const veiculo = body.veiculo || body.veiculo_interesse || ''
 
-  const { data: lead } = await supabase
+  const { data: lead, error: insertLeadError } = await supabase
     .from('leads')
     .insert({
       nome,
@@ -246,17 +312,26 @@ Deno.serve(async (req) => {
     .select()
     .single()
 
+  if (insertLeadError) {
+    console.error('DB Error inserting portal lead:', insertLeadError)
+  }
+
   if (lead) {
-    const initText = `Novo lead recebido do portal ${source}. O cliente se chama ${nome} e tem interesse no veículo: ${veiculo}. Inicie a conversa se apresentando como Pedro, SDR da loja, e puxe assunto para agendar uma visita ou oferecer simulação.`
+    const initText = `Novo lead recebido do portal ${source}. O cliente se chama ${nome} e tem interesse no veículo: ${veiculo}. Inicie a conversa se apresentando como Luiz, SDR da loja, e puxe assunto para agendar uma visita ou oferecer simulação.`
 
     const aiRes = await runGemini([{ role: 'user', parts: [{ text: initText }] }])
     const responseText =
       aiRes.candidates?.[0]?.content?.parts?.[0]?.text ||
-      `Olá ${nome}! Sou o Pedro, consultor digital da Carro e Cia. Vi que você tem interesse no ${veiculo}. Como prefere seguir: agendar uma visita ou fazer uma simulação de financiamento?`
+      `Olá ${nome}! Sou o Luiz, consultor digital da Carro e Cia. Vi que você tem interesse no ${veiculo}. Como prefere seguir: agendar uma visita ou fazer uma simulação de financiamento?`
 
-    await supabase
-      .from('conversation_history')
-      .insert({ lead_id: lead.id, sender: 'bot', message_text: responseText })
+    const { error: histError } = await supabase.from('conversation_history').insert({
+      lead_id: lead.id,
+      sender: 'bot',
+      message_text: responseText,
+    })
+
+    if (histError) console.error('DB Error saving bot init msg:', histError)
+
     if (portalPhone) {
       await sendWhatsApp(portalPhone, responseText)
     }

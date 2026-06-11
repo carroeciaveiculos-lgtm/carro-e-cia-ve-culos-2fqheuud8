@@ -3344,6 +3344,14 @@ export const Constants = {
 //   Policy "allow_auth_all_documentos" (ALL, PERMISSIVE) roles={authenticated}
 //     USING: true
 //     WITH CHECK: true
+// Table: followups
+//   Policy "authenticated_all_followups" (ALL, PERMISSIVE) roles={authenticated}
+//     USING: true
+//     WITH CHECK: true
+// Table: interacoes
+//   Policy "authenticated_all_interacoes" (ALL, PERMISSIVE) roles={authenticated}
+//     USING: true
+//     WITH CHECK: true
 // Table: keywords
 //   Policy "allow_auth_all_keywords" (ALL, PERMISSIVE) roles={authenticated}
 //     USING: true
@@ -3384,6 +3392,10 @@ export const Constants = {
 //   Policy "allow_all_media_select" (SELECT, PERMISSIVE) roles={public}
 //     USING: true
 //   Policy "allow_auth_media_all" (ALL, PERMISSIVE) roles={authenticated}
+//     USING: true
+//     WITH CHECK: true
+// Table: mensagens_template
+//   Policy "authenticated_all_mensagens_template" (ALL, PERMISSIVE) roles={authenticated}
 //     USING: true
 //     WITH CHECK: true
 // Table: notas_fiscais
@@ -3454,9 +3466,6 @@ export const Constants = {
 //   - fipe_anos
 //   - fipe_marcas
 //   - fipe_modelos
-//   - followups
-//   - interacoes
-//   - mensagens_template
 
 // --- DATABASE FUNCTIONS ---
 // FUNCTION rls_auto_enable()
