@@ -20,7 +20,7 @@ Deno.serve(async (req) => {
     const { data: veiculos, error } = await supabase
       .from('veiculos')
       .select(
-        'id, marca, modelo, ano_fabricacao, ano_modelo, preco_venda, quilometragem, combustivel, cor, placa, chassi, renavam, descricao, fotos, categoria, diferenciais, caracteristicas',
+        'id, marca, modelo, ano_fabricacao, ano_modelo, preco_venda, quilometragem, combustivel, cor, placa, chassi, renavam, descricao, fotos, categoria, diferenciais, caracteristicas, is_consignado',
       )
       .eq('status', 'disponivel')
 
@@ -42,6 +42,8 @@ Deno.serve(async (req) => {
       descricao: v.descricao,
       fotos: v.fotos,
       categoria: v.categoria,
+      is_consignado: v.is_consignado,
+      tipo_estoque: v.is_consignado ? 'consignado' : 'proprio',
       opcionais: [...(v.diferenciais || []), ...(v.caracteristicas || [])],
     }))
 

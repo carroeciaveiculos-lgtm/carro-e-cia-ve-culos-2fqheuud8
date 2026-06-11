@@ -33,9 +33,9 @@ export default function Estoque() {
     supabase
       .from('veiculos')
       .select(
-        'id, marca, modelo, versao, ano_fabricacao, ano_modelo, preco_venda, quilometragem, combustivel, cor, fotos, is_zero_km, status, categoria',
+        'id, marca, modelo, versao, ano_fabricacao, ano_modelo, preco_venda, quilometragem, combustivel, cor, fotos, is_zero_km, status, is_consignado, categoria',
       )
-      .in('status', ['disponivel', 'consignado'])
+      .eq('status', 'disponivel')
       .order('destaque', { ascending: false })
       .order('created_at', { ascending: false })
       .then(({ data }) => {

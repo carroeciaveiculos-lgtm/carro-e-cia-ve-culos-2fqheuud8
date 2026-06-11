@@ -768,6 +768,38 @@ export type Database = {
           },
         ]
       }
+      conversation_history: {
+        Row: {
+          created_at: string
+          id: string
+          lead_id: string | null
+          message_text: string
+          sender: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          lead_id?: string | null
+          message_text: string
+          sender: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          lead_id?: string | null
+          message_text?: string
+          sender?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'conversation_history_lead_id_fkey'
+            columns: ['lead_id']
+            isOneToOne: false
+            referencedRelation: 'leads'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       despesas: {
         Row: {
           categoria: string | null
@@ -1272,6 +1304,7 @@ export type Database = {
           cpf: string | null
           created_at: string | null
           email: string | null
+          external_lead_id: string | null
           faixa_preco: string | null
           forma_pagamento: string | null
           google_ads_customer_id: string | null
@@ -1280,7 +1313,9 @@ export type Database = {
           notas_internas: string | null
           observacoes: string | null
           origem: string | null
+          payment_method: string | null
           responsavel_id: string | null
+          source: string | null
           source_brevo: boolean | null
           source_google_ads: boolean | null
           source_gtm: boolean | null
@@ -1288,6 +1323,7 @@ export type Database = {
           telefone: string | null
           temperatura: string | null
           tipo: string
+          trade_in_car: string | null
           unico_dono: boolean | null
           updated_at: string | null
           utm_campaign: string | null
@@ -1308,6 +1344,7 @@ export type Database = {
           cpf?: string | null
           created_at?: string | null
           email?: string | null
+          external_lead_id?: string | null
           faixa_preco?: string | null
           forma_pagamento?: string | null
           google_ads_customer_id?: string | null
@@ -1316,7 +1353,9 @@ export type Database = {
           notas_internas?: string | null
           observacoes?: string | null
           origem?: string | null
+          payment_method?: string | null
           responsavel_id?: string | null
+          source?: string | null
           source_brevo?: boolean | null
           source_google_ads?: boolean | null
           source_gtm?: boolean | null
@@ -1324,6 +1363,7 @@ export type Database = {
           telefone?: string | null
           temperatura?: string | null
           tipo: string
+          trade_in_car?: string | null
           unico_dono?: boolean | null
           updated_at?: string | null
           utm_campaign?: string | null
@@ -1344,6 +1384,7 @@ export type Database = {
           cpf?: string | null
           created_at?: string | null
           email?: string | null
+          external_lead_id?: string | null
           faixa_preco?: string | null
           forma_pagamento?: string | null
           google_ads_customer_id?: string | null
@@ -1352,7 +1393,9 @@ export type Database = {
           notas_internas?: string | null
           observacoes?: string | null
           origem?: string | null
+          payment_method?: string | null
           responsavel_id?: string | null
+          source?: string | null
           source_brevo?: boolean | null
           source_google_ads?: boolean | null
           source_gtm?: boolean | null
@@ -1360,6 +1403,7 @@ export type Database = {
           telefone?: string | null
           temperatura?: string | null
           tipo?: string
+          trade_in_car?: string | null
           unico_dono?: boolean | null
           updated_at?: string | null
           utm_campaign?: string | null
@@ -2673,6 +2717,12 @@ export const Constants = {
 //   pdf_assinado_url: text (nullable)
 //   created_at: timestamp with time zone (nullable, default: now())
 //   updated_at: timestamp with time zone (nullable, default: now())
+// Table: conversation_history
+//   id: uuid (not null, default: gen_random_uuid())
+//   lead_id: uuid (nullable)
+//   sender: text (not null)
+//   message_text: text (not null)
+//   created_at: timestamp with time zone (not null, default: now())
 // Table: despesas
 //   id: uuid (not null, default: gen_random_uuid())
 //   categoria: text (nullable)
@@ -2820,6 +2870,10 @@ export const Constants = {
 //   utm_medium: text (nullable)
 //   utm_campaign: text (nullable)
 //   notas_internas: text (nullable)
+//   external_lead_id: text (nullable)
+//   trade_in_car: text (nullable)
+//   source: text (nullable)
+//   payment_method: text (nullable)
 // Table: logs_ia
 //   id: uuid (not null, default: gen_random_uuid())
 //   usuario_id: uuid (nullable)
@@ -3129,6 +3183,10 @@ export const Constants = {
 // Table: contratos_consignacao
 //   PRIMARY KEY contratos_consignacao_pkey: PRIMARY KEY (id)
 //   FOREIGN KEY contratos_consignacao_veiculo_id_fkey: FOREIGN KEY (veiculo_id) REFERENCES veiculos(id) ON DELETE SET NULL
+// Table: conversation_history
+//   FOREIGN KEY conversation_history_lead_id_fkey: FOREIGN KEY (lead_id) REFERENCES leads(id) ON DELETE CASCADE
+//   PRIMARY KEY conversation_history_pkey: PRIMARY KEY (id)
+//   CHECK conversation_history_sender_check: CHECK ((sender = ANY (ARRAY['bot'::text, 'client'::text, 'human'::text])))
 // Table: despesas
 //   PRIMARY KEY despesas_pkey: PRIMARY KEY (id)
 //   FOREIGN KEY despesas_registrada_por_fkey: FOREIGN KEY (registrada_por) REFERENCES auth.users(id)
@@ -3272,6 +3330,10 @@ export const Constants = {
 //     WITH CHECK: true
 // Table: contratos_consignacao
 //   Policy "allow_auth_all_contratos_consignacao" (ALL, PERMISSIVE) roles={authenticated}
+//     USING: true
+//     WITH CHECK: true
+// Table: conversation_history
+//   Policy "allow_auth_all_conversation_history" (ALL, PERMISSIVE) roles={authenticated}
 //     USING: true
 //     WITH CHECK: true
 // Table: despesas
@@ -3560,6 +3622,8 @@ export const Constants = {
 //   CREATE UNIQUE INDEX clientes_cpf_key ON public.clientes USING btree (cpf)
 // Table: configuracoes_api
 //   CREATE UNIQUE INDEX configuracoes_api_portal_key ON public.configuracoes_api USING btree (portal)
+// Table: conversation_history
+//   CREATE INDEX idx_conversation_history_lead_id ON public.conversation_history USING btree (lead_id)
 // Table: fipe_anos
 //   CREATE UNIQUE INDEX fipe_anos_codigo_modelo_codigo_marca_codigo_key ON public.fipe_anos USING btree (codigo, modelo_codigo, marca_codigo)
 // Table: fipe_marcas
