@@ -25,8 +25,12 @@ import {
 import { useToast } from '@/hooks/use-toast'
 import { cn } from '@/lib/utils'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { getWhatsAppLink } from '@/lib/whatsapp'
+import { useNavigate } from 'react-router-dom'
 
 export default function AdminLeads() {
+  const navigate = useNavigate()
+  const [filterStatus, setFilterStatus] = useState('todos')
   const [leads, setLeads] = useState<any[]>([])
   const [selectedLead, setSelectedLead] = useState<any>(null)
   const [search, setSearch] = useState('')
@@ -77,6 +81,24 @@ export default function AdminLeads() {
     }
   }
 
+  const handleTemperatureChange = async (newTemp: string) => {
+    if (!selectedLead) return
+    try {
+      const { error } = await supabase
+        .from('leads')
+        .update({ temperatura: newTemp })
+        .eq('id', selectedLead.id)
+      if (error) throw error
+      toast({ title: 'Temperatura atualizada com sucesso' })
+      setSelectedLead({ ...selectedLead, temperatura: newTemp })
+      setLeads((prev) =>
+        prev.map((l) => (l.id === selectedLead.id ? { ...l, temperatura: newTemp } : l)),
+      )
+    } catch (err: any) {
+      toast({ title: 'Erro ao atualizar', description: err.message, variant: 'destructive' })
+    }
+  }
+
   const handleStatusChange = async (newStatus: string) => {
     if (!selectedLead) return
     try {
@@ -113,11 +135,20 @@ export default function AdminLeads() {
     }
   }
 
-  const filteredLeads = leads.filter(
-    (l) =>
+  const filteredLeads = leads.filter((l) => {
+    const matchesSearch =
       l.nome?.toLowerCase().includes(search.toLowerCase()) ||
-      l.carro_modelo?.toLowerCase().includes(search.toLowerCase()),
-  )
+      l.carro_modelo?.toLowerCase().includes(search.toLowerCase())
+    const matchesFilter =
+      filterStatus === 'todos'
+        ? true
+        : filterStatus === 'novos'
+          ? l.status === 'novo'
+          : filterStatus === 'pendentes'
+            ? ['em_contato', 'negociando'].includes(l.status)
+            : true
+    return matchesSearch && matchesFilter
+  })
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -162,13 +193,25 @@ export default function AdminLeads() {
             />
           </div>
           <div className="flex gap-2 mt-3 overflow-x-auto pb-1 no-scrollbar">
-            <Badge variant="secondary" className="cursor-pointer bg-slate-200">
+            <Badge
+              variant={filterStatus === 'todos' ? 'secondary' : 'outline'}
+              className={cn('cursor-pointer', filterStatus === 'todos' ? 'bg-slate-200' : '')}
+              onClick={() => setFilterStatus('todos')}
+            >
               Todos
             </Badge>
-            <Badge variant="outline" className="cursor-pointer">
+            <Badge
+              variant={filterStatus === 'novos' ? 'secondary' : 'outline'}
+              className={cn('cursor-pointer', filterStatus === 'novos' ? 'bg-slate-200' : '')}
+              onClick={() => setFilterStatus('novos')}
+            >
               Novos
             </Badge>
-            <Badge variant="outline" className="cursor-pointer">
+            <Badge
+              variant={filterStatus === 'pendentes' ? 'secondary' : 'outline'}
+              className={cn('cursor-pointer', filterStatus === 'pendentes' ? 'bg-slate-200' : '')}
+              onClick={() => setFilterStatus('pendentes')}
+            >
               Pendentes
             </Badge>
           </div>
@@ -248,6 +291,10 @@ export default function AdminLeads() {
                   size="sm"
                   variant="outline"
                   className="text-green-600 border-green-200 bg-green-50 hover:bg-green-100"
+                  onClick={() =>
+                    selectedLead.telefone &&
+                    window.open(getWhatsAppLink('Olá!', selectedLead.telefone), '_blank')
+                  }
                 >
                   <MessageCircle className="w-4 h-4 mr-2" /> Chamar no WhatsApp
                 </Button>
@@ -404,6 +451,7 @@ export default function AdminLeads() {
                       selectedLead.temperatura === 'quente' &&
                         'bg-red-50 border-red-300 text-red-700',
                     )}
+                    onClick={() => handleTemperatureChange('quente')}
                   >
                     Quente
                   </Button>
@@ -414,6 +462,7 @@ export default function AdminLeads() {
                       selectedLead.temperatura === 'morno' &&
                         'bg-amber-50 border-amber-300 text-amber-700',
                     )}
+                    onClick={() => handleTemperatureChange('morno')}
                   >
                     Morno
                   </Button>
@@ -424,6 +473,7 @@ export default function AdminLeads() {
                       selectedLead.temperatura === 'frio' &&
                         'bg-blue-50 border-blue-300 text-blue-700',
                     )}
+                    onClick={() => handleTemperatureChange('frio')}
                   >
                     Frio
                   </Button>
@@ -505,7 +555,15 @@ export default function AdminLeads() {
                 <p className="text-xs text-blue-600 mb-3">
                   Gere uma simulação rápida para este lead baseado no valor do veículo.
                 </p>
-                <Button className="w-full bg-blue-600 hover:bg-blue-700 shadow-sm" size="sm">
+                <Button
+                  className="w-full bg-blue-600 hover:bg-blue-700 shadow-sm"
+                  size="sm"
+                  onClick={() =>
+                    navigate(
+                      `/admin/financiamento?lead_id=${selectedLead.id}&veiculo_id=${selectedLead.veiculo_id || ''}`,
+                    )
+                  }
+                >
                   Abrir Simulador
                 </Button>
               </div>

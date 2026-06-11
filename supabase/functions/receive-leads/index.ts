@@ -18,11 +18,12 @@ const waToken = Deno.env.get('META_WHATSAPP_ACCESS_TOKEN')!
 const waPhoneId = Deno.env.get('META_PHONE_NUMBER_ID')!
 const waVerifyToken = Deno.env.get('WHATSAPP_VERIFY_TOKEN')!
 
-const SYSTEM_PROMPT = `Você é o Luiz, SDR digital da Carro e Cia Motors.
-Identidade: SDR da Carro e Cia.
-Estilo: Mensagens curtas, amigáveis, usando quebras de linha e emojis mínimos.
-Regra: Foco exclusivo em agendar visitas à loja; NUNCA ofereça descontos.
-Use consultar_estoque sempre que precisar verificar veículos disponíveis.`
+const SYSTEM_PROMPT = `Você é o Pedro, SDR digital da Carro e Cia Motors.
+Identidade: SDR consultivo e simpático da Carro e Cia.
+Estilo: Mensagens curtas (máximo 3 linhas), objetivas, amigáveis, usando emojis mínimos. MÁXIMO DE UMA PERGUNTA POR MENSAGEM.
+Regra: Foco exclusivo em agendar visitas à loja física ou iniciar simulação de financiamento. NUNCA ofereça descontos diretos.
+Use "consultar_estoque" sempre que precisar verificar veículos disponíveis ou enviar fotos.
+Use "agendar_visita" quando o cliente quiser ir à loja.`
 
 const tools = [
   {
@@ -35,6 +36,18 @@ const tools = [
         modelo: { type: 'STRING' },
         preco_maximo: { type: 'NUMBER' },
       },
+    },
+  },
+  {
+    name: 'agendar_visita',
+    description: 'Agenda uma visita do cliente na loja física.',
+    parameters: {
+      type: 'OBJECT',
+      properties: {
+        data: { type: 'STRING', description: 'Data no formato YYYY-MM-DD' },
+        hora: { type: 'STRING', description: 'Hora no formato HH:MM' },
+      },
+      required: ['data', 'hora'],
     },
   },
 ]
@@ -54,13 +67,13 @@ async function runGemini(history: any[]) {
   return res.json()
 }
 
-async function handleFunctionCall(call: any) {
+async function handleFunctionCall(call: any, leadId: string) {
   const args = call.args || {}
 
   if (call.name === 'consultar_estoque') {
     let query = supabase
       .from('veiculos')
-      .select('marca, modelo, preco_venda, ano_fabricacao, is_consignado')
+      .select('marca, modelo, preco_venda, ano_fabricacao, is_consignado, fotos')
       .eq('status', 'disponivel')
     if (args.marca) query = query.ilike('marca', `%${args.marca}%`)
     if (args.modelo) query = query.ilike('modelo', `%${args.modelo}%`)
@@ -68,6 +81,26 @@ async function handleFunctionCall(call: any) {
 
     const { data } = await query.limit(5)
     return { result: data || [] }
+  }
+
+  if (call.name === 'agendar_visita') {
+    const { data: users } = await supabase
+      .from('usuarios')
+      .select('id')
+      .ilike('nome', '%Roberto Junior%')
+      .limit(1)
+    const responsavel_id = users?.[0]?.id || null
+    const data_agendada = `${args.data}T${args.hora}:00`
+
+    await supabase.from('followups').insert({
+      lead_id: leadId,
+      responsavel_id: responsavel_id,
+      data_agendada: data_agendada,
+      lembrete: 'Visita agendada via IA SDR',
+      concluido: false,
+    })
+
+    return { result: 'Visita agendada com sucesso. O vendedor Roberto Junior foi notificado.' }
   }
 
   return { error: 'Função não encontrada.' }
@@ -168,7 +201,7 @@ Deno.serve(async (req) => {
     // Lidar com Function Calling
     if (aiRes.candidates?.[0]?.content?.parts?.[0]?.functionCall) {
       const call = aiRes.candidates[0].content.parts[0].functionCall
-      const toolResult = await handleFunctionCall(call)
+      const toolResult = await handleFunctionCall(call, lead.id)
 
       geminiHistory.push(aiRes.candidates[0].content)
       geminiHistory.push({
@@ -179,7 +212,7 @@ Deno.serve(async (req) => {
       const followUp = await runGemini(geminiHistory)
       responseText =
         followUp.candidates?.[0]?.content?.parts?.[0]?.text ||
-        'Gostaria de agendar uma visita para conversarmos melhor?'
+        'Perfeito! Posso ajudar com mais alguma coisa?'
     } else {
       responseText = aiRes.candidates?.[0]?.content?.parts?.[0]?.text || 'Como posso ajudar?'
     }
@@ -214,12 +247,12 @@ Deno.serve(async (req) => {
     .single()
 
   if (lead) {
-    const initText = `Novo lead recebido do portal ${source}. O cliente se chama ${nome} e tem interesse no veículo: ${veiculo}. Inicie a conversa se apresentando como Luiz, SDR da loja, e puxe assunto para agendar uma visita.`
+    const initText = `Novo lead recebido do portal ${source}. O cliente se chama ${nome} e tem interesse no veículo: ${veiculo}. Inicie a conversa se apresentando como Pedro, SDR da loja, e puxe assunto para agendar uma visita ou oferecer simulação.`
 
     const aiRes = await runGemini([{ role: 'user', parts: [{ text: initText }] }])
     const responseText =
       aiRes.candidates?.[0]?.content?.parts?.[0]?.text ||
-      `Olá ${nome}! Sou o Luiz, consultor digital da Carro e Cia. Vi que você tem interesse no ${veiculo}. Gostaria de agendar uma visita?`
+      `Olá ${nome}! Sou o Pedro, consultor digital da Carro e Cia. Vi que você tem interesse no ${veiculo}. Como prefere seguir: agendar uma visita ou fazer uma simulação de financiamento?`
 
     await supabase
       .from('conversation_history')
