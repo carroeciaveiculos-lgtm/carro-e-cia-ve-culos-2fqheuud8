@@ -100,7 +100,7 @@ Deno.serve(async (req) => {
     if (mode === 'subscribe' && token === waVerifyToken) {
       return new Response(challenge, { status: 200 })
     }
-    return new Response('Forbidden', { status: 403 })
+    return new Response('Token de verificação inválido', { status: 403 })
   }
 
   const body = await req.json()
