@@ -1,19 +1,19 @@
 {
   "_versions": {
-    "send-lead-email": 43,
-    "receive-leads": 45,
-    "sync-estoque": 42,
-    "webhook-portais": 43,
-    "on-lead-created": 43,
-    "consultar-placa": 52,
-    "enviar-para-assinatura": 44,
-    "webhook-autentique": 41,
-    "consultar-cpf": 44,
-    "gerar-pdf-contrato": 30,
-    "lead-automation": 19,
-    "gerar-conteudo": 15,
-    "gerar-imagem": 14,
-    "public-inventory-feed": 14,
-    "ai-sdr": 12
+    "send-lead-email": 44,
+    "receive-leads": 46,
+    "sync-estoque": 43,
+    "webhook-portais": 44,
+    "on-lead-created": 44,
+    "consultar-placa": 53,
+    "enviar-para-assinatura": 45,
+    "webhook-autentique": 42,
+    "consultar-cpf": 45,
+    "gerar-pdf-contrato": 31,
+    "lead-automation": 20,
+    "gerar-conteudo": 16,
+    "gerar-imagem": 15,
+    "public-inventory-feed": 15,
+    "ai-sdr": 13
   }
 }
