@@ -560,6 +560,8 @@ export type Database = {
           situacao_receita: string | null
           situacao_receita_data: string | null
           telefone: string | null
+          telefone_residencial: string | null
+          telefone_trabalho: string | null
           updated_at: string
         }
         Insert: {
@@ -583,6 +585,8 @@ export type Database = {
           situacao_receita?: string | null
           situacao_receita_data?: string | null
           telefone?: string | null
+          telefone_residencial?: string | null
+          telefone_trabalho?: string | null
           updated_at?: string
         }
         Update: {
@@ -606,6 +610,8 @@ export type Database = {
           situacao_receita?: string | null
           situacao_receita_data?: string | null
           telefone?: string | null
+          telefone_residencial?: string | null
+          telefone_trabalho?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -2078,6 +2084,8 @@ export type Database = {
           proprietario_situacao_receita: string | null
           proprietario_situacao_receita_data: string | null
           proprietario_telefone: string | null
+          proprietario_telefone_residencial: string | null
+          proprietario_telefone_trabalho: string | null
           publicado_icarros: boolean | null
           publicado_mercadolivre: boolean | null
           publicado_napista: boolean | null
@@ -2145,6 +2153,8 @@ export type Database = {
           proprietario_situacao_receita?: string | null
           proprietario_situacao_receita_data?: string | null
           proprietario_telefone?: string | null
+          proprietario_telefone_residencial?: string | null
+          proprietario_telefone_trabalho?: string | null
           publicado_icarros?: boolean | null
           publicado_mercadolivre?: boolean | null
           publicado_napista?: boolean | null
@@ -2212,6 +2222,8 @@ export type Database = {
           proprietario_situacao_receita?: string | null
           proprietario_situacao_receita_data?: string | null
           proprietario_telefone?: string | null
+          proprietario_telefone_residencial?: string | null
+          proprietario_telefone_trabalho?: string | null
           publicado_icarros?: boolean | null
           publicado_mercadolivre?: boolean | null
           publicado_napista?: boolean | null
@@ -2622,6 +2634,8 @@ export const Constants = {
 //   bairro: text (nullable)
 //   cidade: text (nullable)
 //   estado: text (nullable)
+//   telefone_residencial: text (nullable)
+//   telefone_trabalho: text (nullable)
 // Table: configuracoes_api
 //   id: uuid (not null, default: gen_random_uuid())
 //   portal: text (not null)
@@ -3051,6 +3065,8 @@ export const Constants = {
 //   combustivel_sintetico: text (nullable)
 //   categoria_sintetica: text (nullable)
 //   chassi_completo: text (nullable)
+//   proprietario_telefone_residencial: text (nullable)
+//   proprietario_telefone_trabalho: text (nullable)
 // Table: veiculos_cache
 //   placa: text (not null)
 //   chassi: text (nullable)

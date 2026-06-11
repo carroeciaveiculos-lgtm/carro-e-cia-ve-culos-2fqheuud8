@@ -32,6 +32,7 @@ export default function AdminLeads() {
   const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(true)
   const [message, setMessage] = useState('')
+  const [conversation, setConversation] = useState<any[]>([])
   const { toast } = useToast()
 
   useEffect(() => {
@@ -59,6 +60,23 @@ export default function AdminLeads() {
     }
   }
 
+  useEffect(() => {
+    if (selectedLead) {
+      loadConversation(selectedLead.id)
+    }
+  }, [selectedLead])
+
+  const loadConversation = async (leadId: string) => {
+    const { data, error } = await supabase
+      .from('conversation_history')
+      .select('*')
+      .eq('lead_id', leadId)
+      .order('created_at', { ascending: true })
+    if (!error && data) {
+      setConversation(data)
+    }
+  }
+
   const handleStatusChange = async (newStatus: string) => {
     if (!selectedLead) return
     try {
@@ -77,10 +95,22 @@ export default function AdminLeads() {
     }
   }
 
-  const sendMessage = () => {
-    if (!message.trim()) return
-    toast({ title: 'Mensagem simulada enviada com sucesso!' })
-    setMessage('')
+  const sendMessage = async () => {
+    if (!message.trim() || !selectedLead) return
+    const newMsg = {
+      lead_id: selectedLead.id,
+      sender: 'human',
+      message_text: message,
+    }
+    try {
+      const { error } = await supabase.from('conversation_history').insert([newMsg])
+      if (error) throw error
+      setConversation([...conversation, { ...newMsg, created_at: new Date().toISOString() }])
+      setMessage('')
+      toast({ title: 'Mensagem enviada com sucesso!' })
+    } catch (err: any) {
+      toast({ title: 'Erro ao enviar', description: err.message, variant: 'destructive' })
+    }
   }
 
   const filteredLeads = leads.filter(
@@ -256,25 +286,46 @@ export default function AdminLeads() {
                     </div>
                   </div>
 
-                  {/* Mensagem Inicial */}
-                  <div className="self-start max-w-[80%] bg-white p-3 rounded-2xl rounded-tl-none shadow-sm border border-slate-200">
-                    <p className="text-sm text-slate-700">
-                      Olá, tenho interesse neste veículo. Ainda está disponível?
-                    </p>
-                    <span className="text-[10px] text-slate-400 mt-1 block text-right">
-                      10:30 AM
-                    </span>
-                  </div>
-
-                  {/* Nota Interna */}
-                  <div className="self-center w-full max-w-md bg-amber-50 border border-amber-200 p-3 rounded-xl shadow-sm">
-                    <p className="text-xs text-amber-800 font-bold mb-1 flex items-center gap-1">
-                      <User className="w-3 h-3" /> Nota Interna (Só a loja vê)
-                    </p>
-                    <p className="text-sm text-amber-900">
-                      Cliente demonstrou interesse em financiar. Oferecer simulação pelo banco BV.
-                    </p>
-                  </div>
+                  {/* Mensagens da Conversa */}
+                  {conversation.length === 0 ? (
+                    <div className="self-start max-w-[80%] bg-white p-3 rounded-2xl rounded-tl-none shadow-sm border border-slate-200">
+                      <p className="text-sm text-slate-700">
+                        Nenhuma mensagem ainda. Inicie o contato via Pedro (IA).
+                      </p>
+                    </div>
+                  ) : (
+                    conversation.map((msg, idx) => (
+                      <div
+                        key={idx}
+                        className={cn(
+                          'max-w-[80%] p-3 shadow-sm border border-slate-200',
+                          msg.sender === 'bot'
+                            ? 'self-start bg-blue-50 rounded-2xl rounded-tl-none border-blue-200'
+                            : msg.sender === 'client'
+                              ? 'self-start bg-white rounded-2xl rounded-tl-none'
+                              : 'self-end bg-green-50 rounded-2xl rounded-tr-none border-green-200',
+                        )}
+                      >
+                        {msg.sender === 'bot' && (
+                          <p className="text-[10px] text-blue-600 font-bold mb-1">
+                            🤖 Pedro (IA SDR)
+                          </p>
+                        )}
+                        {msg.sender === 'human' && (
+                          <p className="text-[10px] text-green-600 font-bold mb-1">👤 Você</p>
+                        )}
+                        <p className="text-sm text-slate-700 whitespace-pre-wrap">
+                          {msg.message_text}
+                        </p>
+                        <span className="text-[10px] text-slate-400 mt-1 block text-right">
+                          {new Date(msg.created_at).toLocaleTimeString([], {
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })}
+                        </span>
+                      </div>
+                    ))
+                  )}
                 </div>
               </div>
             </ScrollArea>
@@ -425,9 +476,27 @@ export default function AdminLeads() {
                 <div>
                   <p className="text-[10px] text-slate-400 font-bold uppercase">Origem</p>
                   <p className="text-sm font-medium text-slate-800">
-                    {selectedLead.origem || 'Site'}
+                    {selectedLead.source || selectedLead.origem || 'Site'}
                   </p>
                 </div>
+                {selectedLead.trade_in_car && (
+                  <div>
+                    <p className="text-[10px] text-slate-400 font-bold uppercase">Carro na Troca</p>
+                    <p className="text-sm font-medium text-slate-800">
+                      {selectedLead.trade_in_car}
+                    </p>
+                  </div>
+                )}
+                {selectedLead.payment_method && (
+                  <div>
+                    <p className="text-[10px] text-slate-400 font-bold uppercase">
+                      Forma Pagamento
+                    </p>
+                    <p className="text-sm font-medium text-slate-800">
+                      {selectedLead.payment_method}
+                    </p>
+                  </div>
+                )}
               </div>
 
               {/* Simulador */}

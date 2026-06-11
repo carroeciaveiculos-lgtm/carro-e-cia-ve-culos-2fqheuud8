@@ -35,7 +35,7 @@ export default function Estoque() {
       .select(
         'id, marca, modelo, versao, ano_fabricacao, ano_modelo, preco_venda, quilometragem, combustivel, cor, fotos, is_zero_km, status, categoria',
       )
-      .eq('status', 'disponivel')
+      .in('status', ['disponivel', 'consignado'])
       .order('destaque', { ascending: false })
       .order('created_at', { ascending: false })
       .then(({ data }) => {

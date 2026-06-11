@@ -31,6 +31,18 @@ export const createLead = async (lead: Database['public']['Tables']['leads']['In
 
     // Dispara gatilho do CRM (Boas-vindas e Brevo)
     supabase.functions.invoke('on-lead-created', { body: data }).catch(console.error)
+
+    // Trigger AI SDR Orchestrator
+    supabase.functions
+      .invoke('ai-sdr', {
+        body: {
+          action: 'init_conversation',
+          lead_id: data.id,
+          source: data.origem || 'site',
+          veiculo: data.veiculo_interesse,
+        },
+      })
+      .catch(console.error)
   }
 
   return { data, error }
