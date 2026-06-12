@@ -41,7 +41,45 @@ export default function AdminLeads() {
 
   useEffect(() => {
     loadLeads()
+
+    const leadsChannel = supabase
+      .channel('leads_changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'leads' }, () => {
+        loadLeads()
+      })
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(leadsChannel)
+    }
   }, [])
+
+  useEffect(() => {
+    if (!selectedLead) return
+
+    const messagesChannel = supabase
+      .channel('messages_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'conversation_history',
+          filter: `lead_id=eq.${selectedLead.id}`,
+        },
+        (payload) => {
+          setConversation((prev) => {
+            if (prev.some((m) => m.id === payload.new.id)) return prev
+            return [...prev, payload.new]
+          })
+        },
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(messagesChannel)
+    }
+  }, [selectedLead])
 
   const loadLeads = async () => {
     try {
@@ -125,9 +163,16 @@ export default function AdminLeads() {
       message_text: message,
     }
     try {
-      const { error } = await supabase.from('conversation_history').insert([newMsg])
+      const { data, error } = await supabase
+        .from('conversation_history')
+        .insert([newMsg])
+        .select()
+        .single()
       if (error) throw error
-      setConversation([...conversation, { ...newMsg, created_at: new Date().toISOString() }])
+      setConversation((prev) => {
+        if (prev.some((m) => m.id === data.id)) return prev
+        return [...prev, data]
+      })
       setMessage('')
       toast({ title: 'Mensagem enviada com sucesso!' })
     } catch (err: any) {
@@ -337,7 +382,7 @@ export default function AdminLeads() {
                   {conversation.length === 0 ? (
                     <div className="self-start max-w-[80%] bg-white p-3 rounded-2xl rounded-tl-none shadow-sm border border-slate-200">
                       <p className="text-sm text-slate-700">
-                        Nenhuma mensagem ainda. Inicie o contato via Pedro (IA).
+                        Nenhuma mensagem ainda. Inicie o contato via Luiz (IA).
                       </p>
                     </div>
                   ) : (
@@ -355,7 +400,7 @@ export default function AdminLeads() {
                       >
                         {msg.sender === 'bot' && (
                           <p className="text-[10px] text-blue-600 font-bold mb-1">
-                            🤖 Pedro (IA SDR)
+                            🤖 Luiz (IA SDR)
                           </p>
                         )}
                         {msg.sender === 'human' && (

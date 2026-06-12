@@ -139,46 +139,57 @@ Deno.serve(async (req) => {
 
       // Extração robusta conforme Acceptance Criteria
       const responseContent = data?.content || data?.conteudo || data
-      const contentNome = responseContent?.nome?.conteudo || {};
-      const nomeEncontrado = contentNome.nome || findNome(responseContent) || '';
+      const contentNome = responseContent?.nome?.conteudo || {}
+      const nomeEncontrado = contentNome.nome || findNome(responseContent) || ''
 
-      const telefonesArray = responseContent?.pesquisa_telefones?.conteudo || [];
-      let telefoneStr = '';
-      let telefoneResidencial = '';
-      let telefoneTrabalho = '';
-      
+      const telefonesArray = responseContent?.pesquisa_telefones?.conteudo || []
+      let telefoneStr = ''
+      let telefoneResidencial = ''
+      let telefoneTrabalho = ''
+
       if (Array.isArray(telefonesArray)) {
         telefonesArray.forEach((t) => {
-          const num = String(t?.telefone || t?.numero || '');
-          const tipo = String(t?.tipo || t?.classificacao || '').toLowerCase();
-          if (!num) return;
-          
-          if ((tipo.includes('celular') || String(t?.prioridade).toLowerCase() === 'alta') && !telefoneStr) {
-            telefoneStr = num;
-          } else if ((tipo.includes('fixo') || tipo.includes('residencial')) && !telefoneResidencial) {
-            telefoneResidencial = num;
-          } else if ((tipo.includes('comercial') || tipo.includes('trabalho')) && !telefoneTrabalho) {
-            telefoneTrabalho = num;
+          const num = String(t?.telefone || t?.numero || '')
+          const tipo = String(t?.tipo || t?.classificacao || '').toLowerCase()
+          if (!num) return
+
+          if (
+            (tipo.includes('celular') || String(t?.prioridade).toLowerCase() === 'alta') &&
+            !telefoneStr
+          ) {
+            telefoneStr = num
+          } else if (
+            (tipo.includes('fixo') || tipo.includes('residencial')) &&
+            !telefoneResidencial
+          ) {
+            telefoneResidencial = num
+          } else if (
+            (tipo.includes('comercial') || tipo.includes('trabalho')) &&
+            !telefoneTrabalho
+          ) {
+            telefoneTrabalho = num
           }
-        });
-        
+        })
+
         // Fallbacks
         if (!telefoneStr && telefonesArray.length > 0) {
-          telefoneStr = String(telefonesArray[0]?.telefone || telefonesArray[0]?.numero || telefonesArray[0] || '');
+          telefoneStr = String(
+            telefonesArray[0]?.telefone || telefonesArray[0]?.numero || telefonesArray[0] || '',
+          )
         }
       } else if (typeof telefonesArray === 'string') {
-        telefoneStr = telefonesArray;
+        telefoneStr = telefonesArray
       }
 
-      const emailsArray = responseContent?.emails?.conteudo || [];
-      let emailStr = '';
+      const emailsArray = responseContent?.emails?.conteudo || []
+      let emailStr = ''
       if (Array.isArray(emailsArray) && emailsArray.length > 0) {
-        emailStr = typeof emailsArray[0] === 'string' ? emailsArray[0] : (emailsArray[0]?.email || '');
+        emailStr = typeof emailsArray[0] === 'string' ? emailsArray[0] : emailsArray[0]?.email || ''
       } else if (typeof emailsArray === 'string') {
-        emailStr = emailsArray;
+        emailStr = emailsArray
       }
 
-      const outrosDocs = responseContent?.outros_documentos || {};
+      const outrosDocs = responseContent?.outros_documentos || {}
 
       result = {
         cpf: cleanCpf,
@@ -192,8 +203,13 @@ Deno.serve(async (req) => {
         idade: contentNome.idade || responseContent?.idade || '',
         sexo: contentNome.sexo || responseContent?.sexo || responseContent?.genero || '',
         nome_mae: contentNome.mae || responseContent?.mae || responseContent?.nome_mae || '',
-        situacao_receita: contentNome.situacao_receita || responseContent?.situacao || responseContent?.situacao_cadastral || 'REGULAR',
-        situacao_receita_data: contentNome.situacao_receita_data || responseContent?.situacao_receita_data || '',
+        situacao_receita:
+          contentNome.situacao_receita ||
+          responseContent?.situacao ||
+          responseContent?.situacao_cadastral ||
+          'REGULAR',
+        situacao_receita_data:
+          contentNome.situacao_receita_data || responseContent?.situacao_receita_data || '',
       }
     }
 

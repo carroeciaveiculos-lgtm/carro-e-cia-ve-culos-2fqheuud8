@@ -19,12 +19,14 @@ Deno.serve(async (req) => {
 
     const { data: veiculos, error } = await supabase
       .from('veiculos')
-      .select('id, marca, modelo, ano_fabricacao, ano_modelo, preco_venda, quilometragem, combustivel, cor, placa, chassi, renavam, descricao, fotos, categoria, diferenciais, caracteristicas, is_consignado')
+      .select(
+        'id, marca, modelo, ano_fabricacao, ano_modelo, preco_venda, quilometragem, combustivel, cor, placa, chassi, renavam, descricao, fotos, categoria, diferenciais, caracteristicas, is_consignado',
+      )
       .eq('status', 'disponivel')
 
     if (error) throw error
 
-    const feed = veiculos.map(v => ({
+    const feed = veiculos.map((v) => ({
       id: v.id,
       marca: v.marca,
       modelo: v.modelo,
@@ -42,21 +44,23 @@ Deno.serve(async (req) => {
       categoria: v.categoria,
       is_consignado: v.is_consignado,
       tipo_estoque: v.is_consignado ? 'consignado' : 'proprio',
-      opcionais: [...(v.diferenciais || []), ...(v.caracteristicas || [])]
+      opcionais: [...(v.diferenciais || []), ...(v.caracteristicas || [])],
     }))
 
-    return new Response(JSON.stringify({
-      estoque: feed,
-      total: feed.length,
-      updated_at: new Date().toISOString()
-    }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    })
-
+    return new Response(
+      JSON.stringify({
+        estoque: feed,
+        total: feed.length,
+        updated_at: new Date().toISOString(),
+      }),
+      {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      },
+    )
   } catch (err: any) {
     return new Response(JSON.stringify({ error: err.message }), {
       status: 400,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
   }
 })
