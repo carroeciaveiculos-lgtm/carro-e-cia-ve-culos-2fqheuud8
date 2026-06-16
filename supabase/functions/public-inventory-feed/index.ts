@@ -20,7 +20,7 @@ Deno.serve(async (req) => {
     const { data: veiculos, error } = await supabase
       .from('veiculos')
       .select(
-        'id, marca, modelo, versao, ano_fabricacao, ano_modelo, preco_venda, quilometragem, combustivel, cor, placa, chassi, renavam, descricao, fotos, categoria, diferenciais, caracteristicas, is_consignado, is_zero_km',
+        'id, marca, modelo, versao, ano_fabricacao, ano_modelo, preco_venda, quilometragem, combustivel, cor, placa, chassi, renavam, descricao, fotos, categoria, diferenciais, caracteristicas, is_consignado, is_zero_km, cambio',
       )
       .eq('status', 'disponivel')
 
@@ -28,7 +28,7 @@ Deno.serve(async (req) => {
 
     const items = veiculos
       .map((v) => {
-        const title = `${v.marca} ${v.modelo} ${v.versao || ''}`.trim()
+        const title = `${v.marca || ''} ${v.modelo || ''} ${v.versao || ''}`.trim()
         const description = v.descricao
           ? v.descricao.substring(0, 5000)
           : `${title} em excelente estado.`
@@ -37,34 +37,40 @@ Deno.serve(async (req) => {
           v.fotos && Array.isArray(v.fotos) && v.fotos.length > 0
             ? v.fotos[0]
             : 'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/logos/logo-carro-e-cia.webp'
-        const condition = v.is_zero_km ? 'new' : 'used'
         const price = v.preco_venda ? `${Number(v.preco_venda).toFixed(2)} BRL` : '0.00 BRL'
-        const availability = 'in stock'
 
         return `
-    <item>
-      <g:id><![CDATA[${v.id}]]></g:id>
-      <g:title><![CDATA[${title}]]></g:title>
-      <g:description><![CDATA[${description}]]></g:description>
-      <g:link><![CDATA[${link}]]></g:link>
-      <g:image_link><![CDATA[${imageLink}]]></g:image_link>
-      <g:condition><![CDATA[${condition}]]></g:condition>
-      <g:price><![CDATA[${price}]]></g:price>
-      <g:availability><![CDATA[${availability}]]></g:availability>
-      <g:brand><![CDATA[${v.marca}]]></g:brand>
-    </item>`
+  <vehicle>
+    <vehicle_id><![CDATA[${v.id}]]></vehicle_id>
+    <title><![CDATA[${title}]]></title>
+    <description><![CDATA[${description}]]></description>
+    <url><![CDATA[${link}]]></url>
+    <make><![CDATA[${v.marca || ''}]]></make>
+    <model><![CDATA[${v.modelo || ''}]]></model>
+    <year><![CDATA[${v.ano_modelo || v.ano_fabricacao || ''}]]></year>
+    <mileage>
+      <value><![CDATA[${v.quilometragem || 0}]]></value>
+      <unit><![CDATA[KM]]></unit>
+    </mileage>
+    <price><![CDATA[${price}]]></price>
+    <exterior_color><![CDATA[${v.cor || ''}]]></exterior_color>
+    <transmission><![CDATA[${v.cambio || ''}]]></transmission>
+    <fuel_type><![CDATA[${v.combustivel || ''}]]></fuel_type>
+    <body_style><![CDATA[${v.categoria || ''}]]></body_style>
+    <vin><![CDATA[${v.chassi || ''}]]></vin>
+    <image>
+      <url><![CDATA[${imageLink}]]></url>
+    </image>
+  </vehicle>`
       })
       .join('')
 
     const xmlFeed = `<?xml version="1.0" encoding="UTF-8"?>
-<rss xmlns:g="http://base.google.com/ns/1.0" version="2.0">
-  <channel>
-    <title><![CDATA[Carro e Cia Veículos - Estoque]]></title>
-    <link><![CDATA[https://www.carroeciamotors.com.br]]></link>
-    <description><![CDATA[Catálogo de veículos disponíveis na Carro e Cia Veículos]]></description>
+<listings>
+  <title><![CDATA[Carro e Cia Veículos - Estoque]]></title>
+  <link><![CDATA[https://www.carroeciamotors.com.br]]></link>
 ${items}
-  </channel>
-</rss>`
+</listings>`
 
     return new Response(xmlFeed.trim(), {
       headers: { ...corsHeaders, 'Content-Type': 'application/xml; charset=utf-8' },
