@@ -27,7 +27,7 @@ export default function Estoque() {
   const [ano, setAno] = useState('Todos')
   const [combustivel, setCombustivel] = useState('Todos')
   const [categoria, setCategoria] = useState('Todas')
-  const [maxPrice, setMaxPrice] = useState([300000])
+  const [maxPrice, setMaxPrice] = useState([1000000])
 
   useEffect(() => {
     supabase
@@ -76,7 +76,7 @@ export default function Estoque() {
     setAno('Todos')
     setCombustivel('Todos')
     setCategoria('Todas')
-    setMaxPrice([300000])
+    setMaxPrice([1000000])
     setSearchTerm('')
   }
 
@@ -144,7 +144,7 @@ export default function Estoque() {
       </div>
       <div className="space-y-2">
         <Label>Preço Máximo: R$ {maxPrice[0].toLocaleString('pt-BR')}</Label>
-        <Slider value={maxPrice} onValueChange={setMaxPrice} max={500000} step={10000} />
+        <Slider value={maxPrice} onValueChange={setMaxPrice} max={1000000} step={10000} />
       </div>
       <Button variant="outline" className="w-full" onClick={clearFilters}>
         Limpar Filtros
