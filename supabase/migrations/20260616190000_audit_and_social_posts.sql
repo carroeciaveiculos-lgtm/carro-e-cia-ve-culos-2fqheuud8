@@ -12,10 +12,15 @@ BEGIN
   -- 2. Create logs_ia
   CREATE TABLE IF NOT EXISTS public.logs_ia (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    acao TEXT,
+    usuario_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+    acao TEXT NOT NULL,
+    provider TEXT NOT NULL,
+    modelo TEXT NOT NULL,
     tokens_input INT,
     tokens_output INT,
-    status TEXT,
+    status TEXT NOT NULL,
+    alertas JSONB,
+    certeza_reportada TEXT,
     created_at TIMESTAMPTZ DEFAULT NOW()
   );
 
@@ -89,10 +94,10 @@ ALTER TABLE public.logs_integracao ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.social_posts ENABLE ROW LEVEL SECURITY;
 
 -- Insert Mock Data for Demo
-INSERT INTO public.logs_ia (acao, tokens_input, tokens_output, status) VALUES
-('Geração de Kit Social Media', 150, 240, 'success'),
-('Geração de Kit Social Media', 130, 210, 'success'),
-('Geração de Descrição', 50, 0, 'error')
+INSERT INTO public.logs_ia (acao, provider, modelo, tokens_input, tokens_output, status) VALUES
+('Geração de Kit Social Media', 'openai', 'gpt-4o', 150, 240, 'success'),
+('Geração de Kit Social Media', 'openai', 'gpt-4o', 130, 210, 'success'),
+('Geração de Descrição', 'openai', 'gpt-4o', 50, 0, 'error')
 ON CONFLICT DO NOTHING;
 
 INSERT INTO public.logs_integracao (portal, status, mensagem) VALUES
