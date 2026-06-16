@@ -30,7 +30,7 @@ Deno.serve(async (req) => {
       .select(
         'id, marca, modelo, versao, ano_fabricacao, ano_modelo, preco_venda, quilometragem, combustivel, cor, placa, chassi, renavam, descricao, fotos, categoria, diferenciais, caracteristicas, is_consignado, is_zero_km, cambio, status',
       )
-      .in('status', ['disponivel', 'vendido', 'reservado'])
+      .eq('status', 'disponivel')
 
     if (error) throw error
 
@@ -43,9 +43,12 @@ Deno.serve(async (req) => {
       'brand',
       'model',
       'year',
+      'mileage',
       'price',
-      'availability',
+      'currency',
+      'condition',
       'state_of_vehicle',
+      'availability',
       'transmission',
       'fuel_type',
       'body_style',
@@ -85,7 +88,8 @@ Deno.serve(async (req) => {
       if (lower.includes('sedã') || lower.includes('seda')) return 'SEDAN'
       if (lower.includes('suv')) return 'SUV'
       if (lower.includes('hatch')) return 'HATCHBACK'
-      if (lower.includes('pick-up') || lower.includes('pickup')) return 'PICKUP'
+      if (lower.includes('pick-up') || lower.includes('pickup') || lower.includes('caminhonete'))
+        return 'TRUCK'
       if (lower.includes('conversível') || lower.includes('conversivel')) return 'CONVERTIBLE'
       if (lower.includes('van')) return 'VAN'
       return 'OTHER'
@@ -94,7 +98,7 @@ Deno.serve(async (req) => {
     const FIXED_ADDRESS =
       'Av. Guilherme Ferreira, 1400 - São Benedito, Uberaba - MG, 38022-200, Brasil'
 
-    const rows = veiculos.map((v) => {
+    const rows = (veiculos || []).map((v) => {
       const title = `${v.marca || ''} ${v.modelo || ''} ${v.versao || ''}`.trim()
       const description = v.descricao
         ? v.descricao.substring(0, 5000)
@@ -104,13 +108,15 @@ Deno.serve(async (req) => {
         v.fotos && Array.isArray(v.fotos) && v.fotos.length > 0
           ? v.fotos[0]
           : 'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/logos/logo-carro-e-cia.webp'
-      const price = v.preco_venda ? `${Number(v.preco_venda).toFixed(2)} BRL` : '0.00 BRL'
+      const price = v.preco_venda ? Number(v.preco_venda).toFixed(2) : '0.00'
+      const currency = 'BRL'
       const condition = v.is_zero_km ? 'NEW' : 'USED'
-      const availability = v.status === 'disponivel' ? 'IN_STOCK' : 'OUT_OF_STOCK'
+      const availability = 'IN_STOCK'
 
       const transmission = mapTransmission(v.cambio)
       const fuelType = mapFuelType(v.combustivel)
       const bodyStyle = mapBodyStyle(v.categoria)
+      const mileage = v.quilometragem ? `${v.quilometragem} km` : '0 km'
 
       const rowData = [
         v.id,
@@ -121,9 +127,12 @@ Deno.serve(async (req) => {
         v.marca || '',
         v.modelo || '',
         v.ano_modelo || v.ano_fabricacao || '',
+        mileage,
         price,
-        availability,
+        currency,
         condition,
+        condition, // state_of_vehicle
+        availability,
         transmission,
         fuelType,
         bodyStyle,
@@ -135,31 +144,36 @@ Deno.serve(async (req) => {
 
     const csvFeed = [headers.join(','), ...rows].join('\n')
 
-    return new Response(csvFeed, {
-      headers: { ...corsHeaders, 'Content-Type': 'text/csv; charset=utf-8' },
-    })
-  } catch (err: any) {
-    const emptyHeaders = [
-      'id',
-      'title',
-      'description',
-      'link',
-      'image_link',
-      'brand',
-      'model',
-      'year',
-      'price',
-      'availability',
-      'state_of_vehicle',
-      'transmission',
-      'fuel_type',
-      'body_style',
-      'address',
-    ].join(',')
+    const encoder = new TextEncoder()
+    const fileData = encoder.encode(csvFeed)
 
-    return new Response(emptyHeaders, {
-      status: 200,
-      headers: { ...corsHeaders, 'Content-Type': 'text/csv; charset=utf-8' },
+    const { error: uploadError } = await supabase.storage
+      .from('feeds')
+      .upload('inventory.csv', fileData, {
+        contentType: 'text/csv; charset=utf-8',
+        upsert: true,
+      })
+
+    if (uploadError) throw uploadError
+
+    const publicUrl = supabase.storage.from('feeds').getPublicUrl('inventory.csv').data.publicUrl
+
+    return new Response(
+      JSON.stringify({
+        success: true,
+        last_update: new Date().toISOString(),
+        url: publicUrl,
+        items_count: rows.length,
+      }),
+      {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      },
+    )
+  } catch (err: any) {
+    console.error('Error generating feed:', err)
+    return new Response(JSON.stringify({ error: err.message }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
   }
 })
