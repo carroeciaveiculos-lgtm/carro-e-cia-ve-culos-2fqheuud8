@@ -1,27 +1,27 @@
-import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
-import { createClient } from 'jsr:@supabase/supabase-js@2'
-import { corsHeaders } from '../_shared/cors.ts'
+import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
+import { createClient } from 'jsr:@supabase/supabase-js@2';
+import { corsHeaders } from '../_shared/cors.ts';
 
 Deno.serve(async (req: Request) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+    return new Response('ok', { headers: corsHeaders });
   }
 
   try {
-    const supabaseUrl = Deno.env.get('SUPABASE_URL') || ''
-    const supabaseKey = Deno.env.get('SUPABASE_ANON_KEY') || ''
+    const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
+    const supabaseKey = Deno.env.get('SUPABASE_ANON_KEY') || '';
 
     // We use the anon key since this is a public feed for available vehicles
-    const supabase = createClient(supabaseUrl, supabaseKey)
+    const supabase = createClient(supabaseUrl, supabaseKey);
 
     const { data: veiculos, error } = await supabase
       .from('veiculos')
       .select('*')
-      .eq('status', 'disponivel')
+      .eq('status', 'disponivel');
 
     if (error) {
-      throw error
+      throw error;
     }
 
     if (!veiculos || veiculos.length === 0) {
@@ -31,25 +31,25 @@ Deno.serve(async (req: Request) => {
           'Content-Type': 'application/json; charset=utf-8',
         },
         status: 200,
-      })
+      });
     }
 
     const mappedData = veiculos.map((v: any) => {
-      let opcionais = ''
+      let opcionais = '';
       if (Array.isArray(v.caracteristicas)) {
-        opcionais = v.caracteristicas.join(', ')
+        opcionais = v.caracteristicas.join(', ');
       } else if (typeof v.caracteristicas === 'string') {
-        opcionais = v.caracteristicas
+        opcionais = v.caracteristicas;
       }
 
-      let fotos: string[] = []
+      let fotos: string[] = [];
       if (Array.isArray(v.fotos)) {
-        fotos = v.fotos
+        fotos = v.fotos;
       } else if (typeof v.fotos === 'string') {
         try {
-          fotos = JSON.parse(v.fotos)
+          fotos = JSON.parse(v.fotos);
         } catch {
-          fotos = v.fotos ? [v.fotos] : []
+          fotos = v.fotos ? [v.fotos] : [];
         }
       }
 
@@ -70,8 +70,8 @@ Deno.serve(async (req: Request) => {
         fotos: fotos,
         opcionais: opcionais,
         observacao: v.descricao,
-      }
-    })
+      };
+    });
 
     return new Response(JSON.stringify(mappedData), {
       headers: {
@@ -79,7 +79,7 @@ Deno.serve(async (req: Request) => {
         'Content-Type': 'application/json; charset=utf-8',
       },
       status: 200,
-    })
+    });
   } catch (error: any) {
     return new Response(JSON.stringify({ error: error.message || 'Internal Server Error' }), {
       headers: {
@@ -87,6 +87,6 @@ Deno.serve(async (req: Request) => {
         'Content-Type': 'application/json; charset=utf-8',
       },
       status: 500,
-    })
+    });
   }
-})
+});
