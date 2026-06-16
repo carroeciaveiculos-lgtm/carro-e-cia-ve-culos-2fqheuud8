@@ -5,7 +5,7 @@ import { corsHeaders } from '../_shared/cors.ts'
 // Initialize Supabase client
 const supabase = createClient(
   Deno.env.get('SUPABASE_URL')!,
-  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
 )
 
 const geminiKey = Deno.env.get('GEMINI_API_KEY') || Deno.env.get('GEMINI_APY_KEY')!
@@ -30,7 +30,7 @@ async function runGemini(history: any[]) {
   const res = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(reqBody)
+    body: JSON.stringify(reqBody),
   })
   return res.json()
 }
@@ -39,46 +39,58 @@ async function sendWhatsApp(to: string, text: string) {
   if (!waToken) return console.log('Mocked WA to:', to, 'Msg:', text)
   await fetch(`https://graph.facebook.com/v18.0/${waPhoneId}/messages`, {
     method: 'POST',
-    headers: { 'Authorization': `Bearer ${waToken}`, 'Content-Type': 'application/json' },
+    headers: { Authorization: `Bearer ${waToken}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({
       messaging_product: 'whatsapp',
       to: to.replace(/\D/g, ''),
       type: 'text',
-      text: { body: text }
-    })
+      text: { body: text },
+    }),
   })
 }
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
-  
+
   try {
     const body = await req.json()
-    
+
     if (body.action === 'init_conversation') {
       const { lead_id, source, veiculo } = body
-      
+
       const { data: lead } = await supabase.from('leads').select('*').eq('id', lead_id).single()
       if (!lead) return new Response('Lead not found', { status: 404, headers: corsHeaders })
 
       const nome = lead.nome || 'Cliente'
       const v = veiculo || 'nosso estoque'
       const initText = `Novo lead recebido do portal ${source}. O cliente se chama ${nome} e tem interesse no veículo: ${v}. Inicie a conversa se apresentando como Luiz, SDR da loja, e puxe assunto para qualificar a venda de forma amigável.`
-      
+
       const aiRes = await runGemini([{ role: 'user', parts: [{ text: initText }] }])
-      const responseText = aiRes.candidates?.[0]?.content?.parts?.[0]?.text || `Olá ${nome}! Sou o Luiz, consultor digital da Carro e Cia. Vi que você tem interesse no ${v}. Como posso te ajudar hoje?`
-      
-      await supabase.from('conversation_history').insert({ lead_id: lead.id, sender: 'bot', message_text: responseText })
-      
+      const responseText =
+        aiRes.candidates?.[0]?.content?.parts?.[0]?.text ||
+        `Olá ${nome}! Sou o Luiz, consultor digital da Carro e Cia. Vi que você tem interesse no ${v}. Como posso te ajudar hoje?`
+
+      await supabase
+        .from('conversation_history')
+        .insert({ lead_id: lead.id, sender: 'bot', message_text: responseText })
+
       if (lead.telefone) {
         await sendWhatsApp(lead.telefone, responseText)
       }
-      
-      return new Response(JSON.stringify({ success: true }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+
+      return new Response(JSON.stringify({ success: true }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
     }
-    
-    return new Response(JSON.stringify({ error: 'Unknown action' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+
+    return new Response(JSON.stringify({ error: 'Unknown action' }), {
+      status: 400,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    })
   } catch (err: any) {
-    return new Response(JSON.stringify({ error: err.message }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+    return new Response(JSON.stringify({ error: err.message }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    })
   }
 })

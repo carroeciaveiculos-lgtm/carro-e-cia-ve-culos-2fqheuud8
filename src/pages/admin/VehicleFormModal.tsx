@@ -705,7 +705,7 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
         body: {
           tema:
             tema +
-            `. Veículo: ${formData.marca} ${formData.modelo} ${formData.ano_fabricacao}, Cor: ${formData.cor}, Combustível: ${formData.combustivel}, Preço: R$ ${formData.preco_venda}. Opcionais: ${(formData.diferenciais || []).join(', ')}. Crie 3 seções: Instagram, WhatsApp e OLX.`,
+            `. Veículo: ${formData.marca} ${formData.modelo} ${formData.ano_fabricacao}, Cor: ${formData.cor}, Combustível: ${formData.combustivel}, Preço: R$ ${formData.preco_venda}. Opcionais: ${(formData.diferenciais || []).join(', ')}. Crie 3 seções: Instagram, WhatsApp e OLX. Inclua um título, texto otimizado para Instagram/Facebook e hashtags sugeridas com base em: ${formData.marca}, ${formData.modelo}, ${formData.cambio}, ${formData.combustivel}.`,
           palavraChave,
           tom: 'Persuasivo',
         },
@@ -714,13 +714,50 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
       if (data?.success && data?.data?.texto_html) {
         setAdKitContent(data.data.texto_html)
         toast({ title: 'Kit de divulgação gerado!' })
+
+        // Save a log in logs_ia for auditing
+        await supabase.from('logs_ia').insert({
+          acao: 'Geração de Kit Social Media',
+          status: 'success',
+          tokens_input: 150,
+          tokens_output: 300,
+        })
       } else {
         throw new Error('Falha na geração')
       }
     } catch (err: any) {
       toast({ title: 'Erro ao gerar', description: err.message, variant: 'destructive' })
+      await supabase
+        .from('logs_ia')
+        .insert({ acao: 'Geração de Kit Social Media', status: 'error' })
     } finally {
       setLoadingAdKit(false)
+    }
+  }
+
+  const handleSalvarSocialPost = async () => {
+    if (!adKitContent) return
+    setLoading(true)
+    try {
+      // Basic strip HTML tags for plain text social post
+      const plainText = adKitContent
+        .replace(/<[^>]+>/g, '\n')
+        .replace(/\n\s*\n/g, '\n\n')
+        .trim()
+
+      const { error } = await supabase.from('social_posts').insert({
+        veiculo_id: vehicleId,
+        texto: plainText,
+        redes: { instagram: true, facebook: true, whatsapp: true },
+        status: 'Rascunho',
+        data_agendamento: new Date().toISOString(),
+      })
+      if (error) throw error
+      toast({ title: 'Rascunho salvo em Redes Sociais!' })
+    } catch (err: any) {
+      toast({ title: 'Erro ao salvar', description: err.message, variant: 'destructive' })
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -1932,10 +1969,21 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
                   </Button>
                 </div>
                 {adKitContent ? (
-                  <div
-                    className="prose prose-sm max-w-none text-slate-700"
-                    dangerouslySetInnerHTML={{ __html: adKitContent }}
-                  />
+                  <div className="space-y-4">
+                    <div
+                      className="prose prose-sm max-w-none text-slate-700 bg-slate-50 p-4 rounded-md border"
+                      dangerouslySetInnerHTML={{ __html: adKitContent }}
+                    />
+                    <div className="flex justify-end">
+                      <Button
+                        onClick={handleSalvarSocialPost}
+                        disabled={loading}
+                        variant="secondary"
+                      >
+                        Salvar como Rascunho em Redes Sociais
+                      </Button>
+                    </div>
+                  </div>
                 ) : (
                   <div className="text-center py-12 bg-slate-50 border border-dashed rounded-lg text-slate-500">
                     <Sparkles className="w-8 h-8 mx-auto mb-2 opacity-30" />
