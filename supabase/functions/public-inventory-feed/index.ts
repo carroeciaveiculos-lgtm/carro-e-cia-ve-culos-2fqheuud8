@@ -26,62 +26,94 @@ Deno.serve(async (req) => {
 
     if (error) throw error
 
-    const items = veiculos
-      .map((v) => {
-        const title = `${v.marca || ''} ${v.modelo || ''} ${v.versao || ''}`.trim()
-        const description = v.descricao
-          ? v.descricao.substring(0, 5000)
-          : `${title} em excelente estado.`
-        const link = `https://www.carroeciamotors.com.br/estoque/${v.id}`
-        const imageLink =
-          v.fotos && Array.isArray(v.fotos) && v.fotos.length > 0
-            ? v.fotos[0]
-            : 'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/logos/logo-carro-e-cia.webp'
-        const price = v.preco_venda ? `${Number(v.preco_venda).toFixed(2)} BRL` : '0.00 BRL'
+    const headers = [
+      'vehicle_id',
+      'id',
+      'title',
+      'description',
+      'image_link',
+      'link',
+      'make',
+      'model',
+      'year',
+      'price',
+      'mileage.value',
+      'mileage.unit',
+      'transmission',
+      'fuel_type',
+      'body_style',
+      'condition',
+    ]
 
-        return `
-  <vehicle>
-    <vehicle_id><![CDATA[${v.id}]]></vehicle_id>
-    <title><![CDATA[${title}]]></title>
-    <description><![CDATA[${description}]]></description>
-    <url><![CDATA[${link}]]></url>
-    <make><![CDATA[${v.marca || ''}]]></make>
-    <model><![CDATA[${v.modelo || ''}]]></model>
-    <year><![CDATA[${v.ano_modelo || v.ano_fabricacao || ''}]]></year>
-    <mileage>
-      <value><![CDATA[${v.quilometragem || 0}]]></value>
-      <unit><![CDATA[KM]]></unit>
-    </mileage>
-    <price><![CDATA[${price}]]></price>
-    <exterior_color><![CDATA[${v.cor || ''}]]></exterior_color>
-    <transmission><![CDATA[${v.cambio || ''}]]></transmission>
-    <fuel_type><![CDATA[${v.combustivel || ''}]]></fuel_type>
-    <body_style><![CDATA[${v.categoria || ''}]]></body_style>
-    <vin><![CDATA[${v.chassi || ''}]]></vin>
-    <image>
-      <url><![CDATA[${imageLink}]]></url>
-    </image>
-  </vehicle>`
-      })
-      .join('')
+    const escapeCsv = (field: any) => {
+      if (field === null || field === undefined) return '""'
+      const str = String(field)
+      return `"${str.replace(/"/g, '""')}"`
+    }
 
-    const xmlFeed = `<?xml version="1.0" encoding="UTF-8"?>
-<listings>
-  <title><![CDATA[Carro e Cia Veículos - Estoque]]></title>
-  <link><![CDATA[https://www.carroeciamotors.com.br]]></link>
-${items}
-</listings>`
+    const rows = veiculos.map((v) => {
+      const title = `${v.marca || ''} ${v.modelo || ''} ${v.versao || ''}`.trim()
+      const description = v.descricao
+        ? v.descricao.substring(0, 5000)
+        : `${title} em excelente estado.`
+      const link = `https://www.carroeciamotors.com.br/estoque/${v.id}`
+      const imageLink =
+        v.fotos && Array.isArray(v.fotos) && v.fotos.length > 0
+          ? v.fotos[0]
+          : 'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/logos/logo-carro-e-cia.webp'
+      const price = v.preco_venda ? `${Number(v.preco_venda).toFixed(2)} BRL` : '0.00 BRL'
+      const condition = v.is_zero_km ? 'new' : 'used'
 
-    return new Response(xmlFeed.trim(), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/xml; charset=utf-8' },
+      const rowData = [
+        v.id,
+        v.id,
+        title,
+        description,
+        imageLink,
+        link,
+        v.marca || '',
+        v.modelo || '',
+        v.ano_modelo || v.ano_fabricacao || '',
+        price,
+        v.quilometragem || 0,
+        'KM',
+        v.cambio || '',
+        v.combustivel || '',
+        v.categoria || '',
+        condition,
+      ]
+
+      return rowData.map(escapeCsv).join(',')
+    })
+
+    const csvFeed = [headers.join(','), ...rows].join('\n')
+
+    return new Response(csvFeed, {
+      headers: { ...corsHeaders, 'Content-Type': 'text/csv; charset=utf-8' },
     })
   } catch (err: any) {
-    return new Response(
-      `<?xml version="1.0" encoding="UTF-8"?><error><![CDATA[${err.message}]]></error>`,
-      {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/xml; charset=utf-8' },
-      },
-    )
+    const emptyHeaders = [
+      'vehicle_id',
+      'id',
+      'title',
+      'description',
+      'image_link',
+      'link',
+      'make',
+      'model',
+      'year',
+      'price',
+      'mileage.value',
+      'mileage.unit',
+      'transmission',
+      'fuel_type',
+      'body_style',
+      'condition',
+    ].join(',')
+
+    return new Response(emptyHeaders, {
+      status: 200,
+      headers: { ...corsHeaders, 'Content-Type': 'text/csv; charset=utf-8' },
+    })
   }
 })
