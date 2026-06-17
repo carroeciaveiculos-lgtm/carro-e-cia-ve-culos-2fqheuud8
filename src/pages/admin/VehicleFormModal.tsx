@@ -415,7 +415,7 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
     }
   }
 
-  const save = async (status = 'disponivel') => {
+  const save = async (status = 'disponivel', shouldClose = true) => {
     setLoading(true)
     try {
       const sanitizeNumber = (val: any) => {
@@ -463,7 +463,7 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
       if (error) throw error
       toast({ title: 'Veículo salvo com sucesso!' })
       onSuccess()
-      onClose()
+      if (shouldClose) onClose()
     } catch (err: any) {
       toast({ title: 'Erro ao salvar', description: err.message, variant: 'destructive' })
     } finally {
@@ -551,7 +551,25 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
     }))
 
   const handleMediaSelect = (url: string) =>
-    setFormData((p: any) => ({ ...p, fotos: [...(p.fotos || []), url] }))
+    setFormData((p: any) => {
+      const fotos = p.fotos || []
+      if (fotos.includes(url)) return p
+      return { ...p, fotos: [...fotos, url] }
+    })
+
+  const handleSelectAllMedia = () => {
+    setFormData((p: any) => {
+      const fotos = p.fotos || []
+      const newFotos = [...fotos]
+      mediaAssets.forEach((asset) => {
+        if (!newFotos.includes(asset.file_path)) {
+          newFotos.push(asset.file_path)
+        }
+      })
+      return { ...p, fotos: newFotos }
+    })
+    toast({ title: 'Todas as mídias selecionadas!' })
+  }
 
   const compressToWebP = (file: File): Promise<Blob> => {
     return new Promise((resolve, reject) => {
@@ -598,40 +616,49 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
 
     setLoading(true)
     toast({
-      title: 'Otimizando e enviando imagens...',
-      description: 'Convertendo para WebP e processando upload.',
+      title: 'Enviando mídia...',
+      description: 'Processando upload para o Media Center.',
     })
 
     try {
+      const placaFolder = formData.placa ? formData.placa.toUpperCase() : 'Geral'
       const newUrls = []
       for (let i = 0; i < files.length; i++) {
         const file = files[i]
-        if (!file.type.startsWith('image/')) continue
+        const isVideo = file.type.startsWith('video/')
+        if (!file.type.startsWith('image/') && !isVideo) continue
 
-        const webpBlob = await compressToWebP(file)
-        const fileName = `${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.]/g, '').split('.')[0]}.webp`
+        let fileToUpload = file
+        let contentType = file.type
+        let fileName = `${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.]/g, '')}`
+
+        if (!isVideo) {
+          fileToUpload = await compressToWebP(file)
+          contentType = 'image/webp'
+          fileName = `${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.]/g, '').split('.')[0]}.webp`
+        }
 
         const { error } = await supabase.storage
           .from('logos-e-imagens')
-          .upload(`veiculos/${fileName}`, webpBlob, { contentType: 'image/webp' })
+          .upload(`veiculos/${placaFolder}/${fileName}`, fileToUpload, { contentType })
         if (error) throw error
 
         const { data: publicUrlData } = supabase.storage
           .from('logos-e-imagens')
-          .getPublicUrl(`veiculos/${fileName}`)
+          .getPublicUrl(`veiculos/${placaFolder}/${fileName}`)
         const url = publicUrlData.publicUrl
 
         await supabase.from('media_assets').insert({
           file_name: fileName,
           file_path: url,
-          mime_type: 'image/webp',
-          folder: 'veiculos',
+          mime_type: contentType,
+          folder: `veiculos/${placaFolder}`,
         })
 
         newUrls.push(url)
       }
 
-      toast({ title: 'Imagens otimizadas e adicionadas ao Media Center!' })
+      toast({ title: 'Mídia adicionada com sucesso ao Media Center!' })
 
       supabase
         .from('media_assets')
@@ -699,15 +726,15 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
     if (!vehicleId) return toast({ title: 'Salve o veículo primeiro', variant: 'destructive' })
     setLoadingAdKit(true)
     try {
-      const tema = `Kit de divulgação para redes sociais e portais (Instagram, WhatsApp, OLX)`
-      const palavraChave = `${formData.marca} ${formData.modelo} ${formData.ano_fabricacao}`
+      const tema = `Anúncio persuasivo e acolhedor para ${formData.marca} ${formData.modelo} ${formData.ano_fabricacao}`
+      const palavraChave = `${formData.marca} ${formData.modelo}`
       const { data, error } = await supabase.functions.invoke('gerar-conteudo', {
         body: {
           tema:
             tema +
-            `. Veículo: ${formData.marca} ${formData.modelo} ${formData.ano_fabricacao}, Cor: ${formData.cor}, Combustível: ${formData.combustivel}, Preço: R$ ${formData.preco_venda}. Opcionais: ${(formData.diferenciais || []).join(', ')}. Crie 3 seções: Instagram, WhatsApp e OLX. Inclua um título, texto otimizado para Instagram/Facebook e hashtags sugeridas com base em: ${formData.marca}, ${formData.modelo}, ${formData.cambio}, ${formData.combustivel}.`,
+            `\nDados do veículo:\nMarca: ${formData.marca}\nModelo: ${formData.modelo}\nAno: ${formData.ano_fabricacao}\nCor: ${formData.cor}\nCombustível: ${formData.combustivel}\nPreço: R$ ${formData.preco_venda}\nOpcionais: ${(formData.diferenciais || []).join(', ')}.\n\nPor favor, crie conteúdo específico para 3 formatos:\n1) Instagram/Facebook Feed\n2) Instagram Stories\n3) WhatsApp/OLX.\nUse um tom persuasivo, acolhedor e inclua hashtags adequadas. A inteligência artificial que deve gerar isso preferencialmente é o Gemini 1.5 Flash se disponível no backend.`,
           palavraChave,
-          tom: 'Persuasivo',
+          tom: 'Persuasivo e Acolhedor',
         },
       })
       if (error) throw error
@@ -926,9 +953,9 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
                       />
                     </div>
                     <div>
-                      <Label className="text-xs">Combust. Sintético</Label>
+                      <Label className="text-xs">Categoria Sintética</Label>
                       <Input
-                        value={formData.info_personalizadas?.combustivel_sintetico || ''}
+                        value={formData.info_personalizadas?.categoria_detalhada || 'carro'}
                         readOnly
                         className="h-8 text-sm bg-slate-100"
                       />
@@ -1400,11 +1427,15 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
                           )}
                         >
                           <div className="relative w-full sm:w-24 h-32 sm:h-16 rounded-md overflow-hidden shrink-0 bg-slate-100">
-                            <img
-                              src={f}
-                              className="w-full h-full object-cover"
-                              alt={`Foto ${i + 1}`}
-                            />
+                            {f.match(/\.(mp4|mov|webm)$/i) ? (
+                              <video src={f} className="w-full h-full object-cover" muted />
+                            ) : (
+                              <img
+                                src={f}
+                                className="w-full h-full object-cover"
+                                alt={`Foto ${i + 1}`}
+                              />
+                            )}
                             {i === 0 && (
                               <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end">
                                 <span className="text-[10px] font-bold text-white p-1 flex items-center gap-1 w-full justify-center">
@@ -2026,11 +2057,11 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
             <Button variant="outline" onClick={onClose}>
               Cancelar
             </Button>
-            <Button variant="secondary" onClick={() => save('inativo')} disabled={loading}>
+            <Button variant="secondary" onClick={() => save('rascunho', false)} disabled={loading}>
               Salvar Rascunho
             </Button>
             <Button
-              onClick={() => save('disponivel')}
+              onClick={() => save('disponivel', true)}
               disabled={loading}
               className="bg-blue-600 hover:bg-blue-700 text-white font-bold"
             >
@@ -2046,19 +2077,24 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
                 <ImageIcon className="w-5 h-5 text-blue-600" />
                 Media Center
               </DialogTitle>
-              <div className="relative mr-6">
-                <Button size="sm" className="bg-blue-600 hover:bg-blue-700">
-                  <UploadCloud className="w-4 h-4 mr-2" />
-                  Upload de Imagens
+              <div className="flex items-center gap-2 mr-6">
+                <Button size="sm" variant="secondary" onClick={handleSelectAllMedia}>
+                  Selecionar Todos
                 </Button>
-                <input
-                  type="file"
-                  multiple
-                  accept="image/*"
-                  className="absolute inset-0 opacity-0 cursor-pointer"
-                  onChange={handleFileUpload}
-                  disabled={loading}
-                />
+                <div className="relative">
+                  <Button size="sm" className="bg-blue-600 hover:bg-blue-700">
+                    <UploadCloud className="w-4 h-4 mr-2" />
+                    Upload Mídia
+                  </Button>
+                  <input
+                    type="file"
+                    multiple
+                    accept="image/*,video/mp4,video/quicktime"
+                    className="absolute inset-0 opacity-0 cursor-pointer"
+                    onChange={handleFileUpload}
+                    disabled={loading}
+                  />
+                </div>
               </div>
             </DialogHeader>
             <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-4 p-2 mt-4">
@@ -2067,11 +2103,15 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
                   key={asset.id}
                   onClick={() => {
                     handleMediaSelect(asset.file_path)
-                    toast({ title: 'Imagem importada do Media Center.' })
+                    toast({ title: 'Mídia importada do Media Center.' })
                   }}
                   className="relative aspect-square rounded-lg overflow-hidden border-2 border-transparent hover:border-blue-500 cursor-pointer shadow-sm group bg-slate-100"
                 >
-                  <img src={asset.file_path} className="w-full h-full object-cover" />
+                  {asset.mime_type?.startsWith('video/') ? (
+                    <video src={asset.file_path} className="w-full h-full object-cover" muted />
+                  ) : (
+                    <img src={asset.file_path} className="w-full h-full object-cover" />
+                  )}
                   <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white">
                     <Plus className="w-6 h-6" />
                   </div>

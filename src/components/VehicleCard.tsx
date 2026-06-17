@@ -1,6 +1,13 @@
 import { Link } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from '@/components/ui/carousel'
 
 export function VehicleCard({ vehicle, isList = false }: { vehicle: any; isList?: boolean }) {
   const formatCurrency = (value: number) => {
@@ -21,10 +28,12 @@ export function VehicleCard({ vehicle, isList = false }: { vehicle: any; isList?
     return url
   }
 
-  const coverImage =
+  const fotos =
     vehicle.fotos && vehicle.fotos.length > 0
-      ? getOptimizedUrl(vehicle.fotos[0])
-      : 'https://img.usecurling.com/p/400/300?q=car'
+      ? vehicle.fotos.map(getOptimizedUrl)
+      : ['https://img.usecurling.com/p/400/300?q=car']
+
+  const coverImage = fotos[0]
 
   if (isList) {
     return (
@@ -89,19 +98,39 @@ export function VehicleCard({ vehicle, isList = false }: { vehicle: any; isList?
 
   return (
     <div className="group flex flex-col bg-card rounded-lg overflow-hidden border shadow-sm hover:shadow-md transition-shadow">
-      <div className="relative aspect-[16/9] md:aspect-[4/3] overflow-hidden bg-muted">
-        <picture>
-          <source srcSet={coverImage} type="image/webp" />
-          <img
-            src={coverImage}
-            alt={`Foto do veículo ${vehicle.marca} ${vehicle.modelo} ${vehicle.ano_fabricacao} à venda em Uberaba`}
-            width="400"
-            height="300"
-            loading="lazy"
-            decoding="async"
-            className="object-cover w-full h-[300px] md:h-full group-hover:scale-105 transition-transform duration-500"
-          />{' '}
-        </picture>
+      <div className="relative aspect-[16/9] md:aspect-[4/3] bg-muted group-hover:scale-105 transition-transform duration-500">
+        <Carousel className="w-full h-full">
+          <CarouselContent className="h-full ml-0">
+            {fotos.map((url: string, index: number) => (
+              <CarouselItem key={index} className="pl-0 h-full">
+                <Link to={`/estoque/${vehicle.id}`} className="w-full h-full block">
+                  {url.match(/\.(mp4|mov|webm)$/i) ? (
+                    <video
+                      src={url}
+                      className="w-full h-[300px] md:h-full object-cover"
+                      muted
+                      loop
+                      playsInline
+                    />
+                  ) : (
+                    <img
+                      src={url}
+                      alt={`Foto do veículo ${vehicle.marca} ${vehicle.modelo} à venda em Uberaba`}
+                      loading="lazy"
+                      className="object-cover w-full h-[300px] md:h-full"
+                    />
+                  )}
+                </Link>
+              </CarouselItem>
+            ))}
+          </CarouselContent>
+          {fotos.length > 1 && (
+            <>
+              <CarouselPrevious className="left-2 bg-black/50 text-white border-0 hover:bg-black/70" />
+              <CarouselNext className="right-2 bg-black/50 text-white border-0 hover:bg-black/70" />
+            </>
+          )}
+        </Carousel>
       </div>
       <div className="p-4 md:p-5 flex flex-col flex-grow">
         <h3 className="font-display font-bold text-base md:text-lg text-foreground line-clamp-1 mb-2">

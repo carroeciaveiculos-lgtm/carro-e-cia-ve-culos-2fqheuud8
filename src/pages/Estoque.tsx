@@ -6,6 +6,13 @@ import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from '@/components/ui/carousel'
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -291,32 +298,60 @@ export default function Estoque() {
             ) : (
               <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 {filteredVeiculos.map((v) => {
-                  const fotoPrincipal =
+                  const fotos =
                     Array.isArray(v.fotos) && v.fotos.length > 0
-                      ? v.fotos[0]
-                      : 'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/fotos/modelo-veiculo.webp'
+                      ? v.fotos
+                      : [
+                          'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/fotos/modelo-veiculo.webp',
+                        ]
                   return (
                     <Card
                       key={v.id}
                       className="overflow-hidden hover:shadow-lg transition-shadow border-border/50 group flex flex-col w-full"
                     >
-                      <Link
-                        to={`/estoque/${v.id}`}
-                        className="block relative w-full h-[300px] overflow-hidden bg-muted"
-                        onClick={() =>
-                          trackCTAClick(`Ver Veiculo: ${v.marca} ${v.modelo}`, '/estoque')
-                        }
-                      >
+                      <div className="relative w-full h-[300px] bg-muted group-hover:scale-105 transition-transform duration-500">
                         {v.is_zero_km && (
                           <Badge className="absolute top-3 left-3 z-10 bg-primary">0 KM</Badge>
                         )}
-                        <img
-                          src={fotoPrincipal}
-                          alt={`${v.marca} ${v.modelo}`}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                          loading="lazy"
-                        />
-                      </Link>
+                        <Carousel className="w-full h-full">
+                          <CarouselContent className="h-full ml-0">
+                            {fotos.map((url: string, index: number) => (
+                              <CarouselItem key={index} className="pl-0 h-full">
+                                <Link
+                                  to={`/estoque/${v.id}`}
+                                  onClick={() =>
+                                    trackCTAClick(`Ver Veiculo: ${v.marca} ${v.modelo}`, '/estoque')
+                                  }
+                                  className="w-full h-full block"
+                                >
+                                  {url.match(/\.(mp4|mov|webm)$/i) ? (
+                                    <video
+                                      src={url}
+                                      className="w-full h-[300px] object-cover"
+                                      muted
+                                      loop
+                                      playsInline
+                                    />
+                                  ) : (
+                                    <img
+                                      src={url}
+                                      alt={`${v.marca} ${v.modelo} - Foto ${index + 1}`}
+                                      className="w-full h-[300px] object-cover"
+                                      loading="lazy"
+                                    />
+                                  )}
+                                </Link>
+                              </CarouselItem>
+                            ))}
+                          </CarouselContent>
+                          {fotos.length > 1 && (
+                            <>
+                              <CarouselPrevious className="left-2 bg-black/50 text-white border-0 hover:bg-black/70" />
+                              <CarouselNext className="right-2 bg-black/50 text-white border-0 hover:bg-black/70" />
+                            </>
+                          )}
+                        </Carousel>
+                      </div>
                       <CardContent className="p-4 flex-1 flex flex-col">
                         <div className="mb-3">
                           <h3 className="font-bold text-base md:text-lg leading-tight group-hover:text-primary transition-colors line-clamp-1 mb-2">
