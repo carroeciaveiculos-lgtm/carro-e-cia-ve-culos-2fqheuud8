@@ -16,6 +16,7 @@ import {
   TrendingUp,
   AlertTriangle,
   CameraOff,
+  Settings,
 } from 'lucide-react'
 
 const ALL_MODULES = [
@@ -42,6 +43,13 @@ const ALL_MODULES = [
     line1: 'Administrativo',
     line2: 'e NFs',
     route: '/admin/administrativo',
+  },
+  {
+    id: 'configuracoes',
+    icon: Settings,
+    line1: 'Configurações',
+    line2: 'Sistema e IA',
+    route: '/admin/configuracoes',
   },
 ]
 

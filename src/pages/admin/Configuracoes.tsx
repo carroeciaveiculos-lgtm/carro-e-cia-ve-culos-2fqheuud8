@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
 import { useToast } from '@/hooks/use-toast'
 import { supabase } from '@/lib/supabase/client'
 import { Save, Share2, Facebook, Instagram, MessageCircle } from 'lucide-react'
@@ -80,12 +81,13 @@ export default function Configuracoes() {
                 <MessageCircle className="w-4 h-4 text-purple-600" /> System Prompt da IA (Tom de
                 Voz)
               </Label>
-              <Input
+              <Textarea
                 value={socialConfig.ai_system_prompt || ''}
                 onChange={(e) =>
                   setSocialConfig({ ...socialConfig, ai_system_prompt: e.target.value })
                 }
                 placeholder="Ex: Você é um assistente de marketing experiente focado em venda de seminovos..."
+                className="min-h-[100px]"
               />
             </div>
             <div className="space-y-2">
@@ -128,8 +130,7 @@ export default function Configuracoes() {
             </div>
             <div className="space-y-2">
               <Label className="flex items-center gap-2">
-                <MessageCircle className="w-4 h-4 text-green-600" /> Número WhatsApp (wa.me / Cloud
-                API)
+                <MessageCircle className="w-4 h-4 text-green-600" /> Número do WhatsApp (WA.ME)
               </Label>
               <Input
                 value={socialConfig.whatsapp_number || ''}
@@ -138,6 +139,9 @@ export default function Configuracoes() {
                 }
                 placeholder="Ex: 5534999999999"
               />
+              <p className="text-xs text-slate-500">
+                Este número será usado para os botões "Fale Conosco" gerados pela IA.
+              </p>
             </div>
           </div>
           <div className="flex justify-end pt-4 border-t mt-6">

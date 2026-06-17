@@ -2051,6 +2051,7 @@ export type Database = {
           redes: Json
           status: string | null
           texto: string | null
+          veiculo_id: string | null
         }
         Insert: {
           criado_em?: string | null
@@ -2060,6 +2061,7 @@ export type Database = {
           redes: Json
           status?: string | null
           texto?: string | null
+          veiculo_id?: string | null
         }
         Update: {
           criado_em?: string | null
@@ -2069,8 +2071,17 @@ export type Database = {
           redes?: Json
           status?: string | null
           texto?: string | null
+          veiculo_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: 'social_posts_veiculo_id_fkey'
+            columns: ['veiculo_id']
+            isOneToOne: false
+            referencedRelation: 'veiculos'
+            referencedColumns: ['id']
+          },
+        ]
       }
       usuarios: {
         Row: {
@@ -3085,6 +3096,7 @@ export const Constants = {
 //   data_agendamento: timestamp with time zone (nullable)
 //   status: character varying (nullable, default: 'Agendado'::character varying)
 //   criado_em: timestamp with time zone (nullable, default: now())
+//   veiculo_id: uuid (nullable)
 // Table: usuarios
 //   id: uuid (not null, default: gen_random_uuid())
 //   nome: text (not null)
@@ -3312,6 +3324,7 @@ export const Constants = {
 //   PRIMARY KEY social_configuracoes_pkey: PRIMARY KEY (id)
 // Table: social_posts
 //   PRIMARY KEY social_posts_pkey: PRIMARY KEY (id)
+//   FOREIGN KEY social_posts_veiculo_id_fkey: FOREIGN KEY (veiculo_id) REFERENCES veiculos(id) ON DELETE SET NULL
 // Table: usuarios
 //   UNIQUE usuarios_email_key: UNIQUE (email)
 //   PRIMARY KEY usuarios_pkey: PRIMARY KEY (id)
