@@ -46,14 +46,19 @@ Deno.serve(async (req) => {
 
     const { data: socialConfig } = await supabaseService
       .from('social_configuracoes')
-      .select('ai_system_prompt')
+      .select('ai_system_prompt, whatsapp_number')
       .maybeSingle()
     const customPrompt =
       socialConfig?.ai_system_prompt ||
       'Você é um "Master Arquiteto de Conteúdo" especialista em veículos seminovos.'
+    const whatsappNumber = socialConfig?.whatsapp_number || '5534999999999'
 
     const prompt = `${customPrompt}
 Contexto real da empresa: ${configString}.
+Número de WhatsApp configurado para links: ${whatsappNumber}.
+
+INSTRUÇÃO IMPORTANTE SOBRE LINKS DE WHATSAPP:
+Sempre que gerar botões de CTA, links ou textos convidando para o "Fale conosco no whats", utilize OBRIGATORIAMENTE o link funcional no formato: https://wa.me/${whatsappNumber}
 
 Sua tarefa é gerar conteúdo para o tema "${tema}" com foco na palavra-chave "${palavraChave}".
 Tom: ${tom || 'Conversacional'}.

@@ -62,6 +62,7 @@ interface SocialPost {
   data_agendamento: string
   status: string
   criado_em: string
+  veiculo_id?: string | null
 }
 
 const NETWORK_COLORS: Record<string, string> = {
@@ -95,10 +96,21 @@ export default function RedesSociais() {
   const [formTexto, setFormTexto] = useState('')
   const [formHora, setFormHora] = useState('12:00')
   const [formStatus, setFormStatus] = useState('Agendado')
+  const [formVeiculoId, setFormVeiculoId] = useState<string>('nenhum')
+  const [veiculos, setVeiculos] = useState<any[]>([])
 
   useEffect(() => {
     fetchPosts()
+    fetchVeiculos()
   }, [currentDate, viewMode])
+
+  const fetchVeiculos = async () => {
+    const { data } = await supabase
+      .from('veiculos')
+      .select('id, marca, modelo, ano_fabricacao, placa')
+      .eq('status', 'Disponivel')
+    if (data) setVeiculos(data)
+  }
 
   const fetchPosts = async () => {
     let query = supabase
@@ -128,6 +140,7 @@ export default function RedesSociais() {
     setFormTexto('')
     setFormHora('12:00')
     setFormStatus('Agendado')
+    setFormVeiculoId('nenhum')
     setIsModalOpen(true)
   }
 
@@ -148,11 +161,15 @@ export default function RedesSociais() {
     const [hours, minutes] = formHora.split(':')
     dataAgendamento.setHours(parseInt(hours, 10), parseInt(minutes, 10), 0)
 
-    const newPost = {
+    const newPost: any = {
       redes: formRedes,
       texto: formTexto,
       data_agendamento: dataAgendamento.toISOString(),
       status: formStatus,
+    }
+
+    if (formVeiculoId && formVeiculoId !== 'nenhum') {
+      newPost.veiculo_id = formVeiculoId
     }
 
     const { error } = await supabase.from('social_posts').insert(newPost)
@@ -558,6 +575,22 @@ export default function RedesSociais() {
                   </SelectContent>
                 </Select>
               </div>
+            </div>
+            <div className="grid gap-2">
+              <Label>Veículo Vinculado</Label>
+              <Select value={formVeiculoId} onValueChange={setFormVeiculoId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione um veículo (opcional)" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="nenhum">Nenhum veículo vinculado</SelectItem>
+                  {veiculos.map((v) => (
+                    <SelectItem key={v.id} value={v.id}>
+                      {v.marca} {v.modelo} {v.ano_fabricacao} ({v.placa})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="grid gap-2">
               <Label>Texto da Publicação</Label>

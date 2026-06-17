@@ -2011,6 +2011,7 @@ export type Database = {
       }
       social_configuracoes: {
         Row: {
+          ai_system_prompt: string | null
           created_at: string | null
           facebook_page_id: string | null
           facebook_token: string | null
@@ -2020,6 +2021,7 @@ export type Database = {
           whatsapp_number: string | null
         }
         Insert: {
+          ai_system_prompt?: string | null
           created_at?: string | null
           facebook_page_id?: string | null
           facebook_token?: string | null
@@ -2029,6 +2031,7 @@ export type Database = {
           whatsapp_number?: string | null
         }
         Update: {
+          ai_system_prompt?: string | null
           created_at?: string | null
           facebook_page_id?: string | null
           facebook_token?: string | null
@@ -3073,6 +3076,7 @@ export const Constants = {
 //   whatsapp_number: text (nullable)
 //   created_at: timestamp with time zone (nullable, default: now())
 //   updated_at: timestamp with time zone (nullable, default: now())
+//   ai_system_prompt: text (nullable, default: 'Você é um assistente de marketing digital especialista em veículos seminovos.'::text)
 // Table: social_posts
 //   id: uuid (not null, default: gen_random_uuid())
 //   redes: jsonb (not null)
@@ -3519,6 +3523,9 @@ export const Constants = {
 //     USING: true
 //     WITH CHECK: true
 // Table: veiculos_cache
+//   Policy "allow_all_veiculos_cache" (ALL, PERMISSIVE) roles={public}
+//     USING: true
+//     WITH CHECK: true
 //   Policy "allow_auth_all_veiculos_cache" (ALL, PERMISSIVE) roles={authenticated}
 //     USING: true
 //     WITH CHECK: true

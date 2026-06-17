@@ -128,7 +128,7 @@ export default function Configuracoes() {
             </div>
             <div className="space-y-2">
               <Label className="flex items-center gap-2">
-                <MessageCircle className="w-4 h-4 text-green-600" /> Número Oficial WhatsApp (Cloud
+                <MessageCircle className="w-4 h-4 text-green-600" /> Número WhatsApp (wa.me / Cloud
                 API)
               </Label>
               <Input
@@ -136,7 +136,7 @@ export default function Configuracoes() {
                 onChange={(e) =>
                   setSocialConfig({ ...socialConfig, whatsapp_number: e.target.value })
                 }
-                placeholder="5534999999999"
+                placeholder="Ex: 5534999999999"
               />
             </div>
           </div>

@@ -12,19 +12,30 @@ const geminiKey = Deno.env.get('GEMINI_API_KEY') || Deno.env.get('GEMINI_APY_KEY
 const waToken = Deno.env.get('META_WHATSAPP_ACCESS_TOKEN')!
 const waPhoneId = Deno.env.get('META_PHONE_NUMBER_ID') || 'default_id'
 
-const SYSTEM_PROMPT = `Você é o Luiz, SDR digital da Carro e Cia Motors.
+async function getSystemPrompt() {
+  const { data } = await supabase
+    .from('social_configuracoes')
+    .select('ai_system_prompt, whatsapp_number')
+    .maybeSingle()
+  const basePrompt = data?.ai_system_prompt || 'Você é o Luiz, SDR digital da Carro e Cia Motors.'
+  const waNumber = data?.whatsapp_number || ''
+
+  return `${basePrompt}
 Tom: Empático, consultivo e ágil (máx 3-4 linhas por mensagem). Use emojis moderadamente.
 Objetivos principais: 
 1. Qualificar a forma de pagamento (financiamento, à vista, consórcio). 
 2. Verificar se o cliente tem carro na troca (pegar modelo e ano). 
 3. Agendar uma visita à loja.
 Quando qualificado e o cliente demonstrar intenção real, use a função solicitar_atendimento_humano.
+${waNumber ? `O número oficial de WhatsApp da loja é: ${waNumber}. Se for necessário enviar um link direto, use https://wa.me/${waNumber}` : ''}
 Use consultar_estoque sempre que precisar verificar veículos disponíveis.`
+}
 
 async function runGemini(history: any[]) {
+  const systemPrompt = await getSystemPrompt()
   const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${geminiKey}`
   const reqBody = {
-    systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
+    systemInstruction: { parts: [{ text: systemPrompt }] },
     contents: history,
   }
   const res = await fetch(url, {
