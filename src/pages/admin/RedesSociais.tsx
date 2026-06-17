@@ -482,11 +482,20 @@ export default function RedesSociais() {
             {selectedPost.imagem && (
               <div className="mb-4">
                 <Label className="text-slate-500 text-xs uppercase block mb-2">Mídia Anexada</Label>
-                <img
-                  src={selectedPost.imagem}
-                  alt="Post"
-                  className="rounded-md w-full object-cover border"
-                />
+                {selectedPost.imagem.match(/\.(mp4|mov|webm)$/i) ? (
+                  <video
+                    src={selectedPost.imagem}
+                    className="rounded-md w-full object-cover border"
+                    controls
+                    muted
+                  />
+                ) : (
+                  <img
+                    src={selectedPost.imagem}
+                    alt="Post"
+                    className="rounded-md w-full object-cover border"
+                  />
+                )}
               </div>
             )}
           </div>

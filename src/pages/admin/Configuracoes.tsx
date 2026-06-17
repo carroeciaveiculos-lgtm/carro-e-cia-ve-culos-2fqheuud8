@@ -15,6 +15,7 @@ export default function Configuracoes() {
     facebook_page_id: '',
     facebook_token: '',
     whatsapp_number: '',
+    ai_system_prompt: '',
   })
   const { toast } = useToast()
 
@@ -74,6 +75,19 @@ export default function Configuracoes() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2 md:col-span-2">
+              <Label className="flex items-center gap-2">
+                <MessageCircle className="w-4 h-4 text-purple-600" /> System Prompt da IA (Tom de
+                Voz)
+              </Label>
+              <Input
+                value={socialConfig.ai_system_prompt || ''}
+                onChange={(e) =>
+                  setSocialConfig({ ...socialConfig, ai_system_prompt: e.target.value })
+                }
+                placeholder="Ex: Você é um assistente de marketing experiente focado em venda de seminovos..."
+              />
+            </div>
             <div className="space-y-2">
               <Label className="flex items-center gap-2">
                 <Instagram className="w-4 h-4 text-pink-600" /> Token Instagram (Long-Lived)

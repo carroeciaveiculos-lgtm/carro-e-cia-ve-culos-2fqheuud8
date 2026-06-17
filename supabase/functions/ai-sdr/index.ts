@@ -22,7 +22,7 @@ Quando qualificado e o cliente demonstrar intenção real, use a função solici
 Use consultar_estoque sempre que precisar verificar veículos disponíveis.`
 
 async function runGemini(history: any[]) {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey}`
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${geminiKey}`
   const reqBody = {
     systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
     contents: history,

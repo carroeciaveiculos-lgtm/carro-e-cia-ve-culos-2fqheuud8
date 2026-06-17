@@ -44,7 +44,15 @@ Deno.serve(async (req) => {
       ? JSON.stringify(configData)
       : 'Carro e Cia Veículos, mais de 20 anos de mercado em Uberaba, MG.'
 
-    const prompt = `Você é um "Master Arquiteto de Conteúdo" especialista em veículos seminovos.
+    const { data: socialConfig } = await supabaseService
+      .from('social_configuracoes')
+      .select('ai_system_prompt')
+      .maybeSingle()
+    const customPrompt =
+      socialConfig?.ai_system_prompt ||
+      'Você é um "Master Arquiteto de Conteúdo" especialista em veículos seminovos.'
+
+    const prompt = `${customPrompt}
 Contexto real da empresa: ${configString}.
 
 Sua tarefa é gerar conteúdo para o tema "${tema}" com foco na palavra-chave "${palavraChave}".
@@ -117,11 +125,11 @@ Responda APENAS com um objeto JSON válido, sem formatação markdown:
     let usageTokens = { input: 0, output: 0 }
     const errorDetails: any[] = []
 
-    // 1. Try Gemini 1.5 Flash (Primary if specified or available)
+    // 1. Try Gemini 3.5 Flash (Primary if specified or available)
     if (GEMINI_API_KEY) {
       try {
         const geminiRes = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`,
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${GEMINI_API_KEY}`,
           {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -149,7 +157,7 @@ Responda APENAS com um objeto JSON válido, sem formatação markdown:
         if (content) {
           resultJson = JSON.parse(content)
           usedProvider = 'gemini'
-          usedModel = 'gemini-1.5-flash'
+          usedModel = 'gemini-3.5-flash'
           usageTokens = {
             input: data.usageMetadata?.promptTokenCount || 0,
             output: data.usageMetadata?.candidatesTokenCount || 0,

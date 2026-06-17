@@ -74,12 +74,40 @@ export default function MediaCenterPage() {
           canvas.width = width
           canvas.height = height
           const ctx = canvas.getContext('2d')
-          ctx?.drawImage(img, 0, 0, width, height)
-          canvas.toBlob(
-            (blob) => (blob ? resolve(blob) : reject(new Error('Falha no canvas'))),
-            'image/webp',
-            0.8,
-          )
+          if (!ctx) return reject(new Error('Falha no canvas'))
+          ctx.drawImage(img, 0, 0, width, height)
+
+          const logo = new Image()
+          logo.crossOrigin = 'Anonymous'
+          logo.src =
+            'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/logos/logo-carro-e-cia.webp'
+          logo.onload = () => {
+            const logoWidth = width * 0.25
+            const ratio = logoWidth / logo.width
+            const logoHeight = logo.height * ratio
+            const padding = width * 0.05
+            ctx.globalAlpha = 0.8
+            ctx.drawImage(
+              logo,
+              width - logoWidth - padding,
+              height - logoHeight - padding,
+              logoWidth,
+              logoHeight,
+            )
+            ctx.globalAlpha = 1.0
+            canvas.toBlob(
+              (blob) => (blob ? resolve(blob) : reject(new Error('Falha no canvas'))),
+              'image/webp',
+              0.8,
+            )
+          }
+          logo.onerror = () => {
+            canvas.toBlob(
+              (blob) => (blob ? resolve(blob) : reject(new Error('Falha no canvas'))),
+              'image/webp',
+              0.8,
+            )
+          }
         }
       }
     })
@@ -91,26 +119,36 @@ export default function MediaCenterPage() {
 
     try {
       for (const file of Array.from(e.target.files)) {
-        const compressedBlob = await compressImage(file)
-        const compressedFile = new File([compressedBlob], file.name.replace(/\.[^/.]+$/, '.webp'), {
-          type: 'image/webp',
-        })
-        const filename = `media/${Date.now()}_${Math.random().toString(36).substring(2)}.webp`
+        const isVideo = file.type.startsWith('video/')
+        let fileToUpload = file
+        let contentType = file.type
+        let finalFilename = file.name
+
+        if (!isVideo) {
+          const compressedBlob = await compressImage(file)
+          fileToUpload = new File([compressedBlob], file.name.replace(/\.[^/.]+$/, '.webp'), {
+            type: 'image/webp',
+          })
+          contentType = 'image/webp'
+          finalFilename = fileToUpload.name
+        }
+
+        const filename = `inventory/${activeFolder.replace(/[^a-zA-Z0-9_-]/g, '')}/${Date.now()}_${Math.random().toString(36).substring(2)}_${finalFilename}`
 
         const { error: uploadError } = await supabase.storage
-          .from('veiculos-fotos')
-          .upload(filename, compressedFile)
+          .from('logos-e-imagens')
+          .upload(filename, fileToUpload)
         if (uploadError) throw uploadError
 
         const {
           data: { publicUrl },
-        } = supabase.storage.from('veiculos-fotos').getPublicUrl(filename)
+        } = supabase.storage.from('logos-e-imagens').getPublicUrl(filename)
 
         await supabase.from('media_assets').insert({
-          file_name: compressedFile.name,
+          file_name: finalFilename,
           file_path: publicUrl,
-          file_size: compressedFile.size,
-          mime_type: 'image/webp',
+          file_size: fileToUpload.size,
+          mime_type: contentType,
           folder: activeFolder,
         })
       }
@@ -131,8 +169,8 @@ export default function MediaCenterPage() {
   const handleDelete = async (id: string, url: string) => {
     if (!confirm('Deseja realmente excluir esta imagem?')) return
     try {
-      const path = url.split('/veiculos-fotos/')[1]
-      if (path) await supabase.storage.from('veiculos-fotos').remove([path])
+      const path = url.split('/logos-e-imagens/')[1]
+      if (path) await supabase.storage.from('logos-e-imagens').remove([path])
       await supabase.from('media_assets').delete().eq('id', id)
 
       toast({ title: 'Imagem excluída' })
@@ -182,7 +220,7 @@ export default function MediaCenterPage() {
             type="file"
             id="upload-media"
             multiple
-            accept="image/*"
+            accept="image/*,video/mp4,video/quicktime"
             className="hidden"
             onChange={handleUpload}
             disabled={uploading}
@@ -300,12 +338,16 @@ export default function MediaCenterPage() {
                   className="group relative rounded-xl border border-gray-200 overflow-hidden bg-gray-50 hover:border-[#CC0000] transition-colors"
                 >
                   <div className="aspect-square relative">
-                    <img
-                      src={asset.file_path}
-                      alt={asset.file_name}
-                      className="w-full h-full object-cover"
-                      loading="lazy"
-                    />
+                    {asset.mime_type?.startsWith('video/') ? (
+                      <video src={asset.file_path} className="w-full h-full object-cover" muted />
+                    ) : (
+                      <img
+                        src={asset.file_path}
+                        alt={asset.file_name}
+                        className="w-full h-full object-cover"
+                        loading="lazy"
+                      />
+                    )}
                     <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                       <Button
                         size="icon"

@@ -271,7 +271,7 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
   }
 
   const handleAddDespesa = async () => {
-    if (!vehicleId)
+    if (!currentVehicleId)
       return toast({
         title: 'Salve o veículo primeiro antes de lançar despesas',
         variant: 'destructive',
@@ -282,7 +282,7 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
     setLoading(true)
     try {
       const payload = {
-        veiculo_id: vehicleId,
+        veiculo_id: currentVehicleId,
         categoria: novaDespesa.categoria,
         descricao: novaDespesa.descricao,
         valor: Number(novaDespesa.valor),
@@ -457,10 +457,15 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
         delete payload.id
       }
 
-      const { error } = payload.id
-        ? await supabase.from('veiculos').update(payload).eq('id', payload.id)
-        : await supabase.from('veiculos').insert([payload])
+      const { data, error } = payload.id
+        ? await supabase.from('veiculos').update(payload).eq('id', payload.id).select()
+        : await supabase.from('veiculos').insert([payload]).select()
       if (error) throw error
+
+      if (data && data[0]) {
+        setFormData((prev: any) => ({ ...prev, id: data[0].id }))
+      }
+
       toast({ title: 'Veículo salvo com sucesso!' })
       onSuccess()
       if (shouldClose) onClose()
@@ -474,7 +479,7 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
   const handleDocumentFile = async (e: any) => {
     const file = e.target.files?.[0]
     if (!file) return
-    if (!vehicleId) {
+    if (!currentVehicleId) {
       toast({ title: 'Salve o veículo primeiro', variant: 'destructive' })
       return
     }
@@ -482,7 +487,7 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
     try {
       const ext = file.name.split('.').pop()
       const fileName = `${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.]/g, '')}`
-      const filePath = `${vehicleId}/${fileName}`
+      const filePath = `${currentVehicleId}/${fileName}`
       const { error: uploadError } = await supabase.storage
         .from('documentos-veiculos')
         .upload(filePath, file)
@@ -496,7 +501,7 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
         .from('documentos')
         .insert([
           {
-            veiculo_id: vehicleId,
+            veiculo_id: currentVehicleId,
             nome_documento: file.name,
             tipo: file.type,
             tamanho: file.size,
@@ -593,15 +598,40 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
         canvas.width = width
         canvas.height = height
         const ctx = canvas.getContext('2d')
-        ctx?.drawImage(img, 0, 0, width, height)
-        canvas.toBlob(
-          (blob) => {
-            if (blob) resolve(blob)
-            else reject(new Error('Canvas to Blob failed'))
-          },
-          'image/webp',
-          0.8,
-        )
+        if (!ctx) return reject(new Error('Canvas Context is null'))
+        ctx.drawImage(img, 0, 0, width, height)
+
+        const logo = new Image()
+        logo.crossOrigin = 'Anonymous'
+        logo.src =
+          'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/logos/logo-carro-e-cia.webp'
+        logo.onload = () => {
+          const logoWidth = width * 0.25
+          const ratio = logoWidth / logo.width
+          const logoHeight = logo.height * ratio
+          const padding = width * 0.05
+          ctx.globalAlpha = 0.8
+          ctx.drawImage(
+            logo,
+            width - logoWidth - padding,
+            height - logoHeight - padding,
+            logoWidth,
+            logoHeight,
+          )
+          ctx.globalAlpha = 1.0
+          canvas.toBlob(
+            (blob) => (blob ? resolve(blob) : reject(new Error('Canvas to Blob failed'))),
+            'image/webp',
+            0.8,
+          )
+        }
+        logo.onerror = () => {
+          canvas.toBlob(
+            (blob) => (blob ? resolve(blob) : reject(new Error('Canvas to Blob failed'))),
+            'image/webp',
+            0.8,
+          )
+        }
       }
       img.onerror = (e) => reject(e)
     })
@@ -638,21 +668,22 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
           fileName = `${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.]/g, '').split('.')[0]}.webp`
         }
 
+        const filePathStorage = `inventory/${placaFolder}/${fileName}`
         const { error } = await supabase.storage
           .from('logos-e-imagens')
-          .upload(`veiculos/${placaFolder}/${fileName}`, fileToUpload, { contentType })
+          .upload(filePathStorage, fileToUpload, { contentType })
         if (error) throw error
 
         const { data: publicUrlData } = supabase.storage
           .from('logos-e-imagens')
-          .getPublicUrl(`veiculos/${placaFolder}/${fileName}`)
+          .getPublicUrl(filePathStorage)
         const url = publicUrlData.publicUrl
 
         await supabase.from('media_assets').insert({
           file_name: fileName,
           file_path: url,
           mime_type: contentType,
-          folder: `veiculos/${placaFolder}`,
+          folder: `inventory/${placaFolder}`,
         })
 
         newUrls.push(url)
@@ -722,8 +753,11 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
   const [adKitContent, setAdKitContent] = useState<string | null>(null)
   const [loadingAdKit, setLoadingAdKit] = useState(false)
 
+  const currentVehicleId = formData?.id || vehicleId
+
   const handleGerarAdKit = async () => {
-    if (!vehicleId) return toast({ title: 'Salve o veículo primeiro', variant: 'destructive' })
+    if (!currentVehicleId)
+      return toast({ title: 'Salve o veículo primeiro', variant: 'destructive' })
     setLoadingAdKit(true)
     try {
       const tema = `Anúncio persuasivo e acolhedor para ${formData.marca} ${formData.modelo} ${formData.ano_fabricacao}`
@@ -773,11 +807,12 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
         .trim()
 
       const { error } = await supabase.from('social_posts').insert({
-        veiculo_id: vehicleId,
+        veiculo_id: currentVehicleId,
         texto: plainText,
         redes: { instagram: true, facebook: true, whatsapp: true },
         status: 'Rascunho',
         data_agendamento: new Date().toISOString(),
+        imagem: formData.fotos?.[0] || null,
       })
       if (error) throw error
       toast({ title: 'Rascunho salvo em Redes Sociais!' })
@@ -839,6 +874,7 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
             <TabsTrigger
               value="marketing"
               className="data-[state=active]:border-b-2 border-blue-600 rounded-none shadow-none"
+              disabled={!currentVehicleId}
             >
               <Sparkles className="w-4 h-4 mr-2" /> Marketing IA
             </TabsTrigger>
@@ -1885,13 +1921,13 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
                               const { data: novoContrato, error } = await supabase
                                 .from('contratos_consignacao')
                                 .insert({
-                                  veiculo_id: vehicleId,
+                                  veiculo_id: currentVehicleId,
                                   pdf_url: res.data.pdf_url,
                                   proprietario_nome: formData.proprietario_nome,
                                   proprietario_email: formData.proprietario_email,
                                   proprietario_cpf: formData.proprietario_cpf,
                                   proprietario_telefone: formData.proprietario_telefone,
-                                  numero_contrato: `CNS-${vehicleId.split('-')[0].toUpperCase()}`,
+                                  numero_contrato: `CNS-${currentVehicleId.split('-')[0].toUpperCase()}`,
                                 })
                                 .select('*')
                                 .single()
@@ -1993,7 +2029,7 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
                   </div>
                   <Button
                     onClick={handleGerarAdKit}
-                    disabled={loadingAdKit || !vehicleId}
+                    disabled={loadingAdKit || !currentVehicleId}
                     className="bg-purple-600 hover:bg-purple-700"
                   >
                     {loadingAdKit ? 'Gerando...' : 'Gerar Kit com IA'}

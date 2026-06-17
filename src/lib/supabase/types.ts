@@ -2009,6 +2009,36 @@ export type Database = {
         }
         Relationships: []
       }
+      social_configuracoes: {
+        Row: {
+          created_at: string | null
+          facebook_page_id: string | null
+          facebook_token: string | null
+          id: string
+          instagram_token: string | null
+          updated_at: string | null
+          whatsapp_number: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          facebook_page_id?: string | null
+          facebook_token?: string | null
+          id?: string
+          instagram_token?: string | null
+          updated_at?: string | null
+          whatsapp_number?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          facebook_page_id?: string | null
+          facebook_token?: string | null
+          id?: string
+          instagram_token?: string | null
+          updated_at?: string | null
+          whatsapp_number?: string | null
+        }
+        Relationships: []
+      }
       social_posts: {
         Row: {
           criado_em: string | null
@@ -3035,6 +3065,14 @@ export const Constants = {
 //   publicado: boolean (nullable, default: false)
 //   verificado: boolean (nullable, default: true)
 //   created_at: timestamp with time zone (nullable, default: now())
+// Table: social_configuracoes
+//   id: uuid (not null, default: gen_random_uuid())
+//   instagram_token: text (nullable)
+//   facebook_page_id: text (nullable)
+//   facebook_token: text (nullable)
+//   whatsapp_number: text (nullable)
+//   created_at: timestamp with time zone (nullable, default: now())
+//   updated_at: timestamp with time zone (nullable, default: now())
 // Table: social_posts
 //   id: uuid (not null, default: gen_random_uuid())
 //   redes: jsonb (not null)
@@ -3266,6 +3304,8 @@ export const Constants = {
 //   PRIMARY KEY site_configuracoes_pkey: PRIMARY KEY (id)
 // Table: site_depoimentos
 //   PRIMARY KEY site_depoimentos_pkey: PRIMARY KEY (id)
+// Table: social_configuracoes
+//   PRIMARY KEY social_configuracoes_pkey: PRIMARY KEY (id)
 // Table: social_posts
 //   PRIMARY KEY social_posts_pkey: PRIMARY KEY (id)
 // Table: usuarios
@@ -3394,6 +3434,15 @@ export const Constants = {
 //   Policy "allow_auth_media_all" (ALL, PERMISSIVE) roles={authenticated}
 //     USING: true
 //     WITH CHECK: true
+//   Policy "authenticated_delete_media" (DELETE, PERMISSIVE) roles={authenticated}
+//     USING: true
+//   Policy "authenticated_insert_media" (INSERT, PERMISSIVE) roles={authenticated}
+//     WITH CHECK: true
+//   Policy "authenticated_select_media" (SELECT, PERMISSIVE) roles={authenticated}
+//     USING: true
+//   Policy "authenticated_update_media" (UPDATE, PERMISSIVE) roles={authenticated}
+//     USING: true
+//     WITH CHECK: true
 // Table: mensagens_template
 //   Policy "authenticated_all_mensagens_template" (ALL, PERMISSIVE) roles={authenticated}
 //     USING: true
@@ -3438,8 +3487,25 @@ export const Constants = {
 //   Policy "allow_auth_depoimentos_all" (ALL, PERMISSIVE) roles={authenticated}
 //     USING: true
 //     WITH CHECK: true
+// Table: social_configuracoes
+//   Policy "authenticated_insert_soc_cfg" (INSERT, PERMISSIVE) roles={authenticated}
+//     WITH CHECK: true
+//   Policy "authenticated_select_soc_cfg" (SELECT, PERMISSIVE) roles={authenticated}
+//     USING: true
+//   Policy "authenticated_update_soc_cfg" (UPDATE, PERMISSIVE) roles={authenticated}
+//     USING: true
+//     WITH CHECK: true
 // Table: social_posts
 //   Policy "allow_auth_all_social" (ALL, PERMISSIVE) roles={authenticated}
+//     USING: true
+//     WITH CHECK: true
+//   Policy "authenticated_delete_social" (DELETE, PERMISSIVE) roles={authenticated}
+//     USING: true
+//   Policy "authenticated_insert_social" (INSERT, PERMISSIVE) roles={authenticated}
+//     WITH CHECK: true
+//   Policy "authenticated_select_social" (SELECT, PERMISSIVE) roles={authenticated}
+//     USING: true
+//   Policy "authenticated_update_social" (UPDATE, PERMISSIVE) roles={authenticated}
 //     USING: true
 //     WITH CHECK: true
 // Table: usuarios
@@ -3454,6 +3520,13 @@ export const Constants = {
 //     WITH CHECK: true
 // Table: veiculos_cache
 //   Policy "allow_auth_all_veiculos_cache" (ALL, PERMISSIVE) roles={authenticated}
+//     USING: true
+//     WITH CHECK: true
+//   Policy "authenticated_insert_cache" (INSERT, PERMISSIVE) roles={authenticated}
+//     WITH CHECK: true
+//   Policy "authenticated_select_cache" (SELECT, PERMISSIVE) roles={authenticated}
+//     USING: true
+//   Policy "authenticated_update_cache" (UPDATE, PERMISSIVE) roles={authenticated}
 //     USING: true
 //     WITH CHECK: true
 
