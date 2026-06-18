@@ -800,6 +800,119 @@ export type Database = {
           },
         ]
       }
+      crm_conversas: {
+        Row: {
+          cliente_nome: string | null
+          cliente_psid: string | null
+          cliente_telefone: string | null
+          cliente_wamid: string | null
+          created_at: string | null
+          id: string
+          meta_account_id: string | null
+          meta_data: Json | null
+          platform: string
+          status: string | null
+          tags: string[] | null
+          ultima_msg_em: string | null
+          updated_at: string | null
+          vendedor_id: string | null
+        }
+        Insert: {
+          cliente_nome?: string | null
+          cliente_psid?: string | null
+          cliente_telefone?: string | null
+          cliente_wamid?: string | null
+          created_at?: string | null
+          id?: string
+          meta_account_id?: string | null
+          meta_data?: Json | null
+          platform: string
+          status?: string | null
+          tags?: string[] | null
+          ultima_msg_em?: string | null
+          updated_at?: string | null
+          vendedor_id?: string | null
+        }
+        Update: {
+          cliente_nome?: string | null
+          cliente_psid?: string | null
+          cliente_telefone?: string | null
+          cliente_wamid?: string | null
+          created_at?: string | null
+          id?: string
+          meta_account_id?: string | null
+          meta_data?: Json | null
+          platform?: string
+          status?: string | null
+          tags?: string[] | null
+          ultima_msg_em?: string | null
+          updated_at?: string | null
+          vendedor_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'crm_conversas_meta_account_id_fkey'
+            columns: ['meta_account_id']
+            isOneToOne: false
+            referencedRelation: 'meta_accounts'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'crm_conversas_meta_account_id_fkey'
+            columns: ['meta_account_id']
+            isOneToOne: false
+            referencedRelation: 'meta_accounts_a_vencer'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      crm_mensagens: {
+        Row: {
+          conteudo: string | null
+          conversa_id: string
+          created_at: string | null
+          direcao: string
+          erro_msg: string | null
+          id: string
+          meta_data: Json | null
+          meta_message_id: string | null
+          status: string | null
+          tipo: string | null
+        }
+        Insert: {
+          conteudo?: string | null
+          conversa_id: string
+          created_at?: string | null
+          direcao: string
+          erro_msg?: string | null
+          id?: string
+          meta_data?: Json | null
+          meta_message_id?: string | null
+          status?: string | null
+          tipo?: string | null
+        }
+        Update: {
+          conteudo?: string | null
+          conversa_id?: string
+          created_at?: string | null
+          direcao?: string
+          erro_msg?: string | null
+          id?: string
+          meta_data?: Json | null
+          meta_message_id?: string | null
+          status?: string | null
+          tipo?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'crm_mensagens_conversa_id_fkey'
+            columns: ['conversa_id']
+            isOneToOne: false
+            referencedRelation: 'crm_conversas'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       despesas: {
         Row: {
           categoria: string | null
@@ -884,6 +997,66 @@ export type Database = {
             columns: ['veiculo_id']
             isOneToOne: false
             referencedRelation: 'veiculos'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      estoque_publicacoes: {
+        Row: {
+          created_at: string | null
+          erro_msg: string | null
+          id: string
+          meta_account_id: string | null
+          payload: Json | null
+          platform: string
+          post_id: string | null
+          publicado_em: string | null
+          status: string | null
+          updated_at: string | null
+          url_publicacao: string | null
+          veiculo_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          erro_msg?: string | null
+          id?: string
+          meta_account_id?: string | null
+          payload?: Json | null
+          platform: string
+          post_id?: string | null
+          publicado_em?: string | null
+          status?: string | null
+          updated_at?: string | null
+          url_publicacao?: string | null
+          veiculo_id: string
+        }
+        Update: {
+          created_at?: string | null
+          erro_msg?: string | null
+          id?: string
+          meta_account_id?: string | null
+          payload?: Json | null
+          platform?: string
+          post_id?: string | null
+          publicado_em?: string | null
+          status?: string | null
+          updated_at?: string | null
+          url_publicacao?: string | null
+          veiculo_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'estoque_publicacoes_meta_account_id_fkey'
+            columns: ['meta_account_id']
+            isOneToOne: false
+            referencedRelation: 'meta_accounts'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'estoque_publicacoes_meta_account_id_fkey'
+            columns: ['meta_account_id']
+            isOneToOne: false
+            referencedRelation: 'meta_accounts_a_vencer'
             referencedColumns: ['id']
           },
         ]
@@ -1574,6 +1747,81 @@ export type Database = {
           tipo?: string | null
           titulo?: string
           variaveis?: Json | null
+        }
+        Relationships: []
+      }
+      meta_accounts: {
+        Row: {
+          access_token: string
+          account_id: string
+          account_name: string | null
+          created_at: string | null
+          id: string
+          meta_data: Json | null
+          phone_number_id: string | null
+          platform: string
+          status: string | null
+          token_expires_at: string | null
+          updated_at: string | null
+          waba_id: string | null
+        }
+        Insert: {
+          access_token: string
+          account_id: string
+          account_name?: string | null
+          created_at?: string | null
+          id?: string
+          meta_data?: Json | null
+          phone_number_id?: string | null
+          platform: string
+          status?: string | null
+          token_expires_at?: string | null
+          updated_at?: string | null
+          waba_id?: string | null
+        }
+        Update: {
+          access_token?: string
+          account_id?: string
+          account_name?: string | null
+          created_at?: string | null
+          id?: string
+          meta_data?: Json | null
+          phone_number_id?: string | null
+          platform?: string
+          status?: string | null
+          token_expires_at?: string | null
+          updated_at?: string | null
+          waba_id?: string | null
+        }
+        Relationships: []
+      }
+      meta_webhook_logs: {
+        Row: {
+          created_at: string | null
+          error: string | null
+          event_type: string | null
+          id: number
+          payload: Json
+          platform: string
+          processed: boolean | null
+        }
+        Insert: {
+          created_at?: string | null
+          error?: string | null
+          event_type?: string | null
+          id?: number
+          payload: Json
+          platform: string
+          processed?: boolean | null
+        }
+        Update: {
+          created_at?: string | null
+          error?: string | null
+          event_type?: string | null
+          id?: number
+          payload?: Json
+          platform?: string
+          processed?: boolean | null
         }
         Relationships: []
       }
@@ -2406,12 +2654,109 @@ export type Database = {
         }
         Relationships: []
       }
+      whatsapp_templates: {
+        Row: {
+          categoria: string
+          corpo: string | null
+          created_at: string | null
+          id: string
+          idioma: string | null
+          meta_account_id: string | null
+          meta_data: Json | null
+          nome: string
+          status: string | null
+          variaveis: Json | null
+        }
+        Insert: {
+          categoria: string
+          corpo?: string | null
+          created_at?: string | null
+          id?: string
+          idioma?: string | null
+          meta_account_id?: string | null
+          meta_data?: Json | null
+          nome: string
+          status?: string | null
+          variaveis?: Json | null
+        }
+        Update: {
+          categoria?: string
+          corpo?: string | null
+          created_at?: string | null
+          id?: string
+          idioma?: string | null
+          meta_account_id?: string | null
+          meta_data?: Json | null
+          nome?: string
+          status?: string | null
+          variaveis?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'whatsapp_templates_meta_account_id_fkey'
+            columns: ['meta_account_id']
+            isOneToOne: false
+            referencedRelation: 'meta_accounts'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'whatsapp_templates_meta_account_id_fkey'
+            columns: ['meta_account_id']
+            isOneToOne: false
+            referencedRelation: 'meta_accounts_a_vencer'
+            referencedColumns: ['id']
+          },
+        ]
+      }
     }
     Views: {
-      [_ in never]: never
+      meta_accounts_a_vencer: {
+        Row: {
+          account_name: string | null
+          id: string | null
+          platform: string | null
+          tempo_restante: string | null
+          token_expires_at: string | null
+        }
+        Insert: {
+          account_name?: string | null
+          id?: string | null
+          platform?: string | null
+          tempo_restante?: never
+          token_expires_at?: string | null
+        }
+        Update: {
+          account_name?: string | null
+          id?: string | null
+          platform?: string | null
+          tempo_restante?: never
+          token_expires_at?: string | null
+        }
+        Relationships: []
+      }
+      vw_crm_dashboard: {
+        Row: {
+          abertas: number | null
+          fechadas: number | null
+          msg_hoje: number | null
+          platform: string | null
+          sem_vendedor: number | null
+          ultima_hora: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
-      [_ in never]: never
+      get_or_create_conversa: {
+        Args: {
+          p_cliente_id_externo?: string
+          p_cliente_nome?: string
+          p_cliente_telefone: string
+          p_meta_account_id: string
+          p_platform: string
+        }
+        Returns: string
+      }
     }
     Enums: {
       [_ in never]: never
@@ -2542,1206 +2887,3 @@ export const Constants = {
     Enums: {},
   },
 } as const
-
-// ====== DATABASE EXTENDED CONTEXT (auto-generated) ======
-// This section contains actual PostgreSQL column types, constraints, RLS policies,
-// functions, triggers, indexes and materialized views not present in the type definitions above.
-// IMPORTANT: The TypeScript types above map UUID, TEXT, VARCHAR all to "string".
-// Use the COLUMN TYPES section below to know the real PostgreSQL type for each column.
-// Always use the correct PostgreSQL type when writing SQL migrations.
-
-// --- COLUMN TYPES (actual PostgreSQL types) ---
-// Use this to know the real database type when writing migrations.
-// "string" in TypeScript types above may be uuid, text, varchar, timestamptz, etc.
-// Table: access_log
-//   id: bigint (not null, default: nextval('access_log_id_seq'::regclass))
-//   usuario_id: uuid (nullable)
-//   modulo: text (nullable)
-//   acao: text (nullable)
-//   timestamp: timestamp without time zone (nullable, default: now())
-// Table: article_versions
-//   id: uuid (not null, default: gen_random_uuid())
-//   article_id: uuid (not null)
-//   titulo: character varying (nullable)
-//   slug: character varying (nullable)
-//   categoria: character varying (nullable)
-//   tags: jsonb (nullable)
-//   resumo: character varying (nullable)
-//   meta_title: character varying (nullable)
-//   meta_description: character varying (nullable)
-//   h1_artigo: character varying (nullable)
-//   palavras_chave_principais: jsonb (nullable)
-//   palavras_chave_secundarias: jsonb (nullable)
-//   canonical_url: text (nullable)
-//   og_title: character varying (nullable)
-//   og_description: character varying (nullable)
-//   og_image_url: text (nullable)
-//   schema_markup: character varying (nullable)
-//   indice_google: boolean (nullable)
-//   robots_meta: character varying (nullable)
-//   conteudo: text (nullable)
-//   imagem_destaque_url: text (nullable)
-//   tempo_leitura: integer (nullable)
-//   categoria_secundaria: character varying (nullable)
-//   autor_convidado: character varying (nullable)
-//   url_fonte_externa: text (nullable)
-//   artigo_pillar: boolean (nullable)
-//   artigos_relacionados: jsonb (nullable)
-//   proximo_artigo_sugerido: uuid (nullable)
-//   permitir_comentarios: boolean (nullable)
-//   destaque: boolean (nullable)
-//   status_publicacao: character varying (nullable)
-//   data_agendamento: timestamp with time zone (nullable)
-//   seo_score: integer (nullable)
-//   autor_id: uuid (nullable)
-//   acao: character varying (nullable)
-//   resumo_mudancas: jsonb (nullable)
-//   criado_em: timestamp with time zone (nullable, default: now())
-// Table: articles
-//   id: uuid (not null, default: gen_random_uuid())
-//   titulo: character varying (not null)
-//   slug: character varying (not null)
-//   categoria: character varying (nullable)
-//   tags: jsonb (nullable)
-//   resumo: character varying (nullable)
-//   meta_title: character varying (nullable)
-//   meta_description: character varying (nullable)
-//   h1_artigo: character varying (nullable)
-//   palavras_chave_principais: jsonb (nullable)
-//   palavras_chave_secundarias: jsonb (nullable)
-//   canonical_url: text (nullable)
-//   og_title: character varying (nullable)
-//   og_description: character varying (nullable)
-//   og_image_url: text (nullable)
-//   schema_markup: character varying (nullable)
-//   indice_google: boolean (nullable, default: true)
-//   robots_meta: character varying (nullable, default: 'index, follow'::character varying)
-//   conteudo: text (nullable)
-//   imagem_destaque_url: text (nullable)
-//   tempo_leitura: integer (nullable)
-//   categoria_secundaria: character varying (nullable)
-//   autor_convidado: character varying (nullable)
-//   url_fonte_externa: text (nullable)
-//   artigo_pillar: boolean (nullable, default: false)
-//   artigos_relacionados: jsonb (nullable)
-//   proximo_artigo_sugerido: uuid (nullable)
-//   permitir_comentarios: boolean (nullable, default: false)
-//   destaque: boolean (nullable, default: false)
-//   status_publicacao: character varying (nullable, default: 'Rascunho'::character varying)
-//   data_agendamento: timestamp with time zone (nullable)
-//   seo_score: integer (nullable, default: 0)
-//   autor_id: uuid (nullable)
-//   criado_em: timestamp with time zone (nullable, default: now())
-//   atualizado_em: timestamp with time zone (nullable, default: now())
-//   keyword: text (nullable)
-//   url_path: text (nullable)
-//   image_prompt: text (nullable)
-//   ia_confidence: text (nullable)
-//   ia_generated: boolean (nullable, default: false)
-//   requires_review: boolean (nullable, default: true)
-// Table: assinatura_historico
-//   id: uuid (not null, default: gen_random_uuid())
-//   contrato_id: uuid (nullable)
-//   evento: text (not null)
-//   detalhes: jsonb (nullable)
-//   created_at: timestamp with time zone (nullable, default: now())
-// Table: avaliacoes
-//   id: uuid (not null, default: gen_random_uuid())
-//   lead_id: uuid (nullable)
-//   cliente_nome: text (nullable)
-//   cliente_telefone: text (nullable)
-//   data_avaliacao: timestamp with time zone (nullable)
-//   placa_veiculo: text (nullable)
-//   marca: text (nullable)
-//   modelo: text (nullable)
-//   ano: text (nullable)
-//   valor_fipe: numeric (nullable)
-//   valor_avaliado: numeric (nullable)
-//   preco_consignacao: numeric (nullable)
-//   margem_esperada: numeric (nullable)
-//   condicao_geral: text (nullable)
-//   quilometragem: integer (nullable)
-//   observacoes: text (nullable)
-//   status: text (nullable, default: 'Agendada'::text)
-//   created_at: timestamp with time zone (nullable, default: now())
-// Table: blog_comments
-//   id: uuid (not null, default: gen_random_uuid())
-//   post_id: uuid (nullable)
-//   autor_nome: text (not null)
-//   autor_email: text (not null)
-//   conteudo: text (not null)
-//   publicado: boolean (nullable, default: false)
-//   created_at: timestamp with time zone (nullable, default: now())
-// Table: blog_posts
-//   id: uuid (not null, default: gen_random_uuid())
-//   title: text (not null)
-//   slug: text (not null)
-//   category: text (nullable)
-//   meta_description: text (nullable)
-//   content: text (not null)
-//   image_url: text (nullable)
-//   author: text (nullable, default: 'Carro e Cia Veículos'::text)
-//   read_time: text (nullable, default: '5 min'::text)
-//   tags: _text (nullable, default: '{}'::text[])
-//   published: boolean (nullable, default: true)
-//   created_at: timestamp with time zone (nullable, default: now())
-//   updated_at: timestamp with time zone (nullable, default: now())
-//   keyword: text (nullable)
-//   url_path: text (nullable)
-//   image_prompt: text (nullable)
-//   ia_confidence: text (nullable)
-//   ia_generated: boolean (nullable, default: false)
-//   requires_review: boolean (nullable, default: true)
-// Table: chatbot_history
-//   id: uuid (not null, default: gen_random_uuid())
-//   usuario_id: uuid (nullable)
-//   tipo_editor: character varying (nullable)
-//   editor_id: uuid (nullable)
-//   pergunta: text (nullable)
-//   resposta: text (nullable)
-//   criado_em: timestamp with time zone (nullable, default: now())
-// Table: clientes
-//   id: uuid (not null, default: gen_random_uuid())
-//   cpf: text (not null)
-//   nome: text (not null)
-//   rg: text (nullable)
-//   email: text (nullable)
-//   telefone: text (nullable)
-//   data_nascimento: text (nullable)
-//   idade: text (nullable)
-//   sexo: text (nullable)
-//   nome_mae: text (nullable)
-//   situacao_receita: text (nullable)
-//   situacao_receita_data: text (nullable)
-//   created_at: timestamp with time zone (not null, default: now())
-//   updated_at: timestamp with time zone (not null, default: now())
-//   cep: text (nullable)
-//   logradouro: text (nullable)
-//   numero: text (nullable)
-//   complemento: text (nullable)
-//   bairro: text (nullable)
-//   cidade: text (nullable)
-//   estado: text (nullable)
-//   telefone_residencial: text (nullable)
-//   telefone_trabalho: text (nullable)
-// Table: configuracoes_api
-//   id: uuid (not null, default: gen_random_uuid())
-//   portal: text (not null)
-//   api_key: text (nullable)
-//   auth_token: text (nullable)
-//   ativo: boolean (nullable, default: false)
-//   created_at: timestamp with time zone (nullable, default: now())
-//   updated_at: timestamp with time zone (nullable, default: now())
-// Table: consignacoes
-//   id: uuid (not null, default: gen_random_uuid())
-//   lead_id: uuid (nullable)
-//   veiculo_id: uuid (nullable)
-//   proprietario_nome: text (nullable)
-//   proprietario_telefone: text (nullable)
-//   valor_minimo: numeric (nullable)
-//   valor_anuncio: numeric (nullable)
-//   comissao: numeric (nullable)
-//   data_entrada: date (nullable)
-//   data_vencimento: date (nullable)
-//   status: text (nullable, default: 'ativo'::text)
-//   created_at: timestamp without time zone (nullable, default: now())
-// Table: contratos_consignacao
-//   id: uuid (not null, default: gen_random_uuid())
-//   veiculo_id: uuid (nullable)
-//   proprietario_nome: text (nullable)
-//   proprietario_email: text (nullable)
-//   proprietario_cpf: text (nullable)
-//   proprietario_telefone: text (nullable)
-//   numero_contrato: text (nullable)
-//   assinatura_link: text (nullable)
-//   assinatura_id_externo: text (nullable)
-//   assinatura_status: text (nullable, default: 'nao_enviado'::text)
-//   assinatura_data: timestamp with time zone (nullable)
-//   pdf_url: text (nullable)
-//   pdf_assinado_url: text (nullable)
-//   created_at: timestamp with time zone (nullable, default: now())
-//   updated_at: timestamp with time zone (nullable, default: now())
-// Table: conversation_history
-//   id: uuid (not null, default: gen_random_uuid())
-//   lead_id: uuid (nullable)
-//   sender: text (not null)
-//   message_text: text (not null)
-//   created_at: timestamp with time zone (not null, default: now())
-// Table: despesas
-//   id: uuid (not null, default: gen_random_uuid())
-//   categoria: text (nullable)
-//   descricao: text (nullable)
-//   valor: numeric (nullable)
-//   data_despesa: date (nullable)
-//   forma_pagamento: text (nullable)
-//   comprovante_url: text (nullable)
-//   registrada_por: uuid (nullable)
-//   created_at: timestamp with time zone (nullable, default: now())
-//   veiculo_id: uuid (nullable)
-//   responsabilidade: text (nullable, default: 'loja'::text)
-// Table: documentos
-//   id: uuid (not null, default: gen_random_uuid())
-//   nome_documento: text (nullable)
-//   tipo: text (nullable)
-//   url_documento: text (nullable)
-//   veiculo_id: uuid (nullable)
-//   tamanho: integer (nullable)
-//   created_at: timestamp with time zone (nullable, default: now())
-// Table: financeiras
-//   id: uuid (not null, default: gen_random_uuid())
-//   nome: text (not null)
-//   logo_url: text (nullable)
-//   taxa_juros_mensal: numeric (nullable)
-//   prazo_maximo: integer (nullable)
-//   entrada_minima_percentual: numeric (nullable)
-//   aceita_restricao: boolean (nullable, default: false)
-//   observacoes: text (nullable)
-//   ativa: boolean (nullable, default: true)
-//   created_at: timestamp without time zone (nullable, default: now())
-// Table: fipe_anos
-//   id: integer (not null, default: nextval('fipe_anos_id_seq'::regclass))
-//   codigo: text (not null)
-//   nome: text (not null)
-//   modelo_codigo: text (not null)
-//   marca_codigo: text (not null)
-//   valor_fipe: numeric (nullable)
-//   combustivel: text (nullable)
-//   codigo_fipe: text (nullable)
-//   mes_referencia: text (nullable)
-//   updated_at: timestamp without time zone (nullable, default: now())
-// Table: fipe_marcas
-//   id: integer (not null, default: nextval('fipe_marcas_id_seq'::regclass))
-//   codigo: text (not null)
-//   nome: text (not null)
-//   created_at: timestamp without time zone (nullable, default: now())
-// Table: fipe_modelos
-//   id: integer (not null, default: nextval('fipe_modelos_id_seq'::regclass))
-//   codigo: text (not null)
-//   nome: text (not null)
-//   marca_codigo: text (not null)
-//   created_at: timestamp without time zone (nullable, default: now())
-// Table: followups
-//   id: uuid (not null, default: gen_random_uuid())
-//   lead_id: uuid (nullable)
-//   responsavel_id: uuid (nullable)
-//   data_agendada: timestamp without time zone (nullable)
-//   lembrete: text (nullable)
-//   concluido: boolean (nullable, default: false)
-//   created_at: timestamp without time zone (nullable, default: now())
-// Table: interacoes
-//   id: uuid (not null, default: gen_random_uuid())
-//   lead_id: uuid (nullable)
-//   usuario_id: uuid (nullable)
-//   tipo: text (nullable)
-//   canal: text (nullable)
-//   descricao: text (nullable)
-//   created_at: timestamp without time zone (nullable, default: now())
-// Table: keywords
-//   id: uuid (not null, default: gen_random_uuid())
-//   palavra_chave: character varying (nullable)
-//   categoria: character varying (nullable)
-//   volume_busca: integer (nullable)
-//   dificuldade: character varying (nullable)
-//   criado_em: timestamp with time zone (nullable, default: now())
-// Table: landing_pages
-//   id: uuid (not null, default: gen_random_uuid())
-//   title: text (not null)
-//   slug: text (not null)
-//   meta_description: text (nullable)
-//   content: jsonb (nullable, default: '{}'::jsonb)
-//   published: boolean (nullable, default: true)
-//   created_at: timestamp with time zone (nullable, default: now())
-//   updated_at: timestamp with time zone (nullable, default: now())
-// Table: lead_automations
-//   id: uuid (not null, default: gen_random_uuid())
-//   lead_id: uuid (nullable)
-//   created_at: timestamp with time zone (nullable, default: now())
-//   tipo_automacao: text (nullable)
-//   status: text (nullable, default: 'aguardando'::text)
-//   detalhes: jsonb (nullable)
-//   brevo_message_id: text (nullable)
-//   retry_count: integer (nullable, default: 0)
-//   proximo_retry: timestamp with time zone (nullable)
-// Table: lead_eventos_gtm
-//   id: uuid (not null, default: gen_random_uuid())
-//   lead_id: uuid (nullable)
-//   evento_nome: text (nullable)
-//   timestamp: timestamp with time zone (nullable, default: now())
-//   valor_conversao: numeric (nullable)
-//   propriedades: jsonb (nullable)
-//   sincronizado_google_ads: boolean (nullable, default: false)
-// Table: lead_integracao_log
-//   id: uuid (not null, default: gen_random_uuid())
-//   lead_id: uuid (nullable)
-//   timestamp: timestamp with time zone (nullable, default: now())
-//   ferramenta: text (nullable)
-//   acao: text (nullable)
-//   status_code: integer (nullable)
-//   mensagem_erro: text (nullable)
-//   retry_agendado: boolean (nullable, default: false)
-// Table: leads
-//   id: uuid (not null, default: gen_random_uuid())
-//   nome: text (not null)
-//   telefone: text (nullable)
-//   email: text (nullable)
-//   cpf: text (nullable)
-//   tipo: text (not null)
-//   origem: text (nullable)
-//   status: text (nullable, default: 'novo'::text)
-//   temperatura: text (nullable, default: 'frio'::text)
-//   responsavel_id: uuid (nullable)
-//   veiculo_id: uuid (nullable)
-//   veiculo_interesse: text (nullable)
-//   faixa_preco: text (nullable)
-//   forma_pagamento: text (nullable)
-//   observacoes: text (nullable)
-//   created_at: timestamp without time zone (nullable, default: now())
-//   updated_at: timestamp without time zone (nullable, default: now())
-//   carro_modelo: text (nullable)
-//   carro_ano: text (nullable)
-//   carro_placa: text (nullable)
-//   carro_marca: text (nullable)
-//   carro_km: text (nullable)
-//   unico_dono: boolean (nullable, default: false)
-//   valor_veiculo: numeric (nullable)
-//   campanha: text (nullable)
-//   source_brevo: boolean (nullable, default: false)
-//   source_gtm: boolean (nullable, default: false)
-//   source_google_ads: boolean (nullable, default: false)
-//   brevo_contact_id: text (nullable)
-//   google_ads_customer_id: text (nullable)
-//   utm_source: text (nullable)
-//   utm_medium: text (nullable)
-//   utm_campaign: text (nullable)
-//   notas_internas: text (nullable)
-//   external_lead_id: text (nullable)
-//   trade_in_car: text (nullable)
-//   source: text (nullable)
-//   payment_method: text (nullable)
-// Table: logs_ia
-//   id: uuid (not null, default: gen_random_uuid())
-//   usuario_id: uuid (nullable)
-//   acao: text (not null)
-//   provider: text (not null)
-//   modelo: text (not null)
-//   tokens_input: integer (nullable)
-//   tokens_output: integer (nullable)
-//   status: text (not null)
-//   alertas: jsonb (nullable)
-//   certeza_reportada: text (nullable)
-//   created_at: timestamp with time zone (not null, default: now())
-// Table: logs_integracao
-//   id: uuid (not null, default: gen_random_uuid())
-//   veiculo_id: uuid (nullable)
-//   portal: text (not null)
-//   payload_erro: jsonb (nullable)
-//   status: text (nullable)
-//   created_at: timestamp with time zone (nullable, default: now())
-// Table: media_assets
-//   id: uuid (not null, default: gen_random_uuid())
-//   file_name: text (not null)
-//   file_path: text (not null)
-//   file_size: bigint (nullable)
-//   mime_type: text (nullable)
-//   width: integer (nullable)
-//   height: integer (nullable)
-//   alt_text: text (nullable)
-//   uploaded_by: uuid (nullable)
-//   created_at: timestamp with time zone (not null, default: now())
-//   updated_at: timestamp with time zone (not null, default: now())
-//   folder: text (nullable, default: 'Geral'::text)
-// Table: mensagens_template
-//   id: uuid (not null, default: gen_random_uuid())
-//   titulo: text (not null)
-//   tipo: text (nullable)
-//   canal: text (nullable)
-//   conteudo: text (not null)
-//   variaveis: jsonb (nullable)
-//   ativo: boolean (nullable, default: true)
-//   created_at: timestamp without time zone (nullable, default: now())
-// Table: notas_fiscais
-//   id: uuid (not null, default: gen_random_uuid())
-//   numero_nota: text (nullable)
-//   cliente_nome: text (nullable)
-//   cliente_cpf_cnpj: text (nullable)
-//   veiculo_id: uuid (nullable)
-//   data_venda: date (nullable)
-//   valor_venda: numeric (nullable)
-//   icms: numeric (nullable)
-//   pis: numeric (nullable)
-//   cofins: numeric (nullable)
-//   valor_liquido: numeric (nullable)
-//   status: text (nullable, default: 'Emitida'::text)
-//   pdf_url: text (nullable)
-//   created_at: timestamp with time zone (nullable, default: now())
-// Table: pages
-//   id: uuid (not null, default: gen_random_uuid())
-//   titulo: character varying (not null)
-//   slug: character varying (not null)
-//   meta_title: character varying (nullable)
-//   meta_description: character varying (nullable)
-//   h1_pagina: character varying (nullable)
-//   palavras_chave_principais: jsonb (nullable)
-//   canonical_url: text (nullable)
-//   og_title: character varying (nullable)
-//   og_description: character varying (nullable)
-//   og_image_url: text (nullable)
-//   schema_markup: character varying (nullable)
-//   indice_google: boolean (nullable, default: true)
-//   robots_meta: character varying (nullable, default: 'index, follow'::character varying)
-//   conteudo: text (nullable)
-//   imagem_destaque_url: text (nullable)
-//   template: character varying (nullable)
-//   ordem_menu: integer (nullable)
-//   visibilidade: character varying (nullable, default: 'Pública'::character varying)
-//   status_publicacao: character varying (nullable, default: 'Rascunho'::character varying)
-//   data_agendamento: timestamp with time zone (nullable)
-//   descricao_interna: character varying (nullable)
-//   autor_id: uuid (nullable)
-//   criado_em: timestamp with time zone (nullable, default: now())
-//   atualizado_em: timestamp with time zone (nullable, default: now())
-//   keyword: text (nullable)
-//   url_path: text (nullable)
-//   image_prompt: text (nullable)
-//   ia_confidence: text (nullable)
-//   ia_generated: boolean (nullable, default: false)
-//   requires_review: boolean (nullable, default: true)
-// Table: pages_versions
-//   id: uuid (not null, default: gen_random_uuid())
-//   page_id: uuid (not null)
-//   titulo: character varying (nullable)
-//   slug: character varying (nullable)
-//   meta_title: character varying (nullable)
-//   meta_description: character varying (nullable)
-//   h1_pagina: character varying (nullable)
-//   palavras_chave_principais: jsonb (nullable)
-//   canonical_url: text (nullable)
-//   og_title: character varying (nullable)
-//   og_description: character varying (nullable)
-//   og_image_url: text (nullable)
-//   schema_markup: character varying (nullable)
-//   indice_google: boolean (nullable)
-//   robots_meta: character varying (nullable)
-//   conteudo: text (nullable)
-//   imagem_destaque_url: text (nullable)
-//   template: character varying (nullable)
-//   ordem_menu: integer (nullable)
-//   visibilidade: character varying (nullable)
-//   status_publicacao: character varying (nullable)
-//   data_agendamento: timestamp with time zone (nullable)
-//   descricao_interna: character varying (nullable)
-//   autor_id: uuid (nullable)
-//   acao: character varying (nullable)
-//   resumo_mudancas: jsonb (nullable)
-//   criado_em: timestamp with time zone (nullable, default: now())
-// Table: parametros_avaliacao
-//   id: uuid (not null, default: gen_random_uuid())
-//   parametro: text (not null)
-//   condicao: text (nullable)
-//   ajuste_percentual: numeric (nullable)
-//   ativo: boolean (nullable, default: true)
-//   created_at: timestamp with time zone (nullable, default: now())
-// Table: simulacoes
-//   id: uuid (not null, default: gen_random_uuid())
-//   cliente_nome: text (nullable)
-//   cliente_telefone: text (nullable)
-//   cliente_cpf: text (nullable)
-//   valor_carro: numeric (nullable)
-//   entrada_percentual: numeric (nullable)
-//   prazo_meses: integer (nullable)
-//   taxa_juros: numeric (nullable)
-//   prestacao_mensal: numeric (nullable)
-//   status: text (nullable, default: 'Pendente'::text)
-//   veiculo_id: uuid (nullable)
-//   created_at: timestamp with time zone (nullable, default: now())
-// Table: site_banners
-//   id: uuid (not null, default: gen_random_uuid())
-//   titulo: text (nullable)
-//   imagem_url: text (nullable)
-//   texto: text (nullable)
-//   botao_texto: text (nullable)
-//   botao_link: text (nullable)
-//   ativo: boolean (nullable, default: true)
-//   ordem: integer (nullable, default: 0)
-//   created_at: timestamp with time zone (nullable, default: now())
-// Table: site_configuracoes
-//   id: uuid (not null, default: gen_random_uuid())
-//   chave: text (not null)
-//   valor: jsonb (nullable)
-//   updated_at: timestamp with time zone (nullable, default: now())
-// Table: site_depoimentos
-//   id: uuid (not null, default: gen_random_uuid())
-//   nome_cliente: text (nullable)
-//   foto_url: text (nullable)
-//   texto: text (nullable)
-//   estrelas: integer (nullable, default: 5)
-//   tipo: text (nullable)
-//   publicado: boolean (nullable, default: false)
-//   verificado: boolean (nullable, default: true)
-//   created_at: timestamp with time zone (nullable, default: now())
-// Table: social_configuracoes
-//   id: uuid (not null, default: gen_random_uuid())
-//   instagram_token: text (nullable)
-//   facebook_page_id: text (nullable)
-//   facebook_token: text (nullable)
-//   whatsapp_number: text (nullable)
-//   created_at: timestamp with time zone (nullable, default: now())
-//   updated_at: timestamp with time zone (nullable, default: now())
-//   ai_system_prompt: text (nullable, default: 'Você é um assistente de marketing digital especialista em veículos seminovos.'::text)
-// Table: social_posts
-//   id: uuid (not null, default: gen_random_uuid())
-//   redes: jsonb (not null)
-//   texto: text (nullable)
-//   imagem: text (nullable)
-//   data_agendamento: timestamp with time zone (nullable)
-//   status: character varying (nullable, default: 'Agendado'::character varying)
-//   criado_em: timestamp with time zone (nullable, default: now())
-//   veiculo_id: uuid (nullable)
-// Table: usuarios
-//   id: uuid (not null, default: gen_random_uuid())
-//   nome: text (not null)
-//   email: text (not null)
-//   role: text (nullable, default: 'vendedor'::text)
-//   ativo: boolean (nullable, default: true)
-//   created_at: timestamp without time zone (nullable, default: now())
-//   modulos: _text (nullable, default: ARRAY['estoque'::text])
-//   ultimo_acesso: timestamp without time zone (nullable)
-//   nivel: text (nullable, default: 'operador'::text)
-// Table: veiculos
-//   id: uuid (not null, default: gen_random_uuid())
-//   marca: text (not null)
-//   modelo: text (not null)
-//   versao: text (nullable)
-//   ano_fabricacao: integer (nullable)
-//   ano_modelo: integer (nullable)
-//   cor: text (nullable)
-//   quilometragem: integer (nullable)
-//   cambio: text (nullable)
-//   combustivel: text (nullable)
-//   portas: integer (nullable)
-//   final_placa: text (nullable)
-//   ipva_pago: boolean (nullable, default: false)
-//   preco_venda: numeric (nullable)
-//   preco_minimo: numeric (nullable)
-//   valor_fipe: numeric (nullable)
-//   status: text (nullable, default: 'disponivel'::text)
-//   is_consignado: boolean (nullable, default: false)
-//   proprietario_nome: text (nullable)
-//   proprietario_telefone: text (nullable)
-//   descricao: text (nullable)
-//   diferenciais: jsonb (nullable)
-//   fotos: jsonb (nullable)
-//   video_url: text (nullable)
-//   responsavel_id: uuid (nullable)
-//   publicado_olx: boolean (nullable, default: false)
-//   publicado_webmotors: boolean (nullable, default: false)
-//   publicado_icarros: boolean (nullable, default: false)
-//   created_at: timestamp without time zone (nullable, default: now())
-//   updated_at: timestamp without time zone (nullable, default: now())
-//   placa: text (nullable)
-//   chassi: text (nullable)
-//   renavam: text (nullable)
-//   preco_classificados: numeric (nullable)
-//   is_zero_km: boolean (nullable, default: false)
-//   categoria: text (nullable, default: 'Carro'::text)
-//   destaque: boolean (nullable, default: false)
-//   publicado_mercadolivre: boolean (nullable, default: false)
-//   publicado_napista: boolean (nullable, default: false)
-//   caracteristicas: jsonb (nullable, default: '[]'::jsonb)
-//   visualizacoes_site: integer (nullable, default: 0)
-//   cliques_whatsapp: integer (nullable, default: 0)
-//   nao_exibir_km: boolean (nullable, default: false)
-//   mesma_obs_classificados: boolean (nullable, default: false)
-//   fipe_ref: text (nullable)
-//   info_personalizadas: jsonb (nullable, default: '[]'::jsonb)
-//   proprietario_email: text (nullable)
-//   proprietario_cpf: text (nullable)
-//   proprietario_rg: text (nullable)
-//   proprietario_data_nascimento: text (nullable)
-//   proprietario_idade: text (nullable)
-//   proprietario_sexo: text (nullable)
-//   proprietario_mae: text (nullable)
-//   proprietario_situacao_receita: text (nullable)
-//   proprietario_situacao_receita_data: text (nullable)
-//   proprietario_cep: text (nullable)
-//   proprietario_logradouro: text (nullable)
-//   proprietario_numero: text (nullable)
-//   proprietario_complemento: text (nullable)
-//   proprietario_bairro: text (nullable)
-//   proprietario_cidade: text (nullable)
-//   proprietario_estado: text (nullable)
-//   combustivel_sintetico: text (nullable)
-//   categoria_sintetica: text (nullable)
-//   chassi_completo: text (nullable)
-//   proprietario_telefone_residencial: text (nullable)
-//   proprietario_telefone_trabalho: text (nullable)
-// Table: veiculos_cache
-//   placa: text (not null)
-//   chassi: text (nullable)
-//   renavam: text (nullable)
-//   marca: text (nullable)
-//   modelo: text (nullable)
-//   ano_fab: text (nullable)
-//   ano_modelo: text (nullable)
-//   combustivel: text (nullable)
-//   cor: text (nullable)
-//   preco_fipe: numeric (nullable)
-//   mes_referencia: text (nullable)
-//   codigo_fipe: text (nullable)
-//   url_fipe: text (nullable)
-//   historico_fipe: jsonb (nullable)
-//   categoria: text (nullable)
-//   created_at: timestamp with time zone (not null, default: now())
-//   updated_at: timestamp with time zone (not null, default: now())
-//   combustivel_sintetico: text (nullable)
-//   categoria_sintetica: text (nullable)
-//   chassi_completo: text (nullable)
-
-// --- CONSTRAINTS ---
-// Table: access_log
-//   PRIMARY KEY access_log_pkey: PRIMARY KEY (id)
-//   FOREIGN KEY access_log_usuario_id_fkey: FOREIGN KEY (usuario_id) REFERENCES usuarios(id)
-// Table: article_versions
-//   FOREIGN KEY article_versions_article_id_fkey: FOREIGN KEY (article_id) REFERENCES articles(id) ON DELETE CASCADE
-//   FOREIGN KEY article_versions_autor_id_fkey: FOREIGN KEY (autor_id) REFERENCES auth.users(id)
-//   PRIMARY KEY article_versions_pkey: PRIMARY KEY (id)
-// Table: articles
-//   FOREIGN KEY articles_autor_id_fkey: FOREIGN KEY (autor_id) REFERENCES auth.users(id)
-//   PRIMARY KEY articles_pkey: PRIMARY KEY (id)
-//   UNIQUE articles_slug_key: UNIQUE (slug)
-// Table: assinatura_historico
-//   FOREIGN KEY assinatura_historico_contrato_id_fkey: FOREIGN KEY (contrato_id) REFERENCES contratos_consignacao(id) ON DELETE CASCADE
-//   PRIMARY KEY assinatura_historico_pkey: PRIMARY KEY (id)
-// Table: avaliacoes
-//   FOREIGN KEY avaliacoes_lead_id_fkey: FOREIGN KEY (lead_id) REFERENCES leads(id)
-//   PRIMARY KEY avaliacoes_pkey: PRIMARY KEY (id)
-// Table: blog_comments
-//   PRIMARY KEY blog_comments_pkey: PRIMARY KEY (id)
-//   FOREIGN KEY blog_comments_post_id_fkey: FOREIGN KEY (post_id) REFERENCES blog_posts(id) ON DELETE CASCADE
-// Table: blog_posts
-//   PRIMARY KEY blog_posts_pkey: PRIMARY KEY (id)
-//   UNIQUE blog_posts_slug_key: UNIQUE (slug)
-// Table: chatbot_history
-//   PRIMARY KEY chatbot_history_pkey: PRIMARY KEY (id)
-//   FOREIGN KEY chatbot_history_usuario_id_fkey: FOREIGN KEY (usuario_id) REFERENCES auth.users(id)
-// Table: clientes
-//   UNIQUE clientes_cpf_key: UNIQUE (cpf)
-//   PRIMARY KEY clientes_pkey: PRIMARY KEY (id)
-// Table: configuracoes_api
-//   PRIMARY KEY configuracoes_api_pkey: PRIMARY KEY (id)
-//   UNIQUE configuracoes_api_portal_key: UNIQUE (portal)
-// Table: consignacoes
-//   FOREIGN KEY consignacoes_lead_id_fkey: FOREIGN KEY (lead_id) REFERENCES leads(id)
-//   PRIMARY KEY consignacoes_pkey: PRIMARY KEY (id)
-//   FOREIGN KEY consignacoes_veiculo_id_fkey: FOREIGN KEY (veiculo_id) REFERENCES veiculos(id)
-// Table: contratos_consignacao
-//   PRIMARY KEY contratos_consignacao_pkey: PRIMARY KEY (id)
-//   FOREIGN KEY contratos_consignacao_veiculo_id_fkey: FOREIGN KEY (veiculo_id) REFERENCES veiculos(id) ON DELETE SET NULL
-// Table: conversation_history
-//   FOREIGN KEY conversation_history_lead_id_fkey: FOREIGN KEY (lead_id) REFERENCES leads(id) ON DELETE CASCADE
-//   PRIMARY KEY conversation_history_pkey: PRIMARY KEY (id)
-//   CHECK conversation_history_sender_check: CHECK ((sender = ANY (ARRAY['bot'::text, 'client'::text, 'human'::text])))
-// Table: despesas
-//   PRIMARY KEY despesas_pkey: PRIMARY KEY (id)
-//   FOREIGN KEY despesas_registrada_por_fkey: FOREIGN KEY (registrada_por) REFERENCES auth.users(id)
-//   FOREIGN KEY despesas_veiculo_id_fkey: FOREIGN KEY (veiculo_id) REFERENCES veiculos(id) ON DELETE CASCADE
-// Table: documentos
-//   PRIMARY KEY documentos_pkey: PRIMARY KEY (id)
-//   FOREIGN KEY documentos_veiculo_id_fkey: FOREIGN KEY (veiculo_id) REFERENCES veiculos(id)
-// Table: financeiras
-//   PRIMARY KEY financeiras_pkey: PRIMARY KEY (id)
-// Table: fipe_anos
-//   UNIQUE fipe_anos_codigo_modelo_codigo_marca_codigo_key: UNIQUE (codigo, modelo_codigo, marca_codigo)
-//   PRIMARY KEY fipe_anos_pkey: PRIMARY KEY (id)
-// Table: fipe_marcas
-//   UNIQUE fipe_marcas_codigo_key: UNIQUE (codigo)
-//   PRIMARY KEY fipe_marcas_pkey: PRIMARY KEY (id)
-// Table: fipe_modelos
-//   UNIQUE fipe_modelos_codigo_marca_codigo_key: UNIQUE (codigo, marca_codigo)
-//   FOREIGN KEY fipe_modelos_marca_codigo_fkey: FOREIGN KEY (marca_codigo) REFERENCES fipe_marcas(codigo)
-//   PRIMARY KEY fipe_modelos_pkey: PRIMARY KEY (id)
-// Table: followups
-//   FOREIGN KEY followups_lead_id_fkey: FOREIGN KEY (lead_id) REFERENCES leads(id)
-//   PRIMARY KEY followups_pkey: PRIMARY KEY (id)
-//   FOREIGN KEY followups_responsavel_id_fkey: FOREIGN KEY (responsavel_id) REFERENCES usuarios(id)
-// Table: interacoes
-//   FOREIGN KEY interacoes_lead_id_fkey: FOREIGN KEY (lead_id) REFERENCES leads(id)
-//   PRIMARY KEY interacoes_pkey: PRIMARY KEY (id)
-//   FOREIGN KEY interacoes_usuario_id_fkey: FOREIGN KEY (usuario_id) REFERENCES usuarios(id)
-// Table: keywords
-//   UNIQUE keywords_palavra_chave_key: UNIQUE (palavra_chave)
-//   PRIMARY KEY keywords_pkey: PRIMARY KEY (id)
-// Table: landing_pages
-//   PRIMARY KEY landing_pages_pkey: PRIMARY KEY (id)
-//   UNIQUE landing_pages_slug_key: UNIQUE (slug)
-// Table: lead_automations
-//   FOREIGN KEY lead_automations_lead_id_fkey: FOREIGN KEY (lead_id) REFERENCES leads(id) ON DELETE CASCADE
-//   PRIMARY KEY lead_automations_pkey: PRIMARY KEY (id)
-// Table: lead_eventos_gtm
-//   FOREIGN KEY lead_eventos_gtm_lead_id_fkey: FOREIGN KEY (lead_id) REFERENCES leads(id) ON DELETE CASCADE
-//   PRIMARY KEY lead_eventos_gtm_pkey: PRIMARY KEY (id)
-// Table: lead_integracao_log
-//   FOREIGN KEY lead_integracao_log_lead_id_fkey: FOREIGN KEY (lead_id) REFERENCES leads(id) ON DELETE CASCADE
-//   PRIMARY KEY lead_integracao_log_pkey: PRIMARY KEY (id)
-// Table: leads
-//   PRIMARY KEY leads_pkey: PRIMARY KEY (id)
-//   FOREIGN KEY leads_responsavel_id_fkey: FOREIGN KEY (responsavel_id) REFERENCES usuarios(id)
-//   FOREIGN KEY leads_veiculo_id_fkey: FOREIGN KEY (veiculo_id) REFERENCES veiculos(id)
-// Table: logs_ia
-//   PRIMARY KEY logs_ia_pkey: PRIMARY KEY (id)
-//   FOREIGN KEY logs_ia_usuario_id_fkey: FOREIGN KEY (usuario_id) REFERENCES auth.users(id) ON DELETE SET NULL
-// Table: logs_integracao
-//   PRIMARY KEY logs_integracao_pkey: PRIMARY KEY (id)
-// Table: media_assets
-//   PRIMARY KEY media_assets_pkey: PRIMARY KEY (id)
-//   FOREIGN KEY media_assets_uploaded_by_fkey: FOREIGN KEY (uploaded_by) REFERENCES auth.users(id) ON DELETE SET NULL
-// Table: mensagens_template
-//   PRIMARY KEY mensagens_template_pkey: PRIMARY KEY (id)
-// Table: notas_fiscais
-//   PRIMARY KEY notas_fiscais_pkey: PRIMARY KEY (id)
-//   FOREIGN KEY notas_fiscais_veiculo_id_fkey: FOREIGN KEY (veiculo_id) REFERENCES veiculos(id)
-// Table: pages
-//   FOREIGN KEY pages_autor_id_fkey: FOREIGN KEY (autor_id) REFERENCES auth.users(id)
-//   PRIMARY KEY pages_pkey: PRIMARY KEY (id)
-//   UNIQUE pages_slug_key: UNIQUE (slug)
-// Table: pages_versions
-//   FOREIGN KEY pages_versions_autor_id_fkey: FOREIGN KEY (autor_id) REFERENCES auth.users(id)
-//   FOREIGN KEY pages_versions_page_id_fkey: FOREIGN KEY (page_id) REFERENCES pages(id) ON DELETE CASCADE
-//   PRIMARY KEY pages_versions_pkey: PRIMARY KEY (id)
-// Table: parametros_avaliacao
-//   PRIMARY KEY parametros_avaliacao_pkey: PRIMARY KEY (id)
-// Table: simulacoes
-//   PRIMARY KEY simulacoes_pkey: PRIMARY KEY (id)
-//   FOREIGN KEY simulacoes_veiculo_id_fkey: FOREIGN KEY (veiculo_id) REFERENCES veiculos(id)
-// Table: site_banners
-//   PRIMARY KEY site_banners_pkey: PRIMARY KEY (id)
-// Table: site_configuracoes
-//   UNIQUE site_configuracoes_chave_key: UNIQUE (chave)
-//   PRIMARY KEY site_configuracoes_pkey: PRIMARY KEY (id)
-// Table: site_depoimentos
-//   PRIMARY KEY site_depoimentos_pkey: PRIMARY KEY (id)
-// Table: social_configuracoes
-//   PRIMARY KEY social_configuracoes_pkey: PRIMARY KEY (id)
-// Table: social_posts
-//   PRIMARY KEY social_posts_pkey: PRIMARY KEY (id)
-//   FOREIGN KEY social_posts_veiculo_id_fkey: FOREIGN KEY (veiculo_id) REFERENCES veiculos(id) ON DELETE SET NULL
-// Table: usuarios
-//   UNIQUE usuarios_email_key: UNIQUE (email)
-//   PRIMARY KEY usuarios_pkey: PRIMARY KEY (id)
-// Table: veiculos
-//   PRIMARY KEY veiculos_pkey: PRIMARY KEY (id)
-//   FOREIGN KEY veiculos_responsavel_id_fkey: FOREIGN KEY (responsavel_id) REFERENCES usuarios(id)
-// Table: veiculos_cache
-//   PRIMARY KEY veiculos_cache_pkey: PRIMARY KEY (placa)
-
-// --- ROW LEVEL SECURITY POLICIES ---
-// Table: access_log
-//   Policy "allow_auth_all_access_log" (ALL, PERMISSIVE) roles={authenticated}
-//     USING: true
-//     WITH CHECK: true
-// Table: article_versions
-//   Policy "allow_auth_all_article_versions" (ALL, PERMISSIVE) roles={authenticated}
-//     USING: true
-//     WITH CHECK: true
-// Table: articles
-//   Policy "allow_auth_all_articles" (ALL, PERMISSIVE) roles={authenticated}
-//     USING: true
-//     WITH CHECK: true
-// Table: assinatura_historico
-//   Policy "allow_auth_all_assinatura_historico" (ALL, PERMISSIVE) roles={authenticated}
-//     USING: true
-//     WITH CHECK: true
-// Table: avaliacoes
-//   Policy "allow_auth_all_avaliacoes" (ALL, PERMISSIVE) roles={authenticated}
-//     USING: true
-//     WITH CHECK: true
-// Table: blog_comments
-//   Policy "allow_auth_all_comments" (ALL, PERMISSIVE) roles={authenticated}
-//     USING: true
-//     WITH CHECK: true
-//   Policy "allow_public_insert_comments" (INSERT, PERMISSIVE) roles={public}
-//     WITH CHECK: true
-//   Policy "allow_public_read_published_comments" (SELECT, PERMISSIVE) roles={public}
-//     USING: (publicado = true)
-// Table: blog_posts
-//   Policy "allow_auth_all_blog" (ALL, PERMISSIVE) roles={authenticated}
-//     USING: true
-//     WITH CHECK: true
-//   Policy "allow_public_read_blog" (SELECT, PERMISSIVE) roles={public}
-//     USING: (published = true)
-// Table: chatbot_history
-//   Policy "allow_auth_all_chatbot_history" (ALL, PERMISSIVE) roles={authenticated}
-//     USING: true
-//     WITH CHECK: true
-// Table: clientes
-//   Policy "allow_auth_all_clientes" (ALL, PERMISSIVE) roles={authenticated}
-//     USING: true
-//     WITH CHECK: true
-// Table: configuracoes_api
-//   Policy "allow_auth_all_configuracoes_api" (ALL, PERMISSIVE) roles={authenticated}
-//     USING: true
-//     WITH CHECK: true
-// Table: consignacoes
-//   Policy "allow_auth_all_consignacoes" (ALL, PERMISSIVE) roles={authenticated}
-//     USING: true
-//     WITH CHECK: true
-// Table: contratos_consignacao
-//   Policy "allow_auth_all_contratos_consignacao" (ALL, PERMISSIVE) roles={authenticated}
-//     USING: true
-//     WITH CHECK: true
-// Table: conversation_history
-//   Policy "allow_auth_all_conversation_history" (ALL, PERMISSIVE) roles={authenticated}
-//     USING: true
-//     WITH CHECK: true
-// Table: despesas
-//   Policy "allow_auth_all_despesas" (ALL, PERMISSIVE) roles={authenticated}
-//     USING: true
-//     WITH CHECK: true
-// Table: documentos
-//   Policy "allow_auth_all_documentos" (ALL, PERMISSIVE) roles={authenticated}
-//     USING: true
-//     WITH CHECK: true
-// Table: followups
-//   Policy "authenticated_all_followups" (ALL, PERMISSIVE) roles={authenticated}
-//     USING: true
-//     WITH CHECK: true
-// Table: interacoes
-//   Policy "authenticated_all_interacoes" (ALL, PERMISSIVE) roles={authenticated}
-//     USING: true
-//     WITH CHECK: true
-// Table: keywords
-//   Policy "allow_auth_all_keywords" (ALL, PERMISSIVE) roles={authenticated}
-//     USING: true
-//     WITH CHECK: true
-// Table: landing_pages
-//   Policy "allow_auth_all_lps" (ALL, PERMISSIVE) roles={authenticated}
-//     USING: true
-//     WITH CHECK: true
-//   Policy "allow_public_read_lps" (SELECT, PERMISSIVE) roles={public}
-//     USING: (published = true)
-// Table: lead_automations
-//   Policy "allow_auth_all_lead_automations" (ALL, PERMISSIVE) roles={authenticated}
-//     USING: true
-//     WITH CHECK: true
-// Table: lead_eventos_gtm
-//   Policy "allow_auth_all_lead_eventos_gtm" (ALL, PERMISSIVE) roles={authenticated}
-//     USING: true
-//     WITH CHECK: true
-// Table: lead_integracao_log
-//   Policy "allow_auth_all_lead_integracao_log" (ALL, PERMISSIVE) roles={authenticated}
-//     USING: true
-//     WITH CHECK: true
-// Table: leads
-//   Policy "allow_anon_insert_leads" (INSERT, PERMISSIVE) roles={public}
-//     WITH CHECK: true
-//   Policy "allow_auth_all_leads" (ALL, PERMISSIVE) roles={authenticated}
-//     USING: true
-//     WITH CHECK: true
-// Table: logs_ia
-//   Policy "allow_auth_all_logs_ia" (ALL, PERMISSIVE) roles={authenticated}
-//     USING: true
-//     WITH CHECK: true
-// Table: logs_integracao
-//   Policy "allow_auth_all_logs_integracao" (ALL, PERMISSIVE) roles={authenticated}
-//     USING: true
-//     WITH CHECK: true
-// Table: media_assets
-//   Policy "allow_all_media_select" (SELECT, PERMISSIVE) roles={public}
-//     USING: true
-//   Policy "allow_auth_media_all" (ALL, PERMISSIVE) roles={authenticated}
-//     USING: true
-//     WITH CHECK: true
-//   Policy "authenticated_delete_media" (DELETE, PERMISSIVE) roles={authenticated}
-//     USING: true
-//   Policy "authenticated_insert_media" (INSERT, PERMISSIVE) roles={authenticated}
-//     WITH CHECK: true
-//   Policy "authenticated_select_media" (SELECT, PERMISSIVE) roles={authenticated}
-//     USING: true
-//   Policy "authenticated_update_media" (UPDATE, PERMISSIVE) roles={authenticated}
-//     USING: true
-//     WITH CHECK: true
-// Table: mensagens_template
-//   Policy "authenticated_all_mensagens_template" (ALL, PERMISSIVE) roles={authenticated}
-//     USING: true
-//     WITH CHECK: true
-// Table: notas_fiscais
-//   Policy "allow_auth_all_notas_fiscais" (ALL, PERMISSIVE) roles={authenticated}
-//     USING: true
-//     WITH CHECK: true
-// Table: pages
-//   Policy "allow_auth_all_pages" (ALL, PERMISSIVE) roles={authenticated}
-//     USING: true
-//     WITH CHECK: true
-// Table: pages_versions
-//   Policy "allow_auth_all_pages_versions" (ALL, PERMISSIVE) roles={authenticated}
-//     USING: true
-//     WITH CHECK: true
-// Table: parametros_avaliacao
-//   Policy "allow_auth_all_parametros" (ALL, PERMISSIVE) roles={authenticated}
-//     USING: true
-//     WITH CHECK: true
-// Table: simulacoes
-//   Policy "allow_anon_insert_simulacoes" (INSERT, PERMISSIVE) roles={public}
-//     WITH CHECK: true
-//   Policy "allow_auth_all_simulacoes" (ALL, PERMISSIVE) roles={authenticated}
-//     USING: true
-//     WITH CHECK: true
-// Table: site_banners
-//   Policy "allow_all_banners_select" (SELECT, PERMISSIVE) roles={public}
-//     USING: true
-//   Policy "allow_auth_banners_all" (ALL, PERMISSIVE) roles={authenticated}
-//     USING: true
-//     WITH CHECK: true
-// Table: site_configuracoes
-//   Policy "allow_all_configuracoes_select" (SELECT, PERMISSIVE) roles={public}
-//     USING: true
-//   Policy "allow_auth_configuracoes_all" (ALL, PERMISSIVE) roles={authenticated}
-//     USING: true
-//     WITH CHECK: true
-// Table: site_depoimentos
-//   Policy "allow_all_depoimentos_select" (SELECT, PERMISSIVE) roles={public}
-//     USING: true
-//   Policy "allow_auth_depoimentos_all" (ALL, PERMISSIVE) roles={authenticated}
-//     USING: true
-//     WITH CHECK: true
-// Table: social_configuracoes
-//   Policy "authenticated_insert_soc_cfg" (INSERT, PERMISSIVE) roles={authenticated}
-//     WITH CHECK: true
-//   Policy "authenticated_select_soc_cfg" (SELECT, PERMISSIVE) roles={authenticated}
-//     USING: true
-//   Policy "authenticated_update_soc_cfg" (UPDATE, PERMISSIVE) roles={authenticated}
-//     USING: true
-//     WITH CHECK: true
-// Table: social_posts
-//   Policy "allow_auth_all_social" (ALL, PERMISSIVE) roles={authenticated}
-//     USING: true
-//     WITH CHECK: true
-//   Policy "authenticated_delete_social" (DELETE, PERMISSIVE) roles={authenticated}
-//     USING: true
-//   Policy "authenticated_insert_social" (INSERT, PERMISSIVE) roles={authenticated}
-//     WITH CHECK: true
-//   Policy "authenticated_select_social" (SELECT, PERMISSIVE) roles={authenticated}
-//     USING: true
-//   Policy "authenticated_update_social" (UPDATE, PERMISSIVE) roles={authenticated}
-//     USING: true
-//     WITH CHECK: true
-// Table: usuarios
-//   Policy "allow_auth_all_usuarios" (ALL, PERMISSIVE) roles={authenticated}
-//     USING: true
-//     WITH CHECK: true
-// Table: veiculos
-//   Policy "allow_anon_select_veiculos" (SELECT, PERMISSIVE) roles={public}
-//     USING: true
-//   Policy "allow_auth_all_veiculos" (ALL, PERMISSIVE) roles={authenticated}
-//     USING: true
-//     WITH CHECK: true
-// Table: veiculos_cache
-//   Policy "allow_all_veiculos_cache" (ALL, PERMISSIVE) roles={public}
-//     USING: true
-//     WITH CHECK: true
-//   Policy "allow_auth_all_veiculos_cache" (ALL, PERMISSIVE) roles={authenticated}
-//     USING: true
-//     WITH CHECK: true
-//   Policy "authenticated_insert_cache" (INSERT, PERMISSIVE) roles={authenticated}
-//     WITH CHECK: true
-//   Policy "authenticated_select_cache" (SELECT, PERMISSIVE) roles={authenticated}
-//     USING: true
-//   Policy "authenticated_update_cache" (UPDATE, PERMISSIVE) roles={authenticated}
-//     USING: true
-//     WITH CHECK: true
-
-// --- WARNING: TABLES WITH RLS ENABLED BUT NO POLICIES ---
-// These tables have Row Level Security enabled but NO policies defined.
-// This means ALL queries (SELECT, INSERT, UPDATE, DELETE) will return ZERO rows
-// for non-superuser roles (including the anon and authenticated roles used by the app).
-// You MUST create RLS policies for these tables to allow data access.
-//   - financeiras
-//   - fipe_anos
-//   - fipe_marcas
-//   - fipe_modelos
-
-// --- DATABASE FUNCTIONS ---
-// FUNCTION rls_auto_enable()
-//   CREATE OR REPLACE FUNCTION public.rls_auto_enable()
-//    RETURNS event_trigger
-//    LANGUAGE plpgsql
-//    SECURITY DEFINER
-//    SET search_path TO 'pg_catalog'
-//   AS $function$
-//   DECLARE
-//     cmd record;
-//   BEGIN
-//     FOR cmd IN
-//       SELECT *
-//       FROM pg_event_trigger_ddl_commands()
-//       WHERE command_tag IN ('CREATE TABLE', 'CREATE TABLE AS', 'SELECT INTO')
-//         AND object_type IN ('table','partitioned table')
-//     LOOP
-//        IF cmd.schema_name IS NOT NULL AND cmd.schema_name IN ('public') AND cmd.schema_name NOT IN ('pg_catalog','information_schema') AND cmd.schema_name NOT LIKE 'pg_toast%' AND cmd.schema_name NOT LIKE 'pg_temp%' THEN
-//         BEGIN
-//           EXECUTE format('alter table if exists %s enable row level security', cmd.object_identity);
-//           RAISE LOG 'rls_auto_enable: enabled RLS on %', cmd.object_identity;
-//         EXCEPTION
-//           WHEN OTHERS THEN
-//             RAISE LOG 'rls_auto_enable: failed to enable RLS on %', cmd.object_identity;
-//         END;
-//        ELSE
-//           RAISE LOG 'rls_auto_enable: skip % (either system schema or not in enforced list: %.)', cmd.object_identity, cmd.schema_name;
-//        END IF;
-//     END LOOP;
-//   END;
-//   $function$
-//
-// FUNCTION trigger_articles_version_insert()
-//   CREATE OR REPLACE FUNCTION public.trigger_articles_version_insert()
-//    RETURNS trigger
-//    LANGUAGE plpgsql
-//    SECURITY DEFINER
-//   AS $function$
-//   BEGIN
-//     INSERT INTO public.article_versions (
-//       article_id, titulo, slug, categoria, tags, resumo, meta_title, meta_description,
-//       h1_artigo, palavras_chave_principais, palavras_chave_secundarias, canonical_url,
-//       og_title, og_description, og_image_url, schema_markup, indice_google, robots_meta,
-//       conteudo, imagem_destaque_url, tempo_leitura, categoria_secundaria, autor_convidado,
-//       url_fonte_externa, artigo_pillar, artigos_relacionados, proximo_artigo_sugerido,
-//       permitir_comentarios, destaque, status_publicacao, data_agendamento, seo_score,
-//       autor_id, acao, criado_em
-//     ) VALUES (
-//       NEW.id, NEW.titulo, NEW.slug, NEW.categoria, NEW.tags, NEW.resumo, NEW.meta_title, NEW.meta_description,
-//       NEW.h1_artigo, NEW.palavras_chave_principais, NEW.palavras_chave_secundarias, NEW.canonical_url,
-//       NEW.og_title, NEW.og_description, NEW.og_image_url, NEW.schema_markup, NEW.indice_google, NEW.robots_meta,
-//       NEW.conteudo, NEW.imagem_destaque_url, NEW.tempo_leitura, NEW.categoria_secundaria, NEW.autor_convidado,
-//       NEW.url_fonte_externa, NEW.artigo_pillar, NEW.artigos_relacionados, NEW.proximo_artigo_sugerido,
-//       NEW.permitir_comentarios, NEW.destaque, NEW.status_publicacao, NEW.data_agendamento, NEW.seo_score,
-//       NEW.autor_id,
-//       CASE WHEN TG_OP = 'INSERT' THEN 'Criado' ELSE 'Editado' END, now()
-//     );
-//
-//     -- Cleanup old versions
-//     DELETE FROM public.article_versions
-//     WHERE article_id = NEW.id
-//     AND id NOT IN (
-//       SELECT id FROM public.article_versions WHERE article_id = NEW.id ORDER BY criado_em DESC LIMIT 50
-//     );
-//
-//     RETURN NEW;
-//   END;
-//   $function$
-//
-// FUNCTION trigger_pages_version_insert()
-//   CREATE OR REPLACE FUNCTION public.trigger_pages_version_insert()
-//    RETURNS trigger
-//    LANGUAGE plpgsql
-//    SECURITY DEFINER
-//   AS $function$
-//   BEGIN
-//     INSERT INTO public.pages_versions (
-//       page_id, titulo, slug, meta_title, meta_description, h1_pagina,
-//       palavras_chave_principais, canonical_url, og_title, og_description,
-//       og_image_url, schema_markup, indice_google, robots_meta, conteudo,
-//       imagem_destaque_url, template, ordem_menu, visibilidade, status_publicacao,
-//       data_agendamento, descricao_interna, autor_id, acao, criado_em
-//     ) VALUES (
-//       NEW.id, NEW.titulo, NEW.slug, NEW.meta_title, NEW.meta_description, NEW.h1_pagina,
-//       NEW.palavras_chave_principais, NEW.canonical_url, NEW.og_title, NEW.og_description,
-//       NEW.og_image_url, NEW.schema_markup, NEW.indice_google, NEW.robots_meta, NEW.conteudo,
-//       NEW.imagem_destaque_url, NEW.template, NEW.ordem_menu, NEW.visibilidade, NEW.status_publicacao,
-//       NEW.data_agendamento, NEW.descricao_interna, NEW.autor_id,
-//       CASE WHEN TG_OP = 'INSERT' THEN 'Criado' ELSE 'Editado' END, now()
-//     );
-//
-//     -- Cleanup old versions (keep last 50)
-//     DELETE FROM public.pages_versions
-//     WHERE page_id = NEW.id
-//     AND id NOT IN (
-//       SELECT id FROM public.pages_versions WHERE page_id = NEW.id ORDER BY criado_em DESC LIMIT 50
-//     );
-//
-//     RETURN NEW;
-//   END;
-//   $function$
-//
-// FUNCTION update_media_assets_updated_at()
-//   CREATE OR REPLACE FUNCTION public.update_media_assets_updated_at()
-//    RETURNS trigger
-//    LANGUAGE plpgsql
-//   AS $function$
-//   BEGIN
-//     NEW.updated_at = NOW();
-//     RETURN NEW;
-//   END;
-//   $function$
-//
-// FUNCTION update_timestamp_column()
-//   CREATE OR REPLACE FUNCTION public.update_timestamp_column()
-//    RETURNS trigger
-//    LANGUAGE plpgsql
-//   AS $function$
-//   BEGIN
-//     NEW.updated_at = NOW();
-//     RETURN NEW;
-//   END;
-//   $function$
-//
-// FUNCTION update_veiculo_status_on_nf()
-//   CREATE OR REPLACE FUNCTION public.update_veiculo_status_on_nf()
-//    RETURNS trigger
-//    LANGUAGE plpgsql
-//   AS $function$
-//   BEGIN
-//     IF NEW.status = 'Emitida' AND NEW.veiculo_id IS NOT NULL THEN
-//       UPDATE public.veiculos SET status = 'vendido' WHERE id = NEW.veiculo_id;
-//     END IF;
-//     RETURN NEW;
-//   END;
-//   $function$
-//
-
-// --- TRIGGERS ---
-// Table: articles
-//   on_articles_version_insert: CREATE TRIGGER on_articles_version_insert AFTER INSERT OR UPDATE ON public.articles FOR EACH ROW EXECUTE FUNCTION trigger_articles_version_insert()
-// Table: blog_posts
-//   update_blog_posts_updated_at: CREATE TRIGGER update_blog_posts_updated_at BEFORE UPDATE ON public.blog_posts FOR EACH ROW EXECUTE FUNCTION update_timestamp_column()
-// Table: landing_pages
-//   update_landing_pages_updated_at: CREATE TRIGGER update_landing_pages_updated_at BEFORE UPDATE ON public.landing_pages FOR EACH ROW EXECUTE FUNCTION update_timestamp_column()
-// Table: media_assets
-//   update_media_assets_updated_at: CREATE TRIGGER update_media_assets_updated_at BEFORE UPDATE ON public.media_assets FOR EACH ROW EXECUTE FUNCTION update_media_assets_updated_at()
-// Table: notas_fiscais
-//   trg_update_veiculo_status: CREATE TRIGGER trg_update_veiculo_status AFTER INSERT OR UPDATE ON public.notas_fiscais FOR EACH ROW EXECUTE FUNCTION update_veiculo_status_on_nf()
-// Table: pages
-//   on_pages_version_insert: CREATE TRIGGER on_pages_version_insert AFTER INSERT OR UPDATE ON public.pages FOR EACH ROW EXECUTE FUNCTION trigger_pages_version_insert()
-
-// --- INDEXES ---
-// Table: article_versions
-//   CREATE INDEX idx_article_versions_article_id ON public.article_versions USING btree (article_id)
-//   CREATE INDEX idx_article_versions_criado_em ON public.article_versions USING btree (criado_em DESC)
-// Table: articles
-//   CREATE UNIQUE INDEX articles_slug_key ON public.articles USING btree (slug)
-// Table: blog_posts
-//   CREATE UNIQUE INDEX blog_posts_slug_key ON public.blog_posts USING btree (slug)
-// Table: clientes
-//   CREATE UNIQUE INDEX clientes_cpf_key ON public.clientes USING btree (cpf)
-// Table: configuracoes_api
-//   CREATE UNIQUE INDEX configuracoes_api_portal_key ON public.configuracoes_api USING btree (portal)
-// Table: conversation_history
-//   CREATE INDEX idx_conversation_history_lead_id ON public.conversation_history USING btree (lead_id)
-// Table: fipe_anos
-//   CREATE UNIQUE INDEX fipe_anos_codigo_modelo_codigo_marca_codigo_key ON public.fipe_anos USING btree (codigo, modelo_codigo, marca_codigo)
-// Table: fipe_marcas
-//   CREATE UNIQUE INDEX fipe_marcas_codigo_key ON public.fipe_marcas USING btree (codigo)
-// Table: fipe_modelos
-//   CREATE UNIQUE INDEX fipe_modelos_codigo_marca_codigo_key ON public.fipe_modelos USING btree (codigo, marca_codigo)
-// Table: keywords
-//   CREATE UNIQUE INDEX keywords_palavra_chave_key ON public.keywords USING btree (palavra_chave)
-// Table: landing_pages
-//   CREATE UNIQUE INDEX landing_pages_slug_key ON public.landing_pages USING btree (slug)
-// Table: pages
-//   CREATE UNIQUE INDEX pages_slug_key ON public.pages USING btree (slug)
-// Table: pages_versions
-//   CREATE INDEX idx_pages_versions_criado_em ON public.pages_versions USING btree (criado_em DESC)
-//   CREATE INDEX idx_pages_versions_page_id ON public.pages_versions USING btree (page_id)
-// Table: site_configuracoes
-//   CREATE UNIQUE INDEX site_configuracoes_chave_key ON public.site_configuracoes USING btree (chave)
-// Table: usuarios
-//   CREATE UNIQUE INDEX usuarios_email_key ON public.usuarios USING btree (email)

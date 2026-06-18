@@ -22,32 +22,31 @@ Deno.serve(async (req) => {
 
     const { data: veiculos, error } = await supabase
       .from('veiculos')
-      .select(
-        'id, marca, modelo, versao, preco_venda, descricao, fotos, is_zero_km, status, ano_modelo, quilometragem, categoria, cor, cambio, combustivel',
-      )
-      .ilike('status', '%dispon%')
+      .select('*')
+      .eq('status', 'disponivel')
+      .order('created_at', { ascending: false })
 
     if (error) throw error
 
+    // Headers com mileage obrigatório
     const headers = [
-      'id',
+      'vehicle_id',
       'title',
       'description',
-      'availability',
-      'condition',
-      'price',
-      'link',
-      'image_link',
-      'brand',
+      'make',
       'model',
       'year',
-      'mileage.value',
-      'mileage.unit',
+      'mileage', // OBRIGATÓRIO PRA META
+      'price',
+      'url',
+      'image',
       'address',
+      'state_of_vehicle',
       'body_style',
       'exterior_color',
       'transmission',
       'fuel_type',
+      'availability',
     ]
 
     const escapeCsv = (field: any) => {
@@ -75,6 +74,7 @@ Deno.serve(async (req) => {
       SUV: 'suv',
       Picape: 'truck',
       Caminhonete: 'truck',
+      Pickup: 'truck',
       Cupê: 'coupe',
       Coupe: 'coupe',
       Conversível: 'convertible',
@@ -82,8 +82,10 @@ Deno.serve(async (req) => {
       Minivan: 'minivan',
       Perua: 'wagon',
       SW: 'wagon',
+      'Station Wagon': 'wagon',
       Van: 'van',
       Utilitário: 'other',
+      Utilitario: 'other',
     }
 
     const transmissionMap: Record<string, string> = {
@@ -92,12 +94,15 @@ Deno.serve(async (req) => {
       Manual: 'manual',
       CVT: 'automatic',
       Automatizado: 'automatic',
+      Dualogic: 'automatic',
     }
 
     const fuelMap: Record<string, string> = {
       Gasolina: 'gasoline',
       Etanol: 'flex',
       Flex: 'flex',
+      Álcool: 'flex',
+      Alcool: 'flex',
       Diesel: 'diesel',
       Elétrico: 'electric',
       Eletrico: 'electric',
@@ -110,7 +115,6 @@ Deno.serve(async (req) => {
 
     const rows = (veiculos || [])
       .filter((v) => {
-        // ID Integrity Check (Valid UUID)
         if (
           !v.id ||
           !/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(
@@ -118,39 +122,33 @@ Deno.serve(async (req) => {
           )
         )
           return false
-
-        // Robust Status Check
         const rawStatus = (v.status || '')
           .toLowerCase()
           .normalize('NFD')
           .replace(/[\u0300-\u036f]/g, '')
         if (rawStatus !== 'disponivel') return false
-
         const ano = Number(v.ano_modelo)
         const preco = Number(v.preco_venda)
-        if (!v.preco_venda || preco < 1000 || !v.ano_modelo || ano < 1950 || ano > anoAtual)
+        if (!v.preco_venda || preco < 1000 || !v.ano_modelo || ano < 1950 || ano > anoAtual + 1)
           return false
-
-        // Image Validation Check (Meta rejection prevention)
         if (!v.fotos || !Array.isArray(v.fotos) || v.fotos.length === 0) return false
-
         return true
       })
       .map((v) => {
         const link = `https://www.carroeciamotors.com.br/estoque/${v.id}`
         const imageLink = v.fotos[0]
-
         const price = `${Number(v.preco_venda).toFixed(2)} BRL`
         const condition = v.is_zero_km ? 'new' : 'used'
         const ano = v.ano_modelo
-        const kmValor = v.quilometragem || 0
-        const brand = v.marca || ''
 
-        const title = `${brand} ${v.modelo} ${v.versao || ''}`.trim()
+        // FORÇA 1 KM PRA TODO MUNDO PRA META ACEITAR
+        const mileage = '1 km'
+
+        const title = `${v.marca} ${v.modelo} ${v.versao || ''} ${ano}`.replace(/\s+/g, ' ').trim()
 
         let description = v.descricao
           ? v.descricao.substring(0, 5000)
-          : `${title} ${ano}. ${kmValor}km. Loja Carro e Cia Motors.`
+          : `${title}. Carro e Cia Motors Uberaba.`
         description = description
           .replace(/<[^>]*>?/gm, '')
           .replace(/[\n\r]+/g, ' ')
@@ -158,28 +156,28 @@ Deno.serve(async (req) => {
           .trim()
 
         const rowData = [
-          v.id,
-          title,
-          description,
-          'in stock',
-          condition,
-          price,
-          link,
-          imageLink,
-          brand,
-          `${v.modelo} ${v.versao || ''}`.trim(),
-          ano,
-          kmValor,
-          'km',
-          addressJson,
-          bodyStyleMap[v.categoria] || 'other',
-          v.cor || '',
-          transmissionMap[v.cambio] || 'other',
-          fuelMap[v.combustivel] || 'other',
+          v.id, // vehicle_id
+          title, // title
+          description, // description
+          v.marca, // make
+          `${v.modelo} ${v.versao || ''}`.trim(), // model
+          ano, // year
+          mileage, // mileage = "1 km" fixo
+          price, // price
+          link, // url
+          imageLink, // image
+          addressJson, // address
+          condition, // state_of_vehicle
+          bodyStyleMap[v.categoria] || 'other', // body_style
+          v.cor || '', // exterior_color
+          transmissionMap[v.cambio] || 'other', // transmission
+          fuelMap[v.combustivel] || 'other', // fuel_type
+          'available', // availability
         ]
 
         return rowData.map(escapeCsv).join(',')
       })
+
     const csvFeed = [headers.join(','), ...rows].join('\n')
 
     return new Response(csvFeed, {
@@ -188,12 +186,12 @@ Deno.serve(async (req) => {
         ...corsHeaders,
         'Content-Type': 'text/csv; charset=utf-8',
         'Content-Disposition': `attachment; filename="${filename}"`,
-        'Cache-Control': 'public, max-age=3600',
+        'Cache-Control': 'public, max-age=1800',
       },
     })
   } catch (err: any) {
     console.error('Error generating feed:', err)
-    const errorCsv = `error\n"Erro: ${err.message}"`
+    const errorCsv = `vehicle_id,title\n"error","Erro: ${err.message}"`
     return new Response(errorCsv, {
       status: 200,
       headers: {

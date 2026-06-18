@@ -124,194 +124,261 @@ Deno.serve(async (req) => {
   const body = await req.json()
   console.log("Nova requisição POST recebida na rota 'receive-leads':", JSON.stringify(body))
 
-  // 1. Webhook do WhatsApp (Mensagem do Cliente)
-  if (body.object === 'whatsapp_business_account') {
-    const entry = body.entry?.[0]?.changes?.[0]?.value
-    if (!entry?.messages) {
-      console.log(
-        'Evento recebido do WhatsApp, mas não é uma nova mensagem (ex: confirmação de leitura).',
-      )
-      return new Response('ok')
-    }
+  const isMetaWebhook = body.object === 'whatsapp_business_account'
+  const platform = isMetaWebhook ? 'whatsapp' : 'portal'
+  const eventType = body.entry?.[0]?.changes?.[0]?.field || 'lead'
 
-    const message = entry.messages[0]
-    const contact = entry.contacts?.[0]
-    const phone = message.from
-    const text = message.text?.body
-    const profileName = contact?.profile?.name || 'Cliente'
+  // Registrar o webhook no banco para auditoria e evitar timeout (Meta exige resposta rápida)
+  const { data: logEntry, error: logError } = await supabase
+    .from('meta_webhook_logs')
+    .insert({
+      platform,
+      event_type: eventType,
+      payload: body,
+      processed: false,
+    })
+    .select('id')
+    .maybeSingle()
 
-    console.log(`WhatsApp detectado. Telefone: ${phone}, Nome: ${profileName}, Texto: ${text}`)
+  if (logError) {
+    console.error('Erro ao registrar webhook log:', logError)
+  }
 
-    if (!phone || !text) {
-      console.log('Mensagem sem texto ou telefone ignorada.')
-      return new Response('ok')
-    }
+  const logId = logEntry?.id
 
-    // Buscar Lead de forma segura (using maybeSingle)
-    console.log(`Buscando lead com o telefone ${phone} no banco de dados...`)
-    let { data: lead, error: selectError } = await supabase
-      .from('leads')
-      .select('*')
-      .eq('telefone', phone)
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .maybeSingle() // maybeSingle impede falha silenciosa se não houver registros
+  const processWebhook = async () => {
+    try {
+      // 1. Webhook do WhatsApp (Mensagem do Cliente)
+      if (isMetaWebhook) {
+        const entry = body.entry?.[0]?.changes?.[0]?.value
+        if (!entry?.messages) {
+          console.log(
+            'Evento recebido do WhatsApp, mas não é uma nova mensagem (ex: confirmação de leitura).',
+          )
+          if (logId)
+            await supabase.from('meta_webhook_logs').update({ processed: true }).eq('id', logId)
+          return { response: new Response('ok', { headers: corsHeaders }) }
+        }
 
-    if (selectError) {
-      console.error('Erro na busca de lead no banco de dados:', selectError)
-    }
+        const message = entry.messages[0]
+        const contact = entry.contacts?.[0]
+        const phone = message.from
+        const text = message.text?.body
+        const profileName = contact?.profile?.name || 'Cliente'
 
-    if (!lead) {
-      console.log('Lead inexistente. Cadastrando novo lead...')
-      const { data: newLead, error: insertError } = await supabase
+        console.log(`WhatsApp detectado. Telefone: ${phone}, Nome: ${profileName}, Texto: ${text}`)
+
+        if (!phone || !text) {
+          console.log('Mensagem sem texto ou telefone ignorada.')
+          if (logId)
+            await supabase
+              .from('meta_webhook_logs')
+              .update({ processed: true, error: 'Mensagem sem texto ou telefone' })
+              .eq('id', logId)
+          return { response: new Response('ok', { headers: corsHeaders }) }
+        }
+
+        // Buscar Lead de forma segura (using maybeSingle)
+        console.log(`Buscando lead com o telefone ${phone} no banco de dados...`)
+        let { data: lead, error: selectError } = await supabase
+          .from('leads')
+          .select('*')
+          .eq('telefone', phone)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle() // maybeSingle impede falha silenciosa se não houver registros
+
+        if (selectError) {
+          console.error('Erro na busca de lead no banco de dados:', selectError)
+        }
+
+        if (!lead) {
+          console.log('Lead inexistente. Cadastrando novo lead...')
+          const { data: newLead, error: insertError } = await supabase
+            .from('leads')
+            .insert({
+              nome: profileName,
+              telefone: phone,
+              origem: 'whatsapp',
+              source: 'whatsapp',
+              tipo: 'compra',
+              status: 'novo',
+            })
+            .select()
+            .maybeSingle()
+
+          if (insertError) {
+            console.error('Erro crítico na inserção do novo lead no banco:', insertError)
+          } else {
+            console.log('Lead criado com sucesso no banco:', JSON.stringify(newLead))
+          }
+          lead = newLead
+        } else {
+          console.log('Lead já existente carregado do banco:', JSON.stringify(lead))
+        }
+
+        if (!lead) {
+          console.error(
+            'Aviso: O processo foi interrompido porque o lead não pôde ser encontrado nem criado no banco.',
+          )
+          if (logId)
+            await supabase
+              .from('meta_webhook_logs')
+              .update({ error: 'Lead não encontrado ou criado' })
+              .eq('id', logId)
+          return { response: new Response('ok', { headers: corsHeaders }) }
+        }
+
+        // Salvar mensagem do cliente
+        console.log("Registrando mensagem do cliente na tabela 'conversation_history'...")
+        const { error: historyError } = await supabase.from('conversation_history').insert({
+          lead_id: lead.id,
+          sender: 'client',
+          message_text: text,
+        })
+
+        if (historyError) {
+          console.error(
+            'Erro crítico ao gravar histórico da mensagem do cliente no banco:',
+            historyError,
+          )
+        }
+
+        // Montar histórico para o Gemini
+        const { data: history, error: historyFetchError } = await supabase
+          .from('conversation_history')
+          .select('*')
+          .eq('lead_id', lead.id)
+          .order('created_at', { ascending: true })
+
+        if (historyFetchError) {
+          console.error('Erro ao recuperar o histórico de conversas do banco:', historyFetchError)
+        }
+
+        const geminiHistory = (history || []).map((m) => ({
+          role: m.sender === 'bot' ? 'model' : 'user',
+          parts: [{ text: m.message_text }],
+        }))
+
+        console.log('Enviando histórico de conversas compilado ao Gemini...')
+        const aiRes = await runGemini(geminiHistory)
+        console.log('Resposta bruta gerada pelo Gemini:', JSON.stringify(aiRes))
+
+        let responseText = ''
+
+        // Lidar com Function Calling
+        if (aiRes.candidates?.[0]?.content?.parts?.[0]?.functionCall) {
+          const call = aiRes.candidates[0].content.parts[0].functionCall
+          const toolResult = await handleFunctionCall(call)
+
+          geminiHistory.push(aiRes.candidates[0].content)
+          geminiHistory.push({
+            role: 'function',
+            parts: [{ functionResponse: { name: call.name, response: toolResult } }],
+          })
+
+          const followUp = await runGemini(geminiHistory)
+          responseText =
+            followUp.candidates?.[0]?.content?.parts?.[0]?.text ||
+            'Gostaria de agendar uma visita para conversarmos melhor?'
+        } else {
+          responseText = aiRes.candidates?.[0]?.content?.parts?.[0]?.text || 'Como posso ajudar?'
+        }
+
+        console.log('Resposta final que será enviada ao cliente:', responseText)
+
+        // Salvar resposta e enviar
+        const { error: botHistoryError } = await supabase.from('conversation_history').insert({
+          lead_id: lead.id,
+          sender: 'bot',
+          message_text: responseText,
+        })
+
+        if (botHistoryError) {
+          console.error('Erro ao gravar histórico da resposta da IA no banco:', botHistoryError)
+        }
+
+        await sendWhatsApp(phone, responseText)
+
+        if (logId)
+          await supabase.from('meta_webhook_logs').update({ processed: true }).eq('id', logId)
+        return { response: new Response('ok', { headers: corsHeaders }) }
+      }
+
+      // 2. Webhook de Portais (Webmotors, iCarros, Site)
+      console.log('Portal externo detectado. Iniciando captura de lead...')
+      const nome = body.nome || 'Cliente'
+      const portalPhone = body.telefone || body.phone
+      const source = body.origem || 'site'
+      const veiculo = body.veiculo || body.veiculo_interesse || ''
+
+      const { data: lead, error: portalInsertError } = await supabase
         .from('leads')
         .insert({
-          nome: profileName,
-          telefone: phone,
-          origem: 'whatsapp',
-          source: 'whatsapp',
+          nome,
+          telefone: portalPhone,
+          source: source,
+          origem: source,
+          veiculo_interesse: veiculo,
           tipo: 'compra',
           status: 'novo',
         })
         .select()
         .maybeSingle()
 
-      if (insertError) {
-        console.error('Erro crítico na inserção do novo lead no banco:', insertError)
-      } else {
-        console.log('Lead criado com sucesso no banco:', JSON.stringify(newLead))
+      if (portalInsertError) {
+        console.error('Erro crítico ao registrar lead vindo de portal externo:', portalInsertError)
       }
-      lead = newLead
+
+      if (lead) {
+        console.log(
+          'Lead de portal criado com sucesso. Iniciando saudação por inteligência artificial...',
+        )
+        const initText = `Novo lead recebido do portal ${source}. O cliente se chama ${nome} e tem interesse no veículo: ${veiculo}. Inicie a conversa se apresentando como Luiz, SDR da loja, e puxe assunto para agendar uma visita.`
+
+        const aiRes = await runGemini([{ role: 'user', parts: [{ text: initText }] }])
+        const responseText =
+          aiRes.candidates?.[0]?.content?.parts?.[0]?.text ||
+          `Olá ${nome}! Sou o Luiz, consultor digital da Carro e Cia. Vi que você tem interesse no ${veiculo}. Gostaria de agendar uma visita?`
+
+        await supabase
+          .from('conversation_history')
+          .insert({ lead_id: lead.id, sender: 'bot', message_text: responseText })
+        if (portalPhone) {
+          await sendWhatsApp(portalPhone, responseText)
+        }
+      }
+
+      if (logId)
+        await supabase.from('meta_webhook_logs').update({ processed: true }).eq('id', logId)
+
+      return {
+        response: new Response(JSON.stringify({ success: true, lead_id: lead?.id }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }),
+      }
+    } catch (err: any) {
+      console.error('Erro não tratado durante o processamento do webhook:', err)
+      if (logId)
+        await supabase.from('meta_webhook_logs').update({ error: err.message }).eq('id', logId)
+      return { response: new Response('error', { status: 500, headers: corsHeaders }) }
+    }
+  }
+
+  // Se for Meta Webhook, responde imediatamente e processa em background para evitar timeouts
+  if (isMetaWebhook) {
+    if (
+      typeof (globalThis as any).EdgeRuntime !== 'undefined' &&
+      typeof (globalThis as any).EdgeRuntime.waitUntil === 'function'
+    ) {
+      ;(globalThis as any).EdgeRuntime.waitUntil(processWebhook())
     } else {
-      console.log('Lead já existente carregado do banco:', JSON.stringify(lead))
+      processWebhook().catch(console.error)
     }
-
-    if (!lead) {
-      console.error(
-        'Aviso: O processo foi interrompido porque o lead não pôde ser encontrado nem criado no banco.',
-      )
-      return new Response('ok', { headers: corsHeaders })
-    }
-
-    // Salvar mensagem do cliente
-    console.log("Registrando mensagem do cliente na tabela 'conversation_history'...")
-    const { error: historyError } = await supabase.from('conversation_history').insert({
-      lead_id: lead.id,
-      sender: 'client',
-      message_text: text,
-    })
-
-    if (historyError) {
-      console.error(
-        'Erro crítico ao gravar histórico da mensagem do cliente no banco:',
-        historyError,
-      )
-    }
-
-    // Montar histórico para o Gemini
-    const { data: history, error: historyFetchError } = await supabase
-      .from('conversation_history')
-      .select('*')
-      .eq('lead_id', lead.id)
-      .order('created_at', { ascending: true })
-
-    if (historyFetchError) {
-      console.error('Erro ao recuperar o histórico de conversas do banco:', historyFetchError)
-    }
-
-    const geminiHistory = (history || []).map((m) => ({
-      role: m.sender === 'bot' ? 'model' : 'user',
-      parts: [{ text: m.message_text }],
-    }))
-
-    console.log('Enviando histórico de conversas compilado ao Gemini...')
-    const aiRes = await runGemini(geminiHistory)
-    console.log('Resposta bruta gerada pelo Gemini:', JSON.stringify(aiRes))
-
-    let responseText = ''
-
-    // Lidar com Function Calling
-    if (aiRes.candidates?.[0]?.content?.parts?.[0]?.functionCall) {
-      const call = aiRes.candidates[0].content.parts[0].functionCall
-      const toolResult = await handleFunctionCall(call)
-
-      geminiHistory.push(aiRes.candidates[0].content)
-      geminiHistory.push({
-        role: 'function',
-        parts: [{ functionResponse: { name: call.name, response: toolResult } }],
-      })
-
-      const followUp = await runGemini(geminiHistory)
-      responseText =
-        followUp.candidates?.[0]?.content?.parts?.[0]?.text ||
-        'Gostaria de agendar uma visita para conversarmos melhor?'
-    } else {
-      responseText = aiRes.candidates?.[0]?.content?.parts?.[0]?.text || 'Como posso ajudar?'
-    }
-
-    console.log('Resposta final que será enviada ao cliente:', responseText)
-
-    // Salvar resposta e enviar
-    const { error: botHistoryError } = await supabase.from('conversation_history').insert({
-      lead_id: lead.id,
-      sender: 'bot',
-      message_text: responseText,
-    })
-
-    if (botHistoryError) {
-      console.error('Erro ao gravar histórico da resposta da IA no banco:', botHistoryError)
-    }
-
-    await sendWhatsApp(phone, responseText)
-
-    return new Response('ok', { headers: corsHeaders })
+    return new Response('ok', { headers: corsHeaders, status: 200 })
   }
 
-  // 2. Webhook de Portais (Webmotors, iCarros, Site)
-  console.log('Portal externo detectado. Iniciando captura de lead...')
-  const nome = body.nome || 'Cliente'
-  const portalPhone = body.telefone || body.phone
-  const source = body.origem || 'site'
-  const veiculo = body.veiculo || body.veiculo_interesse || ''
-
-  const { data: lead, error: portalInsertError } = await supabase
-    .from('leads')
-    .insert({
-      nome,
-      telefone: portalPhone,
-      source: source,
-      origem: source,
-      veiculo_interesse: veiculo,
-      tipo: 'compra',
-      status: 'novo',
-    })
-    .select()
-    .maybeSingle()
-
-  if (portalInsertError) {
-    console.error('Erro crítico ao registrar lead vindo de portal externo:', portalInsertError)
-  }
-
-  if (lead) {
-    console.log(
-      'Lead de portal criado com sucesso. Iniciando saudação por inteligência artificial...',
-    )
-    const initText = `Novo lead recebido do portal ${source}. O cliente se chama ${nome} e tem interesse no veículo: ${veiculo}. Inicie a conversa se apresentando como Luiz, SDR da loja, e puxe assunto para agendar uma visita.`
-
-    const aiRes = await runGemini([{ role: 'user', parts: [{ text: initText }] }])
-    const responseText =
-      aiRes.candidates?.[0]?.content?.parts?.[0]?.text ||
-      `Olá ${nome}! Sou o Luiz, consultor digital da Carro e Cia. Vi que você tem interesse no ${veiculo}. Gostaria de agendar uma visita?`
-
-    await supabase
-      .from('conversation_history')
-      .insert({ lead_id: lead.id, sender: 'bot', message_text: responseText })
-    if (portalPhone) {
-      await sendWhatsApp(portalPhone, responseText)
-    }
-  }
-
-  return new Response(JSON.stringify({ success: true, lead_id: lead?.id }), {
-    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-  })
+  // Se não for Meta Webhook, processa sincronamente (para retornar o ID do lead)
+  const { response } = await processWebhook()
+  return response
 })
