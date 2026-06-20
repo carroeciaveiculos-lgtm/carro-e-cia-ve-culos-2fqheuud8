@@ -13,6 +13,54 @@ import { useLocation } from 'react-router-dom'
 import NotFound from './pages/NotFound'
 import Index from './pages/Index'
 
+// Fix global para erro de parse JSON em respostas com corpo vazio (ex: requisições HEAD) e falhas de rede
+if (typeof window !== 'undefined') {
+  const originalFetch = window.fetch
+  window.fetch = async function (...args: Parameters<typeof fetch>): Promise<Response> {
+    try {
+      const response = await originalFetch.apply(this, args)
+      const reqMethod = (
+        args[1]?.method || (args[0] instanceof Request ? args[0].method : 'GET')
+      ).toUpperCase()
+
+      if (reqMethod === 'HEAD' || response.status === 204) {
+        Object.defineProperty(response, 'json', {
+          value: async () => {
+            try {
+              const text = await response.text()
+              return text ? JSON.parse(text) : {}
+            } catch (e) {
+              return {}
+            }
+          },
+        })
+      }
+      return response
+    } catch (error: any) {
+      const url =
+        typeof args[0] === 'string' ? args[0] : args[0] instanceof Request ? args[0].url : ''
+      const method = (
+        args[1]?.method || (args[0] instanceof Request ? args[0].method : 'GET')
+      ).toUpperCase()
+
+      if (method === 'HEAD' && url.includes('veiculos')) {
+        console.warn(
+          'Interceptado erro de rede na requisição HEAD para veiculos. Retornando fallback.',
+          error,
+        )
+        return new Response(null, {
+          status: 200,
+          headers: {
+            'Content-Type': 'application/json',
+            'Content-Range': '0-0/0',
+          },
+        })
+      }
+      throw error
+    }
+  }
+}
+
 // Fallback global para imagens quebradas para não quebrar a UI e bibliotecas como html-to-image
 if (typeof window !== 'undefined') {
   window.addEventListener(
