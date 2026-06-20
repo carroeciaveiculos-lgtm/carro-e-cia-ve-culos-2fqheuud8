@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { cn } from '@/lib/utils'
 import { PageVisualEditor } from '@/components/admin/conteudo-editor/PageVisualEditor'
+import { ArticleSEOEditor } from '@/components/admin/conteudo-editor/ArticleSEOEditor'
 import { useToast } from '@/hooks/use-toast'
 
 export default function Conteudo() {
@@ -53,13 +54,11 @@ export default function Conteudo() {
   })
 
   if (editingId) {
-    return (
-      <PageVisualEditor
-        id={editingId}
-        isArticle={activeTab === 'artigos'}
-        onBack={() => setEditingId(null)}
-      />
-    )
+    if (activeTab === 'artigos') {
+      return <ArticleSEOEditor id={editingId} onBack={() => setEditingId(null)} />
+    }
+
+    return <PageVisualEditor id={editingId} isArticle={false} onBack={() => setEditingId(null)} />
   }
 
   return (
@@ -97,7 +96,7 @@ export default function Conteudo() {
                     setEditingId('new')
                     setShowTypeSelect(false)
                   }}
-                  className="w-full text-left px-4 py-2 hover:bg-slate-50 rounded-lg text-sm font-medium transition-colors text-slate-700"
+                  className="w-full text-left px-4 py-2 hover:bg-slate-50 rounded-lg text-sm font-medium transition-colors text-slate-700 flex items-center justify-between group"
                 >
                   Novo Artigo (Blog)
                 </button>

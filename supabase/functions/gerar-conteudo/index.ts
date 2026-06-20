@@ -27,7 +27,7 @@ Deno.serve(async (req) => {
     } = await supabase.auth.getUser()
     if (authError || !user) throw new Error('Unauthorized')
 
-    const { tema, palavraChave, tom } = await req.json()
+    const { tema, palavraChave, tom, is_seo_copilot, title } = await req.json()
 
     const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY')
     const GROQ_API_KEY = Deno.env.get('GROQ_API_KEY')
@@ -53,13 +53,41 @@ Deno.serve(async (req) => {
       'Você é um "Master Arquiteto de Conteúdo" especialista em veículos seminovos.'
     const whatsappNumber = socialConfig?.whatsapp_number || '5534999999999'
 
-    const prompt = `${customPrompt}
+    const basePrompt = `${customPrompt}
 Contexto real da empresa: ${configString}.
 Número de WhatsApp configurado para links: ${whatsappNumber}.
 
 INSTRUÇÃO IMPORTANTE SOBRE LINKS DE WHATSAPP:
 Sempre que gerar botões de CTA, links ou textos convidando para o "Fale conosco no whats", utilize OBRIGATORIAMENTE o link funcional no formato: https://wa.me/${whatsappNumber}
 
+REGRAS ANTI-ALUCINAÇÃO:
+- NÃO invente modelos de carros que não existem, NÃO prometa garantias irreais.
+- Baseie-se nas informações reais da empresa fornecidas.
+`
+
+    const prompt = is_seo_copilot
+      ? `${basePrompt}
+Você é um especialista em SEO e Copywriting.
+Sua tarefa é gerar um artigo de blog altamente otimizado para SEO baseado no título fornecido: "${title}".
+
+REGRAS DE CONTEÚDO:
+- O artigo deve ser rico, detalhado e estruturado com H2, H3, parágrafos e listas (HTML válido).
+- Inclua a palavra-chave principal no primeiro parágrafo.
+- O meta_title deve ter entre 40 e 60 caracteres.
+- O meta_description deve ter entre 120 e 160 caracteres.
+
+SAÍDA OBRIGATÓRIA (JSON VÁLIDO):
+Responda APENAS com um objeto JSON válido, sem formatação markdown:
+{
+  "slug": "url-amigavel-separada-por-hifens",
+  "meta_title": "Título SEO otimizado (40-60 chars)",
+  "meta_description": "Descrição persuasiva (120-160 chars)",
+  "h1_artigo": "Título principal do artigo",
+  "palavras_chave_principais": ["keyword 1", "keyword 2"],
+  "palavras_chave_secundarias": ["keyword 3", "keyword 4"],
+  "conteudo_html": "<h2>...</h2><p>...</p><h3>...</h3><p>...</p>"
+}`
+      : `${basePrompt}
 Sua tarefa é gerar conteúdo para o tema "${tema}" com foco na palavra-chave "${palavraChave}".
 Tom: ${tom || 'Conversacional'}.
 
@@ -75,10 +103,6 @@ REGRAS DE MÍDIA E IMAGENS:
 - Imagens: Forneça descrições ("prompt_geracao_ia_ingles") SEMPRE EM INGLÊS.
 - Estilo: "Realistic Photography" (fotos de veículos reais, pessoas e lojas. Evite 3D/vetores).
 - Aspect Ratio: 16:9 para Hero, 1:1 ou 4:5 para Institucional, 3:2 para Serviços.
-
-REGRAS ANTI-ALUCINAÇÃO:
-- NÃO invente modelos de carros que não existem, NÃO prometa garantias irreais.
-- Baseie-se nas informações reais da empresa fornecidas.
 
 SAÍDA OBRIGATÓRIA (JSON VÁLIDO):
 Responda APENAS com um objeto JSON válido, sem formatação markdown:
@@ -288,7 +312,9 @@ Responda APENAS com um objeto JSON válido, sem formatação markdown:
 
     // Convert new JSON schema to HTML for frontend compatibility
     let htmlOutput = ''
-    if (resultJson.secoes && Array.isArray(resultJson.secoes)) {
+    if (is_seo_copilot && resultJson.conteudo_html) {
+      htmlOutput = resultJson.conteudo_html
+    } else if (resultJson.secoes && Array.isArray(resultJson.secoes)) {
       for (const secao of resultJson.secoes) {
         const secaoClass = secao.nome_da_secao?.toLowerCase().replace(/\s+/g, '-') || 'geral'
         htmlOutput += `\n<section class="secao-${secaoClass}">\n`
