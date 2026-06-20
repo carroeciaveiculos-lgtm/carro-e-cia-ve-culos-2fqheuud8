@@ -40,17 +40,13 @@ Deno.serve(async (req) => {
 
     // Grounding: Fetch company info to avoid hallucinations
     const { data: configData } = await supabaseService.from('site_configuracoes').select('*')
-
+    
     // Buscar Brain IA knowledge base
-    const { data: brainKnowledge } = await supabaseService
-      .from('brain_ia_knowledge')
-      .select('titulo, conteudo, tipo')
-
+    const { data: brainKnowledge } = await supabaseService.from('brain_ia_knowledge').select('titulo, conteudo, tipo')
+    
     let brainIAContext = ''
     if (brainKnowledge && brainKnowledge.length > 0) {
-      brainIAContext = brainKnowledge
-        .map((k: any) => `[${k.titulo}]: ${k.conteudo || ''}`)
-        .join('\n')
+      brainIAContext = brainKnowledge.map((k: any) => `[${k.titulo}]: ${k.conteudo || ''}`).join('\n')
     }
 
     const configString = configData
@@ -85,8 +81,7 @@ REGRAS ANTI-ALUCINAÇÃO:
 - Baseie-se nas informações reais da empresa e nas diretrizes da marca (Brain IA).
 `
 
-    const prompt = is_seo_copilot
-      ? `${basePrompt}
+    const prompt = is_seo_copilot ? `${basePrompt}
 Você é um especialista em SEO e Copywriting focado no mercado automotivo.
 Sua tarefa é gerar um artigo de blog épico e altamente otimizado para SEO baseado no título fornecido: "${title}".
 
@@ -109,8 +104,7 @@ Responda APENAS com um objeto JSON válido, sem formatação markdown:
   "palavras_chave_principais": ["keyword 1", "keyword 2"],
   "palavras_chave_secundarias": ["keyword 3", "keyword 4"],
   "conteudo_html": "<h2>...</h2><p>...</p><h3>...</h3><p>...</p>"
-}`
-      : `${basePrompt}
+}` : `${basePrompt}
 Sua tarefa é gerar conteúdo para o tema "${tema}" com foco na palavra-chave "${palavraChave}".
 Tom: ${tom || 'Conversacional'}.
 
