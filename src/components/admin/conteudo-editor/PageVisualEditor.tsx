@@ -16,9 +16,14 @@ import {
   Grid3X3,
   Image as ImageIcon,
   Type,
+  BookTemplate,
+  Eye,
+  History,
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
-import { ContentBlock, PageData } from '@/types/conteudo'
+import { ContentBlock, PageData, BlockTemplate } from '@/types/conteudo'
+import { useAuth } from '@/hooks/use-auth'
+import { RevisionHistoryModal } from './RevisionHistoryModal'
 import { BlockPreview } from './BlockPreview'
 import { BlockEditForm } from './BlockEditForm'
 import { cn } from '@/lib/utils'
@@ -51,8 +56,34 @@ export function PageVisualEditor({
   })
   const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null)
   const [previewMode, setPreviewMode] = useState<'mobile' | 'tablet' | 'desktop'>('desktop')
+  const [templates, setTemplates] = useState<BlockTemplate[]>([])
+  const [showHistory, setShowHistory] = useState(false)
+  const [userRole, setUserRole] = useState('operador')
   const { toast } = useToast()
   const { generate, isLoading: aiLoading } = useAiAssistant()
+  const { user } = useAuth()
+
+  useEffect(() => {
+    if (user) {
+      supabase
+        .from('usuarios')
+        .select('nivel')
+        .eq('id', user.id)
+        .single()
+        .then(({ data }) => {
+          if (data) setUserRole(data.nivel || 'operador')
+        })
+    }
+  }, [user])
+
+  useEffect(() => {
+    supabase
+      .from('block_templates')
+      .select('*')
+      .then(({ data }) => {
+        if (data) setTemplates(data)
+      })
+  }, [])
 
   useEffect(() => {
     if (id && id !== 'new') {
@@ -150,6 +181,20 @@ export function PageVisualEditor({
     setSelectedBlockId(newBlock.id)
   }
 
+  const insertTemplate = (template: BlockTemplate) => {
+    const reId = (block: any): any => ({
+      ...block,
+      id: crypto.randomUUID(),
+      children: block.children ? block.children.map(reId) : undefined,
+    })
+
+    const content = Array.isArray(template.conteudo)
+      ? template.conteudo.map(reId)
+      : [reId(template.conteudo)]
+    setBlocks([...blocks, ...content])
+    toast({ title: 'Template inserido com sucesso!' })
+  }
+
   const handleAiGenerate = async () => {
     const prompt = window.prompt(
       "Descreva o que o Assistente Luiz deve gerar (ex: 'Página de vendas para SUVs'):",
@@ -217,21 +262,55 @@ export function PageVisualEditor({
           </Button>
         </div>
         <div className="flex items-center gap-2">
+          {id !== 'new' && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-9 text-slate-600"
+              onClick={() => setShowHistory(true)}
+            >
+              <History className="w-4 h-4 mr-2 hidden sm:block" /> Histórico
+            </Button>
+          )}
+          <Button
+            variant="outline"
+            className="text-slate-700 border-slate-200 hover:bg-slate-50 h-9"
+            onClick={() => handleSave('Rascunho')}
+          >
+            <Save className="w-4 h-4 mr-2 hidden sm:block" /> Rascunho
+          </Button>
           <Button
             variant="outline"
             className="text-amber-700 border-amber-200 hover:bg-amber-50 h-9"
-            onClick={() => handleSave('Rascunho')}
+            onClick={() => handleSave('Em Revisão')}
           >
-            <Save className="w-4 h-4 mr-2 hidden sm:block" /> Salvar Rascunho
+            <Eye className="w-4 h-4 mr-2 hidden sm:block" /> Em Revisão
           </Button>
-          <Button
-            className="bg-blue-600 hover:bg-blue-700 h-9"
-            onClick={() => handleSave('Publicado')}
-          >
-            <Send className="w-4 h-4 mr-2 hidden sm:block" /> Publicar
-          </Button>
+          {userRole === 'admin' && (
+            <Button
+              className="bg-blue-600 hover:bg-blue-700 h-9"
+              onClick={() => handleSave('Publicado')}
+            >
+              <Send className="w-4 h-4 mr-2 hidden sm:block" /> Publicar
+            </Button>
+          )}
         </div>
       </header>
+
+      {showHistory && id !== 'new' && (
+        <RevisionHistoryModal
+          id={id}
+          isArticle={isArticle}
+          currentBlocks={blocks}
+          currentDesignVars={designVars}
+          onClose={() => setShowHistory(false)}
+          onRestore={(v) => {
+            setBlocks(v.blocks || [])
+            if (v.designVars) setDesignVars(v.designVars)
+            setShowHistory(false)
+          }}
+        />
+      )}
 
       <div className="flex flex-1 overflow-hidden relative">
         <aside className="w-80 bg-white border-r flex flex-col shrink-0 z-10">
@@ -267,15 +346,18 @@ export function PageVisualEditor({
             </div>
           ) : (
             <Tabs defaultValue="blocks" className="flex-1 flex flex-col">
-              <TabsList className="grid grid-cols-3 mx-4 mt-4 h-10">
-                <TabsTrigger value="blocks" className="text-xs">
-                  <Layout className="w-3.5 h-3.5 mr-1" /> Blocos
+              <TabsList className="grid grid-cols-4 mx-4 mt-4 h-10 overflow-x-auto no-scrollbar">
+                <TabsTrigger value="blocks" className="text-[10px]">
+                  <Layout className="w-3 h-3 mr-1" /> Blocos
                 </TabsTrigger>
-                <TabsTrigger value="design" className="text-xs">
-                  <Palette className="w-3.5 h-3.5 mr-1" /> Design
+                <TabsTrigger value="library" className="text-[10px]">
+                  <BookTemplate className="w-3 h-3 mr-1" /> Biblio
                 </TabsTrigger>
-                <TabsTrigger value="seo" className="text-xs">
-                  <Settings className="w-3.5 h-3.5 mr-1" /> SEO
+                <TabsTrigger value="design" className="text-[10px]">
+                  <Palette className="w-3 h-3 mr-1" /> Design
+                </TabsTrigger>
+                <TabsTrigger value="seo" className="text-[10px]">
+                  <Settings className="w-3 h-3 mr-1" /> SEO
                 </TabsTrigger>
               </TabsList>
 
@@ -338,6 +420,41 @@ export function PageVisualEditor({
                     <span className="text-[10px]">Galeria</span>
                   </Button>
                 </div>
+              </TabsContent>
+
+              <TabsContent value="library" className="flex-1 p-4 overflow-y-auto m-0 space-y-2">
+                <p className="text-[10px] text-slate-500 mb-2 uppercase font-bold tracking-wider">
+                  Modelos Prontos
+                </p>
+                {templates.length === 0 ? (
+                  <div className="text-xs text-slate-400 text-center py-4">
+                    Nenhum template encontrado.
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-2">
+                    {templates.map((t) => (
+                      <div
+                        key={t.id}
+                        className="border rounded-lg p-3 hover:border-blue-400 hover:shadow-sm transition-all bg-slate-50 group"
+                      >
+                        <div className="flex justify-between items-start mb-2">
+                          <span className="font-bold text-xs">{t.nome}</span>
+                          <span className="text-[9px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded uppercase font-bold tracking-wider">
+                            {t.categoria}
+                          </span>
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="w-full h-8 text-xs bg-white group-hover:bg-blue-50 group-hover:text-blue-700"
+                          onClick={() => insertTemplate(t)}
+                        >
+                          <Layout className="w-3 h-3 mr-2" /> Inserir Bloco
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </TabsContent>
 
               <TabsContent value="design" className="flex-1 p-4 overflow-y-auto m-0 space-y-4">

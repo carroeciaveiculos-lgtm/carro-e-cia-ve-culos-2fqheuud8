@@ -12,6 +12,7 @@ export default function Conteudo() {
   const [activeTab, setActiveTab] = useState<'paginas' | 'artigos'>('paginas')
   const [items, setItems] = useState<any[]>([])
   const [search, setSearch] = useState('')
+  const [statusFilter, setStatusFilter] = useState('todos')
   const [editingId, setEditingId] = useState<string | null>(null)
   const { toast } = useToast()
 
@@ -41,11 +42,15 @@ export default function Conteudo() {
     }
   }
 
-  const filteredItems = items.filter(
-    (i) =>
+  const filteredItems = items.filter((i) => {
+    const matchSearch =
       i.titulo?.toLowerCase().includes(search.toLowerCase()) ||
-      i.slug?.toLowerCase().includes(search.toLowerCase()),
-  )
+      i.slug?.toLowerCase().includes(search.toLowerCase())
+
+    const matchStatus = statusFilter === 'todos' || i.status_publicacao === statusFilter
+
+    return matchSearch && matchStatus
+  })
 
   if (editingId) {
     return (
@@ -117,14 +122,26 @@ export default function Conteudo() {
                 </TabsTrigger>
               </TabsList>
             </Tabs>
-            <div className="relative w-full sm:w-72">
-              <Search className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
-              <Input
-                placeholder="Buscar por título ou slug..."
-                className="pl-9 bg-white"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
+            <div className="flex gap-2 w-full sm:w-auto">
+              <select
+                className="flex h-10 w-full sm:w-40 items-center justify-between rounded-md border border-input bg-white px-3 py-2 text-sm ring-offset-background"
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+              >
+                <option value="todos">Todos os Status</option>
+                <option value="Publicado">Publicados</option>
+                <option value="Em Revisão">Em Revisão</option>
+                <option value="Rascunho">Rascunhos</option>
+              </select>
+              <div className="relative w-full sm:w-64">
+                <Search className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
+                <Input
+                  placeholder="Buscar..."
+                  className="pl-9 bg-white"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                />
+              </div>
             </div>
           </div>
 
@@ -151,7 +168,9 @@ export default function Conteudo() {
                           'text-[10px] px-2 py-1 rounded-full uppercase font-bold tracking-wider shrink-0',
                           item.status_publicacao === 'Publicado'
                             ? 'bg-green-100 text-green-700'
-                            : 'bg-amber-100 text-amber-700',
+                            : item.status_publicacao === 'Em Revisão'
+                              ? 'bg-purple-100 text-purple-700'
+                              : 'bg-amber-100 text-amber-700',
                         )}
                       >
                         {item.status_publicacao || 'Rascunho'}

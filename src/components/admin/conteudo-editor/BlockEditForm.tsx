@@ -47,6 +47,30 @@ function AiBtn({
             Gerar Título Chamativo
           </DropdownMenuItem>
         )}
+        {type === 'image' && (
+          <div className="space-y-4">
+            <div>
+              <label className="text-xs font-bold text-slate-500">URL da Imagem</label>
+              <div className="flex gap-2 mt-1">
+                <Input
+                  value={data.url || ''}
+                  onChange={(e) => onChange({ ...data, url: e.target.value })}
+                />
+                <AiBtn
+                  type="image"
+                  context="cars"
+                  onApply={(v) =>
+                    onChange({
+                      ...data,
+                      url: `https://img.usecurling.com/p/600/400?q=${encodeURIComponent(v)}`,
+                    })
+                  }
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
         {type === 'text' && (
           <>
             <DropdownMenuItem

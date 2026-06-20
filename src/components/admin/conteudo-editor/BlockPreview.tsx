@@ -76,6 +76,25 @@ export function BlockPreview({ block, designVars }: { block: ContentBlock; desig
     )
   }
 
+  if (type === 'image') {
+    return (
+      <div className="w-full flex justify-center">
+        {data.url ? (
+          <img
+            src={data.url}
+            alt="Block Image"
+            className="max-w-full h-auto shadow-sm"
+            style={{ borderRadius: 'var(--radius)' }}
+          />
+        ) : (
+          <div className="w-full h-48 bg-slate-100 flex items-center justify-center text-slate-400 border border-dashed rounded-lg">
+            Imagem
+          </div>
+        )}
+      </div>
+    )
+  }
+
   if (type === 'gallery') {
     const imgs = data.images || []
     return (

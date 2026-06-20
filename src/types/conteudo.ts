@@ -18,6 +18,15 @@ export interface ContentBlock {
   children?: ContentBlock[]
 }
 
+export interface BlockTemplate {
+  id: string
+  nome: string
+  categoria: string
+  conteudo: any
+  preview_url?: string
+  criado_em: string
+}
+
 export interface PageData {
   id?: string
   titulo: string
