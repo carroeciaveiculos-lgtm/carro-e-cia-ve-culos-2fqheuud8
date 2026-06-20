@@ -1,49 +1,73 @@
-import { CheckCircle2 } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { supabase } from '@/lib/supabase/client'
+import { Car, Clock, ShieldCheck, Star } from 'lucide-react'
 
 export function HomeInfo() {
+  const [vehicleCount, setVehicleCount] = useState<number | null>(null)
+
+  useEffect(() => {
+    let isMounted = true
+
+    const fetchCount = async () => {
+      try {
+        // Ensuring head: true to only get count without body data
+        const { count, error } = await supabase
+          .from('veiculos')
+          .select('id', { count: 'exact', head: true })
+          .eq('status', 'disponivel')
+
+        if (error) throw error
+
+        if (isMounted) setVehicleCount(count ?? 0)
+      } catch (err) {
+        console.error('Erro na contagem de veículos:', err)
+        // Fallback state for graceful recovery
+        if (isMounted) setVehicleCount(0)
+      }
+    }
+    fetchCount()
+
+    return () => {
+      isMounted = false
+    }
+  }, [])
+
   return (
-    <section className="py-20 bg-background">
-      <div className="container max-w-6xl mx-auto px-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
-          <div className="animate-fade-in-up">
-            <h2 className="text-3xl md:text-4xl font-display font-bold mb-6">
-              Por que escolher a <span className="text-primary">Carro e Cia?</span>
-            </h2>
-            <p className="text-lg text-muted-foreground mb-8">
-              Com mais de 20 anos de tradição em Uberaba, somos especialistas em tornar a venda do
-              seu veículo uma experiência segura, rápida e rentável.
-            </p>
-            <ul className="space-y-4">
-              {[
-                'Mais de 2 décadas de credibilidade e confiança',
-                'Contrato de consignação com validade jurídica',
-                'Avaliação justa baseada no valor real de mercado',
-                'Ampla divulgação em múltiplos canais de venda',
-                'Você não se preocupa com burocracia ou curiosos',
-              ].map((item, index) => (
-                <li key={index} className="flex items-center gap-3 text-foreground">
-                  <CheckCircle2 className="w-6 h-6 text-primary shrink-0" />
-                  <span>{item}</span>
-                </li>
-              ))}
-            </ul>
+    <section className="py-16 bg-muted/30 border-y">
+      <div className="container">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+          <div className="flex flex-col items-center text-center p-6 bg-card rounded-xl shadow-sm border transition-shadow hover:shadow-md">
+            <div className="h-14 w-14 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+              <Car className="h-7 w-7 text-primary" />
+            </div>
+            <h3 className="text-3xl font-bold mb-2 text-foreground">
+              {vehicleCount !== null ? vehicleCount : '...'}
+            </h3>
+            <p className="text-muted-foreground font-medium">Veículos em Estoque</p>
           </div>
-          <div className="relative animate-fade-in-up" style={{ animationDelay: '200ms' }}>
-            <div className="aspect-[4/3] rounded-2xl overflow-hidden shadow-2xl">
-              <img
-                src="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/fotos/fachada-da-loja.webp"
-                alt="Nossa Loja Carro e Cia"
-                className="w-full h-full object-cover"
-              />
+
+          <div className="flex flex-col items-center text-center p-6 bg-card rounded-xl shadow-sm border transition-shadow hover:shadow-md">
+            <div className="h-14 w-14 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+              <Clock className="h-7 w-7 text-primary" />
             </div>
-            <div className="absolute -bottom-6 -left-6 bg-card p-6 rounded-xl shadow-xl border border-border/50">
-              <p className="text-4xl font-black text-primary mb-1">20+</p>
-              <p className="text-sm text-muted-foreground font-medium">
-                Anos de
-                <br />
-                Experiência
-              </p>
+            <h3 className="text-3xl font-bold mb-2 text-foreground">+20 Anos</h3>
+            <p className="text-muted-foreground font-medium">De Mercado em Uberaba</p>
+          </div>
+
+          <div className="flex flex-col items-center text-center p-6 bg-card rounded-xl shadow-sm border transition-shadow hover:shadow-md">
+            <div className="h-14 w-14 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+              <ShieldCheck className="h-7 w-7 text-primary" />
             </div>
+            <h3 className="text-3xl font-bold mb-2 text-foreground">100%</h3>
+            <p className="text-muted-foreground font-medium">Venda Segura</p>
+          </div>
+
+          <div className="flex flex-col items-center text-center p-6 bg-card rounded-xl shadow-sm border transition-shadow hover:shadow-md">
+            <div className="h-14 w-14 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+              <Star className="h-7 w-7 text-primary" />
+            </div>
+            <h3 className="text-3xl font-bold mb-2 text-foreground">48h</h3>
+            <p className="text-muted-foreground font-medium">Venda Rápida</p>
           </div>
         </div>
       </div>

@@ -28,7 +28,9 @@ if (typeof window !== 'undefined') {
           value: async () => {
             try {
               const text = await response.text()
-              return text ? JSON.parse(text) : {}
+              // Empty body validation: trim before parsing to prevent "Unexpected end of JSON input"
+              const trimmed = text ? text.trim() : ''
+              return trimmed ? JSON.parse(trimmed) : {}
             } catch (e) {
               return {}
             }

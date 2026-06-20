@@ -1,92 +1,93 @@
+import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
-import { getWhatsAppLink } from '@/lib/whatsapp'
-import { MessageCircle, CarFront } from 'lucide-react'
-import { trackCTAClick } from '@/lib/tracking'
-import { LeadForm } from '@/components/LeadForm'
+import { supabase } from '@/lib/supabase/client'
+import { Search, CarFront, ShieldCheck } from 'lucide-react'
 
 export function HomeHero() {
+  const [vehicleCount, setVehicleCount] = useState<number | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+
+  useEffect(() => {
+    let isMounted = true
+
+    const fetchCount = async () => {
+      try {
+        setIsLoading(true)
+        // HEAD request to get exact count without fetching rows
+        const { count, error } = await supabase
+          .from('veiculos')
+          .select('id', { count: 'exact', head: true })
+          .eq('status', 'disponivel')
+
+        if (error) throw error
+
+        if (isMounted) {
+          // Correctly handle the count property instead of looking for body in data
+          setVehicleCount(count ?? 0)
+        }
+      } catch (err) {
+        console.error('Erro ao buscar contagem de veículos:', err)
+        // Fallback state for graceful error recovery to prevent UI crashes
+        if (isMounted) setVehicleCount(0)
+      } finally {
+        if (isMounted) setIsLoading(false)
+      }
+    }
+
+    fetchCount()
+
+    return () => {
+      isMounted = false
+    }
+  }, [])
+
   return (
-    <section className="relative min-h-[90vh] flex items-center pt-24 pb-16">
-      <div className="absolute inset-0 z-0">
-        <picture>
-          <source
-            media="(max-width: 768px)"
-            srcSet="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/fotos/fachada-mobile.webp"
-            type="image/webp"
-          />
-          <img
-            src="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/fotos/fachada-da-loja.webp"
-            alt="Carro e Cia Veículos - 20+ anos de referência em Uberaba"
-            width="1920"
-            height="1080"
-            className="w-full h-[400px] md:h-full object-cover object-center"
-            style={{ filter: 'brightness(0.8)' }}
-          />
-        </picture>
-        <div className="absolute inset-0 bg-black/60" />
-      </div>
-      <div className="container relative z-10 mx-auto px-4 grid lg:grid-cols-2 gap-12 items-center">
-        <div className="text-center lg:text-left flex flex-col items-center lg:items-start">
-          <img
-            src="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/fotos/Luiz-Fernando-foto-profissional.webp"
-            alt="Luiz Fernando"
-            className="w-[140px] h-[140px] rounded-full object-cover object-top border-2 border-[#e0e0e0] shadow-[0_2px_8px_rgba(0,0,0,0.1)] mx-auto lg:mx-0 mb-6 relative z-20 aspect-square flex-shrink-0"
-          />{' '}
-          <h1 className="text-4xl md:text-5xl lg:text-6xl font-display font-extrabold text-white mb-6 leading-tight animate-fade-in-up drop-shadow-md">
-            Venda Seu Veículo em Até 48 Horas
+    <section className="relative overflow-hidden bg-background pt-24 pb-16 md:pt-32 md:pb-24 border-b">
+      <div className="absolute inset-0 bg-grid-slate-100/[0.04] bg-[bottom_1px_center] dark:bg-grid-slate-900/[0.04] dark:bg-bottom" />
+      <div className="container relative z-10">
+        <div className="mx-auto max-w-4xl text-center">
+          <div className="inline-flex items-center rounded-full border px-3 py-1 text-sm font-medium transition-colors border-primary/20 bg-primary/10 text-primary mb-6">
+            <ShieldCheck className="mr-2 h-4 w-4" />
+            Consignação Segura em Uberaba
+          </div>
+
+          <h1 className="text-4xl font-bold tracking-tight sm:text-5xl md:text-6xl text-foreground mb-6">
+            Venda seu carro rápido e seguro
           </h1>
-          <p
-            className="text-lg md:text-xl text-gray-100 mb-8 max-w-3xl mx-auto lg:mx-0 animate-fade-in-up drop-shadow-sm"
-            style={{ animationDelay: '100ms' }}
-          >
-            Consignação profissional, contrato protegido. Há 20 anos, Luiz Fernando oferece
-            transparência e confiança.
+
+          <p className="text-lg text-muted-foreground mb-8 max-w-2xl mx-auto">
+            Avaliação grátis, contrato protegido e transparência total.
+            {isLoading ? (
+              <span className="animate-pulse"> Verificando estoque...</span>
+            ) : vehicleCount !== null && vehicleCount > 0 ? (
+              <span>
+                {' '}
+                Mais de <strong>{vehicleCount} veículos</strong> disponíveis!
+              </span>
+            ) : (
+              <span> Confira nossas opções de compra e venda.</span>
+            )}
           </p>
-          <div
-            className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start w-full sm:w-auto animate-fade-in-up"
-            style={{ animationDelay: '200ms' }}
-          >
-            <Button
-              asChild
-              size="lg"
-              className="h-14 text-sm md:text-base px-6 bg-[#25D366] hover:bg-[#20bd5a] text-white w-full sm:w-auto whitespace-nowrap"
-            >
-              <a href="/consignacao" onClick={() => trackCTAClick('CONSIGNAR AGORA', '/')}>
-                CONSIGNAR AGORA
-              </a>
+
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+            <Button size="lg" asChild className="w-full sm:w-auto h-12 px-8">
+              <Link to="/estoque">
+                <Search className="mr-2 h-5 w-5" />
+                Ver Estoque ({isLoading ? '...' : vehicleCount})
+              </Link>
             </Button>
             <Button
-              asChild
               size="lg"
               variant="outline"
-              className="h-14 text-sm md:text-base px-6 bg-white/10 hover:bg-white/20 text-white border-white/30 backdrop-blur-sm w-full sm:w-auto whitespace-nowrap"
+              asChild
+              className="w-full sm:w-auto h-12 px-8 border-primary text-primary hover:bg-primary/5"
             >
-              <a
-                href={getWhatsAppLink(
-                  'Olá Luiz, quero saber mais sobre a consignação segura da Carro e Cia.',
-                )}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={() => trackCTAClick('FALAR COM LUIZ (WHATSAPP)', '/')}
-              >
-                <MessageCircle className="mr-2 h-5 w-5" /> FALAR COM LUIZ
-              </a>
+              <Link to="/consignacao">
+                <CarFront className="mr-2 h-5 w-5" />
+                Vender Meu Veículo
+              </Link>
             </Button>
-          </div>
-        </div>
-        <div
-          className="w-full max-w-md mx-auto animate-fade-in-up relative z-20"
-          style={{ animationDelay: '400ms' }}
-        >
-          <div className="bg-white/85 dark:bg-card/85 backdrop-blur-md rounded-xl shadow-2xl overflow-hidden p-5 md:p-6 border-t-4 border-[#25D366]">
-            <div className="mb-5 text-center">
-              {' '}
-              <h3 className="text-2xl font-bold text-slate-800">Avaliação Gratuita</h3>
-              <p className="text-sm text-slate-500">
-                Deixe seus dados e entramos em contato rápido.
-              </p>
-            </div>
-            <LeadForm campanha="home" origem="Hero Site" buttonText="Falar com Consultor" />
           </div>
         </div>
       </div>
