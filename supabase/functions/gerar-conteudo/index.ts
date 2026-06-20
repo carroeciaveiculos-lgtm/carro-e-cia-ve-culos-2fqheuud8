@@ -40,7 +40,7 @@ Deno.serve(async (req) => {
 
     // Grounding: Fetch company info to avoid hallucinations
     const { data: configData } = await supabaseService.from('site_configuracoes').select('*')
-
+    
     // Buscar Brain IA settings
     const brainSetting = configData?.find((c: any) => c.chave === 'brain_ia_settings')?.valor || {}
     const baseDeConhecimento = brainSetting.base_conhecimento || ''
@@ -81,8 +81,7 @@ REGRAS ANTI-ALUCINAÇÃO:
 - Baseie-se nas informações reais da empresa e nas diretrizes da marca (Brain IA).
 `
 
-    const prompt = is_seo_copilot
-      ? `${basePrompt}
+    const prompt = is_seo_copilot ? `${basePrompt}
 Você é um especialista em SEO e Copywriting focado no mercado automotivo.
 Sua tarefa é gerar um artigo de blog épico e altamente otimizado para SEO baseado no título fornecido: "${title}".
 
@@ -104,8 +103,7 @@ Responda APENAS com um objeto JSON válido, sem formatação markdown:
   "palavras_chave_principais": ["keyword 1", "keyword 2"],
   "palavras_chave_secundarias": ["keyword 3", "keyword 4"],
   "conteudo_html": "<h2>...</h2><p>...</p><h3>...</h3><p>...</p>"
-}`
-      : `${basePrompt}
+}` : `${basePrompt}
 Sua tarefa é gerar conteúdo para o tema "${tema}" com foco na palavra-chave "${palavraChave}".
 Tom: ${tom || 'Conversacional'}.
 
