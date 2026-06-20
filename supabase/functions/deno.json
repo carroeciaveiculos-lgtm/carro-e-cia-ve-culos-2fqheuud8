@@ -16,6 +16,7 @@
     "public-inventory-feed": 50,
     "ai-sdr": 32,
     "crm-inventory-feed": 14,
-    "ai-assistant": 1
+    "ai-assistant": 1,
+    "content-workflow-notification": 1
   }
 }
