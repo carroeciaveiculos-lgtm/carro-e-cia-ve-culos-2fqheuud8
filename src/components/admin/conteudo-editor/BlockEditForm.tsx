@@ -79,8 +79,15 @@ function AiBtn({
   )
 }
 
-export function BlockEditForm({ block, onChange, onDelete, onMoveUp, onMoveDown }: any) {
-  const { data, type } = block
+export function BlockEditForm({
+  block,
+  onChange,
+  onStyleChange,
+  onDelete,
+  onMoveUp,
+  onMoveDown,
+}: any) {
+  const { data, type, style } = block
 
   return (
     <div className="space-y-6">
@@ -98,6 +105,64 @@ export function BlockEditForm({ block, onChange, onDelete, onMoveUp, onMoveDown 
           </Button>
         </div>
       </div>
+
+      {(type === 'flex' || type === 'grid') && (
+        <div className="space-y-4">
+          <div>
+            <label className="text-xs font-bold text-slate-500">Gap (Espaçamento)</label>
+            <Input
+              value={style?.gap || ''}
+              onChange={(e) => onStyleChange({ ...style, gap: e.target.value })}
+              placeholder="ex: 1rem, 20px"
+              className="mt-1"
+            />
+          </div>
+          <div>
+            <label className="text-xs font-bold text-slate-500">Padding Interno</label>
+            <Input
+              value={style?.padding || ''}
+              onChange={(e) => onStyleChange({ ...style, padding: e.target.value })}
+              placeholder="ex: 2rem"
+              className="mt-1"
+            />
+          </div>
+          <div>
+            <label className="text-xs font-bold text-slate-500">Cor de Fundo (opcional)</label>
+            <Input
+              value={style?.backgroundColor || ''}
+              onChange={(e) => onStyleChange({ ...style, backgroundColor: e.target.value })}
+              placeholder="ex: #f8fafc"
+              className="mt-1"
+            />
+          </div>
+          {type === 'flex' && (
+            <div>
+              <label className="text-xs font-bold text-slate-500">Direção (flex-direction)</label>
+              <select
+                className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background mt-1"
+                value={style?.flexDirection || 'row'}
+                onChange={(e) => onStyleChange({ ...style, flexDirection: e.target.value })}
+              >
+                <option value="row">Linha (Row)</option>
+                <option value="column">Coluna (Column)</option>
+              </select>
+            </div>
+          )}
+          {type === 'grid' && (
+            <div>
+              <label className="text-xs font-bold text-slate-500">
+                Colunas (grid-template-columns)
+              </label>
+              <Input
+                value={style?.gridTemplateColumns || ''}
+                onChange={(e) => onStyleChange({ ...style, gridTemplateColumns: e.target.value })}
+                placeholder="ex: repeat(2, 1fr)"
+                className="mt-1"
+              />
+            </div>
+          )}
+        </div>
+      )}
 
       {type === 'hero' && (
         <div className="space-y-4">

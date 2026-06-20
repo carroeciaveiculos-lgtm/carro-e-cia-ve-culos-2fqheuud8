@@ -28,6 +28,8 @@ export default function Conteudo() {
     setItems(data || [])
   }
 
+  const [showTypeSelect, setShowTypeSelect] = useState(false)
+
   const handleDelete = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation()
     if (!confirm('Deseja realmente excluir este item?')) return
@@ -65,12 +67,38 @@ export default function Conteudo() {
               Crie e edite as páginas e artigos do seu site usando nosso construtor visual.
             </p>
           </div>
-          <Button
-            className="bg-blue-600 hover:bg-blue-700 w-full md:w-auto"
-            onClick={() => setEditingId('new')}
-          >
-            <Plus className="w-4 h-4 mr-2" /> Nova {activeTab === 'paginas' ? 'Página' : 'Artigo'}
-          </Button>
+          <div className="relative">
+            <Button
+              className="bg-blue-600 hover:bg-blue-700 w-full md:w-auto"
+              onClick={() => setShowTypeSelect(!showTypeSelect)}
+            >
+              <Plus className="w-4 h-4 mr-2" /> Novo Conteúdo
+            </Button>
+            {showTypeSelect && (
+              <div className="absolute top-12 right-0 bg-white border shadow-xl rounded-xl p-2 w-48 z-50 animate-in fade-in zoom-in-95">
+                <button
+                  onClick={() => {
+                    setActiveTab('paginas')
+                    setEditingId('new')
+                    setShowTypeSelect(false)
+                  }}
+                  className="w-full text-left px-4 py-2 hover:bg-slate-50 rounded-lg text-sm font-medium transition-colors text-slate-700"
+                >
+                  Nova Página
+                </button>
+                <button
+                  onClick={() => {
+                    setActiveTab('artigos')
+                    setEditingId('new')
+                    setShowTypeSelect(false)
+                  }}
+                  className="w-full text-left px-4 py-2 hover:bg-slate-50 rounded-lg text-sm font-medium transition-colors text-slate-700"
+                >
+                  Novo Artigo (Blog)
+                </button>
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="bg-white rounded-xl shadow-sm border overflow-hidden flex flex-col flex-1">

@@ -1,25 +1,31 @@
 import { ContentBlock } from '@/types/conteudo'
 
-export function BlockPreview({ block }: { block: ContentBlock }) {
-  const { type, data } = block
+export function BlockPreview({ block, designVars }: { block: ContentBlock; designVars?: any }) {
+  const { type, data, style, children } = block
 
   if (type === 'hero') {
     return (
       <div
-        className="bg-slate-900 text-white p-12 text-center min-h-[300px] flex flex-col justify-center items-center"
+        className="text-white p-12 text-center min-h-[300px] flex flex-col justify-center items-center relative"
         style={{
+          backgroundColor: data.image_url ? 'transparent' : 'var(--primary)',
           backgroundImage: data.image_url ? `url(${data.image_url})` : 'none',
           backgroundSize: 'cover',
           backgroundPosition: 'center',
+          fontFamily: 'var(--font-base)',
         }}
       >
-        <div className="bg-black/50 p-6 rounded-xl w-full max-w-4xl mx-auto">
+        {data.image_url && <div className="absolute inset-0 bg-black/50 z-0"></div>}
+        <div className="relative z-10 w-full max-w-4xl mx-auto">
           <h1 className="text-4xl md:text-5xl font-bold mb-4">{data.title || 'Seu Título Aqui'}</h1>
           <p className="text-lg md:text-xl mb-6 text-slate-200">
             {data.subtitle || 'Subtítulo persuasivo para capturar a atenção do usuário.'}
           </p>
           {data.cta_text && (
-            <button className="bg-blue-600 hover:bg-blue-700 px-8 py-3 rounded-full font-bold transition-colors">
+            <button
+              style={{ backgroundColor: 'var(--primary)', borderRadius: 'var(--radius)' }}
+              className="px-8 py-3 font-bold transition-colors shadow-lg hover:brightness-110"
+            >
               {data.cta_text}
             </button>
           )}
@@ -32,10 +38,41 @@ export function BlockPreview({ block }: { block: ContentBlock }) {
     return (
       <div
         className="p-8 max-w-4xl mx-auto prose prose-slate"
+        style={{ fontFamily: 'var(--font-base)' }}
         dangerouslySetInnerHTML={{
           __html: data.html || '<p>Adicione seu texto formatado aqui...</p>',
         }}
       />
+    )
+  }
+
+  if (type === 'flex' || type === 'grid') {
+    const isFlex = type === 'flex'
+    return (
+      <div
+        style={{
+          display: isFlex ? 'flex' : 'grid',
+          flexDirection: isFlex ? (style?.flexDirection as any) || 'row' : undefined,
+          gridTemplateColumns: !isFlex
+            ? (style?.gridTemplateColumns as any) || 'repeat(2, 1fr)'
+            : undefined,
+          gap: style?.gap || '1rem',
+          padding: style?.padding || '2rem',
+          alignItems: style?.alignItems || 'center',
+          justifyContent: style?.justifyContent || 'flex-start',
+          backgroundColor: style?.backgroundColor || 'transparent',
+        }}
+      >
+        {children?.length ? (
+          children.map((child) => (
+            <BlockPreview key={child.id} block={child} designVars={designVars} />
+          ))
+        ) : (
+          <div className="w-full p-8 border-2 border-dashed border-slate-300 text-slate-400 text-center rounded-lg flex items-center justify-center">
+            {type === 'flex' ? 'Container Flexbox Vazio' : 'Container Grid Vazio'}
+          </div>
+        )}
+      </div>
     )
   }
 
@@ -49,12 +86,13 @@ export function BlockPreview({ block }: { block: ContentBlock }) {
               <img
                 key={i}
                 src={img}
-                className="w-full h-48 object-cover rounded-lg shadow-sm"
+                style={{ borderRadius: 'var(--radius)' }}
+                className="w-full h-48 object-cover shadow-sm"
                 alt=""
               />
             ))
           ) : (
-            <div className="col-span-1 sm:col-span-2 md:col-span-3 bg-slate-50 h-48 flex items-center justify-center text-slate-400 rounded-lg border-2 border-dashed border-slate-200">
+            <div className="col-span-full bg-slate-50 h-48 flex items-center justify-center text-slate-400 border-2 border-dashed border-slate-200">
               Nenhuma imagem na galeria
             </div>
           )}
@@ -88,5 +126,9 @@ export function BlockPreview({ block }: { block: ContentBlock }) {
     )
   }
 
-  return <div className="p-4 bg-red-50 text-red-500 border border-red-200">Bloco Desconhecido</div>
+  return (
+    <div className="p-4 bg-slate-100 text-slate-500 border border-slate-200 text-center rounded-lg m-4">
+      Bloco do tipo <strong>{type}</strong>
+    </div>
+  )
 }

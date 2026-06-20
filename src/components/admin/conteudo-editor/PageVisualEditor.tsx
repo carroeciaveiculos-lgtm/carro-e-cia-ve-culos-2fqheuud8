@@ -10,9 +10,12 @@ import {
   Send,
   Layout,
   Settings,
-  FileText,
-  CheckCircle2,
-  AlertCircle,
+  Palette,
+  Sparkles,
+  Columns,
+  Grid3X3,
+  Image as ImageIcon,
+  Type,
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { ContentBlock, PageData } from '@/types/conteudo'
@@ -22,6 +25,7 @@ import { cn } from '@/lib/utils'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
+import { useAiAssistant } from '@/hooks/use-ai-assistant'
 
 export function PageVisualEditor({
   id,
@@ -40,9 +44,15 @@ export function PageVisualEditor({
     meta_title: '',
     meta_description: '',
   })
+  const [designVars, setDesignVars] = useState({
+    primaryColor: '#2563eb',
+    fontFamily: 'Inter, sans-serif',
+    borderRadius: '0.5rem',
+  })
   const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null)
   const [previewMode, setPreviewMode] = useState<'mobile' | 'tablet' | 'desktop'>('desktop')
   const { toast } = useToast()
+  const { generate, isLoading: aiLoading } = useAiAssistant()
 
   useEffect(() => {
     if (id && id !== 'new') {
@@ -63,11 +73,8 @@ export function PageVisualEditor({
             })
             try {
               const b = JSON.parse(data.conteudo || '[]')
-              setBlocks(
-                Array.isArray(b)
-                  ? b
-                  : [{ id: crypto.randomUUID(), type: 'text', data: { html: data.conteudo } }],
-              )
+              if (b.designVars) setDesignVars(b.designVars)
+              setBlocks(Array.isArray(b.blocks) ? b.blocks : Array.isArray(b) ? b : [])
             } catch {
               setBlocks([{ id: crypto.randomUUID(), type: 'text', data: { html: data.conteudo } }])
             }
@@ -92,7 +99,7 @@ export function PageVisualEditor({
       meta_title: pageData.meta_title,
       meta_description: pageData.meta_description,
       status_publicacao: status,
-      conteudo: JSON.stringify(blocks),
+      conteudo: JSON.stringify({ blocks, designVars }),
     }
 
     const table = isArticle ? 'articles' : 'pages'
@@ -125,41 +132,45 @@ export function PageVisualEditor({
   }
 
   const addBlock = (type: any) => {
-    const newBlock: ContentBlock = { id: crypto.randomUUID(), type, data: {} }
+    const newBlock: ContentBlock = { id: crypto.randomUUID(), type, data: {}, style: {} }
     if (type === 'hero') newBlock.data = { title: 'Novo Hero', cta_text: 'Saiba Mais' }
     if (type === 'text') newBlock.data = { html: '<p>Novo texto...</p>' }
-    if (type === 'faq') newBlock.data = { items: [{ q: 'Pergunta?', a: 'Resposta' }] }
+    if (type === 'flex') {
+      newBlock.data = {}
+      newBlock.style = { gap: '1rem', padding: '2rem', alignItems: 'center' }
+      newBlock.children = []
+    }
+    if (type === 'grid') {
+      newBlock.data = {}
+      newBlock.style = { gridTemplateColumns: 'repeat(2, 1fr)', gap: '1rem', padding: '2rem' }
+      newBlock.children = []
+    }
 
     setBlocks([...blocks, newBlock])
     setSelectedBlockId(newBlock.id)
   }
 
-  const moveBlock = (index: number, dir: number) => {
-    if (index + dir < 0 || index + dir >= blocks.length) return
-    const newBlocks = [...blocks]
-    const temp = newBlocks[index]
-    newBlocks[index] = newBlocks[index + dir]
-    newBlocks[index + dir] = temp
-    setBlocks(newBlocks)
+  const handleAiGenerate = async () => {
+    const prompt = window.prompt(
+      "Descreva o que o Assistente Luiz deve gerar (ex: 'Página de vendas para SUVs'):",
+    )
+    if (!prompt) return
+    const res = await generate(
+      `Gere um array JSON de blocos para um editor visual baseado no seguinte pedido: ${prompt}. Formato: [{type: 'hero', data: {title: '...'}}, {type: 'text', data: {html: '...'}}]. Apenas JSON.`,
+      'JSON_ONLY',
+    )
+    try {
+      const parsed = JSON.parse(res || '[]')
+      const newBlocks = parsed.map((b: any) => ({ ...b, id: crypto.randomUUID() }))
+      setBlocks([...blocks, ...newBlocks])
+      toast({ title: 'Conteúdo Gerado!' })
+    } catch {
+      toast({ title: 'Erro ao analisar JSON da IA', variant: 'destructive' })
+    }
   }
-
-  // SEO Score calculation
-  const calculateSeoScore = () => {
-    let score = 0
-    if ((pageData.meta_title?.length || 0) > 30) score += 20
-    if ((pageData.meta_description?.length || 0) > 100) score += 20
-    if ((pageData.slug?.length || 0) > 3) score += 10
-    const hasH1 =
-      blocks.some((b) => b.type === 'hero' && b.data.title) ||
-      blocks.some((b) => b.type === 'text' && b.data.html?.includes('<h1'))
-    if (hasH1) score += 25
-    if (blocks.length > 1) score += 25
-    return Math.min(100, score)
-  }
-  const seoScore = calculateSeoScore()
 
   return (
-    <div className="flex flex-col h-[calc(100vh-64px)] bg-slate-50 overflow-hidden">
+    <div className="flex flex-col h-[calc(100vh-64px)] bg-slate-50 overflow-hidden text-sm">
       <header className="h-14 border-b bg-white flex items-center justify-between px-4 shrink-0 shadow-sm z-10">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" onClick={onBack}>
@@ -214,7 +225,7 @@ export function PageVisualEditor({
             <Save className="w-4 h-4 mr-2 hidden sm:block" /> Salvar Rascunho
           </Button>
           <Button
-            className="bg-green-600 hover:bg-green-700 h-9"
+            className="bg-blue-600 hover:bg-blue-700 h-9"
             onClick={() => handleSave('Publicado')}
           >
             <Send className="w-4 h-4 mr-2 hidden sm:block" /> Publicar
@@ -225,7 +236,7 @@ export function PageVisualEditor({
       <div className="flex flex-1 overflow-hidden relative">
         <aside className="w-80 bg-white border-r flex flex-col shrink-0 z-10">
           {selectedBlockId ? (
-            <div className="p-4 flex-1 overflow-y-auto">
+            <div className="p-4 flex-1 overflow-y-auto no-scrollbar">
               <Button
                 variant="ghost"
                 size="sm"
@@ -242,87 +253,139 @@ export function PageVisualEditor({
                       blocks.map((b) => (b.id === selectedBlockId ? { ...b, data: newData } : b)),
                     )
                   }
+                  onStyleChange={(newStyle: any) =>
+                    setBlocks(
+                      blocks.map((b) => (b.id === selectedBlockId ? { ...b, style: newStyle } : b)),
+                    )
+                  }
                   onDelete={() => {
                     setBlocks(blocks.filter((b) => b.id !== selectedBlockId))
                     setSelectedBlockId(null)
                   }}
-                  onMoveUp={() =>
-                    moveBlock(
-                      blocks.findIndex((b) => b.id === selectedBlockId),
-                      -1,
-                    )
-                  }
-                  onMoveDown={() =>
-                    moveBlock(
-                      blocks.findIndex((b) => b.id === selectedBlockId),
-                      1,
-                    )
-                  }
                 />
               )}
             </div>
           ) : (
             <Tabs defaultValue="blocks" className="flex-1 flex flex-col">
-              <TabsList className="grid grid-cols-2 mx-4 mt-4">
-                <TabsTrigger value="blocks">
-                  <Layout className="w-4 h-4 mr-2" /> Blocos
+              <TabsList className="grid grid-cols-3 mx-4 mt-4 h-10">
+                <TabsTrigger value="blocks" className="text-xs">
+                  <Layout className="w-3.5 h-3.5 mr-1" /> Blocos
                 </TabsTrigger>
-                <TabsTrigger value="seo">
-                  <Settings className="w-4 h-4 mr-2" /> Props & SEO
+                <TabsTrigger value="design" className="text-xs">
+                  <Palette className="w-3.5 h-3.5 mr-1" /> Design
+                </TabsTrigger>
+                <TabsTrigger value="seo" className="text-xs">
+                  <Settings className="w-3.5 h-3.5 mr-1" /> SEO
                 </TabsTrigger>
               </TabsList>
+
               <TabsContent value="blocks" className="flex-1 p-4 overflow-y-auto m-0 space-y-2">
-                <p className="text-xs text-slate-500 mb-4 uppercase font-bold tracking-wider">
-                  Adicionar Bloco
+                <Button
+                  className="w-full mb-4 bg-purple-600 hover:bg-purple-700 h-10"
+                  onClick={handleAiGenerate}
+                  disabled={aiLoading}
+                >
+                  <Sparkles className="w-4 h-4 mr-2" />{' '}
+                  {aiLoading ? 'Gerando...' : 'Assistente Luiz (IA)'}
+                </Button>
+                <p className="text-[10px] text-slate-500 mb-2 uppercase font-bold tracking-wider">
+                  Containers Estruturais
                 </p>
-                <Button
-                  variant="outline"
-                  className="w-full justify-start h-12"
-                  onClick={() => addBlock('hero')}
-                >
-                  <Layout className="w-5 h-5 mr-3 text-blue-500" /> Hero Section
-                </Button>
-                <Button
-                  variant="outline"
-                  className="w-full justify-start h-12"
-                  onClick={() => addBlock('text')}
-                >
-                  <FileText className="w-5 h-5 mr-3 text-emerald-500" /> Bloco de Texto (Rich
-                  Content)
-                </Button>
-                <Button
-                  variant="outline"
-                  className="w-full justify-start h-12"
-                  onClick={() => addBlock('gallery')}
-                >
-                  <Layout className="w-5 h-5 mr-3 text-purple-500" /> Galeria de Imagens
-                </Button>
-                <Button
-                  variant="outline"
-                  className="w-full justify-start h-12"
-                  onClick={() => addBlock('faq')}
-                >
-                  <FileText className="w-5 h-5 mr-3 text-amber-500" /> FAQ (Acordeão)
-                </Button>
-              </TabsContent>
-              <TabsContent value="seo" className="flex-1 p-4 overflow-y-auto m-0 space-y-4">
-                <div className="bg-slate-50 p-3 rounded-lg border flex items-center justify-between mb-2">
-                  <span className="text-sm font-bold text-slate-700">SEO Score</span>
-                  <span
-                    className={cn(
-                      'font-bold',
-                      seoScore > 70
-                        ? 'text-green-600'
-                        : seoScore > 40
-                          ? 'text-amber-600'
-                          : 'text-red-600',
-                    )}
+                <div className="grid grid-cols-2 gap-2 mb-4">
+                  <Button
+                    variant="outline"
+                    className="h-12 flex-col gap-1"
+                    onClick={() => addBlock('flex')}
                   >
-                    {seoScore}/100
-                  </span>
+                    <Columns className="w-4 h-4 text-blue-500" />{' '}
+                    <span className="text-[10px]">Flexbox</span>
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="h-12 flex-col gap-1"
+                    onClick={() => addBlock('grid')}
+                  >
+                    <Grid3X3 className="w-4 h-4 text-purple-500" />{' '}
+                    <span className="text-[10px]">Grid</span>
+                  </Button>
+                </div>
+                <p className="text-[10px] text-slate-500 mb-2 uppercase font-bold tracking-wider">
+                  Elementos Básicos
+                </p>
+                <div className="grid grid-cols-2 gap-2">
+                  <Button
+                    variant="outline"
+                    className="h-12 flex-col gap-1"
+                    onClick={() => addBlock('hero')}
+                  >
+                    <Layout className="w-4 h-4 text-slate-700" />{' '}
+                    <span className="text-[10px]">Hero</span>
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="h-12 flex-col gap-1"
+                    onClick={() => addBlock('text')}
+                  >
+                    <Type className="w-4 h-4 text-slate-700" />{' '}
+                    <span className="text-[10px]">Texto</span>
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="h-12 flex-col gap-1"
+                    onClick={() => addBlock('gallery')}
+                  >
+                    <ImageIcon className="w-4 h-4 text-slate-700" />{' '}
+                    <span className="text-[10px]">Galeria</span>
+                  </Button>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="design" className="flex-1 p-4 overflow-y-auto m-0 space-y-4">
+                <p className="text-xs text-slate-500 mb-4 uppercase font-bold tracking-wider">
+                  Design System Manager
+                </p>
+                <div>
+                  <label className="text-xs font-bold text-slate-700">Cor Primária</label>
+                  <div className="flex gap-2 mt-1">
+                    <Input
+                      type="color"
+                      value={designVars.primaryColor}
+                      onChange={(e) =>
+                        setDesignVars({ ...designVars, primaryColor: e.target.value })
+                      }
+                      className="w-12 h-10 p-1"
+                    />
+                    <Input
+                      value={designVars.primaryColor}
+                      onChange={(e) =>
+                        setDesignVars({ ...designVars, primaryColor: e.target.value })
+                      }
+                      className="font-mono text-xs uppercase"
+                    />
+                  </div>
                 </div>
                 <div>
-                  <label className="text-xs font-bold text-slate-500">Título da Página *</label>
+                  <label className="text-xs font-bold text-slate-700">Família da Fonte</label>
+                  <Input
+                    value={designVars.fontFamily}
+                    onChange={(e) => setDesignVars({ ...designVars, fontFamily: e.target.value })}
+                    className="mt-1"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-slate-700">Arredondamento Padrão</label>
+                  <Input
+                    value={designVars.borderRadius}
+                    onChange={(e) => setDesignVars({ ...designVars, borderRadius: e.target.value })}
+                    className="mt-1"
+                    placeholder="ex: 0.5rem"
+                  />
+                </div>
+              </TabsContent>
+
+              <TabsContent value="seo" className="flex-1 p-4 overflow-y-auto m-0 space-y-4">
+                <div>
+                  <label className="text-xs font-bold text-slate-700">Título da Página *</label>
                   <Input
                     value={pageData.titulo || ''}
                     onChange={(e) => setPageData({ ...pageData, titulo: e.target.value })}
@@ -330,7 +393,7 @@ export function PageVisualEditor({
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-bold text-slate-500">URL Slug *</label>
+                  <label className="text-xs font-bold text-slate-700">URL Slug *</label>
                   <Input
                     value={pageData.slug || ''}
                     onChange={(e) => setPageData({ ...pageData, slug: e.target.value })}
@@ -338,7 +401,7 @@ export function PageVisualEditor({
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-bold text-slate-500">Meta Title</label>
+                  <label className="text-xs font-bold text-slate-700">Meta Title</label>
                   <Input
                     value={pageData.meta_title || ''}
                     onChange={(e) => setPageData({ ...pageData, meta_title: e.target.value })}
@@ -346,7 +409,7 @@ export function PageVisualEditor({
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-bold text-slate-500">Meta Description</label>
+                  <label className="text-xs font-bold text-slate-700">Meta Description</label>
                   <Textarea
                     value={pageData.meta_description || ''}
                     onChange={(e) => setPageData({ ...pageData, meta_description: e.target.value })}
@@ -358,8 +421,15 @@ export function PageVisualEditor({
           )}
         </aside>
 
-        <main className="flex-1 overflow-y-auto p-4 md:p-8 flex justify-center bg-slate-200/50 relative">
+        <main className="flex-1 overflow-y-auto p-4 md:p-8 flex justify-center bg-slate-200/50 relative no-scrollbar">
           <div
+            style={
+              {
+                '--primary': designVars.primaryColor,
+                '--font-base': designVars.fontFamily,
+                '--radius': designVars.borderRadius,
+              } as React.CSSProperties
+            }
             className={cn(
               'bg-white min-h-[800px] shadow-2xl transition-all duration-300 mx-auto border',
               previewMode === 'mobile'
@@ -384,21 +454,17 @@ export function PageVisualEditor({
                     ? 'ring-blue-500 z-10'
                     : 'ring-transparent hover:ring-slate-300',
                 )}
-                onClick={() => setSelectedBlockId(b.id)}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setSelectedBlockId(b.id)
+                }}
               >
                 {selectedBlockId === b.id && (
                   <div className="absolute top-0 left-0 bg-blue-500 text-white text-[10px] uppercase font-bold px-2 py-0.5 rounded-br z-20">
                     Editando {b.type}
                   </div>
                 )}
-                <div
-                  className={cn(
-                    'transition-opacity',
-                    selectedBlockId && selectedBlockId !== b.id ? 'opacity-50' : 'opacity-100',
-                  )}
-                >
-                  <BlockPreview block={b} />
-                </div>
+                <BlockPreview block={b} />
               </div>
             ))}
           </div>

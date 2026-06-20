@@ -1,101 +1,162 @@
-import { Outlet, useLocation, Link } from 'react-router-dom'
-import { AdminHeader } from './admin/AdminHeader'
+import { Outlet, useLocation, Link, useNavigate } from 'react-router-dom'
 import { cn } from '@/lib/utils'
-import { ChevronRight } from 'lucide-react'
+import {
+  LayoutDashboard,
+  Car,
+  Users,
+  Settings,
+  Globe,
+  FileText,
+  LogOut,
+  PanelLeftClose,
+  PanelLeftOpen,
+  ShieldCheck,
+  DollarSign,
+  Image as ImageIcon,
+} from 'lucide-react'
+import { useAuth } from '@/hooks/use-auth'
+import { useState } from 'react'
 
-const HIERARCHY = {
-  estoque: [
-    { label: 'Consulta de Estoque', path: '/admin/estoque' },
-    { label: 'Cadastro de Produtos', path: '/admin/estoque/cadastro' },
-    { label: 'Integração com Plataformas', path: '/admin/estoque/integracao' },
-    { label: 'Relatórios de Inventário', path: '/admin/estoque/relatorios' },
-  ],
-  crm: [
-    { label: 'Acompanhamento de Contatos', path: '/admin/crm' },
-    { label: 'Cadastro de Leads', path: '/admin/crm/cadastro' },
-    { label: 'Qualificação de Leads', path: '/admin/crm/qualificacao' },
-    { label: 'Exportação de Dados', path: '/admin/crm/exportacao' },
-  ],
-  avaliacao: [
-    { label: 'Histórico de Avaliações', path: '/admin/avaliacao' },
-    { label: 'Agendar Avaliação', path: '/admin/avaliacao/agendar' },
-    { label: 'Parâmetros de Avaliação', path: '/admin/avaliacao/parametros' },
-    { label: 'Relatórios de Preço', path: '/admin/avaliacao/relatorios' },
-  ],
-  site: [
-    { label: 'Visão Geral', path: '/admin/site' },
-    { label: 'Páginas e Artigos', path: '/admin/conteudo' },
-    { label: 'Banners do Site', path: '/admin/site/banners' },
-    { label: 'Depoimentos', path: '/admin/site/depoimentos' },
-    { label: 'Configurações Gerais', path: '/admin/site/configuracoes' },
-  ],
-  financiamento: [
-    { label: 'Histórico de Simulações', path: '/admin/financiamento' },
-    { label: 'Simulação Rápida', path: '/admin/financiamento/simulacao' },
-    { label: 'Análise de Crédito', path: '/admin/financiamento/analise' },
-  ],
-  administrativo: [
-    { label: 'Painel Geral', path: '/admin/administrativo' },
-    { label: 'Emissão de Notas', path: '/admin/administrativo/notas' },
-    { label: 'Gestão de Documentos', path: '/admin/administrativo/documentos' },
-    { label: 'Controle de Despesas', path: '/admin/administrativo/despesas' },
-    { label: 'Relatórios Financeiros', path: '/admin/administrativo/relatorios' },
-  ],
-  'redes-sociais': [{ label: 'Calendário de Posts', path: '/admin/redes-sociais' }],
-  conteudo: [{ label: 'Páginas e Artigos', path: '/admin/conteudo' }],
-}
+const SIDEBAR_MENUS = [
+  {
+    title: 'Geral',
+    items: [{ label: 'Dashboard', path: '/admin', icon: LayoutDashboard }],
+  },
+  {
+    title: 'Negócios',
+    items: [
+      { label: 'Estoque', path: '/admin/estoque', icon: Car },
+      { label: 'Leads (CRM)', path: '/admin/crm', icon: Users },
+      { label: 'Avaliações', path: '/admin/avaliacao', icon: ShieldCheck },
+      { label: 'Financiamentos', path: '/admin/financiamento', icon: DollarSign },
+      { label: 'Administrativo', path: '/admin/administrativo', icon: FileText },
+    ],
+  },
+  {
+    title: 'Gerenciamento do Site',
+    items: [
+      { label: 'Visão Geral', path: '/admin/site', icon: Globe },
+      { label: 'Conteúdo', path: '/admin/conteudo', icon: FileText },
+      { label: 'Banners', path: '/admin/site/banners', icon: ImageIcon },
+      { label: 'Configurações', path: '/admin/configuracoes', icon: Settings },
+    ],
+  },
+]
 
 export default function AdminLayout() {
   const location = useLocation()
-  const pathParts = location.pathname.split('/').filter(Boolean)
-  const currentModule = pathParts[1] || ''
+  const { user, signOut } = useAuth()
+  const navigate = useNavigate()
+  const [collapsed, setCollapsed] = useState(false)
 
-  const submenus = HIERARCHY[currentModule as keyof typeof HIERARCHY]
+  const handleLogout = async () => {
+    await signOut()
+    navigate('/admin/login')
+  }
 
   return (
-    <div className="min-h-screen flex flex-col bg-muted/20">
-      <AdminHeader />
+    <div className="min-h-screen flex bg-slate-50">
+      {/* Sidebar */}
+      <aside
+        className={cn(
+          'bg-slate-900 text-slate-300 flex flex-col transition-all duration-300 border-r border-slate-800',
+          collapsed ? 'w-16' : 'w-64',
+        )}
+      >
+        <div className="h-16 flex items-center justify-between px-4 shrink-0 border-b border-slate-800 bg-slate-900/50">
+          {!collapsed && (
+            <span className="font-bold text-white text-lg tracking-tight truncate">
+              Carro e Cia Admin
+            </span>
+          )}
+          <button
+            onClick={() => setCollapsed(!collapsed)}
+            className="text-slate-400 hover:text-white transition-colors"
+          >
+            {collapsed ? (
+              <PanelLeftOpen className="w-5 h-5 mx-auto" />
+            ) : (
+              <PanelLeftClose className="w-5 h-5" />
+            )}
+          </button>
+        </div>
 
-      {submenus && (
-        <div className="bg-white border-b shadow-sm z-10 sticky top-0">
-          <div className="px-4 md:px-6 flex flex-col">
-            <div className="py-2 text-[10px] text-slate-500 flex items-center gap-1 uppercase font-bold tracking-wide">
-              <Link to="/admin" className="hover:text-blue-600 transition-colors">
-                Admin
-              </Link>
-              <ChevronRight className="w-3 h-3" />
-              <span className="text-slate-800">{currentModule}</span>
+        <div className="flex-1 overflow-y-auto py-4 no-scrollbar">
+          {SIDEBAR_MENUS.map((group, i) => (
+            <div key={i} className="mb-6 px-3">
+              {!collapsed && (
+                <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-2 px-3">
+                  {group.title}
+                </div>
+              )}
+              <div className="space-y-1">
+                {group.items.map((item) => {
+                  const isActive =
+                    item.path === '/admin'
+                      ? location.pathname === '/admin'
+                      : location.pathname.startsWith(item.path)
+
+                  return (
+                    <Link
+                      key={item.path}
+                      to={item.path}
+                      className={cn(
+                        'flex items-center gap-3 px-3 py-2 rounded-lg transition-all font-medium text-sm',
+                        isActive
+                          ? 'bg-blue-600 text-white shadow-md shadow-blue-900/20'
+                          : 'hover:bg-slate-800 hover:text-white',
+                      )}
+                      title={collapsed ? item.label : undefined}
+                    >
+                      <item.icon
+                        className={cn(
+                          'w-5 h-5 shrink-0',
+                          isActive ? 'text-white' : 'text-slate-400',
+                        )}
+                      />
+                      {!collapsed && <span className="truncate">{item.label}</span>}
+                    </Link>
+                  )
+                })}
+              </div>
             </div>
-            <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2 pt-1">
-              {submenus.map((sub) => {
-                // Exact match for the module root, otherwise startsWith
-                const isRootRoute = sub.path === `/admin/${currentModule}`
-                const isActive = isRootRoute
-                  ? location.pathname === sub.path
-                  : location.pathname.startsWith(sub.path)
+          ))}
+        </div>
 
-                return (
-                  <Link
-                    key={sub.path}
-                    to={sub.path}
-                    className={cn(
-                      'px-3 py-1.5 text-xs font-semibold rounded-full whitespace-nowrap transition-colors',
-                      isActive
-                        ? 'bg-blue-50 text-blue-700 border border-blue-200'
-                        : 'text-slate-600 hover:bg-slate-50 border border-transparent',
-                    )}
-                  >
-                    {sub.label}
-                  </Link>
-                )
-              })}
+        <div className="p-4 border-t border-slate-800 shrink-0">
+          <button
+            onClick={handleLogout}
+            className={cn(
+              'flex items-center gap-3 w-full px-3 py-2 rounded-lg text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-colors text-sm font-medium',
+              collapsed && 'justify-center',
+            )}
+            title={collapsed ? 'Sair' : undefined}
+          >
+            <LogOut className="w-5 h-5 shrink-0" />
+            {!collapsed && <span>Sair</span>}
+          </button>
+        </div>
+      </aside>
+
+      {/* Main Content Area */}
+      <main className="flex-1 flex flex-col h-screen overflow-hidden relative z-0">
+        <div className="h-16 bg-white border-b border-slate-200 px-6 flex items-center justify-between shrink-0 shadow-sm z-10">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium text-slate-500">
+              {SIDEBAR_MENUS.flatMap((g) => g.items).find(
+                (i) => location.pathname.startsWith(i.path) && i.path !== '/admin',
+              )?.label || 'Dashboard'}
+            </span>
+          </div>
+          <div className="flex items-center gap-4">
+            <div className="text-sm font-medium text-slate-700 bg-slate-100 px-3 py-1.5 rounded-full">
+              {user?.email}
             </div>
           </div>
         </div>
-      )}
-
-      <main className="flex-1 flex flex-col relative z-0">
-        <Outlet />
+        <div className="flex-1 overflow-y-auto relative bg-slate-50">
+          <Outlet />
+        </div>
       </main>
     </div>
   )
