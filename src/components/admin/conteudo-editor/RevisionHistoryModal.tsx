@@ -12,6 +12,7 @@ export function RevisionHistoryModal({
   isArticle,
   currentBlocks,
   currentDesignVars,
+  currentHtml,
   onClose,
   onRestore,
 }: {
@@ -19,6 +20,7 @@ export function RevisionHistoryModal({
   isArticle: boolean
   currentBlocks: any[]
   currentDesignVars: any
+  currentHtml?: string
   onClose: () => void
   onRestore: (data: any) => void
 }) {
@@ -35,7 +37,7 @@ export function RevisionHistoryModal({
     const col = isArticle ? 'article_id' : 'page_id'
     const { data } = await supabase
       .from(table)
-      .select('id, criado_em, status_publicacao, conteudo')
+      .select('*')
       .eq(col, id)
       .order('criado_em', { ascending: false })
 
@@ -46,7 +48,11 @@ export function RevisionHistoryModal({
     setLoading(false)
   }
 
-  const parseContent = (content: string) => {
+  const parseContent = (version: any) => {
+    const content = version.conteudo
+    if (isArticle) {
+      return { blocks: [], designVars: {}, html: content, fullData: version }
+    }
     try {
       const b = JSON.parse(content || '[]')
       return {
@@ -56,15 +62,46 @@ export function RevisionHistoryModal({
           fontFamily: 'Inter',
           borderRadius: '0.5rem',
         },
+        html: '',
       }
     } catch {
-      return { blocks: [], designVars: {} }
+      return { blocks: [], designVars: {}, html: '' }
     }
   }
 
   const selectedData = selectedVersion
-    ? parseContent(selectedVersion.conteudo)
-    : { blocks: [], designVars: {} }
+    ? parseContent(selectedVersion)
+    : { blocks: [], designVars: {}, html: '' }
+
+  const renderContent = (data: any, htmlFallback?: string) => {
+    if (isArticle) {
+      return (
+        <div
+          className="w-full max-w-[800px] mx-auto bg-white border p-8 shadow-sm prose"
+          dangerouslySetInnerHTML={{ __html: data.html || htmlFallback || '<p>Sem conteúdo.</p>' }}
+        />
+      )
+    }
+
+    return (
+      <div
+        className="bg-white border shadow-sm mx-auto w-full max-w-[500px]"
+        style={
+          {
+            '--primary': data.designVars.primaryColor,
+            '--font-base': data.designVars.fontFamily,
+            '--radius': data.designVars.borderRadius,
+          } as React.CSSProperties
+        }
+      >
+        {data.blocks.map((b: any) => (
+          <div key={b.id} className="relative">
+            <BlockPreview block={b} />
+          </div>
+        ))}
+      </div>
+    )
+  }
 
   return (
     <Dialog open onOpenChange={onClose}>
@@ -127,22 +164,7 @@ export function RevisionHistoryModal({
                 Versão Selecionada
               </div>
               <div className="flex-1 overflow-y-auto p-4 no-scrollbar">
-                <div
-                  className="bg-white border shadow-sm mx-auto w-full max-w-[500px]"
-                  style={
-                    {
-                      '--primary': selectedData.designVars.primaryColor,
-                      '--font-base': selectedData.designVars.fontFamily,
-                      '--radius': selectedData.designVars.borderRadius,
-                    } as React.CSSProperties
-                  }
-                >
-                  {selectedData.blocks.map((b: any) => (
-                    <div key={b.id} className="relative">
-                      <BlockPreview block={b} />
-                    </div>
-                  ))}
-                </div>
+                {renderContent(selectedData)}
               </div>
             </div>
 
@@ -151,22 +173,10 @@ export function RevisionHistoryModal({
                 <ArrowLeftRight className="w-4 h-4" /> Versão Atual (Editor)
               </div>
               <div className="flex-1 overflow-y-auto p-4 no-scrollbar">
-                <div
-                  className="bg-white border shadow-sm mx-auto w-full max-w-[500px]"
-                  style={
-                    {
-                      '--primary': currentDesignVars.primaryColor,
-                      '--font-base': currentDesignVars.fontFamily,
-                      '--radius': currentDesignVars.borderRadius,
-                    } as React.CSSProperties
-                  }
-                >
-                  {currentBlocks.map((b: any) => (
-                    <div key={b.id} className="relative">
-                      <BlockPreview block={b} />
-                    </div>
-                  ))}
-                </div>
+                {renderContent(
+                  { blocks: currentBlocks, designVars: currentDesignVars, html: currentHtml },
+                  currentHtml,
+                )}
               </div>
             </div>
           </div>

@@ -9,7 +9,11 @@ import {
   RefreshCw,
   X,
   Tag,
+  History,
+  Image as ImageIcon,
+  Upload,
 } from 'lucide-react'
+import { RevisionHistoryModal } from './RevisionHistoryModal'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -34,6 +38,7 @@ interface ArticleData {
   palavras_chave_principais: string[]
   palavras_chave_secundarias: string[]
   status_publicacao: string
+  imagem_destaque_url: string
 }
 
 const DEFAULT_ARTICLE: ArticleData = {
@@ -46,6 +51,7 @@ const DEFAULT_ARTICLE: ArticleData = {
   palavras_chave_principais: [],
   palavras_chave_secundarias: [],
   status_publicacao: 'Rascunho',
+  imagem_destaque_url: '',
 }
 
 export function ArticleSEOEditor({ id, onBack }: ArticleSEOEditorProps) {
@@ -59,6 +65,8 @@ export function ArticleSEOEditor({ id, onBack }: ArticleSEOEditorProps) {
   const [seoChecklist, setSeoChecklist] = useState<{ id: string; text: string; passed: boolean }[]>(
     [],
   )
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false)
+  const [isUploading, setIsUploading] = useState(false)
 
   const { toast } = useToast()
 
@@ -99,6 +107,7 @@ export function ArticleSEOEditor({ id, onBack }: ArticleSEOEditorProps) {
         palavras_chave_principais: (article.palavras_chave_principais as string[]) || [],
         palavras_chave_secundarias: (article.palavras_chave_secundarias as string[]) || [],
         status_publicacao: article.status_publicacao || 'Rascunho',
+        imagem_destaque_url: article.imagem_destaque_url || '',
       })
     }
     setIsLoading(false)
@@ -238,6 +247,7 @@ export function ArticleSEOEditor({ id, onBack }: ArticleSEOEditorProps) {
         palavras_chave_secundarias: data.palavras_chave_secundarias,
         status_publicacao: status,
         seo_score: seoScore,
+        imagem_destaque_url: data.imagem_destaque_url,
         ...(id === 'new'
           ? { autor_id: user?.id, ia_generated: true, requires_review: status === 'Rascunho' }
           : { requires_review: status === 'Rascunho' }),
@@ -288,6 +298,76 @@ export function ArticleSEOEditor({ id, onBack }: ArticleSEOEditorProps) {
   const removeKeyword = (type: 'principais' | 'secundarias', kw: string) => {
     const key = type === 'principais' ? 'palavras_chave_principais' : 'palavras_chave_secundarias'
     setData({ ...data, [key]: data[key].filter((k) => k !== kw) })
+  }
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    setIsUploading(true)
+    try {
+      // Converter para WebP no client
+      const imageBitmap = await createImageBitmap(file)
+      const canvas = document.createElement('canvas')
+      canvas.width = imageBitmap.width
+      canvas.height = imageBitmap.height
+      const ctx = canvas.getContext('2d')
+      if (ctx) {
+        ctx.drawImage(imageBitmap, 0, 0)
+      }
+
+      const webpBlob = await new Promise<Blob | null>((resolve) => {
+        canvas.toBlob((blob) => resolve(blob), 'image/webp', 0.8)
+      })
+
+      if (!webpBlob) throw new Error('Falha ao converter para WebP')
+
+      const fileName = `${Date.now()}-destaque.webp`
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('imagens')
+        .upload(`blog/${fileName}`, webpBlob, { contentType: 'image/webp' })
+
+      if (uploadError) throw uploadError
+
+      const { data: publicUrlData } = supabase.storage
+        .from('imagens')
+        .getPublicUrl(`blog/${fileName}`)
+      setData({ ...data, imagem_destaque_url: publicUrlData.publicUrl })
+      toast({ title: 'Imagem otimizada (WebP) e enviada com sucesso!' })
+    } catch (err: any) {
+      toast({ title: 'Erro ao enviar imagem', description: err.message, variant: 'destructive' })
+    } finally {
+      setIsUploading(false)
+    }
+  }
+
+  const handleRestoreVersion = (versionData: any) => {
+    if (!versionData || !versionData.html) return
+    setData((prev) => ({
+      ...prev,
+      conteudo: versionData.html,
+      ...(versionData.fullData
+        ? {
+            titulo: versionData.fullData.titulo || prev.titulo,
+            slug: versionData.fullData.slug || prev.slug,
+            meta_title: versionData.fullData.meta_title || prev.meta_title,
+            meta_description: versionData.fullData.meta_description || prev.meta_description,
+            h1_artigo: versionData.fullData.h1_artigo || prev.h1_artigo,
+            palavras_chave_principais: Array.isArray(versionData.fullData.palavras_chave_principais)
+              ? versionData.fullData.palavras_chave_principais
+              : prev.palavras_chave_principais,
+            palavras_chave_secundarias: Array.isArray(
+              versionData.fullData.palavras_chave_secundarias,
+            )
+              ? versionData.fullData.palavras_chave_secundarias
+              : prev.palavras_chave_secundarias,
+            imagem_destaque_url:
+              versionData.fullData.imagem_destaque_url || prev.imagem_destaque_url,
+          }
+        : {}),
+    }))
+    setIsHistoryOpen(false)
+    toast({ title: 'Versão restaurada no editor! Salve para aplicar as mudanças.' })
   }
 
   if (isLoading) {
@@ -398,6 +478,16 @@ export function ArticleSEOEditor({ id, onBack }: ArticleSEOEditorProps) {
           </div>
         </div>
         <div className="flex items-center gap-3">
+          {id !== 'new' && (
+            <Button
+              variant="ghost"
+              className="text-slate-600"
+              onClick={() => setIsHistoryOpen(true)}
+            >
+              <History className="w-4 h-4 mr-2" />
+              Histórico
+            </Button>
+          )}
           <Button variant="outline" onClick={() => handleSave('Rascunho')}>
             Salvar Rascunho
           </Button>
@@ -416,6 +506,40 @@ export function ArticleSEOEditor({ id, onBack }: ArticleSEOEditorProps) {
               <h2 className="font-semibold text-slate-800 flex items-center gap-2">
                 <Tag className="w-4 h-4" /> Informações Básicas
               </h2>
+
+              <div className="space-y-2">
+                <Label>Imagem de Destaque (Convertida para WebP)</Label>
+                <div className="flex gap-4 items-center">
+                  {data.imagem_destaque_url && (
+                    <img
+                      src={data.imagem_destaque_url}
+                      alt="Destaque"
+                      className="w-32 h-20 object-cover rounded-lg border"
+                    />
+                  )}
+                  <div className="flex-1">
+                    <Label
+                      htmlFor="img-upload"
+                      className="flex items-center justify-center w-full h-20 border-2 border-dashed rounded-lg cursor-pointer hover:bg-slate-50 transition-colors"
+                    >
+                      <div className="flex flex-col items-center">
+                        <Upload className="w-5 h-5 text-slate-400" />
+                        <span className="text-sm text-slate-500">
+                          {isUploading ? 'Otimizando...' : 'Clique para enviar (JPG/PNG)'}
+                        </span>
+                      </div>
+                      <input
+                        id="img-upload"
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={handleImageUpload}
+                        disabled={isUploading}
+                      />
+                    </Label>
+                  </div>
+                </div>
+              </div>
 
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
@@ -451,13 +575,15 @@ export function ArticleSEOEditor({ id, onBack }: ArticleSEOEditorProps) {
                   <Label>Meta Title</Label>
                   <span
                     className={cn(
-                      'text-xs',
-                      data.meta_title.length > 60 || data.meta_title.length < 40
+                      'text-xs font-semibold',
+                      data.meta_title.length > 60
                         ? 'text-red-500'
-                        : 'text-green-600',
+                        : data.meta_title.length > 0
+                          ? 'text-green-600'
+                          : 'text-slate-400',
                     )}
                   >
-                    {data.meta_title.length} chars
+                    {data.meta_title.length} / 60
                   </span>
                 </div>
                 <Input
@@ -471,13 +597,15 @@ export function ArticleSEOEditor({ id, onBack }: ArticleSEOEditorProps) {
                   <Label>Meta Description</Label>
                   <span
                     className={cn(
-                      'text-xs',
-                      data.meta_description.length > 160 || data.meta_description.length < 120
+                      'text-xs font-semibold',
+                      data.meta_description.length > 160
                         ? 'text-red-500'
-                        : 'text-green-600',
+                        : data.meta_description.length > 0
+                          ? 'text-green-600'
+                          : 'text-slate-400',
                     )}
                   >
-                    {data.meta_description.length} chars
+                    {data.meta_description.length} / 160
                   </span>
                 </div>
                 <Textarea
@@ -651,6 +779,18 @@ export function ArticleSEOEditor({ id, onBack }: ArticleSEOEditorProps) {
           </div>
         </div>
       </div>
+
+      {isHistoryOpen && (
+        <RevisionHistoryModal
+          id={id}
+          isArticle={true}
+          currentBlocks={[]}
+          currentDesignVars={{}}
+          currentHtml={data.conteudo}
+          onClose={() => setIsHistoryOpen(false)}
+          onRestore={handleRestoreVersion}
+        />
+      )}
     </div>
   )
 }

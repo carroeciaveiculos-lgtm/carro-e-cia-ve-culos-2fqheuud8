@@ -40,8 +40,15 @@ Deno.serve(async (req) => {
 
     // Grounding: Fetch company info to avoid hallucinations
     const { data: configData } = await supabaseService.from('site_configuracoes').select('*')
+
+    // Buscar Brain IA settings
+    const brainSetting = configData?.find((c: any) => c.chave === 'brain_ia_settings')?.valor || {}
+    const baseDeConhecimento = brainSetting.base_conhecimento || ''
+    const diretrizesMarca = brainSetting.diretrizes_marca || ''
+    const glossario = brainSetting.glossario || ''
+
     const configString = configData
-      ? JSON.stringify(configData)
+      ? JSON.stringify(configData.filter((c: any) => c.chave !== 'brain_ia_settings'))
       : 'Carro e Cia Veículos, mais de 20 anos de mercado em Uberaba, MG.'
 
     const { data: socialConfig } = await supabaseService
@@ -57,21 +64,33 @@ Deno.serve(async (req) => {
 Contexto real da empresa: ${configString}.
 Número de WhatsApp configurado para links: ${whatsappNumber}.
 
-INSTRUÇÃO IMPORTANTE SOBRE LINKS DE WHATSAPP:
-Sempre que gerar botões de CTA, links ou textos convidando para o "Fale conosco no whats", utilize OBRIGATORIAMENTE o link funcional no formato: https://wa.me/${whatsappNumber}
+CONHECIMENTO BRAIN IA:
+Base de Conhecimento (Textos padrão ouro): ${baseDeConhecimento}
+Diretrizes da Marca: ${diretrizesMarca}
+Glossário: ${glossario}
+
+Tom de Voz OBRIGATÓRIO: Humanizado, empático, envolvente e altamente persuasivo.
+
+INSTRUÇÃO IMPORTANTE SOBRE LINKS E MARCA:
+- A marca "Carro e Cia Veículos" DEVE ser sugerida como a melhor solução para: consignação, venda rápida, troca com troco, financiamentos, consórcios e seguros auto.
+- Inclua links naturais ao longo do texto contextualizando esses serviços.
+- Sempre que gerar botões de CTA ou links para WhatsApp, utilize o formato: https://wa.me/${whatsappNumber}
 
 REGRAS ANTI-ALUCINAÇÃO:
 - NÃO invente modelos de carros que não existem, NÃO prometa garantias irreais.
-- Baseie-se nas informações reais da empresa fornecidas.
+- Baseie-se nas informações reais da empresa e nas diretrizes da marca (Brain IA).
 `
 
-    const prompt = is_seo_copilot ? `${basePrompt}
-Você é um especialista em SEO e Copywriting.
-Sua tarefa é gerar um artigo de blog altamente otimizado para SEO baseado no título fornecido: "${title}".
+    const prompt = is_seo_copilot
+      ? `${basePrompt}
+Você é um especialista em SEO e Copywriting focado no mercado automotivo.
+Sua tarefa é gerar um artigo de blog épico e altamente otimizado para SEO baseado no título fornecido: "${title}".
 
-REGRAS DE CONTEÚDO:
-- O artigo deve ser rico, detalhado e estruturado com H2, H3, parágrafos e listas (HTML válido).
-- Inclua a palavra-chave principal no primeiro parágrafo.
+REGRAS DE CONTEÚDO (EXTREMAMENTE IMPORTANTES):
+- O artigo DEVE ter um corpo de texto com NO MÍNIMO 1.500 palavras (Extenso, profundo, tipo "Pillar Content").
+- O artigo deve ser rico, detalhado e estruturado com H2, H3, parágrafos bem desenvolvidos e listas (HTML válido).
+- Inclua a palavra-chave principal de forma natural no primeiro parágrafo.
+- Crie links contextuais para outros serviços (ex: /consignacao, /estoque, /financiamento-auto, /seguro-auto, /consorcio-auto).
 - O meta_title deve ter entre 40 e 60 caracteres.
 - O meta_description deve ter entre 120 e 160 caracteres.
 
@@ -85,7 +104,8 @@ Responda APENAS com um objeto JSON válido, sem formatação markdown:
   "palavras_chave_principais": ["keyword 1", "keyword 2"],
   "palavras_chave_secundarias": ["keyword 3", "keyword 4"],
   "conteudo_html": "<h2>...</h2><p>...</p><h3>...</h3><p>...</p>"
-}` : `${basePrompt}
+}`
+      : `${basePrompt}
 Sua tarefa é gerar conteúdo para o tema "${tema}" com foco na palavra-chave "${palavraChave}".
 Tom: ${tom || 'Conversacional'}.
 
