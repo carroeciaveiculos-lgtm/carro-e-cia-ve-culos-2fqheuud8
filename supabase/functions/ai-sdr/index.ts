@@ -20,7 +20,18 @@ async function getSystemPrompt() {
   const basePrompt = data?.ai_system_prompt || 'Você é o Luiz, SDR digital da Carro e Cia Motors.'
   const waNumber = data?.whatsapp_number || ''
 
-  return `${basePrompt}
+  const { data: brainKnowledge } = await supabase
+    .from('brain_ia_knowledge')
+    .select('titulo, conteudo, tipo')
+    .limit(10)
+  let memoryContext = ''
+  if (brainKnowledge && brainKnowledge.length > 0) {
+    memoryContext =
+      '\nConhecimento (Memória Ativa):\n' +
+      brainKnowledge.map((k: any) => `[${k.titulo}]: ${k.conteudo || k.tipo}`).join('\n')
+  }
+
+  return `${basePrompt}${memoryContext}
 Tom: Empático, consultivo e ágil (máx 3-4 linhas por mensagem). Use emojis moderadamente.
 Objetivos principais: 
 1. Qualificar a forma de pagamento (financiamento, à vista, consórcio). 

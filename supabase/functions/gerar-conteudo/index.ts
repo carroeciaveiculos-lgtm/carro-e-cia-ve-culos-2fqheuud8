@@ -40,12 +40,18 @@ Deno.serve(async (req) => {
 
     // Grounding: Fetch company info to avoid hallucinations
     const { data: configData } = await supabaseService.from('site_configuracoes').select('*')
-    
-    // Buscar Brain IA settings
-    const brainSetting = configData?.find((c: any) => c.chave === 'brain_ia_settings')?.valor || {}
-    const baseDeConhecimento = brainSetting.base_conhecimento || ''
-    const diretrizesMarca = brainSetting.diretrizes_marca || ''
-    const glossario = brainSetting.glossario || ''
+
+    // Buscar Brain IA knowledge base
+    const { data: brainKnowledge } = await supabaseService
+      .from('brain_ia_knowledge')
+      .select('titulo, conteudo, tipo')
+
+    let brainIAContext = ''
+    if (brainKnowledge && brainKnowledge.length > 0) {
+      brainIAContext = brainKnowledge
+        .map((k: any) => `[${k.titulo}]: ${k.conteudo || ''}`)
+        .join('\n')
+    }
 
     const configString = configData
       ? JSON.stringify(configData.filter((c: any) => c.chave !== 'brain_ia_settings'))
@@ -64,10 +70,8 @@ Deno.serve(async (req) => {
 Contexto real da empresa: ${configString}.
 Número de WhatsApp configurado para links: ${whatsappNumber}.
 
-CONHECIMENTO BRAIN IA:
-Base de Conhecimento (Textos padrão ouro): ${baseDeConhecimento}
-Diretrizes da Marca: ${diretrizesMarca}
-Glossário: ${glossario}
+CONHECIMENTO BRAIN IA (MEMÓRIA ATIVA):
+${brainIAContext}
 
 Tom de Voz OBRIGATÓRIO: Humanizado, empático, envolvente e altamente persuasivo.
 
@@ -81,15 +85,17 @@ REGRAS ANTI-ALUCINAÇÃO:
 - Baseie-se nas informações reais da empresa e nas diretrizes da marca (Brain IA).
 `
 
-    const prompt = is_seo_copilot ? `${basePrompt}
+    const prompt = is_seo_copilot
+      ? `${basePrompt}
 Você é um especialista em SEO e Copywriting focado no mercado automotivo.
 Sua tarefa é gerar um artigo de blog épico e altamente otimizado para SEO baseado no título fornecido: "${title}".
 
 REGRAS DE CONTEÚDO (EXTREMAMENTE IMPORTANTES):
-- O artigo DEVE ter um corpo de texto com NO MÍNIMO 1.500 palavras (Extenso, profundo, tipo "Pillar Content").
-- O artigo deve ser rico, detalhado e estruturado com H2, H3, parágrafos bem desenvolvidos e listas (HTML válido).
+- O artigo DEVE ser denso, extenso e profundo (NO MÍNIMO 1.500 palavras - tipo "Pillar Content").
+- Tom de voz: Humanizado, empático, envolvente e altamente persuasivo.
+- O artigo deve ser estruturado com H2, H3, parágrafos bem desenvolvidos e listas (HTML válido).
 - Inclua a palavra-chave principal de forma natural no primeiro parágrafo.
-- Crie links contextuais para outros serviços (ex: /consignacao, /estoque, /financiamento-auto, /seguro-auto, /consorcio-auto).
+- Crie links internos contextuais fortes promovendo a "Carro e Cia Veículos" como solução ideal (ex: /consignacao para vender o carro, /estoque para trocar, /financiamento-auto, /seguro-auto, /consorcio-auto).
 - O meta_title deve ter entre 40 e 60 caracteres.
 - O meta_description deve ter entre 120 e 160 caracteres.
 
@@ -103,7 +109,8 @@ Responda APENAS com um objeto JSON válido, sem formatação markdown:
   "palavras_chave_principais": ["keyword 1", "keyword 2"],
   "palavras_chave_secundarias": ["keyword 3", "keyword 4"],
   "conteudo_html": "<h2>...</h2><p>...</p><h3>...</h3><p>...</p>"
-}` : `${basePrompt}
+}`
+      : `${basePrompt}
 Sua tarefa é gerar conteúdo para o tema "${tema}" com foco na palavra-chave "${palavraChave}".
 Tom: ${tom || 'Conversacional'}.
 
