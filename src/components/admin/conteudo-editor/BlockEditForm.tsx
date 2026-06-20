@@ -56,6 +56,18 @@ function AiBtn({
                   value={data.url || ''}
                   onChange={(e) => onChange({ ...data, url: e.target.value })}
                 />
+                <Button
+                  variant="outline"
+                  className="px-2"
+                  onClick={() => {
+                    const event = new CustomEvent('open-media-selector', {
+                      detail: { onSelect: (url: string) => onChange({ ...data, url }) },
+                    })
+                    window.dispatchEvent(event)
+                  }}
+                >
+                  Mídia
+                </Button>
                 <AiBtn
                   type="image"
                   context="cars"
@@ -67,6 +79,20 @@ function AiBtn({
                   }
                 />
               </div>
+            </div>
+            <div>
+              <label className="text-xs font-bold text-slate-500">Filtro Visual</label>
+              <select
+                className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm mt-1"
+                value={data.filter || ''}
+                onChange={(e) => onChange({ ...data, filter: e.target.value })}
+              >
+                <option value="">Sem filtro</option>
+                <option value="brightness-110 contrast-125">Professional Brightness</option>
+                <option value="contrast-150 saturate-150">High Contrast</option>
+                <option value="grayscale">Soft Grayscale</option>
+                <option value="sepia contrast-125 saturate-150">Warm/Vivid</option>
+              </select>
             </div>
           </div>
         )}
@@ -233,6 +259,18 @@ export function BlockEditForm({
                 value={data.image_url || ''}
                 onChange={(e) => onChange({ ...data, image_url: e.target.value })}
               />
+              <Button
+                variant="outline"
+                className="px-2"
+                onClick={() => {
+                  const event = new CustomEvent('open-media-selector', {
+                    detail: { onSelect: (url: string) => onChange({ ...data, image_url: url }) },
+                  })
+                  window.dispatchEvent(event)
+                }}
+              >
+                Mídia
+              </Button>
               <AiBtn
                 type="image"
                 context={data.title}
@@ -288,6 +326,46 @@ export function BlockEditForm({
             className="h-48 font-mono text-xs bg-slate-50"
             value={(data.images || []).join('\n')}
             onChange={(e) => onChange({ ...data, images: e.target.value.split('\n') })}
+          />
+        </div>
+      )}
+
+      {type === 'vehicle-card' && (
+        <div className="space-y-4">
+          <label className="text-xs font-bold text-slate-500">ID do Veículo</label>
+          <Input
+            placeholder="Ex: uuid-do-veiculo"
+            value={data.veiculo_id || ''}
+            onChange={(e) => onChange({ ...data, veiculo_id: e.target.value })}
+          />
+          <p className="text-[10px] text-slate-400">Insira o ID do veículo para exibir seu card.</p>
+        </div>
+      )}
+
+      {type === 'stock-slider' && (
+        <div className="space-y-4">
+          <label className="text-xs font-bold text-slate-500">Limite de Veículos</label>
+          <Input
+            type="number"
+            value={data.limit || 5}
+            onChange={(e) => onChange({ ...data, limit: parseInt(e.target.value) })}
+          />
+        </div>
+      )}
+
+      {type === 'inventory-grid' && (
+        <div className="space-y-4">
+          <label className="text-xs font-bold text-slate-500">Categoria (opcional)</label>
+          <Input
+            placeholder="Ex: SUV, Sedan"
+            value={data.categoria || ''}
+            onChange={(e) => onChange({ ...data, categoria: e.target.value })}
+          />
+          <label className="text-xs font-bold text-slate-500 mt-2 block">Limite</label>
+          <Input
+            type="number"
+            value={data.limit || 6}
+            onChange={(e) => onChange({ ...data, limit: parseInt(e.target.value) })}
           />
         </div>
       )}

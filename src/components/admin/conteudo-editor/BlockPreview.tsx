@@ -1,4 +1,100 @@
+import { useEffect, useState } from 'react'
+import { supabase } from '@/lib/supabase/client'
 import { ContentBlock } from '@/types/conteudo'
+import { cn } from '@/lib/utils'
+
+function VehicleCardFetcher({ id }: { id: string }) {
+  const [vehicle, setVehicle] = useState<any>(null)
+  useEffect(() => {
+    if (id)
+      supabase
+        .from('veiculos')
+        .select('*')
+        .eq('id', id)
+        .single()
+        .then(({ data }) => {
+          if (data) setVehicle(data)
+        })
+  }, [id])
+  if (!vehicle)
+    return (
+      <div className="p-4 bg-slate-100 border rounded text-center text-slate-500">
+        Carregando Veículo...
+      </div>
+    )
+  const photo = vehicle.fotos?.[0] || 'https://img.usecurling.com/p/400/300?q=car'
+  return (
+    <div className="border rounded-lg overflow-hidden shadow-sm bg-white max-w-sm w-full mx-auto">
+      <img src={photo} alt={vehicle.modelo} className="w-full h-48 object-cover" />
+      <div className="p-4 text-left">
+        <h3 className="font-bold text-lg leading-tight">
+          {vehicle.marca} {vehicle.modelo}
+        </h3>
+        <p className="text-slate-500 text-sm mb-2">
+          {vehicle.ano_modelo} • {vehicle.quilometragem} km
+        </p>
+        <p className="font-bold text-blue-600 text-xl">
+          {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(
+            vehicle.preco_venda,
+          )}
+        </p>
+      </div>
+    </div>
+  )
+}
+
+function StockSliderFetcher({ limit = 5 }: { limit?: number }) {
+  const [vehicles, setVehicles] = useState<any[]>([])
+  useEffect(() => {
+    supabase
+      .from('veiculos')
+      .select('*')
+      .eq('destaque', true)
+      .limit(limit)
+      .then(({ data }) => {
+        if (data) setVehicles(data)
+      })
+  }, [limit])
+  if (!vehicles.length)
+    return (
+      <div className="p-4 bg-slate-100 border rounded text-center text-slate-500">
+        Nenhum veículo em destaque.
+      </div>
+    )
+  return (
+    <div className="flex gap-4 overflow-x-auto pb-4 px-4 snap-x no-scrollbar">
+      {vehicles.map((v) => (
+        <div key={v.id} className="min-w-[280px] snap-center shrink-0">
+          <VehicleCardFetcher id={v.id} />
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function InventoryGridFetcher({ limit = 6, categoria }: { limit?: number; categoria?: string }) {
+  const [vehicles, setVehicles] = useState<any[]>([])
+  useEffect(() => {
+    let q = supabase.from('veiculos').select('*').limit(limit)
+    if (categoria) q = q.ilike('categoria', `%${categoria}%`)
+    q.then(({ data }) => {
+      if (data) setVehicles(data)
+    })
+  }, [limit, categoria])
+  if (!vehicles.length)
+    return (
+      <div className="p-4 bg-slate-100 border rounded text-center text-slate-500">
+        Nenhum veículo encontrado.
+      </div>
+    )
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 p-4">
+      {vehicles.map((v) => (
+        <VehicleCardFetcher key={v.id} id={v.id} />
+      ))}
+    </div>
+  )
+}
 
 export function BlockPreview({ block, designVars }: { block: ContentBlock; designVars?: any }) {
   const { type, data, style, children } = block
@@ -83,7 +179,7 @@ export function BlockPreview({ block, designVars }: { block: ContentBlock; desig
           <img
             src={data.url}
             alt="Block Image"
-            className="max-w-full h-auto shadow-sm"
+            className={cn('max-w-full h-auto shadow-sm', data.filter)}
             style={{ borderRadius: 'var(--radius)' }}
           />
         ) : (
@@ -93,6 +189,18 @@ export function BlockPreview({ block, designVars }: { block: ContentBlock; desig
         )}
       </div>
     )
+  }
+
+  if (type === 'vehicle-card') {
+    return <VehicleCardFetcher id={data.veiculo_id} />
+  }
+
+  if (type === 'stock-slider') {
+    return <StockSliderFetcher limit={data.limit} />
+  }
+
+  if (type === 'inventory-grid') {
+    return <InventoryGridFetcher limit={data.limit} categoria={data.categoria} />
   }
 
   if (type === 'gallery') {

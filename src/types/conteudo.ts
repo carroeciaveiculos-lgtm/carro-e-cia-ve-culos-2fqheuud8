@@ -9,6 +9,9 @@ export type BlockType =
   | 'spacer'
   | 'image'
   | 'video'
+  | 'vehicle-card'
+  | 'stock-slider'
+  | 'inventory-grid'
 
 export interface ContentBlock {
   id: string

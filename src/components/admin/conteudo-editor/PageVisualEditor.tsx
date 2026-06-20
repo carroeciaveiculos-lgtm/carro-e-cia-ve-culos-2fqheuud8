@@ -31,6 +31,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { useAiAssistant } from '@/hooks/use-ai-assistant'
+import { MediaSelectorModal } from './MediaSelectorModal'
 
 export function PageVisualEditor({
   id,
@@ -62,6 +63,19 @@ export function PageVisualEditor({
   const { toast } = useToast()
   const { generate, isLoading: aiLoading } = useAiAssistant()
   const { user } = useAuth()
+  const [mediaSelectorOpen, setMediaSelectorOpen] = useState(false)
+  const [mediaSelectorCallback, setMediaSelectorCallback] = useState<
+    ((url: string) => void) | null
+  >(null)
+
+  useEffect(() => {
+    const handleOpenMedia = (e: any) => {
+      setMediaSelectorCallback(() => e.detail.onSelect)
+      setMediaSelectorOpen(true)
+    }
+    window.addEventListener('open-media-selector', handleOpenMedia)
+    return () => window.removeEventListener('open-media-selector', handleOpenMedia)
+  }, [])
 
   useEffect(() => {
     if (user) {
@@ -154,10 +168,28 @@ export function PageVisualEditor({
         })
       else toast({ title: 'Erro ao salvar', description: error.message, variant: 'destructive' })
     } else {
-      toast({
-        title: 'Sucesso',
-        description: status === 'Rascunho' ? 'Rascunho salvo' : 'Página publicada!',
-      })
+      if (status === 'Em Revisão' && pageData.status_publicacao !== 'Em Revisão') {
+        supabase.functions
+          .invoke('content-workflow-notification', {
+            body: {
+              title: pageData.titulo,
+              authorName: user?.user_metadata?.name || 'Autor Desconhecido',
+              authorEmail: user?.email,
+              link: `${window.location.origin}/admin/conteudo`,
+            },
+          })
+          .catch((err) => console.error('Erro ao notificar revisão:', err))
+
+        toast({
+          title: 'Sucesso',
+          description: 'Conteúdo enviado para revisão e notificado!',
+        })
+      } else {
+        toast({
+          title: 'Sucesso',
+          description: status === 'Rascunho' ? 'Rascunho salvo' : 'Página salva e/ou publicada!',
+        })
+      }
       setPageData((prev) => ({ ...prev, status_publicacao: status }))
     }
   }
@@ -297,6 +329,15 @@ export function PageVisualEditor({
         </div>
       </header>
 
+      <MediaSelectorModal
+        open={mediaSelectorOpen}
+        onOpenChange={setMediaSelectorOpen}
+        onSelect={(url: string) => {
+          if (mediaSelectorCallback) mediaSelectorCallback(url)
+          setMediaSelectorOpen(false)
+        }}
+      />
+
       {showHistory && id !== 'new' && (
         <RevisionHistoryModal
           id={id}
@@ -418,6 +459,35 @@ export function PageVisualEditor({
                   >
                     <ImageIcon className="w-4 h-4 text-slate-700" />{' '}
                     <span className="text-[10px]">Galeria</span>
+                  </Button>
+                </div>
+                <p className="text-[10px] text-slate-500 mb-2 mt-4 uppercase font-bold tracking-wider">
+                  Blocos de Veículos
+                </p>
+                <div className="grid grid-cols-2 gap-2">
+                  <Button
+                    variant="outline"
+                    className="h-12 flex-col gap-1 border-blue-200 bg-blue-50"
+                    onClick={() => addBlock('vehicle-card')}
+                  >
+                    <Layout className="w-4 h-4 text-blue-600" />{' '}
+                    <span className="text-[10px] text-blue-800">Card Veículo</span>
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="h-12 flex-col gap-1 border-blue-200 bg-blue-50"
+                    onClick={() => addBlock('stock-slider')}
+                  >
+                    <Columns className="w-4 h-4 text-blue-600" />{' '}
+                    <span className="text-[10px] text-blue-800">Slider Destaques</span>
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="h-12 flex-col gap-1 border-blue-200 bg-blue-50"
+                    onClick={() => addBlock('inventory-grid')}
+                  >
+                    <Grid3X3 className="w-4 h-4 text-blue-600" />{' '}
+                    <span className="text-[10px] text-blue-800">Grid Estoque</span>
                   </Button>
                 </div>
               </TabsContent>
