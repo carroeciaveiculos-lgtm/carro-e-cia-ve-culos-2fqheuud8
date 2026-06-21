@@ -225,13 +225,13 @@ export default function PoliticaPrivacidade() {
             3. Exclusão de Responsabilidade sobre Pré-Propostas
           </h3>
           <p>
-            O assistente de inteligência artificial "Luiz" atua como um facilitador de atendimento
-            digital para simulação de propostas e consulta de veículos disponíveis [1.3.1]. No
-            entanto, todos os valores informados de parcelas, simulações de financiamento bancário,
-            avaliações de carros de troca e reservas de estoque possuem caráter meramente
-            informativo e preliminar. As negociações comerciais finais só são juridicamente válidas
-            quando formalizadas por contrato assinado junto aos nossos gerentes de vendas em nossa
-            sede física.
+            O assistente de inteligência artificial atua como um facilitador de atendimento digital
+            para simulação de propostas e consulta de veículos disponíveis. No entanto, todos os
+            valores informados de parcelas, simulações de financiamento bancário, avaliações de
+            carros de troca e reservas de estoque possuem caráter meramente informativo e
+            preliminar. As negociações comerciais finais só são juridicamente válidas quando
+            formalizadas por contrato assinado junto aos nossos gerentes de vendas em nossa sede
+            física.
           </p>
 
           <h2 className="text-xl md:text-2xl font-bold text-left pt-8">
