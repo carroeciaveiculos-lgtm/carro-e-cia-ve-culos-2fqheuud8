@@ -24,17 +24,10 @@ if (typeof window !== 'undefined') {
       ).toUpperCase()
 
       if (reqMethod === 'HEAD' || response.status === 204) {
-        Object.defineProperty(response, 'json', {
-          value: async () => {
-            try {
-              const text = await response.text()
-              // Empty body validation: trim before parsing to prevent "Unexpected end of JSON input"
-              const trimmed = text ? text.trim() : ''
-              return trimmed ? JSON.parse(trimmed) : {}
-            } catch (e) {
-              return {}
-            }
-          },
+        return new Response('{}', {
+          status: response.status === 204 ? 200 : response.status,
+          statusText: response.statusText,
+          headers: response.headers,
         })
       }
       return response
@@ -50,7 +43,7 @@ if (typeof window !== 'undefined') {
           'Interceptado erro de rede na requisição HEAD para veiculos. Retornando fallback.',
           error,
         )
-        return new Response(null, {
+        return new Response('{}', {
           status: 200,
           headers: {
             'Content-Type': 'application/json',
