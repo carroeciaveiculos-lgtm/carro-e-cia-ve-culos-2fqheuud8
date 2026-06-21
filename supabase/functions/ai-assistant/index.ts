@@ -10,20 +10,27 @@ Deno.serve(async (req) => {
   try {
     const { prompt, context } = await req.json()
     const apiKey = Deno.env.get('GEMINI_APY_KEY') || Deno.env.get('GEMINI_API_KEY')
-    
+
     if (!apiKey) {
       throw new Error('API Key missing. Configured as GEMINI_APY_KEY in secrets.')
     }
 
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL')!,
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
     )
 
     // Fetch active memory context
-    const { data: brainKnowledge } = await supabase.from('brain_ia_knowledge').select('titulo, conteudo, tipo').limit(15)
-    const { data: vehicles } = await supabase.from('veiculos').select('marca, modelo, preco_venda').eq('status', 'disponivel').limit(5)
-    
+    const { data: brainKnowledge } = await supabase
+      .from('brain_ia_knowledge')
+      .select('titulo, conteudo, tipo')
+      .limit(15)
+    const { data: vehicles } = await supabase
+      .from('veiculos')
+      .select('marca, modelo, preco_venda')
+      .eq('status', 'disponivel')
+      .limit(5)
+
     const memoryContext = `
 Conhecimento Brain IA:
 ${brainKnowledge?.map((k: any) => `${k.titulo}: ${k.conteudo || k.tipo}`).join('\n')}
@@ -46,13 +53,16 @@ ${prompt}
 
 Responda de forma humanizada, empática e demonstre como você aplicaria o conhecimento. Responda apenas com o texto final gerado, sem formatação markdown de bloco (\`\`\`) e sem aspas extras.`
 
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${apiKey}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: sysPrompt }] }]
-      })
-    })
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${apiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: sysPrompt }] }],
+        }),
+      },
+    )
 
     const data = await response.json()
     const result = data.candidates?.[0]?.content?.parts?.[0]?.text || ''

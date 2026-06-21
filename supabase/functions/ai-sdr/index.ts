@@ -20,10 +20,15 @@ async function getSystemPrompt() {
   const basePrompt = data?.ai_system_prompt || 'Você é o Luiz, SDR digital da Carro e Cia Motors.'
   const waNumber = data?.whatsapp_number || ''
 
-  const { data: brainKnowledge } = await supabase.from('brain_ia_knowledge').select('titulo, conteudo, tipo').limit(10)
+  const { data: brainKnowledge } = await supabase
+    .from('brain_ia_knowledge')
+    .select('titulo, conteudo, tipo')
+    .limit(10)
   let memoryContext = ''
   if (brainKnowledge && brainKnowledge.length > 0) {
-    memoryContext = '\nConhecimento (Memória Ativa):\n' + brainKnowledge.map((k: any) => `[${k.titulo}]: ${k.conteudo || k.tipo}`).join('\n')
+    memoryContext =
+      '\nConhecimento (Memória Ativa):\n' +
+      brainKnowledge.map((k: any) => `[${k.titulo}]: ${k.conteudo || k.tipo}`).join('\n')
   }
 
   return `${basePrompt}${memoryContext}
