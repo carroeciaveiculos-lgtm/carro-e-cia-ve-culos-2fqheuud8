@@ -70,7 +70,7 @@ export default function PoliticaPrivacidade() {
             sistema de CRM ou enviar mensagens para nosso assistente automatizado de vendas via
             WhatsApp Business API, você declara estar ciente e outorga seu consentimento livre,
             expresso e informado para a coleta e o processamento de seus dados pessoais em
-            conformidade com as regras aqui dispostas [1.1.2].
+            conformidade com as regras aqui dispostas.
           </p>
 
           <h3 className="text-lg md:text-xl font-semibold text-left pt-4">
@@ -83,21 +83,21 @@ export default function PoliticaPrivacidade() {
           <ul className="list-disc pl-6 space-y-2 text-justify">
             <li>
               Dados Cadastrais Básicos: Nome completo e número de telefone celular cadastrado no
-              WhatsApp [4].
+              WhatsApp.
             </li>
             <li>
               Dados de Atendimento e Interações: Histórico completo de conversas mantido em nosso
-              banco de dados, incluindo as interações geradas pelo nosso assistente de IA ("Luiz") e
-              pelos consultores humanos da equipe de vendas [1.3.1, 4].
+              banco de dados, incluindo as interações geradas pelo nosso assistente de IA e pelos
+              consultores humanos da equipe de vendas.
             </li>
             <li>
               Dados de Interesse de Negócio: Modelo do veículo de interesse, faixa de preço
               pretendida, modalidade de pagamento desejada e informações de veículos oferecidos para
-              troca [1.3.1].
+              troca.
             </li>
             <li>
               Dados Técnicos de Navegação: Endereço IP, dados de cookies, tipo de navegador e
-              registros de acesso à nossa plataforma web [4].
+              registros de acesso à nossa plataforma web.
             </li>
           </ul>
 
@@ -112,17 +112,17 @@ export default function PoliticaPrivacidade() {
             <li>
               Atendimento Automatizado por IA: Processar suas dúvidas de estoque, preços e condições
               através do modelo de inteligência artificial Gemini 3.5 Flash do Google, integrado de
-              forma segura ao nosso fluxo de atendimento [1.3.1].
+              forma segura ao nosso fluxo de atendimento.
             </li>
             <li>
               Gerenciamento Interno (CRM): Registrar o histórico operacional de conversas no banco
               de dados hospedado no Supabase para garantir que nossos gerentes e consultores de
-              vendas possam dar continuidade ao seu atendimento sem perdas de informações [1, 4].
+              vendas possam dar continuidade ao seu atendimento sem perdas de informações.
             </li>
             <li>
               Propostas e Agendamentos: Viabilizar o envio de fotos, simulações prévias de
               financiamento bancário e agendar visitas presenciais ao nosso showroom na Av.
-              Guilherme Ferreira, nº 1131 [1.3.1].
+              Guilherme Ferreira, nº 1131.
             </li>
           </ul>
 
@@ -138,16 +138,15 @@ export default function PoliticaPrivacidade() {
           <ul className="list-disc pl-6 space-y-2 text-justify">
             <li>
               Meta Platforms, Inc. (WhatsApp Cloud API): Canal oficial responsável pelo
-              processamento e entrega segura das mensagens trafegadas [3].
+              processamento e entrega segura das mensagens trafegadas.
             </li>
             <li>
               Google LLC (Gemini API): Infraestrutura de inteligência artificial responsável por ler
-              as perguntas enviadas no chat e sugerir respostas personalizadas como SDR digital
-              [1.3.1].
+              as perguntas enviadas no chat e sugerir respostas personalizadas como SDR digital.
             </li>
             <li>
               Supabase, Inc. (Hospedagem em Nuvem): Infraestrutura de banco de dados e computação
-              responsável por manter as informações armazenadas com criptografia [1].
+              responsável por manter as informações armazenadas com criptografia.
             </li>
           </ul>
 
