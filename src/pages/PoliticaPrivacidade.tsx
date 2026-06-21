@@ -47,7 +47,9 @@ export default function PoliticaPrivacidade() {
             <p className="m-0">Data de Publicação: Junho de 2026</p>
           </div>
 
-          <p className="text-muted-foreground text-left">[Quebra de Página no Word]</p>
+          <p className="text-muted-foreground text-left">
+            <br />
+          </p>
 
           <h2 className="text-xl md:text-2xl font-bold text-left pt-6">
             SEÇÃO 1: POLÍTICA DE PRIVACIDADE E PROTEÇÃO DE DADOS (LGPD)
