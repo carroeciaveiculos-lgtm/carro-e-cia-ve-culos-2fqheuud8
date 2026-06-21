@@ -75,9 +75,12 @@ export function ArticleSEOEditor({ id, onBack }: ArticleSEOEditorProps) {
   const { toast } = useToast()
 
   useEffect(() => {
-    supabase.from('keywords').select('palavra_chave').then(({ data }) => {
-      if (data) setDbKeywords(data.map((k: any) => k.palavra_chave))
-    })
+    supabase
+      .from('keywords')
+      .select('palavra_chave')
+      .then(({ data }) => {
+        if (data) setDbKeywords(data.map((k: any) => k.palavra_chave))
+      })
   }, [])
 
   useEffect(() => {
@@ -330,13 +333,15 @@ export function ArticleSEOEditor({ id, onBack }: ArticleSEOEditorProps) {
   const optimizeWithAI = async () => {
     setIsOptimizing(true)
     try {
-      const { data: { session } } = await supabase.auth.getSession()
+      const {
+        data: { session },
+      } = await supabase.auth.getSession()
       if (!session) throw new Error('Não autenticado')
 
       const { data: result, error } = await supabase.functions.invoke('gerar-conteudo', {
         body: {
           is_seo_optimizer: true,
-          current_data: { ...data }
+          current_data: { ...data },
         },
       })
 
@@ -353,8 +358,12 @@ export function ArticleSEOEditor({ id, onBack }: ArticleSEOEditorProps) {
         meta_description: aiData.meta_description || prev.meta_description,
         h1_artigo: aiData.h1_artigo || prev.h1_artigo,
         conteudo: aiData.conteudo_html || prev.conteudo,
-        palavras_chave_principais: Array.isArray(aiData.palavras_chave_principais) ? aiData.palavras_chave_principais : prev.palavras_chave_principais,
-        palavras_chave_secundarias: Array.isArray(aiData.palavras_chave_secundarias) ? aiData.palavras_chave_secundarias : prev.palavras_chave_secundarias,
+        palavras_chave_principais: Array.isArray(aiData.palavras_chave_principais)
+          ? aiData.palavras_chave_principais
+          : prev.palavras_chave_principais,
+        palavras_chave_secundarias: Array.isArray(aiData.palavras_chave_secundarias)
+          ? aiData.palavras_chave_secundarias
+          : prev.palavras_chave_secundarias,
       }))
 
       toast({ title: 'Conteúdo otimizado com IA!' })
@@ -369,7 +378,9 @@ export function ArticleSEOEditor({ id, onBack }: ArticleSEOEditorProps) {
     if (!imagePrompt) return
     setIsGeneratingImage(true)
     try {
-      const { data: { session } } = await supabase.auth.getSession()
+      const {
+        data: { session },
+      } = await supabase.auth.getSession()
       if (!session) throw new Error('Não autenticado')
 
       const { data: result, error } = await supabase.functions.invoke('gerar-imagem', {
@@ -382,7 +393,7 @@ export function ArticleSEOEditor({ id, onBack }: ArticleSEOEditorProps) {
       setIsUploading(true)
       const res = await fetch(result.url)
       const blob = await res.blob()
-      
+
       const imageBitmap = await createImageBitmap(blob)
       const canvas = document.createElement('canvas')
       canvas.width = imageBitmap.width
@@ -390,14 +401,20 @@ export function ArticleSEOEditor({ id, onBack }: ArticleSEOEditorProps) {
       const ctx = canvas.getContext('2d')
       if (ctx) ctx.drawImage(imageBitmap, 0, 0)
 
-      const webpBlob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/webp', 0.8))
+      const webpBlob = await new Promise<Blob | null>((resolve) =>
+        canvas.toBlob(resolve, 'image/webp', 0.8),
+      )
       if (!webpBlob) throw new Error('Falha ao converter IA para WebP')
 
       const fileName = `${Date.now()}-ia-destaque.webp`
-      const { error: uploadError } = await supabase.storage.from('imagens').upload(`blog/${fileName}`, webpBlob, { contentType: 'image/webp' })
+      const { error: uploadError } = await supabase.storage
+        .from('imagens')
+        .upload(`blog/${fileName}`, webpBlob, { contentType: 'image/webp' })
       if (uploadError) throw uploadError
 
-      const { data: publicUrlData } = supabase.storage.from('imagens').getPublicUrl(`blog/${fileName}`)
+      const { data: publicUrlData } = supabase.storage
+        .from('imagens')
+        .getPublicUrl(`blog/${fileName}`)
       setData({ ...data, imagem_destaque_url: publicUrlData.publicUrl })
       toast({ title: 'Imagem IA gerada e convertida (WebP)!' })
       setImagePrompt('')
@@ -597,8 +614,17 @@ export function ArticleSEOEditor({ id, onBack }: ArticleSEOEditorProps) {
               Histórico
             </Button>
           )}
-          <Button variant="secondary" className="bg-amber-100 text-amber-800 hover:bg-amber-200" onClick={optimizeWithAI} disabled={isOptimizing}>
-            {isOptimizing ? <RefreshCw className="w-4 h-4 mr-2 animate-spin" /> : <Sparkles className="w-4 h-4 mr-2" />}
+          <Button
+            variant="secondary"
+            className="bg-amber-100 text-amber-800 hover:bg-amber-200"
+            onClick={optimizeWithAI}
+            disabled={isOptimizing}
+          >
+            {isOptimizing ? (
+              <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+            ) : (
+              <Sparkles className="w-4 h-4 mr-2" />
+            )}
             Otimizar com IA
           </Button>
           <Button variant="outline" onClick={() => handleSave('Rascunho')}>
@@ -655,14 +681,31 @@ export function ArticleSEOEditor({ id, onBack }: ArticleSEOEditorProps) {
                       </Label>
                     </div>
                     <div className="flex-1 flex flex-col justify-end gap-2 border p-3 rounded-lg bg-slate-50">
-                      <Label className="text-xs flex items-center gap-1 text-slate-500"><Sparkles className="w-3 h-3 text-amber-500"/> Ou Gerar Imagem com IA</Label>
+                      <Label className="text-xs flex items-center gap-1 text-slate-500">
+                        <Sparkles className="w-3 h-3 text-amber-500" /> Ou Gerar Imagem com IA
+                      </Label>
                       <div className="flex gap-2">
-                        <Input placeholder="Ex: Um carro elétrico na cidade" value={imagePrompt} onChange={e => setImagePrompt(e.target.value)} disabled={isGeneratingImage || isUploading} className="h-8 text-sm bg-white" />
-                        <Button size="sm" onClick={generateAIImage} disabled={!imagePrompt || isGeneratingImage || isUploading}>
-                          {isGeneratingImage ? <RefreshCw className="w-4 h-4 animate-spin" /> : 'Gerar'}
+                        <Input
+                          placeholder="Ex: Um carro elétrico na cidade"
+                          value={imagePrompt}
+                          onChange={(e) => setImagePrompt(e.target.value)}
+                          disabled={isGeneratingImage || isUploading}
+                          className="h-8 text-sm bg-white"
+                        />
+                        <Button
+                          size="sm"
+                          onClick={generateAIImage}
+                          disabled={!imagePrompt || isGeneratingImage || isUploading}
+                        >
+                          {isGeneratingImage ? (
+                            <RefreshCw className="w-4 h-4 animate-spin" />
+                          ) : (
+                            'Gerar'
+                          )}
                         </Button>
                       </div>
                     </div>
+                  </div>
                 </div>
               </div>
 
@@ -750,7 +793,9 @@ export function ArticleSEOEditor({ id, onBack }: ArticleSEOEditorProps) {
                       list="db-keywords"
                     />
                     <datalist id="db-keywords">
-                      {dbKeywords.map(k => <option key={k} value={k} />)}
+                      {dbKeywords.map((k) => (
+                        <option key={k} value={k} />
+                      ))}
                     </datalist>
                   </div>
                   <div className="flex flex-wrap gap-2 mt-2">
