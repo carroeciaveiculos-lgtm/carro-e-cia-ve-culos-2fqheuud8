@@ -27,7 +27,8 @@ Deno.serve(async (req) => {
     } = await supabase.auth.getUser()
     if (authError || !user) throw new Error('Unauthorized')
 
-    const { tema, palavraChave, tom, is_seo_copilot, title } = await req.json()
+    const { tema, palavraChave, tom, is_seo_copilot, title, is_seo_optimizer, current_data } =
+      await req.json()
 
     const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY')
     const GROQ_API_KEY = Deno.env.get('GROQ_API_KEY')
@@ -40,13 +41,17 @@ Deno.serve(async (req) => {
 
     // Grounding: Fetch company info to avoid hallucinations
     const { data: configData } = await supabaseService.from('site_configuracoes').select('*')
-    
+
     // Buscar Brain IA knowledge base
-    const { data: brainKnowledge } = await supabaseService.from('brain_ia_knowledge').select('titulo, conteudo, tipo')
-    
+    const { data: brainKnowledge } = await supabaseService
+      .from('brain_ia_knowledge')
+      .select('titulo, conteudo, tipo')
+
     let brainIAContext = ''
     if (brainKnowledge && brainKnowledge.length > 0) {
-      brainIAContext = brainKnowledge.map((k: any) => `[${k.titulo}]: ${k.conteudo || ''}`).join('\n')
+      brainIAContext = brainKnowledge
+        .map((k: any) => `[${k.titulo}]: ${k.conteudo || ''}`)
+        .join('\n')
     }
 
     const configString = configData
@@ -81,7 +86,29 @@ REGRAS ANTI-ALUCINAÇÃO:
 - Baseie-se nas informações reais da empresa e nas diretrizes da marca (Brain IA).
 `
 
-    const prompt = is_seo_copilot ? `${basePrompt}
+    const prompt = is_seo_optimizer
+      ? `${basePrompt}
+Você é um Master Especialista em SEO.
+Sua missão é otimizar o rascunho a seguir para atingir a nota máxima (Score 100) em SEO.
+Ajuste os textos, o título, meta_title, meta_description, H1 e certifique-se de que a palavra-chave principal apareça no início do conteúdo e em subtítulos (H2/H3).
+
+Rascunho atual:
+${JSON.stringify(current_data)}
+
+SAÍDA OBRIGATÓRIA (JSON VÁLIDO):
+Responda APENAS com um objeto JSON válido, sem formatação markdown:
+{
+  "titulo": "Título Interno",
+  "slug": "url-amigavel",
+  "meta_title": "Título SEO (40-60 chars)",
+  "meta_description": "Descrição SEO (120-160 chars)",
+  "h1_artigo": "H1 do Artigo",
+  "palavras_chave_principais": ["keyword 1", "keyword 2"],
+  "palavras_chave_secundarias": ["keyword 3", "keyword 4"],
+  "conteudo_html": "<h2>...</h2><p>...</p>"
+}`
+      : is_seo_copilot
+        ? `${basePrompt}
 Você é um especialista em SEO e Copywriting focado no mercado automotivo.
 Sua tarefa é gerar um artigo de blog épico e altamente otimizado para SEO baseado no título fornecido: "${title}".
 
@@ -104,7 +131,8 @@ Responda APENAS com um objeto JSON válido, sem formatação markdown:
   "palavras_chave_principais": ["keyword 1", "keyword 2"],
   "palavras_chave_secundarias": ["keyword 3", "keyword 4"],
   "conteudo_html": "<h2>...</h2><p>...</p><h3>...</h3><p>...</p>"
-}` : `${basePrompt}
+}`
+        : `${basePrompt}
 Sua tarefa é gerar conteúdo para o tema "${tema}" com foco na palavra-chave "${palavraChave}".
 Tom: ${tom || 'Conversacional'}.
 
@@ -329,7 +357,7 @@ Responda APENAS com um objeto JSON válido, sem formatação markdown:
 
     // Convert new JSON schema to HTML for frontend compatibility
     let htmlOutput = ''
-    if (is_seo_copilot && resultJson.conteudo_html) {
+    if ((is_seo_copilot || is_seo_optimizer) && resultJson.conteudo_html) {
       htmlOutput = resultJson.conteudo_html
     } else if (resultJson.secoes && Array.isArray(resultJson.secoes)) {
       for (const secao of resultJson.secoes) {

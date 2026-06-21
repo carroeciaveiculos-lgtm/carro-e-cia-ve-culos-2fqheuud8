@@ -7,10 +7,14 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { cn } from '@/lib/utils'
 import { PageVisualEditor } from '@/components/admin/conteudo-editor/PageVisualEditor'
 import { ArticleSEOEditor } from '@/components/admin/conteudo-editor/ArticleSEOEditor'
+import { KeywordsManager } from '@/components/admin/conteudo-editor/KeywordsManager'
+import { HashtagsManager } from '@/components/admin/conteudo-editor/HashtagsManager'
 import { useToast } from '@/hooks/use-toast'
 
 export default function Conteudo() {
-  const [activeTab, setActiveTab] = useState<'paginas' | 'artigos'>('paginas')
+  const [activeTab, setActiveTab] = useState<'paginas' | 'artigos' | 'keywords' | 'hashtags'>(
+    'paginas',
+  )
   const [items, setItems] = useState<any[]>([])
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('todos')
@@ -22,6 +26,7 @@ export default function Conteudo() {
   }, [activeTab, editingId])
 
   const fetchItems = async () => {
+    if (activeTab === 'keywords' || activeTab === 'hashtags') return
     const table = activeTab === 'paginas' ? 'pages' : 'articles'
     const { data } = await supabase
       .from(table)
@@ -110,42 +115,46 @@ export default function Conteudo() {
             <Tabs
               value={activeTab}
               onValueChange={(v: any) => setActiveTab(v)}
-              className="w-full sm:w-[400px]"
+              className="w-full sm:w-[500px]"
             >
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="paginas">
-                  <LayoutTemplate className="w-4 h-4 mr-2" /> Páginas
-                </TabsTrigger>
-                <TabsTrigger value="artigos">
-                  <PenTool className="w-4 h-4 mr-2" /> Blog & Artigos
-                </TabsTrigger>
+              <TabsList className="grid w-full grid-cols-4">
+                <TabsTrigger value="paginas">Páginas</TabsTrigger>
+                <TabsTrigger value="artigos">Artigos</TabsTrigger>
+                <TabsTrigger value="keywords">Keywords</TabsTrigger>
+                <TabsTrigger value="hashtags">Hashtags</TabsTrigger>
               </TabsList>
             </Tabs>
-            <div className="flex gap-2 w-full sm:w-auto">
-              <select
-                className="flex h-10 w-full sm:w-40 items-center justify-between rounded-md border border-input bg-white px-3 py-2 text-sm ring-offset-background"
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-              >
-                <option value="todos">Todos os Status</option>
-                <option value="Publicado">Publicados</option>
-                <option value="Em Revisão">Em Revisão</option>
-                <option value="Rascunho">Rascunhos</option>
-              </select>
-              <div className="relative w-full sm:w-64">
-                <Search className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
-                <Input
-                  placeholder="Buscar..."
-                  className="pl-9 bg-white"
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                />
+            {(activeTab === 'paginas' || activeTab === 'artigos') && (
+              <div className="flex gap-2 w-full sm:w-auto">
+                <select
+                  className="flex h-10 w-full sm:w-40 items-center justify-between rounded-md border border-input bg-white px-3 py-2 text-sm ring-offset-background"
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                >
+                  <option value="todos">Todos os Status</option>
+                  <option value="Publicado">Publicados</option>
+                  <option value="Em Revisão">Em Revisão</option>
+                  <option value="Rascunho">Rascunhos</option>
+                </select>
+                <div className="relative w-full sm:w-64">
+                  <Search className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
+                  <Input
+                    placeholder="Buscar..."
+                    className="pl-9 bg-white"
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                  />
+                </div>
               </div>
-            </div>
+            )}
           </div>
 
           <div className="flex-1 overflow-y-auto p-4">
-            {filteredItems.length === 0 ? (
+            {activeTab === 'keywords' ? (
+              <KeywordsManager />
+            ) : activeTab === 'hashtags' ? (
+              <HashtagsManager />
+            ) : filteredItems.length === 0 ? (
               <div className="h-full flex flex-col items-center justify-center text-slate-400 gap-4">
                 <FileText className="w-12 h-12 opacity-20" />
                 <p>Nenhum item encontrado.</p>

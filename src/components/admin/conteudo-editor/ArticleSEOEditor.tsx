@@ -67,8 +67,18 @@ export function ArticleSEOEditor({ id, onBack }: ArticleSEOEditorProps) {
   )
   const [isHistoryOpen, setIsHistoryOpen] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
+  const [imagePrompt, setImagePrompt] = useState('')
+  const [isGeneratingImage, setIsGeneratingImage] = useState(false)
+  const [isOptimizing, setIsOptimizing] = useState(false)
+  const [dbKeywords, setDbKeywords] = useState<string[]>([])
 
   const { toast } = useToast()
+
+  useEffect(() => {
+    supabase.from('keywords').select('palavra_chave').then(({ data }) => {
+      if (data) setDbKeywords(data.map((k: any) => k.palavra_chave))
+    })
+  }, [])
 
   useEffect(() => {
     if (id !== 'new') {
@@ -206,8 +216,8 @@ export function ArticleSEOEditor({ id, onBack }: ArticleSEOEditorProps) {
 
     // Check if kw is in first paragraph roughly
     const firstP = contentLower.substring(0, 300)
-    const kwInFirstP = firstKw ? firstP.includes(firstKw) : false
-    score += kwInFirstP ? 20 : 0
+    const kwInFirstP = firstKw ? firstP.includes(firstKw.toLowerCase()) : false
+    score += kwInFirstP ? 15 : 0
     checks.push({
       id: 'kw_p1',
       text: `Palavra-chave principal no início do texto`,
@@ -216,14 +226,31 @@ export function ArticleSEOEditor({ id, onBack }: ArticleSEOEditorProps) {
 
     // Check if kw in H2/H3
     const hasKwInHeaders = firstKw
-      ? (contentLower.includes(`<h2`) && contentLower.includes(firstKw)) ||
-        (contentLower.includes(`<h3`) && contentLower.includes(firstKw))
+      ? (contentLower.includes(`<h2`) && contentLower.includes(firstKw.toLowerCase())) ||
+        (contentLower.includes(`<h3`) && contentLower.includes(firstKw.toLowerCase()))
       : false
-    score += hasKwInHeaders ? 20 : 0
+    score += hasKwInHeaders ? 15 : 0
     checks.push({
       id: 'kw_h2',
       text: `Palavra-chave em subtítulos (H2/H3)`,
       passed: !!hasKwInHeaders,
+    })
+
+    // Check image alt text (if any image exists, does it have alt?)
+    const imgMatch = contentLower.match(/<img[^>]+alt=["']([^"']+)["']/i)
+    let altPassed = false
+    if (contentLower.includes('<img')) {
+      if (imgMatch && imgMatch[1].trim().length > 0) {
+        altPassed = true
+      }
+    } else {
+      altPassed = true // Pass se não houver imagens
+    }
+    score += altPassed ? 10 : 0
+    checks.push({
+      id: 'img_alt',
+      text: `Imagens com texto alternativo (Alt)`,
+      passed: altPassed,
     })
 
     setSeoScore(score)
@@ -298,6 +325,88 @@ export function ArticleSEOEditor({ id, onBack }: ArticleSEOEditorProps) {
   const removeKeyword = (type: 'principais' | 'secundarias', kw: string) => {
     const key = type === 'principais' ? 'palavras_chave_principais' : 'palavras_chave_secundarias'
     setData({ ...data, [key]: data[key].filter((k) => k !== kw) })
+  }
+
+  const optimizeWithAI = async () => {
+    setIsOptimizing(true)
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) throw new Error('Não autenticado')
+
+      const { data: result, error } = await supabase.functions.invoke('gerar-conteudo', {
+        body: {
+          is_seo_optimizer: true,
+          current_data: { ...data }
+        },
+      })
+
+      if (error) throw error
+      if (!result?.success) throw new Error(result?.error || 'Erro ao otimizar')
+
+      const aiData = result.data
+
+      setData((prev) => ({
+        ...prev,
+        titulo: aiData.titulo || prev.titulo,
+        slug: aiData.slug || prev.slug,
+        meta_title: aiData.meta_title || prev.meta_title,
+        meta_description: aiData.meta_description || prev.meta_description,
+        h1_artigo: aiData.h1_artigo || prev.h1_artigo,
+        conteudo: aiData.conteudo_html || prev.conteudo,
+        palavras_chave_principais: Array.isArray(aiData.palavras_chave_principais) ? aiData.palavras_chave_principais : prev.palavras_chave_principais,
+        palavras_chave_secundarias: Array.isArray(aiData.palavras_chave_secundarias) ? aiData.palavras_chave_secundarias : prev.palavras_chave_secundarias,
+      }))
+
+      toast({ title: 'Conteúdo otimizado com IA!' })
+    } catch (err: any) {
+      toast({ title: 'Falha ao otimizar', description: err.message, variant: 'destructive' })
+    } finally {
+      setIsOptimizing(false)
+    }
+  }
+
+  const generateAIImage = async () => {
+    if (!imagePrompt) return
+    setIsGeneratingImage(true)
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) throw new Error('Não autenticado')
+
+      const { data: result, error } = await supabase.functions.invoke('gerar-imagem', {
+        body: { prompt: imagePrompt },
+      })
+      if (error) throw error
+      if (!result?.success) throw new Error(result?.error || 'Erro ao gerar')
+
+      // Converter imagem gerada para WebP no client
+      setIsUploading(true)
+      const res = await fetch(result.url)
+      const blob = await res.blob()
+      
+      const imageBitmap = await createImageBitmap(blob)
+      const canvas = document.createElement('canvas')
+      canvas.width = imageBitmap.width
+      canvas.height = imageBitmap.height
+      const ctx = canvas.getContext('2d')
+      if (ctx) ctx.drawImage(imageBitmap, 0, 0)
+
+      const webpBlob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/webp', 0.8))
+      if (!webpBlob) throw new Error('Falha ao converter IA para WebP')
+
+      const fileName = `${Date.now()}-ia-destaque.webp`
+      const { error: uploadError } = await supabase.storage.from('imagens').upload(`blog/${fileName}`, webpBlob, { contentType: 'image/webp' })
+      if (uploadError) throw uploadError
+
+      const { data: publicUrlData } = supabase.storage.from('imagens').getPublicUrl(`blog/${fileName}`)
+      setData({ ...data, imagem_destaque_url: publicUrlData.publicUrl })
+      toast({ title: 'Imagem IA gerada e convertida (WebP)!' })
+      setImagePrompt('')
+    } catch (err: any) {
+      toast({ title: 'Erro na IA', description: err.message, variant: 'destructive' })
+    } finally {
+      setIsGeneratingImage(false)
+      setIsUploading(false)
+    }
   }
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -488,6 +597,10 @@ export function ArticleSEOEditor({ id, onBack }: ArticleSEOEditorProps) {
               Histórico
             </Button>
           )}
+          <Button variant="secondary" className="bg-amber-100 text-amber-800 hover:bg-amber-200" onClick={optimizeWithAI} disabled={isOptimizing}>
+            {isOptimizing ? <RefreshCw className="w-4 h-4 mr-2 animate-spin" /> : <Sparkles className="w-4 h-4 mr-2" />}
+            Otimizar com IA
+          </Button>
           <Button variant="outline" onClick={() => handleSave('Rascunho')}>
             Salvar Rascunho
           </Button>
@@ -508,8 +621,10 @@ export function ArticleSEOEditor({ id, onBack }: ArticleSEOEditorProps) {
               </h2>
 
               <div className="space-y-2">
-                <Label>Imagem de Destaque (Convertida para WebP)</Label>
-                <div className="flex gap-4 items-center">
+                <div className="flex justify-between items-center">
+                  <Label>Imagem de Destaque (Convertida para WebP)</Label>
+                </div>
+                <div className="flex flex-col md:flex-row gap-4">
                   {data.imagem_destaque_url && (
                     <img
                       src={data.imagem_destaque_url}
@@ -518,26 +633,36 @@ export function ArticleSEOEditor({ id, onBack }: ArticleSEOEditorProps) {
                     />
                   )}
                   <div className="flex-1">
-                    <Label
-                      htmlFor="img-upload"
-                      className="flex items-center justify-center w-full h-20 border-2 border-dashed rounded-lg cursor-pointer hover:bg-slate-50 transition-colors"
-                    >
-                      <div className="flex flex-col items-center">
-                        <Upload className="w-5 h-5 text-slate-400" />
-                        <span className="text-sm text-slate-500">
-                          {isUploading ? 'Otimizando...' : 'Clique para enviar (JPG/PNG)'}
-                        </span>
+                    <div className="flex-1 space-y-2">
+                      <Label
+                        htmlFor="img-upload"
+                        className="flex items-center justify-center w-full h-20 border-2 border-dashed rounded-lg cursor-pointer hover:bg-slate-50 transition-colors"
+                      >
+                        <div className="flex flex-col items-center">
+                          <Upload className="w-5 h-5 text-slate-400" />
+                          <span className="text-sm text-slate-500">
+                            {isUploading ? 'Otimizando...' : 'Clique p/ Upload Manual'}
+                          </span>
+                        </div>
+                        <input
+                          id="img-upload"
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={handleImageUpload}
+                          disabled={isUploading || isGeneratingImage}
+                        />
+                      </Label>
+                    </div>
+                    <div className="flex-1 flex flex-col justify-end gap-2 border p-3 rounded-lg bg-slate-50">
+                      <Label className="text-xs flex items-center gap-1 text-slate-500"><Sparkles className="w-3 h-3 text-amber-500"/> Ou Gerar Imagem com IA</Label>
+                      <div className="flex gap-2">
+                        <Input placeholder="Ex: Um carro elétrico na cidade" value={imagePrompt} onChange={e => setImagePrompt(e.target.value)} disabled={isGeneratingImage || isUploading} className="h-8 text-sm bg-white" />
+                        <Button size="sm" onClick={generateAIImage} disabled={!imagePrompt || isGeneratingImage || isUploading}>
+                          {isGeneratingImage ? <RefreshCw className="w-4 h-4 animate-spin" /> : 'Gerar'}
+                        </Button>
                       </div>
-                      <input
-                        id="img-upload"
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                        onChange={handleImageUpload}
-                        disabled={isUploading}
-                      />
-                    </Label>
-                  </div>
+                    </div>
                 </div>
               </div>
 
@@ -618,10 +743,16 @@ export function ArticleSEOEditor({ id, onBack }: ArticleSEOEditorProps) {
               <div className="grid gap-4 md:grid-cols-2 pt-2">
                 <div className="space-y-2">
                   <Label>Palavras-chave Principais (Enter p/ add)</Label>
-                  <Input
-                    onKeyDown={(e) => handleAddKeyword('principais', e)}
-                    placeholder="Adicionar..."
-                  />
+                  <div className="relative">
+                    <Input
+                      onKeyDown={(e) => handleAddKeyword('principais', e)}
+                      placeholder="Adicionar..."
+                      list="db-keywords"
+                    />
+                    <datalist id="db-keywords">
+                      {dbKeywords.map(k => <option key={k} value={k} />)}
+                    </datalist>
+                  </div>
                   <div className="flex flex-wrap gap-2 mt-2">
                     {data.palavras_chave_principais.map((kw) => (
                       <Badge
@@ -640,10 +771,13 @@ export function ArticleSEOEditor({ id, onBack }: ArticleSEOEditorProps) {
                 </div>
                 <div className="space-y-2">
                   <Label>Palavras-chave Secundárias</Label>
-                  <Input
-                    onKeyDown={(e) => handleAddKeyword('secundarias', e)}
-                    placeholder="Adicionar..."
-                  />
+                  <div className="relative">
+                    <Input
+                      onKeyDown={(e) => handleAddKeyword('secundarias', e)}
+                      placeholder="Adicionar..."
+                      list="db-keywords"
+                    />
+                  </div>
                   <div className="flex flex-wrap gap-2 mt-2">
                     {data.palavras_chave_secundarias.map((kw) => (
                       <Badge
