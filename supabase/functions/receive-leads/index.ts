@@ -308,13 +308,13 @@ Deno.serve(async (req) => {
 
       // 2. Webhook de Portais (Webmotors, iCarros, Site)
       console.log('Portal externo detectado. Iniciando validação de lead...')
-      
+
       const nome = body.nome?.trim()
       const portalPhoneRaw = body.telefone || body.phone
       const portalPhone = portalPhoneRaw ? String(portalPhoneRaw).replace(/\D/g, '').trim() : ''
       const source = body.origem || body.source || 'site'
       const veiculo = body.veiculo || body.veiculo_interesse || ''
-      
+
       // Capturar dados opcionais de rastreamento de origem (UTMs)
       const utmSource = body.utm_source || body.ref || null
       const utmMedium = body.utm_medium || null
@@ -322,21 +322,26 @@ Deno.serve(async (req) => {
 
       // FILTRAGEM: Ignorar requisições de teste/ping de portais para não poluir o CRM
       if (body.ping === 'pong' || body.test === true || body.action === 'ping') {
-        console.log('Ping de teste de portal detectado. Ignorando gravação de lead no banco de dados.')
+        console.log(
+          'Ping de teste de portal detectado. Ignorando gravação de lead no banco de dados.',
+        )
         if (logId) {
           await supabase.from('meta_webhook_logs').update({ processed: true }).eq('id', logId)
         }
         return {
           response: new Response(JSON.stringify({ success: true, message: 'pong' }), {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            status: 200
-          })
+            status: 200,
+          }),
         }
       }
 
       // VALIDAÇÃO ESTRITA: Se o nome for vazio, genérico ou o telefone tiver menos de 8 dígitos, bloqueia imediatamente
       if (!nome || nome === 'Cliente' || !portalPhone || portalPhone.length < 8) {
-        console.warn('Requisição de lead recusada por falta de dados mínimos obrigatórios:', JSON.stringify(body))
+        console.warn(
+          'Requisição de lead recusada por falta de dados mínimos obrigatórios:',
+          JSON.stringify(body),
+        )
         if (logId) {
           await supabase
             .from('meta_webhook_logs')
@@ -344,10 +349,16 @@ Deno.serve(async (req) => {
             .eq('id', logId)
         }
         return {
-          response: new Response(JSON.stringify({ success: false, error: 'Nome e telefone válidos são necessários para registro de leads.' }), {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            status: 400
-          })
+          response: new Response(
+            JSON.stringify({
+              success: false,
+              error: 'Nome e telefone válidos são necessários para registro de leads.',
+            }),
+            {
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+              status: 400,
+            },
+          ),
         }
       }
 
@@ -364,7 +375,7 @@ Deno.serve(async (req) => {
           status: 'novo',
           utm_source: utmSource,
           utm_medium: utmMedium,
-          utm_campaign: utmCampaign
+          utm_campaign: utmCampaign,
         })
         .select()
         .maybeSingle()
@@ -387,7 +398,7 @@ Deno.serve(async (req) => {
         await supabase
           .from('conversation_history')
           .insert({ lead_id: lead.id, sender: 'bot', message_text: responseText })
-        
+
         // Disparar o WhatsApp somente se o telefone de contato existir
         if (portalPhone) {
           await sendWhatsApp(portalPhone, responseText)

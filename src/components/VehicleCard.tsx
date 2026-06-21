@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
+import { getImageUrl } from '@/lib/image-utils'
 import { Badge } from '@/components/ui/badge'
 import {
   Carousel,
@@ -18,19 +19,9 @@ export function VehicleCard({ vehicle, isList = false }: { vehicle: any; isList?
     `Olá! Vi o ${vehicle.marca} ${vehicle.modelo} ${vehicle.ano_fabricacao} por ${formatCurrency(vehicle.preco_venda || 0)} no site. Ainda está disponível?`,
   )
 
-  const getOptimizedUrl = (url: string) => {
-    if (!url) return 'https://img.usecurling.com/p/400/300?q=car'
-    if (url.includes('supabase.co/storage/v1/render/image/public/')) {
-      return url
-        .replace('/storage/v1/render/image/public/', '/storage/v1/object/public/')
-        .split('?')[0]
-    }
-    return url
-  }
-
   const fotos =
     vehicle.fotos && vehicle.fotos.length > 0
-      ? vehicle.fotos.map(getOptimizedUrl)
+      ? vehicle.fotos.map((url: string) => getImageUrl(url))
       : ['https://img.usecurling.com/p/400/300?q=car']
 
   const coverImage = fotos[0]
@@ -39,18 +30,18 @@ export function VehicleCard({ vehicle, isList = false }: { vehicle: any; isList?
     return (
       <div className="group flex bg-card rounded-lg overflow-hidden border shadow-sm hover:shadow-md transition-shadow w-full">
         <div className="relative w-[140px] md:w-[240px] shrink-0 overflow-hidden bg-muted">
-          <picture>
-            <source srcSet={coverImage} type="image/webp" />
-            <img
-              src={coverImage}
-              alt={`${vehicle.marca} ${vehicle.modelo} à venda na Carro e Cia`}
-              width="240"
-              height="180"
-              loading="lazy"
-              decoding="async"
-              className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-500"
-            />
-          </picture>
+          <img
+            src={coverImage}
+            alt={`${vehicle.marca} ${vehicle.modelo} à venda na Carro e Cia`}
+            width="240"
+            height="180"
+            loading="lazy"
+            decoding="async"
+            className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-500 bg-muted"
+            onError={(e) => {
+              ;(e.target as HTMLImageElement).src = 'https://img.usecurling.com/p/400/300?q=car'
+            }}
+          />
         </div>
         <div className="p-4 flex flex-col flex-grow">
           <h3 className="font-display font-bold text-base md:text-lg text-foreground line-clamp-1 mb-2">
@@ -117,7 +108,11 @@ export function VehicleCard({ vehicle, isList = false }: { vehicle: any; isList?
                       src={url}
                       alt={`Foto do veículo ${vehicle.marca} ${vehicle.modelo} à venda em Uberaba`}
                       loading="lazy"
-                      className="object-cover w-full h-[300px] md:h-full"
+                      className="object-cover w-full h-[300px] md:h-full bg-muted"
+                      onError={(e) => {
+                        ;(e.target as HTMLImageElement).src =
+                          'https://img.usecurling.com/p/400/300?q=car'
+                      }}
                     />
                   )}
                 </Link>

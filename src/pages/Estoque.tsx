@@ -25,6 +25,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/co
 import { supabase } from '@/lib/supabase/client'
 import { Filter, Search, Car } from 'lucide-react'
 import { trackCTAClick } from '@/lib/tracking'
+import { getImageUrl } from '@/lib/image-utils'
 
 export default function Estoque() {
   const [veiculos, setVeiculos] = useState<any[]>([])
@@ -300,10 +301,8 @@ export default function Estoque() {
                 {filteredVeiculos.map((v) => {
                   const fotos =
                     Array.isArray(v.fotos) && v.fotos.length > 0
-                      ? v.fotos
-                      : [
-                          'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/fotos/modelo-veiculo.webp',
-                        ]
+                      ? v.fotos.map((url: string) => getImageUrl(url))
+                      : [getImageUrl('fotos/modelo-veiculo.webp')]
                   return (
                     <Card
                       key={v.id}
@@ -336,8 +335,12 @@ export default function Estoque() {
                                     <img
                                       src={url}
                                       alt={`${v.marca} ${v.modelo} - Foto ${index + 1}`}
-                                      className="w-full h-[300px] object-cover"
+                                      className="w-full h-[300px] object-cover bg-muted"
                                       loading="lazy"
+                                      onError={(e) => {
+                                        ;(e.target as HTMLImageElement).src =
+                                          'https://img.usecurling.com/p/400/300?q=car'
+                                      }}
                                     />
                                   )}
                                 </Link>

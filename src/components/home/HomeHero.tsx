@@ -4,9 +4,12 @@ import { Button } from '@/components/ui/button'
 import { supabase } from '@/lib/supabase/client'
 import { Search, CarFront, ShieldCheck } from 'lucide-react'
 
+import { getImageUrl } from '@/lib/image-utils'
+
 export function HomeHero() {
   const [vehicleCount, setVehicleCount] = useState<number | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [banner, setBanner] = useState<any>(null)
 
   useEffect(() => {
     let isMounted = true
@@ -35,7 +38,25 @@ export function HomeHero() {
       }
     }
 
+    const fetchBanner = async () => {
+      try {
+        const { data } = await supabase
+          .from('site_banners')
+          .select('*')
+          .eq('ativo', true)
+          .order('ordem', { ascending: true })
+          .limit(1)
+          .single()
+        if (data && isMounted) {
+          setBanner(data)
+        }
+      } catch (err) {
+        console.error('Erro ao buscar banner:', err)
+      }
+    }
+
     fetchCount()
+    fetchBanner()
 
     return () => {
       isMounted = false
@@ -44,7 +65,20 @@ export function HomeHero() {
 
   return (
     <section className="relative overflow-hidden bg-background pt-24 pb-16 md:pt-32 md:pb-24 border-b">
-      <div className="absolute inset-0 bg-grid-slate-100/[0.04] bg-[bottom_1px_center] dark:bg-grid-slate-900/[0.04] dark:bg-bottom" />
+      {banner && banner.imagem_url && (
+        <div className="absolute inset-0 z-0 opacity-10 dark:opacity-20">
+          <img
+            src={getImageUrl(banner.imagem_url)}
+            alt={banner.titulo || 'Banner Carro e Cia'}
+            className="w-full h-full object-cover"
+            onError={(e) => {
+              ;(e.target as HTMLImageElement).style.display = 'none'
+            }}
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-background via-background/80 to-transparent" />
+        </div>
+      )}
+      <div className="absolute inset-0 z-0 bg-grid-slate-100/[0.04] bg-[bottom_1px_center] dark:bg-grid-slate-900/[0.04] dark:bg-bottom" />
       <div className="container relative z-10">
         <div className="mx-auto max-w-4xl text-center">
           <div className="inline-flex items-center rounded-full border px-3 py-1 text-sm font-medium transition-colors border-primary/20 bg-primary/10 text-primary mb-6">
