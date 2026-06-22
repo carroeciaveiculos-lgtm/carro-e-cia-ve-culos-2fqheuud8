@@ -26,6 +26,7 @@ if (typeof window !== 'undefined') {
       msg.includes('google.com/pagead') ||
       msg.includes('googletagmanager.com') ||
       msg.includes('googleadservices.com') ||
+      msg.includes('google.com/ccm') ||
       msg.includes('net::ERR_BLOCKED_BY_CLIENT') ||
       msg.includes('net::ERR_CONNECTION_REFUSED')
     ) {
@@ -42,6 +43,7 @@ if (typeof window !== 'undefined') {
       typeof url === 'string' &&
       (url.includes('google.com/measurement') ||
         url.includes('google.com/pagead') ||
+        url.includes('google.com/ccm') ||
         url.includes('googletagmanager.com') ||
         url.includes('google-analytics.com') ||
         url.includes('analytics.google.com') ||
@@ -73,6 +75,7 @@ if (typeof window !== 'undefined') {
         typeof url === 'string' &&
         (url.includes('google.com/measurement') ||
           url.includes('google.com/pagead') ||
+          url.includes('google.com/ccm') ||
           url.includes('googletagmanager.com') ||
           url.includes('google-analytics.com') ||
           url.includes('analytics.google.com') ||
@@ -102,6 +105,7 @@ if (typeof window !== 'undefined') {
       if (
         urlStr.includes('google.com/measurement') ||
         urlStr.includes('google.com/pagead') ||
+        urlStr.includes('google.com/ccm') ||
         urlStr.includes('googletagmanager.com') ||
         urlStr.includes('google-analytics.com') ||
         urlStr.includes('analytics.google.com') ||
