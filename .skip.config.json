@@ -33,8 +33,8 @@
   ],
   "deployment": {
     "lastDevBuildRef": "56b0b84",
-    "lastProdBuildRef": "d9c5e9a",
-    "publishedAt": "2026-06-22T18:17:15.624Z",
-    "lastPublishedRef": "4d190f0"
+    "lastProdBuildRef": "2107164",
+    "publishedAt": "2026-06-22T20:35:29.497Z",
+    "lastPublishedRef": "56b0b84"
   }
 }
