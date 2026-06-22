@@ -658,6 +658,16 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
         const isVideo = file.type.startsWith('video/')
         if (!file.type.startsWith('image/') && !isVideo) continue
 
+        const MAX_FILE_SIZE = 50 * 1024 * 1024 // 50MB
+        if (file.size > MAX_FILE_SIZE) {
+          toast({
+            title: 'Erro de tamanho',
+            description: 'O arquivo é muito grande. Por favor, envie um vídeo menor.',
+            variant: 'destructive',
+          })
+          continue
+        }
+
         let fileToUpload = file
         let contentType = file.type
         let fileName = `${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.]/g, '')}`
@@ -672,7 +682,17 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
         const { error } = await supabase.storage
           .from('logos-e-imagens')
           .upload(filePathStorage, fileToUpload, { contentType })
-        if (error) throw error
+
+        if (error) {
+          if (
+            error.message?.toLowerCase().includes('payload too large') ||
+            String(error.message).includes('413') ||
+            (error as any).statusCode === 413
+          ) {
+            throw new Error('O arquivo é muito grande. Por favor, envie um vídeo menor.')
+          }
+          throw error
+        }
 
         const { data: publicUrlData } = supabase.storage
           .from('logos-e-imagens')

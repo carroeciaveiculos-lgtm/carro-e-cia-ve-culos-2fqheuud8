@@ -119,6 +119,11 @@ export default function MediaCenterPage() {
 
     try {
       for (const file of Array.from(e.target.files)) {
+        const MAX_FILE_SIZE = 50 * 1024 * 1024 // 50MB
+        if (file.size > MAX_FILE_SIZE) {
+          throw new Error('O arquivo é muito grande. Por favor, envie um vídeo menor.')
+        }
+
         const isVideo = file.type.startsWith('video/')
         let fileToUpload = file
         let contentType = file.type
@@ -138,7 +143,17 @@ export default function MediaCenterPage() {
         const { error: uploadError } = await supabase.storage
           .from('logos-e-imagens')
           .upload(filename, fileToUpload)
-        if (uploadError) throw uploadError
+
+        if (uploadError) {
+          if (
+            uploadError.message?.toLowerCase().includes('payload too large') ||
+            String(uploadError.message).includes('413') ||
+            (uploadError as any).statusCode === 413
+          ) {
+            throw new Error('O arquivo é muito grande. Por favor, envie um vídeo menor.')
+          }
+          throw uploadError
+        }
 
         const {
           data: { publicUrl },
