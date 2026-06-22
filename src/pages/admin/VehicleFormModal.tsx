@@ -780,6 +780,8 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
         await supabase.from('logs_ia').insert({
           acao: 'Geração de Kit Social Media',
           status: 'success',
+          provider: 'gemini',
+          modelo: 'gemini-1.5-flash',
           tokens_input: 150,
           tokens_output: 300,
         })
@@ -788,9 +790,12 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
       }
     } catch (err: any) {
       toast({ title: 'Erro ao gerar', description: err.message, variant: 'destructive' })
-      await supabase
-        .from('logs_ia')
-        .insert({ acao: 'Geração de Kit Social Media', status: 'error' })
+      await supabase.from('logs_ia').insert({
+        acao: 'Geração de Kit Social Media',
+        status: 'error',
+        provider: 'gemini',
+        modelo: 'gemini-1.5-flash',
+      })
     } finally {
       setLoadingAdKit(false)
     }
