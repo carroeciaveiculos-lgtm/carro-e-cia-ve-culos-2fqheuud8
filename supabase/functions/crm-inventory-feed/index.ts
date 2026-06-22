@@ -53,6 +53,21 @@ Deno.serve(async (req: Request) => {
         }
       }
 
+      fotos = fotos.map((url: any) => {
+        if (typeof url === 'string' && url.includes('supabase.co/storage/v1/object/public/')) {
+          const baseUrl = url.split('?')[0]
+          const query = url.split('?')[1] || ''
+          const params = new URLSearchParams(query)
+          params.set('format', 'jpg')
+          return (
+            baseUrl.replace('/storage/v1/object/public/', '/storage/v1/render/image/public/') +
+            '?' +
+            params.toString()
+          )
+        }
+        return typeof url === 'string' ? url : ''
+      })
+
       return {
         id: v.id,
         marca: v.marca,
