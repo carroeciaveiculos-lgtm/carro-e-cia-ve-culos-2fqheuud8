@@ -14,6 +14,14 @@ export function getImageUrl(
     return 'https://img.usecurling.com/p/400/300?q=car'
   }
 
+  // Force migration of legacy bucket references
+  if (bucket === 'veiculos-fotos') {
+    bucket = 'logos-e-imagens'
+  }
+  if (typeof pathOrUrl === 'string') {
+    pathOrUrl = pathOrUrl.replace('veiculos-fotos', 'logos-e-imagens')
+  }
+
   // Verifica se já é uma URL absoluta
   if (pathOrUrl.startsWith('http://') || pathOrUrl.startsWith('https://')) {
     // Se for URL de renderização do Supabase (image transformation), converte para acesso direto se necessário
