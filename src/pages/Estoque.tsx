@@ -23,8 +23,9 @@ import { Slider } from '@/components/ui/slider'
 import { Label } from '@/components/ui/label'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
 import { supabase } from '@/lib/supabase/client'
-import { Filter, Search, Car } from 'lucide-react'
+import { Filter, Search, Car, Share2 } from 'lucide-react'
 import { trackCTAClick } from '@/lib/tracking'
+import { toast } from 'sonner'
 import { getImageUrl } from '@/lib/image-utils'
 
 export default function Estoque() {
@@ -312,6 +313,30 @@ export default function Estoque() {
                         {v.is_zero_km && (
                           <Badge className="absolute top-3 left-3 z-10 bg-primary">0 KM</Badge>
                         )}
+                        <Button
+                          size="icon"
+                          variant="secondary"
+                          className="absolute top-3 right-3 z-10 rounded-full bg-white/80 hover:bg-white text-slate-700 shadow-sm w-8 h-8"
+                          onClick={(e) => {
+                            e.preventDefault()
+                            e.stopPropagation()
+                            const url = `https://www.carroeciamotors.com.br/estoque/${v.id}`
+                            if (navigator.share) {
+                              navigator
+                                .share({
+                                  title: `${v.marca} ${v.modelo} ${v.ano_fabricacao}`,
+                                  text: `Confira este excelente ${v.marca} ${v.modelo} por R$ ${v.preco_venda?.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}.`,
+                                  url,
+                                })
+                                .catch(console.error)
+                            } else {
+                              navigator.clipboard.writeText(url)
+                              toast.success('Link copiado!')
+                            }
+                          }}
+                        >
+                          <Share2 className="w-4 h-4" />
+                        </Button>
                         <Carousel className="w-full h-full">
                           <CarouselContent className="h-full ml-0">
                             {fotos.map((url: string, index: number) => (

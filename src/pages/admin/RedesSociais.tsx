@@ -23,6 +23,8 @@ import {
   Calendar as CalendarIcon,
   List,
   Filter,
+  Wand2,
+  ImagePlus,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -97,6 +99,8 @@ export default function RedesSociais() {
   const [formHora, setFormHora] = useState('12:00')
   const [formStatus, setFormStatus] = useState('Agendado')
   const [formVeiculoId, setFormVeiculoId] = useState<string>('nenhum')
+  const [formFile, setFormFile] = useState<File | null>(null)
+  const [isGeneratingAi, setIsGeneratingAi] = useState(false)
   const [veiculos, setVeiculos] = useState<any[]>([])
 
   useEffect(() => {
@@ -141,7 +145,53 @@ export default function RedesSociais() {
     setFormHora('12:00')
     setFormStatus('Agendado')
     setFormVeiculoId('nenhum')
+    setFormFile(null)
     setIsModalOpen(true)
+  }
+
+  const handleGenerateAI = async () => {
+    if (!formVeiculoId || formVeiculoId === 'nenhum') {
+      toast({
+        title: 'Selecione um veículo',
+        description: 'É necessário selecionar um veículo para gerar o texto.',
+        variant: 'destructive',
+      })
+      return
+    }
+
+    setIsGeneratingAi(true)
+    try {
+      const { data, error } = await supabase.functions.invoke('gerar-conteudo-social', {
+        body: { veiculo_id: formVeiculoId },
+      })
+      if (error) throw error
+      if (data?.success) {
+        setFormTexto(data.data)
+        toast({ title: 'Texto gerado com sucesso!' })
+      } else {
+        throw new Error(data?.error || 'Erro desconhecido')
+      }
+    } catch (e: any) {
+      toast({ title: 'Erro ao gerar texto', description: e.message, variant: 'destructive' })
+    } finally {
+      setIsGeneratingAi(false)
+    }
+  }
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const f = e.target.files[0]
+      if (f.size > 52428800) {
+        // 50MB limit
+        toast({
+          title: 'Payload too large',
+          description: 'Arquivo muito grande. O limite é 50MB.',
+          variant: 'destructive',
+        })
+        return
+      }
+      setFormFile(f)
+    }
   }
 
   const handlePostClick = (post: SocialPost, e?: React.MouseEvent) => {
@@ -157,6 +207,34 @@ export default function RedesSociais() {
     }
 
     setLoading(true)
+    let imagemUrl = null
+
+    if (formFile) {
+      try {
+        const fileExt = formFile.name.split('.').pop()
+        const path = `social/${Date.now()}_${Math.random().toString(36).substring(2)}.${fileExt}`
+        const { error: uploadError } = await supabase.storage
+          .from('logos-e-imagens')
+          .upload(path, formFile)
+        if (uploadError) throw uploadError
+
+        const { data: publicUrlData } = supabase.storage.from('logos-e-imagens').getPublicUrl(path)
+        imagemUrl = publicUrlData.publicUrl
+      } catch (e: any) {
+        if (e.message?.includes('Payload too large') || e.statusCode === 413) {
+          toast({
+            title: 'Payload too large',
+            description: 'O arquivo excede o limite permitido de 50MB.',
+            variant: 'destructive',
+          })
+        } else {
+          toast({ title: 'Erro no upload', description: e.message, variant: 'destructive' })
+        }
+        setLoading(false)
+        return
+      }
+    }
+
     const dataAgendamento = new Date(selectedDate)
     const [hours, minutes] = formHora.split(':')
     dataAgendamento.setHours(parseInt(hours, 10), parseInt(minutes, 10), 0)
@@ -166,6 +244,7 @@ export default function RedesSociais() {
       texto: formTexto,
       data_agendamento: dataAgendamento.toISOString(),
       status: formStatus,
+      imagem: imagemUrl,
     }
 
     if (formVeiculoId && formVeiculoId !== 'nenhum') {
@@ -593,13 +672,40 @@ export default function RedesSociais() {
               </Select>
             </div>
             <div className="grid gap-2">
-              <Label>Texto da Publicação</Label>
+              <div className="flex items-center justify-between">
+                <Label>Texto da Publicação</Label>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="h-7 text-xs bg-purple-50 text-purple-700 hover:bg-purple-100 border-purple-200"
+                  onClick={handleGenerateAI}
+                  disabled={isGeneratingAi || !formVeiculoId || formVeiculoId === 'nenhum'}
+                >
+                  <Wand2 className="w-3 h-3 mr-1" />
+                  {isGeneratingAi ? 'Gerando...' : 'Gerar com IA'}
+                </Button>
+              </div>
               <Textarea
                 placeholder="Escreva a legenda do post ou use a IA nos detalhes do veículo..."
                 value={formTexto}
                 onChange={(e) => setFormTexto(e.target.value)}
                 className="h-32 resize-none"
               />
+            </div>
+            <div className="grid gap-2">
+              <Label>Mídia (Opcional - Máx 50MB)</Label>
+              <div className="flex items-center gap-2">
+                <Input
+                  type="file"
+                  accept="image/*,video/mp4"
+                  onChange={handleFileChange}
+                  className="cursor-pointer"
+                />
+              </div>
+              {formFile && (
+                <span className="text-xs text-slate-500">Arquivo selecionado: {formFile.name}</span>
+              )}
             </div>
           </div>
           <DialogFooter>
