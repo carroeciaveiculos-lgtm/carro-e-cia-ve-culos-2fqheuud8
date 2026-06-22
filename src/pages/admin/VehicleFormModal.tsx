@@ -342,7 +342,7 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
           .from('contratos_consignacao')
           .select('*')
           .eq('veiculo_id', vehicleId)
-          .single()
+          .maybeSingle()
           .then(({ data }) => {
             if (data) setContrato(data)
           })

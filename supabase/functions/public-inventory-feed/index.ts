@@ -42,7 +42,7 @@ Deno.serve(async (req) => {
       'make',
       'model',
       'year',
-      'mileage', 
+      'mileage',
       'price',
       'url',
       'image',
@@ -136,9 +136,9 @@ Deno.serve(async (req) => {
       })
       .map((v) => {
         const link = `https://www.carroeciamotors.com.br/estoque/${v.id}`
-        
+
         // Mapeamento tolerante de imagem: Pega a primeira do array, o link estático ou exibe um placeholder
-        let imageLink = "https://www.carroeciamotors.com.br/placeholder-car.png"
+        let imageLink = 'https://www.carroeciamotors.com.br/placeholder-car.png'
         if (v.fotos && Array.isArray(v.fotos) && v.fotos.length > 0) {
           imageLink = v.fotos[0]
         } else if (v.link_foto || v.foto_url) {
@@ -159,7 +159,7 @@ Deno.serve(async (req) => {
         let description = v.descricao
           ? v.descricao.substring(0, 5000)
           : `${title}. Lindo carro disponível em estoque na Carro e Cia Motors Uberaba.`
-        
+
         description = description
           .replace(/<[^>]*>?/gm, '')
           .replace(/[\n\r]+/g, ' ')
