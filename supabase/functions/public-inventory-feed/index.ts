@@ -35,6 +35,7 @@ Deno.serve(async (req) => {
 
     if (error) throw error
 
+    // Cabeçalhos corrigidos seguindo o padrão estrito do Meta CSV
     const headers = [
       'vehicle_id',
       'title',
@@ -42,10 +43,11 @@ Deno.serve(async (req) => {
       'make',
       'model',
       'year',
-      'mileage',
+      'mileage.value', // Corrigido de 'mileage' para duas colunas de objeto
+      'mileage.unit',
       'price',
       'url',
-      'image',
+      'image[0].url',  // Corrigido de 'image' para a notação de array de imagens do Meta
       'address',
       'state_of_vehicle',
       'body_style',
@@ -64,13 +66,8 @@ Deno.serve(async (req) => {
       return str
     }
 
-    const addressJson = JSON.stringify({
-      addr1: 'Av. Guilherme Ferreira, 1131',
-      city: 'Uberaba',
-      region: 'MG',
-      country: 'BR',
-      postal_code: '38022-200',
-    })
+    // Endereço formatado no padrão com chaves aceito pela API da Meta (sem aspas duplas de JSON para evitar conflito no CSV)
+    const addressStr = "{addr1: 'Av. Guilherme Ferreira, 1131', city: 'Uberaba', region: 'MG', country: 'BR', postal_code: '38022-200'}"
 
     const bodyStyleMap: Record<string, string> = {
       Hatch: 'hatchback',
@@ -121,28 +118,42 @@ Deno.serve(async (req) => {
 
     const rows = (veiculos || [])
       .filter((v) => {
-        // Validação básica do ID (Apenas garante que o ID não está em branco)
+        // Validação simples de ID
         if (!v.id) return false
-
-        // Validação Inteligente do Ano (Verifica as duas colunas possíveis no banco)
-        const ano = Number(v.ano_modelo || v.ano_fabricacao || v.ano)
-        if (isNaN(ano) || ano < 1950 || ano > anoAtual + 1) return false
-
-        // Validação Inteligente do Preço (Limpa formatação antes de avaliar)
-        const preco = limparEConverterNumero(v.preco_venda || v.preco_venda_promocional)
-        if (preco < 1000) return false
-
+        
+        // Normalização de status
+        const rawStatus = (v.status || '')
+          .toLowerCase()
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '')
+        if (rawStatus !== 'disponivel') return false
+        
+        // Filtro de ano e preço mínimos
+        const ano = Number(v.ano_modelo || v.ano_fabricacao)
+        const preco = Number(v.preco_venda)
+        if (!v.preco_venda || preco < 1000 || isNaN(ano) || ano < 1950 || ano > anoAtual + 1)
+          return false
+        
         return true
       })
       .map((v) => {
         const link = `https://www.carroeciamotors.com.br/estoque/${v.id}`
-
-        // Mapeamento tolerante de imagem: Pega a primeira do array, o link estático ou exibe um placeholder
-        let imageLink = 'https://www.carroeciamotors.com.br/placeholder-car.png'
+        
+        // Capturar o link da imagem
+        let imageLink = "https://www.carroeciamotors.com.br/placeholder-car.png"
         if (v.fotos && Array.isArray(v.fotos) && v.fotos.length > 0) {
           imageLink = v.fotos[0]
         } else if (v.link_foto || v.foto_url) {
           imageLink = v.link_foto || v.foto_url
+        }
+
+        // CONVERSÃO DINÂMICA DE WEBP PARA JPEG (FATOR DE SUCESSO):
+        // Se a foto estiver no seu Storage público do Supabase e for .webp, nós alteramos a rota
+        // de download direto (/object/public/) para a rota de renderização (/render/image/public/) com ?format=jpeg
+        if (imageLink.includes('supabase.co/storage/v1/object/public/')) {
+          imageLink = imageLink
+            .replace('/storage/v1/object/public/', '/storage/v1/render/image/public/')
+            + '?format=jpeg'
         }
 
         const precoFinal = limparEConverterNumero(v.preco_venda || v.preco_venda_promocional)
@@ -150,16 +161,15 @@ Deno.serve(async (req) => {
         const condition = v.is_zero_km ? 'new' : 'used'
         const ano = v.ano_modelo || v.ano_fabricacao || v.ano
 
-        // Sincroniza a quilometragem dinâmica do banco ou usa "1 km" de segurança para a Meta aprovar
-        const kmValue = v.km || v.quilometragem || 1
-        const mileage = `${kmValue} km`
+        // Sincroniza quilometragem numérica pura para mileage.value
+        const kmValue = Number(v.km || v.quilometragem || 1)
 
         const title = `${v.marca} ${v.modelo} ${v.versao || ''} ${ano}`.replace(/\s+/g, ' ').trim()
 
         let description = v.descricao
           ? v.descricao.substring(0, 5000)
-          : `${title}. Lindo carro disponível em estoque na Carro e Cia Motors Uberaba.`
-
+          : `${title}. Lindo veículo em estoque na Carro e Cia Motors.`
+        
         description = description
           .replace(/<[^>]*>?/gm, '')
           .replace(/[\n\r]+/g, ' ')
@@ -173,11 +183,12 @@ Deno.serve(async (req) => {
           v.marca, // make
           `${v.modelo} ${v.versao || ''}`.trim(), // model
           ano, // year
-          mileage, // mileage
+          kmValue, // mileage.value (numérico puro)
+          'KM', // mileage.unit (texto fixo em maiúsculo)
           price, // price
           link, // url
-          imageLink, // image
-          addressJson, // address
+          imageLink, // image[0].url (com conversão em tempo real para JPEG)
+          addressStr, // address
           condition, // state_of_vehicle
           bodyStyleMap[v.categoria] || 'other', // body_style
           v.cor || '', // exterior_color
