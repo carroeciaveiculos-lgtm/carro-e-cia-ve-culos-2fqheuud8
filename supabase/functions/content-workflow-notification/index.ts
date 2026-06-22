@@ -10,7 +10,7 @@ Deno.serve(async (req: Request) => {
     const { title, authorName, authorEmail, link } = await req.json()
 
     const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')
-
+    
     if (!RESEND_API_KEY) {
       console.warn('RESEND_API_KEY not found. Skipping email.')
       return new Response(JSON.stringify({ message: 'Email skipped, no API key' }), {
