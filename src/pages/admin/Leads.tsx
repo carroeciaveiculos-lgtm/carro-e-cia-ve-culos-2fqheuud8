@@ -27,6 +27,7 @@ import {
   AlertTriangle,
   Lock,
   Plus,
+  FileText,
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { cn } from '@/lib/utils'
@@ -52,6 +53,10 @@ export default function AdminLeads() {
   const [isVeiculoModalOpen, setIsVeiculoModalOpen] = useState(false)
   const [searchVeiculo, setSearchVeiculo] = useState('')
   const [veiculosBusca, setVeiculosBusca] = useState<any[]>([])
+
+  const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false)
+  const [templates, setTemplates] = useState<any[]>([])
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false)
 
   useEffect(() => {
     loadInitialData()
@@ -129,6 +134,17 @@ export default function AdminLeads() {
       fetchVeiculos()
     }
   }, [isVeiculoModalOpen, searchVeiculo])
+
+  useEffect(() => {
+    if (isTemplateModalOpen) {
+      supabase
+        .from('whatsapp_templates')
+        .select('*')
+        .then(({ data }) => {
+          if (data) setTemplates(data)
+        })
+    }
+  }, [isTemplateModalOpen])
 
   const loadInitialData = async () => {
     try {
@@ -262,20 +278,79 @@ export default function AdminLeads() {
       message_text: message,
     }
     try {
-      const { data, error } = await supabase
-        .from('conversation_history')
-        .insert([newMsg])
-        .select()
-        .single()
-      if (error) throw error
-      setConversation((prev) => {
-        if (prev.some((m) => m.id === data.id)) return prev
-        return [...prev, data]
-      })
+      if (selectedLead.telefone) {
+        await supabase.functions.invoke('send-whatsapp', {
+          body: {
+            action: 'text',
+            to: selectedLead.telefone,
+            text: message,
+            leadId: selectedLead.id,
+          },
+        })
+      } else {
+        const { data, error } = await supabase
+          .from('conversation_history')
+          .insert([newMsg])
+          .select()
+          .single()
+        if (error) throw error
+      }
       setMessage('')
       toast({ title: 'Mensagem enviada com sucesso!' })
     } catch (err: any) {
       toast({ title: 'Erro ao enviar', description: err.message, variant: 'destructive' })
+    }
+  }
+
+  const sendTemplate = async (templateName: string) => {
+    if (!selectedLead?.telefone) return
+    try {
+      await supabase.functions.invoke('send-whatsapp', {
+        body: {
+          action: 'template',
+          to: selectedLead.telefone,
+          templateName,
+          leadId: selectedLead.id,
+        },
+      })
+      setIsTemplateModalOpen(false)
+      toast({ title: 'Template enviado com sucesso!' })
+    } catch (err: any) {
+      toast({ title: 'Erro ao enviar template', description: err.message, variant: 'destructive' })
+    }
+  }
+
+  const generateAndSendProposal = async () => {
+    if (!selectedLead || !linkedVeiculo || !selectedLead.telefone) {
+      toast({
+        title: 'Vincule um veículo e garanta que o lead tem telefone',
+        variant: 'destructive',
+      })
+      return
+    }
+    setIsGeneratingPdf(true)
+    try {
+      const { data, error } = await supabase.functions.invoke('gerar-pdf-proposta', {
+        body: { veiculo: linkedVeiculo, cliente: selectedLead },
+      })
+      if (error) throw error
+      if (data?.url) {
+        await supabase.functions.invoke('send-whatsapp', {
+          body: {
+            action: 'document',
+            to: selectedLead.telefone,
+            documentUrl: data.url,
+            filename: `Proposta_${linkedVeiculo.modelo.replace(/\s+/g, '_')}.pdf`,
+            text: `Olá ${selectedLead.nome}, segue a proposta do ${linkedVeiculo.modelo}!`,
+            leadId: selectedLead.id,
+          },
+        })
+        toast({ title: 'Proposta enviada por WhatsApp!' })
+      }
+    } catch (err: any) {
+      toast({ title: 'Erro ao gerar proposta', description: err.message, variant: 'destructive' })
+    } finally {
+      setIsGeneratingPdf(false)
     }
   }
 
@@ -671,6 +746,16 @@ export default function AdminLeads() {
                   variant="outline"
                   size="sm"
                   className="h-7 text-[10px]"
+                  onClick={generateAndSendProposal}
+                  disabled={isGeneratingPdf || !linkedVeiculo}
+                >
+                  <FileText className="w-3 h-3 mr-1" />{' '}
+                  {isGeneratingPdf ? 'Gerando...' : 'Gerar e Enviar Proposta PDF (WA)'}
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-7 text-[10px]"
                   onClick={async () => {
                     toast({ title: 'Enviando proposta por e-mail...' })
                     await supabase.functions.invoke('send-lead-email', {
@@ -685,16 +770,16 @@ export default function AdminLeads() {
                     toast({ title: 'Proposta enviada ao e-mail do cliente!' })
                   }}
                 >
-                  <Mail className="w-3 h-3 mr-1" /> Enviar Proposta E-mail
+                  <Mail className="w-3 h-3 mr-1" /> Enviar E-mail
                 </Button>
                 {!sessionInfo.active && (
                   <Button
                     variant="default"
                     size="sm"
                     className="h-7 text-[10px] bg-green-600 hover:bg-green-700"
-                    onClick={() => toast({ title: 'Seleção de templates em breve!' })}
+                    onClick={() => setIsTemplateModalOpen(true)}
                   >
-                    <MessageCircle className="w-3 h-3 mr-1" /> Selecionar Template
+                    <MessageCircle className="w-3 h-3 mr-1" /> Selecionar Template Meta
                   </Button>
                 )}
               </div>
@@ -948,6 +1033,33 @@ export default function AdminLeads() {
               )}
             </div>
           </ScrollArea>
+        </DialogContent>
+      </Dialog>
+
+      {/* MODAL TEMPLATES */}
+      <Dialog open={isTemplateModalOpen} onOpenChange={setIsTemplateModalOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Selecionar Template do WhatsApp</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-4 max-h-[60vh] overflow-y-auto">
+            {templates.map((t) => (
+              <div
+                key={t.id}
+                className="border p-3 rounded-lg hover:bg-slate-50 cursor-pointer"
+                onClick={() => sendTemplate(t.nome)}
+              >
+                <p className="font-bold text-sm">{t.nome}</p>
+                <p className="text-xs text-slate-500 mt-1">{t.corpo}</p>
+                <Badge variant="outline" className="mt-2 text-[10px]">
+                  {t.categoria}
+                </Badge>
+              </div>
+            ))}
+            {templates.length === 0 && (
+              <p className="text-sm text-slate-500 text-center">Nenhum template encontrado.</p>
+            )}
+          </div>
         </DialogContent>
       </Dialog>
     </div>

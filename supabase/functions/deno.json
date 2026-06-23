@@ -1,7 +1,7 @@
 {
   "_versions": {
     "send-lead-email": 60,
-    "receive-leads": 73,
+    "receive-leads": 74,
     "sync-estoque": 59,
     "webhook-portais": 60,
     "on-lead-created": 60,
@@ -19,6 +19,6 @@
     "ai-assistant": 4,
     "content-workflow-notification": 1,
     "gerar-conteudo-social": 1,
-    "publicar-social": 1
+    "publicar-social": 2
   }
 }

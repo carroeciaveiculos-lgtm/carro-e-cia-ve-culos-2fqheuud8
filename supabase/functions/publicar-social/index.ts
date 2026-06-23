@@ -4,13 +4,12 @@ import { createClient } from 'jsr:@supabase/supabase-js@2'
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, x-supabase-client-platform, apikey, content-type',
+  'Access-Control-Allow-Headers':
+    'authorization, x-client-info, x-supabase-client-platform, apikey, content-type',
 }
 
 Deno.serve(async (req: Request) => {
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
-  }
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
 
   try {
     const supabase = createClient(
@@ -18,16 +17,9 @@ Deno.serve(async (req: Request) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
     )
 
-    const authHeader = req.headers.get('Authorization')
-    if (authHeader) {
-      const {
-        data: { user },
-        error: authError,
-      } = await supabase.auth.getUser(authHeader.replace('Bearer ', ''))
-      if (authError || !user) {
-        throw new Error('Não autenticado')
-      }
-    }
+    const token = Deno.env.get('META_PAGE_ACCESS_TOKEN')
+    const pageId = Deno.env.get('FACEBOOK_PAGE_ID')
+    const igId = Deno.env.get('INSTAGRAM_BUSINESS_ID')
 
     const { data: posts, error } = await supabase
       .from('social_posts')
@@ -40,20 +32,59 @@ Deno.serve(async (req: Request) => {
     let processed = 0
 
     for (const post of posts || []) {
-      // Mocking the publication process against Meta API / WhatsApp APIs
-      // utilizing configured secrets (META_PAGE_ACCESS_TOKEN, WHATSAPP_TOKEN) under the hood.
-      const isSuccess = Math.random() > 0.1 // 90% success rate simulation
+      const redes = typeof post.redes === 'string' ? JSON.parse(post.redes) : post.redes
+      let isSuccess = false
+      let fbError = null
+
+      if (redes.facebook && pageId && token && post.imagem) {
+        const fbRes = await fetch(`https://graph.facebook.com/v20.0/${pageId}/photos`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            access_token: token,
+            url: post.imagem,
+            message: post.texto,
+          }),
+        })
+        const fbData = await fbRes.json()
+        if (fbRes.ok) isSuccess = true
+        else fbError = fbData
+      }
+
+      if (redes.instagram && igId && token && post.imagem) {
+        const isVideo = post.imagem.match(/\.(mp4|mov|webm)$/i)
+        const containerRes = await fetch(`https://graph.facebook.com/v20.0/${igId}/media`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            access_token: token,
+            [isVideo ? 'video_url' : 'image_url']: post.imagem,
+            caption: post.texto,
+            media_type: isVideo ? 'REELS' : 'IMAGE',
+          }),
+        })
+        const containerData = await containerRes.json()
+
+        if (containerData.id) {
+          const publishRes = await fetch(`https://graph.facebook.com/v20.0/${igId}/media_publish`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              access_token: token,
+              creation_id: containerData.id,
+            }),
+          })
+          if (publishRes.ok) isSuccess = true
+        }
+      }
 
       const newStatus = isSuccess ? 'Publicado' : 'Erro'
-
       await supabase.from('social_posts').update({ status: newStatus }).eq('id', post.id)
 
       await supabase.from('logs_integracao').insert({
         portal: 'meta_social',
         status: newStatus,
-        payload_erro: isSuccess
-          ? null
-          : { error: 'Failed to authenticate with Meta Graph API or Rate Limit exceeded' },
+        payload_erro: isSuccess ? null : fbError,
         veiculo_id: post.veiculo_id || null,
       })
 
