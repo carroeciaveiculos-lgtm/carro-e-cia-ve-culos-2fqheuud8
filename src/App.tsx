@@ -170,6 +170,7 @@ const RedesSociais = lazyWithRetry(() => import('./pages/admin/RedesSociais'))
 const SocialComments = lazyWithRetry(() => import('./pages/admin/SocialComments'))
 const Conteudo = lazyWithRetry(() => import('./pages/admin/Conteudo'))
 const Auditoria = lazyWithRetry(() => import('./pages/admin/Auditoria'))
+const Marketing = lazyWithRetry(() => import('./pages/admin/Marketing'))
 
 // MotoresHub Pages (Lazy loaded)
 const HubLogin = lazyWithRetry(() => import('./hub/pages/Login'))
@@ -304,6 +305,7 @@ const MainApp = () => (
         <Route path="conteudo" element={<Conteudo />} />
 
         <Route path="auditoria" element={<Auditoria />} />
+        <Route path="marketing" element={<Marketing />} />
 
         {/* Controle de Acesso */}
         <Route path="usuarios" element={<Usuarios />} />

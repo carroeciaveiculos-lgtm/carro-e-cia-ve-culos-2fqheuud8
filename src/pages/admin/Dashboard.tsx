@@ -145,9 +145,52 @@ export default function Dashboard() {
     user?.email === 'adriana.araujo@kmzero.com.br'
   const visibleModules = ALL_MODULES.filter((m) => userModules.includes(m.id) || isAdminMaster)
 
+  const exportCSV = () => {
+    const headers = ['Métrica', 'Valor']
+    const rows = [
+      ['Leads Pendentes', metrics.leadsPendentes],
+      ['Leads em Andamento', metrics.leadsAndamento],
+      ['Leads Convertidos', metrics.leadsConvertidos],
+      ['Estoque Total', metrics.estoqueTotal],
+      ['Estoque Sem Foto', metrics.estoqueSemFoto],
+      ['Estoque Parado (+30 dias)', metrics.estoqueParado],
+    ]
+    const csvContent =
+      'data:text/csv;charset=utf-8,' +
+      [headers.join(','), ...rows.map((e) => e.join(','))].join('\n')
+    const encodedUri = encodeURI(csvContent)
+    const link = document.createElement('a')
+    link.setAttribute('href', encodedUri)
+    link.setAttribute('download', 'relatorio_executivo.csv')
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  }
+
+  const exportPDF = () => {
+    window.print()
+  }
+
   return (
-    <div className="flex-1 p-4 md:p-8 bg-[#F4F6F8]">
-      <div className="max-w-6xl mx-auto space-y-8">
+    <div className="flex-1 p-4 md:p-8 bg-[#F4F6F8] print:bg-white print:p-0">
+      <div className="max-w-6xl mx-auto space-y-8 print:space-y-4">
+        <div className="flex justify-between items-center print:hidden mb-6">
+          <h1 className="text-2xl font-bold text-slate-800">Visão Executiva</h1>
+          <div className="flex gap-2">
+            <button
+              onClick={exportCSV}
+              className="px-4 py-2 bg-white border border-slate-200 rounded-md text-sm font-medium text-slate-700 hover:bg-slate-50 flex items-center gap-2"
+            >
+              <FileText className="w-4 h-4" /> Exportar CSV
+            </button>
+            <button
+              onClick={exportPDF}
+              className="px-4 py-2 bg-blue-600 border border-transparent rounded-md text-sm font-medium text-white hover:bg-blue-700 flex items-center gap-2"
+            >
+              <FileText className="w-4 h-4" /> Exportar PDF
+            </button>
+          </div>
+        </div>
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
             <h1 className="text-2xl font-bold text-slate-800 uppercase tracking-tight">

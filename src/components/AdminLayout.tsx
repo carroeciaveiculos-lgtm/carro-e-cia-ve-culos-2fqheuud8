@@ -38,6 +38,10 @@ const SIDEBAR_MENUS = [
     ],
   },
   {
+    title: 'Marketing & Crescimento',
+    items: [{ label: 'Marketing', path: '/admin/marketing', icon: Activity }],
+  },
+  {
     title: 'Gerenciamento do Site',
     items: [
       { label: 'Visão Geral', path: '/admin/site', icon: Globe },
