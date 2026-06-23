@@ -54,10 +54,9 @@ export function KanbanBoard({
           >
             <div className={cn('p-3 border-b flex flex-col gap-1', col.color)}>
               <div className="flex justify-between items-center font-bold text-sm">
-                <span>{col.title}</span>
-                <Badge variant="secondary" className="bg-white/50 text-inherit">
-                  {colLeads.length}
-                </Badge>
+                <span>
+                  {col.title} ({colLeads.length})
+                </span>
               </div>
               <span className="text-[10px] font-semibold opacity-70">
                 Potencial: {formatCurrency(totalValue)}
@@ -78,10 +77,15 @@ export function KanbanBoard({
                       onDragStart={(e) => e.dataTransfer.setData('leadId', lead.id)}
                       onClick={() => onSelectLead(lead)}
                       className={cn(
-                        'bg-white p-3 rounded-lg shadow-sm border cursor-grab active:cursor-grabbing transition-all hover:shadow-md',
+                        'bg-white p-3 rounded-lg shadow-sm border-y border-r border-l-4 cursor-grab active:cursor-grabbing transition-all hover:shadow-md',
+                        lead.temperatura === 'quente'
+                          ? 'border-l-red-500'
+                          : lead.temperatura === 'morno'
+                            ? 'border-l-amber-500'
+                            : 'border-l-blue-500',
                         selectedLeadId === lead.id
-                          ? 'ring-2 ring-blue-500 border-transparent'
-                          : 'hover:border-blue-300',
+                          ? 'ring-2 ring-blue-500'
+                          : 'hover:border-slate-300',
                       )}
                     >
                       <div className="flex justify-between items-start mb-2 gap-2">

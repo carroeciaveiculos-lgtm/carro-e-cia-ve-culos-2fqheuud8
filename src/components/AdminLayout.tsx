@@ -13,6 +13,7 @@ import {
   ShieldCheck,
   DollarSign,
   Image as ImageIcon,
+  Activity,
 } from 'lucide-react'
 import { useAuth } from '@/hooks/use-auth'
 import { useState } from 'react'
@@ -39,6 +40,7 @@ const SIDEBAR_MENUS = [
       { label: 'Conteúdo', path: '/admin/conteudo', icon: FileText },
       { label: 'Banners', path: '/admin/site/banners', icon: ImageIcon },
       { label: 'Configurações', path: '/admin/configuracoes', icon: Settings },
+      { label: 'Logs do Sistema', path: '/admin/logs', icon: Activity },
     ],
   },
 ]

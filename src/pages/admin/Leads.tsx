@@ -863,10 +863,9 @@ export default function AdminLeads() {
           onDrop={(e) => handleDrop(e, col.id)}
         >
           <div className="p-3 border-b flex justify-between items-center bg-slate-50/50 rounded-t-xl">
-            <h3 className="font-bold text-slate-700 text-sm">{col.title}</h3>
-            <Badge variant="secondary" className="bg-white">
-              {filteredLeads.filter((l) => l.status === col.id).length}
-            </Badge>
+            <h3 className="font-bold text-slate-700 text-sm">
+              {col.title} ({filteredLeads.filter((l) => l.status === col.id).length})
+            </h3>
           </div>
           <ScrollArea className="flex-1 p-2">
             <div className="space-y-3 min-h-[100px] pb-4">
@@ -879,8 +878,15 @@ export default function AdminLeads() {
                     onDragStart={(e) => handleDragStart(e, lead.id)}
                     onClick={() => setSelectedLead(lead)}
                     className={cn(
-                      'bg-white p-3 rounded-lg border shadow-sm cursor-pointer hover:border-blue-400 transition-colors',
-                      selectedLead?.id === lead.id && 'border-blue-500 ring-1 ring-blue-500',
+                      'bg-white p-3 rounded-lg border-y border-r border-l-4 shadow-sm cursor-pointer transition-colors',
+                      lead.temperatura === 'quente'
+                        ? 'border-l-red-500'
+                        : lead.temperatura === 'morno'
+                          ? 'border-l-amber-500'
+                          : 'border-l-blue-500',
+                      selectedLead?.id === lead.id
+                        ? 'ring-2 ring-blue-500'
+                        : 'hover:border-slate-300',
                     )}
                   >
                     <div className="flex justify-between items-start mb-2 gap-2">

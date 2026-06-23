@@ -162,6 +162,7 @@ const Administrativo = lazyWithRetry(() => import('./pages/admin/Administrativo'
 const Portais = lazyWithRetry(() => import('./pages/admin/Portais'))
 const Relatorios = lazyWithRetry(() => import('./pages/admin/Relatorios'))
 const Configuracoes = lazyWithRetry(() => import('./pages/admin/Configuracoes'))
+const Logs = lazyWithRetry(() => import('./pages/admin/Logs'))
 const Usuarios = lazyWithRetry(() => import('./pages/admin/Usuarios'))
 const EditUsuario = lazyWithRetry(() => import('./pages/admin/EditUsuario'))
 const EmConstrucao = lazyWithRetry(() => import('./pages/admin/EmConstrucao'))
@@ -296,6 +297,7 @@ const MainApp = () => (
         <Route path="portais" element={<Portais />} />
         <Route path="relatorios" element={<Relatorios />} />
         <Route path="configuracoes" element={<Configuracoes />} />
+        <Route path="logs" element={<Logs />} />
 
         <Route path="redes-sociais" element={<RedesSociais />} />
         <Route path="social-comentarios" element={<SocialComments />} />

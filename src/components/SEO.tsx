@@ -16,7 +16,7 @@ export function SEO({
   description,
   schema,
   canonical,
-  image = 'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/logos/logo-carro-e-cia.webp',
+  image = 'https://www.carroeciamotors.com.br/og-image.jpeg',
   type = 'website',
   noindex = false,
   keywords,
