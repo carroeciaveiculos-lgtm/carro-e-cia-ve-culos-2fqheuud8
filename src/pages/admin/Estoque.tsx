@@ -32,6 +32,7 @@ import {
   Eye,
   MessageCircle,
   CheckCircle,
+  QrCode,
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
@@ -54,7 +55,63 @@ export default function AdminEstoque() {
   const [totalCount, setTotalCount] = useState(0)
   const pageSize = 10
   const [shareVehicle, setShareVehicle] = useState<any>(null)
+  const [loadingQR, setLoadingQR] = useState(false)
   const { toast } = useToast()
+
+  const generateMissingQRCodes = async () => {
+    setLoadingQR(true)
+    try {
+      const { data: veiculos } = await supabase
+        .from('veiculos')
+        .select('id, marca, modelo')
+        .is('qrcode_url', null)
+      if (!veiculos || veiculos.length === 0) {
+        toast({ title: 'Todos os veículos já possuem QR Code.' })
+        setLoadingQR(false)
+        return
+      }
+
+      toast({
+        title: `Gerando ${veiculos.length} QR Codes...`,
+        description: 'Aguarde, isso pode demorar um pouco.',
+      })
+
+      for (const v of veiculos) {
+        const siteUrl = import.meta.env.VITE_SITE_URL || 'https://www.carroeciamotors.com.br'
+        const url = `${siteUrl}/estoque/${v.id}`
+        const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(url)}`
+
+        try {
+          const res = await fetch(qrUrl)
+          const blob = await res.blob()
+          const fileName = `${v.id}_qrcode.png`
+
+          const { error: uploadError } = await supabase.storage
+            .from('logos-e-imagens')
+            .upload(`qrcodes/${fileName}`, blob, { contentType: 'image/png', upsert: true })
+
+          if (!uploadError) {
+            const { data: publicUrlData } = supabase.storage
+              .from('logos-e-imagens')
+              .getPublicUrl(`qrcodes/${fileName}`)
+            await supabase
+              .from('veiculos')
+              .update({ qrcode_url: publicUrlData.publicUrl })
+              .eq('id', v.id)
+          }
+        } catch (e) {
+          console.error('Erro ao gerar QR para', v.id, e)
+        }
+      }
+
+      toast({ title: 'QR Codes gerados com sucesso!' })
+      loadVehicles()
+    } catch (e: any) {
+      toast({ title: 'Erro ao gerar QR Codes', description: e.message, variant: 'destructive' })
+    } finally {
+      setLoadingQR(false)
+    }
+  }
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearch(search), 300)
@@ -223,6 +280,15 @@ export default function AdminEstoque() {
           </p>
         </div>
         <div className="flex gap-2">
+          <Button
+            variant="outline"
+            onClick={generateMissingQRCodes}
+            disabled={loadingQR}
+            className="hidden sm:flex border-blue-200 text-blue-700 bg-blue-50 hover:bg-blue-100"
+          >
+            <QrCode className="w-4 h-4 mr-2" />{' '}
+            {loadingQR ? 'Gerando...' : 'Gerar QR Codes Faltantes'}
+          </Button>
           <Button
             onClick={() => {
               setEditingId(null)

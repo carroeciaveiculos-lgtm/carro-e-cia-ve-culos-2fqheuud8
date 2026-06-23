@@ -463,7 +463,33 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
       if (error) throw error
 
       if (data && data[0]) {
-        setFormData((prev: any) => ({ ...prev, id: data[0].id }))
+        const novoId = data[0].id
+        setFormData((prev: any) => ({ ...prev, id: novoId }))
+
+        // QR Code Automation
+        if (!payload.id && !data[0].qrcode_url) {
+          try {
+            const siteUrl = import.meta.env.VITE_SITE_URL || 'https://www.carroeciamotors.com.br'
+            const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(`${siteUrl}/estoque/${novoId}`)}`
+            const res = await fetch(qrUrl)
+            const blob = await res.blob()
+            const fileName = `${novoId}_qrcode.png`
+            const { error: uploadError } = await supabase.storage
+              .from('logos-e-imagens')
+              .upload(`qrcodes/${fileName}`, blob, { contentType: 'image/png', upsert: true })
+            if (!uploadError) {
+              const { data: publicUrlData } = supabase.storage
+                .from('logos-e-imagens')
+                .getPublicUrl(`qrcodes/${fileName}`)
+              await supabase
+                .from('veiculos')
+                .update({ qrcode_url: publicUrlData.publicUrl })
+                .eq('id', novoId)
+            }
+          } catch (e) {
+            console.error('Falha ao gerar QR code automático', e)
+          }
+        }
       }
 
       toast({ title: 'Veículo salvo com sucesso!' })
@@ -1795,9 +1821,12 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
                   <div className="mb-4 bg-white p-2 border shadow-sm rounded-lg">
                     {vehicleId ? (
                       <img
-                        src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(`https://carroeciamotors.com.br/estoque/${vehicleId}`)}`}
+                        src={
+                          formData.qrcode_url ||
+                          `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(`https://carroeciamotors.com.br/estoque/${vehicleId}`)}`
+                        }
                         alt="QR Code"
-                        className="w-32 h-32"
+                        className="w-32 h-32 object-contain"
                       />
                     ) : (
                       <div className="w-32 h-32 bg-slate-100 flex items-center justify-center text-slate-400">

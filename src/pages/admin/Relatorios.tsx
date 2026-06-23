@@ -1,264 +1,272 @@
-import { useState, useEffect } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { BarChart3, TrendingUp, Users, Car, Download, DollarSign, Activity } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { useEffect, useState, useMemo } from 'react'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { supabase } from '@/lib/supabase/client'
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart'
-import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Line, LineChart } from 'recharts'
+import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Legend } from 'recharts'
+import { BarChart as BarChartIcon, Calendar, Users, TrendingUp } from 'lucide-react'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 
 export default function Relatorios() {
-  const [metrics, setMetrics] = useState({
-    vendasTotais: 0,
-    novosLeads: 0,
-    estoqueTotal: 0,
-    taxaConversao: 0,
-    lucroTotal: 0,
-    ticketMedio: 0,
-  })
-
+  const [leads, setLeads] = useState<any[]>([])
+  const [vendedores, setVendedores] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
-
-  const [chartData, setChartData] = useState<any[]>([])
+  const [periodo, setPeriodo] = useState('30')
+  const [vendedorFilter, setVendedorFilter] = useState('todos')
 
   useEffect(() => {
-    loadData()
-  }, [])
+    async function loadData() {
+      setLoading(true)
 
-  const loadData = async () => {
-    setLoading(true)
-    try {
-      const { data: vendas } = await supabase
-        .from('veiculos')
-        .select('*')
-        .in('status', ['vendido', 'arquivado'])
-      const { data: leads } = await supabase.from('leads').select('*')
-      const { data: estoque } = await supabase
-        .from('veiculos')
-        .select('*')
-        .eq('status', 'disponivel')
-      const { data: despesas } = await supabase.from('despesas').select('*')
+      const dateLimit = new Date()
+      dateLimit.setDate(dateLimit.getDate() - parseInt(periodo))
 
-      const vendasCount = vendas?.length || 0
-      const leadsCount = leads?.length || 0
-      const estoqueCount = estoque?.length || 0
+      let query = supabase
+        .from('leads')
+        .select('*, responsavel:usuarios(id, nome)')
+        .gte('created_at', dateLimit.toISOString())
 
-      const conversao = leadsCount > 0 ? (vendasCount / leadsCount) * 100 : 0
-
-      // Calcular lucro
-      let lucroCalculado = 0
-      let faturamento = 0
-      vendas?.forEach((v) => {
-        const custoVeiculo = v.is_consignado ? 0 : Number(v.valor_fipe) * 0.8 || 0
-        const precoVenda = Number(v.preco_venda) || 0
-        const despesasVeiculo =
-          despesas
-            ?.filter((d) => d.veiculo_id === v.id)
-            .reduce((acc, curr) => acc + (Number(curr.valor) || 0), 0) || 0
-
-        lucroCalculado += precoVenda - custoVeiculo - despesasVeiculo
-        faturamento += precoVenda
-      })
-
-      setMetrics({
-        vendasTotais: vendasCount,
-        novosLeads: leadsCount,
-        estoqueTotal: estoqueCount,
-        taxaConversao: conversao,
-        lucroTotal: lucroCalculado,
-        ticketMedio: vendasCount > 0 ? faturamento / vendasCount : 0,
-      })
-
-      // Agrupar vendas por mês
-      const vendasPorMes: Record<string, any> = {}
-
-      vendas?.forEach((v) => {
-        const date = new Date(v.updated_at || v.created_at)
-        const mes = date.toLocaleString('pt-BR', { month: 'short', year: '2-digit' })
-        if (!vendasPorMes[mes]) {
-          vendasPorMes[mes] = { name: mes, vendas: 0, lucro: 0 }
-        }
-
-        const custoVeiculo = v.is_consignado ? 0 : Number(v.valor_fipe) * 0.8 || 0
-        const precoVenda = Number(v.preco_venda) || 0
-        const despesasVeiculo =
-          despesas
-            ?.filter((d) => d.veiculo_id === v.id)
-            .reduce((a, c) => a + Number(c.valor || 0), 0) || 0
-
-        vendasPorMes[mes].vendas += 1
-        vendasPorMes[mes].lucro += precoVenda - custoVeiculo - despesasVeiculo
-      })
-
-      let data = Object.values(vendasPorMes).slice(-6)
-
-      if (data.length === 0) {
-        // Fallback visual se não houver dados reais suficientes para preencher
-        const mesesFallback = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun']
-        data = mesesFallback.map((m, i) => ({
-          name: m,
-          vendas: Math.floor(Math.random() * 5) + 1,
-          lucro: Math.floor(Math.random() * 20000) + 5000,
-        }))
+      if (vendedorFilter !== 'todos') {
+        query = query.eq('responsavel_id', vendedorFilter)
       }
 
-      setChartData(data)
-    } catch (e) {
-      console.error(e)
-    } finally {
+      const [leadsRes, vendRes] = await Promise.all([
+        query,
+        supabase.from('usuarios').select('id, nome').eq('role', 'vendedor'),
+      ])
+
+      if (leadsRes.data) setLeads(leadsRes.data)
+      if (vendRes.data) setVendedores(vendRes.data)
+
       setLoading(false)
     }
-  }
 
-  const formatCurrency = (v: number) =>
-    new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v)
+    loadData()
+  }, [periodo, vendedorFilter])
 
-  if (loading) {
-    return <div className="p-8 text-center text-slate-500">Carregando relatórios de ROI...</div>
-  }
+  const chartDataVolume = useMemo(() => {
+    const dataByDate: Record<string, number> = {}
+
+    leads.forEach((l) => {
+      const date = new Date(l.created_at).toLocaleDateString('pt-BR')
+      dataByDate[date] = (dataByDate[date] || 0) + 1
+    })
+
+    return Object.entries(dataByDate)
+      .map(([date, count]) => ({ date, count }))
+      .sort((a, b) => {
+        const [da, ma, ya] = a.date.split('/')
+        const [db, mb, yb] = b.date.split('/')
+        return new Date(`${ya}-${ma}-${da}`).getTime() - new Date(`${yb}-${mb}-${db}`).getTime()
+      })
+  }, [leads])
+
+  const chartDataConversao = useMemo(() => {
+    const perf: Record<string, { total: number; fechados: number; nome: string }> = {}
+
+    leads.forEach((l) => {
+      const respId = l.responsavel_id || 'sem_dono'
+      const nome = l.responsavel?.nome || 'IA / Não Atribuído'
+
+      if (!perf[respId]) perf[respId] = { total: 0, fechados: 0, nome }
+
+      perf[respId].total += 1
+      if (l.status === 'fechado') perf[respId].fechados += 1
+    })
+
+    return Object.values(perf).map((p) => ({
+      nome: p.nome,
+      total: p.total,
+      fechados: p.fechados,
+      taxa: p.total > 0 ? Math.round((p.fechados / p.total) * 100) : 0,
+    }))
+  }, [leads])
+
+  const totalLeads = leads.length
+  const fechados = leads.filter((l) => l.status === 'fechado').length
+  const conversaoGeral = totalLeads > 0 ? ((fechados / totalLeads) * 100).toFixed(1) : '0.0'
 
   return (
-    <div className="space-y-6 animate-fade-in p-4 md:p-8 max-w-[1600px] mx-auto">
-      <div>
-        <h2 className="text-3xl font-bold tracking-tight text-slate-800">Relatórios & ROI</h2>
-        <p className="text-muted-foreground">
-          Acompanhe os resultados de performance e lucratividade dos veículos.
-        </p>
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-        <Card className="bg-white">
-          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-            <CardTitle className="text-sm font-medium">Vendas Totais</CardTitle>
-            <TrendingUp className="w-4 h-4 text-blue-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{metrics.vendasTotais}</div>
-            <p className="text-xs text-muted-foreground">Veículos vendidos</p>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-white">
-          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-            <CardTitle className="text-sm font-medium">Lucro Líquido</CardTitle>
-            <DollarSign className="w-4 h-4 text-green-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600">
-              {formatCurrency(metrics.lucroTotal)}
-            </div>
-            <p className="text-xs text-muted-foreground">Vendas - Custos - Despesas</p>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-white">
-          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-            <CardTitle className="text-sm font-medium">Ticket Médio</CardTitle>
-            <BarChart3 className="w-4 h-4 text-purple-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(metrics.ticketMedio)}</div>
-            <p className="text-xs text-muted-foreground">Por veículo vendido</p>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-white">
-          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-            <CardTitle className="text-sm font-medium">Novos Leads</CardTitle>
-            <Users className="w-4 h-4 text-orange-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{metrics.novosLeads}</div>
-            <p className="text-xs text-muted-foreground">Contatos recebidos</p>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-white">
-          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-            <CardTitle className="text-sm font-medium">Taxa de Conversão</CardTitle>
-            <Activity className="w-4 h-4 text-rose-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{metrics.taxaConversao.toFixed(1)}%</div>
-            <p className="text-xs text-muted-foreground">Leads convertidos em vendas</p>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-white">
-          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-            <CardTitle className="text-sm font-medium">Estoque Ativo</CardTitle>
-            <Car className="w-4 h-4 text-slate-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{metrics.estoqueTotal}</div>
-            <p className="text-xs text-muted-foreground">Veículos disponíveis</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-2">
-        <Card className="bg-white">
-          <CardHeader>
-            <CardTitle>Evolução de Vendas (Qtd)</CardTitle>
-            <CardDescription>Volume de veículos vendidos nos últimos 6 meses</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ChartContainer
-              config={{ vendas: { label: 'Vendas', color: 'hsl(var(--primary))' } }}
-              className="h-[300px] w-full"
-            >
-              <BarChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                <XAxis dataKey="name" />
-                <YAxis />
-                <ChartTooltip content={<ChartTooltipContent />} />
-                <Bar dataKey="vendas" fill="var(--color-vendas)" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ChartContainer>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-white">
-          <CardHeader>
-            <CardTitle>Lucratividade e ROI</CardTitle>
-            <CardDescription>Evolução do lucro líquido em R$</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ChartContainer
-              config={{ lucro: { label: 'Lucro (R$)', color: '#16a34a' } }}
-              className="h-[300px] w-full"
-            >
-              <LineChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                <XAxis dataKey="name" />
-                <YAxis tickFormatter={(v) => `R$ ${(v / 1000).toFixed(0)}k`} width={60} />
-                <ChartTooltip content={<ChartTooltipContent />} />
-                <Line type="monotone" dataKey="lucro" stroke="var(--color-lucro)" strokeWidth={3} />
-              </LineChart>
-            </ChartContainer>
-          </CardContent>
-        </Card>
-      </div>
-
-      <Card className="bg-white border-blue-100">
-        <CardHeader>
-          <CardTitle>Exportar Relatórios</CardTitle>
-          <CardDescription>
-            Exporte os relatórios de ROI, despesas e vendas para sua contabilidade.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex gap-4">
-            <Button variant="outline" className="text-blue-600 border-blue-200 hover:bg-blue-50">
-              <Download className="mr-2 h-4 w-4" />
-              Exportar CSV
-            </Button>
-            <Button variant="outline" className="text-red-600 border-red-200 hover:bg-red-50">
-              <Download className="mr-2 h-4 w-4" />
-              Exportar PDF
-            </Button>
+    <div className="flex-1 p-4 md:p-8 bg-[#F4F6F8] min-h-screen">
+      <div className="max-w-6xl mx-auto space-y-8">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+          <div>
+            <h1 className="text-2xl font-bold text-slate-800 uppercase tracking-tight flex items-center gap-2">
+              <BarChartIcon className="w-6 h-6 text-blue-600" />
+              Visão Geral & ROI
+            </h1>
+            <p className="text-slate-500 text-sm">
+              Acompanhe a performance de vendas e fluxo de leads.
+            </p>
           </div>
-        </CardContent>
-      </Card>
+
+          <div className="flex gap-2">
+            <Select value={periodo} onValueChange={setPeriodo}>
+              <SelectTrigger className="w-[150px] bg-white">
+                <Calendar className="w-4 h-4 mr-2" />
+                <SelectValue placeholder="Período" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="7">Últimos 7 dias</SelectItem>
+                <SelectItem value="15">Últimos 15 dias</SelectItem>
+                <SelectItem value="30">Últimos 30 dias</SelectItem>
+                <SelectItem value="90">Últimos 90 dias</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select value={vendedorFilter} onValueChange={setVendedorFilter}>
+              <SelectTrigger className="w-[180px] bg-white">
+                <Users className="w-4 h-4 mr-2" />
+                <SelectValue placeholder="Vendedor" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todos Vendedores</SelectItem>
+                {vendedores.map((v) => (
+                  <SelectItem key={v.id} value={v.id}>
+                    {v.nome}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Card className="border-none shadow-sm">
+            <CardContent className="p-6">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-blue-50 text-blue-600 rounded-lg">
+                  <Users className="w-6 h-6" />
+                </div>
+                <div>
+                  <p className="text-sm text-slate-500 font-medium">Total de Leads</p>
+                  <h3 className="text-2xl font-bold text-slate-800">{totalLeads}</h3>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="border-none shadow-sm">
+            <CardContent className="p-6">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-green-50 text-green-600 rounded-lg">
+                  <TrendingUp className="w-6 h-6" />
+                </div>
+                <div>
+                  <p className="text-sm text-slate-500 font-medium">Vendas Fechadas</p>
+                  <h3 className="text-2xl font-bold text-slate-800">{fechados}</h3>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="border-none shadow-sm">
+            <CardContent className="p-6">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-purple-50 text-purple-600 rounded-lg">
+                  <BarChartIcon className="w-6 h-6" />
+                </div>
+                <div>
+                  <p className="text-sm text-slate-500 font-medium">Taxa de Conversão</p>
+                  <h3 className="text-2xl font-bold text-slate-800">{conversaoGeral}%</h3>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {loading ? (
+          <div className="h-64 flex items-center justify-center bg-white rounded-xl shadow-sm border-none">
+            <p className="text-slate-500">Carregando dados...</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card className="border-none shadow-sm">
+              <CardHeader>
+                <CardTitle className="text-lg">Volume de Leads</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ChartContainer
+                  config={{ count: { label: 'Leads', color: 'hsl(var(--primary))' } }}
+                  className="h-[300px] w-full"
+                >
+                  <LineChart
+                    data={chartDataVolume}
+                    margin={{ top: 5, right: 10, left: 10, bottom: 0 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                    <XAxis
+                      dataKey="date"
+                      tickLine={false}
+                      axisLine={false}
+                      tickMargin={8}
+                      tick={{ fontSize: 12 }}
+                    />
+                    <YAxis tickLine={false} axisLine={false} width={30} />
+                    <ChartTooltip content={<ChartTooltipContent />} />
+                    <Line
+                      type="monotone"
+                      dataKey="count"
+                      stroke="var(--color-count)"
+                      strokeWidth={2}
+                      dot={{ r: 4 }}
+                      activeDot={{ r: 6 }}
+                    />
+                  </LineChart>
+                </ChartContainer>
+              </CardContent>
+            </Card>
+
+            <Card className="border-none shadow-sm">
+              <CardHeader>
+                <CardTitle className="text-lg">Conversão por Vendedor</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ChartContainer
+                  config={{
+                    fechados: { label: 'Vendas', color: '#16a34a' },
+                    total: { label: 'Leads', color: '#94a3b8' },
+                  }}
+                  className="h-[300px] w-full"
+                >
+                  <BarChart
+                    data={chartDataConversao}
+                    layout="vertical"
+                    margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" horizontal={false} />
+                    <XAxis type="number" tickLine={false} axisLine={false} />
+                    <YAxis
+                      dataKey="nome"
+                      type="category"
+                      tickLine={false}
+                      axisLine={false}
+                      width={100}
+                    />
+                    <ChartTooltip content={<ChartTooltipContent />} />
+                    <Legend />
+                    <Bar
+                      dataKey="total"
+                      fill="var(--color-total)"
+                      radius={[0, 4, 4, 0]}
+                      barSize={20}
+                    />
+                    <Bar
+                      dataKey="fechados"
+                      fill="var(--color-fechados)"
+                      radius={[0, 4, 4, 0]}
+                      barSize={20}
+                    />
+                  </BarChart>
+                </ChartContainer>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+      </div>
     </div>
   )
 }

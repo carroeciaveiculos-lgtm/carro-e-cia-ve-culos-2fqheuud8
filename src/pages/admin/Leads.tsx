@@ -51,6 +51,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { getWhatsAppLink } from '@/lib/whatsapp'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/hooks/use-auth'
+import { KanbanBoard } from '@/components/admin/leads/KanbanBoard'
 
 const COLUMNS = [
   { id: 'novo', title: 'Novos', border: 'border-blue-200' },
@@ -197,24 +198,49 @@ export default function AdminLeads() {
   const loadInitialData = async () => {
     try {
       setLoading(true)
-      const [leadsRes, usersRes] = await Promise.all([
-        supabase.from('leads').select('*').order('created_at', { ascending: false }),
-        supabase.from('usuarios').select('id, nome'),
-      ])
-      if (usersRes.data) {
+      const { data: usersData } = await supabase.from('usuarios').select('id, nome')
+      if (usersData) {
         const uMap: Record<string, string> = {}
-        usersRes.data.forEach((u) => (uMap[u.id] = u.nome))
+        usersData.forEach((u) => (uMap[u.id] = u.nome))
         setUsuariosMap(uMap)
       }
-      if (leadsRes.data) {
-        setLeads(leadsRes.data)
-      }
+      await loadLeads()
     } catch (err: any) {
       toast({ title: 'Erro ao carregar', description: err.message, variant: 'destructive' })
     } finally {
       setLoading(false)
     }
   }
+
+  const loadLeads = async () => {
+    let query = supabase.from('leads').select('*').order('created_at', { ascending: false })
+
+    if (search) {
+      query = query.or(
+        `nome.ilike.%${search}%,carro_modelo.ilike.%${search}%,telefone.ilike.%${search}%`,
+      )
+    }
+
+    if (filterStatus === 'novos') {
+      query = query.eq('status', 'novo')
+    } else if (filterStatus === 'pendentes') {
+      query = query.in('status', ['em_contato', 'negociando'])
+    }
+
+    const { data, error } = await query
+    if (error) {
+      toast({ title: 'Erro ao buscar leads', description: error.message, variant: 'destructive' })
+    } else {
+      setLeads(data || [])
+    }
+  }
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      loadLeads()
+    }, 500)
+    return () => clearTimeout(timer)
+  }, [search, filterStatus])
 
   const loadConversation = async (leadId: string) => {
     const { data } = await supabase
@@ -446,20 +472,7 @@ export default function AdminLeads() {
     return { active: hoursLeft > 0, hoursLeft: Math.max(0, hoursLeft) }
   }
 
-  const filteredLeads = leads.filter((l) => {
-    const matchesSearch =
-      l.nome?.toLowerCase().includes(search.toLowerCase()) ||
-      l.carro_modelo?.toLowerCase().includes(search.toLowerCase())
-    const matchesFilter =
-      filterStatus === 'todos'
-        ? true
-        : filterStatus === 'novos'
-          ? l.status === 'novo'
-          : filterStatus === 'pendentes'
-            ? ['em_contato', 'negociando'].includes(l.status)
-            : true
-    return matchesSearch && matchesFilter
-  })
+  const filteredLeads = leads
 
   if (loading) {
     return (
@@ -850,80 +863,6 @@ export default function AdminLeads() {
     </div>
   )
 
-  const KanbanBoard = () => (
-    <div className="flex-1 flex overflow-x-auto gap-4 p-4 items-start bg-slate-50">
-      {COLUMNS.map((col) => (
-        <div
-          key={col.id}
-          className={cn(
-            'min-w-[300px] w-[300px] bg-white rounded-xl flex flex-col h-[calc(100vh-180px)] border-t-4 shadow-sm',
-            col.border,
-          )}
-          onDragOver={(e) => e.preventDefault()}
-          onDrop={(e) => handleDrop(e, col.id)}
-        >
-          <div className="p-3 border-b flex justify-between items-center bg-slate-50/50 rounded-t-xl">
-            <h3 className="font-bold text-slate-700 text-sm">
-              {col.title} ({filteredLeads.filter((l) => l.status === col.id).length})
-            </h3>
-          </div>
-          <ScrollArea className="flex-1 p-2">
-            <div className="space-y-3 min-h-[100px] pb-4">
-              {filteredLeads
-                .filter((l) => l.status === col.id)
-                .map((lead) => (
-                  <div
-                    key={lead.id}
-                    draggable
-                    onDragStart={(e) => handleDragStart(e, lead.id)}
-                    onClick={() => setSelectedLead(lead)}
-                    className={cn(
-                      'bg-white p-3 rounded-lg border-y border-r border-l-4 shadow-sm cursor-pointer transition-colors',
-                      lead.temperatura === 'quente'
-                        ? 'border-l-red-500'
-                        : lead.temperatura === 'morno'
-                          ? 'border-l-amber-500'
-                          : 'border-l-blue-500',
-                      selectedLead?.id === lead.id
-                        ? 'ring-2 ring-blue-500'
-                        : 'hover:border-slate-300',
-                    )}
-                  >
-                    <div className="flex justify-between items-start mb-2 gap-2">
-                      <span className="font-bold text-sm truncate text-slate-800">{lead.nome}</span>
-                      <Badge
-                        className={cn(
-                          'text-[10px] px-1 h-4',
-                          getTemperatureColor(lead.temperatura),
-                        )}
-                      >
-                        {lead.temperatura || 'frio'}
-                      </Badge>
-                    </div>
-                    <div className="text-xs text-slate-500 flex items-center gap-1 mb-2">
-                      <Car className="w-3 h-3" />{' '}
-                      <span className="truncate">
-                        {lead.carro_modelo || lead.veiculo_interesse || 'Não especificado'}
-                      </span>
-                    </div>
-                    <div className="flex justify-between items-center pt-2 border-t text-[10px] text-slate-400">
-                      <span className="flex items-center gap-1">
-                        <User className="w-3 h-3" />{' '}
-                        <span className="truncate max-w-[80px]">
-                          {usuariosMap[lead.responsavel_id] || 'Sem Atendente'}
-                        </span>
-                      </span>
-                      <span>{new Date(lead.created_at).toLocaleDateString()}</span>
-                    </div>
-                  </div>
-                ))}
-            </div>
-          </ScrollArea>
-        </div>
-      ))}
-    </div>
-  )
-
   return (
     <div className="flex flex-col h-[calc(100vh-100px)] bg-white border rounded-xl shadow-sm mx-4 my-4 max-w-[1600px] xl:mx-auto overflow-hidden">
       {/* Header */}
@@ -1027,7 +966,16 @@ export default function AdminLeads() {
             )}
           </>
         ) : (
-          <KanbanBoard />
+          <KanbanBoard
+            leads={filteredLeads}
+            onStatusChange={async (leadId: string, status: string) => {
+              setLeads((prev) => prev.map((l) => (l.id === leadId ? { ...l, status } : l)))
+              await supabase.from('leads').update({ status }).eq('id', leadId)
+            }}
+            onSelectLead={setSelectedLead}
+            usuariosMap={usuariosMap}
+            selectedLeadId={selectedLead?.id}
+          />
         )}
       </div>
 

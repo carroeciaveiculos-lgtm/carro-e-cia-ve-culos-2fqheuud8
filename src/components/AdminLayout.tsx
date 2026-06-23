@@ -14,9 +14,12 @@ import {
   DollarSign,
   Image as ImageIcon,
   Activity,
+  BarChart,
 } from 'lucide-react'
 import { useAuth } from '@/hooks/use-auth'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { supabase } from '@/lib/supabase/client'
+import { useToast } from '@/hooks/use-toast'
 
 const SIDEBAR_MENUS = [
   {
@@ -28,6 +31,7 @@ const SIDEBAR_MENUS = [
     items: [
       { label: 'Estoque', path: '/admin/estoque', icon: Car },
       { label: 'Leads (CRM)', path: '/admin/crm', icon: Users },
+      { label: 'Visão Geral (ROI)', path: '/admin/relatorios', icon: BarChart },
       { label: 'Avaliações', path: '/admin/avaliacao', icon: ShieldCheck },
       { label: 'Financiamentos', path: '/admin/financiamento', icon: DollarSign },
       { label: 'Administrativo', path: '/admin/administrativo', icon: FileText },
@@ -49,7 +53,53 @@ export default function AdminLayout() {
   const location = useLocation()
   const { user, signOut } = useAuth()
   const navigate = useNavigate()
+  const { toast } = useToast()
   const [collapsed, setCollapsed] = useState(false)
+  const [newLeadsCount, setNewLeadsCount] = useState(0)
+
+  useEffect(() => {
+    if (!user) return
+
+    const fetchLeadsCount = async () => {
+      const { count } = await supabase
+        .from('leads')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'novo')
+      setNewLeadsCount(count || 0)
+    }
+
+    fetchLeadsCount()
+
+    const channel = supabase
+      .channel('admin-layout-leads')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'leads' },
+        (payload: any) => {
+          setNewLeadsCount((prev) => prev + 1)
+          toast({
+            title: 'Novo Lead Recebido!',
+            description: `Nome: ${payload.new.nome} - Interesse: ${payload.new.veiculo_interesse || 'Não informado'}`,
+          })
+        },
+      )
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'leads' },
+        (payload: any) => {
+          if (payload.old.status === 'novo' && payload.new.status !== 'novo') {
+            setNewLeadsCount((prev) => Math.max(0, prev - 1))
+          } else if (payload.old.status !== 'novo' && payload.new.status === 'novo') {
+            setNewLeadsCount((prev) => prev + 1)
+          }
+        },
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [user, toast])
 
   const handleLogout = async () => {
     await signOut()
@@ -103,7 +153,7 @@ export default function AdminLayout() {
                       key={item.path}
                       to={item.path}
                       className={cn(
-                        'flex items-center gap-3 px-3 py-2 rounded-lg transition-all font-medium text-sm',
+                        'relative flex items-center gap-3 px-3 py-2 rounded-lg transition-all font-medium text-sm',
                         isActive
                           ? 'bg-blue-600 text-white shadow-md shadow-blue-900/20'
                           : 'hover:bg-slate-800 hover:text-white',
@@ -116,7 +166,17 @@ export default function AdminLayout() {
                           isActive ? 'text-white' : 'text-slate-400',
                         )}
                       />
-                      {!collapsed && <span className="truncate">{item.label}</span>}
+                      {!collapsed && <span className="truncate flex-1">{item.label}</span>}
+                      {item.path === '/admin/crm' && newLeadsCount > 0 && (
+                        <span
+                          className={cn(
+                            'bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full flex items-center justify-center min-w-[20px]',
+                            collapsed && 'absolute top-1 right-1 w-4 h-4 p-0 min-w-0',
+                          )}
+                        >
+                          {newLeadsCount > 99 ? '99+' : newLeadsCount}
+                        </span>
+                      )}
                     </Link>
                   )
                 })}
