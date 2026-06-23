@@ -16,13 +16,13 @@
     "public-inventory-feed": 53,
     "ai-sdr": 33,
     "crm-inventory-feed": 15,
-    "ai-assistant": 4,
+    "ai-assistant": 5,
     "content-workflow-notification": 1,
     "gerar-conteudo-social": 1,
     "publicar-social": 2,
     "send-whatsapp": 1,
     "social-actions": 1,
     "gerar-pdf-proposta": 1,
-    "re-engagement-cron": 1
+    "re-engagement-cron": 2
   }
 }

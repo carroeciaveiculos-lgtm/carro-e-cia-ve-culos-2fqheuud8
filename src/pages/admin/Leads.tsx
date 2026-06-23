@@ -38,7 +38,7 @@ import {
   Lock,
   Plus,
   FileText,
-  LayoutKanban,
+  Kanban,
   List,
   Trash,
   Edit,
@@ -942,7 +942,7 @@ export default function AdminLeads() {
               className="h-7 px-2"
               onClick={() => setViewMode('kanban')}
             >
-              <LayoutKanban className="w-4 h-4" />
+              <Kanban className="w-4 h-4" />
             </Button>
             <Button
               variant={viewMode === 'list' ? 'secondary' : 'ghost'}
