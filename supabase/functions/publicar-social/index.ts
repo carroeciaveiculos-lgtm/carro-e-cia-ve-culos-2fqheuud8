@@ -4,8 +4,7 @@ import { createClient } from 'jsr:@supabase/supabase-js@2'
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-  'Access-Control-Allow-Headers':
-    'authorization, x-client-info, x-supabase-client-platform, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, x-supabase-client-platform, apikey, content-type',
 }
 
 Deno.serve(async (req: Request) => {
@@ -35,47 +34,47 @@ Deno.serve(async (req: Request) => {
       const redes = typeof post.redes === 'string' ? JSON.parse(post.redes) : post.redes
       let isSuccess = false
       let fbError = null
-
+      
       if (redes.facebook && pageId && token && post.imagem) {
-        const fbRes = await fetch(`https://graph.facebook.com/v20.0/${pageId}/photos`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            access_token: token,
-            url: post.imagem,
-            message: post.texto,
-          }),
-        })
-        const fbData = await fbRes.json()
-        if (fbRes.ok) isSuccess = true
-        else fbError = fbData
+         const fbRes = await fetch(`https://graph.facebook.com/v20.0/${pageId}/photos`, {
+           method: 'POST',
+           headers: { 'Content-Type': 'application/json' },
+           body: JSON.stringify({
+             access_token: token,
+             url: post.imagem,
+             message: post.texto
+           })
+         })
+         const fbData = await fbRes.json()
+         if (fbRes.ok) isSuccess = true
+         else fbError = fbData
       }
 
       if (redes.instagram && igId && token && post.imagem) {
-        const isVideo = post.imagem.match(/\.(mp4|mov|webm)$/i)
-        const containerRes = await fetch(`https://graph.facebook.com/v20.0/${igId}/media`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            access_token: token,
-            [isVideo ? 'video_url' : 'image_url']: post.imagem,
-            caption: post.texto,
-            media_type: isVideo ? 'REELS' : 'IMAGE',
-          }),
-        })
-        const containerData = await containerRes.json()
-
-        if (containerData.id) {
-          const publishRes = await fetch(`https://graph.facebook.com/v20.0/${igId}/media_publish`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              access_token: token,
-              creation_id: containerData.id,
-            }),
-          })
-          if (publishRes.ok) isSuccess = true
-        }
+         const isVideo = post.imagem.match(/\.(mp4|mov|webm)$/i)
+         const containerRes = await fetch(`https://graph.facebook.com/v20.0/${igId}/media`, {
+           method: 'POST',
+           headers: { 'Content-Type': 'application/json' },
+           body: JSON.stringify({
+             access_token: token,
+             [isVideo ? 'video_url' : 'image_url']: post.imagem,
+             caption: post.texto,
+             media_type: isVideo ? 'REELS' : 'IMAGE'
+           })
+         })
+         const containerData = await containerRes.json()
+         
+         if (containerData.id) {
+           const publishRes = await fetch(`https://graph.facebook.com/v20.0/${igId}/media_publish`, {
+             method: 'POST',
+             headers: { 'Content-Type': 'application/json' },
+             body: JSON.stringify({
+               access_token: token,
+               creation_id: containerData.id
+             })
+           })
+           if (publishRes.ok) isSuccess = true
+         }
       }
 
       const newStatus = isSuccess ? 'Publicado' : 'Erro'
