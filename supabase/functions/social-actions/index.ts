@@ -5,7 +5,7 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
   const { action, commentId, message } = await req.json()
   const pageToken = Deno.env.get('META_PAGE_ACCESS_TOKEN')!
-  
+
   let url = ''
   let reqBody: any = {}
 
@@ -19,9 +19,11 @@ Deno.serve(async (req) => {
   const res = await fetch(url, {
     method: 'POST',
     headers: { Authorization: `Bearer ${pageToken}`, 'Content-Type': 'application/json' },
-    body: Object.keys(reqBody).length ? JSON.stringify(reqBody) : undefined
+    body: Object.keys(reqBody).length ? JSON.stringify(reqBody) : undefined,
   })
 
   const data = await res.json()
-  return new Response(JSON.stringify(data), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+  return new Response(JSON.stringify(data), {
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+  })
 })
