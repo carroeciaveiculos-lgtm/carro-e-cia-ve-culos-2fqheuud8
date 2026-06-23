@@ -57,3 +57,8 @@ export const updateLeadStatus = async (id: string, status: string) => {
     .single()
   return { data, error }
 }
+
+export const deleteLead = async (id: string) => {
+  const { error } = await supabase.from('leads').delete().eq('id', id)
+  return { error }
+}

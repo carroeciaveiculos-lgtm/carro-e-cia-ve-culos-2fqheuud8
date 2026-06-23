@@ -1,11 +1,12 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from 'jsr:@supabase/supabase-js@2'
-import { encodeBase64 } from "jsr:@std/encoding/base64"
+import { encodeBase64 } from 'jsr:@std/encoding/base64'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, x-supabase-client-platform, apikey, content-type',
+  'Access-Control-Allow-Headers':
+    'authorization, x-client-info, x-supabase-client-platform, apikey, content-type',
 }
 
 const supabase = createClient(
@@ -33,7 +34,7 @@ async function runGemini(history: any[]) {
   const reqBody = {
     systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
     contents: history,
-    generationConfig: { responseMimeType: "application/json" }
+    generationConfig: { responseMimeType: 'application/json' },
   }
 
   const res = await fetch(url, {
@@ -63,7 +64,10 @@ Deno.serve(async (req) => {
 
   if (req.method === 'GET') {
     const url = new URL(req.url)
-    if (url.searchParams.get('hub.mode') === 'subscribe' && url.searchParams.get('hub.verify_token') === waVerifyToken) {
+    if (
+      url.searchParams.get('hub.mode') === 'subscribe' &&
+      url.searchParams.get('hub.verify_token') === waVerifyToken
+    ) {
       return new Response(url.searchParams.get('hub.challenge'), { status: 200 })
     }
     return new Response('Token inválido', { status: 403 })
@@ -76,7 +80,7 @@ Deno.serve(async (req) => {
   if (isPage) {
     const entry = body.entry?.[0]
     const changes = entry?.changes?.[0]
-    
+
     // Facebook/Instagram Comments Webhook
     if (changes?.field === 'feed') {
       const val = changes.value
@@ -87,7 +91,7 @@ Deno.serve(async (req) => {
           comment_id: val.comment_id,
           from_name: val.from.name,
           from_id: val.from.id,
-          message: val.message
+          message: val.message,
         })
       }
       return new Response('ok', { headers: corsHeaders, status: 200 })
@@ -107,10 +111,14 @@ Deno.serve(async (req) => {
     let audioData = null
     if (message.type === 'audio') {
       const mediaId = message.audio.id
-      const mediaRes = await fetch(`https://graph.facebook.com/v20.0/${mediaId}`, { headers: { Authorization: `Bearer ${waToken}` } })
+      const mediaRes = await fetch(`https://graph.facebook.com/v20.0/${mediaId}`, {
+        headers: { Authorization: `Bearer ${waToken}` },
+      })
       const mediaObj = await mediaRes.json()
       if (mediaObj.url) {
-        const audioRes = await fetch(mediaObj.url, { headers: { Authorization: `Bearer ${waToken}` } })
+        const audioRes = await fetch(mediaObj.url, {
+          headers: { Authorization: `Bearer ${waToken}` },
+        })
         const buffer = await audioRes.arrayBuffer()
         audioData = encodeBase64(new Uint8Array(buffer))
       }
@@ -118,20 +126,38 @@ Deno.serve(async (req) => {
 
     if (!text && !audioData) return new Response('ok', { headers: corsHeaders })
 
-    let { data: lead } = await supabase.from('leads').select('*').eq('telefone', phone).maybeSingle()
+    let { data: lead } = await supabase
+      .from('leads')
+      .select('*')
+      .eq('telefone', phone)
+      .maybeSingle()
 
     if (!lead) {
-      const { data: newLead } = await supabase.from('leads').insert({
-        nome: profileName, telefone: phone, origem: 'whatsapp', tipo: 'compra', status: 'novo'
-      }).select().single()
+      const { data: newLead } = await supabase
+        .from('leads')
+        .insert({
+          nome: profileName,
+          telefone: phone,
+          origem: 'whatsapp',
+          tipo: 'compra',
+          status: 'novo',
+        })
+        .select()
+        .single()
       lead = newLead
     }
 
     await supabase.from('conversation_history').insert({
-      lead_id: lead.id, sender: 'client', message_text: text || '[Mensagem de Áudio]'
+      lead_id: lead.id,
+      sender: 'client',
+      message_text: text || '[Mensagem de Áudio]',
     })
 
-    const { data: history } = await supabase.from('conversation_history').select('*').eq('lead_id', lead.id).order('created_at')
+    const { data: history } = await supabase
+      .from('conversation_history')
+      .select('*')
+      .eq('lead_id', lead.id)
+      .order('created_at')
 
     const geminiHistory: any[] = (history || []).map((m: any) => ({
       role: m.sender === 'bot' ? 'model' : 'user',
@@ -143,13 +169,13 @@ Deno.serve(async (req) => {
         role: 'user',
         parts: [
           { inlineData: { mimeType: message.audio.mime_type || 'audio/ogg', data: audioData } },
-          { text: 'Transcreva e responda a este áudio.' }
-        ]
+          { text: 'Transcreva e responda a este áudio.' },
+        ],
       }
     }
 
     const aiRes = await runGemini(geminiHistory)
-    let responseText = "Como posso te ajudar hoje?"
+    let responseText = 'Como posso te ajudar hoje?'
     let temp = lead.temperatura
     let tradeIn = lead.trade_in_car
     let payMethod = lead.payment_method
@@ -162,16 +188,23 @@ Deno.serve(async (req) => {
       if (parsed.temperature) temp = parsed.temperature
       if (parsed.trade_in_car) tradeIn = parsed.trade_in_car
       if (parsed.payment_method) payMethod = parsed.payment_method
-    } catch(e) {
+    } catch (e) {
       console.error('Failed to parse Gemini JSON')
     }
 
-    await supabase.from('leads').update({
-      temperatura: temp, trade_in_car: tradeIn, payment_method: payMethod
-    }).eq('id', lead.id)
+    await supabase
+      .from('leads')
+      .update({
+        temperatura: temp,
+        trade_in_car: tradeIn,
+        payment_method: payMethod,
+      })
+      .eq('id', lead.id)
 
     await supabase.from('conversation_history').insert({
-      lead_id: lead.id, sender: 'bot', message_text: responseText
+      lead_id: lead.id,
+      sender: 'bot',
+      message_text: responseText,
     })
 
     await sendWhatsApp(phone, responseText)
