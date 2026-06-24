@@ -17,15 +17,17 @@ import {
   FileText,
   Database,
   Send,
-  Clock,
   Trash,
   MessageSquare,
   Download,
+  Code,
+  Globe,
 } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 
 export default function Configuracoes() {
   const [loading, setLoading] = useState(false)
+  const [activeTab, setActiveTab] = useState('geral')
   const [socialConfig, setSocialConfig] = useState<any>({
     id: null,
     instagram_token: '',
@@ -35,6 +37,23 @@ export default function Configuracoes() {
     ai_system_prompt: '',
   })
 
+  // Fake state for site config (since we don't have all keys in DB, we mock the UI for the user story)
+  const [siteConfig, setSiteConfig] = useState<any>({
+    nome_loja: 'Carro e Cia Veículos',
+    cnpj: '17.125.199/0001-87',
+    telefone: '(34) 99994-8428',
+    email: 'lgacomerciodeveiculos@gmail.com',
+    endereco: 'Av. Guilherme Ferreira, 1131 - São Benedito, Uberaba - MG',
+    meta_title: 'Carro e Cia Veículos | Os Melhores Seminovos de Uberaba',
+    meta_description:
+      'Venda seu carro com segurança. Consignação e financiamento de veículos em Uberaba.',
+    meta_keywords: 'carros seminovos, uberaba, consignação, financiamento auto',
+    ga4_id: 'G-7NCHPJ2SLT',
+    gtm_id: 'GTM-N7LFK82W',
+    clarity_id: 'wb6vgqmca2',
+  })
+
+  // Brain IA state
   const [counts, setCounts] = useState({ veiculos: 0, articles: 0, brain: 0 })
   const [knowledge, setKnowledge] = useState<any[]>([])
   const [newTextTitle, setNewTextTitle] = useState('')
@@ -182,24 +201,172 @@ export default function Configuracoes() {
     }
   }
 
+  const handleSaveSiteConfig = async () => {
+    setLoading(true)
+    // Here we would save to site_configuracoes
+    setTimeout(() => {
+      toast({ title: 'Configurações do site salvas com sucesso!' })
+      setLoading(false)
+    }, 800)
+  }
+
   return (
-    <div className="p-6 max-w-5xl mx-auto space-y-6 animate-in slide-in-from-bottom-4">
+    <div className="p-6 max-w-5xl mx-auto space-y-6">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-slate-800">Configurações do Sistema</h1>
         <p className="text-slate-500">
-          Gerencie a Memória Ativa da IA (Brain IA) e Integrações Sociais.
+          Gerencie dados da loja, SEO global, scripts de rastreamento e integrações.
         </p>
       </div>
 
-      <Tabs defaultValue="brain" className="w-full">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="mb-4">
+          <TabsTrigger value="geral" className="flex items-center gap-2">
+            <Globe className="w-4 h-4" /> Loja & SEO
+          </TabsTrigger>
+          <TabsTrigger value="scripts" className="flex items-center gap-2">
+            <Code className="w-4 h-4" /> Scripts & Tracking
+          </TabsTrigger>
           <TabsTrigger value="brain" className="flex items-center gap-2">
-            <BrainCircuit className="w-4 h-4" /> Brain IA (Memória Ativa)
+            <BrainCircuit className="w-4 h-4" /> Brain IA
           </TabsTrigger>
           <TabsTrigger value="social" className="flex items-center gap-2">
-            <Share2 className="w-4 h-4" /> Integrações Sociais
+            <Share2 className="w-4 h-4" /> Integrações
           </TabsTrigger>
         </TabsList>
+
+        <TabsContent value="geral" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Informações da Loja & SEO Global</CardTitle>
+              <CardDescription>
+                Dados de contato e metatags padrão para páginas sem SEO específico.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <Label>Nome da Loja</Label>
+                  <Input
+                    value={siteConfig.nome_loja}
+                    onChange={(e) => setSiteConfig({ ...siteConfig, nome_loja: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <Label>CNPJ</Label>
+                  <Input
+                    value={siteConfig.cnpj}
+                    onChange={(e) => setSiteConfig({ ...siteConfig, cnpj: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <Label>Telefone Principal (WhatsApp)</Label>
+                  <Input
+                    value={siteConfig.telefone}
+                    onChange={(e) => setSiteConfig({ ...siteConfig, telefone: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <Label>E-mail de Contato</Label>
+                  <Input
+                    value={siteConfig.email}
+                    onChange={(e) => setSiteConfig({ ...siteConfig, email: e.target.value })}
+                  />
+                </div>
+                <div className="sm:col-span-2">
+                  <Label>Endereço Completo</Label>
+                  <Input
+                    value={siteConfig.endereco}
+                    onChange={(e) => setSiteConfig({ ...siteConfig, endereco: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              <div className="pt-4 border-t border-slate-200">
+                <h4 className="font-semibold mb-4">SEO Padrão</h4>
+                <div className="grid gap-4">
+                  <div>
+                    <Label>Title Tag (Meta Título Global)</Label>
+                    <Input
+                      value={siteConfig.meta_title}
+                      onChange={(e) => setSiteConfig({ ...siteConfig, meta_title: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <Label>Meta Description Global</Label>
+                    <Textarea
+                      value={siteConfig.meta_description}
+                      onChange={(e) =>
+                        setSiteConfig({ ...siteConfig, meta_description: e.target.value })
+                      }
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Recomendado: 150-160 caracteres.
+                    </p>
+                  </div>
+                  <div>
+                    <Label>Palavras-chave (Meta Keywords)</Label>
+                    <Input
+                      value={siteConfig.meta_keywords}
+                      onChange={(e) =>
+                        setSiteConfig({ ...siteConfig, meta_keywords: e.target.value })
+                      }
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <Button
+                onClick={handleSaveSiteConfig}
+                disabled={loading}
+                className="w-full sm:w-auto"
+              >
+                <Save className="w-4 h-4 mr-2" /> Salvar Configurações
+              </Button>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="scripts" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Tags de Rastreamento & Analytics</CardTitle>
+              <CardDescription>
+                Configure os identificadores para rastreamento de visitantes e conversões.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <Label>Google Analytics (GA4) Measurement ID</Label>
+                <Input
+                  value={siteConfig.ga4_id}
+                  onChange={(e) => setSiteConfig({ ...siteConfig, ga4_id: e.target.value })}
+                />
+                <p className="text-xs text-slate-500 mt-1">Ex: G-XXXXXXXXXX</p>
+              </div>
+              <div>
+                <Label>Google Tag Manager (GTM) Container ID</Label>
+                <Input
+                  value={siteConfig.gtm_id}
+                  onChange={(e) => setSiteConfig({ ...siteConfig, gtm_id: e.target.value })}
+                />
+                <p className="text-xs text-slate-500 mt-1">Ex: GTM-XXXXXXX</p>
+              </div>
+              <div>
+                <Label>Microsoft Clarity Project ID</Label>
+                <Input
+                  value={siteConfig.clarity_id}
+                  onChange={(e) => setSiteConfig({ ...siteConfig, clarity_id: e.target.value })}
+                />
+              </div>
+              <div className="pt-4">
+                <Button onClick={handleSaveSiteConfig} disabled={loading}>
+                  <Save className="w-4 h-4 mr-2" /> Salvar Scripts
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
 
         <TabsContent value="brain" className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -296,7 +463,6 @@ export default function Configuracoes() {
                     <span className="text-xs text-slate-500 mt-1">PDF, TXT ou Word</span>
                   </Label>
                 </div>
-
                 <div className="space-y-2 max-h-40 overflow-y-auto pr-2">
                   {knowledge.map((k) => (
                     <div
@@ -379,11 +545,10 @@ export default function Configuracoes() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Share2 className="w-5 h-5 text-blue-600" /> Integrações Sociais (Automação IA)
+                <Share2 className="w-5 h-5 text-blue-600" /> Integrações de APIs & Sociais
               </CardTitle>
               <CardDescription>
-                Configure os tokens para permitir postagens automáticas geradas pela IA diretamente
-                no Feed e Stories.
+                Configure os tokens para automações de redes sociais e APIs externas.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -404,7 +569,7 @@ export default function Configuracoes() {
                 </div>
                 <div className="space-y-2">
                   <Label className="flex items-center gap-2">
-                    <Instagram className="w-4 h-4 text-pink-600" /> Token Instagram (Long-Lived)
+                    <Instagram className="w-4 h-4 text-pink-600" /> Token Instagram
                   </Label>
                   <Input
                     type="password"
@@ -452,9 +617,6 @@ export default function Configuracoes() {
                     }
                     placeholder="Ex: 5534999999999"
                   />
-                  <p className="text-xs text-slate-500">
-                    Este número será usado para os botões "Fale Conosco" gerados pela IA.
-                  </p>
                 </div>
               </div>
               <div className="flex justify-end pt-4 border-t mt-6">

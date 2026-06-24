@@ -12,21 +12,56 @@ import { HashtagsManager } from '@/components/admin/conteudo-editor/HashtagsMana
 import { useToast } from '@/hooks/use-toast'
 
 export default function Conteudo() {
-  const [activeTab, setActiveTab] = useState<'paginas' | 'artigos' | 'keywords' | 'hashtags'>(
-    'paginas',
-  )
+  const [activeTab, setActiveTab] = useState<
+    'paginas' | 'artigos' | 'keywords' | 'hashtags' | 'comentarios'
+  >('paginas')
   const [items, setItems] = useState<any[]>([])
+  const [comments, setComments] = useState<any[]>([])
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('todos')
   const [editingId, setEditingId] = useState<string | null>(null)
   const { toast } = useToast()
 
   useEffect(() => {
-    if (!editingId) fetchItems()
+    if (!editingId) {
+      if (activeTab === 'comentarios') {
+        fetchComments()
+      } else {
+        fetchItems()
+      }
+    }
   }, [activeTab, editingId])
 
+  const fetchComments = async () => {
+    const { data } = await supabase
+      .from('blog_comments')
+      .select('*, blog_posts(title, slug)')
+      .order('created_at', { ascending: false })
+    if (data) setComments(data)
+  }
+
+  const toggleCommentStatus = async (id: string, status: boolean) => {
+    const { error } = await supabase
+      .from('blog_comments')
+      .update({ publicado: !status })
+      .eq('id', id)
+    if (!error) {
+      toast({ title: 'Status do comentário atualizado' })
+      fetchComments()
+    }
+  }
+
+  const deleteComment = async (id: string) => {
+    if (!confirm('Deseja excluir este comentário permanentemente?')) return
+    const { error } = await supabase.from('blog_comments').delete().eq('id', id)
+    if (!error) {
+      toast({ title: 'Comentário excluído' })
+      fetchComments()
+    }
+  }
+
   const fetchItems = async () => {
-    if (activeTab === 'keywords' || activeTab === 'hashtags') return
+    if (activeTab === 'keywords' || activeTab === 'hashtags' || activeTab === 'comentarios') return
     const table = activeTab === 'paginas' ? 'pages' : 'articles'
     const { data } = await supabase
       .from(table)
@@ -115,13 +150,24 @@ export default function Conteudo() {
             <Tabs
               value={activeTab}
               onValueChange={(v: any) => setActiveTab(v)}
-              className="w-full sm:w-[500px]"
+              className="w-full sm:w-[600px]"
             >
-              <TabsList className="grid w-full grid-cols-4">
-                <TabsTrigger value="paginas">Páginas</TabsTrigger>
-                <TabsTrigger value="artigos">Artigos</TabsTrigger>
-                <TabsTrigger value="keywords">Keywords</TabsTrigger>
-                <TabsTrigger value="hashtags">Hashtags</TabsTrigger>
+              <TabsList className="grid w-full grid-cols-5 h-auto py-1">
+                <TabsTrigger value="paginas" className="text-xs">
+                  Páginas
+                </TabsTrigger>
+                <TabsTrigger value="artigos" className="text-xs">
+                  Artigos
+                </TabsTrigger>
+                <TabsTrigger value="keywords" className="text-xs">
+                  Keywords
+                </TabsTrigger>
+                <TabsTrigger value="hashtags" className="text-xs">
+                  Hashtags
+                </TabsTrigger>
+                <TabsTrigger value="comentarios" className="text-xs">
+                  Comentários
+                </TabsTrigger>
               </TabsList>
             </Tabs>
             {(activeTab === 'paginas' || activeTab === 'artigos') && (
@@ -154,6 +200,63 @@ export default function Conteudo() {
               <KeywordsManager />
             ) : activeTab === 'hashtags' ? (
               <HashtagsManager />
+            ) : activeTab === 'comentarios' ? (
+              <div className="space-y-4">
+                {comments.length === 0 ? (
+                  <p className="text-slate-500 text-center py-8">Nenhum comentário encontrado.</p>
+                ) : (
+                  comments.map((comment) => (
+                    <div
+                      key={comment.id}
+                      className="bg-white p-4 border rounded-xl flex flex-col gap-2"
+                    >
+                      <div className="flex justify-between items-start gap-4">
+                        <div>
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="font-bold text-slate-800">{comment.autor_nome}</span>
+                            <span className="text-xs text-slate-500">({comment.autor_email})</span>
+                          </div>
+                          <p className="text-sm text-slate-700 bg-slate-50 p-3 rounded-lg border">
+                            {comment.conteudo}
+                          </p>
+                          <div className="mt-2 text-xs text-slate-500">
+                            Artigo:{' '}
+                            <a
+                              href={`/blog/${comment.blog_posts?.slug}`}
+                              target="_blank"
+                              className="text-blue-600 hover:underline"
+                            >
+                              {comment.blog_posts?.title}
+                            </a>
+                            {' • '} Data: {new Date(comment.created_at).toLocaleDateString('pt-BR')}
+                          </div>
+                        </div>
+                        <div className="flex flex-col gap-2 shrink-0">
+                          <Button
+                            size="sm"
+                            variant={comment.publicado ? 'outline' : 'default'}
+                            className={
+                              comment.publicado
+                                ? 'text-amber-600 border-amber-200'
+                                : 'bg-green-600 hover:bg-green-700 text-white'
+                            }
+                            onClick={() => toggleCommentStatus(comment.id, comment.publicado)}
+                          >
+                            {comment.publicado ? 'Ocultar' : 'Aprovar'}
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={() => deleteComment(comment.id)}
+                          >
+                            Excluir
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
             ) : filteredItems.length === 0 ? (
               <div className="h-full flex flex-col items-center justify-center text-slate-400 gap-4">
                 <FileText className="w-12 h-12 opacity-20" />

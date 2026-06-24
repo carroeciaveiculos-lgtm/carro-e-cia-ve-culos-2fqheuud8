@@ -45,16 +45,17 @@ const SIDEBAR_MENUS = [
   {
     title: 'Gerenciamento do Site',
     items: [
-      { label: 'Visão Geral', path: '/admin/site', icon: Globe },
       { label: 'Conteúdo', path: '/admin/conteudo', icon: FileText },
-      { label: 'Banners', path: '/admin/site/banners', icon: ImageIcon },
+      { label: 'Design & Mídias', path: '/admin/design', icon: ImageIcon },
       { label: 'Configurações', path: '/admin/configuracoes', icon: Settings },
-      { label: 'Logs do Sistema', path: '/admin/logs', icon: Activity },
     ],
   },
   {
-    title: 'Suporte',
-    items: [{ label: 'Central de Ajuda', path: '/admin/ajuda', icon: HelpCircle }],
+    title: 'Sistema & Suporte',
+    items: [
+      { label: 'Logs do Sistema', path: '/admin/logs', icon: Activity },
+      { label: 'Central de Ajuda', path: '/admin/ajuda', icon: HelpCircle },
+    ],
   },
 ]
 

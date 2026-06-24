@@ -156,7 +156,7 @@ const Dashboard = lazyWithRetry(() => import('./pages/admin/Dashboard'))
 const AdminEstoque = lazyWithRetry(() => import('./pages/admin/Estoque'))
 const AdminLeads = lazyWithRetry(() => import('./pages/admin/Leads'))
 const Avaliacao = lazyWithRetry(() => import('./pages/admin/Avaliacao'))
-const SiteManager = lazyWithRetry(() => import('./pages/admin/SiteManager'))
+const Design = lazyWithRetry(() => import('./pages/admin/Design'))
 const Financiamento = lazyWithRetry(() => import('./pages/admin/Financiamento'))
 const Administrativo = lazyWithRetry(() => import('./pages/admin/Administrativo'))
 const Portais = lazyWithRetry(() => import('./pages/admin/Portais'))
@@ -284,9 +284,9 @@ const MainApp = () => (
         <Route path="avaliacao" element={<Avaliacao />} />
         <Route path="avaliacao/:submenu" element={<Avaliacao />} />
 
-        {/* Module: Site */}
-        <Route path="site" element={<SiteManager />} />
-        <Route path="site/:submenu" element={<SiteManager />} />
+        {/* Module: Design */}
+        <Route path="design" element={<Design />} />
+        <Route path="design/:submenu" element={<Design />} />
 
         {/* Module: Financiamento */}
         <Route path="financiamento" element={<Financiamento />} />
@@ -334,7 +334,7 @@ const HubApp = () => {
         <Route element={<HubLayout />}>
           <Route index element={<HubDashboard />} />
           <Route path="estoque" element={<AdminEstoque />} />
-          <Route path="site" element={<SiteManager />} />
+          <Route path="design" element={<Design />} />
           <Route path="conteudo" element={<Conteudo />} />
           <Route path="branding" element={<HubBranding />} />
           <Route path="scripts" element={<HubScripts />} />
