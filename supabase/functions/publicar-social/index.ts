@@ -4,53 +4,42 @@ import { createClient } from 'jsr:@supabase/supabase-js@2'
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-  'Access-Control-Allow-Headers':
-    'authorization, x-client-info, x-supabase-client-platform, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, x-supabase-client-platform, apikey, content-type',
 }
 
-const delay = (ms: number) => new Promise((res) => setTimeout(res, ms))
+const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
 
 // Função para garantir que fotos .webp do Supabase sejam servidas em .jpeg para o Meta aceitar
 function sanitizeImage(url: string): string {
   if (url.includes('supabase.co/storage/v1/object/public/')) {
-    return (
-      url.replace('/storage/v1/object/public/', '/storage/v1/render/image/public/') + '?format=jpeg'
-    )
+    return url.replace('/storage/v1/object/public/', '/storage/v1/render/image/public/') + '?format=jpeg'
   }
-  return url
+  return url;
 }
 
 // Polling inteligente para aguardar o Meta processar o upload do vídeo antes de publicar
-async function waitForInstagramMediaReady(
-  containerId: string,
-  token: string,
-  maxAttempts = 10,
-): Promise<boolean> {
+async function waitForInstagramMediaReady(containerId: string, token: string, maxAttempts = 10): Promise<boolean> {
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-    console.log(
-      `Verificando processamento do vídeo no Instagram (Tentativa ${attempt}/${maxAttempts})...`,
-    )
-
-    const statusRes = await fetch(
-      `https://graph.facebook.com/v20.0/${containerId}?fields=status_code&access_token=${token}`,
-    )
-    const statusData = await statusRes.json()
-
+    console.log(`Verificando processamento do vídeo no Instagram (Tentativa ${attempt}/${maxAttempts})...`);
+    
+    const statusRes = await fetch(`https://graph.facebook.com/v20.0/${containerId}?fields=status_code&access_token=${token}`);
+    const statusData = await statusRes.json();
+    
     if (statusData.status_code === 'FINISHED') {
-      console.log('Vídeo processado com sucesso pelo Meta!')
-      return true
+      console.log("Vídeo processado com sucesso pelo Meta!");
+      return true;
     }
-
+    
     if (statusData.status_code === 'ERROR') {
-      console.error('Erro reportado pelo Meta no processamento do vídeo:', statusData)
-      return false
+      console.error("Erro reportado pelo Meta no processamento do vídeo:", statusData);
+      return false;
     }
-
+    
     // Aguarda 3 segundos antes de checar novamente
-    await delay(3000)
+    await delay(3000);
   }
-  console.warn('Tempo de processamento de vídeo esgotado.')
-  return false
+  console.warn("Tempo de processamento de vídeo esgotado.");
+  return false;
 }
 
 Deno.serve(async (req: Request) => {
@@ -79,16 +68,16 @@ Deno.serve(async (req: Request) => {
 
     for (const post of posts || []) {
       const redes = typeof post.redes === 'string' ? JSON.parse(post.redes) : post.redes
-
+      
       let fbSuccess = false
       let igSuccess = false
       const errorLog: any = {}
-
-      const imageUrlSanitized = post.imagem ? sanitizeImage(post.imagem) : null
+      
+      const imageUrlSanitized = post.imagem ? sanitizeImage(post.imagem) : null;
 
       // 1. PUBLICAR NO FACEBOOK
       if (redes.facebook && pageId && token) {
-        console.log(`Iniciando publicação do post ${post.id} no Facebook...`)
+        console.log(`Iniciando publicação do post ${post.id} no Facebook...`);
         let fbUrl = `https://graph.facebook.com/v20.0/${pageId}/feed`
         let payload: any = { access_token: token, message: post.texto }
 
@@ -98,7 +87,7 @@ Deno.serve(async (req: Request) => {
           payload = {
             access_token: token,
             url: imageUrlSanitized,
-            message: post.texto,
+            message: post.texto
           }
         }
 
@@ -106,15 +95,15 @@ Deno.serve(async (req: Request) => {
           const fbRes = await fetch(fbUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload),
+            body: JSON.stringify(payload)
           })
           const fbData = await fbRes.json()
           if (fbRes.ok) {
             fbSuccess = true
-            console.log('Publicação realizada com sucesso no Facebook!')
+            console.log("Publicação realizada com sucesso no Facebook!");
           } else {
             errorLog.facebook = fbData
-            console.error('Falha ao publicar no Facebook:', fbData)
+            console.error("Falha ao publicar no Facebook:", fbData);
           }
         } catch (e: any) {
           errorLog.facebook = e.message
@@ -123,9 +112,9 @@ Deno.serve(async (req: Request) => {
 
       // 2. PUBLICAR NO INSTAGRAM
       if (redes.instagram && igId && token && imageUrlSanitized) {
-        console.log(`Iniciando publicação do post ${post.id} no Instagram...`)
+        console.log(`Iniciando publicação do post ${post.id} no Instagram...`);
         const isVideo = imageUrlSanitized.match(/\.(mp4|mov|webm)/i)
-
+        
         try {
           const containerRes = await fetch(`https://graph.facebook.com/v20.0/${igId}/media`, {
             method: 'POST',
@@ -134,13 +123,13 @@ Deno.serve(async (req: Request) => {
               access_token: token,
               [isVideo ? 'video_url' : 'image_url']: imageUrlSanitized,
               caption: post.texto,
-              media_type: isVideo ? 'REELS' : 'IMAGE',
-            }),
+              media_type: isVideo ? 'REELS' : 'IMAGE'
+            })
           })
           const containerData = await containerRes.json()
-
+          
           if (containerData.id) {
-            let readyToPublish = true
+            let readyToPublish = true;
 
             // Se for vídeo, aguarda o Meta finalizar o processamento em background antes de tentar publicar
             if (isVideo) {
@@ -148,34 +137,29 @@ Deno.serve(async (req: Request) => {
             }
 
             if (readyToPublish) {
-              const publishRes = await fetch(
-                `https://graph.facebook.com/v20.0/${igId}/media_publish`,
-                {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({
-                    access_token: token,
-                    creation_id: containerData.id,
-                  }),
-                },
-              )
-
-              const publishData = await publishRes.json()
+              const publishRes = await fetch(`https://graph.facebook.com/v20.0/${igId}/media_publish`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  access_token: token,
+                  creation_id: containerData.id
+                })
+              })
+              
+              const publishData = await publishRes.json();
               if (publishRes.ok) {
                 igSuccess = true
-                console.log('Publicação realizada com sucesso no Instagram!')
+                console.log("Publicação realizada com sucesso no Instagram!");
               } else {
                 errorLog.instagram = publishData
-                console.error('Falha ao publicar contêiner no Instagram:', publishData)
+                console.error("Falha ao publicar contêiner no Instagram:", publishData);
               }
             } else {
-              errorLog.instagram = {
-                error: 'O vídeo não ficou pronto para publicação no tempo limite.',
-              }
+              errorLog.instagram = { error: "O vídeo não ficou pronto para publicação no tempo limite." }
             }
           } else {
             errorLog.instagram = containerData
-            console.error('Falha ao criar contêiner de mídia no Instagram:', containerData)
+            console.error("Falha ao criar contêiner de mídia no Instagram:", containerData);
           }
         } catch (e: any) {
           errorLog.instagram = e.message
@@ -192,7 +176,7 @@ Deno.serve(async (req: Request) => {
       const isTotalSuccess = fbResultOk && igResultOk
 
       const newStatus = isTotalSuccess ? 'Publicado' : 'Erro'
-
+      
       await supabase.from('social_posts').update({ status: newStatus }).eq('id', post.id)
 
       await supabase.from('logs_integracao').insert({
