@@ -45,6 +45,13 @@ const ALL_MODULES = [
     route: '/admin/administrativo',
   },
   {
+    id: 'marketing',
+    icon: Activity,
+    line1: 'Marketing e',
+    line2: 'Automações',
+    route: '/admin/marketing',
+  },
+  {
     id: 'configuracoes',
     icon: Settings,
     line1: 'Configurações',

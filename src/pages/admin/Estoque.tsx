@@ -33,6 +33,8 @@ import {
   MessageCircle,
   CheckCircle,
   QrCode,
+  Sparkles,
+  Loader2,
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
@@ -243,25 +245,102 @@ export default function AdminEstoque() {
   }
 
   const ShareModal = () => {
+    const [platform, setPlatform] = useState('instagram')
+    const [text, setText] = useState('')
+    const [isGenerating, setIsGenerating] = useState(false)
+
+    useEffect(() => {
+      if (shareVehicle && !text) {
+        setText(
+          `🚗 ${shareVehicle.marca} ${shareVehicle.modelo}\n💰 ${formatCurrency(shareVehicle.preco_venda)}\n🔗 ${import.meta.env.VITE_SITE_URL || 'https://www.carroeciamotors.com.br'}/estoque/${shareVehicle.id}`,
+        )
+      }
+    }, [])
+
     if (!shareVehicle) return null
-    const text = `🚗 ${shareVehicle.marca} ${shareVehicle.modelo}\n💰 ${formatCurrency(shareVehicle.preco_venda)}\n🔗 ${import.meta.env.VITE_SITE_URL || 'https://carroeciaveiculos.goskip.app'}/estoque/${shareVehicle.id}`
+
+    const handleGenerateIA = async () => {
+      setIsGenerating(true)
+      try {
+        const { data, error } = await supabase.functions.invoke('gerar-conteudo-social', {
+          body: { veiculo: shareVehicle, platform },
+        })
+        if (error) throw error
+        if (data?.success) {
+          setText(data.text)
+          toast({ title: 'Conteúdo gerado com IA!' })
+        } else {
+          throw new Error(data?.error || 'Erro desconhecido')
+        }
+      } catch (err: any) {
+        toast({ title: 'Erro ao gerar', description: err.message, variant: 'destructive' })
+      } finally {
+        setIsGenerating(false)
+      }
+    }
+
     return (
-      <Dialog open={!!shareVehicle} onOpenChange={() => setShareVehicle(null)}>
+      <Dialog
+        open={!!shareVehicle}
+        onOpenChange={() => {
+          setShareVehicle(null)
+          setText('')
+        }}
+      >
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Compartilhar Anúncio</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
-            <Textarea readOnly value={text} className="h-24 bg-slate-50 text-xs font-mono" />
-            <Button
-              onClick={() => {
-                navigator.clipboard.writeText(text)
-                toast({ title: 'Copiado' })
-              }}
-              className="w-full"
-            >
-              Copiar
-            </Button>
+            <div>
+              <label className="text-xs font-medium text-slate-500 mb-1.5 block">Plataforma</label>
+              <Select value={platform} onValueChange={setPlatform}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione a rede" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="instagram">Instagram</SelectItem>
+                  <SelectItem value="facebook">Facebook</SelectItem>
+                  <SelectItem value="whatsapp">WhatsApp</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <label className="text-xs font-medium text-slate-500 mb-1.5 block">
+                Texto do Post
+              </label>
+              <Textarea
+                value={text}
+                onChange={(e) => setText(e.target.value)}
+                className="h-40 bg-slate-50 text-xs font-mono"
+              />
+            </div>
+
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={handleGenerateIA}
+                disabled={isGenerating}
+                className="w-1/2 border-purple-200 text-purple-700 bg-purple-50 hover:bg-purple-100"
+              >
+                {isGenerating ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <Sparkles className="w-4 h-4 mr-2" />
+                )}
+                Gerar com IA
+              </Button>
+              <Button
+                onClick={() => {
+                  navigator.clipboard.writeText(text)
+                  toast({ title: 'Copiado para a área de transferência!' })
+                }}
+                className="w-1/2"
+              >
+                Copiar
+              </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>

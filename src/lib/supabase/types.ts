@@ -1788,6 +1788,33 @@ export type Database = {
         }
         Relationships: []
       }
+      marketing_logs: {
+        Row: {
+          campanha_id: string | null
+          created_at: string
+          detalhes: Json | null
+          id: string
+          status: string
+          tipo: string
+        }
+        Insert: {
+          campanha_id?: string | null
+          created_at?: string
+          detalhes?: Json | null
+          id?: string
+          status: string
+          tipo: string
+        }
+        Update: {
+          campanha_id?: string | null
+          created_at?: string
+          detalhes?: Json | null
+          id?: string
+          status?: string
+          tipo?: string
+        }
+        Relationships: []
+      }
       media_assets: {
         Row: {
           alt_text: string | null
@@ -2537,6 +2564,7 @@ export type Database = {
           descricao: string | null
           destaque: boolean | null
           diferenciais: Json | null
+          exibir_no_site: boolean | null
           final_placa: string | null
           fipe_ref: string | null
           fotos: Json | null
@@ -2607,6 +2635,7 @@ export type Database = {
           descricao?: string | null
           destaque?: boolean | null
           diferenciais?: Json | null
+          exibir_no_site?: boolean | null
           final_placa?: string | null
           fipe_ref?: string | null
           fotos?: Json | null
@@ -2677,6 +2706,7 @@ export type Database = {
           descricao?: string | null
           destaque?: boolean | null
           diferenciais?: Json | null
+          exibir_no_site?: boolean | null
           final_placa?: string | null
           fipe_ref?: string | null
           fotos?: Json | null

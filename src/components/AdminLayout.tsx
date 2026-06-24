@@ -15,6 +15,7 @@ import {
   Image as ImageIcon,
   Activity,
   BarChart,
+  HelpCircle,
 } from 'lucide-react'
 import { useAuth } from '@/hooks/use-auth'
 import { useState, useEffect } from 'react'
@@ -50,6 +51,10 @@ const SIDEBAR_MENUS = [
       { label: 'Configurações', path: '/admin/configuracoes', icon: Settings },
       { label: 'Logs do Sistema', path: '/admin/logs', icon: Activity },
     ],
+  },
+  {
+    title: 'Suporte',
+    items: [{ label: 'Central de Ajuda', path: '/admin/ajuda', icon: HelpCircle }],
   },
 ]
 
