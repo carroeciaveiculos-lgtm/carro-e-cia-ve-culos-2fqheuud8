@@ -1,12 +1,11 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from 'jsr:@supabase/supabase-js@2'
-import { encodeBase64 } from 'jsr:@std/encoding/base64'
+import { encodeBase64 } from "jsr:@std/encoding/base64"
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-  'Access-Control-Allow-Headers':
-    'authorization, x-client-info, x-supabase-client-platform, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, x-supabase-client-platform, apikey, content-type',
 }
 
 const supabase = createClient(
@@ -18,6 +17,7 @@ const geminiKey = Deno.env.get('GEMINI_APY_KEY') || Deno.env.get('GEMINI_API_KEY
 const waToken = Deno.env.get('WHATSAPP_TOKEN') || Deno.env.get('META_WHATSAPP_ACCESS_TOKEN')!
 const waPhoneId = Deno.env.get('WHATSAPP_PHONE_NUMBER_ID') || Deno.env.get('META_PHONE_NUMBER_ID')!
 const waVerifyToken = Deno.env.get('WHATSAPP_VERIFY_TOKEN') || Deno.env.get('META_VERIFY_TOKEN')!
+const metaPageToken = Deno.env.get('META_PAGE_ACCESS_TOKEN') || waToken!
 
 const SYSTEM_PROMPT = `Você é o Luiz, SDR digital da Carro e Cia Motors.
 Responda sempre em formato JSON válido com as seguintes chaves:
@@ -29,20 +29,61 @@ Responda sempre em formato JSON válido com as seguintes chaves:
 }
 Regra: Foco em agendar visitas à loja; NUNCA ofereça descontos. Seja prestativo.`
 
+const tools = [
+  {
+    name: 'consultar_estoque',
+    description: 'Busca veículos disponíveis no estoque.',
+    parameters: {
+      type: 'OBJECT',
+      properties: {
+        marca: { type: 'STRING' },
+        modelo: { type: 'STRING' },
+        preco_maximo: { type: 'NUMBER' },
+      },
+    },
+  },
+]
+
 async function runGemini(history: any[]) {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiKey}`
+  // Atualizado para o modelo dinâmico correto do Gemini 3.5 Flash contratado por você
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${geminiKey}`
   const reqBody = {
     systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
     contents: history,
-    generationConfig: { responseMimeType: 'application/json' },
+    tools: [{ functionDeclarations: tools }],
+    generationConfig: { responseMimeType: "application/json" }
   }
 
+  console.log('Chamando a API do Gemini...')
   const res = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(reqBody),
   })
   return res.json()
+}
+
+async function handleFunctionCall(call: any) {
+  const args = call.args || {}
+  console.log('IA solicitou consulta de estoque com parâmetros:', JSON.stringify(args))
+
+  if (call.name === 'consultar_estoque') {
+    let query = supabase
+      .from('veiculos')
+      .select('marca, modelo, preco_venda, ano_fabricacao, is_consignado')
+      .eq('status', 'disponivel')
+    if (args.marca) query = query.ilike('marca', `%${args.marca}%`)
+    if (args.modelo) query = query.ilike('modelo', `%${args.modelo}%`)
+    if (args.preco_maximo) query = query.lte('preco_venda', args.preco_maximo)
+
+    const { data, error } = await query.limit(5)
+    if (error) {
+      console.error('Erro na tabela de veiculos:', error)
+    }
+    return { result: data || [] }
+  }
+
+  return { error: 'Função não encontrada.' }
 }
 
 async function sendWhatsApp(to: string, text: string) {
@@ -59,15 +100,43 @@ async function sendWhatsApp(to: string, text: string) {
   })
 }
 
+// Envia resposta ativa de volta para o Messenger ou Instagram Direct
+async function sendPageMessage(platform: 'instagram' | 'messenger', recipientId: string, text: string) {
+  const url = `https://graph.facebook.com/v20.0/me/messages`
+  await fetch(url, {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${metaPageToken}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      recipient: { id: recipientId },
+      messaging_type: "RESPONSE",
+      message: { text: text }
+    })
+  })
+}
+
+// Consulta de forma inteligente o nome real e avatar do perfil do Instagram ou Facebook do cliente
+async function fetchMetaProfile(platform: 'instagram' | 'messenger', userId: string) {
+  try {
+    const fields = platform === 'instagram' ? 'username,name,profile_pic' : 'first_name,last_name,profile_pic'
+    const res = await fetch(`https://graph.facebook.com/v20.0/${userId}?fields=${fields}&access_token=${metaPageToken}`)
+    const data = await res.json()
+    if (platform === 'instagram') {
+      return { name: data.name || data.username || 'Cliente Instagram', pic: data.profile_pic || null }
+    } else {
+      return { name: `${data.first_name || 'Cliente'} ${data.last_name || 'Messenger'}`.trim(), pic: data.profile_pic || null }
+    }
+  } catch (e) {
+    console.error(`Erro ao consultar perfil do ${platform}:`, e)
+    return { name: `Cliente ${platform === 'instagram' ? 'Instagram' : 'Messenger'}`, pic: null }
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
 
   if (req.method === 'GET') {
     const url = new URL(req.url)
-    if (
-      url.searchParams.get('hub.mode') === 'subscribe' &&
-      url.searchParams.get('hub.verify_token') === waVerifyToken
-    ) {
+    if (url.searchParams.get('hub.mode') === 'subscribe' && url.searchParams.get('hub.verify_token') === waVerifyToken) {
       return new Response(url.searchParams.get('hub.challenge'), { status: 200 })
     }
     return new Response('Token inválido', { status: 403 })
@@ -75,141 +144,243 @@ Deno.serve(async (req) => {
 
   const body = await req.json()
   const isWa = body.object === 'whatsapp_business_account'
-  const isPage = body.object === 'page' || body.object === 'instagram'
+  const isPage = body.object === 'page'
+  const isInstagram = body.object === 'instagram'
 
-  if (isPage) {
-    const entry = body.entry?.[0]
-    const changes = entry?.changes?.[0]
-
-    // Facebook/Instagram Comments Webhook
-    if (changes?.field === 'feed') {
-      const val = changes.value
-      if (val.item === 'comment' && val.verb === 'add') {
-        await supabase.from('social_comments').insert({
-          platform: 'facebook',
-          post_id: val.post_id,
-          comment_id: val.comment_id,
-          from_name: val.from.name,
-          from_id: val.from.id,
-          message: val.message,
-        })
-      }
-      return new Response('ok', { headers: corsHeaders, status: 200 })
-    }
-  }
-
-  if (isWa) {
-    const entry = body.entry?.[0]?.changes?.[0]?.value
-    if (!entry?.messages) return new Response('ok', { headers: corsHeaders, status: 200 })
-
-    const message = entry.messages[0]
-    const phone = message.from
-    const profileName = entry.contacts?.[0]?.profile?.name || 'Cliente'
-    let text = message.text?.body
-
-    // Handle Voice Messages
-    let audioData = null
-    if (message.type === 'audio') {
-      const mediaId = message.audio.id
-      const mediaRes = await fetch(`https://graph.facebook.com/v20.0/${mediaId}`, {
-        headers: { Authorization: `Bearer ${waToken}` },
-      })
-      const mediaObj = await mediaRes.json()
-      if (mediaObj.url) {
-        const audioRes = await fetch(mediaObj.url, {
-          headers: { Authorization: `Bearer ${waToken}` },
-        })
-        const buffer = await audioRes.arrayBuffer()
-        audioData = encodeBase64(new Uint8Array(buffer))
-      }
-    }
-
-    if (!text && !audioData) return new Response('ok', { headers: corsHeaders })
-
-    let { data: lead } = await supabase
-      .from('leads')
-      .select('*')
-      .eq('telefone', phone)
-      .maybeSingle()
-
-    if (!lead) {
-      const { data: newLead } = await supabase
-        .from('leads')
-        .insert({
-          nome: profileName,
-          telefone: phone,
-          origem: 'whatsapp',
-          tipo: 'compra',
-          status: 'novo',
-        })
-        .select()
-        .single()
-      lead = newLead
-    }
-
-    await supabase.from('conversation_history').insert({
-      lead_id: lead.id,
-      sender: 'client',
-      message_text: text || '[Mensagem de Áudio]',
-    })
-
-    const { data: history } = await supabase
-      .from('conversation_history')
-      .select('*')
-      .eq('lead_id', lead.id)
-      .order('created_at')
-
-    const geminiHistory: any[] = (history || []).map((m: any) => ({
-      role: m.sender === 'bot' ? 'model' : 'user',
-      parts: [{ text: m.message_text }],
-    }))
-
-    if (audioData) {
-      geminiHistory[geminiHistory.length - 1] = {
-        role: 'user',
-        parts: [
-          { inlineData: { mimeType: message.audio.mime_type || 'audio/ogg', data: audioData } },
-          { text: 'Transcreva e responda a este áudio.' },
-        ],
-      }
-    }
-
-    const aiRes = await runGemini(geminiHistory)
-    let responseText = 'Como posso te ajudar hoje?'
-    let temp = lead.temperatura
-    let tradeIn = lead.trade_in_car
-    let payMethod = lead.payment_method
-
+  const processWebhook = async () => {
     try {
-      const rawText = aiRes.candidates?.[0]?.content?.parts?.[0]?.text || ''
-      const jsonStr = rawText.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/)?.[1] || rawText
-      const parsed = JSON.parse(jsonStr)
-      if (parsed.reply) responseText = parsed.reply
-      if (parsed.temperature) temp = parsed.temperature
-      if (parsed.trade_in_car) tradeIn = parsed.trade_in_car
-      if (parsed.payment_method) payMethod = parsed.payment_method
-    } catch (e) {
-      console.error('Failed to parse Gemini JSON')
+      // 1. Webhook de Comentários Públicos de Páginas (Facebook e Instagram)
+      if (isPage || isInstagram) {
+        const entry = body.entry?.[0]
+        const changes = entry?.changes?.[0]
+        
+        // Comentários do Facebook (feed) ou Instagram (comments)
+        if (changes?.field === 'feed' || changes?.field === 'comments') {
+          const val = changes.value
+          const isComment = val.item === 'comment' || changes.field === 'comments'
+          const verb = val.verb || 'add'
+          
+          if (isComment && (verb === 'add' || !val.verb)) {
+            const platform = isInstagram ? 'instagram' : 'facebook'
+            await supabase.from('social_comments').insert({
+              platform: platform,
+              post_id: val.post_id || val.media?.id,
+              comment_id: val.comment_id || val.id,
+              from_name: val.from?.name || val.from?.username || 'Usuário',
+              from_id: val.from?.id,
+              message: val.message || val.text
+            })
+            console.log(`Comentário de ${platform} registrado no banco com sucesso.`);
+          }
+          return;
+        }
+
+        // 2. Webhook de Mensagens Privadas (DMs do Instagram e Facebook Messenger)
+        const messagingEvent = entry?.messaging?.[0]
+        if (messagingEvent && messagingEvent.message) {
+          const senderId = messagingEvent.sender.id // IGSID (Instagram) ou PSID (Messenger)
+          const messageText = messagingEvent.message.text
+          const platform = isInstagram ? 'instagram' : 'messenger'
+
+          console.log(`DM recebida via ${platform}. Remetente: ${senderId}, Texto: ${messageText}`)
+
+          if (!messageText) return;
+
+          // Buscar ou Criar Lead de forma segura pelo ID Externo da Rede Social
+          let { data: lead, error: selectError } = await supabase
+            .from('leads')
+            .select('*')
+            .eq('external_lead_id', senderId)
+            .maybeSingle()
+
+          if (selectError) console.error('Erro na busca de lead:', selectError)
+
+          if (!lead) {
+            console.log(`Carregando nome do perfil comercial do Meta para o ID: ${senderId}...`)
+            const profile = await fetchMetaProfile(platform, senderId)
+
+            const { data: newLead, error: insertError } = await supabase
+              .from('leads')
+              .insert({
+                nome: profile.name,
+                origem: platform,
+                source: platform,
+                tipo: 'compra',
+                status: 'novo',
+                external_lead_id: senderId
+              })
+              .select()
+              .maybeSingle()
+
+            if (insertError) console.error('Erro ao inserir lead de rede social:', insertError)
+            lead = newLead
+          }
+
+          if (!lead) {
+            console.error('Aviso: O processo foi interrompido porque o lead não pôde ser encontrado nem criado.')
+            return;
+          }
+
+          // Salvar mensagem recebida
+          await supabase.from('conversation_history').insert({
+            lead_id: lead.id, sender: 'client', message_text: messageText
+          })
+
+          // Montar histórico para o Gemini
+          const { data: history } = await supabase
+            .from('conversation_history')
+            .select('*')
+            .eq('lead_id', lead.id)
+            .order('created_at')
+
+          const geminiHistory = (history || []).map((m: any) => ({
+            role: m.sender === 'bot' ? 'model' : 'user',
+            parts: [{ text: m.message_text }],
+          }))
+
+          const aiRes = await runGemini(geminiHistory)
+          console.log('Resposta bruta gerada pelo Gemini:', JSON.stringify(aiRes))
+
+          let responseText = "Como posso te ajudar hoje?"
+          let temp = lead.temperatura
+          let tradeIn = lead.trade_in_car
+          let payMethod = lead.payment_method
+
+          try {
+            const rawText = aiRes.candidates?.[0]?.content?.parts?.[0]?.text || ''
+            const jsonStr = rawText.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/)?.[1] || rawText
+            const parsed = JSON.parse(jsonStr)
+            if (parsed.reply) responseText = parsed.reply
+            if (parsed.temperature) temp = parsed.temperature
+            if (parsed.trade_in_car) tradeIn = parsed.trade_in_car
+            if (parsed.payment_method) payMethod = parsed.payment_method
+          } catch(e) {
+            console.error('Failed to parse Gemini JSON')
+          }
+
+          // Atualizar ficha do lead
+          await supabase.from('leads').update({
+            temperatura: temp, trade_in_car: tradeIn, payment_method: payMethod
+          }).eq('id', lead.id)
+
+          // Gravar resposta no banco
+          await supabase.from('conversation_history').insert({
+            lead_id: lead.id, sender: 'bot', message_text: responseText
+          })
+
+          // Enviar resposta de volta para a rede social correspondente
+          await sendPageMessage(platform, senderId, responseText)
+          console.log(`Resposta enviada com sucesso de volta ao ${platform}!`)
+          return;
+        }
+      }
+
+      // 3. Webhook de Mensagens do WhatsApp
+      if (isWa) {
+        const entry = body.entry?.[0]?.changes?.[0]?.value
+        if (!entry?.messages) return;
+
+        const message = entry.messages[0]
+        const phone = message.from
+        const profileName = entry.contacts?.[0]?.profile?.name || 'Cliente'
+        let text = message.text?.body
+
+        // Processar Mensagens de Áudio com Mime-Type Sanitizado
+        let audioData = null
+        if (message.type === 'audio') {
+          console.log("Mensagem de áudio recebida do WhatsApp. Baixando mídia...")
+          const mediaId = message.audio.id
+          const mediaRes = await fetch(`https://graph.facebook.com/v20.0/${mediaId}`, { headers: { Authorization: `Bearer ${waToken}` } })
+          const mediaObj = await mediaRes.json()
+          if (mediaObj.url) {
+            const audioRes = await fetch(mediaObj.url, { headers: { Authorization: `Bearer ${waToken}` } })
+            const buffer = await audioRes.arrayBuffer()
+            audioData = encodeBase64(new Uint8Array(buffer))
+          }
+        }
+
+        if (!text && !audioData) return;
+
+        let { data: lead } = await supabase.from('leads').select('*').eq('telefone', phone).maybeSingle()
+
+        if (!lead) {
+          const { data: newLead, error: insertError } = await supabase.from('leads').insert({
+            nome: profileName, telefone: phone, origem: 'whatsapp', tipo: 'compra', status: 'novo'
+          }).select().maybeSingle()
+          
+          if (insertError) console.error("Erro ao inserir lead de WhatsApp:", insertError)
+          lead = newLead
+        }
+
+        if (!lead) return;
+
+        await supabase.from('conversation_history').insert({
+          lead_id: lead.id, sender: 'client', message_text: text || '[Mensagem de Áudio]'
+        })
+
+        const { data: history } = await supabase.from('conversation_history').select('*').eq('lead_id', lead.id).order('created_at')
+
+        const geminiHistory: any[] = (history || []).map((m: any) => ({
+          role: m.sender === 'bot' ? 'model' : 'user',
+          parts: [{ text: m.message_text }],
+        }))
+
+        if (audioData) {
+          // Sanitização do Mime-Type (Remove codecs adicionais como "; codecs=opus" para evitar erros no Gemini)
+          const cleanMimeType = (message.audio.mime_type || 'audio/ogg').split(';')[0].trim()
+          
+          geminiHistory[geminiHistory.length - 1] = {
+            role: 'user',
+            parts: [
+              { inlineData: { mimeType: cleanMimeType, data: audioData } },
+              { text: 'Transcreva e responda a este áudio.' }
+            ]
+          }
+        }
+
+        const aiRes = await runGemini(geminiHistory)
+        let responseText = "Como posso te ajudar hoje?"
+        let temp = lead.temperatura
+        let tradeIn = lead.trade_in_car
+        let payMethod = lead.payment_method
+
+        try {
+          const rawText = aiRes.candidates?.[0]?.content?.parts?.[0]?.text || ''
+          const jsonStr = rawText.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/)?.[1] || rawText
+          const parsed = JSON.parse(jsonStr)
+          if (parsed.reply) responseText = parsed.reply
+          if (parsed.temperature) temp = parsed.temperature
+          if (parsed.trade_in_car) tradeIn = parsed.trade_in_car
+          if (parsed.payment_method) payMethod = parsed.payment_method
+        } catch(e) {
+          console.error('Failed to parse Gemini JSON')
+        }
+
+        await supabase.from('leads').update({
+          temperatura: temp, trade_in_car: tradeIn, payment_method: payMethod
+        }).eq('id', lead.id)
+
+        await supabase.from('conversation_history').insert({
+          lead_id: lead.id, sender: 'bot', message_text: responseText
+        })
+
+        await sendWhatsApp(phone, responseText)
+        return;
+      }
+    } catch (error) {
+      console.error('Erro durante o processamento assíncrono do webhook:', error)
     }
-
-    await supabase
-      .from('leads')
-      .update({
-        temperatura: temp,
-        trade_in_car: tradeIn,
-        payment_method: payMethod,
-      })
-      .eq('id', lead.id)
-
-    await supabase.from('conversation_history').insert({
-      lead_id: lead.id,
-      sender: 'bot',
-      message_text: responseText,
-    })
-
-    await sendWhatsApp(phone, responseText)
-    return new Response('ok', { headers: corsHeaders, status: 200 })
   }
 
-  return new Response('ok', { headers: corsHeaders })
+  // EXECUÇÃO ASSÍNCRONA E RESPOSTA IMEDIATA (Evita Timeouts e Mensagens Duplicadas no WhatsApp/Instagram)
+  if (
+    typeof (globalThis as any).EdgeRuntime !== 'undefined' &&
+    typeof (globalThis as any).EdgeRuntime.waitUntil === 'function'
+  ) {
+    ;(globalThis as any).EdgeRuntime.waitUntil(processWebhook())
+  } else {
+    processWebhook().catch(console.error)
+  }
+
+  return new Response('ok', { headers: corsHeaders, status: 200 })
 })

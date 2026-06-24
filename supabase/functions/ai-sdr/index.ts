@@ -2,33 +2,29 @@ import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from 'jsr:@supabase/supabase-js@2'
 import { corsHeaders } from '../_shared/cors.ts'
 
-// Initialize Supabase client
 const supabase = createClient(
   Deno.env.get('SUPABASE_URL')!,
   Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
 )
 
 const geminiKey = Deno.env.get('GEMINI_API_KEY') || Deno.env.get('GEMINI_APY_KEY')!
-const waToken = Deno.env.get('META_WHATSAPP_ACCESS_TOKEN')!
-const waPhoneId = Deno.env.get('META_PHONE_NUMBER_ID') || 'default_id'
+const waToken = Deno.env.get('WHATSAPP_TOKEN') || Deno.env.get('META_WHATSAPP_ACCESS_TOKEN')!
+const waPhoneId = Deno.env.get('WHATSAPP_PHONE_NUMBER_ID') || Deno.env.get('META_PHONE_NUMBER_ID') || 'default_id'
 
 async function getSystemPrompt() {
   const { data } = await supabase
     .from('social_configuracoes')
     .select('ai_system_prompt, whatsapp_number')
     .maybeSingle()
+  
   const basePrompt = data?.ai_system_prompt || 'Você é o Luiz, SDR digital da Carro e Cia Motors.'
   const waNumber = data?.whatsapp_number || ''
 
-  const { data: brainKnowledge } = await supabase
-    .from('brain_ia_knowledge')
-    .select('titulo, conteudo, tipo')
-    .limit(10)
+  const { data: brainKnowledge } = await supabase.from('brain_ia_knowledge').select('titulo, conteudo, tipo').limit(10)
+  
   let memoryContext = ''
   if (brainKnowledge && brainKnowledge.length > 0) {
-    memoryContext =
-      '\nConhecimento (Memória Ativa):\n' +
-      brainKnowledge.map((k: any) => `[${k.titulo}]: ${k.conteudo || k.tipo}`).join('\n')
+    memoryContext = '\nConhecimento (Memória Ativa):\n' + brainKnowledge.map((k: any) => `[${k.titulo}]: ${k.conteudo || k.tipo}`).join('\n')
   }
 
   return `${basePrompt}${memoryContext}
@@ -59,7 +55,7 @@ async function runGemini(history: any[]) {
 
 async function sendWhatsApp(to: string, text: string) {
   if (!waToken) return console.log('Mocked WA to:', to, 'Msg:', text)
-  await fetch(`https://graph.facebook.com/v18.0/${waPhoneId}/messages`, {
+  await fetch(`https://graph.facebook.com/v20.0/${waPhoneId}/messages`, {
     method: 'POST',
     headers: { Authorization: `Bearer ${waToken}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -80,8 +76,21 @@ Deno.serve(async (req) => {
     if (body.action === 'init_conversation') {
       const { lead_id, source, veiculo } = body
 
-      const { data: lead } = await supabase.from('leads').select('*').eq('id', lead_id).single()
-      if (!lead) return new Response('Lead not found', { status: 404, headers: corsHeaders })
+      // Uso seguro de maybeSingle() para evitar quebras de execução
+      const { data: lead, error: leadError } = await supabase
+        .from('leads')
+        .select('*')
+        .eq('id', lead_id)
+        .maybeSingle()
+        
+      if (leadError) console.error("Erro ao carregar dados do lead:", leadError);
+
+      if (!lead) {
+        return new Response(JSON.stringify({ error: 'Lead não localizado.' }), { 
+          status: 404, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        })
+      }
 
       const nome = lead.nome || 'Cliente'
       const v = veiculo || 'nosso estoque'

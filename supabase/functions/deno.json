@@ -1,7 +1,7 @@
 {
   "_versions": {
     "send-lead-email": 60,
-    "receive-leads": 74,
+    "receive-leads": 75,
     "sync-estoque": 59,
     "webhook-portais": 60,
     "on-lead-created": 60,
@@ -14,15 +14,15 @@
     "gerar-conteudo": 39,
     "gerar-imagem": 31,
     "public-inventory-feed": 53,
-    "ai-sdr": 33,
+    "ai-sdr": 34,
     "crm-inventory-feed": 15,
     "ai-assistant": 7,
     "content-workflow-notification": 1,
     "gerar-conteudo-social": 2,
-    "publicar-social": 2,
-    "send-whatsapp": 1,
-    "social-actions": 1,
+    "publicar-social": 3,
+    "send-whatsapp": 3,
+    "social-actions": 2,
     "gerar-pdf-proposta": 1,
-    "re-engagement-cron": 3
+    "re-engagement-cron": 5
   }
 }
