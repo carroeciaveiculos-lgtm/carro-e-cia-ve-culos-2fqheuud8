@@ -1,164 +1,66 @@
 import { Link } from 'react-router-dom'
+import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { getImageUrl } from '@/lib/image-utils'
-import { Badge } from '@/components/ui/badge'
-import {
-  Carousel,
-  CarouselContent,
-  CarouselItem,
-  CarouselNext,
-  CarouselPrevious,
-} from '@/components/ui/carousel'
 
-export function VehicleCard({ vehicle, isList = false }: { vehicle: any; isList?: boolean }) {
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value)
-  }
-
-  const wppText = encodeURIComponent(
-    `Olá! Vi o ${vehicle.marca} ${vehicle.modelo} ${vehicle.ano_fabricacao} por ${formatCurrency(vehicle.preco_venda || 0)} no site. Ainda está disponível?`,
-  )
-
-  const fotos =
+export function VehicleCard({ vehicle }: { vehicle: any }) {
+  const foto =
     vehicle.fotos && vehicle.fotos.length > 0
-      ? vehicle.fotos.map((url: string) => getImageUrl(url))
-      : ['https://img.usecurling.com/p/400/300?q=car']
+      ? getImageUrl(vehicle.fotos[0])
+      : getImageUrl('fotos/modelo-veiculo.webp')
 
-  const coverImage = fotos[0]
-
-  if (isList) {
-    return (
-      <div className="group flex bg-card rounded-lg overflow-hidden border shadow-sm hover:shadow-md transition-shadow w-full">
-        <div className="relative w-[140px] md:w-[240px] shrink-0 overflow-hidden bg-muted">
+  return (
+    <Card className="overflow-hidden hover:shadow-lg transition-shadow border-border/50 group flex flex-col w-full bg-card">
+      <div className="relative w-full h-[240px] bg-muted group-hover:scale-105 transition-transform duration-500">
+        {vehicle.is_zero_km && (
+          <div className="absolute top-3 left-3 z-10 bg-primary text-primary-foreground px-2 py-1 text-xs font-bold rounded shadow-sm">
+            0 KM
+          </div>
+        )}
+        <Link to={`/estoque/${vehicle.id}`} className="w-full h-full block">
           <img
-            src={coverImage}
-            alt={`${vehicle.marca} ${vehicle.modelo} à venda na Carro e Cia`}
-            width="240"
-            height="180"
+            src={foto}
+            alt={`${vehicle.marca} ${vehicle.modelo}`}
+            className="w-full h-full object-cover bg-muted"
             loading="lazy"
-            decoding="async"
-            className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-500 bg-muted"
             onError={(e) => {
               ;(e.target as HTMLImageElement).src = 'https://img.usecurling.com/p/400/300?q=car'
             }}
           />
-        </div>
-        <div className="p-4 flex flex-col flex-grow">
-          <h3 className="font-display font-bold text-base md:text-lg text-foreground line-clamp-1 mb-2">
+        </Link>
+      </div>
+      <CardContent className="p-4 flex-1 flex flex-col">
+        <div className="mb-3">
+          <h3 className="font-bold text-lg leading-tight group-hover:text-primary transition-colors line-clamp-1 mb-2">
             {vehicle.marca} {vehicle.modelo}
           </h3>
-          <p className="text-[13px] text-muted-foreground mb-1">
-            Ano: {vehicle.ano_fabricacao} | Combustível: {vehicle.combustivel || 'N/I'} | Cor:{' '}
-            {vehicle.cor || 'N/I'}
+          <p className="text-[13px] text-muted-foreground line-clamp-1 mb-1">
+            Ano: {vehicle.ano_fabricacao} | {vehicle.combustivel || 'N/I'}
           </p>
-          <p className="text-[13px] text-muted-foreground mb-2">
-            Quilometragem: {vehicle.quilometragem?.toLocaleString('pt-BR') || 0} km
+          <p className="text-[13px] text-muted-foreground line-clamp-1">
+            Km: {vehicle.quilometragem?.toLocaleString('pt-BR') || 0}
           </p>
-          <div className="mt-auto">
-            <span className="font-bold text-primary text-lg md:text-xl">
-              {formatCurrency(vehicle.preco_venda || 0)}
-            </span>
-          </div>
-          <div className="flex gap-2 mt-3">
-            <Button asChild variant="outline" className="w-full h-10 text-xs md:text-sm">
-              <Link
-                to={`/estoque/${vehicle.id}`}
-                aria-label={`Ver detalhes do ${vehicle.marca} ${vehicle.modelo}`}
-              >
-                Detalhes
-              </Link>
-            </Button>
-            <Button
-              asChild
-              className="w-full h-10 text-xs md:text-sm bg-[#25D366] hover:bg-[#20bd5a] text-white"
-            >
-              <a
-                href={`https://wa.me/5534999484285?text=${wppText}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label={`Falar no WhatsApp sobre ${vehicle.marca} ${vehicle.modelo}`}
-              >
-                Interesse
-              </a>
-            </Button>
-          </div>
         </div>
-      </div>
-    )
-  }
-
-  return (
-    <div className="group flex flex-col bg-card rounded-lg overflow-hidden border shadow-sm hover:shadow-md transition-shadow">
-      <div className="relative aspect-[16/9] md:aspect-[4/3] bg-muted group-hover:scale-105 transition-transform duration-500">
-        <Carousel className="w-full h-full">
-          <CarouselContent className="h-full ml-0">
-            {fotos.map((url: string, index: number) => (
-              <CarouselItem key={index} className="pl-0 h-full">
-                <Link to={`/estoque/${vehicle.id}`} className="w-full h-full block">
-                  {url.match(/\.(mp4|mov|webm)$/i) ? (
-                    <video
-                      src={url}
-                      className="w-full h-[300px] md:h-full object-cover"
-                      muted
-                      loop
-                      playsInline
-                    />
-                  ) : (
-                    <img
-                      src={url}
-                      alt={`Foto do veículo ${vehicle.marca} ${vehicle.modelo} à venda em Uberaba`}
-                      loading="lazy"
-                      className="object-cover w-full h-[300px] md:h-full bg-muted"
-                      onError={(e) => {
-                        ;(e.target as HTMLImageElement).src =
-                          'https://img.usecurling.com/p/400/300?q=car'
-                      }}
-                    />
-                  )}
-                </Link>
-              </CarouselItem>
-            ))}
-          </CarouselContent>
-          {fotos.length > 1 && (
-            <>
-              <CarouselPrevious className="left-2 bg-black/50 text-white border-0 hover:bg-black/70" />
-              <CarouselNext className="right-2 bg-black/50 text-white border-0 hover:bg-black/70" />
-            </>
-          )}
-        </Carousel>
-      </div>
-      <div className="p-4 md:p-5 flex flex-col flex-grow">
-        <h3 className="font-display font-bold text-base md:text-lg text-foreground line-clamp-1 mb-2">
-          {vehicle.marca} {vehicle.modelo}
-        </h3>
-        <p className="text-[13px] text-muted-foreground mb-1">
-          Ano: {vehicle.ano_fabricacao} | Combustível: {vehicle.combustivel || 'N/I'} | Cor:{' '}
-          {vehicle.cor || 'N/I'}
-        </p>
-        <p className="text-[13px] text-muted-foreground mb-4">
-          Quilometragem: {vehicle.quilometragem?.toLocaleString('pt-BR') || 0} km
-        </p>
-
-        <div className="bg-[#f5f5f5] dark:bg-muted/30 p-3 rounded-lg mb-4 mt-auto">
+        <div className="bg-muted/40 p-3 rounded-lg mb-4 mt-auto">
           <p className="text-2xl font-bold text-[#25D366] m-0">
-            {formatCurrency(vehicle.preco_venda || 0)}
+            {vehicle.preco_venda
+              ? `R$ ${vehicle.preco_venda.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
+              : 'Consulte'}
           </p>
         </div>
-
         <Button
           asChild
-          className="w-full h-12 bg-[#25D366] hover:bg-[#20bd5a] text-white font-bold text-sm"
+          className="w-full h-10 bg-[#25D366] hover:bg-[#20bd5a] text-white font-bold text-sm rounded-lg"
         >
           <a
-            href={`https://wa.me/5534999484285?text=${wppText}`}
+            href={`https://wa.me/5534999484285?text=${encodeURIComponent(`Olá! Vi o ${vehicle.marca} ${vehicle.modelo} no site por R$ ${vehicle.preco_venda}. Ainda está disponível?`)}`}
             target="_blank"
             rel="noopener noreferrer"
-            aria-label={`Falar no WhatsApp sobre ${vehicle.marca} ${vehicle.modelo}`}
           >
-            CHAMAR VENDEDOR NO WHATSAPP
+            CHAMAR NO WHATSAPP
           </a>
         </Button>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   )
 }
