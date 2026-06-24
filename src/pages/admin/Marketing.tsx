@@ -264,11 +264,12 @@ export default function Marketing() {
                           {post.status}
                         </span>
                         <div className="flex gap-1">
-                          {post.redes?.map((r: string) => (
-                            <span key={r} className="text-xs text-slate-500 uppercase">
-                              {r}
-                            </span>
-                          ))}
+                          {Array.isArray(post.redes) &&
+                            post.redes.map((r: string) => (
+                              <span key={r} className="text-xs text-slate-500 uppercase">
+                                {r}
+                              </span>
+                            ))}
                         </div>
                         {post.veiculos && (
                           <span className="text-xs text-purple-600 font-medium ml-auto">
