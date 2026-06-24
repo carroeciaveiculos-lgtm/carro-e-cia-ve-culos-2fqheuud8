@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { useToast } from '@/hooks/use-toast'
 import { supabase } from '@/lib/supabase/client'
+import { ImageEditorModal } from '@/components/admin/ImageEditorModal'
 import {
   Image as ImageIcon,
   UploadCloud,
@@ -11,13 +13,14 @@ import {
   Copy,
   Folder,
   FolderOpen,
-  Plus,
   ChevronRight,
   FolderPlus,
+  Search,
+  Wand2,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
-const INITIAL_FOLDERS = ['Geral', 'Veículos', 'Fotos', 'Equipe', 'Logos Parceiros']
+const INITIAL_FOLDERS = ['Geral', 'Veículos', 'Fotos', 'Equipe', 'Logos Parceiros', 'Edições']
 
 export default function MediaCenterPage() {
   const [assets, setAssets] = useState<any[]>([])
@@ -25,6 +28,9 @@ export default function MediaCenterPage() {
   const [uploading, setUploading] = useState(false)
   const [activeFolder, setActiveFolder] = useState('Geral')
   const [customFolders, setCustomFolders] = useState<string[]>([])
+  const [searchQuery, setSearchQuery] = useState('')
+  const [editingImage, setEditingImage] = useState<string | null>(null)
+
   const { toast } = useToast()
 
   const loadAssets = async () => {
@@ -77,37 +83,11 @@ export default function MediaCenterPage() {
           if (!ctx) return reject(new Error('Falha no canvas'))
           ctx.drawImage(img, 0, 0, width, height)
 
-          const logo = new Image()
-          logo.crossOrigin = 'Anonymous'
-          logo.src =
-            'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/logos/logo-carro-e-cia.webp'
-          logo.onload = () => {
-            const logoWidth = width * 0.25
-            const ratio = logoWidth / logo.width
-            const logoHeight = logo.height * ratio
-            const padding = width * 0.05
-            ctx.globalAlpha = 0.8
-            ctx.drawImage(
-              logo,
-              width - logoWidth - padding,
-              height - logoHeight - padding,
-              logoWidth,
-              logoHeight,
-            )
-            ctx.globalAlpha = 1.0
-            canvas.toBlob(
-              (blob) => (blob ? resolve(blob) : reject(new Error('Falha no canvas'))),
-              'image/webp',
-              0.8,
-            )
-          }
-          logo.onerror = () => {
-            canvas.toBlob(
-              (blob) => (blob ? resolve(blob) : reject(new Error('Falha no canvas'))),
-              'image/webp',
-              0.8,
-            )
-          }
+          canvas.toBlob(
+            (blob) => (blob ? resolve(blob) : reject(new Error('Falha'))),
+            'image/webp',
+            0.8,
+          )
         }
       }
     })
@@ -116,13 +96,9 @@ export default function MediaCenterPage() {
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || e.target.files.length === 0) return
     setUploading(true)
-
     try {
       for (const file of Array.from(e.target.files)) {
-        const MAX_FILE_SIZE = 50 * 1024 * 1024 // 50MB
-        if (file.size > MAX_FILE_SIZE) {
-          throw new Error('O arquivo é muito grande. Por favor, envie um vídeo menor.')
-        }
+        if (file.size > 50 * 1024 * 1024) throw new Error('Arquivo muito grande (Máx 50MB)')
 
         const isVideo = file.type.startsWith('video/')
         let fileToUpload = file
@@ -138,27 +114,16 @@ export default function MediaCenterPage() {
           finalFilename = fileToUpload.name
         }
 
-        const filename = `inventory/${activeFolder.replace(/[^a-zA-Z0-9_-]/g, '')}/${Date.now()}_${Math.random().toString(36).substring(2)}_${finalFilename}`
-
+        const filename = `inventory/${activeFolder.replace(/[^a-zA-Z0-9_-]/g, '')}/${Date.now()}_${finalFilename}`
         const { error: uploadError } = await supabase.storage
           .from('logos-e-imagens')
           .upload(filename, fileToUpload)
 
-        if (uploadError) {
-          if (
-            uploadError.message?.toLowerCase().includes('payload too large') ||
-            String(uploadError.message).includes('413') ||
-            (uploadError as any).statusCode === 413
-          ) {
-            throw new Error('O arquivo é muito grande. Por favor, envie um vídeo menor.')
-          }
-          throw uploadError
-        }
+        if (uploadError) throw uploadError
 
         const {
           data: { publicUrl },
         } = supabase.storage.from('logos-e-imagens').getPublicUrl(filename)
-
         await supabase.from('media_assets').insert({
           file_name: finalFilename,
           file_path: publicUrl,
@@ -167,11 +132,7 @@ export default function MediaCenterPage() {
           folder: activeFolder,
         })
       }
-
-      toast({
-        title: 'Upload concluído!',
-        description: `Imagens otimizadas e salvas na pasta ${activeFolder}.`,
-      })
+      toast({ title: 'Upload concluído!' })
       loadAssets()
     } catch (err: any) {
       toast({ title: 'Erro no upload', description: err.message, variant: 'destructive' })
@@ -195,11 +156,6 @@ export default function MediaCenterPage() {
     }
   }
 
-  const copyUrl = (url: string) => {
-    navigator.clipboard.writeText(url)
-    toast({ title: 'URL Copiada!' })
-  }
-
   const handleCreateFolder = () => {
     const name = prompt('Nome da nova pasta ou subpasta:')
     if (!name) return
@@ -208,29 +164,40 @@ export default function MediaCenterPage() {
       setCustomFolders([...customFolders, newPath])
     }
     setActiveFolder(newPath)
-    toast({
-      title: 'Pasta criada!',
-      description: `A pasta ${newPath} está pronta para receber arquivos.`,
-    })
+    toast({ title: 'Pasta criada!' })
   }
 
-  const filteredAssets = assets.filter((a) => (a.folder || 'Geral') === activeFolder)
-
-  // Compute all unique folders
   const allFolders = Array.from(
     new Set([...INITIAL_FOLDERS, ...customFolders, ...assets.map((a) => a.folder || 'Geral')]),
   ).sort()
+
+  const filteredAssets = assets.filter((a) => {
+    const matchesFolder = searchQuery ? true : (a.folder || 'Geral') === activeFolder
+    const matchesSearch = searchQuery
+      ? a.file_name?.toLowerCase().includes(searchQuery.toLowerCase())
+      : true
+    return matchesFolder && matchesSearch
+  })
 
   return (
     <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-6 animate-fade-in-up">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-[#1A1A1A]">Media Center</h1>
+          <h1 className="text-3xl font-bold text-[#1A1A1A]">Media Center Supremo</h1>
           <p className="mt-1 text-gray-500">
-            Organize suas imagens em pastas e reutilize em todo o site.
+            Organize fotos, otimize com IA e gerencie todas as mídias em pastas.
           </p>
         </div>
-        <div>
+        <div className="flex gap-2">
+          <div className="relative">
+            <Search className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
+            <Input
+              placeholder="Buscar arquivo..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9 w-full md:w-64"
+            />
+          </div>
           <input
             type="file"
             id="upload-media"
@@ -244,7 +211,7 @@ export default function MediaCenterPage() {
             <Button
               asChild
               disabled={uploading}
-              className="bg-[#CC0000] hover:bg-red-700 cursor-pointer w-full md:w-auto"
+              className="bg-[#CC0000] hover:bg-red-700 cursor-pointer"
             >
               <span>
                 {uploading ? (
@@ -252,7 +219,7 @@ export default function MediaCenterPage() {
                 ) : (
                   <UploadCloud className="w-4 h-4 mr-2" />
                 )}
-                Fazer Upload p/ {activeFolder}
+                Upload
               </span>
             </Button>
           </label>
@@ -268,7 +235,6 @@ export default function MediaCenterPage() {
               size="icon"
               className="h-6 w-6 text-gray-500 hover:text-[#CC0000]"
               onClick={handleCreateFolder}
-              title="Nova Pasta"
             >
               <FolderPlus className="w-4 h-4" />
             </Button>
@@ -281,18 +247,20 @@ export default function MediaCenterPage() {
               return (
                 <button
                   key={folder}
-                  onClick={() => setActiveFolder(folder)}
+                  onClick={() => {
+                    setActiveFolder(folder)
+                    setSearchQuery('')
+                  }}
                   style={{ paddingLeft: `${depth * 12 + 12}px` }}
                   className={cn(
                     'w-full flex items-center gap-2 py-2 pr-3 text-sm font-medium rounded-lg transition-colors text-left',
-                    activeFolder === folder
+                    activeFolder === folder && !searchQuery
                       ? 'bg-red-50 text-[#CC0000]'
                       : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900',
                   )}
-                  title={folder}
                 >
                   {depth > 0 && <ChevronRight className="w-3 h-3 text-gray-300 shrink-0" />}
-                  {activeFolder === folder ? (
+                  {activeFolder === folder && !searchQuery ? (
                     <FolderOpen
                       className={cn(
                         'w-4 h-4 shrink-0',
@@ -315,20 +283,24 @@ export default function MediaCenterPage() {
         <div className="flex-1 bg-white rounded-xl shadow-sm border p-6 min-h-[500px]">
           <div className="flex items-center justify-between mb-6 border-b pb-4">
             <h2 className="text-xl font-semibold flex items-center gap-2 text-slate-800">
-              <FolderOpen className="w-5 h-5 text-gray-400" />
-              {activeFolder.split('/').map((part, idx, arr) => (
-                <span key={idx} className="flex items-center gap-2">
-                  {idx > 0 && <ChevronRight className="w-4 h-4 text-gray-300" />}
-                  <span className={idx === arr.length - 1 ? 'text-[#CC0000]' : 'text-slate-500'}>
-                    {part}
-                  </span>
-                </span>
-              ))}
+              {searchQuery ? (
+                <>Resultados da busca por "{searchQuery}"</>
+              ) : (
+                <>
+                  <FolderOpen className="w-5 h-5 text-gray-400" />
+                  {activeFolder.split('/').map((part, idx, arr) => (
+                    <span key={idx} className="flex items-center gap-2">
+                      {idx > 0 && <ChevronRight className="w-4 h-4 text-gray-300" />}
+                      <span
+                        className={idx === arr.length - 1 ? 'text-[#CC0000]' : 'text-slate-500'}
+                      >
+                        {part}
+                      </span>
+                    </span>
+                  ))}
+                </>
+              )}
             </h2>
-            <Button variant="outline" size="sm" onClick={handleCreateFolder} className="text-xs">
-              <FolderPlus className="w-4 h-4 mr-2" />
-              Criar Subpasta
-            </Button>
           </div>
 
           {loading ? (
@@ -336,23 +308,19 @@ export default function MediaCenterPage() {
               <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
             </div>
           ) : filteredAssets.length === 0 ? (
-            <Card className="border-dashed border-[3px] border-gray-200 bg-gray-50/50 shadow-none">
-              <CardContent className="flex flex-col items-center justify-center py-20 px-6 text-center">
-                <ImageIcon className="w-16 h-16 text-gray-300 mb-4" />
-                <h3 className="text-xl font-bold text-gray-600">Pasta vazia</h3>
-                <p className="text-gray-400 mt-2">
-                  Faça upload de imagens para a pasta "{activeFolder}".
-                </p>
-              </CardContent>
-            </Card>
+            <div className="flex flex-col items-center justify-center py-20 px-6 text-center border-dashed border-2 rounded-xl bg-slate-50">
+              <ImageIcon className="w-16 h-16 text-gray-300 mb-4" />
+              <h3 className="text-xl font-bold text-gray-600">Nenhuma imagem</h3>
+              <p className="text-gray-400 mt-2">Nenhum arquivo encontrado nesta visualização.</p>
+            </div>
           ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
               {filteredAssets.map((asset) => (
                 <div
                   key={asset.id}
-                  className="group relative rounded-xl border border-gray-200 overflow-hidden bg-gray-50 hover:border-[#CC0000] transition-colors"
+                  className="group relative rounded-xl border border-gray-200 overflow-hidden bg-gray-50 hover:border-[#CC0000] transition-all"
                 >
-                  <div className="aspect-square relative">
+                  <div className="aspect-square relative bg-white">
                     {asset.mime_type?.startsWith('video/') ? (
                       <video src={asset.file_path} className="w-full h-full object-cover" muted />
                     ) : (
@@ -363,16 +331,27 @@ export default function MediaCenterPage() {
                         loading="lazy"
                       />
                     )}
-                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                       <Button
                         size="icon"
                         variant="secondary"
-                        onClick={() => copyUrl(asset.file_path)}
-                        className="h-8 w-8 rounded-full hover:bg-white"
+                        onClick={() => navigator.clipboard.writeText(asset.file_path)}
+                        className="h-8 w-8 rounded-full"
                         title="Copiar URL"
                       >
-                        <Copy className="w-4 h-4 text-gray-700" />
+                        <Copy className="w-4 h-4" />
                       </Button>
+                      {!asset.mime_type?.startsWith('video/') && (
+                        <Button
+                          size="icon"
+                          variant="secondary"
+                          onClick={() => setEditingImage(asset.file_path)}
+                          className="h-8 w-8 rounded-full bg-purple-100 text-purple-600 hover:bg-purple-200"
+                          title="Editar / Otimizar IA"
+                        >
+                          <Wand2 className="w-4 h-4" />
+                        </Button>
+                      )}
                       <Button
                         size="icon"
                         variant="destructive"
@@ -392,7 +371,7 @@ export default function MediaCenterPage() {
                       {asset.file_name}
                     </p>
                     <p className="text-[10px] text-gray-400">
-                      {asset.file_size ? (asset.file_size / 1024).toFixed(1) + ' KB' : 'WebP'}
+                      {asset.file_size ? (asset.file_size / 1024).toFixed(1) + ' KB' : 'Arquivo'}
                     </p>
                   </div>
                 </div>
@@ -401,6 +380,15 @@ export default function MediaCenterPage() {
           )}
         </div>
       </div>
+
+      <ImageEditorModal
+        isOpen={!!editingImage}
+        imageUrl={editingImage || ''}
+        onClose={() => setEditingImage(null)}
+        onSave={(newUrl) => {
+          loadAssets()
+        }}
+      />
     </div>
   )
 }
