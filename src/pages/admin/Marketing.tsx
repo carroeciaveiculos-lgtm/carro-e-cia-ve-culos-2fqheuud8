@@ -23,6 +23,7 @@ export default function Marketing() {
   const [activeTab, setActiveTab] = useState('social')
   const [logs, setLogs] = useState<any[]>([])
   const [automations, setAutomations] = useState<any[]>([])
+  const [posts, setPosts] = useState<any[]>([])
 
   const [postText, setPostText] = useState('')
   const [postImage, setPostImage] = useState('')
@@ -51,6 +52,12 @@ export default function Marketing() {
       },
       { id: 3, nome: 'Feliz Aniversário', tipo: 'email', ativo: true, envios: 89 },
     ])
+
+    const { data: postsData } = await supabase
+      .from('social_posts')
+      .select('*, veiculos(marca, modelo)')
+      .order('criado_em', { ascending: false })
+    if (postsData) setPosts(postsData)
   }
 
   const toggleAutomation = (id: number) => {
@@ -92,6 +99,7 @@ export default function Marketing() {
       setPostText('')
       setPostImage('')
       setPostDate('')
+      loadData()
     }
   }
 
@@ -228,6 +236,59 @@ export default function Marketing() {
               >
                 <Plus className="w-4 h-4 mr-2" /> Agendar Postagem
               </Button>
+            </CardContent>
+          </Card>
+
+          <Card className="mt-6">
+            <CardHeader>
+              <CardTitle>Postagens Programadas e Rascunhos</CardTitle>
+              <CardDescription>Posts gerados pela IA ou enviados do Estoque.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {posts.map((post) => (
+                  <div
+                    key={post.id}
+                    className="flex gap-4 p-4 border rounded-lg bg-slate-50 items-start"
+                  >
+                    {post.imagem && (
+                      <div className="w-20 h-20 bg-slate-200 rounded-md overflow-hidden shrink-0">
+                        <img src={post.imagem} alt="Post" className="w-full h-full object-cover" />
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span
+                          className={`text-xs font-semibold px-2 py-0.5 rounded-full ${post.status === 'Agendado' ? 'bg-blue-100 text-blue-700' : 'bg-slate-200 text-slate-700'}`}
+                        >
+                          {post.status}
+                        </span>
+                        <div className="flex gap-1">
+                          {post.redes?.map((r: string) => (
+                            <span key={r} className="text-xs text-slate-500 uppercase">
+                              {r}
+                            </span>
+                          ))}
+                        </div>
+                        {post.veiculos && (
+                          <span className="text-xs text-purple-600 font-medium ml-auto">
+                            Veículo: {post.veiculos.marca} {post.veiculos.modelo}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-sm text-slate-700 line-clamp-2">{post.texto}</p>
+                      {post.data_agendamento && (
+                        <p className="text-xs text-slate-500 mt-2">
+                          Agendado para: {new Date(post.data_agendamento).toLocaleString()}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                ))}
+                {posts.length === 0 && (
+                  <p className="text-center text-slate-500 py-4">Nenhum post encontrado.</p>
+                )}
+              </div>
             </CardContent>
           </Card>
         </TabsContent>

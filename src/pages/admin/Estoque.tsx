@@ -35,6 +35,7 @@ import {
   QrCode,
   Sparkles,
   Loader2,
+  Activity,
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
@@ -341,6 +342,37 @@ export default function AdminEstoque() {
                 Copiar
               </Button>
             </div>
+            {text && (
+              <Button
+                variant="secondary"
+                onClick={async () => {
+                  const { error } = await supabase.from('social_posts').insert({
+                    texto: text,
+                    imagem: shareVehicle.fotos?.[0] || '',
+                    redes: [platform],
+                    status: 'Rascunho',
+                    veiculo_id: shareVehicle.id,
+                  })
+                  if (error) {
+                    toast({
+                      title: 'Erro ao enviar',
+                      description: error.message,
+                      variant: 'destructive',
+                    })
+                  } else {
+                    toast({
+                      title: 'Sucesso',
+                      description: 'Conteúdo enviado para o painel de Marketing!',
+                    })
+                    setShareVehicle(null)
+                  }
+                }}
+                className="w-full mt-2 bg-slate-800 text-white hover:bg-slate-700 border-none"
+              >
+                <Activity className="w-4 h-4 mr-2" />
+                Enviar para o Hub de Marketing
+              </Button>
+            )}
           </div>
         </DialogContent>
       </Dialog>

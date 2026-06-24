@@ -41,6 +41,51 @@ export type Database = {
           },
         ]
       }
+      ajuda_conteudos: {
+        Row: {
+          caminho: string | null
+          categoria: string
+          como_utilizar: string | null
+          created_at: string | null
+          dependencias: string | null
+          id: string
+          is_faq: boolean | null
+          o_que_e: string | null
+          para_que_serve: string | null
+          quando_utilizar: string | null
+          titulo: string
+          updated_at: string | null
+        }
+        Insert: {
+          caminho?: string | null
+          categoria: string
+          como_utilizar?: string | null
+          created_at?: string | null
+          dependencias?: string | null
+          id?: string
+          is_faq?: boolean | null
+          o_que_e?: string | null
+          para_que_serve?: string | null
+          quando_utilizar?: string | null
+          titulo: string
+          updated_at?: string | null
+        }
+        Update: {
+          caminho?: string | null
+          categoria?: string
+          como_utilizar?: string | null
+          created_at?: string | null
+          dependencias?: string | null
+          id?: string
+          is_faq?: boolean | null
+          o_que_e?: string | null
+          para_que_serve?: string | null
+          quando_utilizar?: string | null
+          titulo?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       article_versions: {
         Row: {
           acao: string | null

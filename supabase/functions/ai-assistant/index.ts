@@ -44,6 +44,7 @@ Deno.serve(async (req) => {
       .from('brain_ia_knowledge')
       .select('titulo, conteudo, tipo')
       .limit(15)
+    const { data: helpContents } = await supabase.from('ajuda_conteudos').select('*').limit(20)
     const { data: vehicles } = await supabase
       .from('veiculos')
       .select('marca, modelo, preco_venda')
@@ -53,6 +54,9 @@ Deno.serve(async (req) => {
     const memoryContext = `
 Conhecimento Brain IA:
 ${brainKnowledge?.map((k: any) => `${k.titulo}: ${k.conteudo || k.tipo}`).join('\n')}
+
+Manuais do Sistema e FAQ:
+${helpContents?.map((h: any) => `${h.titulo} (${h.categoria}): O que é: ${h.o_que_e || ''}. Serve para: ${h.para_que_serve || ''}. Como usar: ${h.como_utilizar || ''}`).join('\n')}
 
 Exemplos do Estoque atual (limite de 5):
 ${vehicles?.map((v: any) => `${v.marca} ${v.modelo} - R$ ${v.preco_venda}`).join('\n')}

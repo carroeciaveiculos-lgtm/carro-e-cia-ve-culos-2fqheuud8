@@ -17,6 +17,7 @@ import {
   AlertTriangle,
   CameraOff,
   Settings,
+  Activity,
 } from 'lucide-react'
 
 const ALL_MODULES = [
@@ -264,6 +265,25 @@ export default function Dashboard() {
               </div>
             </CardContent>
           </Card>
+        </div>
+
+        {/* Marketing Card */}
+        <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl shadow-sm text-white p-6 flex flex-col md:flex-row items-center justify-between gap-6">
+          <div>
+            <h2 className="text-xl font-bold flex items-center gap-2 mb-2">
+              <Activity className="w-6 h-6" /> Hub de Marketing Integrado
+            </h2>
+            <p className="text-blue-100 max-w-xl">
+              Gere posts com Inteligência Artificial, gerencie suas redes sociais e automatize
+              e-mails diretamente pelo painel de Marketing.
+            </p>
+          </div>
+          <button
+            onClick={() => handleModuleClick('/admin/marketing', 'marketing')}
+            className="px-6 py-3 bg-white text-blue-700 font-semibold rounded-lg hover:bg-blue-50 transition-colors whitespace-nowrap"
+          >
+            Acessar Marketing
+          </button>
         </div>
 
         {/* Alertas de Qualidade de Estoque */}
