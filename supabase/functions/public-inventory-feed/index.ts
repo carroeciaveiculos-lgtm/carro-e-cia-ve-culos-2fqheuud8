@@ -42,11 +42,11 @@ Deno.serve(async (req) => {
       'make',
       'model',
       'year',
-      'mileage.value', 
+      'mileage.value',
       'mileage.unit',
       'price',
       'url',
-      'image[0].url',  // Formato correto de cabeçalho do Meta
+      'image[0].url', // Formato correto de cabeçalho do Meta
       'address',
       'state_of_vehicle',
       'body_style',
@@ -66,7 +66,8 @@ Deno.serve(async (req) => {
     }
 
     // Endereço formatado no padrão com chaves aceito pela API da Meta
-    const addressStr = "{addr1: 'Av. Guilherme Ferreira, 1131', city: 'Uberaba', region: 'MG', country: 'BR', postal_code: '38022-200'}"
+    const addressStr =
+      "{addr1: 'Av. Guilherme Ferreira, 1131', city: 'Uberaba', region: 'MG', country: 'BR', postal_code: '38022-200'}"
 
     const bodyStyleMap: Record<string, string> = {
       Hatch: 'hatchback',
@@ -118,25 +119,25 @@ Deno.serve(async (req) => {
     const rows = (veiculos || [])
       .filter((v) => {
         if (!v.id) return false
-        
+
         const rawStatus = (v.status || '')
           .toLowerCase()
           .normalize('NFD')
           .replace(/[\u0300-\u036f]/g, '')
         if (rawStatus !== 'disponivel') return false
-        
+
         const ano = Number(v.ano_modelo || v.ano_fabricacao)
         const preco = Number(v.preco_venda)
         if (!v.preco_venda || preco < 1000 || isNaN(ano) || ano < 1950 || ano > anoAtual + 1)
           return false
-        
+
         return true
       })
       .map((v) => {
         const link = `https://www.carroeciamotors.com.br/estoque/${v.id}`
-        
+
         // Capturar o link da imagem
-        let imageLink = "https://www.carroeciamotors.com.br/placeholder-car.png"
+        let imageLink = 'https://www.carroeciamotors.com.br/placeholder-car.png'
         if (v.fotos && Array.isArray(v.fotos) && v.fotos.length > 0) {
           imageLink = v.fotos[0]
         } else if (v.link_foto || v.foto_url) {
@@ -145,7 +146,7 @@ Deno.serve(async (req) => {
 
         // CONVERSÃO DE SUCESSO: Converte WebP para JPEG de forma gratuita para o Meta catalogar sem erros!
         if (imageLink.includes('supabase.co/storage/v1/object/public/')) {
-          const cleanUrl = imageLink.split('?')[0];
+          const cleanUrl = imageLink.split('?')[0]
           imageLink = `https://images.weserv.nl/?url=${encodeURIComponent(cleanUrl)}&output=jpg`
         }
 
@@ -160,7 +161,7 @@ Deno.serve(async (req) => {
         let description = v.descricao
           ? v.descricao.substring(0, 5000)
           : `${title}. Lindo veículo em estoque na Carro e Cia Motors.`
-        
+
         description = description
           .replace(/<[^>]*>?/gm, '')
           .replace(/[\n\r]+/g, ' ')

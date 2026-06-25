@@ -195,11 +195,16 @@ const GlobalHooks = () => {
   const location = useLocation()
 
   useEffect(() => {
-    if (typeof window !== 'undefined' && (window as any).dataLayer) {
-      ;(window as any).dataLayer.push({
-        event: 'page_view',
-        page_path: location.pathname + location.search,
-      })
+    if (typeof window !== 'undefined') {
+      if ((window as any).dataLayer) {
+        ;(window as any).dataLayer.push({
+          event: 'page_view',
+          page_path: location.pathname + location.search,
+        })
+      }
+      if ((window as any).fbq) {
+        ;(window as any).fbq('track', 'PageView')
+      }
     }
   }, [location])
 
