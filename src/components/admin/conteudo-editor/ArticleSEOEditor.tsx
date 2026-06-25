@@ -966,45 +966,48 @@ export function ArticleSEOEditor({ id, onBack }: ArticleSEOEditorProps) {
                     />
                   </>
                 ) : (
-                  {activeTab === 'preview' && (
-                    <div
-                      className="w-full h-full overflow-y-auto p-8 prose max-w-none"
-                      dangerouslySetInnerHTML={{
-                        __html:
-                          data.conteudo ||
-                          '<p class="text-slate-400">Nenhum conteúdo gerado ainda.</p>',
-                      }}
-                    />
-                  )}
-                  {activeTab === 'social' as any && (
-                    <div className="p-8 space-y-8 h-full overflow-y-auto bg-slate-50">
-                      <div>
-                        <h3 className="font-bold text-slate-800 mb-4">Preview Social</h3>
-                        <div className="max-w-[400px] border border-slate-200 rounded-lg overflow-hidden bg-white shadow-sm">
-                          {data.og_image_url || data.imagem_destaque_url ? (
-                            <img src={data.og_image_url || data.imagem_destaque_url} className="w-full h-[210px] object-cover" />
-                          ) : (
-                            <div className="w-full h-[210px] bg-slate-200 flex items-center justify-center text-slate-400">Sem imagem</div>
-                          )}
-                          <div className="p-4 bg-slate-100/50">
-                            <p className="text-[10px] text-slate-500 uppercase mb-2">carroeciamotors.com.br</p>
-                            <Input value={data.og_title} onChange={e => setData({...data, og_title: e.target.value})} placeholder="Título Opcional (se vazio usa o principal)" className="font-bold text-sm h-8 mb-2" />
-                            <Textarea value={data.og_description} onChange={e => setData({...data, og_description: e.target.value})} placeholder="Descrição Opcional" className="text-xs h-16 resize-none" />
+                  <>
+                    {activeTab === 'preview' && (
+                      <div
+                        className="w-full h-full overflow-y-auto p-8 prose max-w-none"
+                        dangerouslySetInnerHTML={{
+                          __html:
+                            data.conteudo ||
+                            '<p class="text-slate-400">Nenhum conteúdo gerado ainda.</p>',
+                        }}
+                      />
+                    )}
+                    {activeTab === 'social' as any && (
+                      <div className="p-8 space-y-8 h-full overflow-y-auto bg-slate-50">
+                        <div>
+                          <h3 className="font-bold text-slate-800 mb-4">Preview Social</h3>
+                          <div className="max-w-[400px] border border-slate-200 rounded-lg overflow-hidden bg-white shadow-sm">
+                            {data.og_image_url || data.imagem_destaque_url ? (
+                              <img src={data.og_image_url || data.imagem_destaque_url} className="w-full h-[210px] object-cover" />
+                            ) : (
+                              <div className="w-full h-[210px] bg-slate-200 flex items-center justify-center text-slate-400">Sem imagem</div>
+                            )}
+                            <div className="p-4 bg-slate-100/50">
+                              <p className="text-[10px] text-slate-500 uppercase mb-2">carroeciamotors.com.br</p>
+                              <Input value={data.og_title} onChange={e => setData({...data, og_title: e.target.value})} placeholder="Título Opcional (se vazio usa o principal)" className="font-bold text-sm h-8 mb-2" />
+                              <Textarea value={data.og_description} onChange={e => setData({...data, og_description: e.target.value})} placeholder="Descrição Opcional" className="text-xs h-16 resize-none" />
+                            </div>
                           </div>
                         </div>
+                        <div className="max-w-[400px]">
+                          <h3 className="font-bold text-amber-800 mb-2">Notas Internas da Equipe</h3>
+                          <Textarea 
+                            value={data.notas_internas} 
+                            onChange={e => setData({...data, notas_internas: e.target.value})} 
+                            placeholder="Revisor: Verifique as fontes antes de publicar..." 
+                            className="bg-amber-50 border-amber-200 h-32" 
+                          />
+                        </div>
                       </div>
-                      <div className="max-w-[400px]">
-                        <h3 className="font-bold text-amber-800 mb-2">Notas Internas da Equipe</h3>
-                        <Textarea 
-                          value={data.notas_internas} 
-                          onChange={e => setData({...data, notas_internas: e.target.value})} 
-                          placeholder="Revisor: Verifique as fontes antes de publicar..." 
-                          className="bg-amber-50 border-amber-200 h-32" 
-                        />
-                      </div>
-                    </div>
-                  )}
-                </div>
+                    )}
+                  </>
+                )}
+              </div>
               </div>
             </div>
           </div>
