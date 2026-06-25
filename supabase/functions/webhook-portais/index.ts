@@ -19,7 +19,7 @@ Deno.serve(async (req) => {
     const mode = url.searchParams.get('hub.mode')
     const token = url.searchParams.get('hub.verify_token')
     const challenge = url.searchParams.get('hub.challenge')
-
+    
     if (mode === 'subscribe') {
       const verifyToken = Deno.env.get('META_VERIFY_TOKEN') || 'kmzero_meta_token'
       if (token === verifyToken) {
@@ -50,12 +50,13 @@ Deno.serve(async (req) => {
 
     // Check if it's Meta Webhook
     if (body.object && ['instagram', 'page', 'whatsapp_business_account'].includes(body.object)) {
+      
       // Log event
       await supabase.from('meta_webhook_logs').insert({
         platform: body.object,
         event_type: 'webhook_event',
         payload: body,
-        processed: false,
+        processed: false
       })
 
       // Process Entries
@@ -68,26 +69,21 @@ Deno.serve(async (req) => {
                 const cleanPhone = msg.from.replace(/\D/g, '')
                 const contact = change.value.contacts?.find((c: any) => c.wa_id === msg.from)
                 const clienteNome = contact?.profile?.name || 'Cliente WhatsApp'
-
+                
                 // Find or create conversa
-                let { data: conversa } = await supabase
-                  .from('crm_conversas')
+                let { data: conversa } = await supabase.from('crm_conversas')
                   .select('id')
                   .eq('cliente_telefone', cleanPhone)
                   .eq('platform', 'whatsapp')
                   .maybeSingle()
 
                 if (!conversa) {
-                  const { data: newConversa } = await supabase
-                    .from('crm_conversas')
-                    .insert({
-                      cliente_telefone: cleanPhone,
-                      cliente_nome: clienteNome,
-                      platform: 'whatsapp',
-                      status: 'novo',
-                    })
-                    .select('id')
-                    .single()
+                  const { data: newConversa } = await supabase.from('crm_conversas').insert({
+                    cliente_telefone: cleanPhone,
+                    cliente_nome: clienteNome,
+                    platform: 'whatsapp',
+                    status: 'novo'
+                  }).select('id').single()
                   conversa = newConversa
                 }
 
@@ -104,14 +100,14 @@ Deno.serve(async (req) => {
                     tipo: msg.type || 'texto',
                     conteudo: textContent,
                     meta_message_id: msg.id,
-                    status: 'recebida',
+                    status: 'recebida'
                   })
                 }
               }
             }
           }
         }
-
+        
         // Instagram / Messenger
         if (['instagram', 'page'].includes(body.object)) {
           for (const messaging of entry.messaging || []) {
@@ -119,35 +115,30 @@ Deno.serve(async (req) => {
               const senderId = messaging.sender.id
               const messageText = messaging.message.text || ''
               const messageId = messaging.message.mid
-
+              
               // Handle story replies
               let finalMessageText = messageText
               if (messaging.message.reply_to && messaging.message.reply_to.story) {
-                finalMessageText = `[Respondeu ao Story] ${messageText}`
-                if (messaging.message.reply_to.story.url) {
-                  finalMessageText += `\nLink do Story: ${messaging.message.reply_to.story.url}`
-                }
+                 finalMessageText = `[Respondeu ao Story] ${messageText}`
+                 if (messaging.message.reply_to.story.url) {
+                   finalMessageText += `\nLink do Story: ${messaging.message.reply_to.story.url}`
+                 }
               }
 
               if (finalMessageText) {
-                let { data: conversa } = await supabase
-                  .from('crm_conversas')
+                let { data: conversa } = await supabase.from('crm_conversas')
                   .select('id')
                   .eq('cliente_psid', senderId)
                   .eq('platform', body.object)
                   .maybeSingle()
 
                 if (!conversa) {
-                  const { data: newConversa } = await supabase
-                    .from('crm_conversas')
-                    .insert({
-                      cliente_psid: senderId,
-                      cliente_nome: `Cliente ${body.object === 'instagram' ? 'Instagram' : 'Facebook'}`,
-                      platform: body.object,
-                      status: 'novo',
-                    })
-                    .select('id')
-                    .single()
+                  const { data: newConversa } = await supabase.from('crm_conversas').insert({
+                    cliente_psid: senderId,
+                    cliente_nome: `Cliente ${body.object === 'instagram' ? 'Instagram' : 'Facebook'}`,
+                    platform: body.object,
+                    status: 'novo'
+                  }).select('id').single()
                   conversa = newConversa
                 }
 
@@ -158,7 +149,7 @@ Deno.serve(async (req) => {
                     tipo: 'texto',
                     conteudo: finalMessageText,
                     meta_message_id: messageId,
-                    status: 'recebida',
+                    status: 'recebida'
                   })
                 }
               }
