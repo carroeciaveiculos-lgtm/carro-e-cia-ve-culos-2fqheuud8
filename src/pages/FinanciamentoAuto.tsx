@@ -1,10 +1,57 @@
+import { useState, useEffect } from 'react'
 import { SEO } from '@/components/SEO'
 import { Button } from '@/components/ui/button'
 import { getWhatsAppLink } from '@/lib/whatsapp'
-import { trackConversion, trackCTAClick } from '@/lib/tracking'
+import { trackConversion, trackCTAClick, trackSimulation } from '@/lib/tracking'
+import { supabase } from '@/lib/supabase/client'
+import { Input } from '@/components/ui/input'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 
 export default function FinanciamentoAuto() {
-  const wppText = 'Olá! Quero simular um financiamento de veículo.'
+  const [veiculos, setVeiculos] = useState<any[]>([])
+  const [selectedVeiculo, setSelectedVeiculo] = useState<any>(null)
+  const [entrada, setEntrada] = useState('')
+  const [parcelas, setParcelas] = useState('48')
+
+  useEffect(() => {
+    supabase
+      .from('veiculos')
+      .select('id, marca, modelo, preco_venda')
+      .eq('status', 'disponivel')
+      .limit(100)
+      .then(({ data }) => {
+        if (data) setVeiculos(data)
+      })
+  }, [])
+
+  const precoBase = selectedVeiculo ? selectedVeiculo.preco_venda : 50000
+  const valorFinanciado = precoBase - (parseFloat(entrada) || 0)
+  const parcelaEstimada = valorFinanciado > 0 ? (valorFinanciado * 1.5) / parseInt(parcelas) : 0
+
+  const handleSimular = async () => {
+    trackConversion('whatsapp')
+    trackCTAClick('Simular Financiamento', window.location.pathname)
+    if (selectedVeiculo) {
+      await supabase.from('simulacoes').insert({
+        veiculo_id: selectedVeiculo.id,
+        valor_carro: precoBase,
+        entrada_percentual: ((parseFloat(entrada) || 0) / precoBase) * 100,
+        prazo_meses: parseInt(parcelas),
+        status: 'Pendente',
+      })
+      trackSimulation(precoBase, ((parseFloat(entrada) || 0) / precoBase) * 100, parcelas)
+    }
+    const wppText = selectedVeiculo
+      ? `Olá! Gostaria de simular o financiamento do ${selectedVeiculo.marca} ${selectedVeiculo.modelo} dando R$ ${entrada} de entrada e o restante em ${parcelas}x.`
+      : 'Olá! Quero simular um financiamento de veículo.'
+    window.open(getWhatsAppLink(wppText), '_blank')
+  }
 
   const passos = [
     {
@@ -51,21 +98,14 @@ export default function FinanciamentoAuto() {
             cada cliente.
           </p>
           <Button
-            asChild
             size="lg"
             className="text-lg px-8 py-6 h-auto bg-black hover:bg-gray-900 text-white w-full sm:w-auto rounded-full font-bold btn-cta"
+            onClick={() => {
+              const el = document.getElementById('simulador')
+              if (el) el.scrollIntoView({ behavior: 'smooth' })
+            }}
           >
-            <a
-              href={getWhatsAppLink(wppText)}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={() => {
-                trackConversion('whatsapp')
-                trackCTAClick('Quero Financiar Meu Carro', window.location.pathname)
-              }}
-            >
-              QUERO FINANCIAR MEU CARRO
-            </a>
+            QUERO FINANCIAR MEU CARRO
           </Button>
         </div>
       </section>
@@ -129,32 +169,72 @@ export default function FinanciamentoAuto() {
       <section className="py-20 px-4">
         <div className="container max-w-4xl mx-auto">
           <div className="grid md:grid-cols-2 gap-12 items-center">
-            <div className="prose prose-lg dark:prose-invert">
-              <h2>Simulador de Financiamento</h2>
-              <p>
-                Quer saber quanto vai pagar por mês? Consulte nossos especialistas para uma
-                simulação sem compromisso e encontre a parcela que cabe no seu bolso.
-              </p>
-              <div className="bg-red-50 dark:bg-red-950/20 p-6 rounded-xl border border-red-100 dark:border-red-900 mt-6">
-                <h3 className="text-red-800 dark:text-red-200 mt-0">Exemplo prático:</h3>
-                <ul className="text-sm">
-                  <li>
-                    <strong>Carro:</strong> R$ 50.000
-                  </li>
-                  <li>
-                    <strong>Entrada:</strong> R$ 10.000
-                  </li>
-                  <li>
-                    <strong>Valor Financiado:</strong> R$ 40.000
-                  </li>
-                  <li>
-                    <strong>Parcelamento Médio:</strong> 60x de R$ 800*
-                  </li>
-                </ul>
-                <p className="text-xs text-muted-foreground mt-4">
+            <div id="simulador" className="bg-white border rounded-2xl shadow-xl p-8">
+              <h2 className="text-2xl font-bold mb-6">Simulador Online Integrado ao Estoque</h2>
+              <div className="space-y-4">
+                <div>
+                  <label className="text-sm font-bold block mb-1">Escolha o Veículo</label>
+                  <Select
+                    onValueChange={(val) => setSelectedVeiculo(veiculos.find((v) => v.id === val))}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Selecione um veículo do estoque" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {veiculos.map((v) => (
+                        <SelectItem key={v.id} value={v.id}>
+                          {v.marca} {v.modelo} - R$ {v.preco_venda?.toLocaleString('pt-BR')}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <label className="text-sm font-bold block mb-1">Valor da Entrada (R$)</label>
+                  <Input
+                    type="number"
+                    placeholder="Ex: 20000"
+                    value={entrada}
+                    onChange={(e) => setEntrada(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-bold block mb-1">Parcelas</label>
+                  <Select value={parcelas} onValueChange={setParcelas}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="12">12x</SelectItem>
+                      <SelectItem value="24">24x</SelectItem>
+                      <SelectItem value="36">36x</SelectItem>
+                      <SelectItem value="48">48x</SelectItem>
+                      <SelectItem value="60">60x</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="bg-red-50 p-6 rounded-xl border border-red-100 mt-6 text-center">
+                <p className="text-sm text-red-800 mb-1">Resultado estimado da parcela:</p>
+                <p className="text-3xl font-extrabold text-red-600">
+                  {parcelas}x de{' '}
+                  {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(
+                    parcelaEstimada,
+                  )}
+                </p>
+                <p className="text-xs text-red-700/60 mt-2">
                   * Valores aproximados sujeitos a análise de crédito.
                 </p>
               </div>
+
+              <Button
+                size="lg"
+                className="w-full mt-4 bg-red-600 hover:bg-red-700"
+                onClick={handleSimular}
+              >
+                ENVIAR SIMULAÇÃO PELO WHATSAPP
+              </Button>
             </div>
 
             <div className="prose prose-lg dark:prose-invert">
@@ -197,18 +277,14 @@ export default function FinanciamentoAuto() {
               Faça sua simulação gratuita agora mesmo e descubra as melhores condições.
             </p>
             <Button
-              asChild
               size="lg"
               className="text-lg px-10 py-6 h-auto bg-white hover:bg-gray-100 text-red-600 w-full sm:w-auto rounded-full font-bold btn-cta"
+              onClick={() => {
+                const el = document.getElementById('simulador')
+                if (el) el.scrollIntoView({ behavior: 'smooth' })
+              }}
             >
-              <a
-                href={getWhatsAppLink(wppText)}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={() => trackConversion('whatsapp')}
-              >
-                SIMULAR MEU FINANCIAMENTO AGORA
-              </a>
+              SIMULAR MEU FINANCIAMENTO AGORA
             </Button>
           </div>
         </div>

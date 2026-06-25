@@ -76,6 +76,14 @@ export default function AdminLeads() {
   const [followupDate, setFollowupDate] = useState<Date | undefined>(new Date())
   const [hasSimulation, setHasSimulation] = useState(false)
 
+  useEffect(() => {
+    if (typeof window !== 'undefined' && 'Notification' in window) {
+      if (Notification.permission === 'default') {
+        Notification.requestPermission()
+      }
+    }
+  }, [])
+
   const playNotificationSound = () => {
     try {
       const ctx = new (window.AudioContext || (window as any).webkitAudioContext)()
@@ -102,6 +110,15 @@ export default function AdminLeads() {
         if (payload.eventType === 'INSERT') {
           playNotificationSound()
           toast({ title: 'Novo lead recebido!', description: payload.new.nome, variant: 'default' })
+          if (
+            typeof window !== 'undefined' &&
+            'Notification' in window &&
+            Notification.permission === 'granted'
+          ) {
+            new Notification('Novo Lead Recebido!', {
+              body: `${payload.new.nome} - ${payload.new.carro_modelo || 'Contato'}`,
+            })
+          }
           setLeads((prev) => [payload.new, ...prev])
         } else if (payload.eventType === 'UPDATE') {
           setLeads((prev) => prev.map((l) => (l.id === payload.new.id ? payload.new : l)))
@@ -131,10 +148,21 @@ export default function AdminLeads() {
           table: 'conversation_history',
           filter: `lead_id=eq.${selectedLead.id}`,
         },
-        (payload) =>
+        (payload) => {
+          if (payload.new.sender === 'internal_note') {
+            playNotificationSound()
+            if (
+              typeof window !== 'undefined' &&
+              'Notification' in window &&
+              Notification.permission === 'granted'
+            ) {
+              new Notification('Nova Nota Interna', { body: 'Uma nota interna foi adicionada.' })
+            }
+          }
           setConversation((prev) =>
             prev.some((m) => m.id === payload.new.id) ? prev : [...prev, payload.new],
-          ),
+          )
+        },
       )
       .subscribe()
 

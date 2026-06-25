@@ -51,6 +51,10 @@ export function PageVisualEditor({
     status_publicacao: 'Rascunho',
     meta_title: '',
     meta_description: '',
+    og_title: '',
+    og_description: '',
+    og_image_url: '',
+    notas_internas: '',
   })
   const [designVars, setDesignVars] = useState({
     primaryColor: '#2563eb',
@@ -119,6 +123,10 @@ export function PageVisualEditor({
                 status_publicacao: data.published ? 'Publicado' : 'Rascunho',
                 meta_title: '',
                 meta_description: data.meta_description,
+                og_title: data.og_title || '',
+                og_description: data.og_description || '',
+                og_image_url: data.og_image_url || '',
+                notas_internas: data.notas_internas || '',
               })
               try {
                 const b = typeof data.content === 'string' ? JSON.parse(data.content) : data.content
@@ -135,6 +143,10 @@ export function PageVisualEditor({
                 status_publicacao: data.status_publicacao,
                 meta_title: data.meta_title,
                 meta_description: data.meta_description,
+                og_title: data.og_title || '',
+                og_description: data.og_description || '',
+                og_image_url: data.og_image_url || '',
+                notas_internas: data.notas_internas || '',
               })
               try {
                 const b = JSON.parse(data.conteudo || '[]')
@@ -170,6 +182,7 @@ export function PageVisualEditor({
         title: pageData.titulo,
         slug: pageData.slug,
         meta_description: pageData.meta_description,
+        notas_internas: pageData.notas_internas,
         published: status === 'Publicado',
         content: { blocks, designVars },
       }
@@ -179,6 +192,10 @@ export function PageVisualEditor({
         slug: pageData.slug,
         meta_title: pageData.meta_title,
         meta_description: pageData.meta_description,
+        og_title: pageData.og_title,
+        og_description: pageData.og_description,
+        og_image_url: pageData.og_image_url,
+        notas_internas: pageData.notas_internas,
         status_publicacao: status,
         conteudo: JSON.stringify({ blocks, designVars }),
       }
@@ -434,7 +451,7 @@ export function PageVisualEditor({
                   <Palette className="w-3 h-3 mr-1" /> Design
                 </TabsTrigger>
                 <TabsTrigger value="seo" className="text-[10px]">
-                  <Settings className="w-3 h-3 mr-1" /> SEO
+                  <Settings className="w-3 h-3 mr-1" /> Config
                 </TabsTrigger>
               </TabsList>
 
@@ -636,7 +653,61 @@ export function PageVisualEditor({
                   <Textarea
                     value={pageData.meta_description || ''}
                     onChange={(e) => setPageData({ ...pageData, meta_description: e.target.value })}
-                    className="mt-1 h-24"
+                    className="mt-1 h-16"
+                  />
+                </div>
+                {!isLandingPage && (
+                  <>
+                    <div className="border-t pt-4">
+                      <label className="text-xs font-bold text-slate-700">
+                        Preview Social (Facebook/WhatsApp)
+                      </label>
+                      <div className="mt-2 border border-slate-200 rounded-lg overflow-hidden bg-white shadow-sm">
+                        {pageData.og_image_url ? (
+                          <img
+                            src={pageData.og_image_url}
+                            className="w-full h-[150px] object-cover"
+                          />
+                        ) : (
+                          <div
+                            className="w-full h-[150px] bg-slate-200 flex flex-col items-center justify-center text-slate-400 cursor-pointer hover:bg-slate-300"
+                            onClick={() => setMediaSelectorOpen(true)}
+                          >
+                            <ImageIcon className="w-6 h-6 mb-1" /> Adicionar Imagem
+                          </div>
+                        )}
+                        <div className="p-3 bg-slate-50">
+                          <p className="text-[10px] text-slate-500 uppercase mb-1">
+                            carroeciamotors.com.br
+                          </p>
+                          <Input
+                            value={pageData.og_title || ''}
+                            onChange={(e) => setPageData({ ...pageData, og_title: e.target.value })}
+                            placeholder="Título Social"
+                            className="h-7 text-xs font-bold mb-1 p-1"
+                          />
+                          <Input
+                            value={pageData.og_description || ''}
+                            onChange={(e) =>
+                              setPageData({ ...pageData, og_description: e.target.value })
+                            }
+                            placeholder="Descrição Social"
+                            className="h-7 text-xs p-1"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </>
+                )}
+                <div className="border-t pt-4">
+                  <label className="text-xs font-bold text-amber-700">
+                    Notas Internas da Equipe
+                  </label>
+                  <Textarea
+                    value={pageData.notas_internas || ''}
+                    onChange={(e) => setPageData({ ...pageData, notas_internas: e.target.value })}
+                    placeholder="Deixe instruções ou anotações para a equipe de revisão..."
+                    className="mt-1 h-24 bg-amber-50 border-amber-200"
                   />
                 </div>
               </TabsContent>

@@ -37,5 +37,9 @@ export interface PageData {
   status_publicacao: string
   meta_title: string
   meta_description: string
+  og_title?: string
+  og_description?: string
+  og_image_url?: string
+  notas_internas?: string
   conteudo: string
 }

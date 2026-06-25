@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase/client'
-import { FileText, Plus, Search, PenTool, LayoutTemplate, Trash2 } from 'lucide-react'
+import { FileText, Plus, Search, PenTool, LayoutTemplate, Trash2, Eye } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -68,7 +68,7 @@ export default function Conteudo() {
     if (table === 'landing_pages') {
       const { data } = await supabase
         .from(table)
-        .select('id, title, published, slug, created_at')
+        .select('id, title, published, slug, created_at, visualizacoes')
         .order('created_at', { ascending: false })
       setItems(
         data?.map((i) => ({
@@ -77,12 +77,13 @@ export default function Conteudo() {
           status_publicacao: i.published ? 'Publicado' : 'Rascunho',
           slug: i.slug,
           criado_em: i.created_at,
+          visualizacoes: i.visualizacoes,
         })) || [],
       )
     } else {
       const { data } = await supabase
         .from(table)
-        .select('id, titulo, status_publicacao, slug, criado_em')
+        .select('id, titulo, status_publicacao, slug, criado_em, visualizacoes')
         .order('criado_em', { ascending: false })
       setItems(data || [])
     }
@@ -329,18 +330,25 @@ export default function Conteudo() {
                       </span>
                     </div>
                     <p className="text-sm text-slate-500 truncate">/{item.slug || 'slug'}</p>
-                    <div className="mt-auto pt-4 border-t flex justify-between items-center">
-                      <span className="text-xs text-slate-400 font-medium">
-                        Editado {new Date(item.criado_em).toLocaleDateString('pt-BR')}
-                      </span>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-slate-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
-                        onClick={(e) => handleDelete(item.id, e)}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
+                    <div className="mt-auto pt-4 border-t flex flex-col gap-2">
+                      <div className="flex justify-between items-center">
+                        <span className="text-xs text-slate-500 flex items-center gap-1">
+                          <Eye className="w-3 h-3" /> {item.visualizacoes || 0} visualizações
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-xs text-slate-400 font-medium">
+                          Editado {new Date(item.criado_em).toLocaleDateString('pt-BR')}
+                        </span>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-slate-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                          onClick={(e) => handleDelete(item.id, e)}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 ))}

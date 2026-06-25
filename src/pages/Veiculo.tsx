@@ -117,10 +117,19 @@ export default function Veiculo() {
   const simParcela = simValue > 0 ? (simValue * 1.5) / parseInt(simParcelas) : 0
   const wppSimText = `Olá! Tenho interesse em simular o financiamento do ${vehicle.marca} ${vehicle.modelo} ${vehicle.ano_fabricacao} com R$ ${simEntrada} de entrada e ${simParcelas} parcelas. Podem me ajudar com as condições?`
 
-  const handleSimulationWhatsApp = () => {
+  const handleSimulationWhatsApp = async () => {
     const entryPercent = vehicle.preco_venda
       ? ((parseFloat(simEntrada) || 0) / vehicle.preco_venda) * 100
       : 0
+
+    await supabase.from('simulacoes').insert({
+      veiculo_id: vehicle.id,
+      valor_carro: vehicle.preco_venda,
+      entrada_percentual: entryPercent,
+      prazo_meses: parseInt(simParcelas),
+      status: 'Pendente',
+    })
+
     trackSimulation(vehicle.preco_venda, entryPercent, simParcelas)
     trackWhatsAppClick('Luiz', 'simulacao_financiamento')
   }

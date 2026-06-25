@@ -137,12 +137,21 @@ export default function Dashboard() {
 
     if (allLeads) {
       allLeads.forEach((l) => {
-        let src = (l.origem || l.source || 'outros').toLowerCase()
-        if (src.includes('whatsapp') || src.includes('wpp')) src = 'WhatsApp'
+        let src = (l.origem || l.source || 'Outros').toLowerCase()
+        if (src.includes('icarros')) src = 'iCarros'
+        else if (
+          src.includes('mercado livre') ||
+          src.includes('mercadolivre') ||
+          src.includes('ml')
+        )
+          src = 'Mercado Livre'
+        else if (src.includes('webmotors')) src = 'Webmotors'
+        else if (src.includes('olx')) src = 'OLX'
+        else if (src.includes('whatsapp') || src.includes('wpp')) src = 'WhatsApp'
         else if (src.includes('instagram') || src.includes('ig')) src = 'Instagram'
         else if (src.includes('facebook') || src.includes('fb')) src = 'Facebook'
         else if (src.includes('site')) src = 'Site'
-        else src = src.charAt(0).toUpperCase() + src.slice(1)
+        else src = 'Outros'
 
         if (!sourceMap[src]) sourceMap[src] = { total: 0, vendidos: 0 }
         sourceMap[src].total++
