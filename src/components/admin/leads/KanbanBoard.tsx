@@ -10,6 +10,8 @@ import {
   ThermometerSnowflake,
   ThermometerSun,
   Clock,
+  Store,
+  Target,
 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -30,6 +32,7 @@ export function KanbanBoard({
   onSelectLead,
   usuariosMap,
   selectedLeadId,
+  veiculosMap = {},
 }: any) {
   const getOriginIcon = (origem?: string) => {
     const o = origem?.toLowerCase() || ''
@@ -39,6 +42,10 @@ export function KanbanBoard({
       return <Instagram className="w-3.5 h-3.5 text-pink-500 shrink-0" />
     if (o.includes('facebook') || o.includes('fb'))
       return <Facebook className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+    if (o.includes('icarros')) return <Car className="w-3.5 h-3.5 text-orange-500 shrink-0" />
+    if (o.includes('mercado livre') || o.includes('mercadolivre') || o.includes('ml'))
+      return <Store className="w-3.5 h-3.5 text-yellow-500 shrink-0" />
+    if (o.includes('webmotors')) return <Target className="w-3.5 h-3.5 text-red-600 shrink-0" />
     return <Globe className="w-3.5 h-3.5 text-slate-400 shrink-0" />
   }
 
@@ -95,10 +102,10 @@ export function KanbanBoard({
     <div className="flex h-full gap-4 p-4 overflow-x-auto bg-slate-50 w-full animate-fade-in">
       {COLUMNS.map((col) => {
         const colLeads = leads.filter((l: any) => l.status === col.id)
-        const totalValue = colLeads.reduce(
-          (acc: number, l: any) => acc + (Number(l.valor_veiculo) || 0),
-          0,
-        )
+        const totalValue = colLeads.reduce((acc: number, l: any) => {
+          const veic = veiculosMap[l.veiculo_id]
+          return acc + (Number(veic?.preco_venda) || Number(l.valor_veiculo) || 0)
+        }, 0)
 
         return (
           <div
@@ -126,6 +133,9 @@ export function KanbanBoard({
                     : lead.status === 'novo'
                       ? 'LUIZ (IA)'
                       : 'Sem Atendente'
+                  const veic = veiculosMap[lead.veiculo_id]
+                  const thumb = veic?.fotos?.[0]
+
                   return (
                     <div
                       key={lead.id}
@@ -139,7 +149,7 @@ export function KanbanBoard({
                       }}
                       onClick={() => onSelectLead(lead)}
                       className={cn(
-                        'bg-white p-3 rounded-lg shadow-sm border-y border-r border-l-4 cursor-grab active:cursor-grabbing transition-all hover:shadow-md group',
+                        'bg-white p-3 rounded-lg shadow-sm border-y border-r border-l-4 cursor-grab active:cursor-grabbing transition-all hover:shadow-md group flex flex-col',
                         lead.temperatura === 'quente'
                           ? 'border-l-red-500'
                           : lead.temperatura === 'morno'
@@ -163,7 +173,13 @@ export function KanbanBoard({
                         {getTemperatureBadge(lead.temperatura)}
                       </div>
 
-                      <div className="text-[10px] text-slate-500 flex items-center justify-between gap-1 mb-2">
+                      {thumb && (
+                        <div className="w-full h-24 mb-2 bg-slate-100 rounded overflow-hidden">
+                          <img src={thumb} alt="Veículo" className="w-full h-full object-cover" />
+                        </div>
+                      )}
+
+                      <div className="text-[10px] text-slate-500 flex items-center justify-between gap-1 mb-2 mt-auto">
                         <div className="flex items-center gap-1 truncate">
                           <User className="w-3 h-3 shrink-0" />{' '}
                           <span className="truncate">{respName}</span>
@@ -184,27 +200,6 @@ export function KanbanBoard({
                             {lead.carro_modelo || lead.veiculo_interesse || 'Não especificado'}
                           </span>
                         </span>
-
-                        {lead.telefone && (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-6 w-6 text-green-600 hover:text-green-700 hover:bg-green-100 opacity-0 group-hover:opacity-100 transition-opacity"
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              window.open(
-                                getWhatsAppLink(
-                                  `Olá ${lead.nome}, recebemos seu interesse no ${lead.carro_modelo || 'veículo'}. Como posso ajudar?`,
-                                  lead.telefone,
-                                ),
-                                '_blank',
-                              )
-                            }}
-                            title="Chamar no WhatsApp"
-                          >
-                            <MessageCircle className="w-4 h-4" />
-                          </Button>
-                        )}
                       </div>
                     </div>
                   )

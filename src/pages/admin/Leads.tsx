@@ -11,39 +11,31 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog'
-import { Sheet, SheetContent } from '@/components/ui/sheet'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { Calendar } from '@/components/ui/calendar'
 import {
   Search,
   MessageCircle,
   Phone,
-  Mail,
-  User,
-  Car,
   Clock,
   Send,
-  MoreVertical,
   CheckCircle2,
   XCircle,
-  Paperclip,
-  Mic,
-  Thermometer,
   Target,
   Instagram,
   Facebook,
   Globe,
-  AlertTriangle,
-  Lock,
-  Plus,
   FileText,
   Kanban,
   List,
   Trash,
-  Edit,
   Bot,
-  StickyNote,
+  Calendar as CalendarIcon,
+  FilePlus,
+  Car,
+  Store,
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { cn } from '@/lib/utils'
@@ -53,32 +45,23 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/hooks/use-auth'
 import { KanbanBoard } from '@/components/admin/leads/KanbanBoard'
 
-const COLUMNS = [
-  { id: 'novo', title: 'Novos', border: 'border-blue-200' },
-  { id: 'em_contato', title: 'Em Contato', border: 'border-amber-200' },
-  { id: 'negociando', title: 'Negociando', border: 'border-purple-200' },
-  { id: 'fechado', title: 'Vendido', border: 'border-green-200' },
-  { id: 'perdido', title: 'Perdido', border: 'border-red-200' },
-]
-
 export default function AdminLeads() {
   const navigate = useNavigate()
   const { toast } = useToast()
   const { user } = useAuth()
 
   const [viewMode, setViewMode] = useState<'list' | 'kanban'>('kanban')
-  const [filterStatus, setFilterStatus] = useState('todos')
   const [leads, setLeads] = useState<any[]>([])
   const [selectedLead, setSelectedLead] = useState<any>(null)
   const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(true)
 
   const [message, setMessage] = useState('')
+  const [isInternalNote, setIsInternalNote] = useState(false)
   const [conversation, setConversation] = useState<any[]>([])
-  const [internalNotes, setInternalNotes] = useState<any[]>([])
-  const [newNote, setNewNote] = useState('')
 
   const [usuariosMap, setUsuariosMap] = useState<Record<string, string>>({})
+  const [veiculosMap, setVeiculosMap] = useState<Record<string, any>>({})
   const [linkedVeiculo, setLinkedVeiculo] = useState<any>(null)
 
   const [isVeiculoModalOpen, setIsVeiculoModalOpen] = useState(false)
@@ -89,8 +72,7 @@ export default function AdminLeads() {
   const [templates, setTemplates] = useState<any[]>([])
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false)
 
-  const [isLeadModalOpen, setIsLeadModalOpen] = useState(false)
-  const [leadForm, setLeadForm] = useState<any>({})
+  const [followupDate, setFollowupDate] = useState<Date | undefined>(new Date())
 
   useEffect(() => {
     loadInitialData()
@@ -135,38 +117,16 @@ export default function AdminLeads() {
       )
       .subscribe()
 
-    const notesChannel = supabase
-      .channel('notes_changes')
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'internal_notes',
-          filter: `lead_id=eq.${selectedLead.id}`,
-        },
-        () => loadInternalNotes(selectedLead.id),
-      )
-      .subscribe()
-
     return () => {
       supabase.removeChannel(messagesChannel)
-      supabase.removeChannel(notesChannel)
     }
   }, [selectedLead?.id])
 
   useEffect(() => {
-    if (selectedLead) {
-      loadConversation(selectedLead.id)
-      loadInternalNotes(selectedLead.id)
-    }
+    if (selectedLead) loadConversation(selectedLead.id)
     if (selectedLead?.veiculo_id) {
-      supabase
-        .from('veiculos')
-        .select('*')
-        .eq('id', selectedLead.veiculo_id)
-        .single()
-        .then(({ data }) => setLinkedVeiculo(data))
+      const v = veiculosMap[selectedLead.veiculo_id]
+      setLinkedVeiculo(v || null)
     } else {
       setLinkedVeiculo(null)
     }
@@ -198,12 +158,23 @@ export default function AdminLeads() {
   const loadInitialData = async () => {
     try {
       setLoading(true)
-      const { data: usersData } = await supabase.from('usuarios').select('id, nome')
+      const [{ data: usersData }, { data: veicsData }] = await Promise.all([
+        supabase.from('usuarios').select('id, nome'),
+        supabase.from('veiculos').select('*'),
+      ])
+
       if (usersData) {
         const uMap: Record<string, string> = {}
         usersData.forEach((u) => (uMap[u.id] = u.nome))
         setUsuariosMap(uMap)
       }
+
+      if (veicsData) {
+        const vMap: Record<string, any> = {}
+        veicsData.forEach((v) => (vMap[v.id] = v))
+        setVeiculosMap(vMap)
+      }
+
       await loadLeads()
     } catch (err: any) {
       toast({ title: 'Erro ao carregar', description: err.message, variant: 'destructive' })
@@ -214,25 +185,12 @@ export default function AdminLeads() {
 
   const loadLeads = async () => {
     let query = supabase.from('leads').select('*').order('created_at', { ascending: false })
-
-    if (search) {
+    if (search)
       query = query.or(
         `nome.ilike.%${search}%,carro_modelo.ilike.%${search}%,telefone.ilike.%${search}%`,
       )
-    }
-
-    if (filterStatus === 'novos') {
-      query = query.eq('status', 'novo')
-    } else if (filterStatus === 'pendentes') {
-      query = query.in('status', ['em_contato', 'negociando'])
-    }
-
-    const { data, error } = await query
-    if (error) {
-      toast({ title: 'Erro ao buscar leads', description: error.message, variant: 'destructive' })
-    } else {
-      setLeads(data || [])
-    }
+    const { data } = await query
+    if (data) setLeads(data)
   }
 
   useEffect(() => {
@@ -240,7 +198,7 @@ export default function AdminLeads() {
       loadLeads()
     }, 500)
     return () => clearTimeout(timer)
-  }, [search, filterStatus])
+  }, [search])
 
   const loadConversation = async (leadId: string) => {
     const { data } = await supabase
@@ -251,63 +209,12 @@ export default function AdminLeads() {
     if (data) setConversation(data)
   }
 
-  const loadInternalNotes = async (leadId: string) => {
-    const { data } = await supabase
-      .from('internal_notes')
-      .select('*, author:usuarios(nome)')
-      .eq('lead_id', leadId)
-      .order('created_at', { ascending: true })
-    if (data) setInternalNotes(data)
-  }
-
-  const handleDragStart = (e: React.DragEvent, leadId: string) => {
-    e.dataTransfer.setData('leadId', leadId)
-  }
-
-  const handleDrop = async (e: React.DragEvent, status: string) => {
-    e.preventDefault()
-    const leadId = e.dataTransfer.getData('leadId')
-    if (leadId) {
-      setLeads((prev) => prev.map((l) => (l.id === leadId ? { ...l, status } : l)))
-      await supabase.from('leads').update({ status }).eq('id', leadId)
-    }
-  }
-
-  const saveInternalNote = async () => {
-    if (!newNote.trim() || !selectedLead) return
-    try {
-      await supabase.from('internal_notes').insert({
-        lead_id: selectedLead.id,
-        author_id: user?.id,
-        content: newNote,
-      })
-      setNewNote('')
-    } catch (err: any) {
-      toast({ title: 'Erro ao salvar nota', description: err.message, variant: 'destructive' })
-    }
-  }
-
-  const toggleAI = async (checked: boolean) => {
-    if (!selectedLead) return
-    setSelectedLead((prev: any) => ({ ...prev, ai_enabled: checked }))
-    await supabase.from('leads').update({ ai_enabled: checked }).eq('id', selectedLead.id)
-    toast({ title: checked ? 'Assistente IA Ativado' : 'Assistente IA Desativado' })
-  }
-
-  const handleSaveLead = async () => {
-    try {
-      if (leadForm.id) {
-        await supabase.from('leads').update(leadForm).eq('id', leadForm.id)
-        toast({ title: 'Lead atualizado com sucesso' })
-      } else {
-        const { id, ...data } = leadForm
-        await supabase.from('leads').insert([data])
-        toast({ title: 'Lead criado com sucesso' })
-      }
-      setIsLeadModalOpen(false)
-    } catch (err: any) {
-      toast({ title: 'Erro ao salvar', description: err.message, variant: 'destructive' })
-    }
+  const updateLeadField = async (field: string, value: any) => {
+    setSelectedLead((prev: any) => ({ ...prev, [field]: value }))
+    await supabase
+      .from('leads')
+      .update({ [field]: value })
+      .eq('id', selectedLead.id)
   }
 
   const handleDeleteLead = async (id: string) => {
@@ -321,49 +228,26 @@ export default function AdminLeads() {
     }
   }
 
-  const handleLinkVeiculo = async (veiculo: any) => {
-    if (!selectedLead) return
-    try {
-      await supabase
-        .from('leads')
-        .update({ veiculo_id: veiculo.id, veiculo_interesse: veiculo.modelo })
-        .eq('id', selectedLead.id)
-      setIsVeiculoModalOpen(false)
-      toast({ title: 'Veículo vinculado com sucesso' })
-    } catch (err: any) {
-      toast({ title: 'Erro ao vincular', description: err.message, variant: 'destructive' })
-    }
-  }
-
-  const handleTemperatureChange = async (newTemp: string) => {
-    if (!selectedLead) return
-    await supabase.from('leads').update({ temperatura: newTemp }).eq('id', selectedLead.id)
-    toast({ title: 'Temperatura atualizada' })
-  }
-
-  const handleStatusChange = async (newStatus: string) => {
-    if (!selectedLead) return
-    await supabase.from('leads').update({ status: newStatus }).eq('id', selectedLead.id)
-    toast({ title: 'Status atualizado com sucesso' })
-  }
-
   const sendMessage = async () => {
     if (!message.trim() || !selectedLead) return
     try {
+      if (isInternalNote) {
+        await supabase
+          .from('conversation_history')
+          .insert([{ lead_id: selectedLead.id, sender: 'internal_note', message_text: message }])
+        setMessage('')
+        setIsInternalNote(false)
+        return
+      }
+
       if (selectedLead.telefone) {
         const cleanPhone = selectedLead.telefone.replace(/\D/g, '')
-        if (cleanPhone.length < 10 || cleanPhone.length > 15) {
-          toast({ title: 'Número de telefone inválido para WhatsApp', variant: 'destructive' })
+        if (cleanPhone.length < 10) {
+          toast({ title: 'Número inválido', variant: 'destructive' })
           return
         }
-
         await supabase.functions.invoke('send-whatsapp', {
-          body: {
-            action: 'text',
-            to: cleanPhone,
-            text: message,
-            leadId: selectedLead.id,
-          },
+          body: { action: 'text', to: cleanPhone, text: message, leadId: selectedLead.id },
         })
       } else {
         await supabase
@@ -371,42 +255,14 @@ export default function AdminLeads() {
           .insert([{ lead_id: selectedLead.id, sender: 'human', message_text: message }])
       }
       setMessage('')
-      toast({ title: 'Mensagem enviada com sucesso!' })
     } catch (err: any) {
       toast({ title: 'Erro ao enviar', description: err.message, variant: 'destructive' })
     }
   }
 
-  const sendTemplate = async (templateName: string) => {
-    if (!selectedLead?.telefone) return
-    try {
-      const cleanPhone = selectedLead.telefone.replace(/\D/g, '')
-      if (cleanPhone.length < 10 || cleanPhone.length > 15) {
-        toast({ title: 'Número de telefone inválido para WhatsApp', variant: 'destructive' })
-        return
-      }
-
-      await supabase.functions.invoke('send-whatsapp', {
-        body: {
-          action: 'template',
-          to: cleanPhone,
-          templateName,
-          leadId: selectedLead.id,
-        },
-      })
-      setIsTemplateModalOpen(false)
-      toast({ title: 'Template enviado com sucesso!' })
-    } catch (err: any) {
-      toast({ title: 'Erro ao enviar template', description: err.message, variant: 'destructive' })
-    }
-  }
-
   const generateAndSendProposal = async () => {
     if (!selectedLead || !linkedVeiculo || !selectedLead.telefone) {
-      toast({
-        title: 'Vincule um veículo e garanta que o lead tem telefone',
-        variant: 'destructive',
-      })
+      toast({ title: 'Vincule um veículo e telefone para gerar proposta.', variant: 'destructive' })
       return
     }
     setIsGeneratingPdf(true)
@@ -436,6 +292,17 @@ export default function AdminLeads() {
     }
   }
 
+  const scheduleFollowup = async () => {
+    if (!selectedLead || !followupDate) return
+    await supabase.from('followups').insert({
+      lead_id: selectedLead.id,
+      data_agendada: followupDate.toISOString(),
+      responsavel_id: user?.id,
+      lembrete: 'Retorno de contato programado',
+    })
+    toast({ title: 'Follow-up agendado com sucesso!' })
+  }
+
   const getOriginIcon = (origem?: string) => {
     const o = origem?.toLowerCase() || ''
     if (o.includes('whatsapp') || o.includes('wpp'))
@@ -444,454 +311,39 @@ export default function AdminLeads() {
       return <Instagram className="w-3.5 h-3.5 text-pink-500 shrink-0" />
     if (o.includes('facebook') || o.includes('fb'))
       return <Facebook className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+    if (o.includes('icarros')) return <Car className="w-3.5 h-3.5 text-orange-500 shrink-0" />
+    if (o.includes('mercado livre') || o.includes('mercadolivre') || o.includes('ml'))
+      return <Store className="w-3.5 h-3.5 text-yellow-500 shrink-0" />
+    if (o.includes('webmotors')) return <Target className="w-3.5 h-3.5 text-red-600 shrink-0" />
     return <Globe className="w-3.5 h-3.5 text-slate-400 shrink-0" />
   }
 
-  const getTemperatureColor = (temp?: string) => {
-    switch (temp) {
-      case 'quente':
-        return 'bg-red-100 text-red-800'
-      case 'morno':
-        return 'bg-amber-100 text-amber-800'
-      case 'frio':
-        return 'bg-blue-100 text-blue-800'
-      default:
-        return 'bg-slate-100 text-slate-800'
-    }
-  }
-
   const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'novo':
-        return 'bg-blue-100 text-blue-800'
-      case 'em_contato':
-        return 'bg-amber-100 text-amber-800'
-      case 'negociando':
-        return 'bg-purple-100 text-purple-800'
-      case 'fechado':
-        return 'bg-green-100 text-green-800'
-      case 'perdido':
-        return 'bg-red-100 text-red-800'
-      default:
-        return 'bg-slate-100 text-slate-800'
-    }
+    if (status === 'novo') return 'bg-blue-100 text-blue-800'
+    if (status === 'em_contato') return 'bg-amber-100 text-amber-800'
+    if (status === 'negociando') return 'bg-purple-100 text-purple-800'
+    if (status === 'fechado') return 'bg-green-100 text-green-800'
+    if (status === 'perdido') return 'bg-red-100 text-red-800'
+    return 'bg-slate-100 text-slate-800'
   }
 
-  const getSessionInfo = (conv: any[]) => {
-    const lastClientMsg = [...conv].reverse().find((m) => m.sender === 'client')
-    if (!lastClientMsg) return { active: false, hoursLeft: 0 }
-    const diffMs = new Date().getTime() - new Date(lastClientMsg.created_at).getTime()
-    const hoursLeft = 24 - diffMs / (1000 * 60 * 60)
-    return { active: hoursLeft > 0, hoursLeft: Math.max(0, hoursLeft) }
-  }
-
-  const filteredLeads = leads
-
-  if (loading) {
+  if (loading)
     return (
-      <div className="flex h-[calc(100vh-100px)] items-center justify-center">
-        Carregando CRM...
-      </div>
+      <div className="flex h-[calc(100vh-64px)] items-center justify-center">Carregando CRM...</div>
     )
-  }
-
-  const sessionInfo = getSessionInfo(conversation)
-
-  const LeadDetailPanel = () => (
-    <div className="flex-1 flex w-full h-full flex-col md:flex-row bg-white">
-      {/* CENTRAL: CONVERSA E NOTAS */}
-      <div className="flex-1 flex flex-col min-w-[300px] border-r">
-        {/* Header do Lead */}
-        <div className="p-4 border-b bg-white flex justify-between items-center shadow-sm z-10 shrink-0">
-          <div className="flex items-center gap-3">
-            <Avatar className="h-10 w-10 border">
-              <AvatarFallback className="bg-blue-100 text-blue-700 font-bold">
-                {selectedLead.nome?.substring(0, 2).toUpperCase() || 'U'}
-              </AvatarFallback>
-            </Avatar>
-            <div>
-              <h3 className="font-bold text-slate-800 flex items-center gap-2">
-                {selectedLead.nome || 'Lead Sem Nome'}
-                <Badge
-                  className={cn('text-[10px] px-1', getTemperatureColor(selectedLead.temperatura))}
-                >
-                  {selectedLead.temperatura || 'frio'}
-                </Badge>
-              </h3>
-              <div className="text-xs text-slate-500 flex items-center gap-2">
-                <span className="flex items-center gap-1">
-                  <Phone className="w-3 h-3" /> {selectedLead.telefone || 'Sem telefone'}
-                </span>
-              </div>
-            </div>
-          </div>
-          <Button
-            size="sm"
-            variant="outline"
-            className="text-green-600 border-green-200 bg-green-50 hover:bg-green-100 hidden sm:flex"
-            onClick={() =>
-              selectedLead.telefone &&
-              window.open(getWhatsAppLink('Olá!', selectedLead.telefone), '_blank')
-            }
-          >
-            <MessageCircle className="w-4 h-4 mr-2" /> WhatsApp
-          </Button>
-        </div>
-
-        {/* TABS: Chat vs Internal Notes */}
-        <Tabs
-          defaultValue="chat"
-          className="flex-1 flex flex-col h-full bg-[#E5DDD5]/20 overflow-hidden"
-        >
-          <div className="px-4 py-2 border-b bg-white flex items-center justify-between shrink-0">
-            <TabsList>
-              <TabsTrigger value="chat" className="text-xs">
-                <MessageCircle className="w-3 h-3 mr-1" /> Conversa (Cliente)
-              </TabsTrigger>
-              <TabsTrigger value="notes" className="text-xs">
-                <StickyNote className="w-3 h-3 mr-1" /> Notas Internas
-              </TabsTrigger>
-            </TabsList>
-          </div>
-
-          <TabsContent
-            value="chat"
-            className="flex-1 overflow-hidden m-0 data-[state=active]:flex flex-col"
-          >
-            <ScrollArea className="flex-1 p-4">
-              <div className="max-w-3xl mx-auto space-y-4">
-                {conversation.length === 0 ? (
-                  <div className="self-start max-w-[80%] bg-white p-3 rounded-2xl shadow-sm border text-sm text-slate-700">
-                    Nenhuma mensagem ainda. Inicie o contato.
-                  </div>
-                ) : (
-                  conversation.map((msg, idx) => (
-                    <div
-                      key={idx}
-                      className={cn(
-                        'max-w-[80%] p-3 shadow-sm border border-slate-200',
-                        msg.sender === 'bot'
-                          ? 'self-start bg-blue-50 rounded-2xl rounded-tl-none border-blue-200'
-                          : msg.sender === 'client'
-                            ? 'self-start bg-white rounded-2xl rounded-tl-none'
-                            : 'self-end bg-green-50 rounded-2xl rounded-tr-none border-green-200',
-                      )}
-                    >
-                      {msg.sender === 'bot' && (
-                        <p className="text-[10px] text-blue-600 font-bold mb-1">🤖 Luiz (IA)</p>
-                      )}
-                      {msg.sender === 'human' && (
-                        <p className="text-[10px] text-green-600 font-bold mb-1">👤 Você</p>
-                      )}
-                      <p className="text-sm text-slate-700 whitespace-pre-wrap">
-                        {msg.message_text}
-                      </p>
-                      <span className="text-[10px] text-slate-400 mt-1 block text-right">
-                        {new Date(msg.created_at).toLocaleString('pt-BR', {
-                          day: '2-digit',
-                          month: '2-digit',
-                          year: 'numeric',
-                          hour: '2-digit',
-                          minute: '2-digit',
-                        })}
-                      </span>
-                    </div>
-                  ))
-                )}
-              </div>
-            </ScrollArea>
-            <div className="bg-white border-t flex flex-col shrink-0">
-              {sessionInfo.active ? (
-                <div className="bg-blue-50 border-b border-blue-100 px-4 py-1.5 flex items-center gap-2">
-                  <Clock className="w-3.5 h-3.5 text-blue-500" />
-                  <span className="text-[11px] text-blue-700">
-                    Sessão ativa: {sessionInfo.hoursLeft.toFixed(1)}h restantes.
-                  </span>
-                </div>
-              ) : (
-                <div className="bg-amber-50 border-b border-amber-100 px-4 py-1.5 flex items-center gap-2">
-                  <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
-                  <span className="text-[11px] text-amber-700">
-                    Sessão expirada. Envio livre bloqueado.
-                  </span>
-                </div>
-              )}
-              <div className="p-3 flex gap-2 items-center">
-                {sessionInfo.active ? (
-                  <Input
-                    value={message}
-                    onChange={(e) => setMessage(e.target.value)}
-                    placeholder="Digite uma mensagem..."
-                    className="flex-1 bg-slate-50"
-                    onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
-                  />
-                ) : (
-                  <Button
-                    variant="default"
-                    className="flex-1 bg-green-600 hover:bg-green-700"
-                    onClick={() => setIsTemplateModalOpen(true)}
-                  >
-                    <MessageCircle className="w-4 h-4 mr-2" /> Selecionar Template Meta
-                  </Button>
-                )}
-                {message && sessionInfo.active && (
-                  <Button onClick={sendMessage} className="bg-blue-600 hover:bg-blue-700">
-                    <Send className="w-4 h-4" />
-                  </Button>
-                )}
-              </div>
-            </div>
-          </TabsContent>
-
-          <TabsContent
-            value="notes"
-            className="flex-1 overflow-hidden m-0 data-[state=active]:flex flex-col bg-slate-50"
-          >
-            <ScrollArea className="flex-1 p-4">
-              <div className="space-y-4 max-w-3xl mx-auto">
-                {internalNotes.map((note) => (
-                  <div
-                    key={note.id}
-                    className="bg-yellow-50 border border-yellow-200 p-3 rounded-lg shadow-sm"
-                  >
-                    <p className="text-sm text-slate-800 whitespace-pre-wrap">{note.content}</p>
-                    <div className="flex justify-between items-center mt-2 text-[10px] text-slate-500">
-                      <span className="font-bold">{note.author?.nome || 'Sistema'}</span>
-                      <span>{new Date(note.created_at).toLocaleString()}</span>
-                    </div>
-                  </div>
-                ))}
-                {internalNotes.length === 0 && (
-                  <p className="text-center text-slate-400 text-sm mt-10">Nenhuma nota interna.</p>
-                )}
-              </div>
-            </ScrollArea>
-            <div className="p-4 bg-white border-t flex gap-2 shrink-0">
-              <Input
-                value={newNote}
-                onChange={(e) => setNewNote(e.target.value)}
-                placeholder="Adicionar nota para a equipe..."
-                onKeyDown={(e) => e.key === 'Enter' && saveInternalNote()}
-              />
-              <Button
-                onClick={saveInternalNote}
-                className="bg-yellow-500 hover:bg-yellow-600 text-white"
-              >
-                Salvar
-              </Button>
-            </div>
-          </TabsContent>
-        </Tabs>
-      </div>
-
-      {/* DIREITA: PERFIL, GESTÃO E VEÍCULO */}
-      <div className="w-full md:w-[320px] bg-slate-50 flex flex-col shrink-0">
-        <ScrollArea className="flex-1 p-4">
-          <div className="flex gap-2 mb-4">
-            <Button
-              variant="outline"
-              size="sm"
-              className="flex-1"
-              onClick={() => {
-                setLeadForm({ ...selectedLead })
-                setIsLeadModalOpen(true)
-              }}
-            >
-              <Edit className="w-4 h-4 mr-1" /> Editar
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="text-red-600 hover:bg-red-50 flex-1"
-              onClick={() => handleDeleteLead(selectedLead.id)}
-            >
-              <Trash className="w-4 h-4 mr-1" /> Excluir
-            </Button>
-          </div>
-
-          <div className="bg-white p-3 rounded-xl border shadow-sm flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <Bot className="w-4 h-4 text-blue-600" />
-              <span className="text-sm font-semibold text-slate-700">Assistente IA (Luiz)</span>
-            </div>
-            <Switch checked={selectedLead.ai_enabled ?? true} onCheckedChange={toggleAI} />
-          </div>
-
-          <div className="space-y-6">
-            <div>
-              <label className="text-xs font-bold text-slate-500 uppercase mb-2 flex items-center gap-1">
-                <Thermometer className="w-4 h-4" /> Temperatura
-              </label>
-              <div className="grid grid-cols-3 gap-2">
-                <Button
-                  variant="outline"
-                  className={cn(
-                    'h-8 text-xs',
-                    selectedLead.temperatura === 'quente' &&
-                      'bg-red-50 border-red-300 text-red-700',
-                  )}
-                  onClick={() => handleTemperatureChange('quente')}
-                >
-                  Quente
-                </Button>
-                <Button
-                  variant="outline"
-                  className={cn(
-                    'h-8 text-xs',
-                    selectedLead.temperatura === 'morno' &&
-                      'bg-amber-50 border-amber-300 text-amber-700',
-                  )}
-                  onClick={() => handleTemperatureChange('morno')}
-                >
-                  Morno
-                </Button>
-                <Button
-                  variant="outline"
-                  className={cn(
-                    'h-8 text-xs',
-                    selectedLead.temperatura === 'frio' &&
-                      'bg-blue-50 border-blue-300 text-blue-700',
-                  )}
-                  onClick={() => handleTemperatureChange('frio')}
-                >
-                  Frio
-                </Button>
-              </div>
-            </div>
-
-            <div>
-              <label className="text-xs font-bold text-slate-500 uppercase mb-2 block">
-                Status (Pipeline)
-              </label>
-              <div className="grid gap-2">
-                <Button
-                  onClick={() => handleStatusChange('fechado')}
-                  className="w-full bg-green-600 hover:bg-green-700 justify-start h-8 text-xs"
-                >
-                  <CheckCircle2 className="w-4 h-4 mr-2" /> Venda Realizada
-                </Button>
-                <Button
-                  onClick={() => handleStatusChange('perdido')}
-                  variant="outline"
-                  className="w-full text-red-600 border-red-200 hover:bg-red-50 justify-start h-8 text-xs"
-                >
-                  <XCircle className="w-4 h-4 mr-2" /> Negócio Perdido
-                </Button>
-              </div>
-            </div>
-
-            <div className="bg-white p-4 rounded-xl border shadow-sm space-y-3">
-              <div className="flex justify-between items-center border-b pb-2">
-                <label className="text-xs font-bold text-slate-500 uppercase">
-                  Veículo de Interesse
-                </label>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-6 text-xs text-blue-600 px-2"
-                  onClick={() => setIsVeiculoModalOpen(true)}
-                >
-                  <Search className="w-3 h-3" />
-                </Button>
-              </div>
-              {linkedVeiculo ? (
-                <div>
-                  <p className="font-bold text-sm text-slate-800">
-                    {linkedVeiculo.marca} {linkedVeiculo.modelo}
-                  </p>
-                  <p className="text-xs text-slate-500">
-                    {linkedVeiculo.ano_fabricacao}/{linkedVeiculo.ano_modelo}
-                  </p>
-                  <Button
-                    className="w-full mt-2"
-                    size="sm"
-                    onClick={generateAndSendProposal}
-                    disabled={isGeneratingPdf}
-                  >
-                    <FileText className="w-4 h-4 mr-2" /> Gerar Proposta PDF
-                  </Button>
-                </div>
-              ) : (
-                <p className="text-sm font-medium text-slate-800">
-                  {selectedLead.carro_modelo ||
-                    selectedLead.veiculo_interesse ||
-                    'Não especificado'}
-                </p>
-              )}
-            </div>
-
-            <div className="bg-white p-4 rounded-xl border shadow-sm space-y-3">
-              <label className="text-xs font-bold text-slate-500 uppercase block border-b pb-2">
-                Dados do Cliente
-              </label>
-              <div>
-                <p className="text-[10px] text-slate-400 font-bold uppercase">Nome</p>
-                <p className="text-sm font-medium">{selectedLead.nome}</p>
-              </div>
-              <div>
-                <p className="text-[10px] text-slate-400 font-bold uppercase">Telefone</p>
-                <p className="text-sm font-medium">{selectedLead.telefone || '-'}</p>
-              </div>
-              <div>
-                <p className="text-[10px] text-slate-400 font-bold uppercase">E-mail</p>
-                <p className="text-sm font-medium break-all">{selectedLead.email || '-'}</p>
-              </div>
-              <div>
-                <p className="text-[10px] text-slate-400 font-bold uppercase">Origem</p>
-                <p className="text-sm font-medium flex items-center gap-1">
-                  {getOriginIcon(selectedLead.origem || selectedLead.source)}{' '}
-                  {selectedLead.source || selectedLead.origem || 'Site'}
-                </p>
-              </div>
-              {selectedLead.trade_in_car && (
-                <div>
-                  <p className="text-[10px] text-slate-400 font-bold uppercase">Carro na Troca</p>
-                  <p className="text-sm font-medium">{selectedLead.trade_in_car}</p>
-                </div>
-              )}
-              {selectedLead.payment_method && (
-                <div>
-                  <p className="text-[10px] text-slate-400 font-bold uppercase">
-                    Forma de Pagamento
-                  </p>
-                  <p className="text-sm font-medium">{selectedLead.payment_method}</p>
-                </div>
-              )}
-            </div>
-
-            <div className="bg-blue-50 p-4 rounded-xl border border-blue-100">
-              <h4 className="font-bold text-blue-800 text-sm mb-2">Simulador de Financiamento</h4>
-              <Button
-                className="w-full bg-blue-600 hover:bg-blue-700"
-                size="sm"
-                onClick={() =>
-                  navigate(
-                    `/admin/financiamento?lead_id=${selectedLead.id}&veiculo_id=${selectedLead.veiculo_id || ''}`,
-                  )
-                }
-              >
-                Abrir Simulador
-              </Button>
-            </div>
-          </div>
-        </ScrollArea>
-      </div>
-    </div>
-  )
 
   return (
-    <div className="flex flex-col h-[calc(100vh-100px)] bg-white border rounded-xl shadow-sm mx-4 my-4 max-w-[1600px] xl:mx-auto overflow-hidden">
-      {/* Header */}
-      <div className="p-4 border-b bg-white flex justify-between items-center shadow-sm z-10 shrink-0">
+    <div className="flex flex-col h-[calc(100vh-64px)] w-full overflow-hidden bg-white relative">
+      <div className="p-3 border-b bg-white flex justify-between items-center shadow-sm z-10 shrink-0">
         <h2 className="font-bold text-lg flex items-center gap-2">
-          <Target className="w-5 h-5 text-blue-600" /> CRM Pipeline
+          <Target className="w-5 h-5 text-blue-600" /> Command Center CRM
         </h2>
         <div className="flex items-center gap-3">
-          <div className="relative hidden md:block w-64">
+          <div className="relative w-64">
             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <Input
               placeholder="Buscar lead..."
-              className="pl-9 h-9"
+              className="pl-9 h-8 text-sm"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
@@ -901,7 +353,10 @@ export default function AdminLeads() {
               variant={viewMode === 'kanban' ? 'secondary' : 'ghost'}
               size="sm"
               className="h-7 px-2"
-              onClick={() => setViewMode('kanban')}
+              onClick={() => {
+                setViewMode('kanban')
+                setSelectedLead(null)
+              }}
             >
               <Kanban className="w-4 h-4" />
             </Button>
@@ -914,169 +369,421 @@ export default function AdminLeads() {
               <List className="w-4 h-4" />
             </Button>
           </div>
-          <Button
-            size="sm"
-            onClick={() => {
-              setLeadForm({ status: 'novo', temperatura: 'frio' })
-              setIsLeadModalOpen(true)
-            }}
-          >
-            <Plus className="w-4 h-4 mr-1" /> Novo Lead
-          </Button>
         </div>
       </div>
 
-      {/* Main Content */}
-      <div className="flex-1 overflow-hidden flex relative">
-        {viewMode === 'list' ? (
+      <div className="flex-1 overflow-hidden flex relative w-full">
+        {viewMode === 'kanban' && !selectedLead ? (
+          <KanbanBoard
+            leads={leads}
+            veiculosMap={veiculosMap}
+            usuariosMap={usuariosMap}
+            onStatusChange={async (leadId: string, status: string) => {
+              setLeads((prev) => prev.map((l) => (l.id === leadId ? { ...l, status } : l)))
+              await supabase.from('leads').update({ status }).eq('id', leadId)
+            }}
+            onSelectLead={(l: any) => {
+              setSelectedLead(l)
+              setViewMode('list')
+            }}
+            selectedLeadId={selectedLead?.id}
+          />
+        ) : (
           <>
-            <div className="w-[300px] border-r flex flex-col bg-slate-50 shrink-0">
+            {/* COLUMN 1: Lead Inbox (20%) */}
+            <div className="w-[20%] min-w-[260px] max-w-[320px] border-r flex flex-col bg-slate-50 shrink-0 h-full">
               <ScrollArea className="flex-1">
-                <div className="p-2 space-y-1">
-                  {filteredLeads.map((lead) => (
+                <div className="p-2 space-y-2">
+                  {leads.map((lead) => (
                     <div
                       key={lead.id}
                       onClick={() => setSelectedLead(lead)}
                       className={cn(
-                        'p-3 rounded-lg cursor-pointer border',
+                        'p-3 rounded-lg cursor-pointer border transition-all',
                         selectedLead?.id === lead.id
-                          ? 'bg-blue-50 border-blue-200'
+                          ? 'bg-blue-50 border-blue-300 shadow-sm'
                           : 'bg-white hover:border-slate-300',
                       )}
                     >
                       <div className="flex justify-between items-start mb-1 gap-2">
-                        <span className="font-bold text-sm truncate">
-                          {lead.nome || 'Sem Nome'}
-                        </span>
-                        <Badge
-                          className={cn('text-[10px] px-1.5 h-4', getStatusColor(lead.status))}
-                        >
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          {getOriginIcon(lead.origem || lead.source)}
+                          <span className="font-bold text-sm truncate text-slate-800">
+                            {lead.nome || 'Sem Nome'}
+                          </span>
+                        </div>
+                        <Badge className={cn('text-[9px] px-1.5 h-4', getStatusColor(lead.status))}>
                           {lead.status}
                         </Badge>
                       </div>
-                      <div className="flex justify-between items-center text-[10px] text-slate-400 mt-2">
+                      <div className="text-[11px] text-slate-500 line-clamp-1 mt-1 mb-1">
+                        {lead.observacoes || lead.carro_modelo || 'Novo Lead'}
+                      </div>
+                      <div className="flex justify-between items-center text-[10px] text-slate-400 mt-2 border-t pt-2">
                         <span>
-                          <Car className="w-3 h-3 inline mr-1" />
-                          {lead.veiculo_interesse || 'Nenhum'}
+                          {lead.responsavel_id ? usuariosMap[lead.responsavel_id] : 'Sem Vendedor'}
                         </span>
-                        <Badge
-                          className={cn(
-                            'text-[9px] px-1 h-3',
-                            getTemperatureColor(lead.temperatura),
-                          )}
-                        >
-                          {lead.temperatura}
-                        </Badge>
+                        <span>{new Date(lead.created_at).toLocaleDateString('pt-BR')}</span>
                       </div>
                     </div>
                   ))}
                 </div>
               </ScrollArea>
             </div>
+
+            {/* COLUMN 2: Chat Timeline (50%) */}
             {selectedLead ? (
-              <LeadDetailPanel />
+              <div className="flex-1 min-w-[400px] flex flex-col border-r bg-white h-full relative">
+                <div className="p-4 border-b bg-white flex justify-between items-center shadow-sm shrink-0">
+                  <div className="flex items-center gap-3">
+                    <Avatar className="h-10 w-10 border">
+                      <AvatarFallback className="bg-blue-100 text-blue-700 font-bold">
+                        {selectedLead.nome?.substring(0, 2).toUpperCase() || 'U'}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <h3 className="font-bold text-slate-800 flex items-center gap-2">
+                        {selectedLead.nome}
+                      </h3>
+                      <span className="flex items-center gap-1 text-xs text-slate-500">
+                        <Phone className="w-3 h-3" /> {selectedLead.telefone || 'Sem telefone'}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="text-slate-600"
+                      onClick={() => {
+                        setViewMode('kanban')
+                        setSelectedLead(null)
+                      }}
+                    >
+                      <Kanban className="w-4 h-4 mr-2" /> Voltar ao Board
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="text-green-600 border-green-200 bg-green-50"
+                      onClick={() =>
+                        selectedLead.telefone &&
+                        window.open(getWhatsAppLink('Olá!', selectedLead.telefone), '_blank')
+                      }
+                    >
+                      <MessageCircle className="w-4 h-4 mr-2" /> WhatsApp
+                    </Button>
+                  </div>
+                </div>
+
+                <ScrollArea className="flex-1 p-4 bg-[#E5DDD5]/20">
+                  <div className="max-w-3xl mx-auto space-y-4">
+                    {conversation.map((msg, idx) => {
+                      const isInternal = msg.sender === 'internal_note'
+                      const isBot = msg.sender === 'bot'
+                      const isHuman = msg.sender === 'human'
+                      const isAudio = msg.message_text.includes('[AUDIO]')
+                      const textClean = msg.message_text.replace('[AUDIO]', '').trim()
+
+                      return (
+                        <div
+                          key={idx}
+                          className={cn(
+                            'max-w-[85%] p-3 shadow-sm border border-slate-200 flex flex-col',
+                            isInternal
+                              ? 'self-center bg-yellow-50 rounded-2xl w-[90%] border-yellow-200'
+                              : isBot
+                                ? 'self-start bg-blue-50 rounded-2xl rounded-tl-none border-blue-200'
+                                : msg.sender === 'client'
+                                  ? 'self-start bg-white rounded-2xl rounded-tl-none'
+                                  : 'self-end bg-green-50 rounded-2xl rounded-tr-none border-green-200',
+                          )}
+                        >
+                          {isInternal && (
+                            <p className="text-[10px] text-yellow-700 font-bold mb-1">
+                              📝 Nota Interna da Equipe
+                            </p>
+                          )}
+                          {isAudio ? (
+                            <div className="flex flex-col gap-2">
+                              <div className="flex items-center gap-2 bg-slate-100 p-2 rounded-lg border w-48">
+                                <MessageCircle className="w-4 h-4 text-slate-400" />
+                                <span className="text-xs text-slate-600 font-medium">Áudio</span>
+                              </div>
+                              <p className="text-xs text-slate-500 italic border-l-2 border-slate-300 pl-2">
+                                Transcrição (IA): {textClean || 'Áudio processado.'}
+                              </p>
+                            </div>
+                          ) : (
+                            <p className="text-sm text-slate-800 whitespace-pre-wrap">
+                              {msg.message_text}
+                            </p>
+                          )}
+                          <div className="flex justify-between items-center mt-1 gap-4">
+                            <span className="text-[9px] text-slate-400 font-medium">
+                              {isBot
+                                ? 'Respondido por LUIZ (IA)'
+                                : isHuman
+                                  ? `Feito por ${usuariosMap[user?.id] || 'Atendente'}`
+                                  : ''}
+                            </span>
+                            <span className="text-[10px] text-slate-400 text-right shrink-0">
+                              {new Date(msg.created_at).toLocaleString('pt-BR', {
+                                hour: '2-digit',
+                                minute: '2-digit',
+                              })}
+                            </span>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </ScrollArea>
+
+                <div
+                  className={cn(
+                    'p-3 border-t flex flex-col gap-2 shrink-0 transition-colors',
+                    isInternalNote ? 'bg-yellow-50' : 'bg-white',
+                  )}
+                >
+                  <div className="flex items-center gap-2 mb-1 px-1">
+                    <div className="flex items-center gap-1.5">
+                      <Switch
+                        checked={isInternalNote}
+                        onCheckedChange={setIsInternalNote}
+                        className="data-[state=checked]:bg-yellow-500"
+                      />
+                      <Label
+                        className="text-xs text-slate-600 font-semibold cursor-pointer"
+                        onClick={() => setIsInternalNote(!isInternalNote)}
+                      >
+                        Nota Interna
+                      </Label>
+                    </div>
+                    <div className="flex-1" />
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-slate-500 hover:text-blue-600 hover:bg-blue-50"
+                          title="Agendar Follow-up"
+                        >
+                          <CalendarIcon className="w-4 h-4" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="end">
+                        <Calendar
+                          mode="single"
+                          selected={followupDate}
+                          onSelect={setFollowupDate}
+                          initialFocus
+                        />
+                        <div className="p-2 border-t">
+                          <Button
+                            size="sm"
+                            className="w-full bg-blue-600 hover:bg-blue-700"
+                            onClick={scheduleFollowup}
+                          >
+                            Agendar Retorno
+                          </Button>
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-slate-500 hover:text-blue-600 hover:bg-blue-50"
+                      title="Templates"
+                      onClick={() => setIsTemplateModalOpen(true)}
+                    >
+                      <FilePlus className="w-4 h-4" />
+                    </Button>
+                  </div>
+                  <div className="flex gap-2 items-center">
+                    <Input
+                      value={message}
+                      onChange={(e) => setMessage(e.target.value)}
+                      placeholder={
+                        isInternalNote
+                          ? 'Digite uma nota invisível para o cliente...'
+                          : 'Digite uma mensagem...'
+                      }
+                      className={cn(
+                        'flex-1',
+                        isInternalNote ? 'bg-yellow-100/50 border-yellow-300' : 'bg-slate-50',
+                      )}
+                      onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
+                    />
+                    <Button
+                      onClick={sendMessage}
+                      className={
+                        isInternalNote
+                          ? 'bg-yellow-600 hover:bg-yellow-700'
+                          : 'bg-blue-600 hover:bg-blue-700'
+                      }
+                    >
+                      <Send className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+              </div>
             ) : (
-              <div className="flex-1 flex items-center justify-center text-slate-400">
-                <Target className="w-12 h-12 opacity-20 mr-2" /> Selecione um lead
+              <div className="flex-1 min-w-[400px] flex items-center justify-center text-slate-400 bg-slate-50/50 border-r h-full">
+                <Target className="w-12 h-12 opacity-20 mr-2" /> Selecione um lead para interagir
+              </div>
+            )}
+
+            {/* COLUMN 3: Lead Management (30%) */}
+            {selectedLead && (
+              <div className="w-[30%] min-w-[320px] bg-slate-50 flex flex-col h-full shrink-0">
+                <ScrollArea className="flex-1 p-4">
+                  <div className="flex gap-2 mb-4">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex-1 border-blue-200 text-blue-700 bg-blue-50 hover:bg-blue-100"
+                      onClick={() => updateLeadField('status', 'fechado')}
+                    >
+                      <CheckCircle2 className="w-4 h-4 mr-1" /> Venda Fechada
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-red-600 hover:bg-red-50 border-red-200 flex-1"
+                      onClick={() => updateLeadField('status', 'perdido')}
+                    >
+                      <XCircle className="w-4 h-4 mr-1" /> Perdido
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-slate-600 hover:bg-slate-100 px-2"
+                      onClick={() => handleDeleteLead(selectedLead.id)}
+                    >
+                      <Trash className="w-4 h-4" />
+                    </Button>
+                  </div>
+
+                  <div className="bg-white p-3 rounded-xl border shadow-sm flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-2">
+                      <Bot className="w-4 h-4 text-blue-600" />
+                      <span className="text-sm font-semibold text-slate-700">
+                        Assistente LUIZ (IA)
+                      </span>
+                    </div>
+                    <Switch
+                      checked={selectedLead.ai_enabled ?? true}
+                      onCheckedChange={(v) => updateLeadField('ai_enabled', v)}
+                    />
+                  </div>
+
+                  <div className="space-y-4">
+                    <div className="bg-white p-4 rounded-xl border shadow-sm space-y-3">
+                      <div className="flex justify-between items-center border-b pb-2">
+                        <Label className="text-xs font-bold text-slate-500 uppercase">
+                          Veículo de Interesse
+                        </Label>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-6 text-xs text-blue-600 px-2 hover:bg-blue-50"
+                          onClick={() => setIsVeiculoModalOpen(true)}
+                        >
+                          <Search className="w-3 h-3" />
+                        </Button>
+                      </div>
+                      {linkedVeiculo ? (
+                        <div>
+                          <p className="font-bold text-sm text-slate-800">
+                            {linkedVeiculo.marca} {linkedVeiculo.modelo}
+                          </p>
+                          <p className="text-xs text-slate-500 mb-3">
+                            {linkedVeiculo.ano_fabricacao}/{linkedVeiculo.ano_modelo}
+                          </p>
+                          <Button
+                            className="w-full bg-slate-800 hover:bg-slate-900"
+                            size="sm"
+                            onClick={generateAndSendProposal}
+                            disabled={isGeneratingPdf}
+                          >
+                            <FileText className="w-4 h-4 mr-2" /> Gerar Proposta PDF Automática
+                          </Button>
+                        </div>
+                      ) : (
+                        <p className="text-sm font-medium text-slate-800">
+                          {selectedLead.carro_modelo ||
+                            selectedLead.veiculo_interesse ||
+                            'Não especificado'}
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="bg-white p-4 rounded-xl border shadow-sm space-y-4">
+                      <Label className="text-xs font-bold text-slate-500 uppercase block border-b pb-2">
+                        Ficha de Negociação (Auto-fill IA)
+                      </Label>
+                      <div className="space-y-3">
+                        <div>
+                          <Label className="text-xs text-slate-500 mb-1 block">
+                            Carro na Troca
+                          </Label>
+                          <Input
+                            value={selectedLead.trade_in_car || ''}
+                            onChange={(e) => updateLeadField('trade_in_car', e.target.value)}
+                            placeholder="Ex: Honda Civic 2020"
+                            className="h-8 text-sm bg-slate-50 focus-visible:ring-blue-500"
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-xs text-slate-500 mb-1 block">
+                            Valor de Entrada
+                          </Label>
+                          <Input
+                            value={selectedLead.faixa_preco || ''}
+                            onChange={(e) => updateLeadField('faixa_preco', e.target.value)}
+                            placeholder="Ex: R$ 20.000"
+                            className="h-8 text-sm bg-slate-50 focus-visible:ring-blue-500"
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-xs text-slate-500 mb-1 block">
+                            Forma de Pagamento
+                          </Label>
+                          <Input
+                            value={selectedLead.payment_method || ''}
+                            onChange={(e) => updateLeadField('payment_method', e.target.value)}
+                            placeholder="Ex: Financiamento Banco X"
+                            className="h-8 text-sm bg-slate-50 focus-visible:ring-blue-500"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="bg-blue-50 p-4 rounded-xl border border-blue-100">
+                      <h4 className="font-bold text-blue-800 text-sm mb-2">
+                        Simulador de Financiamento
+                      </h4>
+                      <Button
+                        className="w-full bg-blue-600 hover:bg-blue-700"
+                        size="sm"
+                        onClick={() =>
+                          navigate(
+                            `/admin/financiamento?lead_id=${selectedLead.id}&veiculo_id=${selectedLead.veiculo_id || ''}`,
+                          )
+                        }
+                      >
+                        Abrir Simulador Completo
+                      </Button>
+                    </div>
+                  </div>
+                </ScrollArea>
               </div>
             )}
           </>
-        ) : (
-          <KanbanBoard
-            leads={filteredLeads}
-            onStatusChange={async (leadId: string, status: string) => {
-              setLeads((prev) => prev.map((l) => (l.id === leadId ? { ...l, status } : l)))
-              await supabase.from('leads').update({ status }).eq('id', leadId)
-            }}
-            onSelectLead={setSelectedLead}
-            usuariosMap={usuariosMap}
-            selectedLeadId={selectedLead?.id}
-          />
         )}
       </div>
 
-      {/* Kanban Sheet Details */}
-      <Sheet
-        open={viewMode === 'kanban' && !!selectedLead}
-        onOpenChange={(open) => !open && setSelectedLead(null)}
-      >
-        <SheetContent side="right" className="w-[90vw] sm:max-w-5xl p-0 flex flex-col">
-          {selectedLead && <LeadDetailPanel />}
-        </SheetContent>
-      </Sheet>
-
-      {/* Manual Lead Create/Edit Modal */}
-      <Dialog open={isLeadModalOpen} onOpenChange={setIsLeadModalOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{leadForm.id ? 'Editar Lead' : 'Novo Lead'}</DialogTitle>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Nome</Label>
-                <Input
-                  value={leadForm.nome || ''}
-                  onChange={(e) => setLeadForm({ ...leadForm, nome: e.target.value })}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Telefone</Label>
-                <Input
-                  value={leadForm.telefone || ''}
-                  onChange={(e) => setLeadForm({ ...leadForm, telefone: e.target.value })}
-                />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label>E-mail</Label>
-              <Input
-                type="email"
-                value={leadForm.email || ''}
-                onChange={(e) => setLeadForm({ ...leadForm, email: e.target.value })}
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Veículo de Interesse</Label>
-                <Input
-                  value={leadForm.veiculo_interesse || ''}
-                  onChange={(e) => setLeadForm({ ...leadForm, veiculo_interesse: e.target.value })}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Origem</Label>
-                <Input
-                  value={leadForm.origem || ''}
-                  onChange={(e) => setLeadForm({ ...leadForm, origem: e.target.value })}
-                  placeholder="Ex: Site, WhatsApp, Indicação"
-                />
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Carro na Troca</Label>
-                <Input
-                  value={leadForm.trade_in_car || ''}
-                  onChange={(e) => setLeadForm({ ...leadForm, trade_in_car: e.target.value })}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Forma de Pagamento</Label>
-                <Input
-                  value={leadForm.payment_method || ''}
-                  onChange={(e) => setLeadForm({ ...leadForm, payment_method: e.target.value })}
-                />
-              </div>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button onClick={handleSaveLead}>Salvar Lead</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Modals Extras (Veículo e Template) */}
       <Dialog open={isVeiculoModalOpen} onOpenChange={setIsVeiculoModalOpen}>
         <DialogContent className="max-w-3xl max-h-[80vh] flex flex-col">
           <DialogHeader>
@@ -1095,7 +802,10 @@ export default function AdminLeads() {
                 <div
                   key={v.id}
                   className="border rounded-lg p-2 flex items-center gap-3 hover:bg-slate-50 cursor-pointer"
-                  onClick={() => handleLinkVeiculo(v)}
+                  onClick={() => {
+                    updateLeadField('veiculo_id', v.id)
+                    setIsVeiculoModalOpen(false)
+                  }}
                 >
                   <div className="flex-1 min-w-0">
                     <p className="font-bold text-sm truncate">
@@ -1122,7 +832,10 @@ export default function AdminLeads() {
               <div
                 key={t.id}
                 className="border p-3 rounded-lg hover:bg-slate-50 cursor-pointer"
-                onClick={() => sendTemplate(t.nome)}
+                onClick={() => {
+                  setMessage(t.corpo)
+                  setIsTemplateModalOpen(false)
+                }}
               >
                 <p className="font-bold text-sm">{t.nome}</p>
                 <p className="text-xs text-slate-500 mt-1">{t.corpo}</p>
