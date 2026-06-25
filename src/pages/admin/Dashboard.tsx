@@ -43,7 +43,7 @@ const ALL_MODULES = [
     line2: 'de Veículos',
     route: '/admin/avaliacao',
   },
-  { id: 'site', icon: Monitor, line1: 'Gerenciador', line2: 'do Site', route: '/admin/site' },
+  { id: 'site', icon: Monitor, line1: 'Gerenciador', line2: 'do Site', route: '/admin/conteudo' },
   {
     id: 'financiamento',
     icon: Banknote,
@@ -88,6 +88,7 @@ export default function Dashboard() {
     estoqueSemFoto: 0,
     estoqueParado: 0,
     totalLeads: 0,
+    pagesPublished: 0,
   })
 
   const [funnelData, setFunnelData] = useState<any[]>([])
@@ -163,6 +164,22 @@ export default function Dashboard() {
 
     setFunnelData(chartData)
 
+    // Pages published
+    const { count: countPages } = await supabase
+      .from('pages')
+      .select('id', { count: 'exact' })
+      .eq('status_publicacao', 'Publicado')
+
+    const { count: countArticles } = await supabase
+      .from('articles')
+      .select('id', { count: 'exact' })
+      .eq('status_publicacao', 'Publicado')
+
+    const { count: countLPs } = await supabase
+      .from('landing_pages')
+      .select('id', { count: 'exact' })
+      .eq('published', true)
+
     // Estoque
     const { data: veiculos } = await supabase
       .from('veiculos')
@@ -189,6 +206,7 @@ export default function Dashboard() {
       estoqueSemFoto: semFoto,
       estoqueParado: parados,
       totalLeads: total,
+      pagesPublished: (countPages || 0) + (countArticles || 0) + (countLPs || 0),
     })
   }
 
@@ -457,7 +475,9 @@ export default function Dashboard() {
                 badgeText={
                   m.id === 'crm' && metrics.leadsPendentes > 0
                     ? `${metrics.leadsPendentes} novos`
-                    : undefined
+                    : m.id === 'site' && metrics.pagesPublished > 0
+                      ? `${metrics.pagesPublished} online`
+                      : undefined
                 }
                 onClick={() => handleModuleClick(m.route, m.id)}
               />
