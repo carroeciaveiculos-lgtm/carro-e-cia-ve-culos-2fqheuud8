@@ -3,7 +3,20 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/hooks/use-auth'
 import { supabase } from '@/lib/supabase/client'
 import { ModuleCard } from '@/components/admin/ModuleCard'
-import { Card, CardContent } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart'
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  ResponsiveContainer,
+  Tooltip,
+  PieChart,
+  Pie,
+  Cell,
+} from 'recharts'
 import {
   Car,
   Target,
@@ -74,7 +87,10 @@ export default function Dashboard() {
     estoqueTotal: 0,
     estoqueSemFoto: 0,
     estoqueParado: 0,
+    totalLeads: 0,
   })
+
+  const [funnelData, setFunnelData] = useState<any[]>([])
 
   useEffect(() => {
     if (user) {
@@ -113,6 +129,40 @@ export default function Dashboard() {
       .select('id', { count: 'exact' })
       .eq('status', 'fechado')
 
+    const { data: allLeads } = await supabase.from('leads').select('id, status, origem, source')
+    const total = allLeads?.length || 0
+
+    const sourceMap: Record<string, { total: number; vendidos: number }> = {}
+
+    if (allLeads) {
+      allLeads.forEach((l) => {
+        let src = (l.origem || l.source || 'outros').toLowerCase()
+        if (src.includes('whatsapp') || src.includes('wpp')) src = 'WhatsApp'
+        else if (src.includes('instagram') || src.includes('ig')) src = 'Instagram'
+        else if (src.includes('facebook') || src.includes('fb')) src = 'Facebook'
+        else if (src.includes('site')) src = 'Site'
+        else src = src.charAt(0).toUpperCase() + src.slice(1)
+
+        if (!sourceMap[src]) sourceMap[src] = { total: 0, vendidos: 0 }
+        sourceMap[src].total++
+        if (l.status === 'fechado') sourceMap[src].vendidos++
+      })
+    }
+
+    const chartData = Object.keys(sourceMap)
+      .map((k) => ({
+        name: k,
+        total: sourceMap[k].total,
+        vendidos: sourceMap[k].vendidos,
+        taxa:
+          sourceMap[k].total > 0
+            ? Math.round((sourceMap[k].vendidos / sourceMap[k].total) * 100)
+            : 0,
+      }))
+      .sort((a, b) => b.total - a.total)
+
+    setFunnelData(chartData)
+
     // Estoque
     const { data: veiculos } = await supabase
       .from('veiculos')
@@ -138,6 +188,7 @@ export default function Dashboard() {
       estoqueTotal: veiculos?.length || 0,
       estoqueSemFoto: semFoto,
       estoqueParado: parados,
+      totalLeads: total,
     })
   }
 
@@ -263,6 +314,95 @@ export default function Dashboard() {
                   <h3 className="text-2xl font-bold text-slate-800">{metrics.estoqueTotal}</h3>
                 </div>
               </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Funnel Health Dashboard */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <Card className="col-span-1 lg:col-span-2 shadow-sm border-none bg-white">
+            <CardHeader>
+              <CardTitle className="text-lg font-bold text-slate-800">
+                Saúde do Funil (Por Origem)
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="h-[300px] w-full">
+                <ChartContainer
+                  config={{
+                    total: { label: 'Total Leads', color: 'hsl(var(--chart-1))' },
+                    vendidos: { label: 'Vendidos', color: 'hsl(var(--chart-2))' },
+                  }}
+                >
+                  <BarChart data={funnelData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                    <XAxis
+                      dataKey="name"
+                      axisLine={false}
+                      tickLine={false}
+                      tick={{ fontSize: 12, fill: '#64748b' }}
+                    />
+                    <YAxis
+                      axisLine={false}
+                      tickLine={false}
+                      tick={{ fontSize: 12, fill: '#64748b' }}
+                    />
+                    <ChartTooltip content={<ChartTooltipContent />} />
+                    <Bar
+                      dataKey="total"
+                      fill="hsl(var(--primary))"
+                      radius={[4, 4, 0, 0]}
+                      name="Total Leads"
+                    />
+                    <Bar dataKey="vendidos" fill="#10b981" radius={[4, 4, 0, 0]} name="Vendas" />
+                  </BarChart>
+                </ChartContainer>
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="col-span-1 shadow-sm border-none bg-white">
+            <CardHeader>
+              <CardTitle className="text-lg font-bold text-slate-800">
+                Taxa de Conversão Global
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="flex flex-col items-center justify-center pt-6">
+              <div className="relative w-48 h-48 flex items-center justify-center">
+                <svg className="w-full h-full transform -rotate-90">
+                  <circle cx="96" cy="96" r="80" stroke="#f1f5f9" strokeWidth="16" fill="none" />
+                  <circle
+                    cx="96"
+                    cy="96"
+                    r="80"
+                    stroke="#10b981"
+                    strokeWidth="16"
+                    fill="none"
+                    strokeDasharray="502.65"
+                    strokeDashoffset={
+                      metrics.totalLeads > 0
+                        ? 502.65 - 502.65 * (metrics.leadsConvertidos / metrics.totalLeads)
+                        : 502.65
+                    }
+                    className="transition-all duration-1000 ease-out"
+                  />
+                </svg>
+                <div className="absolute flex flex-col items-center justify-center">
+                  <span className="text-4xl font-bold text-slate-800">
+                    {metrics.totalLeads > 0
+                      ? ((metrics.leadsConvertidos / metrics.totalLeads) * 100).toFixed(1)
+                      : 0}
+                    %
+                  </span>
+                  <span className="text-xs text-slate-500 uppercase tracking-wider font-semibold">
+                    Conversão
+                  </span>
+                </div>
+              </div>
+              <p className="text-center text-sm text-slate-500 mt-6">
+                De {metrics.totalLeads} leads gerados,
+                <br />
+                {metrics.leadsConvertidos} foram fechados.
+              </p>
             </CardContent>
           </Card>
         </div>

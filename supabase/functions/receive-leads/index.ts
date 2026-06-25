@@ -20,15 +20,27 @@ const waPhoneId = Deno.env.get('WHATSAPP_PHONE_NUMBER_ID') || Deno.env.get('META
 const waVerifyToken = Deno.env.get('WHATSAPP_VERIFY_TOKEN') || Deno.env.get('META_VERIFY_TOKEN')!
 const metaPageToken = Deno.env.get('META_PAGE_ACCESS_TOKEN') || waToken!
 
-const SYSTEM_PROMPT = `Você é o Luiz, SDR digital da Carro e Cia Motors.
-Responda sempre em formato JSON válido com as seguintes chaves:
+const SYSTEM_PROMPT = `Você é o Luiz, consultor digital da Carro e Cia Motors.
+Responda sempre em formato JSON válido com as seguintes chaves (NENHUMA a mais, nenhuma a menos):
 {
   "reply": "Sua resposta amigável e direta ao cliente (máx 3 linhas)",
   "temperature": "frio", "morno" ou "quente",
   "trade_in_car": "Modelo do carro de troca mencionado ou null",
-  "payment_method": "Forma de pagamento mencionada (financiamento, a vista, consorcio) ou null"
+  "payment_method": "Forma de pagamento mencionada ou null",
+  "extracted_data": {
+    "nome_completo": "Nome extraído do cliente ou null",
+    "cpf": "CPF numérico extraído ou null",
+    "email": "Email extraído ou null",
+    "cep": "CEP extraído ou null",
+    "valor_entrada": "Apenas os números do valor de entrada (ex: 20000) ou null",
+    "resumo_interacao": "Resumo dinâmico em max 2 linhas da intenção de compra para a equipe de vendas."
+  }
 }
-Regra: Foco em agendar visitas à loja; NUNCA ofereça descontos. Seja prestativo.`
+Instruções: 
+1. Valorize o motor específico, câmbio e opcionais do veículo em pauta.
+2. Defenda o preço usando um tom altamente consultivo.
+3. NUNCA ofereça descontos ou diminua a margem. Direcione pedidos de desconto sempre para o gerente da loja física.
+4. O foco principal é extrair dados de contato (Nome, Email, CPF), valor de entrada e agendar visita.`
 
 const tools = [
   {
@@ -90,7 +102,6 @@ async function sendWhatsApp(to: string, text: string) {
   if (!waToken) return
   const cleanPhone = to.replace(/\D/g, '')
 
-  // VALIDAÇÃO RÍGIDA DE TELEFONE (Fator de Sucesso para evitar o erro de 'Invalid WhatsApp number')
   if (cleanPhone.length < 10 || isNaN(Number(cleanPhone))) {
     console.warn(`Disparo de WhatsApp cancelado: o número '${to}' é inválido para envio comercial.`)
     return
@@ -122,7 +133,6 @@ async function sendWhatsApp(to: string, text: string) {
   }
 }
 
-// Envia resposta ativa de volta para o Messenger ou Instagram Direct
 async function sendPageMessage(
   platform: 'instagram' | 'messenger',
   recipientId: string,
@@ -146,7 +156,6 @@ async function sendPageMessage(
   }
 }
 
-// Consulta de forma inteligente o nome real e avatar do perfil do Instagram ou Facebook do cliente
 async function fetchMetaProfile(platform: 'instagram' | 'messenger', userId: string) {
   try {
     const fields =
@@ -200,7 +209,6 @@ Deno.serve(async (req) => {
         const entry = body.entry?.[0]
         const changes = entry?.changes?.[0]
 
-        // Comentários do Facebook (feed) ou Instagram (comments)
         if (changes?.field === 'feed' || changes?.field === 'comments') {
           const val = changes.value
           const isComment = val.item === 'comment' || changes.field === 'comments'
@@ -221,7 +229,6 @@ Deno.serve(async (req) => {
           return
         }
 
-        // Mensagens Privadas (DMs de Instagram e Facebook Messenger)
         const messagingEvent = entry?.messaging?.[0]
         if (messagingEvent && messagingEvent.message) {
           const senderId = messagingEvent.sender.id
@@ -229,7 +236,6 @@ Deno.serve(async (req) => {
 
           let messageText = messagingEvent.message.text
 
-          // SUPORTE A RESPOSTAS DE STORIES E REAÇÕES NO INSTAGRAM (Fator de Sucesso)
           if (!messageText && messagingEvent.message.reply_to?.story) {
             console.log('Mensagem sem texto detectada como uma resposta de Story do Instagram.')
             messageText = '[Reagiu ao Story / Mencionou você em um Story]'
@@ -297,44 +303,61 @@ Deno.serve(async (req) => {
           let temp = lead.temperatura
           let tradeIn = lead.trade_in_car
           let payMethod = lead.payment_method
+          let updates: any = { temperatura: temp, trade_in_car: tradeIn, payment_method: payMethod }
 
           try {
             const rawText = aiRes.candidates?.[0]?.content?.parts?.[0]?.text || ''
             const jsonStr = rawText.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/)?.[1] || rawText
             const parsed = JSON.parse(jsonStr)
             if (parsed.reply) responseText = parsed.reply
-            if (parsed.temperature) temp = parsed.temperature
-            if (parsed.trade_in_car) tradeIn = parsed.trade_in_car
-            if (parsed.payment_method) payMethod = parsed.payment_method
+            if (parsed.temperature) updates.temperatura = parsed.temperature
+            if (parsed.trade_in_car) updates.trade_in_car = parsed.trade_in_car
+            if (parsed.payment_method) updates.payment_method = parsed.payment_method
+
+            if (parsed.extracted_data) {
+              if (parsed.extracted_data.nome_completo)
+                updates.nome = parsed.extracted_data.nome_completo
+              if (parsed.extracted_data.cpf) updates.cpf = parsed.extracted_data.cpf
+              if (parsed.extracted_data.email) updates.email = parsed.extracted_data.email
+              if (parsed.extracted_data.valor_entrada)
+                updates.faixa_preco = `Entrada de R$ ${parsed.extracted_data.valor_entrada}`
+              if (parsed.extracted_data.resumo_interacao)
+                updates.ai_summary = parsed.extracted_data.resumo_interacao
+
+              if (parsed.extracted_data.cep) {
+                updates.observacoes = lead.observacoes
+                  ? `${lead.observacoes}\nCEP: ${parsed.extracted_data.cep}`
+                  : `CEP: ${parsed.extracted_data.cep}`
+              }
+
+              // Calcula AI Score simples baseado no quão completo está
+              let aiScore =
+                updates.temperatura === 'quente' ? 60 : updates.temperatura === 'morno' ? 40 : 20
+              if (updates.email) aiScore += 10
+              if (updates.cpf) aiScore += 10
+              if (updates.faixa_preco) aiScore += 10
+              if (updates.trade_in_car) aiScore += 10
+              updates.ai_score = Math.min(100, aiScore)
+            }
           } catch (e) {
             console.error('Failed to parse Gemini JSON')
           }
 
-          // Atualizar ficha do lead
-          await supabase
-            .from('leads')
-            .update({
-              temperatura: temp,
-              trade_in_car: tradeIn,
-              payment_method: payMethod,
-            })
-            .eq('id', lead.id)
+          await supabase.from('leads').update(updates).eq('id', lead.id)
 
-          // Gravar resposta no banco
           await supabase.from('conversation_history').insert({
             lead_id: lead.id,
             sender: 'bot',
             message_text: responseText,
           })
 
-          // Enviar resposta de volta para o Direct
           await sendPageMessage(platform, senderId, responseText)
           console.log(`Resposta enviada com sucesso de volta ao ${platform}!`)
           return
         }
       }
 
-      // B. Webhook de Mensagens do WhatsApp
+      // B. Webhook de Mensagens do WhatsApp com Busca Inteligente de 9º Dígito (CONTRATO DE SUCESSO)
       if (isWa) {
         const entry = body.entry?.[0]?.changes?.[0]?.value
         if (!entry?.messages) return
@@ -344,7 +367,6 @@ Deno.serve(async (req) => {
         const profileName = entry.contacts?.[0]?.profile?.name || 'Cliente'
         let text = message.text?.body
 
-        // Processar Mensagens de Áudio com Mime-Type Sanitizado
         let audioData = null
         if (message.type === 'audio') {
           console.log('Mensagem de áudio recebida do WhatsApp. Baixando mídia...')
@@ -364,11 +386,28 @@ Deno.serve(async (req) => {
 
         if (!text && !audioData) return
 
-        let { data: lead } = await supabase
+        // BUSCA POR "OU" SEMÂNTICO (Trata as discrepâncias físicas do 9º dígito em MG de forma definitiva)
+        const cleanPhone = phone.replace(/\D/g, '')
+        let queryPhoneFilter = `telefone.eq.${cleanPhone}`
+
+        if (cleanPhone.startsWith('55') && (cleanPhone.length === 12 || cleanPhone.length === 13)) {
+          const ddd = cleanPhone.substring(2, 4)
+          const local8 = cleanPhone.substring(cleanPhone.length - 8)
+          const option8 = `55${ddd}${local8}`
+          const option9 = `55${ddd}9${local8}`
+          queryPhoneFilter = `telefone.eq.${option8},telefone.eq.${option9},telefone.eq.${local8},telefone.eq.9${local8}`
+        }
+
+        let { data: lead, error: selectError } = await supabase
           .from('leads')
           .select('*')
-          .eq('telefone', phone)
+          .or(queryPhoneFilter)
+          .order('created_at', { ascending: false })
+          .limit(1)
           .maybeSingle()
+
+        if (selectError)
+          console.error('Erro ao buscar lead com filtro flexível de telefone:', selectError)
 
         if (!lead) {
           const { data: newLead, error: insertError } = await supabase
@@ -407,7 +446,6 @@ Deno.serve(async (req) => {
         }))
 
         if (audioData) {
-          // Sanitização do Mime-Type (Garante compatibilidade com o Gemini)
           const cleanMimeType = (message.audio.mime_type || 'audio/ogg').split(';')[0].trim()
 
           geminiHistory[geminiHistory.length - 1] = {
@@ -424,27 +462,46 @@ Deno.serve(async (req) => {
         let temp = lead.temperatura
         let tradeIn = lead.trade_in_car
         let payMethod = lead.payment_method
+        let updates: any = { temperatura: temp, trade_in_car: tradeIn, payment_method: payMethod }
 
         try {
           const rawText = aiRes.candidates?.[0]?.content?.parts?.[0]?.text || ''
           const jsonStr = rawText.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/)?.[1] || rawText
           const parsed = JSON.parse(jsonStr)
           if (parsed.reply) responseText = parsed.reply
-          if (parsed.temperature) temp = parsed.temperature
-          if (parsed.trade_in_car) tradeIn = parsed.trade_in_car
-          if (parsed.payment_method) payMethod = parsed.payment_method
+          if (parsed.temperature) updates.temperatura = parsed.temperature
+          if (parsed.trade_in_car) updates.trade_in_car = parsed.trade_in_car
+          if (parsed.payment_method) updates.payment_method = parsed.payment_method
+
+          if (parsed.extracted_data) {
+            if (parsed.extracted_data.nome_completo)
+              updates.nome = parsed.extracted_data.nome_completo
+            if (parsed.extracted_data.cpf) updates.cpf = parsed.extracted_data.cpf
+            if (parsed.extracted_data.email) updates.email = parsed.extracted_data.email
+            if (parsed.extracted_data.valor_entrada)
+              updates.faixa_preco = `Entrada de R$ ${parsed.extracted_data.valor_entrada}`
+            if (parsed.extracted_data.resumo_interacao)
+              updates.ai_summary = parsed.extracted_data.resumo_interacao
+
+            if (parsed.extracted_data.cep) {
+              updates.observacoes = lead.observacoes
+                ? `${lead.observacoes}\nCEP: ${parsed.extracted_data.cep}`
+                : `CEP: ${parsed.extracted_data.cep}`
+            }
+
+            let aiScore =
+              updates.temperatura === 'quente' ? 60 : updates.temperatura === 'morno' ? 40 : 20
+            if (updates.email) aiScore += 10
+            if (updates.cpf) aiScore += 10
+            if (updates.faixa_preco) aiScore += 10
+            if (updates.trade_in_car) aiScore += 10
+            updates.ai_score = Math.min(100, aiScore)
+          }
         } catch (e) {
           console.error('Failed to parse Gemini JSON')
         }
 
-        await supabase
-          .from('leads')
-          .update({
-            temperatura: temp,
-            trade_in_car: tradeIn,
-            payment_method: payMethod,
-          })
-          .eq('id', lead.id)
+        await supabase.from('leads').update(updates).eq('id', lead.id)
 
         await supabase.from('conversation_history').insert({
           lead_id: lead.id,
@@ -506,7 +563,6 @@ Deno.serve(async (req) => {
     }
   }
 
-  // Resposta imediata de 200 OK para o Meta para evitar duplicações por timeout
   if (isWa || isPage || isInstagram) {
     if (
       typeof (globalThis as any).EdgeRuntime !== 'undefined' &&

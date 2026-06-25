@@ -44,6 +44,7 @@ import { getWhatsAppLink } from '@/lib/whatsapp'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/hooks/use-auth'
 import { KanbanBoard } from '@/components/admin/leads/KanbanBoard'
+import { BellRing, Activity, AlertTriangle, Zap } from 'lucide-react'
 
 export default function AdminLeads() {
   const navigate = useNavigate()
@@ -73,6 +74,24 @@ export default function AdminLeads() {
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false)
 
   const [followupDate, setFollowupDate] = useState<Date | undefined>(new Date())
+  const [hasSimulation, setHasSimulation] = useState(false)
+
+  const playNotificationSound = () => {
+    try {
+      const ctx = new (window.AudioContext || (window as any).webkitAudioContext)()
+      const osc = ctx.createOscillator()
+      const gainNode = ctx.createGain()
+      osc.type = 'sine'
+      osc.frequency.setValueAtTime(880, ctx.currentTime) // A5
+      gainNode.gain.setValueAtTime(0.1, ctx.currentTime)
+      osc.connect(gainNode)
+      gainNode.connect(ctx.destination)
+      osc.start()
+      osc.stop(ctx.currentTime + 0.15)
+    } catch (e) {
+      console.warn('Audio play failed', e)
+    }
+  }
 
   useEffect(() => {
     loadInitialData()
@@ -81,6 +100,8 @@ export default function AdminLeads() {
       .channel('leads_changes')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'leads' }, (payload) => {
         if (payload.eventType === 'INSERT') {
+          playNotificationSound()
+          toast({ title: 'Novo lead recebido!', description: payload.new.nome, variant: 'default' })
           setLeads((prev) => [payload.new, ...prev])
         } else if (payload.eventType === 'UPDATE') {
           setLeads((prev) => prev.map((l) => (l.id === payload.new.id ? payload.new : l)))
@@ -123,7 +144,10 @@ export default function AdminLeads() {
   }, [selectedLead?.id])
 
   useEffect(() => {
-    if (selectedLead) loadConversation(selectedLead.id)
+    if (selectedLead) {
+      loadConversation(selectedLead.id)
+      checkSimulation(selectedLead)
+    }
     if (selectedLead?.veiculo_id) {
       const v = veiculosMap[selectedLead.veiculo_id]
       setLinkedVeiculo(v || null)
@@ -131,6 +155,20 @@ export default function AdminLeads() {
       setLinkedVeiculo(null)
     }
   }, [selectedLead?.id, selectedLead?.veiculo_id])
+
+  const checkSimulation = async (lead: any) => {
+    if (!lead.telefone) {
+      setHasSimulation(false)
+      return
+    }
+    const cleanPhone = lead.telefone.replace(/\D/g, '')
+    const { data } = await supabase
+      .from('simulacoes')
+      .select('id')
+      .eq('cliente_telefone', cleanPhone)
+      .maybeSingle()
+    setHasSimulation(!!data)
+  }
 
   useEffect(() => {
     if (isVeiculoModalOpen) {
@@ -434,6 +472,22 @@ export default function AdminLeads() {
             {/* COLUMN 2: Chat Timeline (50%) */}
             {selectedLead ? (
               <div className="flex-1 min-w-[400px] flex flex-col border-r bg-white h-full relative">
+                {/* Banner de Origem Contextual */}
+                <div
+                  className={cn(
+                    'px-4 py-1.5 text-xs font-semibold text-white flex items-center justify-center gap-2 shadow-sm shrink-0',
+                    selectedLead.origem?.toLowerCase() === 'whatsapp' ||
+                      selectedLead.source?.toLowerCase() === 'whatsapp'
+                      ? 'bg-[#25D366]'
+                      : selectedLead.origem?.toLowerCase() === 'instagram' ||
+                          selectedLead.source?.toLowerCase() === 'instagram'
+                        ? 'bg-gradient-to-r from-[#833AB4] via-[#FD1D1D] to-[#F56040]'
+                        : 'bg-blue-600',
+                  )}
+                >
+                  {getOriginIcon(selectedLead.origem || selectedLead.source)}
+                  Origem: {(selectedLead.origem || selectedLead.source || 'Site').toUpperCase()}
+                </div>
                 <div className="p-4 border-b bg-white flex justify-between items-center shadow-sm shrink-0">
                   <div className="flex items-center gap-3">
                     <Avatar className="h-10 w-10 border">
@@ -547,15 +601,16 @@ export default function AdminLeads() {
                   )}
                 >
                   <div className="flex items-center gap-2 mb-1 px-1">
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-1.5 bg-slate-100 rounded-full px-2 py-1">
                       <Switch
                         checked={isInternalNote}
                         onCheckedChange={setIsInternalNote}
-                        className="data-[state=checked]:bg-yellow-500"
+                        className="data-[state=checked]:bg-yellow-500 scale-75"
+                        id="nota-interna-switch"
                       />
                       <Label
-                        className="text-xs text-slate-600 font-semibold cursor-pointer"
-                        onClick={() => setIsInternalNote(!isInternalNote)}
+                        htmlFor="nota-interna-switch"
+                        className="text-xs text-slate-600 font-semibold cursor-pointer select-none"
                       >
                         Nota Interna
                       </Label>
@@ -678,6 +733,74 @@ export default function AdminLeads() {
                     />
                   </div>
 
+                  {/* AI Qualification Widget */}
+                  <div className="bg-gradient-to-br from-slate-900 to-slate-800 p-4 rounded-xl shadow-md mb-4 text-white relative overflow-hidden">
+                    <div className="absolute top-0 right-0 p-2 opacity-20">
+                      <Zap className="w-16 h-16" />
+                    </div>
+                    <h4 className="text-xs font-bold text-slate-300 uppercase mb-3 flex items-center gap-2">
+                      <Activity className="w-4 h-4 text-blue-400" /> Esquenta Lead (IA)
+                    </h4>
+                    <div className="flex items-center gap-4">
+                      {/* Circular Gauge */}
+                      <div className="relative w-16 h-16 flex items-center justify-center shrink-0">
+                        <svg className="w-full h-full transform -rotate-90">
+                          <circle
+                            cx="32"
+                            cy="32"
+                            r="28"
+                            stroke="currentColor"
+                            strokeWidth="6"
+                            fill="none"
+                            className="text-slate-700"
+                          />
+                          <circle
+                            cx="32"
+                            cy="32"
+                            r="28"
+                            stroke="currentColor"
+                            strokeWidth="6"
+                            fill="none"
+                            strokeDasharray="175.93"
+                            strokeDashoffset={
+                              175.93 -
+                              (175.93 *
+                                (selectedLead.ai_score ||
+                                  (selectedLead.temperatura === 'quente'
+                                    ? 90
+                                    : selectedLead.temperatura === 'morno'
+                                      ? 60
+                                      : 30))) /
+                                100
+                            }
+                            className={cn(
+                              'transition-all duration-1000',
+                              selectedLead.temperatura === 'quente'
+                                ? 'text-red-500'
+                                : selectedLead.temperatura === 'morno'
+                                  ? 'text-amber-500'
+                                  : 'text-blue-500',
+                            )}
+                          />
+                        </svg>
+                        <span className="absolute text-sm font-bold">
+                          {selectedLead.ai_score ||
+                            (selectedLead.temperatura === 'quente'
+                              ? 90
+                              : selectedLead.temperatura === 'morno'
+                                ? 60
+                                : 30)}
+                        </span>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[11px] text-slate-300 line-clamp-2 leading-tight">
+                          {selectedLead.ai_summary ||
+                            'O assistente está analisando as intenções de compra do cliente em tempo real.'}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
                   <div className="space-y-4">
                     <div className="bg-white p-4 rounded-xl border shadow-sm space-y-3">
                       <div className="flex justify-between items-center border-b pb-2">
@@ -760,12 +883,42 @@ export default function AdminLeads() {
                       </div>
                     </div>
 
-                    <div className="bg-blue-50 p-4 rounded-xl border border-blue-100">
-                      <h4 className="font-bold text-blue-800 text-sm mb-2">
+                    <div
+                      className={cn(
+                        'p-4 rounded-xl border transition-colors',
+                        selectedLead.payment_method?.toLowerCase().includes('financiamento') &&
+                          !hasSimulation
+                          ? 'bg-red-50 border-red-200'
+                          : 'bg-blue-50 border-blue-100',
+                      )}
+                    >
+                      <h4
+                        className={cn(
+                          'font-bold text-sm mb-2 flex items-center gap-2',
+                          selectedLead.payment_method?.toLowerCase().includes('financiamento') &&
+                            !hasSimulation
+                            ? 'text-red-800 animate-pulse'
+                            : 'text-blue-800',
+                        )}
+                      >
+                        {selectedLead.payment_method?.toLowerCase().includes('financiamento') &&
+                          !hasSimulation && <AlertTriangle className="w-4 h-4 shrink-0" />}
                         Simulador de Financiamento
                       </h4>
+                      {selectedLead.payment_method?.toLowerCase().includes('financiamento') &&
+                        !hasSimulation && (
+                          <p className="text-xs text-red-600 mb-3 font-medium">
+                            Lead interessado em financiamento, mas sem simulação iniciada!
+                          </p>
+                        )}
                       <Button
-                        className="w-full bg-blue-600 hover:bg-blue-700"
+                        className={cn(
+                          'w-full',
+                          selectedLead.payment_method?.toLowerCase().includes('financiamento') &&
+                            !hasSimulation
+                            ? 'bg-red-600 hover:bg-red-700 text-white'
+                            : 'bg-blue-600 hover:bg-blue-700 text-white',
+                        )}
                         size="sm"
                         onClick={() =>
                           navigate(
