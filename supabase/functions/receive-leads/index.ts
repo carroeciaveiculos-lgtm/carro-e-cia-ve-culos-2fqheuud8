@@ -32,7 +32,7 @@ Deno.serve(async (req: Request) => {
 
   try {
     const payload = await req.json()
-    console.log('Received payload:', JSON.stringify(payload))
+    console.log('Received webhook payload:', JSON.stringify(payload))
 
     const platform =
       payload.object === 'instagram'
