@@ -15,12 +15,13 @@ export default function Index() {
     supabase
       .from('pages')
       .select('*')
-      .eq('slug', 'home')
+      .eq('slug', '/')
+      .eq('status_publicacao', 'Publicado')
       .single()
       .then(({ data }) => {
         if (data) {
           setPageData(data)
-          supabase.rpc('increment_page_view', { p_slug: 'home' })
+          supabase.rpc('increment_page_view', { p_slug: '/' })
         }
       })
   }, [])

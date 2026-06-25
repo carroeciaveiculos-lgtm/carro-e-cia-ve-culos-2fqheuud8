@@ -69,7 +69,7 @@ export function ArticleSEOEditor({ id, onBack }: ArticleSEOEditorProps) {
   const [isGenerating, setIsGenerating] = useState(false)
   const [generationStep, setGenerationStep] = useState(0)
   const [brainstormTitle, setBrainstormTitle] = useState('')
-  const [activeTab, setActiveTab] = useState<'editor' | 'preview'>('editor')
+  const [activeTab, setActiveTab] = useState<'editor' | 'preview' | 'social'>('editor')
   const [seoScore, setSeoScore] = useState(0)
   const [seoChecklist, setSeoChecklist] = useState<{ id: string; text: string; passed: boolean }[]>(
     [],
@@ -907,7 +907,7 @@ export function ArticleSEOEditor({ id, onBack }: ArticleSEOEditorProps) {
                       ? 'border-blue-600 text-blue-600 bg-white'
                       : 'border-transparent text-slate-600 hover:bg-slate-100',
                   )}
-                  onClick={() => setActiveTab('social' as any)}
+                  onClick={() => setActiveTab('social')}
                 >
                   Social & Equipe
                 </button>
@@ -981,7 +981,7 @@ export function ArticleSEOEditor({ id, onBack }: ArticleSEOEditorProps) {
                         }}
                       />
                     )}
-                    {activeTab === ('social' as any) && (
+                    {activeTab === 'social' && (
                       <div className="p-8 space-y-8 h-full overflow-y-auto bg-slate-50">
                         <div>
                           <h3 className="font-bold text-slate-800 mb-4">Preview Social</h3>

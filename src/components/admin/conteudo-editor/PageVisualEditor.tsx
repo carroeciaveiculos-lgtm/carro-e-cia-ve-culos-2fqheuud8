@@ -662,37 +662,46 @@ export function PageVisualEditor({
                       <label className="text-xs font-bold text-slate-700">
                         Preview Social (Facebook/WhatsApp)
                       </label>
-                      <div className="mt-2 border border-slate-200 rounded-lg overflow-hidden bg-white shadow-sm">
+                      <div className="mt-2 border border-[#dadde1] rounded-lg overflow-hidden bg-[#f2f3f5] shadow-sm max-w-[400px]">
                         {pageData.og_image_url ? (
-                          <img
-                            src={pageData.og_image_url}
-                            className="w-full h-[150px] object-cover"
-                          />
+                          <div className="relative group">
+                            <img
+                              src={pageData.og_image_url}
+                              className="w-full h-[200px] object-cover cursor-pointer"
+                              onClick={() => setMediaSelectorOpen(true)}
+                            />
+                            <div
+                              className="absolute inset-0 bg-black/50 hidden group-hover:flex items-center justify-center cursor-pointer transition-all"
+                              onClick={() => setMediaSelectorOpen(true)}
+                            >
+                              <ImageIcon className="w-8 h-8 text-white" />
+                            </div>
+                          </div>
                         ) : (
                           <div
-                            className="w-full h-[150px] bg-slate-200 flex flex-col items-center justify-center text-slate-400 cursor-pointer hover:bg-slate-300"
+                            className="w-full h-[200px] bg-[#e4e6eb] flex flex-col items-center justify-center text-[#606770] cursor-pointer hover:bg-[#dadde1] transition-colors"
                             onClick={() => setMediaSelectorOpen(true)}
                           >
-                            <ImageIcon className="w-6 h-6 mb-1" /> Adicionar Imagem
+                            <ImageIcon className="w-8 h-8 mb-2" /> Adicionar Imagem
                           </div>
                         )}
-                        <div className="p-3 bg-slate-50">
-                          <p className="text-[10px] text-slate-500 uppercase mb-1">
+                        <div className="p-3 bg-[#f2f3f5] border-t border-[#dadde1]">
+                          <p className="text-[11px] text-[#606770] uppercase tracking-wider mb-1 font-semibold truncate">
                             carroeciamotors.com.br
                           </p>
                           <Input
                             value={pageData.og_title || ''}
                             onChange={(e) => setPageData({ ...pageData, og_title: e.target.value })}
-                            placeholder="Título Social"
-                            className="h-7 text-xs font-bold mb-1 p-1"
+                            placeholder="Título da Página"
+                            className="h-7 text-[15px] font-semibold text-[#1c1e21] mb-1 p-1 bg-transparent border-transparent hover:border-slate-300 focus-visible:ring-1 focus-visible:ring-blue-500 shadow-none px-1 rounded"
                           />
                           <Input
                             value={pageData.og_description || ''}
                             onChange={(e) =>
                               setPageData({ ...pageData, og_description: e.target.value })
                             }
-                            placeholder="Descrição Social"
-                            className="h-7 text-xs p-1"
+                            placeholder="Breve descrição que aparecerá abaixo do título"
+                            className="h-6 text-[13px] text-[#606770] p-1 bg-transparent border-transparent hover:border-slate-300 focus-visible:ring-1 focus-visible:ring-blue-500 shadow-none px-1 rounded truncate"
                           />
                         </div>
                       </div>

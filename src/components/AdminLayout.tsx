@@ -16,6 +16,7 @@ import {
   Activity,
   BarChart,
   HelpCircle,
+  MessageSquareWarning,
 } from 'lucide-react'
 import { useAuth } from '@/hooks/use-auth'
 import { useState, useEffect } from 'react'
@@ -40,7 +41,10 @@ const SIDEBAR_MENUS = [
   },
   {
     title: 'Marketing & Crescimento',
-    items: [{ label: 'Marketing', path: '/admin/marketing', icon: Activity }],
+    items: [
+      { label: 'Marketing', path: '/admin/marketing', icon: Activity },
+      { label: 'Moderador de Posts', path: '/admin/moderador-posts', icon: MessageSquareWarning },
+    ],
   },
   {
     title: 'Gerenciamento do Site',

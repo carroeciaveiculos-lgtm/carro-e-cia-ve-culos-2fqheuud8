@@ -265,15 +265,19 @@ export const trackVehicleView = (
   vehicleName: string,
   vehiclePrice: number,
   vehicleCategory: string = 'Carro',
+  vehicleId?: string,
 ) => {
   trackGTMEvent('estoque_veiculo_view', {
+    vehicle_id: vehicleId,
     vehicle_name: vehicleName,
     vehicle_price: vehiclePrice,
     vehicle_category: vehicleCategory,
   })
   trackMetaEvent('ViewContent', {
+    content_ids: vehicleId ? [vehicleId] : undefined,
+    content_type: 'product',
     content_name: vehicleName,
-    content_category: 'Veículo',
+    content_category: vehicleCategory,
     value: vehiclePrice,
     currency: 'BRL',
   })

@@ -74,6 +74,7 @@ export default function Veiculo() {
         `${vehicle.marca} ${vehicle.modelo} ${vehicle.ano_fabricacao}`,
         vehicle.preco_venda,
         vehicle.categoria || 'Carro',
+        vehicle.id,
       )
     }
   }, [vehicle])

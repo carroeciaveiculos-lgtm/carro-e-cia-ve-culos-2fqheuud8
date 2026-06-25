@@ -302,7 +302,11 @@ const MainApp = () => (
         <Route path="logs" element={<Logs />} />
 
         <Route path="redes-sociais" element={<RedesSociais />} />
-        <Route path="social-comentarios" element={<SocialComments />} />
+        <Route
+          path="social-comentarios"
+          element={<Navigate to="/admin/moderador-posts" replace />}
+        />
+        <Route path="moderador-posts" element={<SocialComments />} />
         <Route path="conteudo" element={<Conteudo />} />
 
         <Route path="auditoria" element={<Auditoria />} />
