@@ -88,35 +88,65 @@ async function handleFunctionCall(call: any) {
 
 async function sendWhatsApp(to: string, text: string) {
   if (!waToken) return
-  await fetch(`https://graph.facebook.com/v20.0/${waPhoneId}/messages`, {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${waToken}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      messaging_product: 'whatsapp',
-      to: to.replace(/\D/g, ''),
-      type: 'text',
-      text: { body: text },
-    }),
-  })
+  const cleanPhone = to.replace(/\D/g, '')
+
+  // VALIDAÇÃO RÍGIDA DE TELEFONE (Fator de Sucesso para evitar o erro de 'Invalid WhatsApp number')
+  if (cleanPhone.length < 10 || isNaN(Number(cleanPhone))) {
+    console.warn(`Disparo de WhatsApp cancelado: o número '${to}' é inválido para envio comercial.`)
+    return
+  }
+
+  try {
+    console.log(
+      `Enviando mensagem de WhatsApp para ${cleanPhone} usando o ID de telefone: ${waPhoneId}...`,
+    )
+    const res = await fetch(`https://graph.facebook.com/v20.0/${waPhoneId}/messages`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${waToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        messaging_product: 'whatsapp',
+        to: cleanPhone,
+        type: 'text',
+        text: { body: text },
+      }),
+    })
+
+    const resData = await res.json()
+    if (!res.ok) {
+      console.error('Erro retornado pelo WhatsApp do Meta:', JSON.stringify(resData))
+    } else {
+      console.log('Mensagem de WhatsApp enviada com sucesso!')
+    }
+  } catch (e) {
+    console.error('Erro ao enviar mensagem via requisição HTTP do Meta:', e)
+  }
 }
 
+// Envia resposta ativa de volta para o Messenger ou Instagram Direct
 async function sendPageMessage(
   platform: 'instagram' | 'messenger',
   recipientId: string,
   text: string,
 ) {
-  const url = `https://graph.facebook.com/v20.0/me/messages`
-  await fetch(url, {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${metaPageToken}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      recipient: { id: recipientId },
-      messaging_type: 'RESPONSE',
-      message: { text: text },
-    }),
-  })
+  try {
+    const url = `https://graph.facebook.com/v20.0/me/messages`
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${metaPageToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        recipient: { id: recipientId },
+        messaging_type: 'RESPONSE',
+        message: { text: text },
+      }),
+    })
+    const data = await res.json()
+    if (!res.ok) console.error(`Erro ao disparar mensagem para ${platform}:`, JSON.stringify(data))
+  } catch (e) {
+    console.error(`Falha técnica de comunicação no envio do ${platform}:`, e)
+  }
 }
 
+// Consulta de forma inteligente o nome real e avatar do perfil do Instagram ou Facebook do cliente
 async function fetchMetaProfile(platform: 'instagram' | 'messenger', userId: string) {
   try {
     const fields =
@@ -157,6 +187,8 @@ Deno.serve(async (req) => {
   }
 
   const body = await req.json()
+  console.log("Nova requisição POST recebida na rota 'receive-leads':", JSON.stringify(body))
+
   const isWa = body.object === 'whatsapp_business_account'
   const isPage = body.object === 'page'
   const isInstagram = body.object === 'instagram'
@@ -193,8 +225,15 @@ Deno.serve(async (req) => {
         const messagingEvent = entry?.messaging?.[0]
         if (messagingEvent && messagingEvent.message) {
           const senderId = messagingEvent.sender.id
-          const messageText = messagingEvent.message.text
           const platform = isInstagram ? 'instagram' : 'messenger'
+
+          let messageText = messagingEvent.message.text
+
+          // SUPORTE A RESPOSTAS DE STORIES E REAÇÕES NO INSTAGRAM (Fator de Sucesso)
+          if (!messageText && messagingEvent.message.reply_to?.story) {
+            console.log('Mensagem sem texto detectada como uma resposta de Story do Instagram.')
+            messageText = '[Reagiu ao Story / Mencionou você em um Story]'
+          }
 
           console.log(`DM recebida via ${platform}. Remetente: ${senderId}, Texto: ${messageText}`)
 
@@ -252,6 +291,7 @@ Deno.serve(async (req) => {
           }))
 
           const aiRes = await runGemini(geminiHistory)
+          console.log('Resposta bruta gerada pelo Gemini:', JSON.stringify(aiRes))
 
           let responseText = 'Como posso te ajudar hoje?'
           let temp = lead.temperatura
@@ -289,6 +329,7 @@ Deno.serve(async (req) => {
 
           // Enviar resposta de volta para o Direct
           await sendPageMessage(platform, senderId, responseText)
+          console.log(`Resposta enviada com sucesso de volta ao ${platform}!`)
           return
         }
       }
@@ -360,7 +401,7 @@ Deno.serve(async (req) => {
           .eq('lead_id', lead.id)
           .order('created_at')
 
-        const geminiHistory: any[] = (history || []).map((m: any) => ({
+        const geminiHistory = (history || []).map((m: any) => ({
           role: m.sender === 'bot' ? 'model' : 'user',
           parts: [{ text: m.message_text }],
         }))

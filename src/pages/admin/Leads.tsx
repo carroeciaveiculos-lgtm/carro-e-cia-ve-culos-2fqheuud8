@@ -351,10 +351,16 @@ export default function AdminLeads() {
     if (!message.trim() || !selectedLead) return
     try {
       if (selectedLead.telefone) {
+        const cleanPhone = selectedLead.telefone.replace(/\D/g, '')
+        if (cleanPhone.length < 10 || cleanPhone.length > 15) {
+          toast({ title: 'Número de telefone inválido para WhatsApp', variant: 'destructive' })
+          return
+        }
+
         await supabase.functions.invoke('send-whatsapp', {
           body: {
             action: 'text',
-            to: selectedLead.telefone,
+            to: cleanPhone,
             text: message,
             leadId: selectedLead.id,
           },
@@ -374,10 +380,16 @@ export default function AdminLeads() {
   const sendTemplate = async (templateName: string) => {
     if (!selectedLead?.telefone) return
     try {
+      const cleanPhone = selectedLead.telefone.replace(/\D/g, '')
+      if (cleanPhone.length < 10 || cleanPhone.length > 15) {
+        toast({ title: 'Número de telefone inválido para WhatsApp', variant: 'destructive' })
+        return
+      }
+
       await supabase.functions.invoke('send-whatsapp', {
         body: {
           action: 'template',
-          to: selectedLead.telefone,
+          to: cleanPhone,
           templateName,
           leadId: selectedLead.id,
         },
@@ -404,10 +416,11 @@ export default function AdminLeads() {
       })
       if (error) throw error
       if (data?.url) {
+        const cleanPhone = selectedLead.telefone.replace(/\D/g, '')
         await supabase.functions.invoke('send-whatsapp', {
           body: {
             action: 'document',
-            to: selectedLead.telefone,
+            to: cleanPhone,
             documentUrl: data.url,
             filename: `Proposta_${linkedVeiculo.modelo.replace(/\s+/g, '_')}.pdf`,
             text: `Olá ${selectedLead.nome}, segue a proposta do ${linkedVeiculo.modelo}!`,
@@ -574,7 +587,10 @@ export default function AdminLeads() {
                         {msg.message_text}
                       </p>
                       <span className="text-[10px] text-slate-400 mt-1 block text-right">
-                        {new Date(msg.created_at).toLocaleTimeString([], {
+                        {new Date(msg.created_at).toLocaleString('pt-BR', {
+                          day: '2-digit',
+                          month: '2-digit',
+                          year: 'numeric',
                           hour: '2-digit',
                           minute: '2-digit',
                         })}

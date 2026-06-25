@@ -9,6 +9,7 @@ import {
   Flame,
   ThermometerSnowflake,
   ThermometerSun,
+  Clock,
 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -43,6 +44,16 @@ export function KanbanBoard({
 
   const formatCurrency = (val: any) =>
     new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(val) || 0)
+
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return ''
+    const d = new Date(dateString)
+    return (
+      d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) +
+      ' - ' +
+      d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
+    )
+  }
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault()
@@ -152,8 +163,15 @@ export function KanbanBoard({
                         {getTemperatureBadge(lead.temperatura)}
                       </div>
 
-                      <div className="text-[10px] text-slate-500 flex items-center gap-1 mb-2">
-                        <User className="w-3 h-3" /> {respName}
+                      <div className="text-[10px] text-slate-500 flex items-center justify-between gap-1 mb-2">
+                        <div className="flex items-center gap-1 truncate">
+                          <User className="w-3 h-3 shrink-0" />{' '}
+                          <span className="truncate">{respName}</span>
+                        </div>
+                        <span className="text-[9px] text-slate-400 shrink-0 font-medium bg-slate-100 px-1.5 py-0.5 rounded flex items-center gap-1">
+                          <Clock className="w-2.5 h-2.5" />
+                          {formatDate(lead.created_at)}
+                        </span>
                       </div>
 
                       <div className="flex justify-between items-center text-[10px] text-slate-400 border-t pt-2 mt-2 bg-slate-50 -mx-3 -mb-3 px-3 pb-2 rounded-b-lg">
