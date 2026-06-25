@@ -4,8 +4,7 @@ import { createClient } from 'jsr:@supabase/supabase-js@2'
 export const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-  'Access-Control-Allow-Headers':
-    'authorization, x-client-info, x-supabase-client-platform, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, x-supabase-client-platform, apikey, content-type',
 }
 
 Deno.serve(async (req: Request) => {
@@ -64,7 +63,7 @@ Deno.serve(async (req: Request) => {
           const baseUrl = url.split('?')[0]
           const query = url.split('?')[1] || ''
           const params = new URLSearchParams(query)
-          params.set('format', 'jpg')
+          params.set('format', 'jpeg')
           return (
             baseUrl.replace('/storage/v1/object/public/', '/storage/v1/render/image/public/') +
             '?' +
