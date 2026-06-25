@@ -13,7 +13,7 @@ import { useToast } from '@/hooks/use-toast'
 
 export default function Conteudo() {
   const [activeTab, setActiveTab] = useState<
-    'paginas' | 'artigos' | 'keywords' | 'hashtags' | 'comentarios'
+    'paginas' | 'artigos' | 'landing_pages' | 'keywords' | 'hashtags' | 'comentarios'
   >('paginas')
   const [items, setItems] = useState<any[]>([])
   const [comments, setComments] = useState<any[]>([])
@@ -62,12 +62,30 @@ export default function Conteudo() {
 
   const fetchItems = async () => {
     if (activeTab === 'keywords' || activeTab === 'hashtags' || activeTab === 'comentarios') return
-    const table = activeTab === 'paginas' ? 'pages' : 'articles'
-    const { data } = await supabase
-      .from(table)
-      .select('id, titulo, status_publicacao, slug, criado_em')
-      .order('criado_em', { ascending: false })
-    setItems(data || [])
+    const table =
+      activeTab === 'paginas' ? 'pages' : activeTab === 'artigos' ? 'articles' : 'landing_pages'
+
+    if (table === 'landing_pages') {
+      const { data } = await supabase
+        .from(table)
+        .select('id, title, published, slug, created_at')
+        .order('created_at', { ascending: false })
+      setItems(
+        data?.map((i) => ({
+          id: i.id,
+          titulo: i.title,
+          status_publicacao: i.published ? 'Publicado' : 'Rascunho',
+          slug: i.slug,
+          criado_em: i.created_at,
+        })) || [],
+      )
+    } else {
+      const { data } = await supabase
+        .from(table)
+        .select('id, titulo, status_publicacao, slug, criado_em')
+        .order('criado_em', { ascending: false })
+      setItems(data || [])
+    }
   }
 
   const [showTypeSelect, setShowTypeSelect] = useState(false)
@@ -75,7 +93,8 @@ export default function Conteudo() {
   const handleDelete = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation()
     if (!confirm('Deseja realmente excluir este item?')) return
-    const table = activeTab === 'paginas' ? 'pages' : 'articles'
+    const table =
+      activeTab === 'paginas' ? 'pages' : activeTab === 'artigos' ? 'articles' : 'landing_pages'
     const { error } = await supabase.from(table).delete().eq('id', id)
     if (!error) {
       toast({ title: 'Item excluído com sucesso.' })
@@ -98,7 +117,14 @@ export default function Conteudo() {
       return <ArticleSEOEditor id={editingId} onBack={() => setEditingId(null)} />
     }
 
-    return <PageVisualEditor id={editingId} isArticle={false} onBack={() => setEditingId(null)} />
+    return (
+      <PageVisualEditor
+        id={editingId}
+        isArticle={false}
+        isLandingPage={activeTab === 'landing_pages'}
+        onBack={() => setEditingId(null)}
+      />
+    )
   }
 
   return (
@@ -140,6 +166,16 @@ export default function Conteudo() {
                 >
                   Novo Artigo (Blog)
                 </button>
+                <button
+                  onClick={() => {
+                    setActiveTab('landing_pages')
+                    setEditingId('new')
+                    setShowTypeSelect(false)
+                  }}
+                  className="w-full text-left px-4 py-2 hover:bg-slate-50 rounded-lg text-sm font-medium transition-colors text-slate-700 flex items-center justify-between group"
+                >
+                  Nova Landing Page
+                </button>
               </div>
             )}
           </div>
@@ -152,12 +188,15 @@ export default function Conteudo() {
               onValueChange={(v: any) => setActiveTab(v)}
               className="w-full sm:w-[600px]"
             >
-              <TabsList className="grid w-full grid-cols-5 h-auto py-1">
+              <TabsList className="grid w-full grid-cols-6 h-auto py-1">
                 <TabsTrigger value="paginas" className="text-xs">
                   Páginas
                 </TabsTrigger>
                 <TabsTrigger value="artigos" className="text-xs">
                   Artigos
+                </TabsTrigger>
+                <TabsTrigger value="landing_pages" className="text-xs">
+                  LPs
                 </TabsTrigger>
                 <TabsTrigger value="keywords" className="text-xs">
                   Keywords
@@ -166,11 +205,13 @@ export default function Conteudo() {
                   Hashtags
                 </TabsTrigger>
                 <TabsTrigger value="comentarios" className="text-xs">
-                  Comentários
+                  Coments
                 </TabsTrigger>
               </TabsList>
             </Tabs>
-            {(activeTab === 'paginas' || activeTab === 'artigos') && (
+            {(activeTab === 'paginas' ||
+              activeTab === 'artigos' ||
+              activeTab === 'landing_pages') && (
               <div className="flex gap-2 w-full sm:w-auto">
                 <select
                   className="flex h-10 w-full sm:w-40 items-center justify-between rounded-md border border-input bg-white px-3 py-2 text-sm ring-offset-background"

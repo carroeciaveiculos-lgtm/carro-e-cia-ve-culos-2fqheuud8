@@ -21,6 +21,7 @@ import { useToast } from '@/hooks/use-toast'
 import { cn } from '@/lib/utils'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
+import { MediaSelectorModal } from './MediaSelectorModal'
 
 interface ArticleSEOEditorProps {
   id: string
@@ -71,6 +72,7 @@ export function ArticleSEOEditor({ id, onBack }: ArticleSEOEditorProps) {
   const [isGeneratingImage, setIsGeneratingImage] = useState(false)
   const [isOptimizing, setIsOptimizing] = useState(false)
   const [dbKeywords, setDbKeywords] = useState<string[]>([])
+  const [mediaSelectorOpen, setMediaSelectorOpen] = useState(false)
 
   const { toast } = useToast()
 
@@ -591,6 +593,11 @@ export function ArticleSEOEditor({ id, onBack }: ArticleSEOEditorProps) {
 
   return (
     <div className="flex flex-col h-[calc(100vh-64px)] bg-slate-50">
+      <MediaSelectorModal
+        open={mediaSelectorOpen}
+        onOpenChange={setMediaSelectorOpen}
+        onSelect={(url: string) => setData((prev) => ({ ...prev, imagem_destaque_url: url }))}
+      />
       <header className="bg-white border-b px-6 py-4 flex items-center justify-between shrink-0">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" onClick={onBack}>
@@ -660,25 +667,36 @@ export function ArticleSEOEditor({ id, onBack }: ArticleSEOEditorProps) {
                   )}
                   <div className="flex-1">
                     <div className="flex-1 space-y-2">
-                      <Label
-                        htmlFor="img-upload"
-                        className="flex items-center justify-center w-full h-20 border-2 border-dashed rounded-lg cursor-pointer hover:bg-slate-50 transition-colors"
-                      >
-                        <div className="flex flex-col items-center">
-                          <Upload className="w-5 h-5 text-slate-400" />
-                          <span className="text-sm text-slate-500">
-                            {isUploading ? 'Otimizando...' : 'Clique p/ Upload Manual'}
-                          </span>
-                        </div>
-                        <input
-                          id="img-upload"
-                          type="file"
-                          accept="image/*"
-                          className="hidden"
-                          onChange={handleImageUpload}
+                      <div className="flex gap-2 h-20">
+                        <Label
+                          htmlFor="img-upload"
+                          className="flex-1 flex items-center justify-center border-2 border-dashed rounded-lg cursor-pointer hover:bg-slate-50 transition-colors"
+                        >
+                          <div className="flex flex-col items-center">
+                            <Upload className="w-5 h-5 text-slate-400" />
+                            <span className="text-xs text-slate-500 mt-1">
+                              {isUploading ? 'Otimizando...' : 'Upload'}
+                            </span>
+                          </div>
+                          <input
+                            id="img-upload"
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={handleImageUpload}
+                            disabled={isUploading || isGeneratingImage}
+                          />
+                        </Label>
+                        <Button
+                          variant="outline"
+                          className="h-full flex-1 flex-col gap-1 border-2 border-dashed"
+                          onClick={() => setMediaSelectorOpen(true)}
                           disabled={isUploading || isGeneratingImage}
-                        />
-                      </Label>
+                        >
+                          <ImageIcon className="w-5 h-5 text-slate-400" />
+                          <span className="text-xs text-slate-500">Biblioteca</span>
+                        </Button>
+                      </div>
                     </div>
                     <div className="flex-1 flex flex-col justify-end gap-2 border p-3 rounded-lg bg-slate-50">
                       <Label className="text-xs flex items-center gap-1 text-slate-500">
@@ -867,14 +885,62 @@ export function ArticleSEOEditor({ id, onBack }: ArticleSEOEditorProps) {
                   Preview Visual
                 </button>
               </div>
-              <div className="flex-1 p-0">
+              <div className="flex-1 p-0 relative">
                 {activeTab === 'editor' ? (
-                  <Textarea
-                    className="w-full h-full border-0 focus-visible:ring-0 rounded-none resize-none p-6 font-mono text-sm"
-                    value={data.conteudo}
-                    onChange={(e) => setData({ ...data, conteudo: e.target.value })}
-                    placeholder="<h2>Seu título aqui</h2><p>Comece a escrever...</p>"
-                  />
+                  <>
+                    <Button
+                      size="sm"
+                      className="absolute right-4 bottom-4 z-10 bg-purple-600 hover:bg-purple-700 shadow-md"
+                      onClick={async () => {
+                        const prompt = window.prompt('O que a IA deve escrever no final do texto?')
+                        if (!prompt) return
+                        setIsOptimizing(true)
+                        try {
+                          const {
+                            data: { session },
+                          } = await supabase.auth.getSession()
+                          if (!session) throw new Error('Não autenticado')
+                          const { data: res, error } = await supabase.functions.invoke(
+                            'gerar-conteudo',
+                            {
+                              body: {
+                                tema: prompt,
+                                palavraChave: data.palavras_chave_principais[0] || 'geral',
+                                tom: 'profissional',
+                              },
+                            },
+                          )
+                          if (error) throw error
+                          if (res?.data?.conteudo_html || res?.data?.conteudo) {
+                            const newContent = res.data.conteudo_html || res.data.conteudo
+                            setData((prev) => ({
+                              ...prev,
+                              conteudo: prev.conteudo + '\n' + newContent,
+                            }))
+                            toast({ title: 'Texto gerado com sucesso!' })
+                          }
+                        } catch (err: any) {
+                          toast({
+                            title: 'Erro ao gerar',
+                            description: err.message,
+                            variant: 'destructive',
+                          })
+                        } finally {
+                          setIsOptimizing(false)
+                        }
+                      }}
+                      disabled={isOptimizing}
+                    >
+                      <Sparkles className="w-4 h-4 mr-2" />
+                      Gerar com IA
+                    </Button>
+                    <Textarea
+                      className="w-full h-full border-0 focus-visible:ring-0 rounded-none resize-none p-6 font-mono text-sm pb-16"
+                      value={data.conteudo}
+                      onChange={(e) => setData({ ...data, conteudo: e.target.value })}
+                      placeholder="<h2>Seu título aqui</h2><p>Comece a escrever...</p>"
+                    />
+                  </>
                 ) : (
                   <div
                     className="w-full h-full overflow-y-auto p-8 prose max-w-none"

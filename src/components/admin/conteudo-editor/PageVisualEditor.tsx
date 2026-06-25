@@ -36,10 +36,12 @@ import { MediaSelectorModal } from './MediaSelectorModal'
 export function PageVisualEditor({
   id,
   isArticle,
+  isLandingPage,
   onBack,
 }: {
   id: string
   isArticle: boolean
+  isLandingPage?: boolean
   onBack: () => void
 }) {
   const [blocks, setBlocks] = useState<ContentBlock[]>([])
@@ -101,32 +103,53 @@ export function PageVisualEditor({
 
   useEffect(() => {
     if (id && id !== 'new') {
+      const table = isLandingPage ? 'landing_pages' : isArticle ? 'articles' : 'pages'
       supabase
-        .from(isArticle ? 'articles' : 'pages')
+        .from(table)
         .select('*')
         .eq('id', id)
         .single()
         .then(({ data }) => {
           if (data) {
-            setPageData({
-              id: data.id,
-              titulo: data.titulo,
-              slug: data.slug,
-              status_publicacao: data.status_publicacao,
-              meta_title: data.meta_title,
-              meta_description: data.meta_description,
-            })
-            try {
-              const b = JSON.parse(data.conteudo || '[]')
-              if (b.designVars) setDesignVars(b.designVars)
-              setBlocks(Array.isArray(b.blocks) ? b.blocks : Array.isArray(b) ? b : [])
-            } catch {
-              setBlocks([{ id: crypto.randomUUID(), type: 'text', data: { html: data.conteudo } }])
+            if (isLandingPage) {
+              setPageData({
+                id: data.id,
+                titulo: data.title,
+                slug: data.slug,
+                status_publicacao: data.published ? 'Publicado' : 'Rascunho',
+                meta_title: '',
+                meta_description: data.meta_description,
+              })
+              try {
+                const b = typeof data.content === 'string' ? JSON.parse(data.content) : data.content
+                if (b?.designVars) setDesignVars(b.designVars)
+                setBlocks(Array.isArray(b?.blocks) ? b.blocks : Array.isArray(b) ? b : [])
+              } catch {
+                setBlocks([])
+              }
+            } else {
+              setPageData({
+                id: data.id,
+                titulo: data.titulo,
+                slug: data.slug,
+                status_publicacao: data.status_publicacao,
+                meta_title: data.meta_title,
+                meta_description: data.meta_description,
+              })
+              try {
+                const b = JSON.parse(data.conteudo || '[]')
+                if (b.designVars) setDesignVars(b.designVars)
+                setBlocks(Array.isArray(b.blocks) ? b.blocks : Array.isArray(b) ? b : [])
+              } catch {
+                setBlocks([
+                  { id: crypto.randomUUID(), type: 'text', data: { html: data.conteudo } },
+                ])
+              }
             }
           }
         })
     }
-  }, [id, isArticle])
+  }, [id, isArticle, isLandingPage])
 
   const handleSave = async (status: string) => {
     if (!pageData.titulo || !pageData.slug) {
@@ -138,16 +161,29 @@ export function PageVisualEditor({
       return
     }
 
-    const payload = {
-      titulo: pageData.titulo,
-      slug: pageData.slug,
-      meta_title: pageData.meta_title,
-      meta_description: pageData.meta_description,
-      status_publicacao: status,
-      conteudo: JSON.stringify({ blocks, designVars }),
+    let payload: any = {}
+    let table = isArticle ? 'articles' : 'pages'
+
+    if (isLandingPage) {
+      table = 'landing_pages'
+      payload = {
+        title: pageData.titulo,
+        slug: pageData.slug,
+        meta_description: pageData.meta_description,
+        published: status === 'Publicado',
+        content: { blocks, designVars },
+      }
+    } else {
+      payload = {
+        titulo: pageData.titulo,
+        slug: pageData.slug,
+        meta_title: pageData.meta_title,
+        meta_description: pageData.meta_description,
+        status_publicacao: status,
+        conteudo: JSON.stringify({ blocks, designVars }),
+      }
     }
 
-    const table = isArticle ? 'articles' : 'pages'
     let error = null
 
     if (id === 'new') {
@@ -294,7 +330,7 @@ export function PageVisualEditor({
           </Button>
         </div>
         <div className="flex items-center gap-2">
-          {id !== 'new' && (
+          {id !== 'new' && !isLandingPage && (
             <Button
               variant="outline"
               size="sm"
@@ -338,7 +374,7 @@ export function PageVisualEditor({
         }}
       />
 
-      {showHistory && id !== 'new' && (
+      {showHistory && id !== 'new' && !isLandingPage && (
         <RevisionHistoryModal
           id={id}
           isArticle={isArticle}
