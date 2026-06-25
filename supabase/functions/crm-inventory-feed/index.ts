@@ -4,12 +4,11 @@ import { createClient } from 'jsr:@supabase/supabase-js@2'
 export const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-  'Access-Control-Allow-Headers':
-    'authorization, x-client-info, x-supabase-client-platform, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, x-supabase-client-platform, apikey, content-type',
 }
 
 Deno.serve(async (req: Request) => {
-  // Handle CORS preflight requests
+  // Tratar requisições CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
@@ -18,7 +17,7 @@ Deno.serve(async (req: Request) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL') || ''
     const supabaseKey = Deno.env.get('SUPABASE_ANON_KEY') || ''
 
-    // We use the anon key since this is a public feed for available vehicles
+    // Usamos a chave anônima (anon) pois este é um feed público para veículos do site
     const supabase = createClient(supabaseUrl, supabaseKey)
 
     const { data: veiculos, error } = await supabase
@@ -59,17 +58,13 @@ Deno.serve(async (req: Request) => {
         }
       }
 
+      // CONVERSÃO DE SUCESSO COCKPIT: 
+      // O proxy do Cloudflare lê o seu WebP do bucket do Supabase e o entrega em tempo real 
+      // como JPEG para a VENDA.IA de forma 100% gratuita!
       fotos = fotos.map((url: any) => {
         if (typeof url === 'string' && url.includes('supabase.co/storage/v1/object/public/')) {
-          const baseUrl = url.split('?')[0]
-          const query = url.split('?')[1] || ''
-          const params = new URLSearchParams(query)
-          params.set('format', 'jpeg')
-          return (
-            baseUrl.replace('/storage/v1/object/public/', '/storage/v1/render/image/public/') +
-            '?' +
-            params.toString()
-          )
+          const cleanUrl = url.split('?')[0] // Remove os parâmetros antigos de query
+          return `https://images.weserv.nl/?url=${encodeURIComponent(cleanUrl)}&output=jpg`
         }
         return typeof url === 'string' ? url : ''
       })

@@ -7,7 +7,6 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-// Função utilitária para limpar e converter preços de forma segura
 const limparEConverterNumero = (val: any): number => {
   if (val === null || val === undefined) return 0
   const cleanStr = String(val).replace(/[^0-9.-]/g, '')
@@ -43,11 +42,11 @@ Deno.serve(async (req) => {
       'make',
       'model',
       'year',
-      'mileage.value', // Corrigido de 'mileage' para duas colunas de objeto
+      'mileage.value', 
       'mileage.unit',
       'price',
       'url',
-      'image[0].url', // Corrigido de 'image' para a notação de array de imagens do Meta
+      'image[0].url',  // Formato correto de cabeçalho do Meta
       'address',
       'state_of_vehicle',
       'body_style',
@@ -66,9 +65,8 @@ Deno.serve(async (req) => {
       return str
     }
 
-    // Endereço formatado no padrão com chaves aceito pela API da Meta (sem aspas duplas de JSON para evitar conflito no CSV)
-    const addressStr =
-      "{addr1: 'Av. Guilherme Ferreira, 1131', city: 'Uberaba', region: 'MG', country: 'BR', postal_code: '38022-200'}"
+    // Endereço formatado no padrão com chaves aceito pela API da Meta
+    const addressStr = "{addr1: 'Av. Guilherme Ferreira, 1131', city: 'Uberaba', region: 'MG', country: 'BR', postal_code: '38022-200'}"
 
     const bodyStyleMap: Record<string, string> = {
       Hatch: 'hatchback',
@@ -119,55 +117,42 @@ Deno.serve(async (req) => {
 
     const rows = (veiculos || [])
       .filter((v) => {
-        // Validação simples de ID
         if (!v.id) return false
-
-        // Normalização de status
+        
         const rawStatus = (v.status || '')
           .toLowerCase()
           .normalize('NFD')
           .replace(/[\u0300-\u036f]/g, '')
         if (rawStatus !== 'disponivel') return false
-
-        // Filtro de ano e preço mínimos
+        
         const ano = Number(v.ano_modelo || v.ano_fabricacao)
         const preco = Number(v.preco_venda)
         if (!v.preco_venda || preco < 1000 || isNaN(ano) || ano < 1950 || ano > anoAtual + 1)
           return false
-
+        
         return true
       })
       .map((v) => {
         const link = `https://www.carroeciamotors.com.br/estoque/${v.id}`
-
+        
         // Capturar o link da imagem
-        let imageLink = 'https://www.carroeciamotors.com.br/placeholder-car.png'
+        let imageLink = "https://www.carroeciamotors.com.br/placeholder-car.png"
         if (v.fotos && Array.isArray(v.fotos) && v.fotos.length > 0) {
           imageLink = v.fotos[0]
         } else if (v.link_foto || v.foto_url) {
           imageLink = v.link_foto || v.foto_url
         }
 
-        // CONVERSÃO DINÂMICA DE WEBP PARA JPEG (FATOR DE SUCESSO):
-        // Se a foto estiver no seu Storage público do Supabase, nós alteramos a rota
-        // de download direto (/object/public/) para a rota de renderização (/render/image/public/) com ?format=jpg
+        // CONVERSÃO DE SUCESSO: Converte WebP para JPEG de forma gratuita para o Meta catalogar sem erros!
         if (imageLink.includes('supabase.co/storage/v1/object/public/')) {
-          const baseUrl = imageLink.split('?')[0]
-          const query = imageLink.split('?')[1] || ''
-          const params = new URLSearchParams(query)
-          params.set('format', 'jpeg')
-          imageLink =
-            baseUrl.replace('/storage/v1/object/public/', '/storage/v1/render/image/public/') +
-            '?' +
-            params.toString()
+          const cleanUrl = imageLink.split('?')[0];
+          imageLink = `https://images.weserv.nl/?url=${encodeURIComponent(cleanUrl)}&output=jpg`
         }
 
         const precoFinal = limparEConverterNumero(v.preco_venda || v.preco_venda_promocional)
         const price = `${precoFinal.toFixed(2)} BRL`
         const condition = v.is_zero_km ? 'new' : 'used'
         const ano = v.ano_modelo || v.ano_fabricacao || v.ano
-
-        // Sincroniza quilometragem numérica pura para mileage.value
         const kmValue = Number(v.km || v.quilometragem || 1)
 
         const title = `${v.marca} ${v.modelo} ${v.versao || ''} ${ano}`.replace(/\s+/g, ' ').trim()
@@ -175,7 +160,7 @@ Deno.serve(async (req) => {
         let description = v.descricao
           ? v.descricao.substring(0, 5000)
           : `${title}. Lindo veículo em estoque na Carro e Cia Motors.`
-
+        
         description = description
           .replace(/<[^>]*>?/gm, '')
           .replace(/[\n\r]+/g, ' ')
@@ -193,7 +178,7 @@ Deno.serve(async (req) => {
           'KM', // mileage.unit (texto fixo em maiúsculo)
           price, // price
           link, // url
-          imageLink, // image[0].url (com conversão em tempo real para JPEG)
+          imageLink, // image[0].url (Convertida via proxy gratuito para JPEG)
           addressStr, // address
           condition, // state_of_vehicle
           bodyStyleMap[v.categoria] || 'other', // body_style
