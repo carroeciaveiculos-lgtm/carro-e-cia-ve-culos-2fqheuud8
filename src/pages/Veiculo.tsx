@@ -31,6 +31,14 @@ import {
   MessageCircle,
   Share2,
 } from 'lucide-react'
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+  type CarouselApi,
+} from '@/components/ui/carousel'
 import { VehicleCard } from '@/components/VehicleCard'
 import { Skeleton } from '@/components/ui/skeleton'
 import { trackVehicleView, trackWhatsAppClick, trackSimulation } from '@/lib/tracking'
@@ -42,6 +50,21 @@ export default function Veiculo() {
   const [similar, setSimilar] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [activePhoto, setActivePhoto] = useState(0)
+  const [api, setApi] = useState<CarouselApi>()
+
+  useEffect(() => {
+    if (!api) return
+
+    api.on('select', () => {
+      setActivePhoto(api.selectedScrollSnap())
+    })
+  }, [api])
+
+  useEffect(() => {
+    if (api && activePhoto !== api.selectedScrollSnap()) {
+      api.scrollTo(activePhoto)
+    }
+  }, [activePhoto, api])
 
   // Simulation state
   const [simEntrada, setSimEntrada] = useState('')
@@ -202,94 +225,83 @@ export default function Veiculo() {
         </Link>
 
         <div className="grid lg:grid-cols-[1.2fr_1fr] gap-10">
-          <div className="space-y-4">
-            <div className="md:hidden flex overflow-x-auto snap-x snap-mandatory hide-scrollbar -mx-4 px-4 gap-4">
-              {photos.length > 0 ? (
-                photos.map((p: string, i: number) => (
-                  <div
-                    key={i}
-                    className="relative w-[85vw] shrink-0 snap-center aspect-[4/3] rounded-xl overflow-hidden bg-muted"
-                  >
-                    <img
-                      src={p}
-                      alt={`Foto ${i + 1} do veículo ${vehicle.marca} ${vehicle.modelo}`}
-                      width="800"
-                      height="600"
-                      loading="lazy"
-                      decoding="async"
-                      className="w-full h-full object-cover"
-                    />{' '}
-                    {vehicle.is_consignado && i === 0 && (
-                      <Badge className="absolute top-4 right-4 bg-primary text-primary-foreground">
-                        Consignado
-                      </Badge>
-                    )}
-                  </div>
-                ))
-              ) : (
-                <div className="relative w-full aspect-[4/3] rounded-xl overflow-hidden bg-muted">
-                  <img
-                    src="https://img.usecurling.com/p/800/600?q=car"
-                    alt="Sem foto"
-                    width="800"
-                    height="600"
-                    loading="lazy"
-                    decoding="async"
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-              )}
-            </div>
-
-            <div className="hidden md:block">
-              <div className="aspect-[4/3] rounded-xl overflow-hidden bg-muted relative group">
-                <img
-                  src={
-                    photos[activePhoto]
-                      ? photos[activePhoto]
-                      : 'https://img.usecurling.com/p/800/600?q=car'
-                  }
-                  alt={`Foto principal do veículo ${vehicle.marca} ${vehicle.modelo}`}
-                  width="800"
-                  height="600"
-                  loading="eager"
-                  decoding="async"
-                  className="w-full h-full object-cover"
-                />{' '}
-                {vehicle.is_consignado && (
-                  <Badge className="absolute top-4 right-4 bg-primary text-primary-foreground border-none text-sm px-3 py-1">
-                    Consignado
-                  </Badge>
-                )}
-                {!vehicle.is_consignado && (
-                  <Badge className="absolute top-4 right-4 bg-secondary text-secondary-foreground border-none text-sm px-3 py-1">
-                    Próprio
-                  </Badge>
-                )}
-              </div>
-
-              {photos.length > 1 && (
-                <div className="grid grid-cols-5 sm:grid-cols-6 gap-2 mt-4">
-                  {photos.map((p: string, i: number) => (
-                    <button
-                      key={i}
-                      onClick={() => setActivePhoto(i)}
-                      className={`aspect-video rounded-md overflow-hidden border-2 transition-all ${activePhoto === i ? 'border-primary' : 'border-transparent opacity-70 hover:opacity-100'}`}
-                    >
+          <div className="space-y-4 w-full min-w-0">
+            <Carousel setApi={setApi} className="w-full relative group">
+              <CarouselContent>
+                {photos.length > 0 ? (
+                  photos.map((p: string, i: number) => (
+                    <CarouselItem key={i}>
+                      <div className="aspect-[4/3] rounded-xl overflow-hidden bg-muted relative w-full">
+                        <img
+                          src={p}
+                          alt={`Foto ${i + 1} do veículo ${vehicle.marca} ${vehicle.modelo}`}
+                          width="800"
+                          height="600"
+                          loading={i === 0 ? 'eager' : 'lazy'}
+                          decoding="async"
+                          className="w-full h-full object-cover"
+                        />
+                        {vehicle.is_consignado ? (
+                          <Badge className="absolute top-4 right-4 bg-primary text-primary-foreground border-none text-sm px-3 py-1">
+                            Consignado
+                          </Badge>
+                        ) : (
+                          <Badge className="absolute top-4 right-4 bg-secondary text-secondary-foreground border-none text-sm px-3 py-1">
+                            Próprio
+                          </Badge>
+                        )}
+                      </div>
+                    </CarouselItem>
+                  ))
+                ) : (
+                  <CarouselItem>
+                    <div className="aspect-[4/3] rounded-xl overflow-hidden bg-muted relative w-full">
                       <img
-                        src={p}
-                        alt={`Miniatura ${i + 1} do ${vehicle.modelo}`}
-                        width="160"
-                        height="90"
-                        loading="lazy"
+                        src="https://img.usecurling.com/p/800/600?q=car"
+                        alt="Sem foto"
+                        width="800"
+                        height="600"
+                        loading="eager"
                         decoding="async"
                         className="w-full h-full object-cover"
                       />
-                    </button>
-                  ))}
+                    </div>
+                  </CarouselItem>
+                )}
+              </CarouselContent>
+              {photos.length > 1 && (
+                <div className="hidden md:block opacity-0 group-hover:opacity-100 transition-opacity">
+                  <CarouselPrevious className="left-4 bg-background/80 hover:bg-background border-none" />
+                  <CarouselNext className="right-4 bg-background/80 hover:bg-background border-none" />
                 </div>
               )}
-            </div>
+            </Carousel>
+
+            {photos.length > 1 && (
+              <div className="grid grid-cols-5 sm:grid-cols-6 gap-2 mt-4">
+                {photos.map((p: string, i: number) => (
+                  <button
+                    key={i}
+                    onClick={() => setActivePhoto(i)}
+                    className={`aspect-video rounded-md overflow-hidden border-2 transition-all ${
+                      activePhoto === i
+                        ? 'border-primary'
+                        : 'border-transparent opacity-70 hover:opacity-100'
+                    }`}
+                  >
+                    <img
+                      src={p}
+                      alt={`Miniatura ${i + 1} do ${vehicle.modelo}`}
+                      width="160"
+                      height="90"
+                      loading="lazy"
+                      decoding="async"
+                      className="w-full h-full object-cover"
+                    />
+                  </button>
+                ))}
+              </div>
+            )}
 
             {vehicle.video_url && (
               <div className="mt-8 aspect-video rounded-xl overflow-hidden bg-black">
@@ -311,7 +323,7 @@ export default function Veiculo() {
               <p className="text-xl text-muted-foreground">{vehicle.versao}</p>
             </div>
 
-            <div className="bg-card rounded-xl p-6 border shadow-sm mb-8">
+            <div className="bg-card rounded-xl p-6 border shadow-sm mb-8 w-full min-w-0">
               <div className="flex flex-col gap-1 mb-6">
                 <span className="text-sm text-muted-foreground font-medium uppercase tracking-wider">
                   Preço de Venda
@@ -319,70 +331,79 @@ export default function Veiculo() {
                 <span className="text-4xl font-bold text-primary">
                   {formatCurrency(vehicle.preco_venda || 0)}
                 </span>
-                {vehicle.valor_fipe && (
-                  <span className="text-sm text-muted-foreground mt-1">
-                    Valor FIPE: {formatCurrency(vehicle.valor_fipe)}
-                  </span>
-                )}
               </div>
 
-              <div className="grid grid-cols-2 gap-4 gap-y-6 mb-8 py-6 border-y">
-                <div className="flex items-center gap-3">
-                  <div className="bg-muted p-2 rounded-lg">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 gap-y-6 mb-8 py-6 border-y">
+                <div className="flex items-center gap-3 overflow-hidden">
+                  <div className="bg-muted p-2 rounded-lg shrink-0">
                     <Calendar className="w-5 h-5 text-foreground" />
                   </div>
-                  <div>
+                  <div className="overflow-hidden">
                     <p className="text-xs text-muted-foreground">Ano</p>
-                    <p className="font-bold">
+                    <p
+                      className="font-bold truncate"
+                      title={`${vehicle.ano_fabricacao}/${vehicle.ano_modelo}`}
+                    >
                       {vehicle.ano_fabricacao}/{vehicle.ano_modelo}
                     </p>
                   </div>
                 </div>
-                <div className="flex items-center gap-3">
-                  <div className="bg-muted p-2 rounded-lg">
+                <div className="flex items-center gap-3 overflow-hidden">
+                  <div className="bg-muted p-2 rounded-lg shrink-0">
                     <Gauge className="w-5 h-5 text-foreground" />
                   </div>
-                  <div>
+                  <div className="overflow-hidden">
                     <p className="text-xs text-muted-foreground">Quilometragem</p>
-                    <p className="font-bold">
+                    <p
+                      className="font-bold truncate"
+                      title={`${vehicle.quilometragem?.toLocaleString('pt-BR') || 0} km`}
+                    >
                       {vehicle.quilometragem?.toLocaleString('pt-BR') || 0} km
                     </p>
                   </div>
                 </div>
-                <div className="flex items-center gap-3">
-                  <div className="bg-muted p-2 rounded-lg">
+                <div className="flex items-center gap-3 overflow-hidden">
+                  <div className="bg-muted p-2 rounded-lg shrink-0">
                     <Cog className="w-5 h-5 text-foreground" />
                   </div>
-                  <div>
+                  <div className="overflow-hidden">
                     <p className="text-xs text-muted-foreground">Câmbio</p>
-                    <p className="font-bold">{vehicle.cambio}</p>
+                    <p className="font-bold truncate" title={vehicle.cambio}>
+                      {vehicle.cambio}
+                    </p>
                   </div>
                 </div>
-                <div className="flex items-center gap-3">
-                  <div className="bg-muted p-2 rounded-lg">
+                <div className="flex items-center gap-3 overflow-hidden">
+                  <div className="bg-muted p-2 rounded-lg shrink-0">
                     <Fuel className="w-5 h-5 text-foreground" />
                   </div>
-                  <div>
+                  <div className="overflow-hidden">
                     <p className="text-xs text-muted-foreground">Combustível</p>
-                    <p className="font-bold">{vehicle.combustivel}</p>
+                    <p className="font-bold truncate" title={vehicle.combustivel}>
+                      {vehicle.combustivel}
+                    </p>
                   </div>
                 </div>
-                <div className="flex items-center gap-3">
-                  <div className="bg-muted p-2 rounded-lg">
+                <div className="flex items-center gap-3 overflow-hidden">
+                  <div className="bg-muted p-2 rounded-lg shrink-0">
                     <PaintBucket className="w-5 h-5 text-foreground" />
                   </div>
-                  <div>
+                  <div className="overflow-hidden">
                     <p className="text-xs text-muted-foreground">Cor</p>
-                    <p className="font-bold">{vehicle.cor}</p>
+                    <p className="font-bold truncate" title={vehicle.cor}>
+                      {vehicle.cor}
+                    </p>
                   </div>
                 </div>
-                <div className="flex items-center gap-3">
-                  <div className="bg-muted p-2 rounded-lg">
+                <div className="flex items-center gap-3 overflow-hidden">
+                  <div className="bg-muted p-2 rounded-lg shrink-0">
                     <DoorOpen className="w-5 h-5 text-foreground" />
                   </div>
-                  <div>
+                  <div className="overflow-hidden">
                     <p className="text-xs text-muted-foreground">Portas</p>
-                    <p className="font-bold">{vehicle.portas}</p>
+                    <p className="font-bold truncate" title={vehicle.portas}>
+                      {vehicle.portas}
+                    </p>
                   </div>
                 </div>
               </div>
