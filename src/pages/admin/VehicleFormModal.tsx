@@ -99,6 +99,9 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
   const [isMediaCenterOpen, setIsMediaCenterOpen] = useState(false)
   const [mediaSearch, setMediaSearch] = useState('')
   const [editingImage, setEditingImage] = useState<string | null>(null)
+  const [isUploadingPhotos, setIsUploadingPhotos] = useState(false)
+  const photoInputRef = useRef<HTMLInputElement>(null)
+  const [selectedFolder, setSelectedFolder] = useState<string | null>(null)
 
   const [newCaracteristica, setNewCaracteristica] = useState('')
   const [newOpcional, setNewOpcional] = useState('')
@@ -391,16 +394,109 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
         ? p[field].filter((x: string) => x !== val)
         : [...(p[field] || []), val],
     }))
-  const handleMediaSelect = (url: string) =>
-    setFormData((p: any) => ({
-      ...p,
-      fotos: (p.fotos || []).includes(url) ? p.fotos : [...(p.fotos || []), url],
-    }))
-  const setAsCover = (url: string) =>
-    setFormData((p: any) => ({
-      ...p,
-      fotos: [url, ...(p.fotos || []).filter((f: string) => f !== url)],
-    }))
+
+  const handleMediaSelect = async (url: string) => {
+    const isIncluded = (formData.fotos || []).includes(url)
+    const newFotos = isIncluded
+      ? (formData.fotos || []).filter((f: string) => f !== url)
+      : [...(formData.fotos || []), url]
+
+    setFormData((p: any) => ({ ...p, fotos: newFotos }))
+    if (formData.id) {
+      await supabase.from('veiculos').update({ fotos: newFotos }).eq('id', formData.id)
+    }
+  }
+
+  const setAsCover = async (url: string) => {
+    const newFotos = [url, ...(formData.fotos || []).filter((f: string) => f !== url)]
+    setFormData((p: any) => ({ ...p, fotos: newFotos }))
+    if (formData.id) {
+      await supabase.from('veiculos').update({ fotos: newFotos }).eq('id', formData.id)
+    }
+  }
+
+  const handlePhotoUpload = async (e: any) => {
+    const files = Array.from(e.target.files || []) as File[]
+    if (!files.length) return
+    setIsUploadingPhotos(true)
+
+    try {
+      const { data: userData } = await supabase.auth.getUser()
+      const userId = userData?.user?.id
+
+      const sanitizeFolderName = (str: string) =>
+        str
+          ? str
+              .normalize('NFD')
+              .replace(/[\u0300-\u036f]/g, '')
+              .replace(/[^a-zA-Z0-9]/g, '_')
+              .toLowerCase()
+          : 'desconhecido'
+      const folderName = `${sanitizeFolderName(formData.modelo)}_${sanitizeFolderName(formData.placa)}`
+
+      const newPhotos: string[] = []
+
+      for (const file of files) {
+        const fileExt = file.name.split('.').pop()
+        const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`
+        const filePath = `${folderName}/${fileName}`
+
+        const { error: uploadError } = await supabase.storage.from('media').upload(filePath, file)
+        if (uploadError) {
+          // Fallback para site-assets se media não existir
+          const { error: uploadError2 } = await supabase.storage
+            .from('site-assets')
+            .upload(filePath, file)
+          if (uploadError2) throw uploadError2
+          const { data: publicUrlData } = supabase.storage
+            .from('site-assets')
+            .getPublicUrl(filePath)
+          newPhotos.push(publicUrlData.publicUrl)
+          await supabase.from('media_assets').insert([
+            {
+              file_name: file.name,
+              file_path: publicUrlData.publicUrl,
+              file_size: file.size,
+              mime_type: file.type,
+              folder: folderName,
+              uploaded_by: userId,
+            },
+          ])
+        } else {
+          const { data: publicUrlData } = supabase.storage.from('media').getPublicUrl(filePath)
+          newPhotos.push(publicUrlData.publicUrl)
+          await supabase.from('media_assets').insert([
+            {
+              file_name: file.name,
+              file_path: publicUrlData.publicUrl,
+              file_size: file.size,
+              mime_type: file.type,
+              folder: folderName,
+              uploaded_by: userId,
+            },
+          ])
+        }
+      }
+
+      const updatedFotos = [...(formData.fotos || []), ...newPhotos]
+      setFormData((p: any) => ({
+        ...p,
+        fotos: updatedFotos,
+      }))
+
+      if (formData.id) {
+        await supabase.from('veiculos').update({ fotos: updatedFotos }).eq('id', formData.id)
+      }
+
+      toast({ title: 'Fotos enviadas com sucesso' })
+      loadMediaAssets()
+    } catch (err: any) {
+      toast({ title: 'Erro ao enviar fotos', description: err.message, variant: 'destructive' })
+    } finally {
+      setIsUploadingPhotos(false)
+      if (photoInputRef.current) photoInputRef.current.value = ''
+    }
+  }
 
   const handleDocumentFile = async (e: any) => {
     const file = e.target.files?.[0]
@@ -449,9 +545,15 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
     }
   }
 
-  const filteredMedia = mediaAssets.filter((a) =>
-    a.file_name?.toLowerCase().includes(mediaSearch.toLowerCase()),
-  )
+  const filteredMedia = mediaAssets.filter((a) => {
+    const matchSearch =
+      a.file_name?.toLowerCase().includes(mediaSearch.toLowerCase()) ||
+      a.folder?.toLowerCase().includes(mediaSearch.toLowerCase())
+    const matchFolder = selectedFolder ? (a.folder || 'Geral') === selectedFolder : true
+    return matchSearch && matchFolder
+  })
+
+  const folders = Array.from(new Set(mediaAssets.map((a) => a.folder || 'Geral'))).filter(Boolean)
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -725,9 +827,32 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
                   <h3 className="font-bold flex items-center gap-2 text-slate-800">
                     <ImageIcon className="w-5 h-5 text-blue-600" /> Galeria de Fotos
                   </h3>
-                  <Button variant="outline" size="sm" onClick={() => setIsMediaCenterOpen(true)}>
-                    <ImageIcon className="w-4 h-4 mr-2 text-blue-600" /> Abrir Media Center
-                  </Button>
+                  <div className="flex gap-2">
+                    <input
+                      type="file"
+                      multiple
+                      accept="image/*,video/*"
+                      className="hidden"
+                      ref={photoInputRef}
+                      onChange={handlePhotoUpload}
+                    />
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => photoInputRef.current?.click()}
+                      disabled={isUploadingPhotos}
+                    >
+                      {isUploadingPhotos ? (
+                        <span className="animate-spin mr-2">...</span>
+                      ) : (
+                        <UploadCloud className="w-4 h-4 mr-2" />
+                      )}
+                      Upload
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => setIsMediaCenterOpen(true)}>
+                      <ImageIcon className="w-4 h-4 mr-2 text-blue-600" /> Biblioteca
+                    </Button>
+                  </div>
                 </div>
 
                 {formData.fotos?.length > 0 ? (
@@ -778,12 +903,16 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
                             variant="ghost"
                             size="icon"
                             className="text-red-500 hover:bg-red-50"
-                            onClick={() =>
-                              setFormData((p: any) => ({
-                                ...p,
-                                fotos: p.fotos.filter((_: any, x: number) => x !== i),
-                              }))
-                            }
+                            onClick={async () => {
+                              const newFotos = formData.fotos.filter((_: any, x: number) => x !== i)
+                              setFormData((p: any) => ({ ...p, fotos: newFotos }))
+                              if (formData.id) {
+                                await supabase
+                                  .from('veiculos')
+                                  .update({ fotos: newFotos })
+                                  .eq('id', formData.id)
+                              }
+                            }}
                           >
                             <Trash2 className="w-4 h-4" />
                           </Button>
@@ -931,8 +1060,8 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
 
         {/* MEDIA CENTER DIALOG */}
         <Dialog open={isMediaCenterOpen} onOpenChange={setIsMediaCenterOpen}>
-          <DialogContent className="max-w-4xl max-h-[80vh] overflow-hidden flex flex-col">
-            <DialogHeader className="shrink-0 flex flex-row items-center justify-between border-b pb-4">
+          <DialogContent className="max-w-5xl h-[85vh] p-0 flex flex-col overflow-hidden bg-slate-50">
+            <DialogHeader className="shrink-0 flex flex-row items-center justify-between border-b p-4 bg-white">
               <DialogTitle className="flex items-center gap-2">
                 <ImageIcon className="w-5 h-5 text-blue-600" /> Media Center
               </DialogTitle>
@@ -946,35 +1075,65 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
                 />
               </div>
             </DialogHeader>
-            <ScrollArea className="flex-1 p-4 bg-slate-50">
-              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-4">
-                {filteredMedia.map((asset) => (
-                  <div
-                    key={asset.id}
-                    onClick={() => handleMediaSelect(asset.file_path)}
-                    className="relative aspect-square rounded-lg overflow-hidden border-2 border-transparent hover:border-blue-500 cursor-pointer shadow-sm group bg-white"
+            <div className="flex flex-1 min-h-0 overflow-hidden">
+              <div className="w-64 border-r bg-white p-2 flex flex-col gap-1 overflow-y-auto shrink-0">
+                <Button
+                  variant={selectedFolder === null ? 'secondary' : 'ghost'}
+                  className="justify-start text-left w-full"
+                  onClick={() => setSelectedFolder(null)}
+                >
+                  Todas as Pastas
+                </Button>
+                {folders.map((f) => (
+                  <Button
+                    key={f}
+                    variant={selectedFolder === f ? 'secondary' : 'ghost'}
+                    className="justify-start text-left w-full truncate"
+                    onClick={() => setSelectedFolder(f)}
+                    title={f}
                   >
-                    {asset.mime_type?.startsWith('video/') ? (
-                      <video src={asset.file_path} className="w-full h-full object-cover" muted />
-                    ) : (
-                      <img
-                        src={asset.file_path}
-                        className="w-full h-full object-cover"
-                        loading="lazy"
-                      />
-                    )}
-                    {(formData.fotos || []).includes(asset.file_path) && (
-                      <div className="absolute inset-0 bg-blue-500/30 flex items-center justify-center backdrop-blur-[1px]">
-                        <div className="bg-blue-500 text-white rounded-full p-1">
-                          <Plus className="w-4 h-4 rotate-45" />
-                        </div>
-                      </div>
-                    )}
-                  </div>
+                    {f}
+                  </Button>
                 ))}
               </div>
-            </ScrollArea>
-            <div className="flex justify-end p-4 border-t bg-white shrink-0">
+              <ScrollArea className="flex-1 p-4">
+                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-4">
+                  {filteredMedia.map((asset) => (
+                    <div
+                      key={asset.id}
+                      onClick={() => handleMediaSelect(asset.file_path)}
+                      className="relative aspect-square rounded-lg overflow-hidden border-2 border-transparent hover:border-blue-500 cursor-pointer shadow-sm group bg-white"
+                    >
+                      {asset.mime_type?.startsWith('video/') ? (
+                        <video src={asset.file_path} className="w-full h-full object-cover" muted />
+                      ) : (
+                        <img
+                          src={asset.file_path}
+                          className="w-full h-full object-cover"
+                          loading="lazy"
+                        />
+                      )}
+                      {(formData.fotos || []).includes(asset.file_path) && (
+                        <div className="absolute inset-0 bg-blue-500/30 flex items-center justify-center backdrop-blur-[1px]">
+                          <div className="bg-blue-500 text-white rounded-full p-1">
+                            <Plus className="w-4 h-4 rotate-45" />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                  {filteredMedia.length === 0 && (
+                    <div className="col-span-full text-center text-slate-500 py-12">
+                      Nenhuma mídia encontrada.
+                    </div>
+                  )}
+                </div>
+              </ScrollArea>
+            </div>
+            <div className="flex justify-between items-center p-4 border-t bg-white shrink-0">
+              <span className="text-sm text-slate-500 font-medium">
+                {(formData.fotos || []).length} fotos selecionadas
+              </span>
               <Button onClick={() => setIsMediaCenterOpen(false)}>Concluir Seleção</Button>
             </div>
           </DialogContent>
