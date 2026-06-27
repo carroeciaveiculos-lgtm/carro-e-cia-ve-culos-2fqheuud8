@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import { getImageUrl } from '@/lib/image-utils'
 
 export function VehicleCard({ vehicle }: { vehicle: any }) {
@@ -31,15 +32,24 @@ export function VehicleCard({ vehicle }: { vehicle: any }) {
       </div>
       <CardContent className="p-4 flex-1 flex flex-col">
         <div className="mb-3">
-          <h3 className="font-bold text-lg leading-tight group-hover:text-primary transition-colors line-clamp-1 mb-2">
-            {vehicle.marca} {vehicle.modelo}
+          <h3 className="font-bold text-lg leading-tight group-hover:text-primary transition-colors mb-3">
+            {vehicle.marca} {vehicle.modelo} {vehicle.versao}
           </h3>
-          <p className="text-[13px] text-muted-foreground line-clamp-1 mb-1">
-            Ano: {vehicle.ano_fabricacao} | {vehicle.combustivel || 'N/I'}
-          </p>
-          <p className="text-[13px] text-muted-foreground line-clamp-1">
-            Km: {vehicle.quilometragem?.toLocaleString('pt-BR') || 0}
-          </p>
+          <div className="flex flex-wrap gap-1.5">
+            <Badge variant="secondary" className="text-xs font-normal">
+              Ano {vehicle.ano_modelo || vehicle.ano_fabricacao}
+            </Badge>
+            {vehicle.combustivel && (
+              <Badge variant="secondary" className="text-xs font-normal">
+                {vehicle.combustivel}
+              </Badge>
+            )}
+            {vehicle.cor && (
+              <Badge variant="secondary" className="text-xs font-normal">
+                {vehicle.cor}
+              </Badge>
+            )}
+          </div>
         </div>
         <div className="bg-muted/40 p-3 rounded-lg mb-4 mt-auto">
           <p className="text-2xl font-bold text-[#25D366] m-0">

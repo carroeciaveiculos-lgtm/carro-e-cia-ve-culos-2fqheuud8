@@ -286,7 +286,7 @@ export default function Estoque() {
             {loading ? (
               <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 {[1, 2, 3, 4, 5, 6].map((i) => (
-                  <Card key={i} className="h-80 animate-pulse bg-muted/50 border-0" />
+                  <Card key={i} className="h-[420px] animate-pulse bg-muted/50 border-0" />
                 ))}
               </div>
             ) : filteredVeiculos.length === 0 ? (
@@ -383,16 +383,24 @@ export default function Estoque() {
                       </div>
                       <CardContent className="p-4 flex-1 flex flex-col">
                         <div className="mb-3">
-                          <h3 className="font-bold text-base md:text-lg leading-tight group-hover:text-primary transition-colors line-clamp-1 mb-2">
-                            {v.marca} {v.modelo}
+                          <h3 className="font-bold text-base md:text-lg leading-tight group-hover:text-primary transition-colors mb-3">
+                            {v.marca} {v.modelo} {v.versao}
                           </h3>
-                          <p className="text-[13px] text-muted-foreground line-clamp-1 mb-1">
-                            Ano: {v.ano_fabricacao} | Combustível: {v.combustivel || 'N/I'} | Cor:{' '}
-                            {v.cor || 'N/I'}
-                          </p>
-                          <p className="text-[13px] text-muted-foreground line-clamp-1">
-                            Quilometragem: {v.quilometragem?.toLocaleString('pt-BR') || 0} km
-                          </p>
+                          <div className="flex flex-wrap gap-1.5">
+                            <Badge variant="secondary" className="text-xs font-normal">
+                              Ano {v.ano_modelo || v.ano_fabricacao}
+                            </Badge>
+                            {v.combustivel && (
+                              <Badge variant="secondary" className="text-xs font-normal">
+                                {v.combustivel}
+                              </Badge>
+                            )}
+                            {v.cor && (
+                              <Badge variant="secondary" className="text-xs font-normal">
+                                {v.cor}
+                              </Badge>
+                            )}
+                          </div>
                         </div>
 
                         <div className="bg-[#f5f5f5] dark:bg-muted/30 p-3 rounded-lg mb-4 mt-auto">
