@@ -4,8 +4,7 @@ import { createClient } from 'jsr:@supabase/supabase-js@2'
 export const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-  'Access-Control-Allow-Headers':
-    'authorization, x-client-info, x-supabase-client-platform, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, x-supabase-client-platform, apikey, content-type',
 }
 
 Deno.serve(async (req: Request) => {
@@ -59,8 +58,8 @@ Deno.serve(async (req: Request) => {
         }
       }
 
-      // CONVERSÃO DE SUCESSO COCKPIT:
-      // O proxy do Cloudflare lê o seu WebP do bucket do Supabase e o entrega em tempo real
+      // CONVERSÃO DE SUCESSO COCKPIT: 
+      // O proxy do Cloudflare lê o seu WebP do bucket do Supabase e o entrega em tempo real 
       // como JPEG para a VENDA.IA de forma 100% gratuita!
       fotos = fotos.map((url: any) => {
         if (typeof url === 'string' && url.includes('supabase.co/storage/v1/object/public/')) {
