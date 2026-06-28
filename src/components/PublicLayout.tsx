@@ -182,15 +182,6 @@ export default function PublicLayout() {
               </a>
             </Button>
           </nav>
-
-          {/* Mobile Toggle */}
-          <button
-            className="md:hidden flex items-center justify-center w-11 h-11 text-foreground"
-            onClick={() => setMenuOpen(true)}
-            aria-label="Abrir menu"
-          >
-            <Menu className="w-6 h-6" />
-          </button>
         </div>
       </header>
       {/* Main Content Padding */}

@@ -9,28 +9,22 @@ const supabase = createClient(
 
 const geminiKey = Deno.env.get('GEMINI_API_KEY') || Deno.env.get('GEMINI_APY_KEY')!
 const waToken = Deno.env.get('WHATSAPP_TOKEN') || Deno.env.get('META_WHATSAPP_ACCESS_TOKEN')!
-const waPhoneId =
-  Deno.env.get('WHATSAPP_PHONE_NUMBER_ID') || Deno.env.get('META_PHONE_NUMBER_ID') || 'default_id'
+const waPhoneId = Deno.env.get('WHATSAPP_PHONE_NUMBER_ID') || Deno.env.get('META_PHONE_NUMBER_ID') || 'default_id'
 
 async function getSystemPrompt() {
   const { data } = await supabase
     .from('social_configuracoes')
     .select('ai_system_prompt, whatsapp_number')
     .maybeSingle()
-
+  
   const basePrompt = data?.ai_system_prompt || 'Você é o Luiz, SDR digital da Carro e Cia Motors.'
   const waNumber = data?.whatsapp_number || ''
 
-  const { data: brainKnowledge } = await supabase
-    .from('brain_ia_knowledge')
-    .select('titulo, conteudo, tipo')
-    .limit(10)
-
+  const { data: brainKnowledge } = await supabase.from('brain_ia_knowledge').select('titulo, conteudo, tipo').limit(10)
+  
   let memoryContext = ''
   if (brainKnowledge && brainKnowledge.length > 0) {
-    memoryContext =
-      '\nConhecimento (Memória Ativa):\n' +
-      brainKnowledge.map((k: any) => `[${k.titulo}]: ${k.conteudo || k.tipo}`).join('\n')
+    memoryContext = '\nConhecimento (Memória Ativa):\n' + brainKnowledge.map((k: any) => `[${k.titulo}]: ${k.conteudo || k.tipo}`).join('\n')
   }
 
   return `${basePrompt}${memoryContext}
@@ -88,13 +82,13 @@ Deno.serve(async (req) => {
         .select('*')
         .eq('id', lead_id)
         .maybeSingle()
-
-      if (leadError) console.error('Erro ao carregar dados do lead:', leadError)
+        
+      if (leadError) console.error("Erro ao carregar dados do lead:", leadError);
 
       if (!lead) {
-        return new Response(JSON.stringify({ error: 'Lead não localizado.' }), {
-          status: 404,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        return new Response(JSON.stringify({ error: 'Lead não localizado.' }), { 
+          status: 404, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
         })
       }
 

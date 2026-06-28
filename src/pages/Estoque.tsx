@@ -23,7 +23,7 @@ import { Slider } from '@/components/ui/slider'
 import { Label } from '@/components/ui/label'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
 import { supabase } from '@/lib/supabase/client'
-import { Filter, Search, Car, Share2 } from 'lucide-react'
+import { Filter, Search, Car, Share2, CalendarDays, Settings2, Fuel } from 'lucide-react'
 import { trackCTAClick } from '@/lib/tracking'
 import { toast } from 'sonner'
 import { getImageUrl } from '@/lib/image-utils'
@@ -42,7 +42,7 @@ export default function Estoque() {
     supabase
       .from('veiculos')
       .select(
-        'id, marca, modelo, versao, ano_fabricacao, ano_modelo, preco_venda, quilometragem, combustivel, cor, fotos, is_zero_km, status, is_consignado, categoria, exibir_no_site',
+        'id, marca, modelo, versao, ano_fabricacao, ano_modelo, preco_venda, quilometragem, combustivel, cambio, cor, fotos, is_zero_km, status, is_consignado, categoria, exibir_no_site',
       )
       .eq('status', 'disponivel')
       .eq('exibir_no_site', true)
@@ -165,8 +165,8 @@ export default function Estoque() {
   return (
     <main className="flex-1 bg-muted/10 pt-24 pb-16">
       <SEO
-        title="Carros em Estoque | Consignação em Uberaba - Carro e Cia"
-        description="Confira nosso estoque de carros em Uberaba. Procedência verificada, preços justos, financiamento facilitado. Carro e Cia."
+        title="Estoque de Carros Seminovos e Usados em Uberaba | Carro e Cia Motors"
+        description="Confira o estoque de carros seminovos e usados selecionados da Carro e Cia Motors em Uberaba - MG. Veículos com procedência garantida e 1 ano de garantia de câmbio e motor."
       />
 
       <section className="container max-w-7xl mx-auto px-4 mb-8">
@@ -310,7 +310,7 @@ export default function Estoque() {
                       key={v.id}
                       className="overflow-hidden hover:shadow-lg transition-shadow border-border/50 group flex flex-col w-full"
                     >
-                      <div className="relative w-full h-[300px] bg-muted group-hover:scale-105 transition-transform duration-500">
+                      <div className="relative w-full aspect-video bg-muted group-hover:scale-105 transition-transform duration-500">
                         {v.is_zero_km && (
                           <Badge className="absolute top-3 left-3 z-10 bg-primary">0 KM</Badge>
                         )}
@@ -352,7 +352,7 @@ export default function Estoque() {
                                   {url.match(/\.(mp4|mov|webm)$/i) ? (
                                     <video
                                       src={url}
-                                      className="w-full h-[300px] object-cover"
+                                      className="w-full aspect-video object-cover"
                                       muted
                                       loop
                                       playsInline
@@ -361,7 +361,7 @@ export default function Estoque() {
                                     <img
                                       src={url}
                                       alt={`${v.marca} ${v.modelo} - Foto ${index + 1}`}
-                                      className="w-full h-[300px] object-cover bg-muted"
+                                      className="w-full aspect-video object-cover bg-muted"
                                       loading="lazy"
                                       onError={(e) => {
                                         ;(e.target as HTMLImageElement).src =
@@ -383,21 +383,31 @@ export default function Estoque() {
                       </div>
                       <CardContent className="p-4 flex-1 flex flex-col">
                         <div className="mb-3">
-                          <h3 className="font-bold text-base md:text-lg leading-tight group-hover:text-primary transition-colors mb-3">
+                          <h2 className="font-bold text-base md:text-lg leading-tight group-hover:text-primary transition-colors mb-3">
                             {v.marca} {v.modelo} {v.versao}
-                          </h3>
-                          <div className="flex flex-wrap gap-1.5">
-                            <Badge variant="secondary" className="text-xs font-normal">
-                              Ano {v.ano_modelo || v.ano_fabricacao}
+                          </h2>
+                          <div className="flex flex-wrap gap-2 mb-3">
+                            <Badge
+                              variant="secondary"
+                              className="bg-muted/50 text-muted-foreground text-xs font-medium flex items-center gap-1.5 py-1 px-2"
+                            >
+                              <CalendarDays className="w-3 h-3" /> {v.ano_fabricacao}/
+                              {v.ano_modelo || v.ano_fabricacao}
                             </Badge>
-                            {v.combustivel && (
-                              <Badge variant="secondary" className="text-xs font-normal">
-                                {v.combustivel}
+                            {v.cambio && (
+                              <Badge
+                                variant="secondary"
+                                className="bg-muted/50 text-muted-foreground text-xs font-medium flex items-center gap-1.5 py-1 px-2"
+                              >
+                                <Settings2 className="w-3 h-3" /> {v.cambio}
                               </Badge>
                             )}
-                            {v.cor && (
-                              <Badge variant="secondary" className="text-xs font-normal">
-                                {v.cor}
+                            {v.combustivel && (
+                              <Badge
+                                variant="secondary"
+                                className="bg-muted/50 text-muted-foreground text-xs font-medium flex items-center gap-1.5 py-1 px-2"
+                              >
+                                <Fuel className="w-3 h-3" /> {v.combustivel}
                               </Badge>
                             )}
                           </div>
@@ -413,15 +423,17 @@ export default function Estoque() {
 
                         <Button
                           asChild
-                          className="w-full h-12 bg-[#25D366] hover:bg-[#20bd5a] text-white font-bold text-sm rounded-lg"
+                          variant="outline"
+                          className="w-full h-10 font-bold text-sm rounded-lg"
                         >
-                          <a
-                            href={`https://wa.me/5534999484285?text=${encodeURIComponent(`Olá! Vi o ${v.marca} ${v.modelo} no site por R$ ${v.preco_venda}. Ainda está disponível?`)}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
+                          <Link
+                            to={`/estoque/${v.id}`}
+                            onClick={() =>
+                              trackCTAClick(`Ver Detalhes: ${v.marca} ${v.modelo}`, '/estoque')
+                            }
                           >
-                            CHAMAR VENDEDOR NO WHATSAPP
-                          </a>
+                            Ver Detalhes
+                          </Link>
                         </Button>
                       </CardContent>
                     </Card>
