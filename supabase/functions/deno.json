@@ -2,7 +2,7 @@
   "_versions": {
     "send-lead-email": 66,
     "receive-leads": 87,
-    "sync-estoque": 65,
+    "sync-estoque": 66,
     "webhook-portais": 67,
     "on-lead-created": 66,
     "consultar-placa": 75,
