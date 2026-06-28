@@ -26,29 +26,33 @@ Descrição: ${veiculo.descricao || 'Sem descrição adicional'}
 
 Inclua emojis, um tom atrativo e chamadas para ação. No final, adicione hashtags relevantes. Não coloque aspas no texto todo. O formato deve estar pronto para copiar e colar no ${platform}.`
 
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          contents: [
+            {
+              parts: [{ text: prompt }],
+            },
+          ],
+        }),
       },
-      body: JSON.stringify({
-        contents: [{
-          parts: [{ text: prompt }]
-        }]
-      })
-    })
+    )
 
     const data = await response.json()
     const text = data.candidates?.[0]?.content?.parts?.[0]?.text || 'Erro ao gerar conteúdo.'
 
-    return new Response(
-      JSON.stringify({ success: true, text }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    )
+    return new Response(JSON.stringify({ success: true, text }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    })
   } catch (error: any) {
-    return new Response(
-      JSON.stringify({ success: false, error: error.message }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
-    )
+    return new Response(JSON.stringify({ success: false, error: error.message }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      status: 500,
+    })
   }
 })
