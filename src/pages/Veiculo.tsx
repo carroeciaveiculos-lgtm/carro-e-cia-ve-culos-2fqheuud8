@@ -41,7 +41,12 @@ import {
 } from '@/components/ui/carousel'
 import { VehicleCard } from '@/components/VehicleCard'
 import { Skeleton } from '@/components/ui/skeleton'
-import { trackVehicleView, trackWhatsAppClick, trackSimulation } from '@/lib/tracking'
+import {
+  trackVehicleView,
+  trackWhatsAppClick,
+  trackSimulation,
+  trackCTAClick,
+} from '@/lib/tracking'
 import { SEO } from '@/components/SEO'
 
 export default function Veiculo() {
@@ -76,12 +81,13 @@ export default function Veiculo() {
     const fetchVehicle = async () => {
       setLoading(true)
       const { data, error } = await supabase.from('veiculos').select('*').eq('id', id).single()
-      if (data) {
+      if (data && data.status === 'disponivel' && data.exibir_no_site !== false) {
         setVehicle(data)
         const { data: simData } = await supabase
           .from('veiculos')
           .select('*')
           .eq('marca', data.marca)
+          .eq('status', 'disponivel')
           .neq('id', data.id)
           .limit(3)
         if (simData) setSimilar(simData)
@@ -241,15 +247,6 @@ export default function Veiculo() {
                           decoding="async"
                           className="w-full h-full object-cover"
                         />
-                        {vehicle.is_consignado ? (
-                          <Badge className="absolute top-4 right-4 bg-primary text-primary-foreground border-none text-sm px-3 py-1">
-                            Consignado
-                          </Badge>
-                        ) : (
-                          <Badge className="absolute top-4 right-4 bg-secondary text-secondary-foreground border-none text-sm px-3 py-1">
-                            Próprio
-                          </Badge>
-                        )}
                       </div>
                     </CarouselItem>
                   ))

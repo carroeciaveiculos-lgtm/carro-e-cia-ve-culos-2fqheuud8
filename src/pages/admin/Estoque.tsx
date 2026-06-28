@@ -18,14 +18,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
   Edit2,
-  ExternalLink,
-  Archive,
-  Share2,
   Plus,
-  Printer,
-  Download,
   Search,
   Car,
   AlertTriangle,
@@ -33,33 +29,110 @@ import {
   MessageCircle,
   CheckCircle,
   QrCode,
-  Sparkles,
   Loader2,
-  Activity,
+  Undo2,
+  Power,
+  Share2,
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { Textarea } from '@/components/ui/textarea'
 import VehicleFormModal from './VehicleFormModal'
+import { VehicleQuickViewModal } from '@/components/admin/VehicleQuickViewModal'
+import { VehicleShareModal } from '@/components/admin/VehicleShareModal'
+
+const STATUS_MAP: Record<string, string> = {
+  ativos: 'disponivel',
+  vendidos: 'vendido',
+  devolvidos: 'devolvido',
+}
 
 export default function AdminEstoque() {
   const [vehicles, setVehicles] = useState<any[]>([])
   const [search, setSearch] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
+  const [activeTab, setActiveTab] = useState('ativos')
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [sortBy, setSortBy] = useState('recentes')
-  const [statusFilter, setStatusFilter] = useState('todos')
   const [diasFilter, setDiasFilter] = useState('todos')
   const [combustivelFilter, setCombustivelFilter] = useState('todos')
   const [page, setPage] = useState(0)
-
-  const combustiveis = ['Flex', 'Gasolina', 'Álcool', 'Diesel', 'Híbrido', 'Elétrico']
   const [totalCount, setTotalCount] = useState(0)
-  const pageSize = 10
   const [shareVehicle, setShareVehicle] = useState<any>(null)
+  const [quickViewVehicle, setQuickViewVehicle] = useState<any>(null)
   const [loadingQR, setLoadingQR] = useState(false)
   const { toast } = useToast()
+
+  const combustiveis = ['Flex', 'Gasolina', 'Álcool', 'Diesel', 'Híbrido', 'Elétrico']
+  const pageSize = 10
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(search), 300)
+    return () => clearTimeout(timer)
+  }, [search])
+
+  const loadVehicles = async () => {
+    try {
+      let query = supabase.from('veiculos').select('*', { count: 'exact' })
+      query = query.eq('status', STATUS_MAP[activeTab])
+      if (debouncedSearch) {
+        query = query.or(
+          `marca.ilike.%${debouncedSearch}%,modelo.ilike.%${debouncedSearch}%,placa.ilike.%${debouncedSearch}%`,
+        )
+      }
+      if (combustivelFilter !== 'todos') {
+        query = query.eq('combustivel', combustivelFilter)
+      }
+      if (diasFilter !== 'todos' && activeTab === 'ativos') {
+        const dateLimit = new Date()
+        dateLimit.setDate(dateLimit.getDate() - parseInt(diasFilter))
+        query = query.lte('created_at', dateLimit.toISOString())
+      }
+      if (sortBy === 'recentes') query = query.order('created_at', { ascending: false })
+      if (sortBy === 'antigos') query = query.order('created_at', { ascending: true })
+      if (sortBy === 'menor_preco') query = query.order('preco_venda', { ascending: true })
+      if (sortBy === 'maior_preco') query = query.order('preco_venda', { ascending: false })
+      query = query.range(page * pageSize, (page + 1) * pageSize - 1)
+      const { data, count, error } = await query
+      if (error) throw error
+      if (data) setVehicles(data)
+      if (count !== null) setTotalCount(count)
+    } catch {
+      toast({ title: 'Erro ao carregar estoque', variant: 'destructive' })
+    }
+  }
+
+  useEffect(() => {
+    loadVehicles()
+  }, [activeTab, debouncedSearch, sortBy, diasFilter, combustivelFilter, page])
+
+  const handleDevolver = async (id: string) => {
+    if (!confirm('Tem certeza que deseja devolver este veículo ao cliente?')) return
+    const { error } = await supabase.from('veiculos').update({ status: 'devolvido' }).eq('id', id)
+    if (error) toast({ title: 'Erro ao devolver', variant: 'destructive' })
+    else {
+      toast({ title: 'Veículo devolvido ao cliente' })
+      loadVehicles()
+    }
+  }
+
+  const handleSell = async (id: string) => {
+    if (!confirm('Confirmar venda deste veículo? Ele sairá da vitrine pública.')) return
+    const { error } = await supabase.from('veiculos').update({ status: 'vendido' }).eq('id', id)
+    if (error) toast({ title: 'Erro ao registrar venda', variant: 'destructive' })
+    else {
+      toast({ title: 'Venda registrada com sucesso! 🎉' })
+      loadVehicles()
+    }
+  }
+
+  const handleAtivar = async (id: string) => {
+    const { error } = await supabase.from('veiculos').update({ status: 'disponivel' }).eq('id', id)
+    if (error) toast({ title: 'Erro ao ativar veículo', variant: 'destructive' })
+    else {
+      toast({ title: 'Veículo ativado com sucesso!' })
+      loadVehicles()
+    }
+  }
 
   const generateMissingQRCodes = async () => {
     setLoadingQR(true)
@@ -73,26 +146,18 @@ export default function AdminEstoque() {
         setLoadingQR(false)
         return
       }
-
-      toast({
-        title: `Gerando ${veiculos.length} QR Codes...`,
-        description: 'Aguarde, isso pode demorar um pouco.',
-      })
-
+      toast({ title: `Gerando ${veiculos.length} QR Codes...` })
       for (const v of veiculos) {
         const siteUrl = import.meta.env.VITE_SITE_URL || 'https://www.carroeciamotors.com.br'
         const url = `${siteUrl}/estoque/${v.id}`
         const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(url)}`
-
         try {
           const res = await fetch(qrUrl)
           const blob = await res.blob()
           const fileName = `${v.id}_qrcode.png`
-
           const { error: uploadError } = await supabase.storage
             .from('logos-e-imagens')
             .upload(`qrcodes/${fileName}`, blob, { contentType: 'image/png', upsert: true })
-
           if (!uploadError) {
             const { data: publicUrlData } = supabase.storage
               .from('logos-e-imagens')
@@ -102,11 +167,10 @@ export default function AdminEstoque() {
               .update({ qrcode_url: publicUrlData.publicUrl })
               .eq('id', v.id)
           }
-        } catch (e) {
-          console.error('Erro ao gerar QR para', v.id, e)
+        } catch {
+          /* ignore */
         }
       }
-
       toast({ title: 'QR Codes gerados com sucesso!' })
       loadVehicles()
     } catch (e: any) {
@@ -116,267 +180,25 @@ export default function AdminEstoque() {
     }
   }
 
-  useEffect(() => {
-    const timer = setTimeout(() => setDebouncedSearch(search), 300)
-    return () => clearTimeout(timer)
-  }, [search])
-
-  const loadVehicles = async () => {
-    try {
-      let query = supabase.from('veiculos').select('*', { count: 'exact' })
-      if (debouncedSearch) {
-        query = query.or(
-          `marca.ilike.%${debouncedSearch}%,modelo.ilike.%${debouncedSearch}%,placa.ilike.%${debouncedSearch}%`,
-        )
-      }
-      if (statusFilter !== 'todos') {
-        if (statusFilter === 'ativos') query = query.in('status', ['disponivel', 'consignado'])
-        if (statusFilter === 'inativos')
-          query = query.in('status', ['vendido', 'reservado', 'inativo'])
-        if (statusFilter === 'arquivados') query = query.eq('status', 'arquivado')
-      } else {
-        query = query.neq('status', 'arquivado')
-      }
-
-      if (diasFilter !== 'todos') {
-        const dateLimit = new Date()
-        dateLimit.setDate(dateLimit.getDate() - parseInt(diasFilter))
-        query = query.lte('created_at', dateLimit.toISOString())
-      }
-
-      if (combustivelFilter !== 'todos') {
-        query = query.eq('combustivel', combustivelFilter)
-      }
-
-      if (sortBy === 'recentes') query = query.order('created_at', { ascending: false })
-      if (sortBy === 'antigos') query = query.order('created_at', { ascending: true })
-      if (sortBy === 'menor_preco') query = query.order('preco_venda', { ascending: true })
-      if (sortBy === 'maior_preco') query = query.order('preco_venda', { ascending: false })
-
-      query = query.range(page * pageSize, (page + 1) * pageSize - 1)
-
-      const { data, count, error } = await query
-      if (error) throw error
-      if (data) setVehicles(data)
-      if (count !== null) setTotalCount(count)
-    } catch (error) {
-      toast({ title: 'Erro ao carregar estoque', variant: 'destructive' })
-    }
-  }
-
-  useEffect(() => {
-    loadVehicles()
-  }, [debouncedSearch, sortBy, statusFilter, diasFilter, combustivelFilter, page])
-
-  const handleArchive = async (id: string) => {
-    if (!confirm('Tem certeza que deseja arquivar este veículo? Ele será movido para o histórico.'))
-      return
-    const { error } = await supabase.from('veiculos').update({ status: 'arquivado' }).eq('id', id)
-    if (error) toast({ title: 'Erro ao arquivar', variant: 'destructive' })
-    else {
-      toast({ title: 'Veículo arquivado no histórico' })
-      loadVehicles()
-    }
-  }
-
-  const handleSell = async (id: string) => {
-    if (
-      !confirm(
-        'Confirmar venda deste veículo? Ele será marcado como VENDIDO e sairá da vitrine pública.',
-      )
-    )
-      return
-    const { error } = await supabase.from('veiculos').update({ status: 'vendido' }).eq('id', id)
-    if (error) toast({ title: 'Erro ao registrar venda', variant: 'destructive' })
-    else {
-      toast({ title: 'Venda registrada com sucesso! 🎉' })
-      loadVehicles()
-    }
-  }
-
-  const handleDeleteHard = async (id: string) => {
-    if (
-      !confirm(
-        'EXCLUSÃO PERMANENTE: Tem certeza que deseja apagar este veículo do banco de dados? Use apenas para erros de cadastro.',
-      )
-    )
-      return
-    const { error } = await supabase.from('veiculos').delete().eq('id', id)
-    if (error) toast({ title: 'Erro ao excluir', variant: 'destructive' })
-    else {
-      toast({ title: 'Veículo excluído permanentemente' })
-      loadVehicles()
-    }
-  }
-
   const formatCurrency = (val: number) =>
     val ? new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val) : '-'
 
   const diasEmEstoque = (dateString: string) => {
     if (!dateString) return 0
-    const diff = new Date().getTime() - new Date(dateString).getTime()
-    return Math.floor(diff / (1000 * 3600 * 24))
+    return Math.floor((new Date().getTime() - new Date(dateString).getTime()) / (1000 * 3600 * 24))
   }
 
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'disponivel':
         return <Badge className="bg-green-600">Ativo</Badge>
-      case 'consignado':
-        return <Badge className="bg-purple-600">Consignado</Badge>
-      case 'reservado':
-        return <Badge className="bg-amber-500">Reservado</Badge>
       case 'vendido':
         return <Badge className="bg-slate-500">Vendido</Badge>
-      case 'arquivado':
-        return <Badge className="bg-slate-300 text-slate-700">Arquivado</Badge>
-      case 'inativo':
-        return (
-          <Badge variant="outline" className="text-slate-400">
-            Inativo
-          </Badge>
-        )
+      case 'devolvido':
+        return <Badge className="bg-amber-500">Devolvido</Badge>
       default:
-        return (
-          <Badge variant="outline" className="capitalize">
-            {status}
-          </Badge>
-        )
+        return <Badge variant="outline">{status}</Badge>
     }
-  }
-
-  const ShareModal = () => {
-    const [platform, setPlatform] = useState('instagram')
-    const [text, setText] = useState('')
-    const [isGenerating, setIsGenerating] = useState(false)
-
-    useEffect(() => {
-      if (shareVehicle && !text) {
-        setText(
-          `🚗 ${shareVehicle.marca} ${shareVehicle.modelo}\n💰 ${formatCurrency(shareVehicle.preco_venda)}\n🔗 ${import.meta.env.VITE_SITE_URL || 'https://www.carroeciamotors.com.br'}/estoque/${shareVehicle.id}`,
-        )
-      }
-    }, [])
-
-    if (!shareVehicle) return null
-
-    const handleGenerateIA = async () => {
-      setIsGenerating(true)
-      try {
-        const { data, error } = await supabase.functions.invoke('gerar-conteudo-social', {
-          body: { veiculo: shareVehicle, platform },
-        })
-        if (error) throw error
-        if (data?.success) {
-          setText(data.text)
-          toast({ title: 'Conteúdo gerado com IA!' })
-        } else {
-          throw new Error(data?.error || 'Erro desconhecido')
-        }
-      } catch (err: any) {
-        toast({ title: 'Erro ao gerar', description: err.message, variant: 'destructive' })
-      } finally {
-        setIsGenerating(false)
-      }
-    }
-
-    return (
-      <Dialog
-        open={!!shareVehicle}
-        onOpenChange={() => {
-          setShareVehicle(null)
-          setText('')
-        }}
-      >
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Compartilhar Anúncio</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <label className="text-xs font-medium text-slate-500 mb-1.5 block">Plataforma</label>
-              <Select value={platform} onValueChange={setPlatform}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione a rede" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="instagram">Instagram</SelectItem>
-                  <SelectItem value="facebook">Facebook</SelectItem>
-                  <SelectItem value="whatsapp">WhatsApp</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <label className="text-xs font-medium text-slate-500 mb-1.5 block">
-                Texto do Post
-              </label>
-              <Textarea
-                value={text}
-                onChange={(e) => setText(e.target.value)}
-                className="h-40 bg-slate-50 text-xs font-mono"
-              />
-            </div>
-
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                onClick={handleGenerateIA}
-                disabled={isGenerating}
-                className="w-1/2 border-purple-200 text-purple-700 bg-purple-50 hover:bg-purple-100"
-              >
-                {isGenerating ? (
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                ) : (
-                  <Sparkles className="w-4 h-4 mr-2" />
-                )}
-                Gerar com IA
-              </Button>
-              <Button
-                onClick={() => {
-                  navigator.clipboard.writeText(text)
-                  toast({ title: 'Copiado para a área de transferência!' })
-                }}
-                className="w-1/2"
-              >
-                Copiar
-              </Button>
-            </div>
-            {text && (
-              <Button
-                variant="secondary"
-                onClick={async () => {
-                  const { error } = await supabase.from('social_posts').insert({
-                    texto: text,
-                    imagem: shareVehicle.fotos?.[0] || '',
-                    redes: [platform],
-                    status: 'Rascunho',
-                    veiculo_id: shareVehicle.id,
-                  })
-                  if (error) {
-                    toast({
-                      title: 'Erro ao enviar',
-                      description: error.message,
-                      variant: 'destructive',
-                    })
-                  } else {
-                    toast({
-                      title: 'Sucesso',
-                      description: 'Conteúdo enviado para o painel de Marketing!',
-                    })
-                    setShareVehicle(null)
-                  }
-                }}
-                className="w-full mt-2 bg-slate-800 text-white hover:bg-slate-700 border-none"
-              >
-                <Activity className="w-4 h-4 mr-2" />
-                Enviar para o Hub de Marketing
-              </Button>
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
-    )
   }
 
   return (
@@ -387,19 +209,20 @@ export default function AdminEstoque() {
             <Car className="w-6 h-6 text-blue-600" /> Estoque e Integrador
           </h1>
           <p className="text-sm text-slate-500 mt-1">
-            Gerencie seus veículos, arquive vendas passadas e organize os portais.
+            Gerencie seus veículos ativos, vendidos e devolvidos.
           </p>
         </div>
         <div className="flex gap-2">
-          <Button
-            variant="outline"
-            onClick={generateMissingQRCodes}
-            disabled={loadingQR}
-            className="hidden sm:flex border-blue-200 text-blue-700 bg-blue-50 hover:bg-blue-100"
-          >
-            <QrCode className="w-4 h-4 mr-2" />{' '}
-            {loadingQR ? 'Gerando...' : 'Gerar QR Codes Faltantes'}
-          </Button>
+          {activeTab === 'ativos' && (
+            <Button
+              variant="outline"
+              onClick={generateMissingQRCodes}
+              disabled={loadingQR}
+              className="hidden sm:flex border-blue-200 text-blue-700 bg-blue-50 hover:bg-blue-100"
+            >
+              <QrCode className="w-4 h-4 mr-2" /> {loadingQR ? 'Gerando...' : 'Gerar QR Codes'}
+            </Button>
+          )}
           <Button
             onClick={() => {
               setEditingId(null)
@@ -436,28 +259,19 @@ export default function AdminEstoque() {
               ))}
             </SelectContent>
           </Select>
-          <Select value={diasFilter} onValueChange={setDiasFilter}>
-            <SelectTrigger className="w-[140px]">
-              <SelectValue placeholder="Tempo Estoque" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="todos">Todos</SelectItem>
-              <SelectItem value="30">+ de 30 dias</SelectItem>
-              <SelectItem value="60">+ de 60 dias</SelectItem>
-              <SelectItem value="90">+ de 90 dias</SelectItem>
-            </SelectContent>
-          </Select>
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="todos">Todos Ativos</SelectItem>
-              <SelectItem value="ativos">Disponíveis</SelectItem>
-              <SelectItem value="inativos">Vendidos/Inativos</SelectItem>
-              <SelectItem value="arquivados">Histórico (Arquivados)</SelectItem>
-            </SelectContent>
-          </Select>
+          {activeTab === 'ativos' && (
+            <Select value={diasFilter} onValueChange={setDiasFilter}>
+              <SelectTrigger className="w-[140px]">
+                <SelectValue placeholder="Tempo Estoque" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todos</SelectItem>
+                <SelectItem value="30">+ de 30 dias</SelectItem>
+                <SelectItem value="60">+ de 60 dias</SelectItem>
+                <SelectItem value="90">+ de 90 dias</SelectItem>
+              </SelectContent>
+            </Select>
+          )}
           <Select value={sortBy} onValueChange={setSortBy}>
             <SelectTrigger className="w-[160px]">
               <SelectValue placeholder="Ordem" />
@@ -466,12 +280,27 @@ export default function AdminEstoque() {
               <SelectItem value="recentes">Mais Recentes</SelectItem>
               <SelectItem value="antigos">Mais Antigos</SelectItem>
               <SelectItem value="menor_preco">Menor Preço</SelectItem>
+              <SelectItem value="maior_preco">Maior Preço</SelectItem>
             </SelectContent>
           </Select>
         </div>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
+      <Tabs
+        value={activeTab}
+        onValueChange={(v) => {
+          setActiveTab(v)
+          setPage(0)
+        }}
+      >
+        <TabsList className="bg-white border rounded-t-xl w-full justify-start px-4 gap-2">
+          <TabsTrigger value="ativos">Ativos</TabsTrigger>
+          <TabsTrigger value="vendidos">Vendidos</TabsTrigger>
+          <TabsTrigger value="devolvidos">Devolvidos</TabsTrigger>
+        </TabsList>
+      </Tabs>
+
+      <div className="bg-white rounded-b-xl shadow-sm border border-t-0 overflow-hidden">
         <Table>
           <TableHeader className="bg-slate-50">
             <TableRow>
@@ -488,12 +317,8 @@ export default function AdminEstoque() {
               const dias = diasEmEstoque(v.created_at)
               const isEncalhado = dias > 60 && v.status === 'disponivel'
               const poucaVisibilidade = v.visualizacoes_site < 50 && dias > 30
-
               return (
-                <TableRow
-                  key={v.id}
-                  className={`hover:bg-slate-50/50 ${v.status === 'arquivado' ? 'opacity-60' : ''}`}
-                >
+                <TableRow key={v.id} className="hover:bg-slate-50/50">
                   <TableCell>
                     <div className="w-16 h-12 bg-slate-100 rounded-md border overflow-hidden">
                       {v.fotos?.[0] ? (
@@ -509,11 +334,14 @@ export default function AdminEstoque() {
                         {v.marca} {v.modelo}
                       </p>
                       {getStatusBadge(v.status)}
+                      {v.is_consignado && (
+                        <Badge className="bg-purple-600 text-[9px]">Consig.</Badge>
+                      )}
                     </div>
                     <div className="text-xs text-slate-500 font-mono">
                       {v.placa || 'SEM PLACA'} • {v.ano_fabricacao} • {v.cor}
                     </div>
-                    {(isEncalhado || poucaVisibilidade) && v.status === 'disponivel' && (
+                    {activeTab === 'ativos' && (isEncalhado || poucaVisibilidade) && (
                       <div className="mt-1 flex flex-col gap-1">
                         {isEncalhado && (
                           <span className="text-[10px] text-red-600 bg-red-50 px-1.5 py-0.5 rounded flex items-center w-fit">
@@ -577,6 +405,15 @@ export default function AdminEstoque() {
                       <Button
                         variant="ghost"
                         size="icon"
+                        onClick={() => setQuickViewVehicle(v)}
+                        className="text-slate-600"
+                        title="Consultar/Visualizar"
+                      >
+                        <Eye className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
                         onClick={() => {
                           setEditingId(v.id)
                           setIsModalOpen(true)
@@ -586,46 +423,46 @@ export default function AdminEstoque() {
                       >
                         <Edit2 className="w-4 h-4" />
                       </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => setShareVehicle(v)}
-                        className="text-pink-600"
-                        title="Compartilhar"
-                      >
-                        <Share2 className="w-4 h-4" />
-                      </Button>
-                      {(v.status === 'disponivel' || v.status === 'consignado') && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleSell(v.id)}
-                          className="text-green-600 hover:text-green-700 hover:bg-green-50"
-                          title="Marcar como Vendido"
-                        >
-                          <CheckCircle className="w-4 h-4" />
-                        </Button>
+                      {activeTab === 'ativos' && (
+                        <>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => setShareVehicle(v)}
+                            className="text-pink-600"
+                            title="Compartilhar"
+                          >
+                            <Share2 className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleSell(v.id)}
+                            className="text-green-600 hover:bg-green-50"
+                            title="Marcar como Vendido"
+                          >
+                            <CheckCircle className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleDevolver(v.id)}
+                            className="text-amber-600 hover:bg-amber-50"
+                            title="Devolver ao Cliente"
+                          >
+                            <Undo2 className="w-4 h-4" />
+                          </Button>
+                        </>
                       )}
-                      {v.status !== 'arquivado' && (
+                      {activeTab === 'devolvidos' && (
                         <Button
                           variant="ghost"
                           size="icon"
-                          onClick={() => handleArchive(v.id)}
-                          className="text-slate-500 hover:text-slate-700"
-                          title="Mover para Histórico Arquivado"
+                          onClick={() => handleAtivar(v.id)}
+                          className="text-green-600 hover:bg-green-50"
+                          title="Ativar Veículo"
                         >
-                          <Archive className="w-4 h-4" />
-                        </Button>
-                      )}
-                      {v.status === 'arquivado' && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleDeleteHard(v.id)}
-                          className="text-red-500 hover:text-red-700"
-                          title="Excluir Permanentemente"
-                        >
-                          <AlertTriangle className="w-4 h-4" />
+                          <Power className="w-4 h-4" />
                         </Button>
                       )}
                     </div>
@@ -643,7 +480,6 @@ export default function AdminEstoque() {
           </TableBody>
         </Table>
 
-        {/* Paginação */}
         {totalCount > pageSize && (
           <div className="p-4 border-t flex items-center justify-between bg-slate-50">
             <span className="text-sm text-slate-500">
@@ -671,7 +507,21 @@ export default function AdminEstoque() {
           </div>
         )}
       </div>
-      <ShareModal />
+
+      <VehicleShareModal
+        vehicle={shareVehicle}
+        open={!!shareVehicle}
+        onOpenChange={(open) => {
+          if (!open) setShareVehicle(null)
+        }}
+      />
+      <VehicleQuickViewModal
+        vehicle={quickViewVehicle}
+        open={!!quickViewVehicle}
+        onOpenChange={(open) => {
+          if (!open) setQuickViewVehicle(null)
+        }}
+      />
       {isModalOpen && (
         <VehicleFormModal
           isOpen={isModalOpen}

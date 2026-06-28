@@ -26,7 +26,11 @@ Deno.serve(async (req) => {
     }
 
     // 2. Load stock (single vehicle or all)
-    let query = supabase.from('veiculos').select('*').eq('status', 'disponivel')
+    let query = supabase
+      .from('veiculos')
+      .select('*')
+      .eq('status', 'disponivel')
+      .eq('exibir_no_site', true)
     if (veiculoId) {
       query = query.eq('id', veiculoId)
     }
