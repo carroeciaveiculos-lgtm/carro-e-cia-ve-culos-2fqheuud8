@@ -17,7 +17,7 @@ export function HomeSocial() {
           rel="noopener noreferrer"
           className="font-bold text-primary hover:underline text-lg"
         >
-          @carroeciamotors
+          @carroecia_uberaba
         </a>
       </div>
     </section>
