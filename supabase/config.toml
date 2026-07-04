@@ -1,2 +1,5 @@
 [functions.receive-leads]
 verify_jwt = false
+
+[functions.sitemap]
+verify_jwt = false

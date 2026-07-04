@@ -23,7 +23,7 @@ import { Slider } from '@/components/ui/slider'
 import { Label } from '@/components/ui/label'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
 import { supabase } from '@/lib/supabase/client'
-import { Filter, Search, Car, Share2, CalendarDays, Settings2, Fuel } from 'lucide-react'
+import { Filter, Search, Car, Share2, CalendarDays, Settings2, Fuel, Gauge } from 'lucide-react'
 import { trackCTAClick } from '@/lib/tracking'
 import { toast } from 'sonner'
 import { getImageUrl } from '@/lib/image-utils'
@@ -42,7 +42,7 @@ export default function Estoque() {
     supabase
       .from('veiculos')
       .select(
-        'id, marca, modelo, versao, ano_fabricacao, ano_modelo, preco_venda, quilometragem, combustivel, cambio, cor, fotos, is_zero_km, status, is_consignado, categoria, exibir_no_site',
+        'id, marca, modelo, versao, ano_fabricacao, ano_modelo, preco_venda, quilometragem, combustivel, cambio, cor, fotos, is_zero_km, status, is_consignado, categoria, exibir_no_site, nao_exibir_km',
       )
       .eq('status', 'disponivel')
       .eq('exibir_no_site', true)
@@ -381,23 +381,32 @@ export default function Estoque() {
                           )}
                         </Carousel>
                       </div>
-                      <CardContent className="p-4 flex-1 flex flex-col">
+                      <CardContent className="p-3 flex-1 flex flex-col">
                         <div className="mb-3">
                           <h2 className="font-bold text-base md:text-lg leading-tight group-hover:text-primary transition-colors mb-3">
                             {v.marca} {v.modelo} {v.versao}
                           </h2>
-                          <div className="flex flex-wrap gap-2 mb-3">
+                          <div className="flex flex-wrap gap-1.5 mb-2">
                             <Badge
                               variant="secondary"
-                              className="bg-muted/50 text-muted-foreground text-xs font-medium flex items-center gap-1.5 py-1 px-2"
+                              className="bg-muted/50 text-muted-foreground text-xs font-medium flex items-center gap-1 py-1 px-2"
                             >
                               <CalendarDays className="w-3 h-3" /> {v.ano_fabricacao}/
                               {v.ano_modelo || v.ano_fabricacao}
                             </Badge>
+                            {v.quilometragem != null && !v.nao_exibir_km && (
+                              <Badge
+                                variant="secondary"
+                                className="bg-muted/50 text-muted-foreground text-xs font-medium flex items-center gap-1 py-1 px-2"
+                              >
+                                <Gauge className="w-3 h-3" />{' '}
+                                {Number(v.quilometragem).toLocaleString('pt-BR')} KM
+                              </Badge>
+                            )}
                             {v.cambio && (
                               <Badge
                                 variant="secondary"
-                                className="bg-muted/50 text-muted-foreground text-xs font-medium flex items-center gap-1.5 py-1 px-2"
+                                className="bg-muted/50 text-muted-foreground text-xs font-medium flex items-center gap-1 py-1 px-2"
                               >
                                 <Settings2 className="w-3 h-3" /> {v.cambio}
                               </Badge>
@@ -405,7 +414,7 @@ export default function Estoque() {
                             {v.combustivel && (
                               <Badge
                                 variant="secondary"
-                                className="bg-muted/50 text-muted-foreground text-xs font-medium flex items-center gap-1.5 py-1 px-2"
+                                className="bg-muted/50 text-muted-foreground text-xs font-medium flex items-center gap-1 py-1 px-2"
                               >
                                 <Fuel className="w-3 h-3" /> {v.combustivel}
                               </Badge>
@@ -413,8 +422,8 @@ export default function Estoque() {
                           </div>
                         </div>
 
-                        <div className="bg-[#f5f5f5] dark:bg-muted/30 p-3 rounded-lg mb-4 mt-auto">
-                          <p className="text-2xl font-bold text-[#25D366] m-0">
+                        <div className="bg-muted/40 p-2.5 rounded-lg mb-3 mt-auto">
+                          <p className="text-xl font-bold text-foreground m-0">
                             {v.preco_venda
                               ? `R$ ${v.preco_venda.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
                               : 'Consulte'}

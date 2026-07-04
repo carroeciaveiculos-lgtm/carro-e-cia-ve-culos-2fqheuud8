@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { supabase } from '@/lib/supabase/client'
-import { Search, CarFront, ShieldCheck } from 'lucide-react'
+import { Search, CarFront, ShieldCheck, MapPin } from 'lucide-react'
 
 import { getImageUrl } from '@/lib/image-utils'
 
@@ -17,7 +17,6 @@ export function HomeHero() {
     const fetchCount = async () => {
       try {
         setIsLoading(true)
-        // HEAD request to get exact count without fetching rows
         const { count, error } = await supabase
           .from('veiculos')
           .select('id', { count: 'exact', head: true })
@@ -26,12 +25,10 @@ export function HomeHero() {
         if (error) throw error
 
         if (isMounted) {
-          // Correctly handle the count property instead of looking for body in data
           setVehicleCount(count ?? 0)
         }
       } catch (err) {
         console.error('Erro ao buscar contagem de veículos:', err)
-        // Fallback state for graceful error recovery to prevent UI crashes
         if (isMounted) setVehicleCount(0)
       } finally {
         if (isMounted) setIsLoading(false)
@@ -87,9 +84,9 @@ export function HomeHero() {
               Consignação Segura em Uberaba
             </div>
 
-            <h1 className="text-4xl font-bold tracking-tight sm:text-5xl md:text-6xl text-foreground mb-6">
+            <h2 className="text-4xl font-bold tracking-tight sm:text-5xl md:text-6xl text-foreground mb-6">
               Venda seu carro rápido e seguro
-            </h1>
+            </h2>
 
             <p className="text-lg text-muted-foreground mb-8 max-w-2xl mx-auto lg:mx-0">
               Avaliação grátis, contrato protegido e transparência total.
@@ -127,19 +124,26 @@ export function HomeHero() {
           </div>
 
           <div className="relative mx-auto w-full max-w-lg lg:max-w-none">
-            <div className="aspect-[4/3] sm:aspect-video lg:aspect-[4/3] relative overflow-hidden rounded-2xl border shadow-2xl bg-muted">
+            <div className="group aspect-[4/3] sm:aspect-video lg:aspect-[4/3] relative overflow-hidden rounded-2xl border shadow-2xl bg-muted">
               <img
                 src="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/fotos/fachada-da-loja.webp"
                 alt="Fachada da Loja Carro e Cia Motors"
-                className="absolute inset-0 w-full h-full object-cover transition-opacity duration-500"
+                className="absolute inset-0 w-full h-full object-cover object-center transition-transform duration-700 ease-out group-hover:scale-110"
                 onError={(e) => {
                   ;(e.target as HTMLImageElement).style.opacity = '0'
                 }}
               />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent pointer-events-none" />
               <div className="absolute inset-0 ring-1 ring-inset ring-black/10 rounded-2xl" />
+
+              <div className="absolute bottom-4 left-4 z-10 flex items-center gap-2 rounded-full bg-white/95 backdrop-blur-sm px-4 py-2 shadow-lg">
+                <MapPin className="h-4 w-4 text-primary" />
+                <span className="text-sm font-semibold text-foreground">
+                  Uberaba - MG | Tradição e Confiança
+                </span>
+              </div>
             </div>
 
-            {/* Decorative background blur element */}
             <div className="absolute -z-10 -inset-4 bg-primary/20 blur-3xl rounded-[3rem] opacity-50 dark:opacity-20 pointer-events-none" />
           </div>
         </div>

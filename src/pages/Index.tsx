@@ -4,6 +4,7 @@ import { HomeInfo } from '@/components/home/HomeInfo'
 import { HomeFeatures } from '@/components/home/HomeFeatures'
 import { HomeSocial } from '@/components/home/HomeSocial'
 import { HomeFaqContact } from '@/components/home/HomeFaqContact'
+import { Partners } from '@/components/home/Partners'
 
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase/client'
@@ -47,10 +48,11 @@ export default function Index() {
   }
 
   const title =
-    pageData?.meta_title || 'Venda Seu Veículo em 48 Horas | Consignação Segura em Uberaba'
+    pageData?.meta_title ||
+    'Carro e Cia Motors | Compra, Venda e Consignação de Veículos em Uberaba - MG'
   const description =
     pageData?.meta_description ||
-    'Venda seu carro em até 48 horas com consignação segura. Avaliação grátis, contrato protegido, transparência total.'
+    'Encontre os melhores carros seminovos e usados selecionados com 1 ano de garantia e laudo cautelar aprovado em Uberaba - MG. Venda, compre ou consigne seu veículo de forma segura na Carro e Cia Motors.'
   const image =
     pageData?.imagem_destaque_url ||
     'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/fotos/fachada-da-loja.webp'
@@ -68,6 +70,7 @@ export default function Index() {
       { type: 'home-hero' },
       { type: 'home-info' },
       { type: 'home-features' },
+      { type: 'partners' },
       { type: 'home-social' },
       { type: 'home-faq' },
     ]
@@ -76,10 +79,12 @@ export default function Index() {
   return (
     <div className="flex flex-col min-h-screen bg-background">
       <SEO title={title} description={description} schema={schema} image={image} />
+      <h1 className="sr-only">Carro e Cia Motors | Revenda de Carros Seminovos em Uberaba - MG</h1>
       {blocks.map((b: any, idx: number) => {
         if (b.type === 'home-hero') return <HomeHero key={idx} />
         if (b.type === 'home-info') return <HomeInfo key={idx} />
         if (b.type === 'home-features') return <HomeFeatures key={idx} />
+        if (b.type === 'partners') return <Partners key={idx} />
         if (b.type === 'home-social') return <HomeSocial key={idx} />
         if (b.type === 'home-faq') return <HomeFaqContact key={idx} />
         if (b.type === 'hero')
