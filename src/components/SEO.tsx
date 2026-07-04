@@ -132,6 +132,8 @@ export function SEO({
     })
 
     // Adiciona ou atualiza meta robots (noindex) e otimização de snippet
+    const isPreviewEnv =
+      typeof window !== 'undefined' && window.location.hostname.includes('goskip.app')
     let metaRobots = document.querySelector('meta[name="robots"]')
     if (!metaRobots) {
       metaRobots = document.createElement('meta')
@@ -140,7 +142,7 @@ export function SEO({
     }
     metaRobots.setAttribute(
       'content',
-      noindex
+      noindex || isPreviewEnv
         ? 'noindex, nofollow'
         : 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1',
     )

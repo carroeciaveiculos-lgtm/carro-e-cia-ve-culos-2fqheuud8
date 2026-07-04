@@ -76,6 +76,9 @@ export default function Index() {
     ]
   }
 
+  const firstPartnersIdx = blocks.findIndex((b) => b.type === 'partners')
+  blocks = blocks.filter((b, idx) => b.type !== 'partners' || idx === firstPartnersIdx)
+
   return (
     <div className="flex flex-col min-h-screen bg-background">
       <SEO title={title} description={description} schema={schema} image={image} />

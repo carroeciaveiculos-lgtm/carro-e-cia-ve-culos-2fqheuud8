@@ -1,4 +1,4 @@
-<!-- HTML template for the frontend react app: https://developer.mozilla.org/en-US/docs/Web/HTML --><!doctype html>
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -22,34 +22,36 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="preload" as="image" href="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Fotos/fachada%20da%20loja.jpeg" />
-    <!-- Google Tag Manager -->
-    <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+    <!-- Google Tag Manager (deferred to reduce main-thread blocking) -->
+    <script>window.addEventListener('DOMContentLoaded',function(){setTimeout(function(){
+    (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
     new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
     j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
     'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
-    })(window,document,'script','dataLayer','GTM-N7LFK82W');</script>
+    })(window,document,'script','dataLayer','GTM-N7LFK82W');
+    },2000);});</script>
     <!-- End Google Tag Manager -->
-    <!-- Google tag (gtag.js) -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-BMYR1WXTT2"></script>
-    <script>
+    <!-- Google tag (gtag.js) - deferred -->
+    <script defer src="https://www.googletagmanager.com/gtag/js?id=G-BMYR1WXTT2"></script>
+    <script>window.addEventListener('DOMContentLoaded',function(){setTimeout(function(){
       window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
       gtag('js', new Date());
       gtag('config', 'G-BMYR1WXTT2');
-    </script>
-    <!-- Meta Pixel Base Code (ID: 917411362618696) -->
-    <script>
+    },2000);});</script>
+    <!-- Meta Pixel Base Code (ID: 917411362618696) - deferred -->
+    <script>window.addEventListener('DOMContentLoaded',function(){setTimeout(function(){
     !function(f,b,e,v,n,t,s)
     {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
     n.callMethod.apply(n,arguments):n.queue.push(arguments)};
     if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
-    n.queue=[];t=b.createElement(e);t.async=!0;
+    n.queue=[];t=b.createElement(e);t.async=true;
     t.src=v;s=b.getElementsByTagName(e)[0];
     s.parentNode.insertBefore(t,s)}(window, document,'script',
     'https://connect.facebook.net/en_US/fbevents.js');
     fbq('init', '917411362618696');
     fbq('track', 'PageView');
-    </script>
+    },2000);});</script>
     <noscript><img height="1" width="1" style="display:none"
     src="https://www.facebook.com/tr?id=917411362618696&ev=PageView&noscript=1"
     /></noscript>

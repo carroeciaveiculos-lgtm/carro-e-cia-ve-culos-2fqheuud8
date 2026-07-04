@@ -33,6 +33,24 @@ Deno.serve(async (req) => {
     const staticUrls = [
       { loc: `${baseUrl}/`, lastmod: now, changefreq: 'daily', priority: '1.0' },
       { loc: `${baseUrl}/estoque`, lastmod: now, changefreq: 'daily', priority: '0.9' },
+      { loc: `${baseUrl}/consignacao`, lastmod: now, changefreq: 'weekly', priority: '0.9' },
+      {
+        loc: `${baseUrl}/consignar-meu-carro`,
+        lastmod: now,
+        changefreq: 'weekly',
+        priority: '0.9',
+      },
+      {
+        loc: `${baseUrl}/financiamento-auto`,
+        lastmod: now,
+        changefreq: 'monthly',
+        priority: '0.8',
+      },
+      { loc: `${baseUrl}/seguro-auto`, lastmod: now, changefreq: 'monthly', priority: '0.7' },
+      { loc: `${baseUrl}/consorcio-auto`, lastmod: now, changefreq: 'monthly', priority: '0.7' },
+      { loc: `${baseUrl}/blog`, lastmod: now, changefreq: 'daily', priority: '0.8' },
+      { loc: `${baseUrl}/sobre`, lastmod: now, changefreq: 'monthly', priority: '0.5' },
+      { loc: `${baseUrl}/contato`, lastmod: now, changefreq: 'monthly', priority: '0.5' },
     ]
 
     const vehicleUrls = (veiculos || []).map((v) => ({
@@ -42,7 +60,19 @@ Deno.serve(async (req) => {
       priority: '0.8',
     }))
 
-    const allUrls = [...staticUrls, ...vehicleUrls]
+    const { data: blogPosts } = await supabase
+      .from('blog_posts')
+      .select('slug, updated_at')
+      .eq('published', true)
+
+    const blogUrls = (blogPosts || []).map((p) => ({
+      loc: `${baseUrl}/blog/${p.slug}`,
+      lastmod: p.updated_at || now,
+      changefreq: 'weekly',
+      priority: '0.6',
+    }))
+
+    const allUrls = [...staticUrls, ...vehicleUrls, ...blogUrls]
 
     const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">

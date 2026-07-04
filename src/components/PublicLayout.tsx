@@ -105,11 +105,16 @@ export default function PublicLayout() {
       {/* Navbar Desktop & Mobile */}{' '}
       <header className="fixed top-0 left-0 right-0 z-[1000] h-[60px] bg-background shadow-[0_2px_8px_rgba(0,0,0,0.1)] flex items-center">
         <div className="container flex items-center justify-between w-full">
-          <Link to="/" className="flex items-center" target="_self" aria-label="Página Inicial">
+          <Link
+            to="/"
+            className="flex items-center overflow-hidden shrink-0 h-10 max-w-[140px]"
+            target="_self"
+            aria-label="Página Inicial"
+          >
             <img
               src="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/logos/logo-carro-e-cia.webp"
               alt="Carro e Cia Logo Oficial"
-              className="h-10 w-auto max-w-[140px] object-contain"
+              className="h-10 w-auto max-w-full object-contain"
               width="140"
               height="40"
               loading="eager"

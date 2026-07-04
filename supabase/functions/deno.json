@@ -24,6 +24,8 @@
     "social-actions": 8,
     "gerar-pdf-proposta": 7,
     "re-engagement-cron": 11,
-    "sitemap": 1
+    "sitemap": 2,
+    "ads-agent": 1,
+    "ad-copy-generator": 1
   }
 }

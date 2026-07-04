@@ -300,7 +300,7 @@ export default function Estoque() {
               </div>
             ) : (
               <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filteredVeiculos.map((v) => {
+                {filteredVeiculos.map((v, vehicleIndex) => {
                   const fotos =
                     Array.isArray(v.fotos) && v.fotos.length > 0
                       ? v.fotos.map((url: string) => getImageUrl(url))
@@ -361,8 +361,11 @@ export default function Estoque() {
                                     <img
                                       src={url}
                                       alt={`${v.marca} ${v.modelo} - Foto ${index + 1}`}
-                                      className="w-full aspect-video object-cover bg-muted"
-                                      loading="lazy"
+                                      className="w-full aspect-video object-cover bg-muted max-w-[640px] mx-auto md:max-w-full"
+                                      loading={vehicleIndex === 0 && index === 0 ? 'eager' : 'lazy'}
+                                      fetchPriority={
+                                        vehicleIndex === 0 && index === 0 ? 'high' : 'auto'
+                                      }
                                       onError={(e) => {
                                         ;(e.target as HTMLImageElement).src =
                                           'https://img.usecurling.com/p/400/300?q=car'

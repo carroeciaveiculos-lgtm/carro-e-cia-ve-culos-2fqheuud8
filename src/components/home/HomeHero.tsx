@@ -124,7 +124,7 @@ export function HomeHero() {
           </div>
 
           <div className="relative mx-auto w-full max-w-lg lg:max-w-none">
-            <div className="group aspect-[4/3] sm:aspect-video lg:aspect-[4/3] relative overflow-hidden rounded-2xl border shadow-2xl bg-muted">
+            <div className="group aspect-[4/3] sm:aspect-video lg:aspect-[4/3] relative overflow-hidden rounded-2xl border shadow-2xl bg-muted ring-1 ring-black/5">
               <img
                 src="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/fotos/fachada-da-loja.webp"
                 alt="Fachada da Loja Carro e Cia Motors"
@@ -133,13 +133,17 @@ export function HomeHero() {
                   ;(e.target as HTMLImageElement).style.opacity = '0'
                 }}
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent pointer-events-none" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/10 to-transparent pointer-events-none" />
               <div className="absolute inset-0 ring-1 ring-inset ring-black/10 rounded-2xl" />
 
-              <div className="absolute bottom-4 left-4 z-10 flex items-center gap-2 rounded-full bg-white/95 backdrop-blur-sm px-4 py-2 shadow-lg">
+              <div className="absolute top-4 right-4 z-10 flex items-center gap-2 rounded-lg bg-primary/90 backdrop-blur-sm px-3 py-2 shadow-lg animate-fade-in">
+                <ShieldCheck className="h-4 w-4 text-white" />
+                <span className="text-xs font-bold text-white">Empresa Verificada</span>
+              </div>
+              <div className="absolute bottom-4 left-4 z-10 flex items-center gap-2 rounded-full bg-white/95 backdrop-blur-sm px-4 py-2 shadow-lg animate-fade-in-up">
                 <MapPin className="h-4 w-4 text-primary" />
                 <span className="text-sm font-semibold text-foreground">
-                  Uberaba - MG | Tradição e Confiança
+                  Uberaba - MG | +20 anos de experiência
                 </span>
               </div>
             </div>

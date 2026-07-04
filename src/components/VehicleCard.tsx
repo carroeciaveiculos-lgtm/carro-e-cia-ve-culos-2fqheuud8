@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge'
 import { getImageUrl } from '@/lib/image-utils'
 import { CalendarDays, Settings2, Fuel, Gauge } from 'lucide-react'
 
-export function VehicleCard({ vehicle }: { vehicle: any }) {
+export function VehicleCard({ vehicle, priority = false }: { vehicle: any; priority?: boolean }) {
   const foto =
     vehicle.fotos && vehicle.fotos.length > 0
       ? getImageUrl(vehicle.fotos[0])
@@ -24,7 +24,8 @@ export function VehicleCard({ vehicle }: { vehicle: any }) {
             src={foto}
             alt={`${vehicle.marca} ${vehicle.modelo}`}
             className="w-full h-full object-cover bg-muted group-hover:scale-105 transition-transform duration-500"
-            loading="lazy"
+            loading={priority ? 'eager' : 'lazy'}
+            fetchPriority={priority ? 'high' : 'auto'}
             onError={(e) => {
               ;(e.target as HTMLImageElement).src = 'https://img.usecurling.com/p/400/300?q=car'
             }}
