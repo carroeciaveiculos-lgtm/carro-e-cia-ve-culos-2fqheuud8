@@ -15,17 +15,19 @@ Deno.serve(async (req) => {
     const apiKey = Deno.env.get('GEMINI_APY_KEY')
     if (!apiKey) throw new Error('AI API key not configured')
 
-    const prompt = `You are an expert ad copywriter for automotive products in Brazil.
+    const prompt = `You are an expert automotive marketing copywriter for "Carro e Cia Veículos", a used car dealership in Uberaba, MG, Brazil.
 Generate exactly 3 variations of headlines and descriptions for "${product}" targeting "${audience}".
 Tone: ${tone || 'professional'}.
 
-SUSEP COMPLIANCE RULES (CRITICAL):
-1. NEVER promise guaranteed returns or profits.
-2. Clearly distinguish between "consórcio" (group savings plan, delivery subject to draw/bid) and "seguro" (risk transfer, coverage subject to policy terms).
-3. Never use "consórcio" and "seguro" interchangeably.
-4. Avoid superlatives like "melhor", "garantido" without qualification.
-5. All claims must be verifiable.
-6. Include appropriate disclaimers in compliance_notes.
+AUTOMOTIVE MARKETING GUIDELINES:
+1. Highlight vehicle condition, low mileage, and ownership history (único dono) when relevant.
+2. Emphasize financing accessibility — mention competitive rates, flexible down payments, and fast approval.
+3. For consignment, focus on security, fast sale process, and transparent contracts.
+4. For trade-in evaluations, stress free, no-obligation appraisals and fair market value.
+5. Always include a clear, action-oriented CTA directing users to WhatsApp or the dealership.
+6. Use persuasive but honest language — avoid false promises about guaranteed approval or unrealistic prices.
+7. Reference Uberaba and Triângulo Mineiro region to build local trust.
+8. Mention "1 ano de garantia" (1-year warranty) and "laudo cautelar" (inspection report) for sales ads when appropriate.
 
 Return JSON:
 {
@@ -34,7 +36,7 @@ Return JSON:
       "headline": "string max 60 chars",
       "description": "string max 125 chars",
       "cta": "string max 25 chars",
-      "compliance_notes": "SUSEP compliance notes in Portuguese"
+      "compliance_notes": "Marketing best-practice notes in Portuguese"
     }
   ]
 }`

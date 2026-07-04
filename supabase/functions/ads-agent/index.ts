@@ -65,7 +65,8 @@ Deno.serve(async (req) => {
       const apiKey = Deno.env.get('GEMINI_APY_KEY')
       if (!apiKey) throw new Error('AI API key not configured')
 
-      const sysPrompt = `You are an Ads management AI agent for Carro e Cia Veículos.
+      const sysPrompt = `You are an Ads management AI agent for Carro e Cia Veículos, an automotive dealership in Uberaba, MG.
+The dealership focuses on: vehicle sales, consignment, financing, and trade-in evaluations.
 Parse the user's instruction and return a JSON object with the proposed action.
 Supported actions: list_campaigns, get_metrics, update_budget, toggle_status
 Platforms: google, meta

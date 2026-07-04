@@ -11,13 +11,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Sparkles, Loader2, ShieldCheck } from 'lucide-react'
+import { Sparkles, Loader2, Car } from 'lucide-react'
 import { generateAdCopy } from '@/services/ads-manager'
 import { useToast } from '@/hooks/use-toast'
 
 export function AdCopyGenerator() {
-  const [product, setProduct] = useState('Seguro Auto')
-  const [audience, setAudience] = useState('Pessoas de 25-35 anos em Uberaba')
+  const [product, setProduct] = useState('Venda de Veículos')
+  const [audience, setAudience] = useState('Pessoas buscando carro seminovo em Uberaba e região')
   const [tone, setTone] = useState('Profissional')
   const [loading, setLoading] = useState(false)
   const [variations, setVariations] = useState<any[]>([])
@@ -43,21 +43,23 @@ export function AdCopyGenerator() {
             <Sparkles className="w-5 h-5 text-purple-500" /> Gerador de Anúncios IA
           </CardTitle>
           <CardDescription>
-            Gera variações de copy em conformidade com as diretrizes da SUSEP.
+            Gera variações de copy para marketing automotivo, focando em vendas, consignação,
+            financiamento e avaliação de troca.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4 max-w-2xl">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Produto</Label>
+              <Label>Produto / Serviço</Label>
               <Select value={product} onValueChange={setProduct}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Seguro Auto">Seguro Auto</SelectItem>
-                  <SelectItem value="Consórcio Auto">Consórcio Auto</SelectItem>
+                  <SelectItem value="Venda de Veículos">Venda de Veículos</SelectItem>
+                  <SelectItem value="Consignação de Veículos">Consignação de Veículos</SelectItem>
                   <SelectItem value="Financiamento Auto">Financiamento Auto</SelectItem>
+                  <SelectItem value="Avaliação de Troca">Avaliação de Troca</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -68,10 +70,11 @@ export function AdCopyGenerator() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Profissional">Profissional</SelectItem>
-                  <SelectItem value="Conversacional">Conversacional</SelectItem>
-                  <SelectItem value="Urgente">Urgente</SelectItem>
-                </SelectContent>
+                  <SelectItem value="Venda de Veículos">Venda de Veículos</SelectItem>
+                  <SelectItem value="Consignação de Veículos">Consignação de Veículos</SelectItem>
+                  <SelectItem value="Financiamento Auto">Financiamento Auto</SelectItem>
+                  <SelectItem value="Avaliação de Troca">Avaliação de Troca</SelectItem>
+                </SelectContent>{' '}
               </Select>
             </div>
           </div>
@@ -80,7 +83,7 @@ export function AdCopyGenerator() {
             <Input
               value={audience}
               onChange={(e) => setAudience(e.target.value)}
-              placeholder="Ex: Pessoas de 25-35 anos em Uberaba"
+              placeholder="Ex: Pessoas buscando carro seminovo em Uberaba e região"
             />
           </div>
           <Button
@@ -116,11 +119,11 @@ export function AdCopyGenerator() {
                   <Badge className="bg-purple-100 text-purple-700">{v.cta}</Badge>
                 </div>
                 {v.compliance_notes && (
-                  <div className="flex items-start gap-2 p-3 bg-green-50 rounded-md">
-                    <ShieldCheck className="w-4 h-4 text-green-600 shrink-0 mt-0.5" />
-                    <p className="text-xs text-green-700">{v.compliance_notes}</p>
+                  <div className="flex items-start gap-2 p-3 bg-blue-50 rounded-md">
+                    <Car className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
+                    <p className="text-xs text-blue-700">{v.compliance_notes}</p>
                   </div>
-                )}
+                )}{' '}
               </CardContent>
             </Card>
           ))}

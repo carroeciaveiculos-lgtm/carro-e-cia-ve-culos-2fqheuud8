@@ -107,22 +107,21 @@ export default function PublicLayout() {
         <div className="container flex items-center justify-between w-full">
           <Link
             to="/"
-            className="flex items-center overflow-hidden shrink-0 h-10 max-w-[140px]"
+            className="flex items-center justify-start overflow-hidden shrink min-w-0 h-10 max-w-[140px]"
             target="_self"
             aria-label="Página Inicial"
           >
             <img
               src="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/logos/logo-carro-e-cia.webp"
               alt="Carro e Cia Logo Oficial"
-              className="h-10 w-auto max-w-full object-contain"
+              className="h-10 max-h-10 w-auto max-w-full object-contain block"
               width="140"
               height="40"
               loading="eager"
               fetchPriority="high"
               decoding="async"
             />
-          </Link>
-
+          </Link>{' '}
           {/* Desktop Menu */}
           <nav className="hidden md:flex items-center space-x-6 text-sm font-medium">
             {links.map((l) => (

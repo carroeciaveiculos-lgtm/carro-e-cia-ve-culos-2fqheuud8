@@ -41,6 +41,39 @@ export type Database = {
           },
         ]
       }
+      ads_audit_logs: {
+        Row: {
+          acao: string
+          campanha_id: string | null
+          created_at: string
+          detalhes: Json | null
+          id: string
+          plataforma: string
+          status: string | null
+          usuario_id: string | null
+        }
+        Insert: {
+          acao: string
+          campanha_id?: string | null
+          created_at?: string
+          detalhes?: Json | null
+          id?: string
+          plataforma: string
+          status?: string | null
+          usuario_id?: string | null
+        }
+        Update: {
+          acao?: string
+          campanha_id?: string | null
+          created_at?: string
+          detalhes?: Json | null
+          id?: string
+          plataforma?: string
+          status?: string | null
+          usuario_id?: string | null
+        }
+        Relationships: []
+      }
       ajuda_conteudos: {
         Row: {
           caminho: string | null
@@ -2682,6 +2715,7 @@ export type Database = {
           quilometragem: number | null
           renavam: string | null
           responsavel_id: string | null
+          slug: string | null
           status: string | null
           updated_at: string | null
           url_fipe: string | null
@@ -2756,6 +2790,7 @@ export type Database = {
           quilometragem?: number | null
           renavam?: string | null
           responsavel_id?: string | null
+          slug?: string | null
           status?: string | null
           updated_at?: string | null
           url_fipe?: string | null
@@ -2830,6 +2865,7 @@ export type Database = {
           quilometragem?: number | null
           renavam?: string | null
           responsavel_id?: string | null
+          slug?: string | null
           status?: string | null
           updated_at?: string | null
           url_fipe?: string | null

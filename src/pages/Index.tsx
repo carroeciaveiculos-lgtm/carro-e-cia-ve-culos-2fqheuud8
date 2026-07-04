@@ -78,6 +78,15 @@ export default function Index() {
 
   const firstPartnersIdx = blocks.findIndex((b) => b.type === 'partners')
   blocks = blocks.filter((b, idx) => b.type !== 'partners' || idx === firstPartnersIdx)
+  blocks = blocks.filter((b, idx) => {
+    if (b.type !== 'partners') return true
+    const lastPartnersIdx = blocks.map((x) => x.type).lastIndexOf('partners')
+    return idx === lastPartnersIdx || idx === firstPartnersIdx
+  })
+  const lastPartnersIdx = blocks.map((b) => b.type).lastIndexOf('partners')
+  if (lastPartnersIdx !== -1 && lastPartnersIdx !== firstPartnersIdx) {
+    blocks = blocks.filter((b, idx) => b.type !== 'partners' || idx === firstPartnersIdx)
+  }
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
