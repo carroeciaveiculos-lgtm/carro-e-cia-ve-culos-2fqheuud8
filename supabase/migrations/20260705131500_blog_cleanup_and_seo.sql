@@ -246,4 +246,3 @@ END $seed_user$;
 
 -- 4. Update existing blog posts that have NULL or empty read_time
 UPDATE public.blog_posts SET read_time = '5 min' WHERE read_time IS NULL OR read_time = '';
-$seed_user$

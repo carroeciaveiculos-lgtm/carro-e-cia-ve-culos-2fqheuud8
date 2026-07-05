@@ -193,7 +193,9 @@ export default function Sobre() {
       <section className="py-20">
         <div className="container max-w-6xl mx-auto px-4">
           <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-display font-bold mb-4">Nossos Especialistas</h2>
+            <h2 className="text-3xl md:text-4xl font-display font-bold mb-4">
+              Nossos Especialistas
+            </h2>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
               Profissionais dedicados a oferecer a melhor solução para você.
             </p>
@@ -241,7 +243,9 @@ export default function Sobre() {
               </p>
               <Button className="w-full bg-[#25D366] hover:bg-[#128C7E] text-white mt-auto" asChild>
                 <a
-                  href={getWhatsAppLink('Olá Gabriel! Vim pelo site e gostaria de falar sobre Seguro Auto.')}
+                  href={getWhatsAppLink(
+                    'Olá Gabriel! Vim pelo site e gostaria de falar sobre Seguro Auto.',
+                  )}
                   target="_blank"
                   rel="noopener noreferrer"
                 >
@@ -266,7 +270,9 @@ export default function Sobre() {
               </p>
               <Button className="w-full bg-[#25D366] hover:bg-[#128C7E] text-white mt-auto" asChild>
                 <a
-                  href={getWhatsAppLink('Olá Adriana! Vim pelo site e gostaria de falar sobre consórcios e financiamentos.')}
+                  href={getWhatsAppLink(
+                    'Olá Adriana! Vim pelo site e gostaria de falar sobre consórcios e financiamentos.',
+                  )}
                   target="_blank"
                   rel="noopener noreferrer"
                 >
@@ -284,8 +290,6 @@ export default function Sobre() {
           </div>
 
           {loadingTeam ? (
-          </div>
-          </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {[1, 2, 3].map((i) => (
                 <Card key={i} className="h-64 animate-pulse bg-muted/50 border-0" />
@@ -315,7 +319,9 @@ export default function Sobre() {
                     asChild
                   >
                     <a
-                      href={getWhatsAppLink(`Olá ${membro.nome}, gostaria de falar sobre veículos!`)}
+                      href={getWhatsAppLink(
+                        `Olá ${membro.nome}, gostaria de falar sobre veículos!`,
+                      )}
                       target="_blank"
                       rel="noopener noreferrer"
                     >
