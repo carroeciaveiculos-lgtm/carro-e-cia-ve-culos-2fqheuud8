@@ -47,7 +47,7 @@ export function SEO({
         streetAddress: 'Av. Guilherme Ferreira, 1119',
         addressLocality: 'Uberaba',
         addressRegion: 'MG',
-        postalCode: '38010-200',
+        postalCode: '38022-200',
         addressCountry: 'BR',
       },
       sameAs: ['https://www.instagram.com/carroeciaveiculos', 'https://wa.me/5534999484285'],

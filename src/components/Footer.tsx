@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { Instagram, Facebook, MapPin, Phone, Mail } from 'lucide-react'
+import { getWhatsAppLink } from '@/lib/whatsapp'
 
 export function Footer() {
   return (
@@ -172,7 +173,7 @@ export function Footer() {
                 <Phone className="w-5 h-5 text-[#25D366] shrink-0" />
                 <div className="flex flex-col text-muted-foreground">
                   <a
-                    href="https://wa.me/5534999484285"
+                    href={getWhatsAppLink('Olá! Vim pelo site e gostaria de falar com o Luiz.')}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="hover:text-white"
@@ -180,12 +181,24 @@ export function Footer() {
                     Luiz (Vendas): (34) 99948-4285
                   </a>
                   <a
-                    href="https://wa.me/5534992000300"
+                    href={getWhatsAppLink(
+                      'Olá! Vim pelo site e gostaria de falar com o Gabriel sobre Seguro Auto.',
+                    )}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="hover:text-white"
                   >
-                    Gabriel (Seguros): (34) 99200-0300
+                    Gabriel (Seguro Auto): (34) 99948-4285
+                  </a>
+                  <a
+                    href={getWhatsAppLink(
+                      'Olá! Vim pelo site e gostaria de falar com a Adriana sobre consórcios e financiamentos.',
+                    )}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="hover:text-white"
+                  >
+                    Adriana (Consórcios/Financiamentos): (34) 99948-4285
                   </a>
                 </div>
               </li>

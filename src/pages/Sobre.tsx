@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { MapPin, Mail, Clock, MessageCircle, Star, Users } from 'lucide-react'
 import { supabase } from '@/lib/supabase/client'
+import { getWhatsAppLink } from '@/lib/whatsapp'
 
 export default function Sobre() {
   const [equipe, setEquipe] = useState<any[]>([])
@@ -178,7 +179,7 @@ export default function Sobre() {
               asChild
             >
               <a
-                href="https://wa.me/5534999484285?text=Olá! Quero saber mais sobre como fazer um bom negócio."
+                href={getWhatsAppLink('Olá! Quero saber mais sobre como fazer um bom negócio.')}
                 target="_blank"
                 rel="noopener noreferrer"
               >
@@ -192,13 +193,99 @@ export default function Sobre() {
       <section className="py-20">
         <div className="container max-w-6xl mx-auto px-4">
           <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-display font-bold mb-4">Nosso Time</h2>
+            <h2 className="text-3xl md:text-4xl font-display font-bold mb-4">Nossos Especialistas</h2>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              Equipe dedicada a oferecer a melhor solução para você.
+              Profissionais dedicados a oferecer a melhor solução para você.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
+            <Card className="overflow-hidden border-border/50 flex flex-col p-6 items-center text-center shadow-sm">
+              <img
+                src="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/fotos/Luiz-Fernando-foto-profissional.webp"
+                alt="Luiz Fernando, CEO Carro e Cia"
+                className="w-24 h-24 rounded-full object-cover shadow-md border-4 border-background mb-4"
+                loading="lazy"
+              />
+              <h3 className="text-xl font-bold font-display mb-1">Luiz Fernando</h3>
+              <p className="text-sm text-primary font-semibold uppercase tracking-wider mb-4">
+                CEO & Fundador · 20+ anos
+              </p>
+              <p className="text-sm text-muted-foreground mb-6">
+                Liderando a Carro e Cia com dedicação e humanidade em cada transação.
+              </p>
+              <Button className="w-full bg-[#25D366] hover:bg-[#128C7E] text-white mt-auto" asChild>
+                <a
+                  href={getWhatsAppLink('Olá Luiz! Vim pelo site e gostaria de mais informações.')}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <MessageCircle className="w-4 h-4 mr-2" /> Falar com Luiz
+                </a>
+              </Button>
+            </Card>
+
+            <Card className="overflow-hidden border-border/50 flex flex-col p-6 items-center text-center shadow-sm">
+              <img
+                src="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/fotos/gabriel%20na%20mesa.jpeg"
+                alt="Gabriel Araújo, especialista em Seguro Auto"
+                className="w-24 h-24 rounded-full object-cover shadow-md border-4 border-background mb-4"
+                loading="lazy"
+              />
+              <h3 className="text-xl font-bold font-display mb-1">Gabriel Araújo</h3>
+              <p className="text-sm text-primary font-semibold uppercase tracking-wider mb-4">
+                Seguro Auto · Km Zero Seguros
+              </p>
+              <p className="text-sm text-muted-foreground mb-6">
+                Especialista em seguro auto, garantindo a melhor cobertura pelo melhor preço.
+              </p>
+              <Button className="w-full bg-[#25D366] hover:bg-[#128C7E] text-white mt-auto" asChild>
+                <a
+                  href={getWhatsAppLink('Olá Gabriel! Vim pelo site e gostaria de falar sobre Seguro Auto.')}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <MessageCircle className="w-4 h-4 mr-2" /> Falar com Gabriel
+                </a>
+              </Button>
+            </Card>
+
+            <Card className="overflow-hidden border-border/50 flex flex-col p-6 items-center text-center shadow-sm">
+              <img
+                src="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/fotos/adriana%20na%20mesa.jpeg"
+                alt="Adriana Araújo, especialista em seguros, consórcios e financiamentos"
+                className="w-24 h-24 rounded-full object-cover shadow-md border-4 border-background mb-4"
+                loading="lazy"
+              />
+              <h3 className="text-xl font-bold font-display mb-1">Adriana Araújo</h3>
+              <p className="text-sm text-primary font-semibold uppercase tracking-wider mb-4">
+                Seguros, Consórcios e Financiamentos
+              </p>
+              <p className="text-sm text-muted-foreground mb-6">
+                Demais seguros, consórcios e financiamentos. A melhor solução para o seu bolso.
+              </p>
+              <Button className="w-full bg-[#25D366] hover:bg-[#128C7E] text-white mt-auto" asChild>
+                <a
+                  href={getWhatsAppLink('Olá Adriana! Vim pelo site e gostaria de falar sobre consórcios e financiamentos.')}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <MessageCircle className="w-4 h-4 mr-2" /> Falar com Adriana
+                </a>
+              </Button>
+            </Card>
+          </div>
+
+          <div className="text-center mb-16 mt-20">
+            <h2 className="text-3xl md:text-4xl font-display font-bold mb-4">Equipe Completa</h2>
+            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+              Conheça todos os membros da nossa equipe.
             </p>
           </div>
 
           {loadingTeam ? (
+          </div>
+          </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {[1, 2, 3].map((i) => (
                 <Card key={i} className="h-64 animate-pulse bg-muted/50 border-0" />
@@ -228,7 +315,7 @@ export default function Sobre() {
                     asChild
                   >
                     <a
-                      href={`https://wa.me/5534999484285?text=Olá ${membro.nome}, gostaria de falar sobre veículos!`}
+                      href={getWhatsAppLink(`Olá ${membro.nome}, gostaria de falar sobre veículos!`)}
                       target="_blank"
                       rel="noopener noreferrer"
                     >

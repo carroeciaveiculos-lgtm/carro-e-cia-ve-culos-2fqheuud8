@@ -1,3 +1,7 @@
+import { useState } from 'react'
+
+const FALLBACK_IMG = 'https://img.usecurling.com/p/200/80?q=bank%20logo&color=gray&dpr=2'
+
 export function Partners() {
   const partners = [
     {
@@ -32,21 +36,30 @@ export function Partners() {
         <h2 className="text-3xl font-bold text-center mb-10">Nossos Parceiros Financeiros</h2>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-8 items-center justify-items-center">
           {partners.map((p, i) => (
-            <picture key={i}>
-              <source srcSet={p.src} type="image/webp" />
-              <img
-                src={p.src}
-                alt={`Logo do banco parceiro ${p.name} - Carro e Cia Veículos`}
-                width="200"
-                height="80"
-                loading="lazy"
-                decoding="async"
-                className="h-14 w-auto max-w-[200px] object-contain transition-all duration-300"
-              />
-            </picture>
+            <PartnerLogo key={i} name={p.name} src={p.src} />
           ))}
         </div>
       </div>
     </section>
+  )
+}
+
+function PartnerLogo({ name, src }: { name: string; src: string }) {
+  const [imgSrc, setImgSrc] = useState(src)
+
+  return (
+    <picture>
+      <source srcSet={imgSrc} type="image/webp" />
+      <img
+        src={imgSrc}
+        alt={`Logo do banco parceiro ${name} - Carro e Cia Veículos`}
+        width="200"
+        height="80"
+        loading="lazy"
+        decoding="async"
+        className="h-14 w-auto max-w-[200px] object-contain transition-all duration-300"
+        onError={() => setImgSrc(FALLBACK_IMG)}
+      />
+    </picture>
   )
 }

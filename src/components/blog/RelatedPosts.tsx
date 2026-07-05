@@ -3,20 +3,21 @@ import { supabase } from '@/lib/supabase/client'
 import { Link } from 'react-router-dom'
 import { Card, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { getBlogImageUrl } from '@/lib/blog-utils'
 
 export function RelatedPosts({ category, currentId }: { category: string; currentId: string }) {
   const [posts, setPosts] = useState<any[]>([])
 
   useEffect(() => {
-    if (!category) return
-    supabase
-      .from('blog_posts')
-      .select('id, title, slug, image_url, category, read_time')
-      .eq('published', true)
-      .eq('category', category)
-      .neq('id', currentId)
-      .limit(3)
-      .then(({ data }) => setPosts(data || []))
+    if (!category)
+      return supabase
+        .from('blog_posts')
+        .select('id, title, slug, image_url, category, read_time')
+        .eq('published', true)
+        .eq('category', category)
+        .neq('id', currentId)
+        .limit(3)
+        .then(({ data }) => setPosts(data || []))
   }, [category, currentId])
 
   if (posts.length === 0) return null
@@ -33,14 +34,16 @@ export function RelatedPosts({ category, currentId }: { category: string; curren
             className="shrink-0 w-[280px] md:w-auto snap-center"
           >
             <Card className="h-full hover:shadow-lg transition-shadow overflow-hidden">
-              <img
-                src={post.image_url || `https://img.usecurling.com/p/400/250?q=car`}
-                alt={post.title}
-                width="400"
-                height="250"
-                loading="lazy"
-                className="w-full h-40 object-cover"
-              />
+              <div className="w-full h-40 overflow-hidden">
+                <img
+                  src={getBlogImageUrl(post, 400, 250)}
+                  alt={post.title}
+                  width="400"
+                  height="250"
+                  loading="lazy"
+                  className="w-full h-full object-cover"
+                />
+              </div>
               <CardHeader className="p-4">
                 <Badge className="w-fit mb-2">{post.category}</Badge>
                 <CardTitle className="text-lg line-clamp-2">{post.title}</CardTitle>
