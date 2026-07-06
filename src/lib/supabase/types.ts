@@ -261,6 +261,7 @@ export type Database = {
           criado_em: string | null
           data_agendamento: string | null
           destaque: boolean | null
+          faq_schema: string | null
           h1_artigo: string | null
           ia_confidence: string | null
           ia_generated: boolean | null
@@ -306,6 +307,7 @@ export type Database = {
           criado_em?: string | null
           data_agendamento?: string | null
           destaque?: boolean | null
+          faq_schema?: string | null
           h1_artigo?: string | null
           ia_confidence?: string | null
           ia_generated?: boolean | null
@@ -351,6 +353,7 @@ export type Database = {
           criado_em?: string | null
           data_agendamento?: string | null
           destaque?: boolean | null
+          faq_schema?: string | null
           h1_artigo?: string | null
           ia_confidence?: string | null
           ia_generated?: boolean | null
@@ -2615,8 +2618,11 @@ export type Database = {
       usuarios: {
         Row: {
           ativo: boolean | null
+          bio: string | null
           created_at: string | null
           email: string
+          especialidade: string | null
+          foto_url: string | null
           id: string
           modulos: string[] | null
           nivel: string | null
@@ -2626,8 +2632,11 @@ export type Database = {
         }
         Insert: {
           ativo?: boolean | null
+          bio?: string | null
           created_at?: string | null
           email: string
+          especialidade?: string | null
+          foto_url?: string | null
           id?: string
           modulos?: string[] | null
           nivel?: string | null
@@ -2637,8 +2646,11 @@ export type Database = {
         }
         Update: {
           ativo?: boolean | null
+          bio?: string | null
           created_at?: string | null
           email?: string
+          especialidade?: string | null
+          foto_url?: string | null
           id?: string
           modulos?: string[] | null
           nivel?: string | null

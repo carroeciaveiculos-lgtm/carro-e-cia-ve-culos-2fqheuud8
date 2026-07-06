@@ -4,7 +4,6 @@ import { HomeInfo } from '@/components/home/HomeInfo'
 import { HomeFeatures } from '@/components/home/HomeFeatures'
 import { HomeSocial } from '@/components/home/HomeSocial'
 import { HomeFaqContact } from '@/components/home/HomeFaqContact'
-import { Partners } from '@/components/home/Partners'
 
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase/client'
@@ -65,19 +64,17 @@ export default function Index() {
     /* intentionally ignored */
   }
 
+  blocks = blocks.filter((b) => b.type !== 'partners')
+
   if (blocks.length === 0) {
     blocks = [
       { type: 'home-hero' },
       { type: 'home-info' },
       { type: 'home-features' },
-      { type: 'partners' },
       { type: 'home-social' },
       { type: 'home-faq' },
     ]
   }
-
-  const firstPartnersIdx = blocks.findIndex((b) => b.type === 'partners')
-  blocks = blocks.filter((b, idx) => b.type !== 'partners' || idx === firstPartnersIdx)
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
@@ -87,7 +84,6 @@ export default function Index() {
         if (b.type === 'home-hero') return <HomeHero key={idx} />
         if (b.type === 'home-info') return <HomeInfo key={idx} />
         if (b.type === 'home-features') return <HomeFeatures key={idx} />
-        if (b.type === 'partners') return <Partners key={idx} />
         if (b.type === 'home-social') return <HomeSocial key={idx} />
         if (b.type === 'home-faq') return <HomeFaqContact key={idx} />
         if (b.type === 'hero')
