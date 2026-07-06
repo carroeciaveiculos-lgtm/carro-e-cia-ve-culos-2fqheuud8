@@ -57,7 +57,16 @@ export default function Index() {
     pageData?.imagem_destaque_url ||
     'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/fotos/fachada-da-loja.webp'
 
-  let blocks = []
+  const defaultBlocks = [
+    { type: 'home-hero' },
+    { type: 'home-info' },
+    { type: 'home-features' },
+    { type: 'partners' },
+    { type: 'home-social' },
+    { type: 'home-faq' },
+  ]
+
+  let blocks: { type: string; data?: any }[] = []
   try {
     const parsed = JSON.parse(pageData?.conteudo || '{}')
     blocks = parsed.blocks || []
@@ -66,14 +75,14 @@ export default function Index() {
   }
 
   if (blocks.length === 0) {
-    blocks = [
-      { type: 'home-hero' },
-      { type: 'home-info' },
-      { type: 'home-features' },
-      { type: 'partners' },
-      { type: 'home-social' },
-      { type: 'home-faq' },
-    ]
+    blocks = defaultBlocks
+  } else {
+    const dbBlockTypes = new Set(blocks.map((b) => b.type))
+    for (const def of defaultBlocks) {
+      if (!dbBlockTypes.has(def.type)) {
+        blocks.push(def)
+      }
+    }
   }
 
   return (
