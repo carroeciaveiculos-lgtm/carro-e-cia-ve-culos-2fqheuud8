@@ -1179,15 +1179,13 @@ export function ArticleSEOEditor({ id, onBack }: ArticleSEOEditorProps) {
               existingSchema={data.faq_schema}
               onSchemaChange={(schema) => setData({ ...data, faq_schema: schema })}
             />
-            <InternalLinkSuggestions
-              keywords={data.palavras_chave_principais}
-              currentId={id}
-            />
+            <InternalLinkSuggestions keywords={data.palavras_chave_principais} currentId={id} />
             <div>
               <h4 className="text-sm font-semibold text-slate-900 mb-2">Dicas do Copilot</h4>
-            <div className="p-4 bg-blue-50 text-blue-800 text-sm rounded-xl border border-blue-100">
-              Mantenha seu conteúdo sempre atualizado e utilize links internos para outras páginas
-              do seu site para fortalecer a autoridade do seu domínio.
+              <div className="p-4 bg-blue-50 text-blue-800 text-sm rounded-xl border border-blue-100">
+                Mantenha seu conteúdo sempre atualizado e utilize links internos para outras páginas
+                do seu site para fortalecer a autoridade do seu domínio.
+              </div>
             </div>
           </div>
         </div>
