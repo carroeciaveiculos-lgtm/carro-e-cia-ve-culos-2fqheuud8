@@ -122,6 +122,7 @@ export type Database = {
           id: string
           mensagem_usuario: string | null
           resposta_agente: string | null
+          tipo_comando: string | null
           usuario_telefone: string
         }
         Insert: {
@@ -130,6 +131,7 @@ export type Database = {
           id?: string
           mensagem_usuario?: string | null
           resposta_agente?: string | null
+          tipo_comando?: string | null
           usuario_telefone: string
         }
         Update: {
@@ -138,6 +140,7 @@ export type Database = {
           id?: string
           mensagem_usuario?: string | null
           resposta_agente?: string | null
+          tipo_comando?: string | null
           usuario_telefone?: string
         }
         Relationships: [
