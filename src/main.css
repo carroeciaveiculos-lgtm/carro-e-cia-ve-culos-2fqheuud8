@@ -146,6 +146,25 @@
   .mb-safe {
     margin-bottom: env(safe-area-inset-bottom);
   }
+  .blog-protected-content {
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+  }
+  .blog-protected-content img {
+    pointer-events: none;
+    -webkit-user-drag: none;
+  }
+  .image-protect-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: transparent;
+    z-index: 5;
+  }
   @media (max-width: 768px) {
     .btn-cta,
     button[class*='btn'],

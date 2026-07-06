@@ -10,6 +10,7 @@ import { getWhatsAppLink } from '@/lib/whatsapp'
 import { parseMarkdown } from '@/lib/markdown'
 import { extractFAQSchema, formatUpdateDate } from '@/lib/blog-utils'
 import { AuthorBio } from '@/components/blog/AuthorBio'
+import { useContentProtection } from '@/hooks/use-content-protection'
 
 interface BlogPostData {
   id: string
@@ -123,6 +124,8 @@ export default function BlogPost() {
     }
   }
 
+  useContentProtection(true)
+
   if (notFound) {
     return <Navigate to="/blog" replace />
   }
@@ -199,9 +202,11 @@ export default function BlogPost() {
           <div className="relative rounded-2xl overflow-hidden mb-8 shadow-lg">
             <img
               src={post.image_url}
-              alt={post.title}
+              alt={`Carro seminovo em Uberaba - ${post.title}`}
               className="w-full h-[300px] md:h-[450px] object-cover"
+              draggable="false"
             />
+            <div className="image-protect-overlay" />
           </div>
         )}
 
@@ -223,7 +228,7 @@ export default function BlogPost() {
         </div>
 
         <div
-          className="prose prose-lg max-w-none text-slate-700 leading-relaxed blog-content"
+          className="prose prose-lg max-w-none text-slate-700 leading-relaxed blog-content blog-protected-content"
           dangerouslySetInnerHTML={{ __html: parseMarkdown(post.content) }}
         />
 
@@ -240,6 +245,18 @@ export default function BlogPost() {
             </div>
           </div>
         )}
+
+        <div className="mt-8 p-4 rounded-lg bg-muted/50 border border-border/50 text-center">
+          <p className="text-xs text-muted-foreground font-medium">
+            &copy; {new Date().getFullYear()} Carro e Cia Veículos. Todos os direitos reservados.
+            Conteúdo protegido pela Lei 9.610/98 (Direitos Autorais). Reprodução não autorizada é
+            proibida.
+          </p>
+          <p className="text-xs text-muted-foreground/70 mt-1">
+            Publicado em {formattedDate} | Autor: {post.author || 'Carro e Cia Veículos'} | Uberaba,
+            MG
+          </p>
+        </div>
 
         <div className="mt-10 p-8 rounded-2xl bg-gradient-to-br from-[#25D366] to-[#128C7E] text-white text-center shadow-xl">
           <h3 className="text-2xl font-bold mb-3">Ficou com dúvidas?</h3>
