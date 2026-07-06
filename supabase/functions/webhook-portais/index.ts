@@ -1,5 +1,6 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from 'jsr:@supabase/supabase-js@2'
+import { processWhatsAppCommand, AUTHORIZED_PHONE } from '../_shared/whatsapp-commands.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -106,6 +107,22 @@ Deno.serve(async (req) => {
                     meta_message_id: msg.id,
                     status: 'recebida',
                   })
+
+                  if (cleanPhone === AUTHORIZED_PHONE && msg.type === 'text' && msg.text?.body) {
+                    const cmdResponse = await processWhatsAppCommand(
+                      msg.text.body,
+                      cleanPhone,
+                      Deno.env.get('SUPABASE_URL') ?? '',
+                      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+                    )
+                    if (cmdResponse) {
+                      await supabase.from('agente_interacoes').insert({
+                        usuario_telefone: cleanPhone,
+                        mensagem_usuario: msg.text.body,
+                        resposta_agente: cmdResponse,
+                      })
+                    }
+                  }
                 }
               }
             }

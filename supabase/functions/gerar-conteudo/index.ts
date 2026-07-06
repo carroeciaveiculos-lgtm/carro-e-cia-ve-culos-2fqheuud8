@@ -1,5 +1,7 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from 'jsr:@supabase/supabase-js@2'
+import { validateSeoContent } from '../_shared/seo-validator.ts'
+import { buildSeoAgentPrompt } from '../_shared/seo-prompt.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -37,6 +39,8 @@ Deno.serve(async (req) => {
       current_data,
       is_heading_draft,
       article_title,
+      is_seo_agent,
+      agenda_id,
     } = await req.json()
 
     const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY')
@@ -161,7 +165,10 @@ Responda APENAS com um objeto JSON válido, sem formatação markdown:
   "palavras_chave_secundarias": ["keyword 3", "keyword 4"],
   "conteudo_html": "<h2>...</h2><p>...</p><h3>...</h3><p>...</p>"
 }`
-          : `${basePrompt}
+          : is_seo_agent
+            ? `${basePrompt}
+${buildSeoAgentPrompt(tema || '', palavraChave || '')}`
+            : `${basePrompt}
 Sua tarefa é gerar conteúdo para o tema "${tema}" com foco na palavra-chave "${palavraChave}".
 Tom: ${tom || 'Conversacional'}.
 
@@ -427,6 +434,66 @@ Responda APENAS com um objeto JSON válido, sem formatação markdown:
     }
 
     resultJson.texto_html = htmlOutput.trim()
+
+    // SEO Agent: Save to blog_posts, validate, and notify manager via WhatsApp
+    if (is_seo_agent && resultJson) {
+      const validation = validateSeoContent(htmlOutput, resultJson.meta_description)
+      const slug =
+        resultJson.slug ||
+        (tema || '')
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/^-|-$/g, '')
+
+      const { data: blogPost } = await supabaseService
+        .from('blog_posts')
+        .insert({
+          title: resultJson.titulo || tema || 'Artigo SEO',
+          slug,
+          content: htmlOutput,
+          meta_description: resultJson.meta_description || '',
+          category: 'SEO',
+          published: false,
+          requires_review: true,
+          ia_generated: true,
+          ia_confidence: resultJson.certeza || 'media',
+          keyword: palavraChave || resultJson.keyword_principal || '',
+          tags: [palavraChave || resultJson.keyword_principal || ''],
+          read_time: '10 min',
+        })
+        .select('id')
+        .single()
+
+      if (agenda_id && blogPost) {
+        await supabaseService
+          .from('agenda_conteudo')
+          .update({ status: 'Em Revisão', artigo_id: blogPost.id })
+          .eq('id', agenda_id)
+      }
+
+      const waToken = Deno.env.get('WHATSAPP_TOKEN')
+      const waPhoneId = Deno.env.get('WHATSAPP_PHONE_NUMBER_ID')
+      if (waToken && waPhoneId && blogPost) {
+        const valSummary = validation.checks
+          .map((c: any) => `${c.passed ? '✅' : '❌'} ${c.name}: ${c.detail}`)
+          .join('\n')
+        await fetch(`https://graph.facebook.com/v20.0/${waPhoneId}/messages`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${waToken}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            messaging_product: 'whatsapp',
+            to: '5534984080220',
+            type: 'text',
+            text: {
+              body: `📝 Artigo pronto para revisão!\n\n*${resultJson.titulo || tema}*\n\nValidação:\n${valSummary}\n\nResponda:\n• APROVAR ${tema}\n• CORRIGIR ${tema} [instrução]\n• VER ${tema}`,
+            },
+          }),
+        })
+      }
+
+      resultJson.validation = validation
+      resultJson.blog_post_id = blogPost?.id || null
+    }
 
     // On Success
     await supabaseService.from('logs_ia').insert({
