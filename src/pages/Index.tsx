@@ -2,6 +2,7 @@ import { SEO } from '@/components/SEO'
 import { HomeHero } from '@/components/home/HomeHero'
 import { HomeInfo } from '@/components/home/HomeInfo'
 import { HomeFeatures } from '@/components/home/HomeFeatures'
+import { Partners } from '@/components/home/Partners'
 import { HomeSocial } from '@/components/home/HomeSocial'
 import { HomeFaqContact } from '@/components/home/HomeFaqContact'
 
@@ -64,13 +65,12 @@ export default function Index() {
     /* intentionally ignored */
   }
 
-  blocks = blocks.filter((b) => b.type !== 'partners')
-
   if (blocks.length === 0) {
     blocks = [
       { type: 'home-hero' },
       { type: 'home-info' },
       { type: 'home-features' },
+      { type: 'partners' },
       { type: 'home-social' },
       { type: 'home-faq' },
     ]
@@ -84,6 +84,7 @@ export default function Index() {
         if (b.type === 'home-hero') return <HomeHero key={idx} />
         if (b.type === 'home-info') return <HomeInfo key={idx} />
         if (b.type === 'home-features') return <HomeFeatures key={idx} />
+        if (b.type === 'partners') return <Partners key={idx} />
         if (b.type === 'home-social') return <HomeSocial key={idx} />
         if (b.type === 'home-faq') return <HomeFaqContact key={idx} />
         if (b.type === 'hero')

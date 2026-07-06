@@ -1,9 +1,12 @@
 import { useState, useEffect } from 'react'
 import { Star, MapPin, Clock, Phone } from 'lucide-react'
 import { supabase } from '@/lib/supabase/client'
+import type { Database } from '@/lib/supabase/types'
 
 export function TestimonialsAndLocation() {
-  const [testimonials, setTestimonials] = useState<any[]>([])
+  const [testimonials, setTestimonials] = useState<
+    Database['public']['Tables']['site_depoimentos']['Row'][]
+  >([])
 
   useEffect(() => {
     supabase
@@ -16,47 +19,22 @@ export function TestimonialsAndLocation() {
         if (data && data.length > 0) {
           setTestimonials(data)
         } else {
-          // Fallback if none exist yet
           setTestimonials([
             {
               texto: 'Excelente loja, pessoal muito educado e atenciosos.',
               nome_cliente: 'Rodrigo Carvalho Gomide',
               tipo: 'Local Guide',
               estrelas: 5,
+              id: 'fallback-1',
+              foto_url: null,
+              publicado: true,
+              verificado: true,
+              created_at: null,
             },
           ])
         }
       })
   }, [])
-
-  const partners = [
-    {
-      name: 'Km Zero',
-      logo: 'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Parceiros/Logo%20quadrado%20fundo%20azul%20transparente.svg',
-      highlight: true,
-      url: 'https://kmzero.com.br',
-    },
-    {
-      name: 'Bradesco',
-      logo: 'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Parceiros/Bradesco.png',
-    },
-    {
-      name: 'BV Financeira',
-      logo: 'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Parceiros/BV.png',
-    },
-    {
-      name: 'Porto Bank',
-      logo: 'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Parceiros/PORTO%20BANK%20LOGO.png',
-    },
-    {
-      name: 'Banco Safra',
-      logo: 'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Parceiros/Safra.jpeg',
-    },
-    {
-      name: 'Santander',
-      logo: 'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Parceiros/santander.png',
-    },
-  ]
 
   return (
     <>
@@ -73,7 +51,7 @@ export function TestimonialsAndLocation() {
           <div className="flex gap-4 md:gap-8 overflow-x-auto snap-x snap-mandatory hide-scrollbar pb-4 -mx-4 px-4 md:mx-0 md:px-0">
             {testimonials.map((t, i) => (
               <div
-                key={i}
+                key={t.id || i}
                 className="bg-card p-8 rounded-2xl border shadow-sm relative shrink-0 w-[85vw] md:w-[350px] snap-center flex flex-col"
               >
                 <div className="flex gap-1 text-accent mb-6">
@@ -88,7 +66,7 @@ export function TestimonialsAndLocation() {
                   {t.foto_url ? (
                     <img
                       src={t.foto_url}
-                      alt={t.nome_cliente}
+                      alt={t.nome_cliente || 'Cliente'}
                       className="w-10 h-10 rounded-full object-cover"
                     />
                   ) : (
@@ -102,44 +80,6 @@ export function TestimonialsAndLocation() {
                   </div>
                 </div>
               </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section className="py-16 bg-muted/30 border-y">
-        <div className="container text-center">
-          <h2 className="text-2xl font-bold mb-12 text-muted-foreground">
-            Nossos Parceiros Oficiais
-          </h2>
-          <div className="flex flex-wrap justify-center items-center gap-10 md:gap-16">
-            {partners.map((p, i) => (
-              <a
-                key={i}
-                href={p.url || '#'}
-                target="_blank"
-                rel="noopener noreferrer"
-                className={`group relative flex items-center justify-center ${p.highlight ? 'w-48 h-24' : 'w-32 h-16'} grayscale hover:grayscale-0 transition-all duration-300 opacity-60 hover:opacity-100`}
-                aria-label={`Visitar site do parceiro ${p.name}`}
-              >
-                <picture>
-                  <source srcSet={p.logo} type="image/webp" />
-                  <img
-                    src={p.logo}
-                    alt={`Logotipo oficial do parceiro ${p.name} - Carro e Cia`}
-                    width="120"
-                    height="60"
-                    loading="lazy"
-                    decoding="async"
-                    className="w-full h-full object-contain mix-blend-multiply dark:mix-blend-normal"
-                  />
-                </picture>
-                {p.highlight && (
-                  <span className="absolute -bottom-8 left-1/2 -translate-x-1/2 w-max text-sm font-bold text-primary opacity-0 group-hover:opacity-100 transition-opacity">
-                    Parceiro Oficial
-                  </span>
-                )}
-              </a>
             ))}
           </div>
         </div>
