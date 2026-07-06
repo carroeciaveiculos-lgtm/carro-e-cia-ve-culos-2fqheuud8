@@ -91,10 +91,10 @@ export function buildMLItemPayload(v: any): any {
       { id: 'BRAND', value_name: v.marca || undefined },
       { id: 'MODEL', value_name: v.modelo || undefined },
       { id: 'VEHICLE_YEAR', value_name: v.ano_modelo ? String(v.ano_modelo) : undefined },
-      { id: 'KM', value_name: v.quilometragem ? String(v.quilometragem) : undefined }),
+      { id: 'KM', value_name: v.quilometragem ? String(v.quilometragem) : undefined },
       { id: 'COLOR', value_name: v.cor || undefined },
       { id: 'FUEL_TYPE', value_name: v.combustivel || undefined },
-      { id: 'TRANSMISSION', value_name: v.cambio || undefined }),
+      { id: 'TRANSMISSION', value_name: v.cambio || undefined },
     ].filter((a: any) => a.value_name !== undefined),
     description: { plain_text: v.descricao || `${v.marca} ${v.modelo}` },
   }

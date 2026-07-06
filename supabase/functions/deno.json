@@ -29,6 +29,8 @@
     "ad-copy-generator": 4,
     "whatsapp-webhook": 4,
     "ml-auth": 1,
-    "daily-report-cron": 1
+    "daily-report-cron": 1,
+    "ml-sync": 1,
+    "ml-webhook": 1
   }
 }
