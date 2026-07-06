@@ -1,18 +1,37 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from 'jsr:@supabase/supabase-js@2'
 import { corsHeaders } from '../_shared/cors.ts'
+import { getValidMLToken } from '../_shared/ml-client.ts'
 
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
 
-  try {
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL')!,
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
-    )
+  const supabase = createClient(
+    Deno.env.get('SUPABASE_URL')!,
+    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+  )
 
+  try {
     const url = new URL(req.url)
-    const code = url.searchParams.get('code') || (await req.json().catch(() => ({})))?.code
+    const body = await req.json().catch(() => ({}))
+    const code = url.searchParams.get('code') || body?.code
+
+    if (body?.action === 'refresh_check') {
+      const { token, error: tokenError } = await getValidMLToken(supabase)
+
+      await supabase.from('logs_integracao').insert({
+        portal: 'mercadolivre_auth',
+        status: tokenError ? 'error' : 'success',
+        payload_erro: tokenError
+          ? { error: tokenError, action: 'refresh_check' }
+          : { action: 'refresh_check', message: 'Token valid or refreshed' },
+      })
+
+      return new Response(
+        JSON.stringify({ success: !tokenError, token_valid: !!token, error: tokenError }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      )
+    }
 
     if (!code) {
       const clientId = Deno.env.get('ML_CLIENT_ID')!
@@ -41,6 +60,15 @@ Deno.serve(async (req: Request) => {
 
     if (!tokenRes.ok) {
       const errText = await tokenRes.text()
+      await supabase.from('logs_integracao').insert({
+        portal: 'mercadolivre_auth',
+        status: 'error',
+        payload_erro: {
+          error: 'OAuth token exchange failed',
+          details: errText,
+          status_code: tokenRes.status,
+        },
+      })
       return new Response(
         JSON.stringify({ error: 'OAuth token exchange failed', details: errText }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
@@ -59,6 +87,12 @@ Deno.serve(async (req: Request) => {
       updated_at: new Date().toISOString(),
     })
 
+    await supabase.from('logs_integracao').insert({
+      portal: 'mercadolivre_auth',
+      status: 'success',
+      payload_erro: { action: 'oauth_exchange', expires_at: expiresAt },
+    })
+
     const html = `<!DOCTYPE html><html><body style="font-family:Arial,sans-serif;text-align:center;padding:40px">
       <h2 style="color:#2E7D32">✅ Mercado Livre conectado com sucesso!</h2>
       <p>Você já pode fechar esta janela. A sincronização de estoque está ativa.</p>
@@ -70,6 +104,11 @@ Deno.serve(async (req: Request) => {
       headers: { 'Content-Type': 'text/html' },
     })
   } catch (err: any) {
+    await supabase.from('logs_integracao').insert({
+      portal: 'mercadolivre_auth',
+      status: 'error',
+      payload_erro: { error: err.message, stage: 'general' },
+    })
     return new Response(JSON.stringify({ error: err.message }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

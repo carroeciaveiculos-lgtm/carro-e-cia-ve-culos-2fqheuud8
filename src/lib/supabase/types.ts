@@ -2146,6 +2146,68 @@ export type Database = {
         }
         Relationships: []
       }
+      ml_credentials: {
+        Row: {
+          access_token: string | null
+          expires_at: string | null
+          id: string
+          refresh_token: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          access_token?: string | null
+          expires_at?: string | null
+          id?: string
+          refresh_token?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          access_token?: string | null
+          expires_at?: string | null
+          id?: string
+          refresh_token?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      ml_listings: {
+        Row: {
+          created_at: string | null
+          id: string
+          last_synced_at: string | null
+          ml_item_id: string | null
+          ml_listing_url: string | null
+          status: string | null
+          veiculo_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          last_synced_at?: string | null
+          ml_item_id?: string | null
+          ml_listing_url?: string | null
+          status?: string | null
+          veiculo_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          last_synced_at?: string | null
+          ml_item_id?: string | null
+          ml_listing_url?: string | null
+          status?: string | null
+          veiculo_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'ml_listings_veiculo_id_fkey'
+            columns: ['veiculo_id']
+            isOneToOne: false
+            referencedRelation: 'veiculos'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       notas_fiscais: {
         Row: {
           cliente_cpf_cnpj: string | null

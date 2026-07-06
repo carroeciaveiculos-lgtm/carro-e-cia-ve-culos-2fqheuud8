@@ -6,14 +6,19 @@ import { getValidMLToken, buildMLItemPayload } from '../_shared/ml-client.ts'
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
 
-  try {
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL')!,
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
-    )
+  const supabase = createClient(
+    Deno.env.get('SUPABASE_URL')!,
+    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+  )
 
+  try {
     const { token, error: tokenError } = await getValidMLToken(supabase)
     if (tokenError || !token) {
+      await supabase.from('logs_integracao').insert({
+        portal: 'mercadolivre_sync',
+        status: 'error',
+        payload_erro: { error: tokenError || 'No token', stage: 'authentication' },
+      })
       return new Response(JSON.stringify({ error: tokenError || 'No token' }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -36,6 +41,11 @@ Deno.serve(async (req: Request) => {
 
     if (pendingError) throw pendingError
     if (!pendingListings || pendingListings.length === 0) {
+      await supabase.from('logs_integracao').insert({
+        portal: 'mercadolivre_sync',
+        status: 'success',
+        payload_erro: { message: 'No pending listings to sync', processed: 0 },
+      })
       return new Response(
         JSON.stringify({ success: true, message: 'No pending listings to sync', processed: 0 }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
@@ -157,10 +167,22 @@ Deno.serve(async (req: Request) => {
       }
     }
 
+    const errorCount = results.filter((r) => r.status === 'error').length
+    await supabase.from('logs_integracao').insert({
+      portal: 'mercadolivre_sync',
+      status: errorCount > 0 ? (errorCount === results.length ? 'error' : 'partial') : 'success',
+      payload_erro: { processed: results.length, errors: errorCount, details: results },
+    })
+
     return new Response(JSON.stringify({ success: true, processed: results.length, results }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
   } catch (err: any) {
+    await supabase.from('logs_integracao').insert({
+      portal: 'mercadolivre_sync',
+      status: 'error',
+      payload_erro: { error: err.message, stage: 'general' },
+    })
     return new Response(JSON.stringify({ error: err.message }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
