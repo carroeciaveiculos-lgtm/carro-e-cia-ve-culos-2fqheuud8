@@ -9,6 +9,7 @@ import { PageVisualEditor } from '@/components/admin/conteudo-editor/PageVisualE
 import { ArticleSEOEditor } from '@/components/admin/conteudo-editor/ArticleSEOEditor'
 import { KeywordsManager } from '@/components/admin/conteudo-editor/KeywordsManager'
 import { HashtagsManager } from '@/components/admin/conteudo-editor/HashtagsManager'
+import { RevisionAlerts } from '@/components/admin/conteudo-editor/RevisionAlerts'
 import { useToast } from '@/hooks/use-toast'
 
 export default function Conteudo() {
@@ -238,6 +239,7 @@ export default function Conteudo() {
           </div>
 
           <div className="flex-1 overflow-y-auto p-4">
+            {activeTab === 'artigos' && <RevisionAlerts />}
             {activeTab === 'keywords' ? (
               <KeywordsManager />
             ) : activeTab === 'hashtags' ? (

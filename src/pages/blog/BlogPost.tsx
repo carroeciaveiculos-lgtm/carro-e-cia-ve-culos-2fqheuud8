@@ -7,6 +7,9 @@ import { Badge } from '@/components/ui/badge'
 import { Calendar, Clock, ArrowLeft, Share2, ChevronRight } from 'lucide-react'
 import { supabase } from '@/lib/supabase/client'
 import { getWhatsAppLink } from '@/lib/whatsapp'
+import { parseMarkdown } from '@/lib/markdown'
+import { extractFAQSchema, formatUpdateDate } from '@/lib/blog-utils'
+import { AuthorBio } from '@/components/blog/AuthorBio'
 
 interface BlogPostData {
   id: string
@@ -87,7 +90,8 @@ export default function BlogPost() {
 
   const schema = useMemo(() => {
     if (!post) return null
-    return {
+    const faqs = extractFAQSchema(post.content)
+    const baseSchema: Record<string, any> = {
       '@context': 'https://schema.org',
       '@type': 'BlogPosting',
       headline: post.title,
@@ -101,6 +105,14 @@ export default function BlogPost() {
         name: 'Carro e Cia Veículos',
       },
     }
+    if (faqs && faqs.length > 0) {
+      baseSchema.mainEntity = faqs.map((f) => ({
+        '@type': 'Question',
+        name: f.question,
+        acceptedAnswer: { '@type': 'Answer', text: f.answer },
+      }))
+    }
+    return baseSchema
   }, [post])
 
   const handleShare = () => {
@@ -171,6 +183,11 @@ export default function BlogPost() {
                 <Clock className="w-4 h-4" /> {post.read_time}
               </span>
             )}
+            {post.updated_at && formatUpdateDate(post.updated_at) && (
+              <span className="text-xs text-muted-foreground/70">
+                Última atualização: {formatUpdateDate(post.updated_at)}
+              </span>
+            )}
           </div>
         </div>
 
@@ -207,8 +224,10 @@ export default function BlogPost() {
 
         <div
           className="prose prose-lg max-w-none text-slate-700 leading-relaxed blog-content"
-          dangerouslySetInnerHTML={{ __html: post.content }}
+          dangerouslySetInnerHTML={{ __html: parseMarkdown(post.content) }}
         />
+
+        <AuthorBio authorName={post.author} />
 
         {post.tags && post.tags.length > 0 && (
           <div className="mt-10 pt-6 border-t border-border/50">

@@ -27,8 +27,17 @@ Deno.serve(async (req) => {
     } = await supabase.auth.getUser()
     if (authError || !user) throw new Error('Unauthorized')
 
-    const { tema, palavraChave, tom, is_seo_copilot, title, is_seo_optimizer, current_data } =
-      await req.json()
+    const {
+      tema,
+      palavraChave,
+      tom,
+      is_seo_copilot,
+      title,
+      is_seo_optimizer,
+      current_data,
+      is_heading_draft,
+      article_title,
+    } = await req.json()
 
     const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY')
     const GROQ_API_KEY = Deno.env.get('GROQ_API_KEY')
@@ -86,8 +95,28 @@ REGRAS ANTI-ALUCINAÇÃO:
 - Baseie-se nas informações reais da empresa e nas diretrizes da marca (Brain IA).
 `
 
-    const prompt = is_seo_optimizer
+    const prompt = is_heading_draft
       ? `${basePrompt}
+Você é um especialista em SEO e estrutura de conteúdo.
+Sua tarefa é criar uma estrutura otimizada de subtítulos (H2, H3) para um artigo com o título: "${article_title}".
+
+REGRAS:
+- Gere entre 5-8 seções H2 principais que cubram todo o tema
+- Para cada H2, sugira 1-3 H3 subtópicos quando relevante
+- Inclua palavras-chave relacionadas de forma natural nos headings
+- A estrutura deve ser abrangente e seguir a jornada do usuário
+- Considere intenção de busca informacional e transacional
+
+SAÍDA OBRIGATÓRIA (JSON VÁLIDO):
+Responda APENAS com um objeto JSON válido, sem formatação markdown:
+{
+  "headings": [
+    { "level": 2, "text": "Título da Seção Principal" },
+    { "level": 3, "text": "Subtópico da Seção" }
+  ]
+}`
+      : is_seo_optimizer
+        ? `${basePrompt}
 Você é um Master Especialista em SEO.
 Sua missão é otimizar o rascunho a seguir para atingir a nota máxima (Score 100) em SEO.
 Ajuste os textos, o título, meta_title, meta_description, H1 e certifique-se de que a palavra-chave principal apareça no início do conteúdo e em subtítulos (H2/H3).
@@ -107,8 +136,8 @@ Responda APENAS com um objeto JSON válido, sem formatação markdown:
   "palavras_chave_secundarias": ["keyword 3", "keyword 4"],
   "conteudo_html": "<h2>...</h2><p>...</p>"
 }`
-      : is_seo_copilot
-        ? `${basePrompt}
+        : is_seo_copilot
+          ? `${basePrompt}
 Você é um especialista em SEO e Copywriting focado no mercado automotivo.
 Sua tarefa é gerar um artigo de blog épico e altamente otimizado para SEO baseado no título fornecido: "${title}".
 
@@ -132,7 +161,7 @@ Responda APENAS com um objeto JSON válido, sem formatação markdown:
   "palavras_chave_secundarias": ["keyword 3", "keyword 4"],
   "conteudo_html": "<h2>...</h2><p>...</p><h3>...</h3><p>...</p>"
 }`
-        : `${basePrompt}
+          : `${basePrompt}
 Sua tarefa é gerar conteúdo para o tema "${tema}" com foco na palavra-chave "${palavraChave}".
 Tom: ${tom || 'Conversacional'}.
 

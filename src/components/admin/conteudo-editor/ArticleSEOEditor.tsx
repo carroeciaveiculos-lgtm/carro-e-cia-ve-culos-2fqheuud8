@@ -22,6 +22,10 @@ import { cn } from '@/lib/utils'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { MediaSelectorModal } from './MediaSelectorModal'
+import { FaqSchemaTool } from './FaqSchemaTool'
+import { InternalLinkSuggestions } from './InternalLinkSuggestions'
+import { AiHeadingDraft } from './AiHeadingDraft'
+import { Monitor, Smartphone } from 'lucide-react'
 
 interface ArticleSEOEditorProps {
   id: string
@@ -44,6 +48,8 @@ interface ArticleData {
   og_description: string
   og_image_url: string
   notas_internas: string
+  autor_id: string
+  faq_schema: string
 }
 
 const DEFAULT_ARTICLE: ArticleData = {
@@ -61,6 +67,8 @@ const DEFAULT_ARTICLE: ArticleData = {
   og_description: '',
   og_image_url: '',
   notas_internas: '',
+  autor_id: '',
+  faq_schema: '',
 }
 
 export function ArticleSEOEditor({ id, onBack }: ArticleSEOEditorProps) {
@@ -81,6 +89,8 @@ export function ArticleSEOEditor({ id, onBack }: ArticleSEOEditorProps) {
   const [isOptimizing, setIsOptimizing] = useState(false)
   const [dbKeywords, setDbKeywords] = useState<string[]>([])
   const [mediaSelectorOpen, setMediaSelectorOpen] = useState(false)
+  const [authors, setAuthors] = useState<{ id: string; nome: string }[]>([])
+  const [previewMode, setPreviewMode] = useState<'desktop' | 'mobile'>('desktop')
 
   const { toast } = useToast()
 
@@ -90,6 +100,14 @@ export function ArticleSEOEditor({ id, onBack }: ArticleSEOEditorProps) {
       .select('palavra_chave')
       .then(({ data }) => {
         if (data) setDbKeywords(data.map((k: any) => k.palavra_chave))
+      })
+    supabase
+      .from('usuarios')
+      .select('id, nome')
+      .eq('ativo', true)
+      .order('nome')
+      .then(({ data }) => {
+        if (data) setAuthors(data)
       })
   }, [])
 
@@ -135,6 +153,8 @@ export function ArticleSEOEditor({ id, onBack }: ArticleSEOEditorProps) {
         og_description: article.og_description || '',
         og_image_url: article.og_image_url || '',
         notas_internas: article.notas_internas || '',
+        autor_id: article.autor_id || '',
+        faq_schema: article.faq_schema || '',
       })
     }
     setIsLoading(false)
@@ -296,9 +316,17 @@ export function ArticleSEOEditor({ id, onBack }: ArticleSEOEditorProps) {
         og_description: data.og_description,
         og_image_url: data.og_image_url,
         notas_internas: data.notas_internas,
+        faq_schema: data.faq_schema || null,
         ...(id === 'new'
-          ? { autor_id: user?.id, ia_generated: true, requires_review: status === 'Rascunho' }
-          : { requires_review: status === 'Rascunho' }),
+          ? {
+              autor_id: data.autor_id || user?.id,
+              ia_generated: true,
+              requires_review: status === 'Rascunho',
+            }
+          : {
+              autor_id: data.autor_id || user?.id,
+              requires_review: status === 'Rascunho',
+            }),
       }
 
       if (id === 'new') {
@@ -767,6 +795,32 @@ export function ArticleSEOEditor({ id, onBack }: ArticleSEOEditorProps) {
                   onChange={(e) => setData({ ...data, h1_artigo: e.target.value })}
                 />
               </div>
+
+              <div className="space-y-2">
+                <Label>Autor do Artigo</Label>
+                <select
+                  className="flex h-10 w-full items-center rounded-md border border-input bg-white px-3 py-2 text-sm ring-offset-background"
+                  value={data.autor_id}
+                  onChange={(e) => setData({ ...data, autor_id: e.target.value })}
+                >
+                  <option value="">Selecione um autor...</option>
+                  {authors.map((a) => (
+                    <option key={a.id} value={a.id}>
+                      {a.nome}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Estrutura de Headings (IA)</Label>
+                <AiHeadingDraft
+                  articleTitle={data.titulo || data.h1_artigo}
+                  onInsert={(html) =>
+                    setData((prev) => ({ ...prev, conteudo: prev.conteudo + '\n' + html }))
+                  }
+                />
+              </div>
             </div>
 
             <div className="bg-white p-6 rounded-xl border shadow-sm space-y-4">
@@ -972,14 +1026,37 @@ export function ArticleSEOEditor({ id, onBack }: ArticleSEOEditorProps) {
                 ) : (
                   <>
                     {activeTab === 'preview' && (
-                      <div
-                        className="w-full h-full overflow-y-auto p-8 prose max-w-none"
-                        dangerouslySetInnerHTML={{
-                          __html:
-                            data.conteudo ||
-                            '<p class="text-slate-400">Nenhum conteúdo gerado ainda.</p>',
-                        }}
-                      />
+                      <div className="w-full h-full flex flex-col">
+                        <div className="flex justify-center gap-2 py-2 border-b bg-slate-50">
+                          <Button
+                            size="sm"
+                            variant={previewMode === 'desktop' ? 'default' : 'outline'}
+                            onClick={() => setPreviewMode('desktop')}
+                          >
+                            <Monitor className="w-4 h-4 mr-1" /> Desktop
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant={previewMode === 'mobile' ? 'default' : 'outline'}
+                            onClick={() => setPreviewMode('mobile')}
+                          >
+                            <Smartphone className="w-4 h-4 mr-1" /> Mobile
+                          </Button>
+                        </div>
+                        <div
+                          className={cn(
+                            'flex-1 overflow-y-auto p-8 prose max-w-none mx-auto',
+                            previewMode === 'mobile'
+                              ? 'max-w-[375px] border-x-2 border-slate-200'
+                              : 'max-w-none',
+                          )}
+                          dangerouslySetInnerHTML={{
+                            __html:
+                              data.conteudo ||
+                              '<p class="text-slate-400">Nenhum conteúdo gerado ainda.</p>',
+                          }}
+                        />
+                      </div>
                     )}
                     {activeTab === 'social' && (
                       <div className="p-8 space-y-8 h-full overflow-y-auto bg-slate-50">
@@ -1096,8 +1173,18 @@ export function ArticleSEOEditor({ id, onBack }: ArticleSEOEditorProps) {
             </div>
           </div>
 
-          <div className="p-6 bg-slate-50 flex-1">
-            <h4 className="text-sm font-semibold text-slate-900 mb-2">Dicas do Copilot</h4>
+          <div className="p-6 bg-slate-50 flex-1 space-y-6">
+            <FaqSchemaTool
+              content={data.conteudo}
+              existingSchema={data.faq_schema}
+              onSchemaChange={(schema) => setData({ ...data, faq_schema: schema })}
+            />
+            <InternalLinkSuggestions
+              keywords={data.palavras_chave_principais}
+              currentId={id}
+            />
+            <div>
+              <h4 className="text-sm font-semibold text-slate-900 mb-2">Dicas do Copilot</h4>
             <div className="p-4 bg-blue-50 text-blue-800 text-sm rounded-xl border border-blue-100">
               Mantenha seu conteúdo sempre atualizado e utilize links internos para outras páginas
               do seu site para fortalecer a autoridade do seu domínio.
