@@ -74,6 +74,82 @@ export type Database = {
         }
         Relationships: []
       }
+      agenda_conteudo: {
+        Row: {
+          artigo_id: string | null
+          created_at: string
+          data_programada: string | null
+          id: string
+          palavra_chave_principal: string | null
+          status: string
+          tema: string
+          updated_at: string
+        }
+        Insert: {
+          artigo_id?: string | null
+          created_at?: string
+          data_programada?: string | null
+          id?: string
+          palavra_chave_principal?: string | null
+          status?: string
+          tema: string
+          updated_at?: string
+        }
+        Update: {
+          artigo_id?: string | null
+          created_at?: string
+          data_programada?: string | null
+          id?: string
+          palavra_chave_principal?: string | null
+          status?: string
+          tema?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'agenda_conteudo_artigo_id_fkey'
+            columns: ['artigo_id']
+            isOneToOne: false
+            referencedRelation: 'blog_posts'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      agente_interacoes: {
+        Row: {
+          contexto_artigo_id: string | null
+          created_at: string
+          id: string
+          mensagem_usuario: string | null
+          resposta_agente: string | null
+          usuario_telefone: string
+        }
+        Insert: {
+          contexto_artigo_id?: string | null
+          created_at?: string
+          id?: string
+          mensagem_usuario?: string | null
+          resposta_agente?: string | null
+          usuario_telefone: string
+        }
+        Update: {
+          contexto_artigo_id?: string | null
+          created_at?: string
+          id?: string
+          mensagem_usuario?: string | null
+          resposta_agente?: string | null
+          usuario_telefone?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'agente_interacoes_contexto_artigo_id_fkey'
+            columns: ['contexto_artigo_id']
+            isOneToOne: false
+            referencedRelation: 'blog_posts'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       ajuda_conteudos: {
         Row: {
           caminho: string | null

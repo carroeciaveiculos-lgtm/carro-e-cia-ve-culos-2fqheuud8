@@ -55,12 +55,15 @@ Deno.serve(async (req) => {
               fromPhone,
               supabaseUrl,
               supabaseKey,
+              waToken,
+              waPhoneId,
             )
 
             await supabase.from('agente_interacoes').insert({
               usuario_telefone: fromPhone,
               mensagem_usuario: textContent,
               resposta_agente: response || '',
+              tipo_comando: 'admin',
             })
 
             if (response && waToken && waPhoneId) {

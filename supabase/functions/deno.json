@@ -1,7 +1,7 @@
 {
   "_versions": {
     "send-lead-email": 66,
-    "receive-leads": 87,
+    "receive-leads": 88,
     "sync-estoque": 66,
     "webhook-portais": 68,
     "on-lead-created": 66,
@@ -20,13 +20,13 @@
     "content-workflow-notification": 8,
     "gerar-conteudo-social": 8,
     "publicar-social": 9,
-    "send-whatsapp": 11,
+    "send-whatsapp": 12,
     "social-actions": 8,
     "gerar-pdf-proposta": 7,
     "re-engagement-cron": 11,
     "sitemap": 2,
     "ads-agent": 2,
     "ad-copy-generator": 2,
-    "whatsapp-webhook": 1
+    "whatsapp-webhook": 2
   }
 }
