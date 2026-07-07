@@ -80,7 +80,16 @@ export default function Veiculo() {
     window.scrollTo(0, 0)
     const fetchVehicle = async () => {
       setLoading(true)
-      const { data, error } = await supabase.from('veiculos').select('*').eq('id', id).single()
+      const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+        id || '',
+      )
+      let query = supabase.from('veiculos').select('*')
+      if (isUUID) {
+        query = query.eq('id', id)
+      } else {
+        query = query.eq('slug', id)
+      }
+      const { data, error } = await query.single()
       if (data && data.status === 'disponivel' && data.exibir_no_site !== false) {
         setVehicle(data)
         const { data: simData } = await supabase
@@ -141,11 +150,15 @@ export default function Veiculo() {
     new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val)
   const photos = vehicle.fotos || []
 
-  const wppText = `Olá! Vi o ${vehicle.marca} ${vehicle.modelo} ${vehicle.ano_fabricacao} por ${formatCurrency(vehicle.preco_venda || 0)} no site. Ainda está disponível?`
+  const vehicleUrl = vehicle.slug
+    ? `https://www.carroeciamotors.com.br/estoque/${vehicle.slug}`
+    : `https://www.carroeciamotors.com.br/estoque/${vehicle.id}`
+
+  const wppText = `*Oportunidade Imperdível!*\n\n🚗 *${vehicle.marca} ${vehicle.modelo} ${vehicle.versao || ''}*\n📅 Ano: ${vehicle.ano_fabricacao}/${vehicle.ano_modelo}\n🛣️ ${vehicle.quilometragem ? `${vehicle.quilometragem.toLocaleString('pt-BR')} km` : 'Excelente km'}\n💰 *${formatCurrency(vehicle.preco_venda || 0)}*\n\nVenda ou Compre seu carro rápido e seguro.\n\n${vehicleUrl}`
 
   const simValue = vehicle.preco_venda - (parseFloat(simEntrada) || 0)
   const simParcela = simValue > 0 ? (simValue * 1.5) / parseInt(simParcelas) : 0
-  const wppSimText = `Olá! Tenho interesse em simular o financiamento do ${vehicle.marca} ${vehicle.modelo} ${vehicle.ano_fabricacao} com R$ ${simEntrada} de entrada e ${simParcelas} parcelas. Podem me ajudar com as condições?`
+  const wppSimText = `*Oportunidade Imperdível!*\n\nOlá! Tenho interesse em simular o financiamento do ${vehicle.marca} ${vehicle.modelo} ${vehicle.ano_fabricacao}.\n\n💰 Valor: ${formatCurrency(vehicle.preco_venda || 0)}\n💵 Entrada: R$ ${simEntrada || '0'}\n📅 Parcelas: ${simParcelas}x\n\nVenda ou Compre seu carro rápido e seguro.\n\n${vehicleUrl}`
 
   const handleSimulationWhatsApp = async () => {
     const entryPercent = vehicle.preco_venda
@@ -169,18 +182,13 @@ export default function Veiculo() {
     const km = vehicle.quilometragem
       ? `${vehicle.quilometragem.toLocaleString('pt-BR')} km`
       : 'Excelente km'
-    const diffs =
-      vehicle.diferenciais?.length > 0
-        ? `\n✨ Destaques: ${vehicle.diferenciais.slice(0, 3).join(', ')}`
-        : ''
 
-    const ogUrl = `https://www.carroeciamotors.com.br/estoque/${vehicle.id}`
-    return `*Oportunidade Imperdível!*\n\n🚗 *${vehicle.marca} ${vehicle.modelo} ${vehicle.versao || ''}*\n📅 Ano: ${vehicle.ano_fabricacao}/${vehicle.ano_modelo}\n🛣️ ${km}${diffs}\n\n💰 Por apenas *${price}*\n\nConfira todos os detalhes e fotos no nosso site:\n${ogUrl}`
+    return `*Oportunidade Imperdível!*\n\n🚗 *${vehicle.marca} ${vehicle.modelo} ${vehicle.versao || ''}*\n📅 Ano: ${vehicle.ano_fabricacao}/${vehicle.ano_modelo}\n🛣️ ${km}\n💰 *${price}*\n\nVenda ou Compre seu carro rápido e seguro.\n\n${vehicleUrl}`
   }
 
   const handleShare = async () => {
     const text = getShareText()
-    const url = `https://www.carroeciamotors.com.br/estoque/${vehicle.id}`
+    const url = vehicleUrl
     const title = `${vehicle.marca} ${vehicle.modelo}`
 
     if (navigator.share) {

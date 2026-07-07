@@ -10,7 +10,7 @@ const corsHeaders = {
 const BASE_URL = 'https://www.carroeciamotors.com.br'
 const DEFAULT_OG_IMAGE =
   'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/fotos/fachada-da-loja.webp'
-const SLOGAN = 'Venda seu carro rápido e seguro'
+const SLOGAN = 'Venda ou Compre seu carro rápido e seguro'
 
 const BOT_PATTERNS = [
   'whatsapp',
@@ -67,7 +67,7 @@ function getOptimizedImageUrl(imageUrl: string): string {
   if (imageUrl.includes('supabase.co/storage/v1/object/public/')) {
     return (
       imageUrl.replace('/storage/v1/object/public/', '/storage/v1/render/image/public/') +
-      '?width=1200&height=630&resize=cover&quality=85'
+      '?width=1200&height=630&resize=contain&quality=85'
     )
   }
   return imageUrl
@@ -155,7 +155,8 @@ Deno.serve(async (req) => {
       return Response.redirect(`${BASE_URL}/`, 302)
     }
 
-    const frontendUrl = `${BASE_URL}/estoque/${vehicleId || vehicleSlug}`
+    const requestPath = vehicleId || vehicleSlug
+    const frontendUrl = `${BASE_URL}/estoque/${requestPath}`
 
     if (!isSocialBot(userAgent)) {
       if (!isProxied) {
@@ -179,7 +180,9 @@ Deno.serve(async (req) => {
 
     let query = supabase
       .from('veiculos')
-      .select('id,marca,modelo,versao,preco_venda,fotos,slug,status')
+      .select(
+        'id,marca,modelo,versao,ano_fabricacao,ano_modelo,preco_venda,quilometragem,fotos,slug,status',
+      )
 
     if (vehicleId) {
       query = query.eq('id', vehicleId)
@@ -199,10 +202,13 @@ Deno.serve(async (req) => {
     const photos = Array.isArray(vehicle.fotos) ? vehicle.fotos : []
     const primaryImage = photos.length > 0 ? photos[0] : DEFAULT_OG_IMAGE
 
-    const title = `${vehicle.marca} ${vehicle.modelo} - Carro e Cia Veículos`
-    const description = `Confira este ${vehicle.marca} ${vehicle.modelo} por ${formatCurrency(vehicle.preco_venda)}. ${SLOGAN}.`
+    const vehicleSlugOrId = vehicle.slug || vehicle.id
+    const canonicalUrl = `${BASE_URL}/estoque/${vehicleSlugOrId}`
 
-    const html = generateOGHtml(title, description, primaryImage, frontendUrl)
+    const title = `${vehicle.marca} ${vehicle.modelo} ${vehicle.ano_fabricacao || ''} - Carro e Cia Veículos`
+    const description = `Ano ${vehicle.ano_fabricacao || ''}/${vehicle.ano_modelo || ''} por ${formatCurrency(vehicle.preco_venda)}. ${SLOGAN}.`
+
+    const html = generateOGHtml(title, description, primaryImage, canonicalUrl)
 
     return new Response(html, {
       status: 200,

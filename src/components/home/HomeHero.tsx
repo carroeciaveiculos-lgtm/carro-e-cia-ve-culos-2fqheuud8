@@ -85,7 +85,7 @@ export function HomeHero() {
             </div>
 
             <h2 className="text-4xl font-bold tracking-tight sm:text-5xl md:text-6xl text-foreground mb-6">
-              Venda seu carro rápido e seguro
+              Venda ou Compre seu carro rápido e seguro
             </h2>
 
             <p className="text-lg text-muted-foreground mb-8 max-w-2xl mx-auto lg:mx-0">

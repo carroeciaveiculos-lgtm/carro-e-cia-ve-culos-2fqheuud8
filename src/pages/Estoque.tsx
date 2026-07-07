@@ -42,7 +42,7 @@ export default function Estoque() {
     supabase
       .from('veiculos')
       .select(
-        'id, marca, modelo, versao, ano_fabricacao, ano_modelo, preco_venda, quilometragem, combustivel, cambio, cor, fotos, is_zero_km, status, is_consignado, categoria, exibir_no_site, nao_exibir_km',
+        'id, slug, marca, modelo, versao, ano_fabricacao, ano_modelo, preco_venda, quilometragem, combustivel, cambio, cor, fotos, is_zero_km, status, is_consignado, categoria, exibir_no_site, nao_exibir_km',
       )
       .eq('status', 'disponivel')
       .eq('exibir_no_site', true)
@@ -321,17 +321,17 @@ export default function Estoque() {
                           onClick={(e) => {
                             e.preventDefault()
                             e.stopPropagation()
-                            const url = `https://www.carroeciamotors.com.br/estoque/${v.id}`
+                            const shareUrl = `https://www.carroeciamotors.com.br/estoque/${v.slug || v.id}`
                             if (navigator.share) {
                               navigator
                                 .share({
                                   title: `${v.marca} ${v.modelo} ${v.ano_fabricacao}`,
-                                  text: `Confira este excelente ${v.marca} ${v.modelo} por R$ ${v.preco_venda?.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}.`,
-                                  url,
+                                  text: `Confira este excelente ${v.marca} ${v.modelo} por R$ ${v.preco_venda?.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}. Venda ou Compre seu carro rápido e seguro.`,
+                                  url: shareUrl,
                                 })
                                 .catch(console.error)
                             } else {
-                              navigator.clipboard.writeText(url)
+                              navigator.clipboard.writeText(shareUrl)
                               toast.success('Link copiado!')
                             }
                           }}
@@ -343,7 +343,7 @@ export default function Estoque() {
                             {fotos.map((url: string, index: number) => (
                               <CarouselItem key={index} className="pl-0 h-full">
                                 <Link
-                                  to={`/estoque/${v.id}`}
+                                  to={`/estoque/${v.slug || v.id}`}
                                   onClick={() =>
                                     trackCTAClick(`Ver Veiculo: ${v.marca} ${v.modelo}`, '/estoque')
                                   }
@@ -439,7 +439,7 @@ export default function Estoque() {
                           className="w-full h-10 font-bold text-sm rounded-lg"
                         >
                           <Link
-                            to={`/estoque/${v.id}`}
+                            to={`/estoque/${v.slug || v.id}`}
                             onClick={() =>
                               trackCTAClick(`Ver Detalhes: ${v.marca} ${v.modelo}`, '/estoque')
                             }

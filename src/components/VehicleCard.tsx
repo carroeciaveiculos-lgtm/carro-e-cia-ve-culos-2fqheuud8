@@ -19,7 +19,7 @@ export function VehicleCard({ vehicle, priority = false }: { vehicle: any; prior
             0 KM
           </div>
         )}
-        <Link to={`/estoque/${vehicle.id}`} className="w-full h-full block">
+        <Link to={`/estoque/${vehicle.slug || vehicle.id}`} className="w-full h-full block">
           <img
             src={foto}
             alt={`${vehicle.marca} ${vehicle.modelo}`}
@@ -80,7 +80,7 @@ export function VehicleCard({ vehicle, priority = false }: { vehicle: any; prior
           </p>
         </div>
         <Button asChild variant="outline" className="w-full h-10 font-bold text-sm rounded-lg">
-          <Link to={`/estoque/${vehicle.id}`}>Ver Detalhes</Link>
+          <Link to={`/estoque/${vehicle.slug || vehicle.id}`}>Ver Detalhes</Link>
         </Button>
       </CardContent>
     </Card>
