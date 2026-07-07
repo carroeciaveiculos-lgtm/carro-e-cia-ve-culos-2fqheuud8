@@ -39,7 +39,7 @@ export function SEO({
       '@context': 'https://schema.org',
       '@type': 'Organization',
       name: 'Carro e Cia Veículos',
-      url: 'https://carroeciamotors.com.br',
+      url: 'https://www.carroeciamotors.com.br',
       logo: 'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/logos/logo-carro-e-cia.webp',
       telephone: '+5534999484285',
       address: {
@@ -78,17 +78,17 @@ export function SEO({
     // Adiciona ou atualiza a tag Canonical - Força o domínio oficial sempre sem www e sem goskip
     let canonicalUrl = canonical || window.location.href.split('?')[0]
     try {
-      const urlObj = new URL(canonicalUrl, 'https://carroeciamotors.com.br')
-      urlObj.hostname = 'carroeciamotors.com.br'
+      const urlObj = new URL(canonicalUrl, 'https://www.carroeciamotors.com.br')
+      urlObj.hostname = 'www.carroeciamotors.com.br'
       urlObj.protocol = 'https:'
       if (urlObj.port) urlObj.port = ''
       canonicalUrl = urlObj.toString()
-      if (canonicalUrl !== 'https://carroeciamotors.com.br/' && canonicalUrl.endsWith('/')) {
+      if (canonicalUrl !== 'https://www.carroeciamotors.com.br/' && canonicalUrl.endsWith('/')) {
         canonicalUrl = canonicalUrl.slice(0, -1)
       }
     } catch (e) {
       // fallback caso a URL seja inválida
-      canonicalUrl = 'https://carroeciamotors.com.br'
+      canonicalUrl = 'https://www.carroeciamotors.com.br'
     }
     let linkCanonical = document.querySelector('link[rel="canonical"]')
     if (!linkCanonical) {

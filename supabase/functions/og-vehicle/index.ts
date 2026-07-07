@@ -10,6 +10,44 @@ const corsHeaders = {
 const BASE_URL = 'https://www.carroeciamotors.com.br'
 const DEFAULT_OG_IMAGE =
   'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/fotos/fachada-da-loja.webp'
+const SLOGAN = 'Venda seu carro rápido e seguro'
+
+const BOT_PATTERNS = [
+  'whatsapp',
+  'facebook',
+  'facebot',
+  'facebookexternalhit',
+  'linkedin',
+  'linkedinbot',
+  'twitter',
+  'twitterbot',
+  'telegram',
+  'telegrambot',
+  'slack',
+  'slackbot',
+  'discord',
+  'discordbot',
+  'googlebot',
+  'bingbot',
+  'snapchat',
+  'pinterest',
+  'applebot',
+  'skypeuripreview',
+  'vkshare',
+  'w3c_validator',
+  'crawler',
+  'bot',
+  'spider',
+  'scraper',
+  'preview',
+  'fetch',
+]
+
+function isSocialBot(userAgent: string | null): boolean {
+  if (!userAgent) return false
+  const ua = userAgent.toLowerCase()
+  return BOT_PATTERNS.some((p) => ua.includes(p))
+}
 
 function escapeHtml(str: string): string {
   return String(str || '')
@@ -21,18 +59,27 @@ function escapeHtml(str: string): string {
 }
 
 function formatCurrency(val: number): string {
-  return new Intl.NumberFormat('pt-BR', {
-    style: 'currency',
-    currency: 'BRL',
-  }).format(val || 0)
+  return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val || 0)
 }
 
-function generateHtml(
+function getOptimizedImageUrl(imageUrl: string): string {
+  if (!imageUrl) return DEFAULT_OG_IMAGE
+  if (imageUrl.includes('supabase.co/storage/v1/object/public/')) {
+    return (
+      imageUrl.replace('/storage/v1/object/public/', '/storage/v1/render/image/public/') +
+      '?width=1200&height=630&resize=cover&quality=85'
+    )
+  }
+  return imageUrl
+}
+
+function generateOGHtml(
   title: string,
   description: string,
   image: string,
   targetUrl: string,
 ): string {
+  const optimizedImage = getOptimizedImageUrl(image)
   return `<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -43,7 +90,7 @@ function generateHtml(
   <meta property="og:type" content="website" />
   <meta property="og:title" content="${escapeHtml(title)}" />
   <meta property="og:description" content="${escapeHtml(description)}" />
-  <meta property="og:image" content="${escapeHtml(image)}" />
+  <meta property="og:image" content="${escapeHtml(optimizedImage)}" />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
   <meta property="og:url" content="${escapeHtml(targetUrl)}" />
@@ -51,7 +98,7 @@ function generateHtml(
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="${escapeHtml(title)}" />
   <meta name="twitter:description" content="${escapeHtml(description)}" />
-  <meta name="twitter:image" content="${escapeHtml(image)}" />
+  <meta name="twitter:image" content="${escapeHtml(optimizedImage)}" />
   <meta http-equiv="refresh" content="0;url=${escapeHtml(targetUrl)}" />
   <link rel="canonical" href="${escapeHtml(targetUrl)}" />
 </head>
@@ -63,9 +110,9 @@ function generateHtml(
 }
 
 function generateDefaultHtml(): string {
-  return generateHtml(
+  return generateOGHtml(
     'Carro e Cia Veículos',
-    'Venda seu carro rápido e seguro. Compra, venda e consignação de veículos em Uberaba - MG.',
+    `${SLOGAN}. Compra e venda de veículos em Uberaba - MG.`,
     DEFAULT_OG_IMAGE,
     BASE_URL,
   )
@@ -78,9 +125,13 @@ Deno.serve(async (req) => {
 
   try {
     const url = new URL(req.url)
+    const userAgent = req.headers.get('user-agent')
+    const forwardedHost = req.headers.get('x-forwarded-host') || ''
+    const isProxied =
+      forwardedHost.includes('carroeciamotors') || url.hostname.includes('carroeciamotors')
+
     const idParam = url.searchParams.get('id')
     const slugParam = url.searchParams.get('slug')
-
     const pathParts = url.pathname.split('/').filter(Boolean)
     let vehicleId: string | null = idParam
     let vehicleSlug: string | null = slugParam
@@ -95,10 +146,31 @@ Deno.serve(async (req) => {
     }
 
     if (!vehicleId && !vehicleSlug) {
-      return new Response(generateDefaultHtml(), {
-        status: 200,
-        headers: { ...corsHeaders, 'Content-Type': 'text/html; charset=utf-8' },
-      })
+      if (isSocialBot(userAgent)) {
+        return new Response(generateDefaultHtml(), {
+          status: 200,
+          headers: { ...corsHeaders, 'Content-Type': 'text/html; charset=utf-8' },
+        })
+      }
+      return Response.redirect(`${BASE_URL}/`, 302)
+    }
+
+    const frontendUrl = `${BASE_URL}/estoque/${vehicleId || vehicleSlug}`
+
+    if (!isSocialBot(userAgent)) {
+      if (!isProxied) {
+        return Response.redirect(frontendUrl, 302)
+      }
+      try {
+        const spaResponse = await fetch(`${BASE_URL}/index.html`)
+        const spaHtml = await spaResponse.text()
+        return new Response(spaHtml, {
+          status: 200,
+          headers: { ...corsHeaders, 'Content-Type': 'text/html; charset=utf-8' },
+        })
+      } catch {
+        return Response.redirect(frontendUrl, 302)
+      }
     }
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? ''
@@ -128,10 +200,9 @@ Deno.serve(async (req) => {
     const primaryImage = photos.length > 0 ? photos[0] : DEFAULT_OG_IMAGE
 
     const title = `${vehicle.marca} ${vehicle.modelo} - Carro e Cia Veículos`
-    const description = `Venda seu carro rápido e seguro. Confira este ${vehicle.modelo} por apenas ${formatCurrency(vehicle.preco_venda)}.`
-    const vehicleUrl = `${BASE_URL}/estoque/${vehicle.id}`
+    const description = `Confira este ${vehicle.marca} ${vehicle.modelo} por ${formatCurrency(vehicle.preco_venda)}. ${SLOGAN}.`
 
-    const html = generateHtml(title, description, primaryImage, vehicleUrl)
+    const html = generateOGHtml(title, description, primaryImage, frontendUrl)
 
     return new Response(html, {
       status: 200,

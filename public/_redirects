@@ -1,2 +1,5 @@
-https://carroeciaveiculos.goskip.app/* https://carroeciamotors.com.br/:splat 301!
-/* /index.html 200
+# Proxy vehicle pages to edge function for dynamic OG tags
+/estoque/:id  https://htpcqdbhktmvppfemnad.supabase.co/functions/v1/og-vehicle?id=:id  200
+
+# SPA fallback
+/*  /index.html  200

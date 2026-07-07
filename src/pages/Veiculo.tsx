@@ -174,13 +174,13 @@ export default function Veiculo() {
         ? `\n✨ Destaques: ${vehicle.diferenciais.slice(0, 3).join(', ')}`
         : ''
 
-    const ogUrl = `https://htpcqdbhktmvppfemnad.supabase.co/functions/v1/og-vehicle?id=${vehicle.id}`
+    const ogUrl = `https://www.carroeciamotors.com.br/estoque/${vehicle.id}`
     return `*Oportunidade Imperdível!*\n\n🚗 *${vehicle.marca} ${vehicle.modelo} ${vehicle.versao || ''}*\n📅 Ano: ${vehicle.ano_fabricacao}/${vehicle.ano_modelo}\n🛣️ ${km}${diffs}\n\n💰 Por apenas *${price}*\n\nConfira todos os detalhes e fotos no nosso site:\n${ogUrl}`
   }
 
   const handleShare = async () => {
     const text = getShareText()
-    const url = `https://htpcqdbhktmvppfemnad.supabase.co/functions/v1/og-vehicle?id=${vehicle.id}`
+    const url = `https://www.carroeciamotors.com.br/estoque/${vehicle.id}`
     const title = `${vehicle.marca} ${vehicle.modelo}`
 
     if (navigator.share) {

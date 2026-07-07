@@ -32,8 +32,9 @@ export function VehicleShareModal({
 
   useEffect(() => {
     if (vehicle) {
+      const siteUrl = 'https://www.carroeciamotors.com.br'
       setText(
-        `🚗 ${vehicle.marca} ${vehicle.modelo}\n💰 ${formatCurrency(vehicle.preco_venda)}\n🔗 ${import.meta.env.VITE_SITE_URL || 'https://www.carroeciamotors.com.br'}/estoque/${vehicle.id}`,
+        `🚗 ${vehicle.marca} ${vehicle.modelo}\n💰 ${formatCurrency(vehicle.preco_venda)}\n🔗 ${siteUrl}/estoque/${vehicle.id}`,
       )
     }
   }, [vehicle])
