@@ -34,7 +34,7 @@ export default function Index() {
     image:
       'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/logos/logo-carro-e-cia.webp',
     description:
-      'Vender seu carro nunca foi tão fácil. Consignação segura, profissional, com contrato protetor. Carro e Cia: referência 20+ anos em Uberaba.',
+      'Venda seu carro rápido e seguro. Compra, venda e consignação de veículos com transparência total. Carro e Cia Veículos: referência 20+ anos em Uberaba.',
     url: 'https://carroeciamotors.com.br',
     telephone: '+55 34 99948-4285',
     address: {
@@ -49,10 +49,10 @@ export default function Index() {
 
   const title =
     pageData?.meta_title ||
-    'Carro e Cia Motors | Compra, Venda e Consignação de Veículos em Uberaba - MG'
+    'Carro e Cia Veículos | Compra, Venda e Consignação de Veículos em Uberaba - MG'
   const description =
     pageData?.meta_description ||
-    'Encontre os melhores carros seminovos e usados selecionados com 1 ano de garantia e laudo cautelar aprovado em Uberaba - MG. Venda, compre ou consigne seu veículo de forma segura na Carro e Cia Motors.'
+    'Venda seu carro rápido e seguro. Encontre os melhores carros seminovos e usados selecionados com 1 ano de garantia e laudo cautelar aprovado em Uberaba - MG.'
   const image =
     pageData?.imagem_destaque_url ||
     'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/fotos/fachada-da-loja.webp'

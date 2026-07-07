@@ -81,7 +81,7 @@ export function HomeHero() {
           <div className="max-w-2xl mx-auto lg:mx-0 text-center lg:text-left">
             <div className="inline-flex items-center rounded-full border px-3 py-1 text-sm font-medium transition-colors border-primary/20 bg-primary/10 text-primary mb-6">
               <ShieldCheck className="mr-2 h-4 w-4" />
-              Consignação Segura em Uberaba
+              Venda Segura em Uberaba
             </div>
 
             <h2 className="text-4xl font-bold tracking-tight sm:text-5xl md:text-6xl text-foreground mb-6">

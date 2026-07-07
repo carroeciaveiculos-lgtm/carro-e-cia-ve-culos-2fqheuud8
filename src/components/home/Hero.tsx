@@ -123,7 +123,7 @@ export function Hero() {
               <span className="text-primary">Nós temos os compradores esperando.</span>
             </h1>
             <p className="text-lg md:text-xl text-gray-100 mb-8 max-w-2xl mx-auto lg:mx-0 drop-shadow-md">
-              Consignação segura, rápida e transparente em Uberaba há mais de 20 anos.
+              Venda seu carro rápido e seguro em Uberaba há mais de 20 anos.
             </p>
           </div>
 

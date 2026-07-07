@@ -16,7 +16,7 @@ export function SEO({
   description,
   schema,
   canonical,
-  image = 'https://www.carroeciamotors.com.br/og-image.jpeg',
+  image = 'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/fotos/fachada-da-loja.webp',
   type = 'website',
   noindex = false,
   keywords,

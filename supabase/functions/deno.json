@@ -31,6 +31,7 @@
     "ml-auth": 7,
     "daily-report-cron": 6,
     "ml-sync": 7,
-    "ml-webhook": 7
+    "ml-webhook": 7,
+    "og-vehicle": 1
   }
 }
