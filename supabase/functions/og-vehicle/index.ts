@@ -8,9 +8,10 @@ const corsHeaders = {
 }
 
 const BASE_URL = 'https://www.carroeciamotors.com.br'
-const DEFAULT_OG_IMAGE =
-  'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/fotos/fachada-da-loja.webp'
-const SLOGAN = 'Venda ou Compre seu carro rápido e seguro'
+const DEFAULT_OG_IMAGE = 'https://www.carroeciamotors.com.br/og-image.jpeg'
+const FACADE_IMAGE =
+  'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/fotos/fachada-da-loja.png'
+const SLOGAN = 'Venda ou Compre seu carro rápido e seguro.'
 
 const BOT_PATTERNS = [
   'whatsapp',
@@ -43,6 +44,8 @@ const BOT_PATTERNS = [
   'fetch',
 ]
 
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
 function isSocialBot(userAgent: string | null): boolean {
   if (!userAgent) return false
   const ua = userAgent.toLowerCase()
@@ -62,48 +65,47 @@ function formatCurrency(val: number): string {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val || 0)
 }
 
-function getOptimizedImageUrl(imageUrl: string): string {
+function getSocialImageUrl(imageUrl: string): string {
   if (!imageUrl) return DEFAULT_OG_IMAGE
-  if (imageUrl.includes('supabase.co/storage/v1/object/public/')) {
-    return (
-      imageUrl.replace('/storage/v1/object/public/', '/storage/v1/render/image/public/') +
-      '?width=1200&height=630&resize=contain&quality=85'
-    )
+  if (imageUrl.includes('supabase.co')) {
+    return `https://images.weserv.nl/?url=${encodeURIComponent(imageUrl)}&output=jpg`
   }
   return imageUrl
 }
 
 function generateOGHtml(
-  title: string,
-  description: string,
+  pageTitle: string,
+  pageDescription: string,
+  ogTitle: string,
+  ogDescription: string,
   image: string,
   targetUrl: string,
 ): string {
-  const optimizedImage = getOptimizedImageUrl(image)
+  const socialImage = getSocialImageUrl(image)
   return `<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>${escapeHtml(title)}</title>
-  <meta name="description" content="${escapeHtml(description)}" />
+  <title>${escapeHtml(pageTitle)}</title>
+  <meta name="description" content="${escapeHtml(pageDescription)}" />
   <meta property="og:type" content="website" />
-  <meta property="og:title" content="${escapeHtml(title)}" />
-  <meta property="og:description" content="${escapeHtml(description)}" />
-  <meta property="og:image" content="${escapeHtml(optimizedImage)}" />
+  <meta property="og:title" content="${escapeHtml(ogTitle)}" />
+  <meta property="og:description" content="${escapeHtml(ogDescription)}" />
+  <meta property="og:image" content="${escapeHtml(socialImage)}" />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
   <meta property="og:url" content="${escapeHtml(targetUrl)}" />
-  <meta property="og:site_name" content="Carro e Cia Veículos" />
+  <meta property="og:site_name" content="Carro e Cia Motors" />
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="${escapeHtml(title)}" />
-  <meta name="twitter:description" content="${escapeHtml(description)}" />
-  <meta name="twitter:image" content="${escapeHtml(optimizedImage)}" />
+  <meta name="twitter:title" content="${escapeHtml(ogTitle)}" />
+  <meta name="twitter:description" content="${escapeHtml(ogDescription)}" />
+  <meta name="twitter:image" content="${escapeHtml(socialImage)}" />
   <meta http-equiv="refresh" content="0;url=${escapeHtml(targetUrl)}" />
   <link rel="canonical" href="${escapeHtml(targetUrl)}" />
 </head>
 <body>
-  <p>Redirecionando para <a href="${escapeHtml(targetUrl)}">${escapeHtml(title)}</a>...</p>
+  <p>Redirecionando para <a href="${escapeHtml(targetUrl)}">${escapeHtml(pageTitle)}</a>...</p>
   <script>window.location.href="${escapeHtml(targetUrl)}";</script>
 </body>
 </html>`
@@ -111,9 +113,11 @@ function generateOGHtml(
 
 function generateDefaultHtml(): string {
   return generateOGHtml(
-    'Carro e Cia Veículos',
-    `${SLOGAN}. Compra e venda de veículos em Uberaba - MG.`,
-    DEFAULT_OG_IMAGE,
+    'Carro e Cia Motors | Compra e Venda de Veículos em Uberaba - MG',
+    `${SLOGAN} Compra, venda e troca de veículos em Uberaba - MG.`,
+    'Carro e Cia Motors - Uberaba MG',
+    `${SLOGAN} Veículos seminovos selecionados em Uberaba - MG.`,
+    FACADE_IMAGE,
     BASE_URL,
   )
 }
@@ -133,12 +137,20 @@ Deno.serve(async (req) => {
     const idParam = url.searchParams.get('id')
     const slugParam = url.searchParams.get('slug')
     const pathParts = url.pathname.split('/').filter(Boolean)
-    let vehicleId: string | null = idParam
+    let vehicleId: string | null = null
     let vehicleSlug: string | null = slugParam
+
+    if (idParam) {
+      if (UUID_REGEX.test(idParam)) {
+        vehicleId = idParam
+      } else {
+        vehicleSlug = idParam
+      }
+    }
 
     if (!vehicleId && !vehicleSlug && pathParts.length >= 1) {
       const lastPart = pathParts[pathParts.length - 1]
-      if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(lastPart)) {
+      if (UUID_REGEX.test(lastPart)) {
         vehicleId = lastPart
       } else {
         vehicleSlug = lastPart
@@ -205,10 +217,23 @@ Deno.serve(async (req) => {
     const vehicleSlugOrId = vehicle.slug || vehicle.id
     const canonicalUrl = `${BASE_URL}/estoque/${vehicleSlugOrId}`
 
-    const title = `${vehicle.marca} ${vehicle.modelo} ${vehicle.ano_fabricacao || ''} - Carro e Cia Veículos`
-    const description = `Ano ${vehicle.ano_fabricacao || ''}/${vehicle.ano_modelo || ''} por ${formatCurrency(vehicle.preco_venda)}. ${SLOGAN}.`
+    const versaoStr = vehicle.versao ? ` ${vehicle.versao}` : ''
+    const anoModeloStr = vehicle.ano_modelo ? ` ${vehicle.ano_modelo}` : ''
+    const formattedPrice = formatCurrency(vehicle.preco_venda)
 
-    const html = generateOGHtml(title, description, primaryImage, canonicalUrl)
+    const pageTitle = `${vehicle.marca} ${vehicle.modelo}${versaoStr}${anoModeloStr} à venda em Uberaba | Carro e Cia Motors`
+    const pageDescription = `Confira as fotos e detalhes deste lindo ${vehicle.marca} ${vehicle.modelo} no valor de ${formattedPrice}. Financiamos e aceitamos troca. Entre em contato!`
+    const ogTitle = `${vehicle.marca} ${vehicle.modelo} (${vehicle.ano_modelo || vehicle.ano_fabricacao || ''}) - ${formattedPrice}`
+    const ogDescription = `Veja a ficha completa e simule as parcelas deste veículo em nosso site comercial Carro e Cia Motors.`
+
+    const html = generateOGHtml(
+      pageTitle,
+      pageDescription,
+      ogTitle,
+      ogDescription,
+      primaryImage,
+      canonicalUrl,
+    )
 
     return new Response(html, {
       status: 200,

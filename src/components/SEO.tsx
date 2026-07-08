@@ -9,6 +9,8 @@ interface SEOProps {
   type?: string
   noindex?: boolean
   keywords?: string
+  ogTitle?: string
+  ogDescription?: string
 }
 
 export function SEO({
@@ -16,10 +18,12 @@ export function SEO({
   description,
   schema,
   canonical,
-  image = 'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/fotos/fachada-da-loja.webp',
+  image = 'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/fotos/fachada-da-loja.png',
   type = 'website',
   noindex = false,
   keywords,
+  ogTitle,
+  ogDescription,
 }: SEOProps) {
   useEffect(() => {
     // Atualiza o título da página
@@ -99,17 +103,20 @@ export function SEO({
     linkCanonical.setAttribute('href', canonicalUrl)
 
     // Open Graph Tags (Social Sharing Otimizado)
+    const finalOgTitle = ogTitle || title
+    const finalOgDescription = ogDescription || description
+
     const ogTags = [
-      { property: 'og:title', content: title },
-      { property: 'og:description', content: description },
+      { property: 'og:title', content: finalOgTitle },
+      { property: 'og:description', content: finalOgDescription },
       { property: 'og:url', content: canonicalUrl },
       { property: 'og:image', content: image },
       { property: 'og:image:width', content: '1200' },
       { property: 'og:image:height', content: '630' },
       { property: 'og:type', content: type },
       { name: 'twitter:card', content: 'summary_large_image' },
-      { name: 'twitter:title', content: title },
-      { name: 'twitter:description', content: description },
+      { name: 'twitter:title', content: finalOgTitle },
+      { name: 'twitter:description', content: finalOgDescription },
       { name: 'twitter:image', content: image },
     ]
 
@@ -164,7 +171,7 @@ export function SEO({
         document.head.removeChild(script)
       }
     }
-  }, [title, description, schema, canonical, image, type, noindex])
+  }, [title, description, schema, canonical, image, type, noindex, ogTitle, ogDescription])
 
   return null
 }

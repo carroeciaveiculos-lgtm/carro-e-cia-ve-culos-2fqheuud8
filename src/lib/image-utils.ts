@@ -37,3 +37,18 @@ export function getImageUrl(
   const { data } = supabase.storage.from(bucket).getPublicUrl(pathOrUrl)
   return data.publicUrl
 }
+
+/**
+ * Returns a social-media-compatible image URL.
+ * Converts Supabase-hosted WebP images to JPEG via the weserv.nl proxy
+ * so WhatsApp and Facebook can render preview cards correctly.
+ * Falls back to the site OG image if no URL is provided.
+ */
+export function getSocialImageUrl(imageUrl?: string | null): string {
+  const FALLBACK = 'https://www.carroeciamotors.com.br/og-image.jpeg'
+  if (!imageUrl) return FALLBACK
+  if (imageUrl.includes('supabase.co')) {
+    return `https://images.weserv.nl/?url=${encodeURIComponent(imageUrl)}&output=jpg`
+  }
+  return imageUrl
+}

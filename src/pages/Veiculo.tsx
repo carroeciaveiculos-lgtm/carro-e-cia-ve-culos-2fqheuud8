@@ -226,11 +226,14 @@ export default function Veiculo() {
   return (
     <div className="bg-background min-h-screen pb-20">
       <SEO
-        title={`${vehicle.marca} ${vehicle.modelo} ${vehicle.ano_fabricacao} | Carro e Cia`}
-        description={`Confira este ${vehicle.marca} ${vehicle.modelo} ${vehicle.ano_fabricacao} por ${formatCurrency(vehicle.preco_venda || 0)}. Veículo revisado e com garantia.`}
-        image={photos.length > 0 ? photos[0] : undefined}
+        title={`${vehicle.marca} ${vehicle.modelo} ${vehicle.versao || ''} ${vehicle.ano_modelo || ''} à venda em Uberaba | Carro e Cia Motors`}
+        description={`Confira as fotos e detalhes deste lindo ${vehicle.marca} ${vehicle.modelo} no valor de ${formatCurrency(vehicle.preco_venda || 0)}. Financiamos e aceitamos troca. Entre em contato!`}
+        ogTitle={`${vehicle.marca} ${vehicle.modelo} (${vehicle.ano_modelo || vehicle.ano_fabricacao || ''}) - ${formatCurrency(vehicle.preco_venda || 0)}`}
+        ogDescription={`Veja a ficha completa e simule as parcelas deste veículo em nosso site comercial Carro e Cia Motors.`}
+        image={getSocialImageUrl(photos.length > 0 ? photos[0] : undefined)}
+        canonical={vehicleUrl}
         schema={schema}
-      />
+      /
       <div className="container py-6">
         <Link
           to="/estoque"
