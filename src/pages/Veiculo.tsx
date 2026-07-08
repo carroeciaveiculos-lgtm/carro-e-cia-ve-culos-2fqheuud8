@@ -155,11 +155,16 @@ export default function Veiculo() {
     ? `https://www.carroeciamotors.com.br/estoque/${vehicle.slug}`
     : `https://www.carroeciamotors.com.br/estoque/${vehicle.id}`
 
-  const wppText = `*Oportunidade Imperdível!*\n\n🚗 *${vehicle.marca} ${vehicle.modelo} ${vehicle.versao || ''}*\n📅 Ano: ${vehicle.ano_fabricacao}/${vehicle.ano_modelo}\n🛣️ ${vehicle.quilometragem ? `${vehicle.quilometragem.toLocaleString('pt-BR')} km` : 'Excelente km'}\n💰 *${formatCurrency(vehicle.preco_venda || 0)}*\n\nVenda ou Compre seu carro rápido e seguro.\n\n${vehicleUrl}`
+  const ogBaseUrl = 'https://htpcqdbhktmvppfemnad.supabase.co/functions/v1/og-vehicle'
+  const shareUrl = vehicle.slug
+    ? `${ogBaseUrl}?slug=${encodeURIComponent(vehicle.slug)}`
+    : `${ogBaseUrl}?id=${encodeURIComponent(vehicle.id)}`
+
+  const wppText = `*Oportunidade Imperdível!*\n\n🚗 *${vehicle.marca} ${vehicle.modelo} ${vehicle.versao || ''}*\n📅 Ano: ${vehicle.ano_fabricacao}/${vehicle.ano_modelo}\n🛣️ ${vehicle.quilometragem ? `${vehicle.quilometragem.toLocaleString('pt-BR')} km` : 'Excelente km'}\n💰 *${formatCurrency(vehicle.preco_venda || 0)}*\n\nVenda ou Compre seu carro rápido e seguro.\n\n${shareUrl}`
 
   const simValue = vehicle.preco_venda - (parseFloat(simEntrada) || 0)
   const simParcela = simValue > 0 ? (simValue * 1.5) / parseInt(simParcelas) : 0
-  const wppSimText = `*Oportunidade Imperdível!*\n\nOlá! Tenho interesse em simular o financiamento do ${vehicle.marca} ${vehicle.modelo} ${vehicle.ano_fabricacao}.\n\n💰 Valor: ${formatCurrency(vehicle.preco_venda || 0)}\n💵 Entrada: R$ ${simEntrada || '0'}\n📅 Parcelas: ${simParcelas}x\n\nVenda ou Compre seu carro rápido e seguro.\n\n${vehicleUrl}`
+  const wppSimText = `*Oportunidade Imperdível!*\n\nOlá! Tenho interesse em simular o financiamento do ${vehicle.marca} ${vehicle.modelo} ${vehicle.ano_fabricacao}.\n\n💰 Valor: ${formatCurrency(vehicle.preco_venda || 0)}\n💵 Entrada: R$ ${simEntrada || '0'}\n📅 Parcelas: ${simParcelas}x\n\nVenda ou Compre seu carro rápido e seguro.\n\n${shareUrl}`
 
   const handleSimulationWhatsApp = async () => {
     const entryPercent = vehicle.preco_venda
@@ -184,12 +189,12 @@ export default function Veiculo() {
       ? `${vehicle.quilometragem.toLocaleString('pt-BR')} km`
       : 'Excelente km'
 
-    return `*Oportunidade Imperdível!*\n\n🚗 *${vehicle.marca} ${vehicle.modelo} ${vehicle.versao || ''}*\n📅 Ano: ${vehicle.ano_fabricacao}/${vehicle.ano_modelo}\n🛣️ ${km}\n💰 *${price}*\n\nVenda ou Compre seu carro rápido e seguro.\n\n${vehicleUrl}`
+    return `*Oportunidade Imperdível!*\n\n🚗 *${vehicle.marca} ${vehicle.modelo} ${vehicle.versao || ''}*\n📅 Ano: ${vehicle.ano_fabricacao}/${vehicle.ano_modelo}\n🛣️ ${km}\n💰 *${price}*\n\nVenda ou Compre seu carro rápido e seguro.\n\n${shareUrl}`
   }
 
   const handleShare = async () => {
     const text = getShareText()
-    const url = vehicleUrl
+    const url = shareUrl
     const title = `${vehicle.marca} ${vehicle.modelo}`
 
     if (navigator.share) {

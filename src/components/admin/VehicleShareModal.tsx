@@ -32,9 +32,12 @@ export function VehicleShareModal({
 
   useEffect(() => {
     if (vehicle) {
-      const siteUrl = 'https://www.carroeciamotors.com.br'
+      const ogBaseUrl = 'https://htpcqdbhktmvppfemnad.supabase.co/functions/v1/og-vehicle'
+      const shareUrl = vehicle.slug
+        ? `${ogBaseUrl}?slug=${encodeURIComponent(vehicle.slug)}`
+        : `${ogBaseUrl}?id=${encodeURIComponent(vehicle.id)}`
       setText(
-        `🚗 ${vehicle.marca} ${vehicle.modelo}\n💰 ${formatCurrency(vehicle.preco_venda)}\n🔗 ${siteUrl}/estoque/${vehicle.id}`,
+        `🚗 ${vehicle.marca} ${vehicle.modelo}\n💰 ${formatCurrency(vehicle.preco_venda)}\n🔗 ${shareUrl}`,
       )
     }
   }, [vehicle])
