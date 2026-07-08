@@ -61,14 +61,21 @@ function escapeHtml(str: string): string {
     .replace(/'/g, '&#039;')
 }
 
-function formatCurrency(val: number): string {
-  return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val || 0)
+// CORREÇÃO 1: Formatação numérica segura de preço para evitar exibir "R$ NaN" na tela
+function formatCurrency(val: any): string {
+  if (val === null || val === undefined) return "Sob consulta"
+  const cleanStr = String(val).replace(/[^0-9.-]/g, '')
+  const numericVal = parseFloat(cleanStr) || 0
+  if (numericVal === 0) return "Sob consulta"
+  return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(numericVal)
 }
 
+// CORREÇÃO 2: Limpa parâmetros de token e codifica de forma perfeita a foto para JPEG
 function getSocialImageUrl(imageUrl: string): string {
   if (!imageUrl) return DEFAULT_OG_IMAGE
   if (imageUrl.includes('supabase.co')) {
-    return `https://images.weserv.nl/?url=${encodeURIComponent(imageUrl)}&output=jpg`
+    const cleanUrl = imageUrl.split('?')[0] // Garante que não haverá dupla codificação de queries
+    return `https://images.weserv.nl/?url=${encodeURIComponent(cleanUrl)}&output=jpg`
   }
   return imageUrl
 }
