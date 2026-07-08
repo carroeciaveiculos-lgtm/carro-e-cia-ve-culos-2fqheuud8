@@ -126,7 +126,7 @@ export function HomeHero() {
           <div className="relative mx-auto w-full max-w-lg lg:max-w-none">
             <div className="group aspect-[4/3] sm:aspect-video lg:aspect-[4/3] relative overflow-hidden rounded-2xl border shadow-2xl bg-muted ring-1 ring-black/5">
               <img
-                src="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/fotos/fachada-da-loja.webp"
+                src="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/fotos/fachada-da-loja.png"
                 alt="Fachada da Loja Carro e Cia Motors"
                 className="absolute inset-0 w-full h-full object-cover object-center transition-transform duration-700 ease-out group-hover:scale-110"
                 onError={(e) => {

@@ -47,6 +47,7 @@ import {
   trackSimulation,
   trackCTAClick,
 } from '@/lib/tracking'
+import { getSocialImageUrl } from '@/lib/image-utils'
 import { SEO } from '@/components/SEO'
 
 export default function Veiculo() {

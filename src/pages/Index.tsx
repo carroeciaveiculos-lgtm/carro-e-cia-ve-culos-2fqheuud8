@@ -55,7 +55,7 @@ export default function Index() {
     'Venda seu carro rápido e seguro. Encontre os melhores carros seminovos e usados selecionados com 1 ano de garantia e laudo cautelar aprovado em Uberaba - MG.'
   const image =
     pageData?.imagem_destaque_url ||
-    'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/fotos/fachada-da-loja.webp'
+    'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/fotos/fachada-da-loja.png'
 
   const defaultBlocks = [
     { type: 'home-hero' },
