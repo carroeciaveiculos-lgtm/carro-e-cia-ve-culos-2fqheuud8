@@ -20,9 +20,11 @@ import { useToast } from '@/hooks/use-toast'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { CurrencyInput } from '@/components/ui/currency-input'
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart'
-import { Line, LineChart, Bar, BarChart, CartesianGrid, XAxis, YAxis } from 'recharts'
+import { Line, LineChart, CartesianGrid, XAxis, YAxis } from 'recharts'
 import { cn } from '@/lib/utils'
 import { ImageEditorModal } from '@/components/admin/ImageEditorModal'
+import { DocumentPreviewDialog } from '@/components/admin/DocumentPreviewDialog'
+import { getFipeHistoryFromDB } from '@/services/fipe'
 import {
   Camera,
   Search,
@@ -108,6 +110,7 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
   const [newOpcional, setNewOpcional] = useState('')
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [previewDoc, setPreviewDoc] = useState<any>(null)
+  const [fipeHistory, setFipeHistory] = useState<any[]>([])
 
   const [novaDespesa, setNovaDespesa] = useState({
     categoria: 'Mecânica',
@@ -115,6 +118,8 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
     valor: '',
     data_despesa: new Date().toISOString().split('T')[0],
     responsabilidade: 'loja',
+    tipo: '',
+    origem: '',
   })
 
   const maskPhone = (v: string) => {
@@ -170,6 +175,7 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
     proprietario_telefone_trabalho: '',
     proprietario_email: '',
     proprietario_cpf: '',
+    proprietario_estado_civil: '',
     diferenciais: [],
     caracteristicas: [],
     fotos: [],
@@ -201,6 +207,7 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
             proprietario_idade: res.idade || p.proprietario_idade,
             proprietario_sexo: res.sexo || p.proprietario_sexo,
             proprietario_mae: res.nome_mae || p.proprietario_mae,
+            proprietario_estado_civil: res.estado_civil || p.proprietario_estado_civil,
           }))
           toast({ title: 'Dados do CPF importados!' })
         }
@@ -249,6 +256,8 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
         valor: '',
         data_despesa: new Date().toISOString().split('T')[0],
         responsabilidade: 'loja',
+        tipo: '',
+        origem: '',
       })
       toast({ title: 'Despesa lançada' })
     } catch (err: any) {
@@ -307,6 +316,7 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
           diferenciais: [],
           info_personalizadas: {},
           em_preparacao: false,
+          proprietario_estado_civil: '',
         })
       }
       loadMediaAssets()
@@ -321,6 +331,37 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
       .limit(50)
       .then(({ data }) => setMediaAssets(data || []))
   }
+
+  useEffect(() => {
+    const historico = formData.info_personalizadas?.historico_fipe
+    if (Array.isArray(historico) && historico.length > 0) {
+      const formatted = historico
+        .map((item: any) => ({
+          mes: item.mes_referencia || item.mes || item.reference || '',
+          valor: Number(item.valor_fipe || item.valor || item.preco_fipe || item.price || 0),
+        }))
+        .filter((item: any) => item.mes && item.valor > 0)
+        .reverse()
+      setFipeHistory(formatted)
+    } else if (formData.info_personalizadas?.codigo_fipe) {
+      getFipeHistoryFromDB(formData.info_personalizadas.codigo_fipe).then(({ data }) => {
+        if (data && data.length > 0) {
+          setFipeHistory(
+            data
+              .map((item: any) => ({
+                mes: item.mes_referencia || '',
+                valor: Number(item.valor_fipe || 0),
+              }))
+              .filter((item: any) => item.mes && item.valor > 0),
+          )
+        } else {
+          setFipeHistory([])
+        }
+      })
+    } else {
+      setFipeHistory([])
+    }
+  }, [formData.info_personalizadas])
 
   const consultarAPIPlaca = async () => {
     if (!formData.placa) return
@@ -861,6 +902,170 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
                       className="bg-white"
                     />
                   </div>
+                  <div className="col-span-1">
+                    <Label>Telefone Residencial</Label>
+                    <Input
+                      value={maskPhone(formData.proprietario_telefone_residencial || '')}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          proprietario_telefone_residencial: e.target.value,
+                        })
+                      }
+                      className="bg-white"
+                    />
+                  </div>
+                  <div className="col-span-1">
+                    <Label>Telefone Trabalho</Label>
+                    <Input
+                      value={maskPhone(formData.proprietario_telefone_trabalho || '')}
+                      onChange={(e) =>
+                        setFormData({ ...formData, proprietario_telefone_trabalho: e.target.value })
+                      }
+                      className="bg-white"
+                    />
+                  </div>
+                  <div className="col-span-1">
+                    <Label>Data de Nascimento</Label>
+                    <Input
+                      value={maskDate(formData.proprietario_data_nascimento || '')}
+                      onChange={(e) =>
+                        setFormData({ ...formData, proprietario_data_nascimento: e.target.value })
+                      }
+                      placeholder="DD/MM/AAAA"
+                      className="bg-white"
+                    />
+                  </div>
+                  <div className="col-span-1">
+                    <Label>Idade</Label>
+                    <Input
+                      value={calculateAge(formData.proprietario_data_nascimento || '')}
+                      readOnly
+                      className="bg-slate-100"
+                    />
+                  </div>
+                  <div className="col-span-1">
+                    <Label>Estado Civil</Label>
+                    <Select
+                      value={formData.proprietario_estado_civil || ''}
+                      onValueChange={(v) =>
+                        setFormData({ ...formData, proprietario_estado_civil: v })
+                      }
+                    >
+                      <SelectTrigger className="bg-white">
+                        <SelectValue placeholder="Selecione" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="solteiro">Solteiro(a)</SelectItem>
+                        <SelectItem value="casado">Casado(a)</SelectItem>
+                        <SelectItem value="divorciado">Divorciado(a)</SelectItem>
+                        <SelectItem value="viuvo">Viúvo(a)</SelectItem>
+                        <SelectItem value="uniao_estavel">União Estável</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="col-span-1">
+                    <Label>Sexo</Label>
+                    <Select
+                      value={formData.proprietario_sexo || ''}
+                      onValueChange={(v) => setFormData({ ...formData, proprietario_sexo: v })}
+                    >
+                      <SelectTrigger className="bg-white">
+                        <SelectValue placeholder="Selecione" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="masculino">Masculino</SelectItem>
+                        <SelectItem value="feminino">Feminino</SelectItem>
+                        <SelectItem value="outro">Outro</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="col-span-2">
+                    <Label>Nome da Mãe</Label>
+                    <Input
+                      value={formData.proprietario_mae || ''}
+                      onChange={(e) =>
+                        setFormData({ ...formData, proprietario_mae: e.target.value })
+                      }
+                      className="bg-white"
+                    />
+                  </div>
+                  <div className="col-span-1">
+                    <Label>CEP</Label>
+                    <Input
+                      value={formData.proprietario_cep || ''}
+                      onChange={(e) =>
+                        setFormData({ ...formData, proprietario_cep: e.target.value })
+                      }
+                      onBlur={(e) => handleCepBlur(e.target.value)}
+                      placeholder="00000-000"
+                      className="bg-white font-mono"
+                    />
+                  </div>
+                  <div className="col-span-2">
+                    <Label>Logradouro (Rua)</Label>
+                    <Input
+                      value={formData.proprietario_logradouro || ''}
+                      onChange={(e) =>
+                        setFormData({ ...formData, proprietario_logradouro: e.target.value })
+                      }
+                      className="bg-white"
+                    />
+                  </div>
+                  <div className="col-span-1">
+                    <Label>Número</Label>
+                    <Input
+                      value={formData.proprietario_numero || ''}
+                      onChange={(e) =>
+                        setFormData({ ...formData, proprietario_numero: e.target.value })
+                      }
+                      className="bg-white"
+                    />
+                  </div>
+                  <div className="col-span-2">
+                    <Label>Complemento</Label>
+                    <Input
+                      value={formData.proprietario_complemento || ''}
+                      onChange={(e) =>
+                        setFormData({ ...formData, proprietario_complemento: e.target.value })
+                      }
+                      className="bg-white"
+                    />
+                  </div>
+                  <div className="col-span-1">
+                    <Label>Bairro</Label>
+                    <Input
+                      value={formData.proprietario_bairro || ''}
+                      onChange={(e) =>
+                        setFormData({ ...formData, proprietario_bairro: e.target.value })
+                      }
+                      className="bg-white"
+                    />
+                  </div>
+                  <div className="col-span-1">
+                    <Label>Cidade</Label>
+                    <Input
+                      value={formData.proprietario_cidade || ''}
+                      onChange={(e) =>
+                        setFormData({ ...formData, proprietario_cidade: e.target.value })
+                      }
+                      className="bg-white"
+                    />
+                  </div>
+                  <div className="col-span-1">
+                    <Label>Estado (UF)</Label>
+                    <Input
+                      value={formData.proprietario_estado || ''}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          proprietario_estado: e.target.value.toUpperCase(),
+                        })
+                      }
+                      maxLength={2}
+                      className="bg-white uppercase"
+                    />
+                  </div>
                 </div>
               </div>
             </TabsContent>
@@ -868,6 +1073,32 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
             <TabsContent value="inspecao" className="m-0 space-y-6">
               <div className="bg-white p-6 rounded-lg border">
                 <h3 className="font-bold border-b pb-2 mb-4">Características</h3>
+                <div className="flex gap-2 mb-4">
+                  <Input
+                    value={newCaracteristica}
+                    onChange={(e) => setNewCaracteristica(e.target.value)}
+                    placeholder="Adicionar característica personalizada..."
+                    className="bg-white"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && newCaracteristica.trim()) {
+                        toggleArray('caracteristicas', newCaracteristica.trim())
+                        setNewCaracteristica('')
+                      }
+                    }}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      if (newCaracteristica.trim()) {
+                        toggleArray('caracteristicas', newCaracteristica.trim())
+                        setNewCaracteristica('')
+                      }
+                    }}
+                  >
+                    <Plus className="w-4 h-4 mr-1" /> Adicionar
+                  </Button>
+                </div>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   {Array.from(
                     new Set([...CARACTERISTICAS_LIST, ...(formData.caracteristicas || [])]),
@@ -884,6 +1115,32 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
               </div>
               <div className="bg-white p-6 rounded-lg border">
                 <h3 className="font-bold border-b pb-2 mb-4">Opcionais</h3>
+                <div className="flex gap-2 mb-4">
+                  <Input
+                    value={newOpcional}
+                    onChange={(e) => setNewOpcional(e.target.value)}
+                    placeholder="Adicionar opcional personalizado..."
+                    className="bg-white"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && newOpcional.trim()) {
+                        toggleArray('diferenciais', newOpcional.trim())
+                        setNewOpcional('')
+                      }
+                    }}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      if (newOpcional.trim()) {
+                        toggleArray('diferenciais', newOpcional.trim())
+                        setNewOpcional('')
+                      }
+                    }}
+                  >
+                    <Plus className="w-4 h-4 mr-1" /> Adicionar
+                  </Button>
+                </div>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   {Array.from(new Set([...OPCIONAIS_LIST, ...(formData.diferenciais || [])])).map(
                     (o: string) => (
@@ -1047,19 +1304,26 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
                   </div>
                 </div>
                 <ChartContainer config={chartConfig} className="h-[250px] w-full">
-                  <BarChart
-                    data={[
-                      { name: 'FIPE', valor: Number(formData.valor_fipe) || 0 },
-                      { name: 'Preço Mín.', valor: Number(formData.preco_minimo) || 0 },
-                      { name: 'Preço Venda', valor: Number(formData.preco_venda) || 0 },
-                    ]}
-                  >
-                    <CartesianGrid vertical={false} />
-                    <XAxis dataKey="name" />
-                    <YAxis />
-                    <ChartTooltip content={<ChartTooltipContent />} />
-                    <Bar dataKey="valor" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
-                  </BarChart>
+                  {fipeHistory.length > 0 ? (
+                    <LineChart data={fipeHistory}>
+                      <CartesianGrid vertical={false} />
+                      <XAxis dataKey="mes" tick={{ fontSize: 10 }} angle={-15} height={50} />
+                      <YAxis tick={{ fontSize: 10 }} />
+                      <ChartTooltip content={<ChartTooltipContent />} />
+                      <Line
+                        type="monotone"
+                        dataKey="valor"
+                        stroke="hsl(var(--primary))"
+                        strokeWidth={2}
+                        dot={{ r: 3 }}
+                        activeDot={{ r: 5 }}
+                      />
+                    </LineChart>
+                  ) : (
+                    <div className="flex items-center justify-center h-full text-sm text-slate-500">
+                      Consulte a placa para carregar o histórico FIPE do veículo.
+                    </div>
+                  )}
                 </ChartContainer>
               </div>
               <div className="bg-white p-6 rounded-lg border shadow-sm">
@@ -1087,6 +1351,41 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
                       <SelectContent>
                         <SelectItem value="loja">Loja</SelectItem>
                         <SelectItem value="cliente">Cliente</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="w-40">
+                    <Label>Tipo</Label>
+                    <Select
+                      value={novaDespesa.tipo}
+                      onValueChange={(v) => setNovaDespesa({ ...novaDespesa, tipo: v })}
+                    >
+                      <SelectTrigger className="bg-white">
+                        <SelectValue placeholder="Selecione" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="manutencao">Manutenção</SelectItem>
+                        <SelectItem value="documentacao">Documentação</SelectItem>
+                        <SelectItem value="limpeza">Limpeza</SelectItem>
+                        <SelectItem value="marketing">Marketing</SelectItem>
+                        <SelectItem value="comissao">Comissão</SelectItem>
+                        <SelectItem value="outro">Outro</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="w-40">
+                    <Label>Origem</Label>
+                    <Select
+                      value={novaDespesa.origem}
+                      onValueChange={(v) => setNovaDespesa({ ...novaDespesa, origem: v })}
+                    >
+                      <SelectTrigger className="bg-white">
+                        <SelectValue placeholder="Selecione" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="interna">Interna</SelectItem>
+                        <SelectItem value="externa">Externa</SelectItem>
+                        <SelectItem value="terceirizado">Terceirizado</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -1120,6 +1419,16 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
                         >
                           {d.responsabilidade === 'loja' ? 'Loja' : 'Cliente'}
                         </span>
+                        {d.tipo && (
+                          <span className="text-[9px] px-1.5 py-0.5 rounded font-bold bg-purple-100 text-purple-700 capitalize">
+                            {d.tipo}
+                          </span>
+                        )}
+                        {d.origem && (
+                          <span className="text-[9px] px-1.5 py-0.5 rounded font-bold bg-teal-100 text-teal-700 capitalize">
+                            {d.origem}
+                          </span>
+                        )}
                       </div>
                     </div>
                     <div className="font-bold text-red-500">
@@ -1155,7 +1464,7 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
                   {documentos.map((doc) => (
                     <div
                       key={doc.id}
-                      className="border p-4 rounded flex justify-between bg-slate-50"
+                      className="border p-4 rounded flex justify-between items-center bg-slate-50"
                     >
                       <p
                         className="text-sm font-semibold truncate cursor-pointer hover:underline"
@@ -1163,17 +1472,28 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
                       >
                         {doc.nome_documento}
                       </p>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="text-red-500"
-                        onClick={async () => {
-                          await supabase.from('documentos').delete().eq('id', doc.id)
-                          setDocumentos((p) => p.filter((d) => d.id !== doc.id))
-                        }}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
+                      <div className="flex items-center gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="text-blue-600 hover:bg-blue-50"
+                          onClick={() => setPreviewDoc(doc)}
+                          title="Visualizar"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="text-red-500"
+                          onClick={async () => {
+                            await supabase.from('documentos').delete().eq('id', doc.id)
+                            setDocumentos((p) => p.filter((d) => d.id !== doc.id))
+                          }}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -1308,6 +1628,8 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
             }}
           />
         )}
+
+        <DocumentPreviewDialog document={previewDoc} onClose={() => setPreviewDoc(null)} />
       </DialogContent>
     </Dialog>
   )
