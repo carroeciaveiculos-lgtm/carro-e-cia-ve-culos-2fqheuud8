@@ -30,7 +30,9 @@ import {
   Phone,
   MessageCircle,
   Share2,
+  Copy,
 } from 'lucide-react'
+import { useIsMobile } from '@/hooks/use-mobile'
 import {
   Carousel,
   CarouselContent,
@@ -57,6 +59,8 @@ export default function Veiculo() {
   const [loading, setLoading] = useState(true)
   const [activePhoto, setActivePhoto] = useState(0)
   const [api, setApi] = useState<CarouselApi>()
+  const [showDesktopShare, setShowDesktopShare] = useState(false)
+  const isMobile = useIsMobile()
 
   useEffect(() => {
     if (!api) return
@@ -193,11 +197,13 @@ export default function Veiculo() {
   }
 
   const handleShare = async () => {
+    if (!vehicle?.marca || !vehicle?.modelo) return
+
     const text = getShareText()
     const url = shareUrl
     const title = `${vehicle.marca} ${vehicle.modelo}`
 
-    if (navigator.share) {
+    if (isMobile && navigator.share) {
       try {
         await navigator.share({ title, text, url })
         trackCTAClick('Compartilhar Veículo (Nativo)', '/veiculo')
@@ -205,9 +211,7 @@ export default function Veiculo() {
         console.error('Error sharing', err)
       }
     } else {
-      navigator.clipboard.writeText(text)
-      trackCTAClick('Compartilhar Veículo (Copiado)', '/veiculo')
-      alert('Texto copiado para a área de transferência!')
+      setShowDesktopShare(true)
     }
   }
 
@@ -580,6 +584,41 @@ export default function Veiculo() {
           </div>
         )}
       </div>
+
+      <Dialog open={showDesktopShare} onOpenChange={setShowDesktopShare}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Compartilhar Veículo</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div>
+              <label className="text-sm font-bold mb-2 block">Link do Anúncio</label>
+              <Input value={shareUrl} readOnly className="bg-muted font-mono text-sm" />
+            </div>
+            <div className="flex gap-3">
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={() => {
+                  navigator.clipboard.writeText(shareUrl)
+                  trackCTAClick('Compartilhar Veículo (Copiado)', '/veiculo')
+                }}
+              >
+                <Copy className="w-4 h-4 mr-2" /> Copiar Link
+              </Button>
+              <Button asChild className="flex-1 bg-[#25D366] hover:bg-[#20bd5a] text-white">
+                <a
+                  href={`https://wa.me/?text=${encodeURIComponent(getShareText())}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <MessageCircle className="w-4 h-4 mr-2" /> WhatsApp
+                </a>
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Fixed Bottom CTAs for Mobile */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-background border-t shadow-[0_-4px_12px_rgba(0,0,0,0.05)] p-3 grid grid-cols-2 gap-3 pb-safe">

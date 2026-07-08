@@ -13,7 +13,10 @@ Deno.serve(async (req: Request) => {
 
     if (!veiculo_id && !veiculo) {
       return new Response(
-        JSON.stringify({ success: false, error: 'veiculo_id é obrigatório no corpo da requisição.' }),
+        JSON.stringify({
+          success: false,
+          error: 'veiculo_id é obrigatório no corpo da requisição.',
+        }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
       )
     }
@@ -27,44 +30,61 @@ Deno.serve(async (req: Request) => {
     if (!vehicleData && veiculo_id) {
       const { data: vehicleRecord, error: dbError } = await supabase
         .from('veiculos')
-        .select('marca, modelo, versao, ano_fabricacao, ano_modelo, cor, combustivel, quilometragem, cambio, preco_venda, descricao')
+        .select(
+          'marca, modelo, versao, ano_fabricacao, ano_modelo, cor, combustivel, quilometragem, cambio, preco_venda, descricao',
+        )
         .eq('id', veiculo_id)
         .single()
 
       if (dbError) {
-        console.error('[gerar-conteudo-social] Database query error for ID:', veiculo_id, dbError.message)
+        console.error(
+          '[gerar-conteudo-social] Database query error for ID:',
+          veiculo_id,
+          dbError.message,
+        )
       }
 
       if (!vehicleRecord) {
         console.error('[gerar-conteudo-social] Database query returned null for ID:', veiculo_id)
-        return new Response(
-          JSON.stringify({ success: false, error: 'Veículo não encontrado' }),
-          { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
-        )
+        return new Response(JSON.stringify({ success: false, error: 'Veículo não encontrado' }), {
+          status: 404,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
       }
 
       vehicleData = vehicleRecord
     }
 
     if (!vehicleData || !vehicleData.marca) {
-      console.error('[gerar-conteudo-social] Vehicle data is missing or has no marca property. ID:', veiculo_id || 'inline')
+      console.error(
+        '[gerar-conteudo-social] Vehicle data is missing or has no marca property. ID:',
+        veiculo_id || 'inline',
+      )
       return new Response(
         JSON.stringify({ success: false, error: 'Dados do veículo incompletos ou inválidos.' }),
         { status: 422, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
       )
     }
 
+    const safeMarca = vehicleData.marca || 'Veículo'
+    const safeModelo = vehicleData.modelo || ''
+    const safeAno = vehicleData.ano_fabricacao || 'Ano não informado'
+    const safePreco = vehicleData.preco_venda ?? 'Sob consulta'
+    const safeCor = vehicleData.cor || 'Não informada'
+    const safeCombustivel = vehicleData.combustivel || 'Não informado'
+    const safeDescricao = vehicleData.descricao || 'Sem descrição adicional'
+
     const targetPlatform = platform || 'Instagram'
 
     const prompt = `Você é um especialista em marketing automotivo.
 Crie um post persuasivo para a rede social ${targetPlatform} vendendo o seguinte veículo:
-Marca: ${vehicleData.marca}
-Modelo: ${vehicleData.modelo}
-Ano: ${vehicleData.ano_fabricacao}
-Preço: R$ ${vehicleData.preco_venda}
-Cor: ${vehicleData.cor}
-Combustível: ${vehicleData.combustivel}
-Descrição: ${vehicleData.descricao || 'Sem descrição adicional'}
+Marca: ${safeMarca}
+Modelo: ${safeModelo}
+Ano: ${safeAno}
+Preço: R$ ${safePreco}
+Cor: ${safeCor}
+Combustível: ${safeCombustivel}
+Descrição: ${safeDescricao}
 
 Inclua emojis, um tom atrativo e chamadas para ação. No final, adicione hashtags relevantes. Não coloque aspas no texto todo. O formato deve estar pronto para copiar e colar no ${targetPlatform}.`
 
@@ -99,9 +119,12 @@ Inclua emojis, um tom atrativo e chamadas para ação. No final, adicione hashta
     })
   } catch (error: any) {
     console.error('[gerar-conteudo-social] Unexpected error:', error?.message || error)
-    return new Response(JSON.stringify({ success: false, error: error.message || 'Erro interno do servidor' }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 500,
-    })
+    return new Response(
+      JSON.stringify({ success: false, error: error.message || 'Erro interno do servidor' }),
+      {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 500,
+      },
+    )
   }
 })

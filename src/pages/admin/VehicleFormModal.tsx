@@ -536,6 +536,18 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
   const [loadingAdKit, setLoadingAdKit] = useState(false)
   const [loadingDescricao, setLoadingDescricao] = useState(false)
 
+  const sanitizeAiText = (raw: string): string => {
+    if (!raw) return ''
+    return raw
+      .replace(/<[^>]*>/g, '')
+      .replace(/[*#`>_~]/g, '')
+      .split('\n')
+      .map((line) => line.trim())
+      .join('\n')
+      .replace(/\n{3,}/g, '\n\n')
+      .trim()
+  }
+
   const handleGerarDescricao = async () => {
     setLoadingDescricao(true)
     try {
@@ -551,7 +563,8 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
         const tempDiv = document.createElement('div')
         tempDiv.innerHTML = data.data.texto_html
         const plainText = tempDiv.textContent || tempDiv.innerText || ''
-        setFormData((p: any) => ({ ...p, descricao: plainText.substring(0, 1000) }))
+        const cleanedText = sanitizeAiText(plainText)
+        setFormData((p: any) => ({ ...p, descricao: cleanedText.substring(0, 1000) }))
         toast({ title: 'Descrição gerada com IA!' })
       }
     } catch {

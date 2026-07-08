@@ -33,6 +33,7 @@ import {
   Undo2,
   Power,
   Share2,
+  Trash2,
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import VehicleFormModal from './VehicleFormModal'
@@ -131,6 +132,30 @@ export default function AdminEstoque() {
     else {
       toast({ title: 'Veículo ativado com sucesso!' })
       loadVehicles()
+    }
+  }
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('Deseja realmente excluir este veículo?')) return
+    try {
+      await supabase.from('estoque_publicacoes').delete().eq('veiculo_id', id)
+      await supabase.from('social_posts').delete().eq('veiculo_id', id)
+      await supabase.from('ml_listings').delete().eq('veiculo_id', id)
+      await supabase.from('documentos').delete().eq('veiculo_id', id)
+      await supabase.from('despesas').delete().eq('veiculo_id', id)
+      await supabase.from('simulacoes').delete().eq('veiculo_id', id)
+      await supabase.from('contratos_consignacao').delete().eq('veiculo_id', id)
+      await supabase.from('consignacoes').delete().eq('veiculo_id', id)
+      await supabase.from('logs_integracao').delete().eq('veiculo_id', id)
+      await supabase.from('leads').update({ veiculo_id: null }).eq('veiculo_id', id)
+      await supabase.from('notas_fiscais').update({ veiculo_id: null }).eq('veiculo_id', id)
+
+      const { error } = await supabase.from('veiculos').delete().eq('id', id)
+      if (error) throw error
+      toast({ title: 'Veículo excluído com sucesso!' })
+      loadVehicles()
+    } catch (err: any) {
+      toast({ title: 'Erro ao excluir', description: err.message, variant: 'destructive' })
     }
   }
 
@@ -468,6 +493,15 @@ export default function AdminEstoque() {
                           <Power className="w-4 h-4" />
                         </Button>
                       )}
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleDelete(v.id)}
+                        className="text-red-600 hover:bg-red-50"
+                        title="Excluir Veículo"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
                     </div>
                   </TableCell>
                 </TableRow>
