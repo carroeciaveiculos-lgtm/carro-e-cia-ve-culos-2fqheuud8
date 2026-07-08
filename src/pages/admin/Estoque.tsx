@@ -337,6 +337,9 @@ export default function AdminEstoque() {
                       {v.is_consignado && (
                         <Badge className="bg-purple-600 text-[9px]">Consig.</Badge>
                       )}
+                      {(v as any).em_preparacao && (
+                        <Badge className="bg-amber-500 text-[9px]">Prep.</Badge>
+                      )}{' '}
                     </div>
                     <div className="text-xs text-slate-500 font-mono">
                       {v.placa || 'SEM PLACA'} • {v.ano_fabricacao} • {v.cor}

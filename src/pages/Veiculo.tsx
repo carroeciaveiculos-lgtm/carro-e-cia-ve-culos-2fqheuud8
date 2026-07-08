@@ -270,16 +270,27 @@ export default function Veiculo() {
                   ))
                 ) : (
                   <CarouselItem>
-                    <div className="aspect-[4/3] rounded-xl overflow-hidden bg-muted relative w-full">
-                      <img
-                        src="https://img.usecurling.com/p/800/600?q=car"
-                        alt="Sem foto"
-                        width="800"
-                        height="600"
-                        loading="eager"
-                        decoding="async"
-                        className="w-full h-full object-cover"
-                      />
+                    <div className="aspect-[4/3] rounded-xl overflow-hidden bg-muted relative w-full flex items-center justify-center">
+                      {(vehicle as any).em_preparacao ? (
+                        <div className="text-center p-8">
+                          <p className="text-2xl font-bold text-foreground mb-2">
+                            🔧 Veículo em Preparação
+                          </p>
+                          <p className="text-muted-foreground">
+                            Em breve disponível para visualização.
+                          </p>
+                        </div>
+                      ) : (
+                        <img
+                          src="https://img.usecurling.com/p/800/600?q=car"
+                          alt="Sem foto"
+                          width="800"
+                          height="600"
+                          loading="eager"
+                          decoding="async"
+                          className="w-full h-full object-cover"
+                        />
+                      )}
                     </div>
                   </CarouselItem>
                 )}

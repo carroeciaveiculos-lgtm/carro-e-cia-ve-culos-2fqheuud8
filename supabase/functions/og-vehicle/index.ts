@@ -63,10 +63,10 @@ function escapeHtml(str: string): string {
 
 // CORREÇÃO 1: Formatação numérica segura de preço para evitar exibir "R$ NaN" na tela
 function formatCurrency(val: any): string {
-  if (val === null || val === undefined) return "Sob consulta"
+  if (val === null || val === undefined) return 'Sob consulta'
   const cleanStr = String(val).replace(/[^0-9.-]/g, '')
   const numericVal = parseFloat(cleanStr) || 0
-  if (numericVal === 0) return "Sob consulta"
+  if (numericVal === 0) return 'Sob consulta'
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(numericVal)
 }
 
@@ -191,7 +191,9 @@ Deno.serve(async (req) => {
 
     let query = supabase
       .from('veiculos')
-      .select('id,marca,modelo,versao,ano_fabricacao,ano_modelo,preco_venda,quilometragem,fotos,slug,status')
+      .select(
+        'id,marca,modelo,versao,ano_fabricacao,ano_modelo,preco_venda,quilometragem,fotos,slug,status',
+      )
 
     if (vehicleId) {
       query = query.eq('id', vehicleId)
@@ -202,7 +204,7 @@ Deno.serve(async (req) => {
     const { data: vehicle, error } = await query.maybeSingle()
 
     if (error || !vehicle || vehicle.status !== 'disponivel') {
-      console.warn("Veículo não localizado para meta-tag. Exibindo cabeçalho padrão.");
+      console.warn('Veículo não localizado para meta-tag. Exibindo cabeçalho padrão.')
       return new Response(generateDefaultHtml(), {
         status: 200,
         headers: { ...corsHeaders, 'Content-Type': 'text/html; charset=utf-8' },

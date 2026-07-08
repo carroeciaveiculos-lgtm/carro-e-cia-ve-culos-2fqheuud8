@@ -9,7 +9,9 @@ export function VehicleCard({ vehicle, priority = false }: { vehicle: any; prior
   const foto =
     vehicle.fotos && vehicle.fotos.length > 0
       ? getImageUrl(vehicle.fotos[0])
-      : getImageUrl('fotos/modelo-veiculo.webp')
+      : (vehicle as any).em_preparacao
+        ? 'https://img.usecurling.com/p/400/300?q=car%20detailing%20workshop&color=gray'
+        : getImageUrl('fotos/modelo-veiculo.webp')
 
   return (
     <Card className="overflow-hidden hover:shadow-lg transition-shadow border-border/50 group flex flex-col w-full bg-card">
@@ -17,6 +19,11 @@ export function VehicleCard({ vehicle, priority = false }: { vehicle: any; prior
         {vehicle.is_zero_km && (
           <div className="absolute top-3 left-3 z-10 bg-primary text-primary-foreground px-2 py-1 text-xs font-bold rounded shadow-sm">
             0 KM
+          </div>
+        )}
+        {(vehicle as any).em_preparacao && (
+          <div className="absolute top-3 left-3 z-10 bg-amber-500 text-white px-2 py-1 text-xs font-bold rounded shadow-sm">
+            Em Preparação
           </div>
         )}
         <Link to={`/estoque/${vehicle.slug || vehicle.id}`} className="w-full h-full block">

@@ -12,6 +12,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Checkbox } from '@/components/ui/checkbox'
+import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { supabase } from '@/lib/supabase/client'
@@ -19,7 +20,7 @@ import { useToast } from '@/hooks/use-toast'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { CurrencyInput } from '@/components/ui/currency-input'
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart'
-import { Line, LineChart, CartesianGrid, XAxis, YAxis } from 'recharts'
+import { Line, LineChart, Bar, BarChart, CartesianGrid, XAxis, YAxis } from 'recharts'
 import { cn } from '@/lib/utils'
 import { ImageEditorModal } from '@/components/admin/ImageEditorModal'
 import {
@@ -84,7 +85,7 @@ const OPCIONAIS_LIST = [
   'Vidros elétricos',
 ]
 
-const chartConfig = { valor: { label: 'Valor FIPE', color: 'hsl(var(--primary))' } }
+const chartConfig = { valor: { label: 'Valor (R$)', color: 'hsl(var(--primary))' } }
 
 export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess }: any) {
   const { toast } = useToast()
@@ -177,6 +178,7 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
     fipe_ref: 'Atual',
     versao: '',
     descricao: '',
+    em_preparacao: false,
   })
 
   const handleDocumentoSearch = async (doc: string) => {
@@ -304,6 +306,7 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
           fotos: [],
           diferenciais: [],
           info_personalizadas: {},
+          em_preparacao: false,
         })
       }
       loadMediaAssets()
@@ -531,15 +534,49 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
 
   const [adKitContent, setAdKitContent] = useState<string | null>(null)
   const [loadingAdKit, setLoadingAdKit] = useState(false)
+  const [loadingDescricao, setLoadingDescricao] = useState(false)
+
+  const handleGerarDescricao = async () => {
+    setLoadingDescricao(true)
+    try {
+      const { data, error } = await supabase.functions.invoke('gerar-conteudo', {
+        body: {
+          tema: `${formData.marca} ${formData.modelo} ${formData.ano_fabricacao || ''} ${formData.versao || ''}`,
+          palavraChave: `${formData.marca} ${formData.modelo} seminovo uberaba`,
+          tom: 'Conversacional',
+        },
+      })
+      if (error) throw error
+      if (data?.success && data?.data?.texto_html) {
+        const tempDiv = document.createElement('div')
+        tempDiv.innerHTML = data.data.texto_html
+        const plainText = tempDiv.textContent || tempDiv.innerText || ''
+        setFormData((p: any) => ({ ...p, descricao: plainText.substring(0, 1000) }))
+        toast({ title: 'Descrição gerada com IA!' })
+      }
+    } catch {
+      toast({ title: 'Erro ao gerar descrição', variant: 'destructive' })
+    } finally {
+      setLoadingDescricao(false)
+    }
+  }
 
   const handleGerarAdKit = async () => {
     if (!formData.id) return toast({ title: 'Salve primeiro' })
     setLoadingAdKit(true)
     try {
-      await new Promise((r) => setTimeout(r, 2000))
-      setAdKitContent(
-        `<h4>🚀 Oportunidade Única: ${formData.marca} ${formData.modelo}</h4><p>Completo, impecável e pronto para sua garagem!</p>`,
-      )
+      const { data, error } = await supabase.functions.invoke('gerar-conteudo-social', {
+        body: { veiculo_id: formData.id },
+      })
+      if (error) throw error
+      if (data?.success && data?.data) {
+        setAdKitContent(data.data)
+        toast({ title: 'Kit de anúncio gerado!' })
+      } else {
+        throw new Error(data?.error || 'Erro desconhecido')
+      }
+    } catch (err: any) {
+      toast({ title: 'Erro ao gerar kit', description: err.message, variant: 'destructive' })
     } finally {
       setLoadingAdKit(false)
     }
@@ -602,6 +639,22 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
                 <Button onClick={consultarAPIPlaca} disabled={loadingPlaca}>
                   <Search className="w-4 h-4 mr-2" /> Consultar Placa Inteligente
                 </Button>
+              </div>
+
+              <div className="flex items-center justify-between p-4 bg-amber-50 rounded-lg border border-amber-200">
+                <div>
+                  <Label className="font-bold text-amber-900">Veículo em Preparação</Label>
+                  <p className="text-xs text-amber-700 mt-1">
+                    Marque enquanto o veículo está em limpeza/preparo. Exibe placeholder no site
+                    público quando não há fotos.
+                  </p>
+                </div>
+                <Switch
+                  checked={formData.em_preparacao || false}
+                  onCheckedChange={(checked) =>
+                    setFormData({ ...formData, em_preparacao: checked })
+                  }
+                />
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-white p-6 rounded-lg border">
@@ -707,7 +760,20 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
                     />
                   </div>
                   <div>
-                    <Label>Observações / Descrição</Label>
+                    <div className="flex items-center justify-between mb-1">
+                      <Label>Observações / Descrição</Label>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="h-7 text-xs bg-purple-50 text-purple-700 hover:bg-purple-100 border-purple-200"
+                        onClick={handleGerarDescricao}
+                        disabled={loadingDescricao}
+                      >
+                        <Wand2 className="w-3 h-3 mr-1" />
+                        {loadingDescricao ? 'Gerando...' : 'Gerar com IA'}
+                      </Button>
+                    </div>
                     <Textarea
                       value={formData.descricao || ''}
                       onChange={(e) => setFormData({ ...formData, descricao: e.target.value })}
@@ -930,6 +996,60 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
 
             <TabsContent value="financeiro" className="m-0 space-y-6">
               <div className="bg-white p-6 rounded-lg border shadow-sm">
+                <h3 className="font-bold text-slate-800 mb-4">Análise de Precificação & ROI</h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                  <div className="bg-slate-50 p-4 rounded-lg border">
+                    <p className="text-xs text-slate-500">Margem Bruta</p>
+                    <p className="text-xl font-bold text-green-600">
+                      R${' '}
+                      {Math.max(
+                        0,
+                        (Number(formData.preco_venda) || 0) - (Number(formData.preco_minimo) || 0),
+                      ).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                    </p>
+                  </div>
+                  <div className="bg-slate-50 p-4 rounded-lg border">
+                    <p className="text-xs text-slate-500">Despesas (Loja)</p>
+                    <p className="text-xl font-bold text-red-500">
+                      R${' '}
+                      {despesas
+                        .filter((d) => d.responsabilidade === 'loja')
+                        .reduce((s, d) => s + (Number(d.valor) || 0), 0)
+                        .toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                    </p>
+                  </div>
+                  <div className="bg-slate-50 p-4 rounded-lg border">
+                    <p className="text-xs text-slate-500">Lucro Líquido Est.</p>
+                    <p className="text-xl font-bold text-blue-600">
+                      R${' '}
+                      {Math.max(
+                        0,
+                        (Number(formData.preco_venda) || 0) -
+                          (Number(formData.preco_minimo) || 0) -
+                          despesas
+                            .filter((d) => d.responsabilidade === 'loja')
+                            .reduce((s, d) => s + (Number(d.valor) || 0), 0),
+                      ).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                    </p>
+                  </div>
+                </div>
+                <ChartContainer config={chartConfig} className="h-[250px] w-full">
+                  <BarChart
+                    data={[
+                      { name: 'FIPE', valor: Number(formData.valor_fipe) || 0 },
+                      { name: 'Preço Mín.', valor: Number(formData.preco_minimo) || 0 },
+                      { name: 'Preço Venda', valor: Number(formData.preco_venda) || 0 },
+                    ]}
+                  >
+                    <CartesianGrid vertical={false} />
+                    <XAxis dataKey="name" />
+                    <YAxis />
+                    <ChartTooltip content={<ChartTooltipContent />} />
+                    <Bar dataKey="valor" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ChartContainer>
+              </div>
+              <div className="bg-white p-6 rounded-lg border shadow-sm">
                 <h3 className="font-bold text-slate-800 mb-4">Despesas Vinculadas</h3>
                 <div className="bg-slate-50 p-4 rounded-lg border mb-4 shadow-sm flex flex-col md:flex-row gap-3 items-end">
                   <div className="flex-1">
@@ -941,6 +1061,21 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
                       }
                       className="bg-white"
                     />
+                  </div>
+                  <div className="w-40">
+                    <Label>Responsabilidade</Label>
+                    <Select
+                      value={novaDespesa.responsabilidade}
+                      onValueChange={(v) => setNovaDespesa({ ...novaDespesa, responsabilidade: v })}
+                    >
+                      <SelectTrigger className="bg-white">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="loja">Loja</SelectItem>
+                        <SelectItem value="cliente">Cliente</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div className="w-32">
                     <Label>Valor</Label>
@@ -965,7 +1100,14 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
                   >
                     <div>
                       <p className="font-medium">{d.descricao || d.categoria}</p>
-                      <p className="text-xs text-slate-500">{d.data_despesa}</p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <p className="text-xs text-slate-500">{d.data_despesa}</p>
+                        <span
+                          className={`text-[9px] px-1.5 py-0.5 rounded font-bold ${d.responsabilidade === 'loja' ? 'bg-blue-100 text-blue-700' : 'bg-orange-100 text-orange-700'}`}
+                        >
+                          {d.responsabilidade === 'loja' ? 'Loja' : 'Cliente'}
+                        </span>
+                      </div>
                     </div>
                     <div className="font-bold text-red-500">
                       R$ {Number(d.valor).toLocaleString('pt-BR')}

@@ -7,8 +7,17 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Switch } from '@/components/ui/switch'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { useToast } from '@/hooks/use-toast'
-import { Activity, Mail, Share2, BarChart3, Plus } from 'lucide-react'
+import { Activity, Mail, Share2, BarChart3, Plus, MessageCircle, Wand2 } from 'lucide-react'
+import { SocialApprovalDashboard } from '@/components/admin/marketing/SocialApprovalDashboard'
+import { WhatsAppScheduler } from '@/components/admin/marketing/WhatsAppScheduler'
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Line, LineChart } from 'recharts'
 import {
   ChartContainer,
@@ -29,6 +38,7 @@ export default function Marketing() {
   const [postImage, setPostImage] = useState('')
   const [postDate, setPostDate] = useState('')
   const [postPlatforms, setPostPlatforms] = useState<string[]>(['instagram'])
+  const [postContentType, setPostContentType] = useState('feed')
 
   useEffect(() => {
     loadData()
@@ -65,6 +75,26 @@ export default function Marketing() {
     toast({ title: 'Status atualizado', description: 'Automação alterada com sucesso.' })
   }
 
+  const [generatingAI, setGeneratingAI] = useState(false)
+
+  const handleGenerateAIPost = async () => {
+    setGeneratingAI(true)
+    try {
+      const { data, error } = await supabase.functions.invoke('gerar-conteudo-social', {
+        body: { content_type: postContentType },
+      })
+      if (error) throw error
+      if (data?.success && data?.data) {
+        setPostText(data.data)
+        toast({ title: 'Conteúdo gerado com IA!' })
+      }
+    } catch (e: any) {
+      toast({ title: 'Erro ao gerar', description: e.message, variant: 'destructive' })
+    } finally {
+      setGeneratingAI(false)
+    }
+  }
+
   const handleSchedulePost = async () => {
     if (!postText || !postDate || postPlatforms.length === 0) {
       toast({
@@ -89,7 +119,8 @@ export default function Marketing() {
       imagem: postImage,
       data_agendamento: new Date(postDate).toISOString(),
       redes: postPlatforms,
-      status: 'Agendado',
+      status: 'Rascunho',
+      content_type: postContentType,
     })
 
     if (error) {
@@ -159,6 +190,12 @@ export default function Marketing() {
             <Share2 className="w-4 h-4 mr-2" /> Redes Sociais
           </TabsTrigger>
           <TabsTrigger
+            value="whatsapp"
+            className="py-2.5 px-4 data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700"
+          >
+            <MessageCircle className="w-4 h-4 mr-2" /> WhatsApp
+          </TabsTrigger>
+          <TabsTrigger
             value="emails"
             className="py-2.5 px-4 data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700"
           >
@@ -202,7 +239,34 @@ export default function Marketing() {
               </div>
 
               <div className="space-y-2">
-                <Label>Texto da Postagem</Label>
+                <Label>Tipo de Conteúdo</Label>
+                <Select value={postContentType} onValueChange={setPostContentType}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="feed">Feed</SelectItem>
+                    <SelectItem value="stories">Stories</SelectItem>
+                    <SelectItem value="reels">Reels</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label>Texto da Postagem</Label>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-7 text-xs bg-purple-50 text-purple-700 hover:bg-purple-100 border-purple-200"
+                    onClick={handleGenerateAIPost}
+                    disabled={generatingAI}
+                  >
+                    <Wand2 className="w-3 h-3 mr-1" />
+                    {generatingAI ? 'Gerando...' : 'Gerar com IA'}
+                  </Button>
+                </div>
                 <Textarea
                   rows={5}
                   placeholder="Escreva a legenda do seu post aqui..."
@@ -292,6 +356,22 @@ export default function Marketing() {
               </div>
             </CardContent>
           </Card>
+
+          <Card className="mt-6">
+            <CardHeader>
+              <CardTitle>Painel de Aprovação</CardTitle>
+              <CardDescription>
+                Revise e aprove o conteúdo gerado antes da publicação.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <SocialApprovalDashboard />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="whatsapp">
+          <WhatsAppScheduler />
         </TabsContent>
 
         <TabsContent value="emails">

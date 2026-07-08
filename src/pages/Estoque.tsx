@@ -42,7 +42,7 @@ export default function Estoque() {
     supabase
       .from('veiculos')
       .select(
-        'id, slug, marca, modelo, versao, ano_fabricacao, ano_modelo, preco_venda, quilometragem, combustivel, cambio, cor, fotos, is_zero_km, status, is_consignado, categoria, exibir_no_site, nao_exibir_km',
+        'id, slug, marca, modelo, versao, ano_fabricacao, ano_modelo, preco_venda, quilometragem, combustivel, cambio, cor, fotos, is_zero_km, status, is_consignado, categoria, exibir_no_site, nao_exibir_km, em_preparacao',
       )
       .eq('status', 'disponivel')
       .eq('exibir_no_site', true)
@@ -304,7 +304,11 @@ export default function Estoque() {
                   const fotos =
                     Array.isArray(v.fotos) && v.fotos.length > 0
                       ? v.fotos.map((url: string) => getImageUrl(url))
-                      : [getImageUrl('fotos/modelo-veiculo.webp')]
+                      : (v as any).em_preparacao
+                        ? [
+                            'https://img.usecurling.com/p/400/300?q=car%20detailing%20workshop&color=gray',
+                          ]
+                        : [getImageUrl('fotos/modelo-veiculo.webp')]
                   return (
                     <Card
                       key={v.id}
@@ -313,6 +317,11 @@ export default function Estoque() {
                       <div className="relative w-full aspect-video bg-muted group-hover:scale-105 transition-transform duration-500">
                         {v.is_zero_km && (
                           <Badge className="absolute top-3 left-3 z-10 bg-primary">0 KM</Badge>
+                        )}
+                        {(v as any).em_preparacao && !v.is_zero_km && (
+                          <Badge className="absolute top-3 left-3 z-10 bg-amber-500">
+                            Em Preparação
+                          </Badge>
                         )}
                         <Button
                           size="icon"
