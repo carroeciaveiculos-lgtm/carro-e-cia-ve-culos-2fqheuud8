@@ -233,7 +233,7 @@ export default function Veiculo() {
         image={getSocialImageUrl(photos.length > 0 ? photos[0] : undefined)}
         canonical={vehicleUrl}
         schema={schema}
-      /
+      />
       <div className="container py-6">
         <Link
           to="/estoque"
