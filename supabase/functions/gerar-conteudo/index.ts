@@ -186,7 +186,7 @@ REGRAS DE MÍDIA E IMAGENS:
 - Aspect Ratio: 16:9 para Hero, 1:1 ou 4:5 para Institucional, 3:2 para Serviços.
 
 REGRAS DE FORMATAÇÃO DE TEXTO:
-- Todo o texto nos campos "texto" deve ser texto puro, sem símbolos Markdown (como ###, **, _, `) ou tags HTML.
+- Todo o texto nos campos "texto" deve ser texto puro, sem símbolos Markdown (como ###, **, _, \`) ou tags HTML.
 - Use apenas quebras de parágrafo naturais (dupla quebra de linha) para separar parágrafos.
 - Não inclua marcadores de lista com símbolos especiais; use texto corrido com numeração simples quando necessário.
 - O texto deve estar pronto para exibição direta em um campo de texto simples, sem necessidade de conversão.
