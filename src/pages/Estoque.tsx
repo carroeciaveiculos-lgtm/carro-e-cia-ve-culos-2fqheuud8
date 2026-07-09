@@ -27,6 +27,7 @@ import { Filter, Search, Car, Share2, CalendarDays, Settings2, Fuel, Gauge } fro
 import { trackCTAClick } from '@/lib/tracking'
 import { toast } from 'sonner'
 import { getImageUrl } from '@/lib/image-utils'
+import { handleShareCTA } from '@/lib/cta-router'
 
 export default function Estoque() {
   const [veiculos, setVeiculos] = useState<any[]>([])
@@ -327,21 +328,12 @@ export default function Estoque() {
                           size="icon"
                           variant="secondary"
                           className="absolute top-3 right-3 z-10 rounded-full bg-white/80 hover:bg-white text-slate-700 shadow-sm w-8 h-8"
-                          onClick={(e) => {
+                          onClick={async (e) => {
                             e.preventDefault()
                             e.stopPropagation()
-                            const shareUrl = `https://www.carroeciamotors.com.br/estoque/${v.slug || v.id}`
-                            if (navigator.share) {
-                              navigator
-                                .share({
-                                  title: `${v.marca} ${v.modelo} ${v.ano_fabricacao}`,
-                                  text: `Confira este excelente ${v.marca} ${v.modelo} por R$ ${v.preco_venda?.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}. Venda ou Compre seu carro rápido e seguro.`,
-                                  url: shareUrl,
-                                })
-                                .catch(console.error)
-                            } else {
-                              navigator.clipboard.writeText(shareUrl)
-                              toast.success('Link copiado!')
+                            const shared = await handleShareCTA(v, '/estoque')
+                            if (!shared) {
+                              toast.success('Link de compartilhamento copiado!')
                             }
                           }}
                         >

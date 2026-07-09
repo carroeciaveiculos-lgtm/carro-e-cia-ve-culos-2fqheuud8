@@ -17,6 +17,7 @@ import { cn } from '@/lib/utils'
 import { trackWhatsAppClick } from '@/lib/tracking'
 import { getWhatsAppLink } from '@/lib/whatsapp'
 import { Button } from './ui/button'
+import { handleCommercialCTA } from '@/lib/cta-router'
 
 export default function PublicLayout() {
   const [menuOpen, setMenuOpen] = useState(false)
@@ -136,7 +137,6 @@ export default function PublicLayout() {
                 {l.label}
               </Link>
             ))}
-
             <div className="relative group">
               <button
                 className="flex items-center gap-1 transition-colors hover:text-primary text-foreground/80 py-2"
@@ -158,7 +158,6 @@ export default function PublicLayout() {
                 ))}
               </div>
             </div>
-
             {rightLinks.map((l) => (
               <Link
                 key={l.href}
@@ -171,20 +170,21 @@ export default function PublicLayout() {
                 {l.label}
               </Link>
             ))}
-
             <Button
               asChild
               className="bg-[#25D366] hover:bg-[#20bd5a] text-white rounded-full font-bold"
             >
-              <a
-                href={getWhatsAppLink(wppText)}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={() => trackWhatsAppClick('Luiz', 'menu_desktop')}
+              <button
+                onClick={() => {
+                  handleCommercialCTA({
+                    ctaType: 'menu_desktop',
+                    source: location.pathname,
+                  })
+                }}
               >
                 Falar pelo WhatsApp
-              </a>
-            </Button>
+              </button>
+            </Button>{' '}
           </nav>
         </div>
       </header>
@@ -265,14 +265,17 @@ export default function PublicLayout() {
             asChild
             className="w-full h-[52px] text-lg bg-[#25D366] hover:bg-[#20bd5a] text-white"
           >
-            <a
-              href={getWhatsAppLink(wppText)}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={() => trackWhatsAppClick('Luiz', 'menu_mobile')}
+            <button
+              onClick={() => {
+                setMenuOpen(false)
+                handleCommercialCTA({
+                  ctaType: 'menu_mobile',
+                  source: location.pathname,
+                })
+              }}
             >
               Falar com o Luiz
-            </a>
+            </button>
           </Button>
         </div>
       </div>
@@ -307,12 +310,19 @@ export default function PublicLayout() {
                 href={getWhatsAppLink(wppText)}
                 target="_blank"
                 rel="noopener noreferrer"
-                onClick={() => trackWhatsAppClick('Luiz', 'bottom_nav')}
+                onClick={(e) => {
+                  e.preventDefault()
+                  handleCommercialCTA({
+                    ctaType: 'bottom_nav',
+                    source: location.pathname,
+                  })
+                }}
                 className="flex items-center justify-center w-[56px] h-[56px] rounded-full bg-[#25D366] text-white shadow-lg border-4 border-background"
                 aria-label="Falar pelo WhatsApp"
+                role="button"
               >
                 <MessageCircle className="w-7 h-7" />
-              </a>
+              </a>{' '}
               <span className="text-[11px] font-medium text-muted-foreground mt-1">WhatsApp</span>
             </div>
 

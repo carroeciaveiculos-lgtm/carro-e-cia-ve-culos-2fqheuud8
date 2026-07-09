@@ -1,8 +1,8 @@
 import { SEO } from '@/components/SEO'
 import { Button } from '@/components/ui/button'
-import { getWhatsAppLink } from '@/lib/whatsapp'
 import { trackConversion, trackGTMEvent } from '@/lib/tracking'
 import { CheckCircle2, XCircle } from 'lucide-react'
+import { handleCommercialCTA } from '@/lib/cta-router'
 import { ConsignacaoLPForm } from '@/components/ConsignacaoLPForm'
 
 export default function ConsignarMeuCarro() {
@@ -29,18 +29,19 @@ export default function ConsignarMeuCarro() {
             size="lg"
             className="text-sm md:text-lg px-6 py-4 md:px-8 md:py-6 h-auto bg-red-600 hover:bg-red-700 text-white w-full sm:w-auto rounded-full font-bold shadow-lg shadow-red-600/20 whitespace-normal break-words leading-snug"
           >
-            <a
-              href={getWhatsAppLink(wppText)}
-              target="_blank"
-              rel="noopener noreferrer"
+            <button
               aria-label="Falar no WhatsApp para consignar carro"
               onClick={() => {
                 trackConversion('whatsapp')
                 trackGTMEvent('click_whatsapp_consignacao')
+                handleCommercialCTA({
+                  ctaType: 'Consignar Meu Carro (Hero)',
+                  source: window.location.pathname,
+                })
               }}
             >
               CONSIGNAR MEU CARRO
-            </a>
+            </button>
           </Button>
 
           <div className="mt-12 grid md:grid-cols-3 gap-6 text-center border-t border-white/10 pt-8">
@@ -184,18 +185,19 @@ export default function ConsignarMeuCarro() {
               size="lg"
               className="text-sm md:text-lg px-6 py-4 md:px-8 md:py-6 h-auto bg-[#25D366] hover:bg-[#20bd5a] text-white w-full rounded-full font-bold whitespace-normal break-words leading-snug"
             >
-              <a
-                href={getWhatsAppLink(wppText)}
-                target="_blank"
-                rel="noopener noreferrer"
+              <button
                 aria-label="Avaliar carro gratuitamente pelo WhatsApp"
                 onClick={() => {
                   trackConversion('whatsapp')
                   trackGTMEvent('click_whatsapp_consignacao')
+                  handleCommercialCTA({
+                    ctaType: 'Avaliar Meu Carro (Footer)',
+                    source: window.location.pathname,
+                  })
                 }}
               >
                 AVALIAR MEU CARRO
-              </a>
+              </button>
             </Button>
           </div>
           <div className="bg-card p-6 md:p-8 rounded-2xl shadow-xl border">

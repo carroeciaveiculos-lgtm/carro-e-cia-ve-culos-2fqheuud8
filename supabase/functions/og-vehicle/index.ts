@@ -11,7 +11,7 @@ const BASE_URL = 'https://www.carroeciamotors.com.br'
 const DEFAULT_OG_IMAGE = 'https://www.carroeciamotors.com.br/og-image.jpeg'
 const FACADE_IMAGE =
   'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/fotos/fachada-da-loja.png'
-const SLOGAN = 'Venda ou Compre seu carro r\u00e1pido e seguro.'
+const SLOGAN = 'Venda ou Compre seu carro rápido e seguro.'
 
 const BOT_PATTERNS = [
   'whatsapp',
@@ -200,10 +200,10 @@ Deno.serve(async (req) => {
     const anoModeloStr = vehicle.ano_modelo ? ` ${vehicle.ano_modelo}` : ''
     const formattedPrice = formatCurrency(vehicle.preco_venda)
 
-    const pageTitle = `${vehicle.marca} ${vehicle.modelo}${versaoStr}${anoModeloStr} \u00e0 venda em Uberaba | Carro e Cia Motors`
+    const pageTitle = `${vehicle.marca} ${vehicle.modelo}${versaoStr}${anoModeloStr} à venda em Uberaba | Carro e Cia Motors`
     const pageDescription = `Confira as fotos e detalhes deste lindo ${vehicle.marca} ${vehicle.modelo} no valor de ${formattedPrice}. Financiamos e aceitamos troca. Entre em contato!`
-    const ogTitle = `\u{1F697} ${vehicle.marca} ${vehicle.modelo} (${vehicle.ano_modelo || vehicle.ano_fabricacao || ''}) \u{1F4B0} ${formattedPrice}`
-    const ogDescription = `\u{1F4C5} Veja a ficha completa e simule as parcelas deste ve\u00edculo em nosso site Carro e Cia Motors.`
+    const ogTitle = `🚗 ${vehicle.marca} ${vehicle.modelo} (${vehicle.ano_modelo || vehicle.ano_fabricacao || ''}) 💰 ${formattedPrice}`
+    const ogDescription = `📅 Veja a ficha completa e simule as parcelas deste veículo em nosso site Carro e Cia Motors.`
 
     const html = generateOGHtml(
       pageTitle,

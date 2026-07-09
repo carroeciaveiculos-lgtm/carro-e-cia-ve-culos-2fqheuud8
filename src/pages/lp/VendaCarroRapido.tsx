@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button'
 import { getWhatsAppLink } from '@/lib/whatsapp'
 import { trackConversion, trackGTMEvent } from '@/lib/tracking'
 import { Link } from 'react-router-dom'
+import { handleCommercialCTA } from '@/lib/cta-router'
 import { ConsignacaoLPForm } from '@/components/ConsignacaoLPForm'
 import {
   Table,
@@ -96,19 +97,20 @@ export default function VendaCarroRapido() {
               className="text-sm md:text-lg px-6 py-4 md:px-8 md:py-6 h-auto w-full sm:w-auto whitespace-normal break-words leading-snug"
               asChild
             >
-              <a
-                href={getWhatsAppLink('Olá Luiz! Preciso vender meu carro rápido. Pode me ajudar?')}
-                target="_blank"
-                rel="noopener noreferrer"
+              <button
                 aria-label="Vender meu carro pelo WhatsApp"
                 onClick={() => {
                   trackConversion('whatsapp')
                   trackGTMEvent('click_whatsapp_venda_rapida')
+                  handleCommercialCTA({
+                    ctaType: 'Vender Meu Carro Rápido',
+                    source: window.location.pathname,
+                  })
                 }}
               >
                 VENDER MEU CARRO
-              </a>
-            </Button>
+              </button>
+            </Button>{' '}
           </div>
         </div>
       </section>
@@ -219,21 +221,20 @@ export default function VendaCarroRapido() {
                   size="lg"
                   className="w-full sm:w-auto h-14 text-sm md:text-lg px-6 md:px-8 whitespace-normal break-words leading-snug"
                 >
-                  <a
-                    href={getWhatsAppLink(
-                      'Olá Luiz! Preciso vender meu carro rápido. Pode me ajudar?',
-                    )}
-                    target="_blank"
-                    rel="noopener noreferrer"
+                  <button
                     aria-label="Falar direto no WhatsApp para venda rápida"
                     onClick={() => {
                       trackConversion('whatsapp')
                       trackGTMEvent('click_whatsapp_venda_rapida')
+                      handleCommercialCTA({
+                        ctaType: 'Vender Meu Carro',
+                        source: window.location.pathname,
+                      })
                     }}
                   >
                     VENDER MEU CARRO
-                  </a>
-                </Button>
+                  </button>
+                </Button>{' '}
               </div>
               <div className="bg-background rounded-xl">
                 <ConsignacaoLPForm

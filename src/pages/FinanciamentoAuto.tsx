@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react'
 import { SEO } from '@/components/SEO'
 import { Button } from '@/components/ui/button'
-import { getWhatsAppLink } from '@/lib/whatsapp'
-import { trackConversion, trackCTAClick, trackSimulation } from '@/lib/tracking'
+import { trackConversion, trackSimulation } from '@/lib/tracking'
 import { supabase } from '@/lib/supabase/client'
+import { handleCommercialCTA } from '@/lib/cta-router'
 import { Input } from '@/components/ui/input'
 import {
   Select,
@@ -36,7 +36,6 @@ export default function FinanciamentoAuto() {
 
   const handleSimular = async () => {
     trackConversion('whatsapp')
-    trackCTAClick('Simular Financiamento', window.location.pathname)
     if (selectedVeiculo) {
       await supabase.from('simulacoes').insert({
         veiculo_id: selectedVeiculo.id,
@@ -47,10 +46,14 @@ export default function FinanciamentoAuto() {
       })
       trackSimulation(precoBase, ((parseFloat(entrada) || 0) / precoBase) * 100, parcelas)
     }
-    const wppText = selectedVeiculo
-      ? `Olá! Gostaria de simular o financiamento do ${selectedVeiculo.marca} ${selectedVeiculo.modelo} dando R$ ${entrada} de entrada e o restante em ${parcelas}x.`
-      : 'Olá! Quero simular um financiamento de veículo.'
-    window.open(getWhatsAppLink(wppText), '_blank')
+
+    await handleCommercialCTA({
+      vehicle: selectedVeiculo,
+      ctaType: 'Simular Financiamento',
+      source: window.location.pathname,
+      isSimulacao: true,
+      simDetails: { entrada, parcelas },
+    })
   }
 
   const passos = [

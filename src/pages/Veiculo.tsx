@@ -51,7 +51,7 @@ import {
 } from '@/lib/tracking'
 import { getSocialImageUrl } from '@/lib/image-utils'
 import { SEO } from '@/components/SEO'
-import { createLead } from '@/services/leads'
+import { handleCommercialCTA, handleShareCTA, getShareText, getVehicleUrl } from '@/lib/cta-router'
 
 export default function Veiculo() {
   const { id } = useParams()
@@ -156,38 +156,18 @@ export default function Veiculo() {
     new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val)
   const photos = vehicle.fotos || []
 
-  const vehicleUrl = vehicle.slug
-    ? `https://www.carroeciamotors.com.br/estoque/${vehicle.slug}`
-    : `https://www.carroeciamotors.com.br/estoque/${vehicle.id}`
-
+  const vehicleUrl = getVehicleUrl(vehicle)
   const shareUrl = vehicleUrl
-
-  const wppText = `*Oportunidade Imperd\u00edvel!*\n\n\u{1F697} *${vehicle.marca} ${vehicle.modelo} ${vehicle.versao || ''}*\n\u{1F4C5} Ano: ${vehicle.ano_fabricacao}/${vehicle.ano_modelo}\n\u{1F6E3}\u{FE0F} ${vehicle.quilometragem ? `${vehicle.quilometragem.toLocaleString('pt-BR')} km` : 'Excelente km'}\n\u{1F4B0} *${formatCurrency(vehicle.preco_venda || 0)}*\n\nVenda ou Compre seu carro r\u00e1pido e seguro.\n\n${shareUrl}`
 
   const simValue = vehicle.preco_venda - (parseFloat(simEntrada) || 0)
   const simParcela = simValue > 0 ? (simValue * 1.5) / parseInt(simParcelas) : 0
-  const wppSimText = `*Oportunidade Imperd\u00edvel!*\n\nOl\u00e1! Tenho interesse em simular o financiamento do ${vehicle.marca} ${vehicle.modelo} ${vehicle.ano_fabricacao}.\n\n\u{1F4B0} Valor: ${formatCurrency(vehicle.preco_venda || 0)}\n\u{1F4B5} Entrada: R$ ${simEntrada || '0'}\n\u{1F4C5} Parcelas: ${simParcelas}x\n\nVenda ou Compre seu carro r\u00e1pido e seguro.\n\n${shareUrl}`
 
   const handleTenhoInteresse = async (trigger: string = 'botao_veiculo') => {
-    try {
-      await createLead({
-        nome: 'Lead Interessado',
-        veiculo_id: vehicle.id,
-        tipo: 'interesse',
-        origem: 'site_veiculo_detalhe',
-        status: 'novo',
-        veiculo_interesse: `${vehicle.marca} ${vehicle.modelo} ${vehicle.ano_fabricacao}/${vehicle.ano_modelo}`,
-        cta_type: trigger,
-      })
-    } catch (e) {
-      console.error('Erro ao criar lead:', e)
-    }
-    trackWhatsAppClick('Luiz', trigger)
-    window.open(
-      `https://wa.me/5534999484285?text=${encodeURIComponent(wppText)}`,
-      '_blank',
-      'noopener,noreferrer',
-    )
+    await handleCommercialCTA({
+      vehicle,
+      ctaType: trigger,
+      source: '/veiculo',
+    })
   }
 
   const handleSimulationWhatsApp = async () => {
@@ -203,48 +183,20 @@ export default function Veiculo() {
       status: 'Pendente',
     })
 
-    try {
-      await createLead({
-        nome: 'Lead Interessado',
-        veiculo_id: vehicle.id,
-        tipo: 'interesse',
-        origem: 'site_veiculo_detalhe',
-        status: 'novo',
-        veiculo_interesse: `${vehicle.marca} ${vehicle.modelo} ${vehicle.ano_fabricacao}/${vehicle.ano_modelo} - Simula\u00e7\u00e3o Financiamento`,
-        cta_type: 'simular_financiamento',
-      })
-    } catch (e) {
-      console.error('Erro ao criar lead:', e)
-    }
-
     trackSimulation(vehicle.preco_venda, entryPercent, simParcelas)
-    trackWhatsAppClick('Luiz', 'simulacao_financiamento')
-  }
 
-  const getShareText = () => {
-    const price = formatCurrency(vehicle.preco_venda || 0)
-    const km = vehicle.quilometragem
-      ? `${vehicle.quilometragem.toLocaleString('pt-BR')} km`
-      : 'Excelente km'
-
-    return `*Oportunidade Imperd\u00edvel!*\n\n\u{1F697} *${vehicle.marca} ${vehicle.modelo} ${vehicle.versao || ''}*\n\u{1F4C5} Ano: ${vehicle.ano_fabricacao}/${vehicle.ano_modelo}\n\u{1F6E3}\u{FE0F} ${km}\n\u{1F4B0} *${price}*\n\nVenda ou Compre seu carro r\u00e1pido e seguro.\n\n${shareUrl}`
+    await handleCommercialCTA({
+      vehicle,
+      ctaType: 'simular_financiamento',
+      source: '/veiculo',
+      isSimulacao: true,
+      simDetails: { entrada: simEntrada, parcelas: simParcelas },
+    })
   }
 
   const handleShare = async () => {
-    if (!vehicle?.marca || !vehicle?.modelo) return
-
-    const text = getShareText()
-    const url = shareUrl
-    const title = `${vehicle.marca} ${vehicle.modelo}`
-
-    if (isMobile && navigator.share) {
-      try {
-        await navigator.share({ title, text, url })
-        trackCTAClick('Compartilhar Veículo (Nativo)', '/veiculo')
-      } catch (err) {
-        console.error('Error sharing', err)
-      }
-    } else {
+    const shared = await handleShareCTA(vehicle, '/veiculo')
+    if (!shared) {
       setShowDesktopShare(true)
     }
   }
@@ -538,7 +490,6 @@ export default function Veiculo() {
                           </Select>
                         </div>
                       </div>
-
                       {simValue > 0 && simEntrada && (
                         <div className="bg-muted p-4 rounded-xl text-center border border-primary/20">
                           <p className="text-sm text-muted-foreground mb-1">
@@ -552,20 +503,12 @@ export default function Veiculo() {
                           </p>
                         </div>
                       )}
-
                       <Button
-                        asChild
                         className="w-full h-14 text-lg font-bold bg-[#25D366] hover:bg-[#20bd5a] text-white uppercase tracking-wide"
+                        onClick={handleSimulationWhatsApp}
                       >
-                        <a
-                          href={`https://wa.me/5534999484285?text=${encodeURIComponent(wppSimText)}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          onClick={handleSimulationWhatsApp}
-                        >
-                          Simule Agora
-                        </a>
-                      </Button>
+                        Simule Agora
+                      </Button>{' '}
                     </div>
                   </DialogContent>
                 </Dialog>
@@ -635,13 +578,13 @@ export default function Veiculo() {
               </Button>
               <Button asChild className="flex-1 bg-[#25D366] hover:bg-[#20bd5a] text-white">
                 <a
-                  href={`https://wa.me/?text=${encodeURIComponent(getShareText())}`}
+                  href={`https://wa.me/?text=${encodeURIComponent(getShareText(vehicle))}`}
                   target="_blank"
                   rel="noopener noreferrer"
                 >
                   <MessageCircle className="w-4 h-4 mr-2" /> WhatsApp
                 </a>
-              </Button>
+              </Button>{' '}
             </div>
           </div>
         </DialogContent>

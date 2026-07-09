@@ -24,6 +24,7 @@ import { supabase } from '@/lib/supabase/client'
 import { VehicleCard } from '@/components/VehicleCard'
 import { CheckCircle2, FilterX, Search } from 'lucide-react'
 import { Link } from 'react-router-dom'
+import { handleCommercialCTA } from '@/lib/cta-router'
 
 export default function CarrosSeminovosUberaba() {
   const [vehicles, setVehicles] = useState<any[]>([])
@@ -155,21 +156,19 @@ export default function CarrosSeminovosUberaba() {
               className="text-sm md:text-lg px-6 py-4 md:px-8 md:py-6 h-auto w-full sm:w-auto whitespace-normal break-words leading-snug btn-cta"
               asChild
             >
-              <a
-                href={getWhatsAppLink(
-                  'Olá! Vi a página de carros seminovos e gostaria de ver as opções disponíveis.',
-                )}
-                target="_blank"
-                rel="noopener noreferrer"
+              <button
                 aria-label="Falar com a Carro e Cia pelo WhatsApp"
                 onClick={() => {
                   trackConversion('whatsapp')
-                  trackCTAClick('Fale com Especialistas', window.location.pathname)
+                  handleCommercialCTA({
+                    ctaType: 'Fale com Especialistas',
+                    source: window.location.pathname,
+                  })
                 }}
               >
                 Fale com Nossos Especialistas
-              </a>
-            </Button>
+              </button>
+            </Button>{' '}
           </div>
         </div>
       </section>
@@ -369,16 +368,19 @@ export default function CarrosSeminovosUberaba() {
               size="lg"
               className="w-full sm:w-auto h-14 text-sm md:text-lg px-6 md:px-8 whitespace-normal break-words leading-snug btn-cta"
             >
-              <a
-                href={getWhatsAppLink('Olá! Gostaria de avaliar meu carro para dar como entrada.')}
-                target="_blank"
-                rel="noopener noreferrer"
+              <button
                 aria-label="Solicitar avaliação grátis pelo WhatsApp"
-                onClick={() => trackConversion('whatsapp')}
+                onClick={() => {
+                  trackConversion('whatsapp')
+                  handleCommercialCTA({
+                    ctaType: 'Solicitar Avaliação Grátis',
+                    source: window.location.pathname,
+                  })
+                }}
               >
                 Solicitar Avaliação Grátis
-              </a>
-            </Button>
+              </button>
+            </Button>{' '}
           </div>
         </div>
       </section>
