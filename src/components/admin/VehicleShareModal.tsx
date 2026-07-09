@@ -12,7 +12,7 @@ import {
 import { supabase } from '@/lib/supabase/client'
 import { useToast } from '@/hooks/use-toast'
 import { Sparkles, Loader2, Activity } from 'lucide-react'
-import { getVehicleUrl, formatCurrency } from '@/lib/cta-router'
+import { getShareUrl, formatCurrency } from '@/lib/cta-router'
 
 export function VehicleShareModal({
   vehicle,
@@ -30,7 +30,7 @@ export function VehicleShareModal({
 
   useEffect(() => {
     if (vehicle) {
-      const shareUrl = getVehicleUrl(vehicle)
+      const shareUrl = getShareUrl(vehicle)
       setText(
         `🚗 ${vehicle.marca} ${vehicle.modelo}\n💰 ${formatCurrency(vehicle.preco_venda || 0)}\n🔗 ${shareUrl}`,
       )

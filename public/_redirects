@@ -1,5 +1,8 @@
 # Proxy vehicle pages to edge function for dynamic OG tags
 /estoque/:id  https://htpcqdbhktmvppfemnad.supabase.co/functions/v1/og-vehicle?id=:id  200
 
+# Proxy sharing route to edge function for social media previews
+/s/:slug  https://htpcqdbhktmvppfemnad.supabase.co/functions/v1/og-vehicle?slug=:slug&route=share  200
+
 # SPA fallback
 /*  /index.html  200

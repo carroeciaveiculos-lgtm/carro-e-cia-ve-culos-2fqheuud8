@@ -51,7 +51,15 @@ import {
 } from '@/lib/tracking'
 import { getSocialImageUrl } from '@/lib/image-utils'
 import { SEO } from '@/components/SEO'
-import { handleCommercialCTA, handleShareCTA, getShareText, getVehicleUrl } from '@/lib/cta-router'
+import {
+  handleCommercialCTA,
+  handleShareCTA,
+  getShareText,
+  getVehicleUrl,
+  getShareUrl,
+  getVehicleDescription,
+  getVehicleDiferenciais,
+} from '@/lib/cta-router'
 
 export default function Veiculo() {
   const { id } = useParams()
@@ -157,7 +165,7 @@ export default function Veiculo() {
   const photos = vehicle.fotos || []
 
   const vehicleUrl = getVehicleUrl(vehicle)
-  const shareUrl = vehicleUrl
+  const shareUrl = getShareUrl(vehicle)
 
   const simValue = vehicle.preco_venda - (parseFloat(simEntrada) || 0)
   const simParcela = simValue > 0 ? (simValue * 1.5) / parseInt(simParcelas) : 0
@@ -206,7 +214,7 @@ export default function Veiculo() {
     '@type': 'Product',
     name: `${vehicle.marca} ${vehicle.modelo} ${vehicle.versao}`,
     image: photos.length > 0 ? photos[0] : undefined,
-    description: vehicle.descricao || `Compre ${vehicle.marca} ${vehicle.modelo} na Carro e Cia.`,
+    description: getVehicleDescription(vehicle),
     offers: {
       '@type': 'Offer',
       priceCurrency: 'BRL',
@@ -520,25 +528,24 @@ export default function Veiculo() {
         <div className="mt-16 grid lg:grid-cols-2 gap-12">
           <div>
             <h2 className="text-2xl font-display font-bold mb-6">Diferenciais do Veículo</h2>
-            {vehicle.diferenciais &&
-            Array.isArray(vehicle.diferenciais) &&
-            vehicle.diferenciais.length > 0 ? (
-              <div className="grid sm:grid-cols-2 gap-y-3">
-                {vehicle.diferenciais.map((dif: string, i: number) => (
-                  <div key={i} className="flex items-center gap-2">
-                    <CheckCircle2 className="w-5 h-5 text-primary shrink-0" />
-                    <span>{dif}</span>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-muted-foreground">Nenhum diferencial cadastrado.</p>
-            )}
+            {(() => {
+              const diferenciais = getVehicleDiferenciais(vehicle)
+              return diferenciais.length > 0 ? (
+                <div className="grid sm:grid-cols-2 gap-y-3">
+                  {diferenciais.map((dif: string, i: number) => (
+                    <div key={i} className="flex items-center gap-2">
+                      <CheckCircle2 className="w-5 h-5 text-primary shrink-0" />
+                      <span>{dif}</span>
+                    </div>
+                  ))}
+                </div>
+              ) : null
+            })()}
           </div>
           <div>
             <h2 className="text-2xl font-display font-bold mb-6">Descrição</h2>
             <div className="prose prose-sm max-w-none text-muted-foreground whitespace-pre-wrap">
-              {vehicle.descricao || 'Sem descrição detalhada.'}
+              {getVehicleDescription(vehicle)}
             </div>
           </div>
         </div>
