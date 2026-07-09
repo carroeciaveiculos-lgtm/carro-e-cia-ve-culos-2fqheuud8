@@ -79,7 +79,124 @@ Deno.serve(async (req: Request) => {
             continue // Skip lead generation for public comments
           }
 
-          // 2. Handle Private Messages (DMs / WhatsApp) -> CRM
+          // 2. Handle Meta Lead Ads (leadgen) -> CRM Lead Pipeline
+          if (field === 'leadgen') {
+            const leadgenId = value?.leadgen_id
+            const formId = value?.form_id
+
+            if (leadgenId) {
+              const pageToken =
+                Deno.env.get('META_PAGE_ACCESS_TOKEN') || Deno.env.get('META_ADS_TOKEN') || ''
+              if (pageToken) {
+                try {
+                  const leadRes = await fetch(
+                    `https://graph.facebook.com/v20.0/${leadgenId}?access_token=${pageToken}`,
+                  )
+                  const leadData = await leadRes.json()
+                  const fieldData = leadData.field_data || []
+                  const getField = (name: string) => {
+                    const field = fieldData.find((f: any) => f.name === name)
+                    return field?.values?.[0] || ''
+                  }
+
+                  const leadNome = getField('full_name') || getField('name') || 'Lead Meta Ads'
+                  const leadTelefoneRaw = getField('phone_number') || getField('phone') || ''
+                  const leadEmail = getField('email') || ''
+                  const leadInteresse =
+                    getField('vehicle') || getField('interesse') || getField('produto') || ''
+                  const cleanTelefone = leadTelefoneRaw.replace(/\D/g, '')
+
+                  const { data: existingLeads } = await supabase
+                    .from('leads')
+                    .select('id')
+                    .eq('telefone', cleanTelefone)
+                    .limit(1)
+
+                  let leadId = existingLeads?.[0]?.id
+
+                  if (!leadId && cleanTelefone) {
+                    const { data: newLead } = await supabase
+                      .from('leads')
+                      .insert({
+                        nome: leadNome,
+                        telefone: cleanTelefone,
+                        email: leadEmail || null,
+                        origem: 'meta_lead_ads',
+                        source: 'meta_lead_ads',
+                        veiculo_interesse: leadInteresse || null,
+                        tipo: 'compra',
+                        status: 'novo',
+                        temperatura: 'quente',
+                        campanha: 'facebook_lead_ads',
+                      })
+                      .select()
+                      .single()
+                    leadId = newLead?.id
+
+                    if (leadId) {
+                      const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? ''
+                      const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+
+                      await fetch(`${supabaseUrl}/functions/v1/on-lead-created`, {
+                        method: 'POST',
+                        headers: {
+                          'Content-Type': 'application/json',
+                          Authorization: `Bearer ${serviceKey}`,
+                        },
+                        body: JSON.stringify({
+                          id: leadId,
+                          nome: leadNome,
+                          email: leadEmail,
+                          telefone: cleanTelefone,
+                        }),
+                      }).catch(console.error)
+
+                      await fetch(`${supabaseUrl}/functions/v1/ai-sdr`, {
+                        method: 'POST',
+                        headers: {
+                          'Content-Type': 'application/json',
+                          Authorization: `Bearer ${serviceKey}`,
+                        },
+                        body: JSON.stringify({
+                          action: 'init_conversation',
+                          lead_id: leadId,
+                          source: 'meta_lead_ads',
+                          veiculo: leadInteresse,
+                        }),
+                      }).catch(console.error)
+
+                      const waToken = Deno.env.get('WHATSAPP_TOKEN') || ''
+                      const waPhoneId = Deno.env.get('WHATSAPP_PHONE_NUMBER_ID') || ''
+                      if (waToken && waPhoneId) {
+                        await fetch(`https://graph.facebook.com/v20.0/${waPhoneId}/messages`, {
+                          method: 'POST',
+                          headers: {
+                            Authorization: `Bearer ${waToken}`,
+                            'Content-Type': 'application/json',
+                          },
+                          body: JSON.stringify({
+                            messaging_product: 'whatsapp',
+                            to: '5534999484285',
+                            type: 'text',
+                            text: {
+                              body: `\u{1F514} *Novo Lead via Meta Lead Ads!*\n\n\u{1F464} Nome: ${leadNome}\n\ud83d\udcde Telefone: ${cleanTelefone || 'N/A'}\n\ud83d\udce7 Email: ${leadEmail || 'N/A'}\n\ud83d\ude97 Interesse: ${leadInteresse || 'N/A'}\n\nAcesse o CRM para atendimento.`,
+                            },
+                          }),
+                        }).catch(console.error)
+                      }
+
+                      console.log(`Lead Ads captured: ${leadNome} (${cleanTelefone})`)
+                    }
+                  }
+                } catch (e) {
+                  console.error('Error fetching leadgen data:', e)
+                }
+              }
+            }
+            continue
+          }
+
+          // 3. Handle Private Messages (DMs / WhatsApp) -> CRM
           if (field === 'messages') {
             if (payload.object === 'whatsapp_business_account') {
               console.log(

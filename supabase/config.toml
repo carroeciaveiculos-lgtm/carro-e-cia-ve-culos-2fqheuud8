@@ -6,3 +6,9 @@ verify_jwt = false
 
 [functions.og-vehicle]
 verify_jwt = false
+
+[functions.ads-agent]
+verify_jwt = false
+
+[functions.meta-capi-postback]
+verify_jwt = false

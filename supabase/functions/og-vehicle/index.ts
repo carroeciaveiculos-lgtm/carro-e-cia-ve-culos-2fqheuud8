@@ -11,7 +11,7 @@ const BASE_URL = 'https://www.carroeciamotors.com.br'
 const DEFAULT_OG_IMAGE = 'https://www.carroeciamotors.com.br/og-image.jpeg'
 const FACADE_IMAGE =
   'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/fotos/fachada-da-loja.png'
-const SLOGAN = 'Venda ou Compre seu carro rápido e seguro.'
+const SLOGAN = 'Venda ou Compre seu carro r\u00e1pido e seguro.'
 
 const BOT_PATTERNS = [
   'whatsapp',
@@ -46,10 +46,10 @@ const BOT_PATTERNS = [
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
-function isSocialBot(userAgent: string | null): boolean {
-  if (!userAgent) return false
-  const ua = userAgent.toLowerCase()
-  return BOT_PATTERNS.some((p) => ua.includes(p))
+function isSocialBot(ua: string | null): boolean {
+  if (!ua) return false
+  const lower = ua.toLowerCase()
+  return BOT_PATTERNS.some((p) => lower.includes(p))
 }
 
 function escapeHtml(str: string): string {
@@ -61,21 +61,17 @@ function escapeHtml(str: string): string {
     .replace(/'/g, '&#039;')
 }
 
-// CORREÇÃO 1: Formatação numérica segura de preço para evitar exibir "R$ NaN" na tela
 function formatCurrency(val: any): string {
-  if (val === null || val === undefined) return "Sob consulta"
-  const cleanStr = String(val).replace(/[^0-9.-]/g, '')
-  const numericVal = parseFloat(cleanStr) || 0
-  if (numericVal === 0) return "Sob consulta"
-  return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(numericVal)
+  if (val === null || val === undefined) return 'Sob consulta'
+  const num = parseFloat(String(val).replace(/[^0-9.-]/g, '')) || 0
+  if (num === 0) return 'Sob consulta'
+  return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(num)
 }
 
-// CORREÇÃO 2: Limpa parâmetros de token e codifica de forma ideal a foto para JPEG via proxy do Cloudflare
 function getSocialImageUrl(imageUrl: string): string {
   if (!imageUrl) return DEFAULT_OG_IMAGE
   if (imageUrl.includes('supabase.co')) {
-    const cleanUrl = imageUrl.split('?')[0] // Garante que não haverá dupla codificação de queries
-    return `https://images.weserv.nl/?url=${encodeURIComponent(cleanUrl)}&output=jpg`
+    return `https://images.weserv.nl/?url=${encodeURIComponent(imageUrl.split('?')[0])}&output=jpg`
   }
   return imageUrl
 }
@@ -120,19 +116,17 @@ function generateOGHtml(
 
 function generateDefaultHtml(): string {
   return generateOGHtml(
-    'Carro e Cia Motors | Compra e Venda de Veículos em Uberaba - MG',
-    `${SLOGAN} Compra, venda e troca de veículos em Uberaba - MG.`,
+    'Carro e Cia Motors | Compra e Venda de Ve\u00edculos em Uberaba - MG',
+    `${SLOGAN} Compra, venda e troca de ve\u00edculos em Uberaba - MG.`,
     'Carro e Cia Motors - Uberaba MG',
-    `${SLOGAN} Veículos seminovos selecionados em Uberaba - MG.`,
+    `${SLOGAN} Ve\u00edculos seminovos selecionados em Uberaba - MG.`,
     FACADE_IMAGE,
     BASE_URL,
   )
 }
 
 Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
-  }
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
 
   try {
     const url = new URL(req.url)
@@ -148,20 +142,14 @@ Deno.serve(async (req) => {
     let vehicleSlug: string | null = slugParam
 
     if (idParam) {
-      if (UUID_REGEX.test(idParam)) {
-        vehicleId = idParam
-      } else {
-        vehicleSlug = idParam
-      }
+      if (UUID_REGEX.test(idParam)) vehicleId = idParam
+      else vehicleSlug = idParam
     }
 
     if (!vehicleId && !vehicleSlug && pathParts.length >= 1) {
       const lastPart = pathParts[pathParts.length - 1]
-      if (UUID_REGEX.test(lastPart)) {
-        vehicleId = lastPart
-      } else {
-        vehicleSlug = lastPart
-      }
+      if (UUID_REGEX.test(lastPart)) vehicleId = lastPart
+      else vehicleSlug = lastPart
     }
 
     if (!vehicleId && !vehicleSlug) {
@@ -177,32 +165,27 @@ Deno.serve(async (req) => {
     const requestPath = vehicleId || vehicleSlug
     const frontendUrl = `${BASE_URL}/estoque/${requestPath}`
 
-    // 1. Redirecionamento instantâneo para Navegadores Humanos normais
-    if (!isSocialBot(userAgent)) {
-      if (!isProxied) {
-        return Response.redirect(frontendUrl, 302)
-      }
+    if (!isSocialBot(userAgent) && !isProxied) {
+      return Response.redirect(frontendUrl, 302)
     }
 
-    // 2. Processamento dinâmico estritamente para os Robôs de Busca (Bots)
-    const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? ''
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    const supabase = createClient(supabaseUrl, supabaseKey)
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+    )
 
     let query = supabase
       .from('veiculos')
-      .select('id,marca,modelo,versao,ano_fabricacao,ano_modelo,preco_venda,quilometragem,fotos,slug,status')
+      .select(
+        'id,marca,modelo,versao,ano_fabricacao,ano_modelo,preco_venda,quilometragem,fotos,slug,status',
+      )
 
-    if (vehicleId) {
-      query = query.eq('id', vehicleId)
-    } else if (vehicleSlug) {
-      query = query.eq('slug', vehicleSlug)
-    }
+    if (vehicleId) query = query.eq('id', vehicleId)
+    else if (vehicleSlug) query = query.eq('slug', vehicleSlug)
 
     const { data: vehicle, error } = await query.maybeSingle()
 
     if (error || !vehicle || vehicle.status !== 'disponivel') {
-      console.warn("Veículo não localizado para meta-tag. Exibindo cabeçalho padrão.");
       return new Response(generateDefaultHtml(), {
         status: 200,
         headers: { ...corsHeaders, 'Content-Type': 'text/html; charset=utf-8' },
@@ -211,18 +194,16 @@ Deno.serve(async (req) => {
 
     const photos = Array.isArray(vehicle.fotos) ? vehicle.fotos : []
     const primaryImage = photos.length > 0 ? photos[0] : DEFAULT_OG_IMAGE
-
     const vehicleSlugOrId = vehicle.slug || vehicle.id
     const canonicalUrl = `${BASE_URL}/estoque/${vehicleSlugOrId}`
-
     const versaoStr = vehicle.versao ? ` ${vehicle.versao}` : ''
     const anoModeloStr = vehicle.ano_modelo ? ` ${vehicle.ano_modelo}` : ''
     const formattedPrice = formatCurrency(vehicle.preco_venda)
 
-    const pageTitle = `${vehicle.marca} ${vehicle.modelo}${versaoStr}${anoModeloStr} à venda em Uberaba | Carro e Cia Motors`
+    const pageTitle = `${vehicle.marca} ${vehicle.modelo}${versaoStr}${anoModeloStr} \u00e0 venda em Uberaba | Carro e Cia Motors`
     const pageDescription = `Confira as fotos e detalhes deste lindo ${vehicle.marca} ${vehicle.modelo} no valor de ${formattedPrice}. Financiamos e aceitamos troca. Entre em contato!`
-    const ogTitle = `${vehicle.marca} ${vehicle.modelo} (${vehicle.ano_modelo || vehicle.ano_fabricacao || ''}) - ${formattedPrice}`
-    const ogDescription = `Veja a ficha completa e simule as parcelas deste veículo em nosso site comercial Carro e Cia Motors.`
+    const ogTitle = `\u{1F697} ${vehicle.marca} ${vehicle.modelo} (${vehicle.ano_modelo || vehicle.ano_fabricacao || ''}) \u{1F4B0} ${formattedPrice}`
+    const ogDescription = `\u{1F4C5} Veja a ficha completa e simule as parcelas deste ve\u00edculo em nosso site Carro e Cia Motors.`
 
     const html = generateOGHtml(
       pageTitle,
