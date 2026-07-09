@@ -14,10 +14,34 @@ const FACADE_IMAGE =
 const SLOGAN = 'Venda ou Compre seu carro r\u00e1pido e seguro.'
 
 const BOT_PATTERNS = [
-  'whatsapp', 'facebook', 'facebot', 'facebookexternalhit', 'linkedin', 'linkedinbot',
-  'twitter', 'twitterbot', 'telegram', 'telegrambot', 'slack', 'slackbot', 'discord',
-  'discordbot', 'googlebot', 'bingbot', 'snapchat', 'pinterest', 'applebot',
-  'skypeuripreview', 'vkshare', 'w3c_validator', 'crawler', 'bot', 'spider', 'scraper', 'preview', 'fetch',
+  'whatsapp',
+  'facebook',
+  'facebot',
+  'facebookexternalhit',
+  'linkedin',
+  'linkedinbot',
+  'twitter',
+  'twitterbot',
+  'telegram',
+  'telegrambot',
+  'slack',
+  'slackbot',
+  'discord',
+  'discordbot',
+  'googlebot',
+  'bingbot',
+  'snapchat',
+  'pinterest',
+  'applebot',
+  'skypeuripreview',
+  'vkshare',
+  'w3c_validator',
+  'crawler',
+  'bot',
+  'spider',
+  'scraper',
+  'preview',
+  'fetch',
 ]
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
@@ -30,8 +54,11 @@ function isSocialBot(ua: string | null): boolean {
 
 function escapeHtml(str: string): string {
   return String(str || '')
-    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;').replace(/'/g, '&#039;')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;')
 }
 
 function formatCurrency(val: any): string {
@@ -50,8 +77,12 @@ function getSocialImageUrl(imageUrl: string): string {
 }
 
 function generateOGHtml(
-  pageTitle: string, pageDescription: string, ogTitle: string,
-  ogDescription: string, image: string, targetUrl: string,
+  pageTitle: string,
+  pageDescription: string,
+  ogTitle: string,
+  ogDescription: string,
+  image: string,
+  targetUrl: string,
 ): string {
   const socialImage = getSocialImageUrl(image)
   return `<!DOCTYPE html>
@@ -101,7 +132,8 @@ Deno.serve(async (req) => {
     const url = new URL(req.url)
     const userAgent = req.headers.get('user-agent')
     const forwardedHost = req.headers.get('x-forwarded-host') || ''
-    const isProxied = forwardedHost.includes('carroeciamotors') || url.hostname.includes('carroeciamotors')
+    const isProxied =
+      forwardedHost.includes('carroeciamotors') || url.hostname.includes('carroeciamotors')
 
     const idParam = url.searchParams.get('id')
     const slugParam = url.searchParams.get('slug')
@@ -122,7 +154,10 @@ Deno.serve(async (req) => {
 
     if (!vehicleId && !vehicleSlug) {
       if (isSocialBot(userAgent)) {
-        return new Response(generateDefaultHtml(), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'text/html; charset=utf-8' } })
+        return new Response(generateDefaultHtml(), {
+          status: 200,
+          headers: { ...corsHeaders, 'Content-Type': 'text/html; charset=utf-8' },
+        })
       }
       return Response.redirect(`${BASE_URL}/`, 302)
     }
@@ -134,11 +169,16 @@ Deno.serve(async (req) => {
       return Response.redirect(frontendUrl, 302)
     }
 
-    const supabase = createClient(Deno.env.get('SUPABASE_URL') ?? '', Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '')
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+    )
 
     let query = supabase
       .from('veiculos')
-      .select('id,marca,modelo,versao,ano_fabricacao,ano_modelo,preco_venda,quilometragem,fotos,slug,status')
+      .select(
+        'id,marca,modelo,versao,ano_fabricacao,ano_modelo,preco_venda,quilometragem,fotos,slug,status',
+      )
 
     if (vehicleId) query = query.eq('id', vehicleId)
     else if (vehicleSlug) query = query.eq('slug', vehicleSlug)
@@ -146,7 +186,10 @@ Deno.serve(async (req) => {
     const { data: vehicle, error } = await query.maybeSingle()
 
     if (error || !vehicle || vehicle.status !== 'disponivel') {
-      return new Response(generateDefaultHtml(), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'text/html; charset=utf-8' } })
+      return new Response(generateDefaultHtml(), {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'text/html; charset=utf-8' },
+      })
     }
 
     const photos = Array.isArray(vehicle.fotos) ? vehicle.fotos : []
@@ -162,14 +205,28 @@ Deno.serve(async (req) => {
     const ogTitle = `\u{1F697} ${vehicle.marca} ${vehicle.modelo} (${vehicle.ano_modelo || vehicle.ano_fabricacao || ''}) \u{1F4B0} ${formattedPrice}`
     const ogDescription = `\u{1F4C5} Veja a ficha completa e simule as parcelas deste ve\u00edculo em nosso site Carro e Cia Motors.`
 
-    const html = generateOGHtml(pageTitle, pageDescription, ogTitle, ogDescription, primaryImage, canonicalUrl)
+    const html = generateOGHtml(
+      pageTitle,
+      pageDescription,
+      ogTitle,
+      ogDescription,
+      primaryImage,
+      canonicalUrl,
+    )
 
     return new Response(html, {
       status: 200,
-      headers: { ...corsHeaders, 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'public, max-age=300' },
+      headers: {
+        ...corsHeaders,
+        'Content-Type': 'text/html; charset=utf-8',
+        'Cache-Control': 'public, max-age=300',
+      },
     })
   } catch (err: any) {
     console.error('Error generating OG metadata:', err)
-    return new Response(generateDefaultHtml(), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'text/html; charset=utf-8' } })
+    return new Response(generateDefaultHtml(), {
+      status: 200,
+      headers: { ...corsHeaders, 'Content-Type': 'text/html; charset=utf-8' },
+    })
   }
 })

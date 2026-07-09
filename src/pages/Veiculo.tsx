@@ -51,6 +51,7 @@ import {
 } from '@/lib/tracking'
 import { getSocialImageUrl } from '@/lib/image-utils'
 import { SEO } from '@/components/SEO'
+import { createLead } from '@/services/leads'
 
 export default function Veiculo() {
   const { id } = useParams()
@@ -159,16 +160,35 @@ export default function Veiculo() {
     ? `https://www.carroeciamotors.com.br/estoque/${vehicle.slug}`
     : `https://www.carroeciamotors.com.br/estoque/${vehicle.id}`
 
-  const ogBaseUrl = 'https://htpcqdbhktmvppfemnad.supabase.co/functions/v1/og-vehicle'
-  const shareUrl = vehicle.slug
-    ? `${ogBaseUrl}?slug=${encodeURIComponent(vehicle.slug)}`
-    : `${ogBaseUrl}?id=${encodeURIComponent(vehicle.id)}`
+  const shareUrl = vehicleUrl
 
-  const wppText = `*Oportunidade Imperdível!*\n\n🚗 *${vehicle.marca} ${vehicle.modelo} ${vehicle.versao || ''}*\n📅 Ano: ${vehicle.ano_fabricacao}/${vehicle.ano_modelo}\n🛣️ ${vehicle.quilometragem ? `${vehicle.quilometragem.toLocaleString('pt-BR')} km` : 'Excelente km'}\n💰 *${formatCurrency(vehicle.preco_venda || 0)}*\n\nVenda ou Compre seu carro rápido e seguro.\n\n${shareUrl}`
+  const wppText = `*Oportunidade Imperd\u00edvel!*\n\n\u{1F697} *${vehicle.marca} ${vehicle.modelo} ${vehicle.versao || ''}*\n\u{1F4C5} Ano: ${vehicle.ano_fabricacao}/${vehicle.ano_modelo}\n\u{1F6E3}\u{FE0F} ${vehicle.quilometragem ? `${vehicle.quilometragem.toLocaleString('pt-BR')} km` : 'Excelente km'}\n\u{1F4B0} *${formatCurrency(vehicle.preco_venda || 0)}*\n\nVenda ou Compre seu carro r\u00e1pido e seguro.\n\n${shareUrl}`
 
   const simValue = vehicle.preco_venda - (parseFloat(simEntrada) || 0)
   const simParcela = simValue > 0 ? (simValue * 1.5) / parseInt(simParcelas) : 0
-  const wppSimText = `*Oportunidade Imperdível!*\n\nOlá! Tenho interesse em simular o financiamento do ${vehicle.marca} ${vehicle.modelo} ${vehicle.ano_fabricacao}.\n\n💰 Valor: ${formatCurrency(vehicle.preco_venda || 0)}\n💵 Entrada: R$ ${simEntrada || '0'}\n📅 Parcelas: ${simParcelas}x\n\nVenda ou Compre seu carro rápido e seguro.\n\n${shareUrl}`
+  const wppSimText = `*Oportunidade Imperd\u00edvel!*\n\nOl\u00e1! Tenho interesse em simular o financiamento do ${vehicle.marca} ${vehicle.modelo} ${vehicle.ano_fabricacao}.\n\n\u{1F4B0} Valor: ${formatCurrency(vehicle.preco_venda || 0)}\n\u{1F4B5} Entrada: R$ ${simEntrada || '0'}\n\u{1F4C5} Parcelas: ${simParcelas}x\n\nVenda ou Compre seu carro r\u00e1pido e seguro.\n\n${shareUrl}`
+
+  const handleTenhoInteresse = async (trigger: string = 'botao_veiculo') => {
+    try {
+      await createLead({
+        nome: 'Lead Interessado',
+        veiculo_id: vehicle.id,
+        tipo: 'interesse',
+        origem: 'site_veiculo_detalhe',
+        status: 'novo',
+        veiculo_interesse: `${vehicle.marca} ${vehicle.modelo} ${vehicle.ano_fabricacao}/${vehicle.ano_modelo}`,
+        cta_type: trigger,
+      })
+    } catch (e) {
+      console.error('Erro ao criar lead:', e)
+    }
+    trackWhatsAppClick('Luiz', trigger)
+    window.open(
+      `https://wa.me/5534999484285?text=${encodeURIComponent(wppText)}`,
+      '_blank',
+      'noopener,noreferrer',
+    )
+  }
 
   const handleSimulationWhatsApp = async () => {
     const entryPercent = vehicle.preco_venda
@@ -183,6 +203,20 @@ export default function Veiculo() {
       status: 'Pendente',
     })
 
+    try {
+      await createLead({
+        nome: 'Lead Interessado',
+        veiculo_id: vehicle.id,
+        tipo: 'interesse',
+        origem: 'site_veiculo_detalhe',
+        status: 'novo',
+        veiculo_interesse: `${vehicle.marca} ${vehicle.modelo} ${vehicle.ano_fabricacao}/${vehicle.ano_modelo} - Simula\u00e7\u00e3o Financiamento`,
+        cta_type: 'simular_financiamento',
+      })
+    } catch (e) {
+      console.error('Erro ao criar lead:', e)
+    }
+
     trackSimulation(vehicle.preco_venda, entryPercent, simParcelas)
     trackWhatsAppClick('Luiz', 'simulacao_financiamento')
   }
@@ -193,7 +227,7 @@ export default function Veiculo() {
       ? `${vehicle.quilometragem.toLocaleString('pt-BR')} km`
       : 'Excelente km'
 
-    return `*Oportunidade Imperdível!*\n\n🚗 *${vehicle.marca} ${vehicle.modelo} ${vehicle.versao || ''}*\n📅 Ano: ${vehicle.ano_fabricacao}/${vehicle.ano_modelo}\n🛣️ ${km}\n💰 *${price}*\n\nVenda ou Compre seu carro rápido e seguro.\n\n${shareUrl}`
+    return `*Oportunidade Imperd\u00edvel!*\n\n\u{1F697} *${vehicle.marca} ${vehicle.modelo} ${vehicle.versao || ''}*\n\u{1F4C5} Ano: ${vehicle.ano_fabricacao}/${vehicle.ano_modelo}\n\u{1F6E3}\u{FE0F} ${km}\n\u{1F4B0} *${price}*\n\nVenda ou Compre seu carro r\u00e1pido e seguro.\n\n${shareUrl}`
   }
 
   const handleShare = async () => {
@@ -441,17 +475,10 @@ export default function Veiculo() {
               <div className="space-y-3">
                 <div className="flex gap-2">
                   <Button
-                    asChild
                     className="flex-1 bg-[#25D366] hover:bg-[#20bd5a] text-white h-14 text-lg"
+                    onClick={() => handleTenhoInteresse('botao_veiculo')}
                   >
-                    <a
-                      href={`https://wa.me/5534999484285?text=${encodeURIComponent(wppText)}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      onClick={() => trackWhatsAppClick('Luiz', 'botao_veiculo')}
-                    >
-                      Tenho Interesse
-                    </a>
+                    Tenho Interesse
                   </Button>
                   <Button
                     variant="outline"
@@ -631,15 +658,11 @@ export default function Veiculo() {
             <Phone className="w-4 h-4 mr-2" /> Ligar
           </a>
         </Button>
-        <Button asChild className="h-12 bg-[#25D366] hover:bg-[#20bd5a] text-white">
-          <a
-            href={`https://wa.me/5534999484285?text=${encodeURIComponent(wppText)}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={() => trackWhatsAppClick('Luiz', 'bottom_nav_veiculo')}
-          >
-            <MessageCircle className="w-4 h-4 mr-2" /> WhatsApp
-          </a>
+        <Button
+          className="h-12 bg-[#25D366] hover:bg-[#20bd5a] text-white"
+          onClick={() => handleTenhoInteresse('bottom_nav_veiculo')}
+        >
+          <MessageCircle className="w-4 h-4 mr-2" /> WhatsApp
         </Button>
       </div>
     </div>

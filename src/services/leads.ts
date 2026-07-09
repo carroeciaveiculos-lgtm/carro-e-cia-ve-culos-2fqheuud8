@@ -11,8 +11,14 @@ export const getLeads = async () => {
   return { data, error }
 }
 
-export const createLead = async (lead: Database['public']['Tables']['leads']['Insert']) => {
-  const { data, error } = await supabase.from('leads').insert([lead]).select().single()
+export const createLead = async (
+  lead: Database['public']['Tables']['leads']['Insert'] & { cta_type?: string },
+) => {
+  const { data, error } = await supabase
+    .from('leads')
+    .insert([lead as any])
+    .select()
+    .single()
 
   if (data && !error) {
     // Alerta interno
