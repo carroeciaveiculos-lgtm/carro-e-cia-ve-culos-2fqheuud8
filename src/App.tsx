@@ -1,5 +1,5 @@
 import { Suspense, lazy, useEffect } from 'react'
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, useParams } from 'react-router-dom'
 import { Toaster } from '@/components/ui/toaster'
 import { Toaster as Sonner } from '@/components/ui/sonner'
 import { TooltipProvider } from '@/components/ui/tooltip'
@@ -212,6 +212,11 @@ const GlobalHooks = () => {
   return null
 }
 
+const ShareRedirect = () => {
+  const { slug } = useParams()
+  return <Navigate to={`/estoque/${slug}`} replace />
+}
+
 const MainApp = () => (
   <Routes>
     {/* Public Routes */}
@@ -220,6 +225,7 @@ const MainApp = () => (
       <Route path="/estoque" element={<Estoque />} />
       <Route path="/comprar" element={<Navigate to="/estoque" replace />} />
       <Route path="/estoque/:id" element={<Veiculo />} />
+      <Route path="/s/:slug" element={<ShareRedirect />} />
       <Route path="/consignacao" element={<Consignacao />} />
       <Route path="/sobre" element={<Sobre />} />
       <Route path="/servicos" element={<Servicos />} />

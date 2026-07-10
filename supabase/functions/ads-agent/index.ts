@@ -4,7 +4,8 @@ import { createClient } from 'jsr:@supabase/supabase-js@2'
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, x-supabase-client-platform, apikey, content-type',
+  'Access-Control-Allow-Headers':
+    'authorization, x-client-info, x-supabase-client-platform, apikey, content-type',
 }
 
 const META_API_BASE = 'https://graph.facebook.com/v20.0'
@@ -35,7 +36,10 @@ Deno.serve(async (req) => {
 
   try {
     const authHeader = req.headers.get('Authorization')
-    const supabase = createClient(Deno.env.get('SUPABASE_URL') ?? '', Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '')
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+    )
 
     let userId: string | null = null
     if (authHeader) {
@@ -44,7 +48,9 @@ Deno.serve(async (req) => {
         Deno.env.get('SUPABASE_ANON_KEY') ?? '',
         { global: { headers: { Authorization: authHeader } } },
       )
-      const { data: { user } } = await userClient.auth.getUser()
+      const {
+        data: { user },
+      } = await userClient.auth.getUser()
       userId = user?.id ?? null
     }
 
@@ -74,7 +80,9 @@ Deno.serve(async (req) => {
         },
       )
       const data = await res.json()
-      result = { proposed_action: JSON.parse(data.candidates?.[0]?.content?.parts?.[0]?.text || '{}') }
+      result = {
+        proposed_action: JSON.parse(data.candidates?.[0]?.content?.parts?.[0]?.text || '{}'),
+      }
     } else if (action === 'list_campaigns') {
       const data = await metaGet(`act_${META_AD_ACCOUNT_ID}/campaigns`, {
         fields: 'id,name,status,daily_budget,objective',
@@ -82,18 +90,30 @@ Deno.serve(async (req) => {
       })
       result = { campaigns: data.data || [] }
     } else if (action === 'get_metrics') {
-      const campData = await metaGet(`act_${META_AD_ACCOUNT_ID}/campaigns`, { fields: 'id,name,status', limit: '100' })
+      const campData = await metaGet(`act_${META_AD_ACCOUNT_ID}/campaigns`, {
+        fields: 'id,name,status',
+        limit: '100',
+      })
       const metrics = await Promise.all(
         (campData.data || []).map(async (c: any) => {
           try {
-            const ins = await metaGet(`${c.id}/insights`, { fields: 'impressions,clicks,spend,ctr,actions', date_preset: 'last_30d' })
+            const ins = await metaGet(`${c.id}/insights`, {
+              fields: 'impressions,clicks,spend,ctr,actions',
+              date_preset: 'last_30d',
+            })
             const d = ins.data?.[0] || {}
             return {
-              id: c.id, name: c.name, status: c.status,
+              id: c.id,
+              name: c.name,
+              status: c.status,
               metrics: {
-                impressions: +(d.impressions || 0), clicks: +(d.clicks || 0),
-                cost: +(d.spend || 0), ctr: +(d.ctr || 0),
-                conversions: +(d.actions?.find((a: any) => a.action_type === 'offsite_conversion')?.value || 0),
+                impressions: +(d.impressions || 0),
+                clicks: +(d.clicks || 0),
+                cost: +(d.spend || 0),
+                ctr: +(d.ctr || 0),
+                conversions: +(
+                  d.actions?.find((a: any) => a.action_type === 'offsite_conversion')?.value || 0
+                ),
               },
             }
           } catch {
@@ -103,28 +123,51 @@ Deno.serve(async (req) => {
       )
       result = { metrics }
     } else if (action === 'update_budget') {
-      const data = await metaPost(params?.campaign_id, { daily_budget: Math.round((params?.new_budget || 0) * 100).toString() })
-      result = { success: true, campaign_id: params?.campaign_id, new_budget: params?.new_budget, data }
+      const data = await metaPost(params?.campaign_id, {
+        daily_budget: Math.round((params?.new_budget || 0) * 100).toString(),
+      })
+      result = {
+        success: true,
+        campaign_id: params?.campaign_id,
+        new_budget: params?.new_budget,
+        data,
+      }
     } else if (action === 'toggle_status') {
       const data = await metaPost(params?.campaign_id, { status: params?.new_status })
-      result = { success: true, campaign_id: params?.campaign_id, new_status: params?.new_status, data }
+      result = {
+        success: true,
+        campaign_id: params?.campaign_id,
+        new_status: params?.new_status,
+        data,
+      }
     } else if (action === 'pause_sold_ads') {
-      const { data: soldVehicles } = await supabase.from('veiculos').select('id,marca,modelo').eq('status', 'Vendido')
+      const { data: soldVehicles } = await supabase
+        .from('veiculos')
+        .select('id,marca,modelo')
+        .eq('status', 'Vendido')
       if (!soldVehicles?.length) {
         result = { success: true, message: 'No sold vehicles found', paused: 0 }
       } else {
-        const campData = await metaGet(`act_${META_AD_ACCOUNT_ID}/campaigns`, { fields: 'id,name,status', limit: '100' })
+        const campData = await metaGet(`act_${META_AD_ACCOUNT_ID}/campaigns`, {
+          fields: 'id,name,status',
+          limit: '100',
+        })
         const active = (campData.data || []).filter((c: any) => c.status === 'ACTIVE')
         const paused: any[] = []
         for (const v of soldVehicles) {
           const matched = active.filter(
-            (c: any) => c.name?.toLowerCase().includes(v.marca?.toLowerCase()) &&
-            c.name?.toLowerCase().includes(v.modelo?.toLowerCase()),
+            (c: any) =>
+              c.name?.toLowerCase().includes(v.marca?.toLowerCase()) &&
+              c.name?.toLowerCase().includes(v.modelo?.toLowerCase()),
           )
           for (const ad of matched) {
             try {
               await metaPost(ad.id, { status: 'PAUSED' })
-              paused.push({ campaign_id: ad.id, campaign_name: ad.name, vehicle: `${v.marca} ${v.modelo}` })
+              paused.push({
+                campaign_id: ad.id,
+                campaign_name: ad.name,
+                vehicle: `${v.marca} ${v.modelo}`,
+              })
             } catch (e) {
               console.error(`Pause failed for ${ad.id}:`, e)
             }

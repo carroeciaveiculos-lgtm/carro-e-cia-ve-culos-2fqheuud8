@@ -10,7 +10,8 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
 
   try {
-    const { vehicle_id, marca, modelo, versao, ano_modelo, preco_venda, status, slug } = await req.json()
+    const { vehicle_id, marca, modelo, versao, ano_modelo, preco_venda, status, slug } =
+      await req.json()
 
     if (!vehicle_id || status !== 'Vendido') {
       return new Response(
@@ -37,20 +38,22 @@ Deno.serve(async (req) => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        data: [{
-          event_name: 'Purchase',
-          event_time: eventTime,
-          event_id: eventId,
-          action_source: 'physical_store',
-          event_source_url: `https://www.carroeciamotors.com.br/estoque/${slug || vehicle_id}`,
-          custom_data: {
-            currency: 'BRL',
-            value: preco_venda || 0,
-            content_name: vehicleName,
-            content_type: 'vehicle',
-            content_ids: [vehicle_id],
+        data: [
+          {
+            event_name: 'Purchase',
+            event_time: eventTime,
+            event_id: eventId,
+            action_source: 'physical_store',
+            event_source_url: `https://www.carroeciamotors.com.br/estoque/${slug || vehicle_id}`,
+            custom_data: {
+              currency: 'BRL',
+              value: preco_venda || 0,
+              content_name: vehicleName,
+              content_type: 'vehicle',
+              content_ids: [vehicle_id],
+            },
           },
-        }],
+        ],
         access_token: adsToken,
       }),
     })
@@ -79,9 +82,9 @@ Deno.serve(async (req) => {
     )
   } catch (err: any) {
     console.error('CAPI Postback error:', err)
-    return new Response(
-      JSON.stringify({ error: err.message }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
-    )
+    return new Response(JSON.stringify({ error: err.message }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    })
   }
 })

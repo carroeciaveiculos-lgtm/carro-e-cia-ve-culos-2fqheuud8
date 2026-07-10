@@ -5,6 +5,31 @@ import { trackCTAClick, trackWhatsAppClick } from '@/lib/tracking'
 export const formatCurrency = (val: number) =>
   new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val)
 
+export const sanitizeText = (text: string): string => {
+  if (!text) return ''
+  return text
+    .replace(/\uFEFF/g, '')
+    .replace(/[\u200B-\u200D\uFEFF]/g, '')
+    .replace(/\uFFFD/g, '')
+    .replace(/Ã§/g, 'ç')
+    .replace(/Ã£/g, 'ã')
+    .replace(/Ã¡/g, 'á')
+    .replace(/Ã©/g, 'é')
+    .replace(/Ã­/g, 'í')
+    .replace(/Ã³/g, 'ó')
+    .replace(/Ãº/g, 'ú')
+    .replace(/Ã/g, 'Á')
+    .replace(/Ã‚/g, 'Â')
+    .replace(/â€"/g, '—')
+    .replace(/â€"/g, '–')
+    .replace(/â€œ/g, '"')
+    .replace(/â€/g, '"')
+    .replace(/'/g, "'")
+    .replace(/'/g, "'")
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
 export const getVehicleUrl = (vehicle: any) => {
   if (!vehicle) return 'https://www.carroeciamotors.com.br/estoque'
   const slug = vehicle.slug || vehicle.id
@@ -19,10 +44,20 @@ export const getShareUrl = (vehicle: any) => {
 
 export const getVehicleDescription = (vehicle: any): string => {
   if (!vehicle) return ''
-  if (vehicle.descricao && vehicle.descricao.trim()) return vehicle.descricao
-  const name = `${vehicle.marca} ${vehicle.modelo}`
+  if (vehicle.descricao && vehicle.descricao.trim()) {
+    return sanitizeText(vehicle.descricao.trim())
+  }
+  const name = `${vehicle.marca} ${vehicle.modelo}`.trim()
   const ano = vehicle.ano_fabricacao || vehicle.ano_modelo || ''
-  return `Confira este ${name} ${ano} em excelente estado. Entre em contato para mais detalhes e ficha técnica completa.`
+  const km = vehicle.quilometragem
+    ? `, ${Number(vehicle.quilometragem).toLocaleString('pt-BR')} km`
+    : ''
+  const fuel = vehicle.combustivel ? `, ${vehicle.combustivel}` : ''
+  const cambio = vehicle.cambio ? `, câmbio ${vehicle.cambio}` : ''
+  const cor = vehicle.cor ? `, cor ${vehicle.cor}` : ''
+  return sanitizeText(
+    `Excelente ${name} ${ano}${km}${fuel}${cambio}${cor}. Veículo em ótimo estado. Financiamos e aceitamos troca. Entre em contato para mais detalhes.`,
+  )
 }
 
 export const getVehicleDiferenciais = (vehicle: any): string[] => {
@@ -59,8 +94,9 @@ export const getShareText = (vehicle: any) => {
   const ano = `${vehicle.ano_fabricacao}/${vehicle.ano_modelo}`
   const name = `${vehicle.marca} ${vehicle.modelo} ${vehicle.versao || ''}`.trim()
   const url = getShareUrl(vehicle)
-
-  return `${name} | Ano: ${ano} | KM: ${km} | Preço: ${price}. Venda ou Compre seu carro rápido e seguro. ${url}`
+  return sanitizeText(
+    `${name} | Ano: ${ano} | KM: ${km} | Preço: ${price}. Venda ou Compre seu carro rápido e seguro. ${url}`,
+  )
 }
 
 export const getCommercialText = (
@@ -70,22 +106,21 @@ export const getCommercialText = (
 ) => {
   if (!vehicle) return 'Olá! Gostaria de mais informações.'
   const name = `${vehicle.marca} ${vehicle.modelo} ${vehicle.versao || ''}`.trim()
-
   if (isSimulacao && simDetails) {
-    return `Olá! Tenho interesse em simular o financiamento do ${name} (${vehicle.ano_fabricacao}).\n\n💰 Valor: ${formatCurrency(vehicle.preco_venda || 0)}\n💵 Entrada: R$ ${simDetails.entrada || '0'}\n📅 Parcelas: ${simDetails.parcelas}x`
+    return sanitizeText(
+      `Olá! Tenho interesse em simular o financiamento do ${name} (${vehicle.ano_fabricacao}).\n\n💰 Valor: ${formatCurrency(vehicle.preco_venda || 0)}\n💵 Entrada: R$ ${simDetails.entrada || '0'}\n📅 Parcelas: ${simDetails.parcelas}x`,
+    )
   }
-
-  return `🚗 *Oportunidade Imperdível!*\n\nOlá! Tenho interesse no veículo:\n*${name}*\n📅 Ano: ${vehicle.ano_fabricacao}/${vehicle.ano_modelo}\n🛣️ KM: ${vehicle.quilometragem ? vehicle.quilometragem.toLocaleString('pt-BR') : 'Excelente km'}\n💰 Valor: ${formatCurrency(vehicle.preco_venda || 0)}`
+  return sanitizeText(
+    `🚗 *Oportunidade Imperdível!*\n\nOlá! Tenho interesse no veículo:\n*${name}*\n📅 Ano: ${vehicle.ano_fabricacao}/${vehicle.ano_modelo}\n🛣️ KM: ${vehicle.quilometragem ? vehicle.quilometragem.toLocaleString('pt-BR') : 'Excelente km'}\n💰 Valor: ${formatCurrency(vehicle.preco_venda || 0)}`,
+  )
 }
 
 export const handleShareCTA = async (vehicle: any, source: string) => {
   if (!vehicle) return false
-
   const shareText = getShareText(vehicle)
   const shareUrl = getShareUrl(vehicle)
-
   trackCTAClick('Compartilhar Veículo', source)
-
   if (navigator.share) {
     try {
       await navigator.share({
@@ -125,15 +160,11 @@ export const handleCommercialCTA = async ({
       status: 'novo',
       cta_type: ctaType,
     }
-
     if (vehicle) {
       leadData.veiculo_id = vehicle.id
       leadData.veiculo_interesse = `${vehicle.marca} ${vehicle.modelo} ${vehicle.ano_fabricacao}/${vehicle.ano_modelo}`
-      if (isSimulacao) {
-        leadData.veiculo_interesse += ' - Simulação Financiamento'
-      }
+      if (isSimulacao) leadData.veiculo_interesse += ' - Simulação Financiamento'
     }
-
     await createLead(leadData)
   } catch (e) {
     console.error('Erro ao criar lead:', e)
@@ -143,6 +174,15 @@ export const handleCommercialCTA = async ({
   trackCTAClick(ctaType, source)
 
   const message = getCommercialText(vehicle, isSimulacao, simDetails)
+  const whatsappUrl = getWhatsAppLink(message)
 
-  window.open(getWhatsAppLink(message), '_blank', 'noopener,noreferrer')
+  const isMobileDevice =
+    typeof window !== 'undefined' &&
+    (window.innerWidth < 768 || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent))
+
+  if (isMobileDevice) {
+    window.location.href = whatsappUrl
+  } else {
+    window.open(whatsappUrl, '_blank', 'noopener,noreferrer')
+  }
 }

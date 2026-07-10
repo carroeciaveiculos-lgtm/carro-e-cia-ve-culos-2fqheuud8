@@ -31,6 +31,7 @@ import {
   MessageCircle,
   Share2,
   Copy,
+  Loader2,
 } from 'lucide-react'
 import { useIsMobile } from '@/hooks/use-mobile'
 import {
@@ -84,6 +85,8 @@ export default function Veiculo() {
       api.scrollTo(activePhoto)
     }
   }, [activePhoto, api])
+
+  const [isProcessing, setIsProcessing] = useState(false)
 
   // Simulation state
   const [simEntrada, setSimEntrada] = useState('')
@@ -171,11 +174,16 @@ export default function Veiculo() {
   const simParcela = simValue > 0 ? (simValue * 1.5) / parseInt(simParcelas) : 0
 
   const handleTenhoInteresse = async (trigger: string = 'botao_veiculo') => {
-    await handleCommercialCTA({
-      vehicle,
-      ctaType: trigger,
-      source: '/veiculo',
-    })
+    setIsProcessing(true)
+    try {
+      await handleCommercialCTA({
+        vehicle,
+        ctaType: trigger,
+        source: '/veiculo',
+      })
+    } finally {
+      setIsProcessing(false)
+    }
   }
 
   const handleSimulationWhatsApp = async () => {
@@ -437,8 +445,16 @@ export default function Veiculo() {
                   <Button
                     className="flex-1 bg-[#25D366] hover:bg-[#20bd5a] text-white h-14 text-lg"
                     onClick={() => handleTenhoInteresse('botao_veiculo')}
+                    disabled={isProcessing}
                   >
-                    Tenho Interesse
+                    {isProcessing ? (
+                      <>
+                        <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                        Aguarde...
+                      </>
+                    ) : (
+                      'Tenho Interesse'
+                    )}
                   </Button>
                   <Button
                     variant="outline"
@@ -611,8 +627,14 @@ export default function Veiculo() {
         <Button
           className="h-12 bg-[#25D366] hover:bg-[#20bd5a] text-white"
           onClick={() => handleTenhoInteresse('bottom_nav_veiculo')}
+          disabled={isProcessing}
         >
-          <MessageCircle className="w-4 h-4 mr-2" /> WhatsApp
+          {isProcessing ? (
+            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+          ) : (
+            <MessageCircle className="w-4 h-4 mr-2" />
+          )}
+          {isProcessing ? 'Aguarde...' : 'WhatsApp'}
         </Button>
       </div>
     </div>
