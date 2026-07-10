@@ -13,34 +13,10 @@ const FACADE_IMAGE =
   'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/fotos/fachada-da-loja.png'
 
 const BOT_PATTERNS = [
-  'whatsapp',
-  'facebook',
-  'facebot',
-  'facebookexternalhit',
-  'linkedin',
-  'linkedinbot',
-  'twitter',
-  'twitterbot',
-  'telegram',
-  'telegrambot',
-  'slack',
-  'slackbot',
-  'discord',
-  'discordbot',
-  'googlebot',
-  'bingbot',
-  'snapchat',
-  'pinterest',
-  'applebot',
-  'skypeuripreview',
-  'vkshare',
-  'w3c_validator',
-  'crawler',
-  'bot',
-  'spider',
-  'scraper',
-  'preview',
-  'fetch',
+  'whatsapp', 'facebook', 'facebot', 'facebookexternalhit', 'linkedin', 'linkedinbot',
+  'twitter', 'twitterbot', 'telegram', 'telegrambot', 'slack', 'slackbot', 'discord',
+  'discordbot', 'googlebot', 'bingbot', 'snapchat', 'pinterest', 'applebot',
+  'skypeuripreview', 'vkshare', 'w3c_validator', 'crawler', 'bot', 'spider', 'scraper', 'preview', 'fetch',
 ]
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
@@ -53,11 +29,8 @@ function isSocialBot(ua: string | null): boolean {
 
 function escapeHtml(str: string): string {
   return String(str || '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;')
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#039;')
 }
 
 function sanitizeText(str: string): string {
@@ -66,21 +39,12 @@ function sanitizeText(str: string): string {
     .replace(/\uFEFF/g, '')
     .replace(/[\u200B-\u200D\uFEFF]/g, '')
     .replace(/\uFFFD/g, '')
-    .replace(/Ã§/g, 'ç')
-    .replace(/Ã£/g, 'ã')
-    .replace(/Ã¡/g, 'á')
-    .replace(/Ã©/g, 'é')
-    .replace(/Ã­/g, 'í')
-    .replace(/Ã³/g, 'ó')
-    .replace(/Ãº/g, 'ú')
-    .replace(/Ã/g, 'Á')
-    .replace(/Ã‚/g, 'Â')
-    .replace(/â€"/g, '—')
-    .replace(/â€"/g, '–')
-    .replace(/â€œ/g, '"')
-    .replace(/â€/g, '"')
-    .replace(/'/g, "'")
-    .replace(/'/g, "'")
+    .replace(/Ã§/g, 'ç').replace(/Ã£/g, 'ã').replace(/Ã¡/g, 'á')
+    .replace(/Ã©/g, 'é').replace(/Ã­/g, 'í').replace(/Ã³/g, 'ó')
+    .replace(/Ãº/g, 'ú').replace(/Ã/g, 'Á').replace(/Ã‚/g, 'Â')
+    .replace(/â€"/g, '—').replace(/â€"/g, '–')
+    .replace(/â€œ/g, '"').replace(/â€/g, '"')
+    .replace(/'/g, "'").replace(/'/g, "'")
     .replace(/\s+/g, ' ')
     .trim()
 }
@@ -103,9 +67,7 @@ function getSocialImageUrl(imageUrl: string): string {
 function generateFallbackDescription(vehicle: any): string {
   const name = `${vehicle.marca} ${vehicle.modelo}`
   const ano = vehicle.ano_fabricacao || vehicle.ano_modelo || ''
-  const km = vehicle.quilometragem
-    ? `${Number(vehicle.quilometragem).toLocaleString('pt-BR')} km`
-    : ''
+  const km = vehicle.quilometragem ? `${Number(vehicle.quilometragem).toLocaleString('pt-BR')} km` : ''
   const combustivel = vehicle.combustivel || ''
   const parts = [ano, km, combustivel].filter(Boolean)
   return `Excelente ${name}${parts.length > 0 ? ` - ${parts.join(', ')}` : ''}. Veículo em ótimo estado de conservação. Financiamos e aceitamos troca. Entre em contato para mais detalhes.`
@@ -133,19 +95,12 @@ function generatePageDescription(vehicle: any): string {
   const name = `${vehicle.marca} ${vehicle.modelo}`
   const ano = vehicle.ano_modelo || vehicle.ano_fabricacao || ''
   const price = formatCurrency(vehicle.preco_venda)
-  return sanitizeText(
-    `Confira as fotos e detalhes deste ${name} ${ano} no valor de ${price}. Financiamos e aceitamos troca. Entre em contato!`,
-  )
+  return sanitizeText(`Confira as fotos e detalhes deste ${name} ${ano} no valor de ${price}. Financiamos e aceitamos troca. Entre em contato!`)
 }
 
 function generateOGHtml(
-  pageTitle: string,
-  pageDescription: string,
-  ogTitle: string,
-  ogDescription: string,
-  image: string,
-  ogUrl: string,
-  canonicalUrl: string,
+  pageTitle: string, pageDescription: string, ogTitle: string,
+  ogDescription: string, image: string, ogUrl: string, canonicalUrl: string,
 ): string {
   const socialImage = getSocialImageUrl(image)
   return `<!DOCTYPE html>
@@ -197,8 +152,7 @@ Deno.serve(async (req) => {
     const url = new URL(req.url)
     const userAgent = req.headers.get('user-agent')
     const forwardedHost = req.headers.get('x-forwarded-host') || ''
-    const isProxied =
-      forwardedHost.includes('carroeciamotors') || url.hostname.includes('carroeciamotors')
+    const isProxied = forwardedHost.includes('carroeciamotors') || url.hostname.includes('carroeciamotors')
 
     const idParam = url.searchParams.get('id')
     const slugParam = url.searchParams.get('slug')
@@ -224,10 +178,7 @@ Deno.serve(async (req) => {
 
     if (!vehicleId && !vehicleSlug) {
       if (isSocialBot(userAgent)) {
-        return new Response(generateDefaultHtml(), {
-          status: 200,
-          headers: { ...corsHeaders, 'Content-Type': 'text/html; charset=utf-8' },
-        })
+        return new Response(generateDefaultHtml(), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'text/html; charset=utf-8' } })
       }
       return Response.redirect(`${BASE_URL}/`, 302)
     }
@@ -239,16 +190,11 @@ Deno.serve(async (req) => {
       return Response.redirect(frontendUrl, 302)
     }
 
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-    )
+    const supabase = createClient(Deno.env.get('SUPABASE_URL') ?? '', Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '')
 
     let query = supabase
       .from('veiculos')
-      .select(
-        'id,marca,modelo,versao,ano_fabricacao,ano_modelo,preco_venda,quilometragem,cor,combustivel,descricao,fotos,slug,status',
-      )
+      .select('id,marca,modelo,versao,ano_fabricacao,ano_modelo,preco_venda,quilometragem,cor,combustivel,descricao,fotos,slug,status')
 
     if (vehicleId) query = query.eq('id', vehicleId)
     else if (vehicleSlug) query = query.eq('slug', vehicleSlug)
@@ -256,10 +202,7 @@ Deno.serve(async (req) => {
     const { data: vehicle, error } = await query.maybeSingle()
 
     if (error || !vehicle || vehicle.status !== 'disponivel') {
-      return new Response(generateDefaultHtml(), {
-        status: 200,
-        headers: { ...corsHeaders, 'Content-Type': 'text/html; charset=utf-8' },
-      })
+      return new Response(generateDefaultHtml(), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'text/html; charset=utf-8' } })
     }
 
     const photos = Array.isArray(vehicle.fotos) ? vehicle.fotos : []
@@ -274,33 +217,17 @@ Deno.serve(async (req) => {
 
     const pageTitle = `${vehicle.marca} ${vehicle.modelo}${versaoStr}${anoModeloStr} à venda em Uberaba | Carro e Cia Motors`
     const pageDescription = generatePageDescription(vehicle)
-    const ogTitle =
-      `${vehicle.marca} ${vehicle.modelo} ${vehicle.ano_modelo || vehicle.ano_fabricacao || ''}`.trim()
+    const ogTitle = `${vehicle.marca} ${vehicle.modelo} ${vehicle.ano_modelo || vehicle.ano_fabricacao || ''}`.trim()
     const ogDescription = generateOGDescription(vehicle)
 
-    const html = generateOGHtml(
-      pageTitle,
-      pageDescription,
-      ogTitle,
-      ogDescription,
-      primaryImage,
-      ogUrl,
-      canonicalUrl,
-    )
+    const html = generateOGHtml(pageTitle, pageDescription, ogTitle, ogDescription, primaryImage, ogUrl, canonicalUrl)
 
     return new Response(html, {
       status: 200,
-      headers: {
-        ...corsHeaders,
-        'Content-Type': 'text/html; charset=utf-8',
-        'Cache-Control': 'public, max-age=300',
-      },
+      headers: { ...corsHeaders, 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'public, max-age=300' },
     })
   } catch (err: any) {
     console.error('Error generating OG metadata:', err)
-    return new Response(generateDefaultHtml(), {
-      status: 200,
-      headers: { ...corsHeaders, 'Content-Type': 'text/html; charset=utf-8' },
-    })
+    return new Response(generateDefaultHtml(), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'text/html; charset=utf-8' } })
   }
 })
