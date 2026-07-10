@@ -1,6 +1,7 @@
 import { createLead } from '@/services/leads'
 import { getWhatsAppLink } from '@/lib/whatsapp'
 import { trackCTAClick, trackWhatsAppClick } from '@/lib/tracking'
+import { toast } from 'sonner'
 
 export const formatCurrency = (val: number) =>
   new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val)
@@ -151,7 +152,7 @@ export const handleCommercialCTA = async ({
   source: string
   isSimulacao?: boolean
   simDetails?: { entrada: string; parcelas: string }
-}) => {
+}): Promise<{ success: boolean }> => {
   try {
     const leadData: any = {
       nome: 'Lead Interessado',
@@ -165,9 +166,20 @@ export const handleCommercialCTA = async ({
       leadData.veiculo_interesse = `${vehicle.marca} ${vehicle.modelo} ${vehicle.ano_fabricacao}/${vehicle.ano_modelo}`
       if (isSimulacao) leadData.veiculo_interesse += ' - Simulação Financiamento'
     }
-    await createLead(leadData)
+
+    const { error: leadError } = await createLead(leadData)
+
+    if (leadError) {
+      console.error('Erro ao criar lead no CRM:', leadError)
+      toast.error(
+        'Não foi possível iniciar o atendimento. Por favor, tente novamente em instantes.',
+      )
+      return { success: false }
+    }
   } catch (e) {
     console.error('Erro ao criar lead:', e)
+    toast.error('Não foi possível iniciar o atendimento. Por favor, tente novamente em instantes.')
+    return { success: false }
   }
 
   trackWhatsAppClick('Luiz', ctaType)
@@ -185,4 +197,6 @@ export const handleCommercialCTA = async ({
   } else {
     window.open(whatsappUrl, '_blank', 'noopener,noreferrer')
   }
+
+  return { success: true }
 }

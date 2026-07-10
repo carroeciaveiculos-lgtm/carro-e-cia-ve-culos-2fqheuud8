@@ -13,10 +13,34 @@ const FACADE_IMAGE =
   'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/fotos/fachada-da-loja.png'
 
 const BOT_PATTERNS = [
-  'whatsapp', 'facebook', 'facebot', 'facebookexternalhit', 'linkedin', 'linkedinbot',
-  'twitter', 'twitterbot', 'telegram', 'telegrambot', 'slack', 'slackbot', 'discord',
-  'discordbot', 'googlebot', 'bingbot', 'snapchat', 'pinterest', 'applebot',
-  'skypeuripreview', 'vkshare', 'w3c_validator', 'crawler', 'bot', 'spider', 'scraper', 'preview', 'fetch',
+  'whatsapp',
+  'facebook',
+  'facebot',
+  'facebookexternalhit',
+  'linkedin',
+  'linkedinbot',
+  'twitter',
+  'twitterbot',
+  'telegram',
+  'telegrambot',
+  'slack',
+  'slackbot',
+  'discord',
+  'discordbot',
+  'googlebot',
+  'bingbot',
+  'snapchat',
+  'pinterest',
+  'applebot',
+  'skypeuripreview',
+  'vkshare',
+  'w3c_validator',
+  'crawler',
+  'bot',
+  'spider',
+  'scraper',
+  'preview',
+  'fetch',
 ]
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
@@ -29,8 +53,11 @@ function isSocialBot(ua: string | null): boolean {
 
 function escapeHtml(str: string): string {
   return String(str || '')
-    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;').replace(/'/g, '&#039;')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;')
 }
 
 function sanitizeText(str: string): string {
@@ -39,12 +66,21 @@ function sanitizeText(str: string): string {
     .replace(/\uFEFF/g, '')
     .replace(/[\u200B-\u200D\uFEFF]/g, '')
     .replace(/\uFFFD/g, '')
-    .replace(/Ã§/g, 'ç').replace(/Ã£/g, 'ã').replace(/Ã¡/g, 'á')
-    .replace(/Ã©/g, 'é').replace(/Ã­/g, 'í').replace(/Ã³/g, 'ó')
-    .replace(/Ãº/g, 'ú').replace(/Ã/g, 'Á').replace(/Ã‚/g, 'Â')
-    .replace(/â€"/g, '—').replace(/â€"/g, '–')
-    .replace(/â€œ/g, '"').replace(/â€/g, '"')
-    .replace(/'/g, "'").replace(/'/g, "'")
+    .replace(/Ã§/g, 'ç')
+    .replace(/Ã£/g, 'ã')
+    .replace(/Ã¡/g, 'á')
+    .replace(/Ã©/g, 'é')
+    .replace(/Ã­/g, 'í')
+    .replace(/Ã³/g, 'ó')
+    .replace(/Ãº/g, 'ú')
+    .replace(/Ã/g, 'Á')
+    .replace(/Ã‚/g, 'Â')
+    .replace(/â€"/g, '—')
+    .replace(/â€"/g, '–')
+    .replace(/â€œ/g, '"')
+    .replace(/â€/g, '"')
+    .replace(/'/g, "'")
+    .replace(/'/g, "'")
     .replace(/\s+/g, ' ')
     .trim()
 }
@@ -67,7 +103,9 @@ function getSocialImageUrl(imageUrl: string): string {
 function generateFallbackDescription(vehicle: any): string {
   const name = `${vehicle.marca} ${vehicle.modelo}`
   const ano = vehicle.ano_fabricacao || vehicle.ano_modelo || ''
-  const km = vehicle.quilometragem ? `${Number(vehicle.quilometragem).toLocaleString('pt-BR')} km` : ''
+  const km = vehicle.quilometragem
+    ? `${Number(vehicle.quilometragem).toLocaleString('pt-BR')} km`
+    : ''
   const combustivel = vehicle.combustivel || ''
   const parts = [ano, km, combustivel].filter(Boolean)
   return `Excelente ${name}${parts.length > 0 ? ` - ${parts.join(', ')}` : ''}. Veículo em ótimo estado de conservação. Financiamos e aceitamos troca. Entre em contato para mais detalhes.`
@@ -81,7 +119,6 @@ function generateOGDescription(vehicle: any): string {
   }
   if (vehicle.cor) parts.push(vehicle.cor)
   if (vehicle.combustivel) parts.push(vehicle.combustivel)
-
   if (parts.length === 0) {
     return sanitizeText(generateFallbackDescription(vehicle))
   }
@@ -89,20 +126,38 @@ function generateOGDescription(vehicle: any): string {
 }
 
 function generatePageDescription(vehicle: any): string {
-  if (vehicle.descricao && vehicle.descricao.trim()) {
+  if (vehicle.descricao && vehicle.descricao.trim().length > 20) {
     return sanitizeText(vehicle.descricao.trim()).substring(0, 160)
   }
   const name = `${vehicle.marca} ${vehicle.modelo}`
   const ano = vehicle.ano_modelo || vehicle.ano_fabricacao || ''
   const price = formatCurrency(vehicle.preco_venda)
-  return sanitizeText(`Confira as fotos e detalhes deste ${name} ${ano} no valor de ${price}. Financiamos e aceitamos troca. Entre em contato!`)
+  return sanitizeText(
+    `Confira as fotos e detalhes deste ${name} ${ano} no valor de ${price}. Financiamos e aceitamos troca. Entre em contato!`,
+  )
 }
 
 function generateOGHtml(
-  pageTitle: string, pageDescription: string, ogTitle: string,
-  ogDescription: string, image: string, ogUrl: string, canonicalUrl: string,
+  pageTitle: string,
+  pageDescription: string,
+  ogTitle: string,
+  ogDescription: string,
+  image: string,
+  ogUrl: string,
+  canonicalUrl: string,
+  shouldRedirect: boolean,
 ): string {
   const socialImage = getSocialImageUrl(image)
+  const redirectMeta = shouldRedirect
+    ? `  <meta http-equiv="refresh" content="0;url=${escapeHtml(canonicalUrl)}" />\n`
+    : ''
+  const bodyContent = shouldRedirect
+    ? `<body>
+  <p>Redirecionando para <a href="${escapeHtml(canonicalUrl)}">${escapeHtml(pageTitle)}</a>...</p>
+  <script>window.location.href="${escapeHtml(canonicalUrl)}";</script>
+</body>`
+    : `<body></body>`
+
   return `<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -123,17 +178,13 @@ function generateOGHtml(
   <meta name="twitter:title" content="${escapeHtml(ogTitle)}" />
   <meta name="twitter:description" content="${escapeHtml(ogDescription)}" />
   <meta name="twitter:image" content="${escapeHtml(socialImage)}" />
-  <meta http-equiv="refresh" content="0;url=${escapeHtml(canonicalUrl)}" />
-  <link rel="canonical" href="${escapeHtml(canonicalUrl)}" />
+${redirectMeta}  <link rel="canonical" href="${escapeHtml(canonicalUrl)}" />
 </head>
-<body>
-  <p>Redirecionando para <a href="${escapeHtml(canonicalUrl)}">${escapeHtml(pageTitle)}</a>...</p>
-  <script>window.location.href="${escapeHtml(canonicalUrl)}";</script>
-</body>
+${bodyContent}
 </html>`
 }
 
-function generateDefaultHtml(): string {
+function generateDefaultHtml(shouldRedirect: boolean): string {
   return generateOGHtml(
     'Carro e Cia Motors | Compra e Venda de Ve\u00edculos em Uberaba - MG',
     'Venda ou Compre seu carro r\u00e1pido e seguro. Compra, venda e troca de ve\u00edculos em Uberaba - MG.',
@@ -142,6 +193,7 @@ function generateDefaultHtml(): string {
     FACADE_IMAGE,
     BASE_URL,
     BASE_URL,
+    shouldRedirect,
   )
 }
 
@@ -151,8 +203,7 @@ Deno.serve(async (req) => {
   try {
     const url = new URL(req.url)
     const userAgent = req.headers.get('user-agent')
-    const forwardedHost = req.headers.get('x-forwarded-host') || ''
-    const isProxied = forwardedHost.includes('carroeciamotors') || url.hostname.includes('carroeciamotors')
+    const isBot = isSocialBot(userAgent)
 
     const idParam = url.searchParams.get('id')
     const slugParam = url.searchParams.get('slug')
@@ -173,28 +224,26 @@ Deno.serve(async (req) => {
     if (!vehicleId && !vehicleSlug && pathParts.length >= 1) {
       const lastPart = pathParts[pathParts.length - 1]
       if (UUID_REGEX.test(lastPart)) vehicleId = lastPart
-      else vehicleSlug = lastPart
+      else if (lastPart !== 'og-vehicle') vehicleSlug = lastPart
     }
 
     if (!vehicleId && !vehicleSlug) {
-      if (isSocialBot(userAgent)) {
-        return new Response(generateDefaultHtml(), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'text/html; charset=utf-8' } })
-      }
-      return Response.redirect(`${BASE_URL}/`, 302)
+      return new Response(generateDefaultHtml(!isBot), {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'text/html; charset=utf-8' },
+      })
     }
 
-    const requestPath = vehicleId || vehicleSlug
-    const frontendUrl = `${BASE_URL}/estoque/${requestPath}`
-
-    if (!isSocialBot(userAgent) && !isProxied) {
-      return Response.redirect(frontendUrl, 302)
-    }
-
-    const supabase = createClient(Deno.env.get('SUPABASE_URL') ?? '', Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '')
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+    )
 
     let query = supabase
       .from('veiculos')
-      .select('id,marca,modelo,versao,ano_fabricacao,ano_modelo,preco_venda,quilometragem,cor,combustivel,descricao,fotos,slug,status')
+      .select(
+        'id,marca,modelo,versao,ano_fabricacao,ano_modelo,preco_venda,quilometragem,cor,combustivel,descricao,fotos,slug,status',
+      )
 
     if (vehicleId) query = query.eq('id', vehicleId)
     else if (vehicleSlug) query = query.eq('slug', vehicleSlug)
@@ -202,14 +251,17 @@ Deno.serve(async (req) => {
     const { data: vehicle, error } = await query.maybeSingle()
 
     if (error || !vehicle || vehicle.status !== 'disponivel') {
-      return new Response(generateDefaultHtml(), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'text/html; charset=utf-8' } })
+      return new Response(generateDefaultHtml(!isBot), {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'text/html; charset=utf-8' },
+      })
     }
 
     const photos = Array.isArray(vehicle.fotos) ? vehicle.fotos : []
     const primaryImage = photos.length > 0 ? photos[0] : DEFAULT_OG_IMAGE
     const vehicleSlugOrId = vehicle.slug || vehicle.id
 
-    const ogUrl = `${BASE_URL}/estoque/${vehicleSlugOrId}`
+    const ogUrl = `${BASE_URL}/s/${vehicleSlugOrId}`
     const canonicalUrl = `${BASE_URL}/estoque/${vehicleSlugOrId}`
 
     const versaoStr = vehicle.versao ? ` ${vehicle.versao}` : ''
@@ -217,17 +269,35 @@ Deno.serve(async (req) => {
 
     const pageTitle = `${vehicle.marca} ${vehicle.modelo}${versaoStr}${anoModeloStr} à venda em Uberaba | Carro e Cia Motors`
     const pageDescription = generatePageDescription(vehicle)
-    const ogTitle = `${vehicle.marca} ${vehicle.modelo} ${vehicle.ano_modelo || vehicle.ano_fabricacao || ''}`.trim()
+    const ogTitle =
+      `${vehicle.marca} ${vehicle.modelo} ${vehicle.ano_modelo || vehicle.ano_fabricacao || ''}`.trim()
     const ogDescription = generateOGDescription(vehicle)
 
-    const html = generateOGHtml(pageTitle, pageDescription, ogTitle, ogDescription, primaryImage, ogUrl, canonicalUrl)
+    const html = generateOGHtml(
+      pageTitle,
+      pageDescription,
+      ogTitle,
+      ogDescription,
+      primaryImage,
+      ogUrl,
+      canonicalUrl,
+      !isBot,
+    )
 
     return new Response(html, {
       status: 200,
-      headers: { ...corsHeaders, 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'public, max-age=300' },
+      headers: {
+        ...corsHeaders,
+        'Content-Type': 'text/html; charset=utf-8',
+        'Cache-Control': 'public, max-age=300',
+      },
     })
   } catch (err: any) {
     console.error('Error generating OG metadata:', err)
-    return new Response(generateDefaultHtml(), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'text/html; charset=utf-8' } })
+    const isBot = isSocialBot(req.headers.get('user-agent'))
+    return new Response(generateDefaultHtml(!isBot), {
+      status: 200,
+      headers: { ...corsHeaders, 'Content-Type': 'text/html; charset=utf-8' },
+    })
   }
 })
