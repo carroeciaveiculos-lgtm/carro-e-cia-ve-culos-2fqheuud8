@@ -136,14 +136,12 @@ Deno.serve(async (req: Request) => {
         },
         body: '{}',
       })
-      await supabase
-        .from('sync_log')
-        .insert({
-          plataforma_id: plataforma.id,
-          acao: 'force_sync',
-          status: 'success',
-          mensagem: 'Sincronização forçada pelo admin',
-        })
+      await supabase.from('sync_log').insert({
+        plataforma_id: plataforma.id,
+        acao: 'force_sync',
+        status: 'success',
+        mensagem: 'Sincronização forçada pelo admin',
+      })
       await supabase
         .from('integracao_plataforma')
         .update({
@@ -188,15 +186,13 @@ Deno.serve(async (req: Request) => {
         }
       }
 
-      await supabase
-        .from('sync_log')
-        .insert({
-          plataforma_id: plataforma.id,
-          veiculo_id: veiculoId,
-          acao: publicar ? 'publish' : 'close',
-          status: 'pending',
-          mensagem: publicar ? 'Publicação solicitada' : 'Encerramento solicitado',
-        })
+      await supabase.from('sync_log').insert({
+        plataforma_id: plataforma.id,
+        veiculo_id: veiculoId,
+        acao: publicar ? 'publish' : 'close',
+        status: 'pending',
+        mensagem: publicar ? 'Publicação solicitada' : 'Encerramento solicitado',
+      })
       return json({ success: true })
     }
 
