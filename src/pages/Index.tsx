@@ -53,9 +53,7 @@ export default function Index() {
   const description =
     pageData?.meta_description ||
     'Venda seu carro rápido e seguro. Encontre os melhores carros seminovos e usados selecionados com 1 ano de garantia e laudo cautelar aprovado em Uberaba - MG.'
-  const image =
-    pageData?.imagem_destaque_url ||
-    'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/fotos/fachada-da-loja.png'
+  const image = pageData?.imagem_destaque_url || 'https://www.carroeciamotors.com.br/og-image.jpeg'
 
   const defaultBlocks = [
     { type: 'home-hero' },

@@ -9,8 +9,6 @@ const corsHeaders = {
 
 const BASE_URL = 'https://www.carroeciamotors.com.br'
 const DEFAULT_OG_IMAGE = 'https://www.carroeciamotors.com.br/og-image.jpeg'
-const FACADE_IMAGE =
-  'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/fotos/fachada-da-loja.png'
 
 const BOT_PATTERNS = [
   'whatsapp',
@@ -66,21 +64,6 @@ function sanitizeText(str: string): string {
     .replace(/\uFEFF/g, '')
     .replace(/[\u200B-\u200D\uFEFF]/g, '')
     .replace(/\uFFFD/g, '')
-    .replace(/Ã§/g, 'ç')
-    .replace(/Ã£/g, 'ã')
-    .replace(/Ã¡/g, 'á')
-    .replace(/Ã©/g, 'é')
-    .replace(/Ã­/g, 'í')
-    .replace(/Ã³/g, 'ó')
-    .replace(/Ãº/g, 'ú')
-    .replace(/Ã/g, 'Á')
-    .replace(/Ã‚/g, 'Â')
-    .replace(/â€"/g, '—')
-    .replace(/â€"/g, '–')
-    .replace(/â€œ/g, '"')
-    .replace(/â€/g, '"')
-    .replace(/'/g, "'")
-    .replace(/'/g, "'")
     .replace(/\s+/g, ' ')
     .trim()
 }
@@ -100,46 +83,25 @@ function getSocialImageUrl(imageUrl: string): string {
   return imageUrl
 }
 
-function generateFallbackDescription(vehicle: any): string {
-  const name = `${vehicle.marca} ${vehicle.modelo}`
-  const ano = vehicle.ano_fabricacao || vehicle.ano_modelo || ''
-  const km = vehicle.quilometragem
-    ? `${Number(vehicle.quilometragem).toLocaleString('pt-BR')} km`
-    : ''
-  const combustivel = vehicle.combustivel || ''
-  const parts = [ano, km, combustivel].filter(Boolean)
-  return `Excelente ${name}${parts.length > 0 ? ` - ${parts.join(', ')}` : ''}. Veículo em ótimo estado de conservação. Financiamos e aceitamos troca. Entre em contato para mais detalhes.`
-}
-
 function generateOGDescription(vehicle: any): string {
   const parts: string[] = []
-  if (vehicle.preco_venda) parts.push(formatCurrency(vehicle.preco_venda))
   if (vehicle.quilometragem != null && vehicle.quilometragem > 0) {
     parts.push(`${Number(vehicle.quilometragem).toLocaleString('pt-BR')} km`)
   }
   if (vehicle.cor) parts.push(vehicle.cor)
   if (vehicle.combustivel) parts.push(vehicle.combustivel)
-  if (parts.length === 0) {
-    return sanitizeText(generateFallbackDescription(vehicle))
-  }
-  return sanitizeText(parts.join(' - '))
-}
+  if (vehicle.cambio) parts.push(`Câmbio ${vehicle.cambio}`)
 
-function generatePageDescription(vehicle: any): string {
-  if (vehicle.descricao && vehicle.descricao.trim().length > 20) {
-    return sanitizeText(vehicle.descricao.trim()).substring(0, 160)
-  }
-  const name = `${vehicle.marca} ${vehicle.modelo}`
-  const ano = vehicle.ano_modelo || vehicle.ano_fabricacao || ''
-  const price = formatCurrency(vehicle.preco_venda)
+  const desc = parts.join(' - ')
+  const price = vehicle.preco_venda ? formatCurrency(vehicle.preco_venda) : 'Sob consulta'
+
   return sanitizeText(
-    `Confira as fotos e detalhes deste ${name} ${ano} no valor de ${price}. Financiamos e aceitamos troca. Entre em contato!`,
+    `Excelente oportunidade: ${desc}. Valor: ${price}. Financiamos e aceitamos troca. Confira!`,
   )
 }
 
 function generateOGHtml(
   pageTitle: string,
-  pageDescription: string,
   ogTitle: string,
   ogDescription: string,
   image: string,
@@ -154,7 +116,7 @@ function generateOGHtml(
   const bodyContent = shouldRedirect
     ? `<body>
   <p>Redirecionando para <a href="${escapeHtml(canonicalUrl)}">${escapeHtml(pageTitle)}</a>...</p>
-  <script>window.location.href="${escapeHtml(canonicalUrl)}";</script>
+  <script>window.location.replace("${escapeHtml(canonicalUrl)}");</script>
 </body>`
     : `<body></body>`
 
@@ -164,7 +126,9 @@ function generateOGHtml(
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>${escapeHtml(pageTitle)}</title>
-  <meta name="description" content="${escapeHtml(pageDescription)}" />
+  <meta name="description" content="${escapeHtml(ogDescription)}" />
+  
+  <!-- Open Graph / Facebook -->
   <meta property="og:type" content="website" />
   <meta property="og:title" content="${escapeHtml(ogTitle)}" />
   <meta property="og:description" content="${escapeHtml(ogDescription)}" />
@@ -174,27 +138,17 @@ function generateOGHtml(
   <meta property="og:image:type" content="image/jpeg" />
   <meta property="og:url" content="${escapeHtml(ogUrl)}" />
   <meta property="og:site_name" content="Carro e Cia Motors" />
+  
+  <!-- Twitter -->
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="${escapeHtml(ogTitle)}" />
   <meta name="twitter:description" content="${escapeHtml(ogDescription)}" />
   <meta name="twitter:image" content="${escapeHtml(socialImage)}" />
+  
 ${redirectMeta}  <link rel="canonical" href="${escapeHtml(canonicalUrl)}" />
 </head>
 ${bodyContent}
 </html>`
-}
-
-function generateDefaultHtml(shouldRedirect: boolean): string {
-  return generateOGHtml(
-    'Carro e Cia Motors | Compra e Venda de Ve\u00edculos em Uberaba - MG',
-    'Venda ou Compre seu carro r\u00e1pido e seguro. Compra, venda e troca de ve\u00edculos em Uberaba - MG.',
-    'Carro e Cia Motors - Uberaba MG',
-    'Venda ou Compre seu carro r\u00e1pido e seguro. Ve\u00edculos seminovos selecionados em Uberaba - MG.',
-    FACADE_IMAGE,
-    BASE_URL,
-    BASE_URL,
-    shouldRedirect,
-  )
 }
 
 Deno.serve(async (req) => {
@@ -228,9 +182,9 @@ Deno.serve(async (req) => {
     }
 
     if (!vehicleId && !vehicleSlug) {
-      return new Response(generateDefaultHtml(!isBot), {
-        status: 200,
-        headers: { ...corsHeaders, 'Content-Type': 'text/html; charset=utf-8' },
+      return new Response('Veículo não especificado.', {
+        status: 404,
+        headers: { ...corsHeaders, 'Content-Type': 'text/plain; charset=utf-8' },
       })
     }
 
@@ -242,7 +196,7 @@ Deno.serve(async (req) => {
     let query = supabase
       .from('veiculos')
       .select(
-        'id,marca,modelo,versao,ano_fabricacao,ano_modelo,preco_venda,quilometragem,cor,combustivel,descricao,fotos,slug,status',
+        'id,marca,modelo,versao,ano_fabricacao,ano_modelo,preco_venda,quilometragem,cor,combustivel,cambio,fotos,slug,status',
       )
 
     if (vehicleId) query = query.eq('id', vehicleId)
@@ -251,10 +205,18 @@ Deno.serve(async (req) => {
     const { data: vehicle, error } = await query.maybeSingle()
 
     if (error || !vehicle || vehicle.status !== 'disponivel') {
-      return new Response(generateDefaultHtml(!isBot), {
-        status: 200,
-        headers: { ...corsHeaders, 'Content-Type': 'text/html; charset=utf-8' },
-      })
+      if (isBot) {
+        return new Response('Veículo não encontrado ou indisponível.', {
+          status: 404,
+          headers: { ...corsHeaders, 'Content-Type': 'text/plain; charset=utf-8' },
+        })
+      } else {
+        const html = `<!DOCTYPE html><html><head><meta http-equiv="refresh" content="0;url=${escapeHtml(BASE_URL + '/estoque')}" /></head><body></body></html>`
+        return new Response(html, {
+          status: 200,
+          headers: { ...corsHeaders, 'Content-Type': 'text/html; charset=utf-8' },
+        })
+      }
     }
 
     const photos = Array.isArray(vehicle.fotos) ? vehicle.fotos : []
@@ -265,17 +227,18 @@ Deno.serve(async (req) => {
     const canonicalUrl = `${BASE_URL}/estoque/${vehicleSlugOrId}`
 
     const versaoStr = vehicle.versao ? ` ${vehicle.versao}` : ''
-    const anoModeloStr = vehicle.ano_modelo ? ` ${vehicle.ano_modelo}` : ''
+    const anoModeloStr = vehicle.ano_modelo || vehicle.ano_fabricacao || ''
 
-    const pageTitle = `${vehicle.marca} ${vehicle.modelo}${versaoStr}${anoModeloStr} à venda em Uberaba | Carro e Cia Motors`
-    const pageDescription = generatePageDescription(vehicle)
-    const ogTitle =
-      `${vehicle.marca} ${vehicle.modelo} ${vehicle.ano_modelo || vehicle.ano_fabricacao || ''}`.trim()
+    const pageTitle = `${vehicle.marca} ${vehicle.modelo}${versaoStr} ${anoModeloStr} à venda em Uberaba | Carro e Cia Motors`
+
+    // Exact format required by AC: "[Brand] [Model] [Version] [Year]"
+    const ogTitle = `${vehicle.marca} ${vehicle.modelo}${versaoStr} ${anoModeloStr}`
+      .trim()
+      .replace(/\s+/g, ' ')
     const ogDescription = generateOGDescription(vehicle)
 
     const html = generateOGHtml(
       pageTitle,
-      pageDescription,
       ogTitle,
       ogDescription,
       primaryImage,
@@ -294,10 +257,9 @@ Deno.serve(async (req) => {
     })
   } catch (err: any) {
     console.error('Error generating OG metadata:', err)
-    const isBot = isSocialBot(req.headers.get('user-agent'))
-    return new Response(generateDefaultHtml(!isBot), {
-      status: 200,
-      headers: { ...corsHeaders, 'Content-Type': 'text/html; charset=utf-8' },
+    return new Response('Erro interno.', {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'text/plain; charset=utf-8' },
     })
   }
 })

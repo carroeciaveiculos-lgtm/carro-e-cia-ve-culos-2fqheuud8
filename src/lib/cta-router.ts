@@ -188,14 +188,9 @@ export const handleCommercialCTA = async ({
   const message = getCommercialText(vehicle, isSimulacao, simDetails)
   const whatsappUrl = getWhatsAppLink(message)
 
-  const isMobileDevice =
-    typeof window !== 'undefined' &&
-    (window.innerWidth < 768 || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent))
-
-  if (isMobileDevice) {
+  // Navigate using location.href to avoid popup blockers and ensure robust delivery
+  if (typeof window !== 'undefined') {
     window.location.href = whatsappUrl
-  } else {
-    window.open(whatsappUrl, '_blank', 'noopener,noreferrer')
   }
 
   return { success: true }

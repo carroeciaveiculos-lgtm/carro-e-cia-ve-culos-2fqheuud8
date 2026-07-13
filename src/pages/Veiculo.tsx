@@ -238,6 +238,7 @@ export default function Veiculo() {
         title={`${vehicle.marca} ${vehicle.modelo} ${vehicle.versao || ''} ${vehicle.ano_modelo || ''} à venda em Uberaba | Carro e Cia Motors`}
         description={`Confira as fotos e detalhes deste lindo ${vehicle.marca} ${vehicle.modelo} no valor de ${formatCurrency(vehicle.preco_venda || 0)}. Financiamos e aceitamos troca. Entre em contato!`}
         schema={schema}
+        isVehicle={true}
       />
       <div className="container py-6">
         <Link

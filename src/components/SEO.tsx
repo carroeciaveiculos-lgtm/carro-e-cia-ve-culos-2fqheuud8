@@ -11,19 +11,49 @@ interface SEOProps {
   keywords?: string
   ogTitle?: string
   ogDescription?: string
+  isVehicle?: boolean
 }
 
-export function SEO({ title, description, schema, noindex = false, keywords }: SEOProps) {
+export function SEO({
+  title,
+  description,
+  schema,
+  noindex = false,
+  keywords,
+  image,
+  isVehicle = false,
+}: SEOProps) {
   useEffect(() => {
     document.title = title
 
-    let metaDescription = document.querySelector('meta[name="description"]')
-    if (!metaDescription) {
-      metaDescription = document.createElement('meta')
-      metaDescription.setAttribute('name', 'description')
-      document.head.appendChild(metaDescription)
+    const setMeta = (name: string, content: string, isProperty = false) => {
+      const attr = isProperty ? 'property' : 'name'
+      let tag = document.querySelector(`meta[${attr}="${name}"]`)
+      if (!tag) {
+        tag = document.createElement('meta')
+        tag.setAttribute(attr, name)
+        document.head.appendChild(tag)
+      }
+      tag.setAttribute('content', content)
     }
-    metaDescription.setAttribute('content', description)
+
+    setMeta('description', description)
+
+    if (!isVehicle) {
+      setMeta('og:title', title, true)
+      setMeta('og:description', description, true)
+      setMeta('og:type', 'website', true)
+
+      let finalImage = image || 'https://www.carroeciamotors.com.br/og-image.jpeg'
+      if (finalImage.startsWith('/')) {
+        finalImage = `https://www.carroeciamotors.com.br${finalImage}`
+      }
+      setMeta('og:image', finalImage, true)
+      setMeta('og:url', window.location.href, true)
+    } else {
+      const ogTags = document.querySelectorAll('meta[property^="og:"]')
+      ogTags.forEach((tag) => tag.remove())
+    }
 
     const organizationSchema = {
       '@context': 'https://schema.org',
@@ -79,13 +109,7 @@ export function SEO({ title, description, schema, noindex = false, keywords }: S
     )
 
     if (keywords) {
-      let metaKeywords = document.querySelector('meta[name="keywords"]')
-      if (!metaKeywords) {
-        metaKeywords = document.createElement('meta')
-        metaKeywords.setAttribute('name', 'keywords')
-        document.head.appendChild(metaKeywords)
-      }
-      metaKeywords.setAttribute('content', keywords)
+      setMeta('keywords', keywords)
     }
 
     let linkSitemap = document.querySelector('link[rel="sitemap"]')
@@ -103,7 +127,7 @@ export function SEO({ title, description, schema, noindex = false, keywords }: S
         document.head.removeChild(script)
       }
     }
-  }, [title, description, schema, noindex, keywords])
+  }, [title, description, schema, noindex, keywords, image, isVehicle])
 
   return null
 }

@@ -32,7 +32,7 @@
     "daily-report-cron": 12,
     "ml-sync": 13,
     "ml-webhook": 13,
-    "og-vehicle": 17,
+    "og-vehicle": 18,
     "meta-capi-postback": 1
   }
 }
