@@ -30,10 +30,10 @@
     "whatsapp-webhook": 16,
     "ml-auth": 16,
     "daily-report-cron": 13,
-    "ml-sync": 17,
+    "ml-sync": 18,
     "ml-webhook": 15,
     "og-vehicle": 20,
     "meta-capi-postback": 2,
-    "admin-plataformas-api": 3
+    "admin-plataformas-api": 4
   }
 }
