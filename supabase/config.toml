@@ -12,3 +12,6 @@ verify_jwt = false
 
 [functions.meta-capi-postback]
 verify_jwt = false
+
+[functions.admin-plataformas-api]
+verify_jwt = false

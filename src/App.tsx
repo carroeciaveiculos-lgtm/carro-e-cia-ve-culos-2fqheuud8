@@ -214,7 +214,25 @@ const GlobalHooks = () => {
 
 const ShareRedirect = () => {
   const { slug } = useParams()
-  return <Navigate to={`/estoque/${slug}`} replace />
+  useEffect(() => {
+    const ua = navigator.userAgent.toLowerCase()
+    const isBot = [
+      'whatsapp',
+      'facebook',
+      'facebot',
+      'twitter',
+      'telegram',
+      'googlebot',
+      'bingbot',
+      'bot',
+      'crawler',
+      'spider',
+    ].some((p) => ua.includes(p))
+    if (!isBot) {
+      window.location.replace(`/estoque/${slug}`)
+    }
+  }, [slug])
+  return null
 }
 
 const MainApp = () => (

@@ -78,7 +78,12 @@ function formatCurrency(val: any): string {
 function getSocialImageUrl(imageUrl: string): string {
   if (!imageUrl) return DEFAULT_OG_IMAGE
   if (imageUrl.includes('supabase.co')) {
-    return `https://images.weserv.nl/?url=${encodeURIComponent(imageUrl.split('?')[0])}&output=jpg`
+    const cleanUrl = imageUrl.split('?')[0]
+    return `https://images.weserv.nl/?url=${encodeURIComponent(cleanUrl)}&output=jpg`
+  }
+  if (!imageUrl.startsWith('http://') && !imageUrl.startsWith('https://')) {
+    const baseUrl = Deno.env.get('SUPABASE_URL') ?? ''
+    return `${baseUrl}/storage/v1/object/public/logos-e-imagens/${imageUrl}`
   }
   return imageUrl
 }
@@ -219,8 +224,15 @@ Deno.serve(async (req) => {
       }
     }
 
-    const photos = Array.isArray(vehicle.fotos) ? vehicle.fotos : []
-    const primaryImage = photos.length > 0 ? photos[0] : DEFAULT_OG_IMAGE
+    const photos = Array.isArray(vehicle.fotos)
+      ? vehicle.fotos.filter((p: any) => typeof p === 'string' && p.length > 0)
+      : []
+    const rawImage = photos.length > 0 ? photos[0] : ''
+    const primaryImage = rawImage.startsWith('http')
+      ? rawImage
+      : rawImage
+        ? `https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/${rawImage}`
+        : DEFAULT_OG_IMAGE
     const vehicleSlugOrId = vehicle.slug || vehicle.id
 
     const ogUrl = `${BASE_URL}/s/${vehicleSlugOrId}`

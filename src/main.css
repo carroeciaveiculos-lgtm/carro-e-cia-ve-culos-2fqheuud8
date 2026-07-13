@@ -94,6 +94,9 @@
     scroll-behavior: smooth;
     scroll-padding-top: 72px;
   }
+  @font-face {
+    font-display: swap;
+  }
   body,
   html {
     @apply bg-background text-foreground font-sans antialiased;

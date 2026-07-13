@@ -59,6 +59,13 @@ export function LeadForm({
       navigate('/obrigado', { state: { nome: formData.nome } })
     } catch (err: any) {
       console.error(err)
+      await supabase
+        .from('lead_errors')
+        .insert({
+          lead_data: { ...formData, campanha, origem },
+          error_message: err?.message || String(err),
+        })
+        .catch(console.error)
       toast({
         title: 'Erro ao enviar',
         description:
