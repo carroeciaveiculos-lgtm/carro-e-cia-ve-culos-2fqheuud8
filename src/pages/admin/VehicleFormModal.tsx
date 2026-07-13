@@ -720,29 +720,6 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
                 />
               </div>
 
-              <div className="p-4 bg-yellow-50 rounded-lg border border-yellow-200">
-                <h3 className="font-bold text-yellow-900 mb-3">Mercado Livre — Tipo de Anúncio</h3>
-                <div className="flex items-center gap-4">
-                  <Select
-                    value={formData.ml_listing_type || 'gold_special'}
-                    onValueChange={(v) => setFormData({ ...formData, ml_listing_type: v })}
-                  >
-                    <SelectTrigger className="w-48">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="gold_pro">Diamante</SelectItem>
-                      <SelectItem value="gold_special">Ouro</SelectItem>
-                      <SelectItem value="silver">Prata</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <p className="text-xs text-yellow-700 mt-2">
-                  Regra de negócio: os primeiros 15 veículos podem ser anunciados como "Diamante".
-                  Após atingir o limite, novos anúncios devem usar "Prata".
-                </p>
-              </div>
-
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-white p-6 rounded-lg border">
                 <div className="space-y-4">
                   <h3 className="font-bold border-b pb-2">Dados Básicos</h3>

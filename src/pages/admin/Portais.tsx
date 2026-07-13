@@ -10,6 +10,7 @@ import {
   forceSync,
   triggerSyncEstoque,
   toggleVehiclePublication,
+  updateListingType,
   type Plataforma,
   type VeiculoSync,
   type PlataformaDashboard,
@@ -72,6 +73,18 @@ export default function Portais() {
       toast({ title: 'Erro ao sincronizar', variant: 'destructive' })
     } finally {
       setSyncing(false)
+    }
+  }
+
+  const handleUpdateListingType = async (veiculoId: string, listingType: string) => {
+    setVeiculos((prev) =>
+      prev.map((v) => (v.id === veiculoId ? { ...v, ml_listing_type: listingType } : v)),
+    )
+    try {
+      await updateListingType(veiculoId, listingType)
+      toast({ title: 'Tipo de anúncio atualizado!' })
+    } catch (err: any) {
+      toast({ title: 'Erro ao atualizar', description: err.message, variant: 'destructive' })
     }
   }
 
@@ -174,6 +187,7 @@ export default function Portais() {
                 plataformas={plataformas}
                 onToggle={handleToggle}
                 toggling={toggling}
+                onUpdateListingType={handleUpdateListingType}
               />
             ))}
           </div>

@@ -34,6 +34,7 @@ export interface VeiculoSync {
   publicado_icarros: boolean | null
   publicado_napista: boolean | null
   status: string | null
+  ml_listing_type: string | null
 }
 
 export async function fetchPlataformas(): Promise<Plataforma[]> {
@@ -93,5 +94,13 @@ export async function toggleVehiclePublication(
     method: 'POST',
     body: { path: `${slug}/veiculos/publicar`, veiculo_id: veiculoId, publicar },
   })
+  if (error) throw error
+}
+
+export async function updateListingType(veiculoId: string, listingType: string): Promise<void> {
+  const { error } = await supabase
+    .from('veiculos')
+    .update({ ml_listing_type: listingType })
+    .eq('id', veiculoId)
   if (error) throw error
 }

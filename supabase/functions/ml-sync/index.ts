@@ -19,7 +19,9 @@ Deno.serve(async (req: Request) => {
   )
 
   const logSync = (status: string, payload: any) =>
-    supabase.from('logs_integracao').insert({ portal: 'mercadolivre_sync', status, payload_erro: payload })
+    supabase
+      .from('logs_integracao')
+      .insert({ portal: 'mercadolivre_sync', status, payload_erro: payload })
 
   try {
     const { token, error: tokenError } = await getValidMLToken(supabase)
@@ -33,6 +35,13 @@ Deno.serve(async (req: Request) => {
 
     const body = await req.json().catch(() => ({}))
     const specificVeiculoId = body.veiculo_id
+
+    const { data: mlPlataforma } = await supabase
+      .from('plataformas')
+      .select('id')
+      .eq('slug', 'mercadolivre')
+      .maybeSingle()
+    const mlPlataformaId = mlPlataforma?.id || null
 
     let pendingQuery = supabase
       .from('ml_listings')
@@ -64,35 +73,71 @@ Deno.serve(async (req: Request) => {
         .maybeSingle()
 
       if (!veiculo) {
-        await supabase.from('ml_listings').update({ status: 'error', last_synced_at: new Date().toISOString() }).eq('id', listing.id)
+        await supabase
+          .from('ml_listings')
+          .update({ status: 'error', last_synced_at: new Date().toISOString() })
+          .eq('id', listing.id)
         results.push({ listing_id: listing.id, status: 'error', error: 'Vehicle not found' })
         continue
       }
 
       try {
         if (listing.status === 'pending_create') {
-          const errorMsg = await handleCreate(supabase, token, listing, veiculo, cachedMandatoryAttrs)
+          const errorMsg = await handleCreate(
+            supabase,
+            token,
+            listing,
+            veiculo,
+            cachedMandatoryAttrs,
+          )
           if (errorMsg.cachedAttrs) cachedMandatoryAttrs = errorMsg.cachedAttrs
           if (errorMsg.error) {
-            await supabase.from('ml_listings').update({ status: 'error', last_synced_at: new Date().toISOString() }).eq('id', listing.id)
+            await supabase
+              .from('ml_listings')
+              .update({ status: 'error', last_synced_at: new Date().toISOString() })
+              .eq('id', listing.id)
             results.push({ listing_id: listing.id, status: 'error', error: errorMsg.error })
           } else {
-            await supabase.from('veiculos').update({ publicado_mercadolivre: true }).eq('id', veiculo.id)
-            results.push({ listing_id: listing.id, ml_item_id: errorMsg.mlItemId, status: 'created' })
+            await supabase
+              .from('veiculos')
+              .update({ publicado_mercadolivre: true })
+              .eq('id', veiculo.id)
+            results.push({
+              listing_id: listing.id,
+              ml_item_id: errorMsg.mlItemId,
+              status: 'created',
+            })
           }
         } else if (listing.status === 'pending_update' && listing.ml_item_id) {
-          const updateRes = await fetch(`https://api.mercadolibre.com/items/${listing.ml_item_id}`, {
-            method: 'PUT',
-            headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-            body: JSON.stringify({ price: Number(veiculo.preco_venda) || 0 }),
-          })
+          const updateRes = await fetch(
+            `https://api.mercadolibre.com/items/${listing.ml_item_id}`,
+            {
+              method: 'PUT',
+              headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+              body: JSON.stringify({ price: Number(veiculo.preco_venda) || 0 }),
+            },
+          )
           if (updateRes.ok) {
-            await supabase.from('ml_listings').update({ status: 'active', last_synced_at: new Date().toISOString() }).eq('id', listing.id)
-            results.push({ listing_id: listing.id, ml_item_id: listing.ml_item_id, status: 'updated' })
+            await supabase
+              .from('ml_listings')
+              .update({ status: 'active', last_synced_at: new Date().toISOString() })
+              .eq('id', listing.id)
+            results.push({
+              listing_id: listing.id,
+              ml_item_id: listing.ml_item_id,
+              status: 'updated',
+            })
           } else {
             const errData = await updateRes.json()
-            await supabase.from('ml_listings').update({ status: 'error', last_synced_at: new Date().toISOString() }).eq('id', listing.id)
-            results.push({ listing_id: listing.id, status: 'error', error: JSON.stringify(errData) })
+            await supabase
+              .from('ml_listings')
+              .update({ status: 'error', last_synced_at: new Date().toISOString() })
+              .eq('id', listing.id)
+            results.push({
+              listing_id: listing.id,
+              status: 'error',
+              error: JSON.stringify(errData),
+            })
           }
         } else if (listing.status === 'pending_close' && listing.ml_item_id) {
           const closeRes = await fetch(`https://api.mercadolibre.com/items/${listing.ml_item_id}`, {
@@ -101,26 +146,74 @@ Deno.serve(async (req: Request) => {
             body: JSON.stringify({ status: 'closed' }),
           })
           if (closeRes.ok) {
-            await supabase.from('ml_listings').update({ status: 'closed', last_synced_at: new Date().toISOString() }).eq('id', listing.id)
-            await supabase.from('veiculos').update({ publicado_mercadolivre: false }).eq('id', veiculo.id)
-            results.push({ listing_id: listing.id, ml_item_id: listing.ml_item_id, status: 'closed' })
+            await supabase
+              .from('ml_listings')
+              .update({ status: 'closed', last_synced_at: new Date().toISOString() })
+              .eq('id', listing.id)
+            await supabase
+              .from('veiculos')
+              .update({ publicado_mercadolivre: false })
+              .eq('id', veiculo.id)
+            results.push({
+              listing_id: listing.id,
+              ml_item_id: listing.ml_item_id,
+              status: 'closed',
+            })
           } else {
             const errData = await closeRes.json()
-            results.push({ listing_id: listing.id, status: 'error', error: JSON.stringify(errData) })
+            results.push({
+              listing_id: listing.id,
+              status: 'error',
+              error: JSON.stringify(errData),
+            })
           }
         }
       } catch (err: any) {
-        await supabase.from('ml_listings').update({ status: 'error', last_synced_at: new Date().toISOString() }).eq('id', listing.id)
+        await supabase
+          .from('ml_listings')
+          .update({ status: 'error', last_synced_at: new Date().toISOString() })
+          .eq('id', listing.id)
         results.push({ listing_id: listing.id, status: 'error', error: err.message })
       }
     }
 
+    if (mlPlataformaId && pendingListings.length > 0) {
+      const successVeiculoIds = results
+        .filter((r) => r.status === 'created' || r.status === 'updated' || r.status === 'closed')
+        .map((r) => pendingListings.find((l) => l.id === r.listing_id)?.veiculo_id)
+        .filter(Boolean) as string[]
+      const errorVeiculoIds = results
+        .filter((r) => r.status === 'error')
+        .map((r) => pendingListings.find((l) => l.id === r.listing_id)?.veiculo_id)
+        .filter(Boolean) as string[]
+
+      if (successVeiculoIds.length > 0) {
+        await supabase
+          .from('sync_log')
+          .update({ status: 'success', mensagem: 'Sincronizacao processada via ml-sync' })
+          .eq('plataforma_id', mlPlataformaId)
+          .in('veiculo_id', successVeiculoIds)
+          .eq('status', 'pending')
+      }
+      if (errorVeiculoIds.length > 0) {
+        await supabase
+          .from('sync_log')
+          .update({ status: 'erro', mensagem: 'Erro na sincronizacao via ml-sync' })
+          .eq('plataforma_id', mlPlataformaId)
+          .in('veiculo_id', errorVeiculoIds)
+          .eq('status', 'pending')
+      }
+    }
+
     const errorCount = results.filter((r) => r.status === 'error').length
-    await logSync(errorCount > 0 ? (errorCount === results.length ? 'error' : 'partial') : 'success', {
-      processed: results.length,
-      errors: errorCount,
-      details: results,
-    })
+    await logSync(
+      errorCount > 0 ? (errorCount === results.length ? 'error' : 'partial') : 'success',
+      {
+        processed: results.length,
+        errors: errorCount,
+        details: results,
+      },
+    )
 
     return new Response(JSON.stringify({ success: true, processed: results.length, results }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -182,12 +275,15 @@ async function handleCreate(
   const mlData = await mlRes.json()
 
   if (mlRes.ok) {
-    await supabase.from('ml_listings').update({
-      ml_item_id: mlData.id,
-      ml_listing_url: mlData.permalink,
-      status: 'active',
-      last_synced_at: new Date().toISOString(),
-    }).eq('id', listing.id)
+    await supabase
+      .from('ml_listings')
+      .update({
+        ml_item_id: mlData.id,
+        ml_listing_url: mlData.permalink,
+        status: 'active',
+        last_synced_at: new Date().toISOString(),
+      })
+      .eq('id', listing.id)
     return { error: null, mlItemId: mlData.id, cachedAttrs: mandatoryAttrs }
   }
 

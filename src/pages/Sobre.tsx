@@ -12,12 +12,24 @@ export default function Sobre() {
   const [loadingTeam, setLoadingTeam] = useState(true)
 
   useEffect(() => {
+    const AUTHORIZED_TEAM = [
+      'Luiz Fernando',
+      'Adriana Araújo',
+      'Gabriel Araújo',
+      'Roberto Junior',
+      'Jessica Germano',
+    ]
     supabase
       .from('usuarios')
       .select('id, nome, role')
       .eq('ativo', true)
       .then(({ data }) => {
-        setEquipe(data || [])
+        const filtered = (data || []).filter((m: any) =>
+          AUTHORIZED_TEAM.some(
+            (name) => m.nome?.toLowerCase().trim() === name.toLowerCase().trim(),
+          ),
+        )
+        setEquipe(filtered)
         setLoadingTeam(false)
       })
 
@@ -364,7 +376,7 @@ export default function Sobre() {
               <p className="text-sm text-muted-foreground">
                 contato@carroeciamotors.com.br
                 <br />
-                (34) 99948-4285
+                (34) 97384-177
               </p>
             </div>
             <div>
