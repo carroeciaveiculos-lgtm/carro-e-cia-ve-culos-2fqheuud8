@@ -1,18 +1,21 @@
 import { useState, useEffect, useCallback } from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Loader2, RefreshCw, Search, AlertCircle } from 'lucide-react'
+import { Loader2, Search, Zap } from 'lucide-react'
 import {
   fetchPlataformas,
   fetchDashboard,
   fetchVeiculosSync,
   forceSync,
+  triggerSyncEstoque,
   toggleVehiclePublication,
   type Plataforma,
   type VeiculoSync,
+  type PlataformaDashboard,
 } from '@/services/plataformas'
 import { PlatformHealthBadge } from '@/components/admin/portais/PlatformHealthBadge'
+import { PlatformStatsBar } from '@/components/admin/portais/PlatformStatsBar'
 import { VehicleSyncCard } from '@/components/admin/portais/VehicleSyncCard'
 import { useToast } from '@/hooks/use-toast'
 
@@ -20,6 +23,7 @@ export default function Portais() {
   const { toast } = useToast()
   const [plataformas, setPlataformas] = useState<Plataforma[]>([])
   const [selectedSlug, setSelectedSlug] = useState('mercadolivre')
+  const [dashboard, setDashboard] = useState<PlataformaDashboard | null>(null)
   const [veiculos, setVeiculos] = useState<VeiculoSync[]>([])
   const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(true)
@@ -31,6 +35,12 @@ export default function Portais() {
       .then(setPlataformas)
       .catch(() => toast({ title: 'Erro ao carregar plataformas', variant: 'destructive' }))
   }, [toast])
+
+  useEffect(() => {
+    fetchDashboard(selectedSlug)
+      .then(setDashboard)
+      .catch(() => setDashboard(null))
+  }, [selectedSlug])
 
   const loadVeiculos = useCallback(async () => {
     setLoading(true)
@@ -49,14 +59,17 @@ export default function Portais() {
     return () => clearTimeout(timer)
   }, [loadVeiculos])
 
-  const handleForceSync = async () => {
+  const handleSyncNow = async () => {
     setSyncing(true)
     try {
-      await forceSync(selectedSlug)
-      toast({ title: 'Sincronização forçada iniciada!' })
+      await Promise.all([forceSync(selectedSlug), triggerSyncEstoque()])
+      toast({ title: 'Sincronização iniciada com sucesso!' })
+      fetchDashboard(selectedSlug)
+        .then(setDashboard)
+        .catch(() => {})
       loadVeiculos()
     } catch {
-      toast({ title: 'Erro ao forçar sincronização', variant: 'destructive' })
+      toast({ title: 'Erro ao sincronizar', variant: 'destructive' })
     } finally {
       setSyncing(false)
     }
@@ -108,22 +121,29 @@ export default function Portais() {
       <div className="flex-1 min-w-0 space-y-4">
         <div className="flex flex-wrap items-center gap-3">
           <h1 className="text-xl font-bold text-gray-800">Sincronização de Portais</h1>
-          <PlatformHealthBadge status="conectado" />
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={handleForceSync}
-            disabled={syncing}
-            className="ml-auto"
-          >
+          <PlatformHealthBadge
+            status={dashboard?.status_conexao || 'desconectado'}
+            ultimoErro={dashboard?.ultimo_erro}
+          />
+          <Button size="sm" onClick={handleSyncNow} disabled={syncing} className="ml-auto">
             {syncing ? (
               <Loader2 className="w-4 h-4 mr-2 animate-spin" />
             ) : (
-              <RefreshCw className="w-4 h-4 mr-2" />
+              <Zap className="w-4 h-4 mr-2" />
             )}
-            Forçar Sync
+            Sincronizar Agora
           </Button>
         </div>
+
+        <PlatformStatsBar dashboard={dashboard} />
+
+        {dashboard?.ultimo_erro && (
+          <Card className="border-red-200 bg-red-50">
+            <CardContent className="py-2 px-3 text-xs text-red-700">
+              <strong>Último erro:</strong> {dashboard.ultimo_erro}
+            </CardContent>
+          </Card>
+        )}
 
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />

@@ -70,6 +70,7 @@ export default function Sobre() {
                   src="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/fotos/Luiz-Fernando-foto-profissional.webp"
                   alt="Luiz Fernando, CEO Carro e Cia"
                   className="w-40 h-40 md:w-48 md:h-48 rounded-full object-cover shadow-lg border-4 border-white"
+                  loading="eager"
                 />
                 <div>
                   <h1 className="text-3xl md:text-4xl font-display font-extrabold text-slate-800">
@@ -125,9 +126,10 @@ export default function Sobre() {
           <div className="relative">
             <div className="absolute inset-0 bg-gradient-to-tr from-primary/20 to-transparent rounded-2xl transform translate-x-4 translate-y-4 -z-10"></div>
             <img
-              src="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/fotos/fachada-da-loja.webp"
+              src="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/fotos/fachada%20da%20loja.jpg"
               alt="Showroom Carro e Cia Veículos"
               className="rounded-2xl shadow-2xl object-cover w-full h-[200px] md:h-[400px]"
+              loading="lazy"
             />
           </div>
         </div>

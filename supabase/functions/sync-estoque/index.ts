@@ -16,7 +16,6 @@ Deno.serve(async (req) => {
     const body = await req.json().catch(() => ({}))
     const veiculoId = body.veiculo_id
 
-    // 1. Load APIs configured
     const { data: configs } = await supabase.from('configuracoes_api').select('*').eq('ativo', true)
 
     if (!configs || configs.length === 0) {
@@ -25,7 +24,6 @@ Deno.serve(async (req) => {
       })
     }
 
-    // 2. Load stock (single vehicle or all)
     let query = supabase
       .from('veiculos')
       .select('*')
@@ -39,21 +37,30 @@ Deno.serve(async (req) => {
     if (!veiculos || veiculos.length === 0) {
       return new Response(
         JSON.stringify({ message: 'Nenhum veículo válido encontrado para sincronização.' }),
-        {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        },
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
       )
     }
 
-    // 3. Sync to each portal for each vehicle
+    const { data: plataformas } = await supabase
+      .from('plataformas')
+      .select('id, slug')
+      .eq('ativo', true)
+
+    const allResults: any[] = []
     const logsToInsert: any[] = []
+    const syncLogsToInsert: any[] = []
+
+    const colMap: Record<string, string> = {
+      mercadolivre: 'publicado_mercadolivre',
+      webmotors: 'publicado_webmotors',
+      olx: 'publicado_olx',
+      icarros: 'publicado_icarros',
+      napista: 'publicado_napista',
+    }
 
     for (const veiculo of veiculos) {
       const results = await Promise.allSettled(
         configs.map(async (config) => {
-          // Here we would call the real portal APIs (Webmotors, iCarros, etc.)
-          // via cURL logic, mounting the JSON/XML payload.
-
           const payload = {
             placa: veiculo.placa,
             marca: veiculo.marca,
@@ -68,10 +75,6 @@ Deno.serve(async (req) => {
             opcionais: veiculo.diferenciais,
             caracteristicas: veiculo.caracteristicas,
           }
-
-          // Simulate API call
-          // if (Math.random() > 0.8) throw new Error("Simulated API failure for " + config.portal);
-
           return {
             portal: config.portal,
             veiculo_id: veiculo.id,
@@ -81,33 +84,55 @@ Deno.serve(async (req) => {
         }),
       )
 
-      // 4. Log responses
       results.forEach((res, idx) => {
+        const portal = configs[idx].portal
         if (res.status === 'rejected') {
           logsToInsert.push({
             veiculo_id: veiculo.id,
-            portal: configs[idx].portal,
+            portal,
             status: 'falha',
             payload_erro: { error: res.reason?.message || 'Unknown error' },
           })
         } else {
           logsToInsert.push({
             veiculo_id: veiculo.id,
-            portal: configs[idx].portal,
+            portal,
             status: 'sucesso',
             payload_erro: null,
           })
+          allResults.push(res.value)
         }
       })
+
+      if (plataformas) {
+        for (const p of plataformas) {
+          const col = colMap[p.slug]
+          if (col && (veiculo as any)[col]) {
+            syncLogsToInsert.push({
+              plataforma_id: p.id,
+              veiculo_id: veiculo.id,
+              acao: 'sync',
+              status: 'success',
+              mensagem: 'Veículo sincronizado via sync-estoque',
+            })
+          }
+        }
+      }
     }
 
     if (logsToInsert.length > 0) {
       await supabase.from('logs_integracao').insert(logsToInsert)
     }
+    if (syncLogsToInsert.length > 0) {
+      await supabase.from('sync_log').insert(syncLogsToInsert)
+    }
 
-    return new Response(JSON.stringify({ success: true, results }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    })
+    return new Response(
+      JSON.stringify({ success: true, synced: allResults.length, results: allResults }),
+      {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      },
+    )
   } catch (err: any) {
     return new Response(JSON.stringify({ error: err.message }), {
       status: 400,

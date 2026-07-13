@@ -76,6 +76,14 @@ export async function forceSync(slug: string): Promise<void> {
   if (error) throw error
 }
 
+export async function triggerSyncEstoque(): Promise<void> {
+  const { error } = await supabase.functions.invoke('sync-estoque', {
+    method: 'POST',
+    body: {},
+  })
+  if (error) throw error
+}
+
 export async function toggleVehiclePublication(
   slug: string,
   veiculoId: string,

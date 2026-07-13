@@ -105,21 +105,22 @@ export default function VenderMeuCarro() {
           <picture className="w-full h-full block">
             <source
               media="(max-width: 768px)"
-              srcSet="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/fotos/fachada-mobile.webp"
-              type="image/webp"
+              srcSet="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/fotos/fachada%20da%20loja.jpg"
+              type="image/jpeg"
             />
             <source
               media="(min-width: 769px)"
-              srcSet="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/fotos/fachada-da-loja.webp"
-              type="image/webp"
+              srcSet="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/fotos/fachada%20da%20loja.jpg"
+              type="image/jpeg"
             />
             <img
-              src="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/fotos/fachada-da-loja.webp"
+              src="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/fotos/fachada%20da%20loja.jpg"
               alt="Fachada Carro e Cia Veículos Uberaba"
               width="1920"
               height="1080"
               className="w-full h-full object-cover object-center"
               style={{ aspectRatio: '16/9' }}
+              loading="eager"
             />
           </picture>
           <div className="absolute inset-0 bg-black/60" />

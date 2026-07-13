@@ -38,6 +38,7 @@ const SIDEBAR_MENUS = [
       { label: 'Avaliações', path: '/admin/avaliacao', icon: ShieldCheck },
       { label: 'Financiamentos', path: '/admin/financiamento', icon: DollarSign },
       { label: 'Administrativo', path: '/admin/administrativo', icon: FileText },
+      { label: 'Portais', path: '/admin/portais', icon: Globe },
     ],
   },
   {
