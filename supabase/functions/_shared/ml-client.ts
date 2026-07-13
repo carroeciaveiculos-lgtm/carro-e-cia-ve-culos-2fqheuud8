@@ -8,6 +8,21 @@ export interface MLCredentials {
   expires_at: string
 }
 
+const LISTING_TYPE_MAP: Record<string, string> = {
+  diamante: 'gold_pro',
+  ouro: 'gold_special',
+  prata: 'silver',
+  gold_pro: 'gold_pro',
+  gold_special: 'gold_special',
+  silver: 'silver',
+}
+
+export function resolveListingType(mlListingType: string | null | undefined): string {
+  if (!mlListingType) return 'gold_special'
+  const key = mlListingType.toLowerCase()
+  return LISTING_TYPE_MAP[key] || mlListingType
+}
+
 export async function getValidMLToken(
   supabase: SupabaseClient,
 ): Promise<{ token: string | null; error: string | null }> {
@@ -71,10 +86,124 @@ export function formatVehicleTitle(v: any): string {
   return `${parts.join(' ')}${yearPart}`.substring(0, 60)
 }
 
-export function buildMLItemPayload(v: any): any {
+export async function validatePhotos(
+  photos: string[],
+): Promise<{ valid: boolean; errors: string[] }> {
+  const errors: string[] = []
+  for (const url of photos) {
+    if (!url.startsWith('https://')) {
+      errors.push(`URL não é HTTPS: ${url}`)
+      continue
+    }
+    try {
+      const res = await fetch(url, { method: 'HEAD', signal: AbortSignal.timeout(10000) })
+      if (!res.ok) {
+        errors.push(`Imagem inacessível (HTTP ${res.status}): ${url}`)
+      }
+    } catch {
+      try {
+        const res2 = await fetch(url, {
+          method: 'GET',
+          headers: { Range: 'bytes=0-0' },
+          signal: AbortSignal.timeout(10000),
+        })
+        if (!res2.ok && res2.status !== 206) {
+          errors.push(`Imagem inacessível (HTTP ${res2.status}): ${url}`)
+        }
+      } catch {
+        errors.push(`Falha ao acessar imagem: ${url}`)
+      }
+    }
+  }
+  return { valid: errors.length === 0, errors }
+}
+
+export async function checkMLPackages(
+  token: string,
+): Promise<{ hasPackage: boolean; activeCount: number; error: string | null }> {
+  try {
+    const userRes = await fetch('https://api.mercadolibre.com/users/me', {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+    if (!userRes.ok) {
+      return {
+        hasPackage: false,
+        activeCount: 0,
+        error: 'Não foi possível obter informações do usuário no Mercado Livre',
+      }
+    }
+    const user = await userRes.json()
+
+    const listingsRes = await fetch(
+      `https://api.mercadolibre.com/users/${user.id}/items/search?status=active&search_type=classifieds`,
+      { headers: { Authorization: `Bearer ${token}` } },
+    )
+    if (!listingsRes.ok) {
+      return {
+        hasPackage: false,
+        activeCount: 0,
+        error: 'Não foi possível verificar anúncios ativos no Mercado Livre',
+      }
+    }
+    const listings = await listingsRes.json()
+    const activeCount = listings.results?.length || 0
+
+    return { hasPackage: true, activeCount, error: null }
+  } catch (err: any) {
+    return { hasPackage: false, activeCount: 0, error: err.message }
+  }
+}
+
+export async function fetchCategoryAttributes(
+  token: string,
+  categoryId = 'MLB1744',
+): Promise<string[]> {
+  try {
+    const res = await fetch(`https://api.mercadolibre.com/categories/${categoryId}/attributes`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+    if (!res.ok) return []
+    const attrs = await res.json()
+    return attrs
+      .filter((a: any) => a.tags?.required === true || a.required === true)
+      .map((a: any) => a.id)
+  } catch {
+    return []
+  }
+}
+
+export function buildMLItemPayload(v: any, listingType?: string, mandatoryAttrs?: string[]): any {
   let fotos: string[] = []
   if (Array.isArray(v.fotos)) {
     fotos = v.fotos.filter((url: any) => typeof url === 'string')
+  }
+
+  const resolvedListingType = resolveListingType(listingType || v.ml_listing_type)
+  const isZeroKm = v.is_zero_km === true
+  const condition = isZeroKm ? 'new' : 'used'
+
+  const attributes = [
+    { id: 'BRAND', value_name: v.marca || undefined },
+    { id: 'MODEL', value_name: v.modelo || undefined },
+    { id: 'VEHICLE_YEAR', value_name: v.ano_modelo ? String(v.ano_modelo) : undefined },
+    { id: 'KM', value_name: v.quilometragem ? String(v.quilometragem) : undefined },
+    { id: 'COLOR', value_name: v.cor || undefined },
+    { id: 'FUEL_TYPE', value_name: v.combustivel || undefined },
+    { id: 'TRANSMISSION', value_name: v.cambio || undefined },
+    { id: 'DOORS', value_name: v.portas ? String(v.portas) : undefined },
+    { id: 'STEERING', value_name: v.direcao || undefined },
+    { id: 'ENGINE_DISPLACEMENT', value_name: v.cilindrada || undefined },
+    { id: 'TRIM', value_name: v.versao || undefined },
+    { id: 'PLATE_FINAL_DIGIT', value_name: v.final_placa || undefined },
+    { id: 'ITEM_CONDITION', value_name: isZeroKm ? 'Nuevo' : 'Usado' },
+  ].filter((a: any) => a.value_name !== undefined)
+
+  if (mandatoryAttrs && mandatoryAttrs.length > 0) {
+    const presentIds = new Set(attributes.map((a) => a.id))
+    const missing = mandatoryAttrs.filter((id) => !presentIds.has(id))
+    if (missing.length > 0) {
+      throw new Error(`Missing mandatory attribute(s): ${missing.join(', ')}`)
+    }
   }
 
   return {
@@ -84,18 +213,10 @@ export function buildMLItemPayload(v: any): any {
     currency_id: 'BRL',
     available_quantity: 1,
     buying_mode: 'classified',
-    condition: 'used',
-    listing_type_id: 'gold_special',
+    condition,
+    listing_type_id: resolvedListingType,
     pictures: fotos.map((url: string) => ({ source: url })),
-    attributes: [
-      { id: 'BRAND', value_name: v.marca || undefined },
-      { id: 'MODEL', value_name: v.modelo || undefined },
-      { id: 'VEHICLE_YEAR', value_name: v.ano_modelo ? String(v.ano_modelo) : undefined },
-      { id: 'KM', value_name: v.quilometragem ? String(v.quilometragem) : undefined },
-      { id: 'COLOR', value_name: v.cor || undefined },
-      { id: 'FUEL_TYPE', value_name: v.combustivel || undefined },
-      { id: 'TRANSMISSION', value_name: v.cambio || undefined },
-    ].filter((a: any) => a.value_name !== undefined),
+    attributes,
     description: { plain_text: v.descricao || `${v.marca} ${v.modelo}` },
   }
 }

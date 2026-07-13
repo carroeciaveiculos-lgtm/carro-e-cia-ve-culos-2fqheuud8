@@ -167,6 +167,10 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
     preco_classificados: '',
     quilometragem: '',
     cambio: 'Manual',
+    direcao: '',
+    cilindrada: '',
+    portas: '',
+    ml_listing_type: 'gold_special',
     status: 'disponivel',
     tipo_entrada: 'consignacao',
     proprietario_nome: '',
@@ -317,6 +321,10 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
           info_personalizadas: {},
           em_preparacao: false,
           proprietario_estado_civil: '',
+          direcao: '',
+          cilindrada: '',
+          portas: '',
+          ml_listing_type: 'gold_special',
         })
       }
       loadMediaAssets()
@@ -404,6 +412,7 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
         ano_fabricacao: sanitizeNumber(formData.ano_fabricacao),
         ano_modelo: sanitizeNumber(formData.ano_modelo),
         quilometragem: sanitizeNumber(formData.quilometragem),
+        portas: sanitizeNumber(formData.portas),
         valor_fipe: sanitizeNumber(formData.valor_fipe),
         preco_venda: sanitizeNumber(formData.preco_venda),
         preco_minimo: sanitizeNumber(formData.preco_minimo),
@@ -711,6 +720,29 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
                 />
               </div>
 
+              <div className="p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+                <h3 className="font-bold text-yellow-900 mb-3">Mercado Livre — Tipo de Anúncio</h3>
+                <div className="flex items-center gap-4">
+                  <Select
+                    value={formData.ml_listing_type || 'gold_special'}
+                    onValueChange={(v) => setFormData({ ...formData, ml_listing_type: v })}
+                  >
+                    <SelectTrigger className="w-48">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="gold_pro">Diamante</SelectItem>
+                      <SelectItem value="gold_special">Ouro</SelectItem>
+                      <SelectItem value="silver">Prata</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <p className="text-xs text-yellow-700 mt-2">
+                  Regra de negócio: os primeiros 15 veículos podem ser anunciados como "Diamante".
+                  Após atingir o limite, novos anúncios devem usar "Prata".
+                </p>
+              </div>
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-white p-6 rounded-lg border">
                 <div className="space-y-4">
                   <h3 className="font-bold border-b pb-2">Dados Básicos</h3>
@@ -784,6 +816,40 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
                         value={formData.renavam || ''}
                         onChange={(e) => setFormData({ ...formData, renavam: e.target.value })}
                         className="font-mono"
+                      />
+                    </div>
+                    <div>
+                      <Label>Portas</Label>
+                      <Input
+                        type="number"
+                        value={formData.portas || ''}
+                        onChange={(e) => setFormData({ ...formData, portas: e.target.value })}
+                        placeholder="Ex: 4"
+                      />
+                    </div>
+                    <div>
+                      <Label>Direção</Label>
+                      <Select
+                        value={formData.direcao || ''}
+                        onValueChange={(v) => setFormData({ ...formData, direcao: v })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Manual">Manual</SelectItem>
+                          <SelectItem value="Hidráulica">Hidráulica</SelectItem>
+                          <SelectItem value="Elétrica">Elétrica</SelectItem>
+                          <SelectItem value="Assistida">Assistida</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label>Cilindrada</Label>
+                      <Input
+                        value={formData.cilindrada || ''}
+                        onChange={(e) => setFormData({ ...formData, cilindrada: e.target.value })}
+                        placeholder="Ex: 1.0, 2.0, 1598"
                       />
                     </div>
                   </div>
