@@ -48,7 +48,7 @@ export async function fetchPlataformas(): Promise<Plataforma[]> {
 
 export async function fetchDashboard(slug: string): Promise<PlataformaDashboard> {
   const { data, error } = await supabase.functions.invoke('admin-plataformas-api', {
-    method: 'GET',
+    method: 'POST',
     body: { path: `${slug}/dashboard` },
   })
   if (error) throw error
@@ -61,7 +61,7 @@ export async function fetchVeiculosSync(
   search = '',
 ): Promise<{ veiculos: VeiculoSync[]; total: number }> {
   const { data, error } = await supabase.functions.invoke('admin-plataformas-api', {
-    method: 'GET',
+    method: 'POST',
     body: { path: `${slug}/veiculos`, page, search },
   })
   if (error) throw error
