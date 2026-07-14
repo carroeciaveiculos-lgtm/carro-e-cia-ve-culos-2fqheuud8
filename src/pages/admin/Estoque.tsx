@@ -56,6 +56,7 @@ export default function AdminEstoque() {
   const [sortBy, setSortBy] = useState('recentes')
   const [diasFilter, setDiasFilter] = useState('todos')
   const [combustivelFilter, setCombustivelFilter] = useState('todos')
+  const [elegibilidadeFilter, setElegibilidadeFilter] = useState('todos')
   const [page, setPage] = useState(0)
   const [totalCount, setTotalCount] = useState(0)
   const [shareVehicle, setShareVehicle] = useState<any>(null)
@@ -83,6 +84,11 @@ export default function AdminEstoque() {
       if (combustivelFilter !== 'todos') {
         query = query.eq('combustivel', combustivelFilter)
       }
+      if (elegibilidadeFilter === 'elegivel') {
+        query = query.eq('elegivel_portais', true)
+      } else if (elegibilidadeFilter === 'inelegivel') {
+        query = query.eq('elegivel_portais', false)
+      }
       if (diasFilter !== 'todos' && activeTab === 'ativos') {
         const dateLimit = new Date()
         dateLimit.setDate(dateLimit.getDate() - parseInt(diasFilter))
@@ -92,6 +98,8 @@ export default function AdminEstoque() {
       if (sortBy === 'antigos') query = query.order('created_at', { ascending: true })
       if (sortBy === 'menor_preco') query = query.order('preco_venda', { ascending: true })
       if (sortBy === 'maior_preco') query = query.order('preco_venda', { ascending: false })
+      if (sortBy === 'marca_modelo')
+        query = query.order('marca', { ascending: true }).order('modelo', { ascending: true })
       query = query.range(page * pageSize, (page + 1) * pageSize - 1)
       const { data, count, error } = await query
       if (error) throw error
@@ -104,7 +112,7 @@ export default function AdminEstoque() {
 
   useEffect(() => {
     loadVehicles()
-  }, [activeTab, debouncedSearch, sortBy, diasFilter, combustivelFilter, page])
+  }, [activeTab, debouncedSearch, sortBy, diasFilter, combustivelFilter, elegibilidadeFilter, page])
 
   const handleDevolver = async (id: string) => {
     if (!confirm('Tem certeza que deseja devolver este veículo ao cliente?')) return
@@ -306,6 +314,17 @@ export default function AdminEstoque() {
               <SelectItem value="antigos">Mais Antigos</SelectItem>
               <SelectItem value="menor_preco">Menor Preço</SelectItem>
               <SelectItem value="maior_preco">Maior Preço</SelectItem>
+              <SelectItem value="marca_modelo">Marca + Modelo</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={elegibilidadeFilter} onValueChange={setElegibilidadeFilter}>
+            <SelectTrigger className="w-[160px]">
+              <SelectValue placeholder="Elegibilidade" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="todos">Todas</SelectItem>
+              <SelectItem value="elegivel">Elegíveis</SelectItem>
+              <SelectItem value="inelegivel">Inelegíveis</SelectItem>
             </SelectContent>
           </Select>
         </div>

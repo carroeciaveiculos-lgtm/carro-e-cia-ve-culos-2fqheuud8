@@ -1,5 +1,6 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from 'jsr:@supabase/supabase-js@2'
+import { GeminiClient } from '../_shared/gemini-client.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -65,23 +66,25 @@ Deno.serve(async (req) => {
     }
 
     if (action === 'chat') {
-      const apiKey = Deno.env.get('GEMINI_APY_KEY')
-      if (!apiKey) throw new Error('AI API key not configured')
       const sysPrompt = `You are an Ads management AI agent for Carro e Cia Veiculos, a dealership in Uberaba, MG. Focus: vehicle sales, consignment, financing, trade-in. Parse the user instruction and return JSON: {"action":"list_campaigns|get_metrics|update_budget|toggle_status","platform":"google|meta","campaign_id":"optional","new_budget":optional_number,"new_status":"optional ACTIVE|PAUSED","description":"Portuguese description"}`
-      const res = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: `${sysPrompt}\n\nUser: ${message}` }] }],
-            generationConfig: { responseMimeType: 'application/json', temperature: 0.3 },
-          }),
+      const gemini = new GeminiClient()
+      const geminiResult = await gemini.generate(`${sysPrompt}\n\nUser: ${message}`, {
+        thinkingLevel: 'minimal',
+        temperature: 0.3,
+        jsonSchema: {
+          type: 'OBJECT',
+          properties: {
+            action: { type: 'STRING' },
+            platform: { type: 'STRING' },
+            campaign_id: { type: 'STRING' },
+            new_budget: { type: 'NUMBER' },
+            new_status: { type: 'STRING' },
+            description: { type: 'STRING' },
+          },
         },
-      )
-      const data = await res.json()
+      })
       result = {
-        proposed_action: JSON.parse(data.candidates?.[0]?.content?.parts?.[0]?.text || '{}'),
+        proposed_action: geminiResult.json || JSON.parse(geminiResult.text || '{}'),
       }
     } else if (action === 'list_campaigns') {
       const data = await metaGet(`act_${META_AD_ACCOUNT_ID}/campaigns`, {

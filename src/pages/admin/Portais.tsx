@@ -15,6 +15,15 @@ import {
 import { fetchPublicacoes, bulkPublish, bulkUnpublish, bulkDelete } from '@/services/portais-sync'
 import { VehicleAccordion } from '@/components/admin/portais/VehicleAccordion'
 import { GlobalActionsBar } from '@/components/admin/portais/GlobalActionsBar'
+import { ErrorHistoryPanel } from '@/components/admin/portais/ErrorHistoryPanel'
+import { ConversionMonitor } from '@/components/admin/portais/ConversionMonitor'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { useToast } from '@/hooks/use-toast'
 
 export default function Portais() {
@@ -30,6 +39,7 @@ export default function Portais() {
   const [syncingSlug, setSyncingSlug] = useState<string | null>(null)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [toggling, setToggling] = useState<Record<string, boolean>>({})
+  const [sortBy, setSortBy] = useState('marca_modelo')
 
   useEffect(() => {
     fetchPlataformas()
@@ -40,7 +50,12 @@ export default function Portais() {
   const loadVeiculos = useCallback(async () => {
     setLoading(true)
     try {
-      const { vehicles: data, total: count } = await fetchVeiculosForPortais(search, page, pageSize)
+      const { vehicles: data, total: count } = await fetchVeiculosForPortais(
+        search,
+        page,
+        pageSize,
+        sortBy,
+      )
       const ids = data.map((v) => v.id)
       const pubMap = ids.length > 0 ? await fetchPublicacoes(ids) : {}
       setVehicles(data.map((v) => ({ ...v, publicacoes: pubMap[v.id] || [] })))
@@ -50,7 +65,7 @@ export default function Portais() {
     } finally {
       setLoading(false)
     }
-  }, [search, page, pageSize])
+  }, [search, page, pageSize, sortBy])
 
   useEffect(() => {
     const timer = setTimeout(loadVeiculos, 300)
@@ -194,17 +209,34 @@ export default function Portais() {
         syncingSlug={syncingSlug}
       />
 
-      <div className="relative max-w-md">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-        <Input
-          placeholder="Buscar veículo..."
-          value={search}
-          onChange={(e) => {
-            setSearch(e.target.value)
+      <div className="flex gap-2 items-center">
+        <div className="relative max-w-md flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <Input
+            placeholder="Buscar veículo..."
+            value={search}
+            onChange={(e) => {
+              setSearch(e.target.value)
+              setPage(1)
+            }}
+            className="pl-9"
+          />
+        </div>
+        <Select
+          value={sortBy}
+          onValueChange={(v) => {
+            setSortBy(v)
             setPage(1)
           }}
-          className="pl-9"
-        />
+        >
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="Ordenar por" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="marca_modelo">Marca + Modelo</SelectItem>
+            <SelectItem value="recentes">Mais Recentes</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       {loading ? (
@@ -257,6 +289,17 @@ export default function Portais() {
           </div>
         </div>
       )}
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-8">
+        <div className="bg-white rounded-lg border p-4">
+          <h2 className="text-sm font-bold text-gray-800 mb-3">Histórico de Erros</h2>
+          <ErrorHistoryPanel />
+        </div>
+        <div className="bg-white rounded-lg border p-4">
+          <h2 className="text-sm font-bold text-gray-800 mb-3">Monitoramento de Conversão</h2>
+          <ConversionMonitor />
+        </div>
+      </div>
     </div>
   )
 }

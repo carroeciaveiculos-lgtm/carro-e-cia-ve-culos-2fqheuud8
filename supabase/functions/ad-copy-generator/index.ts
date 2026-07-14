@@ -1,4 +1,5 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
+import { GeminiClient } from '../_shared/gemini-client.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -12,8 +13,7 @@ Deno.serve(async (req) => {
 
   try {
     const { product, audience, tone } = await req.json()
-    const apiKey = Deno.env.get('GEMINI_APY_KEY')
-    if (!apiKey) throw new Error('AI API key not configured')
+    const gemini = new GeminiClient()
 
     const prompt = `You are an expert automotive marketing copywriter for "Carro e Cia Veículos", a used car dealership in Uberaba, MG, Brazil.
 Generate exactly 3 variations of headlines and descriptions for "${product}" targeting "${audience}".
@@ -41,20 +41,28 @@ Return JSON:
   ]
 }`
 
-    const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { responseMimeType: 'application/json', temperature: 0.7 },
-        }),
+    const result = await gemini.generate(prompt, {
+      thinkingLevel: 'medium',
+      temperature: 0.7,
+      jsonSchema: {
+        type: 'OBJECT',
+        properties: {
+          variations: {
+            type: 'ARRAY',
+            items: {
+              type: 'OBJECT',
+              properties: {
+                headline: { type: 'STRING' },
+                description: { type: 'STRING' },
+                cta: { type: 'STRING' },
+                compliance_notes: { type: 'STRING' },
+              },
+            },
+          },
+        },
       },
-    )
-    const data = await res.json()
-    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '{}'
-    const parsed = JSON.parse(text)
+    })
+    const parsed = result.json || JSON.parse(result.text || '{}')
 
     return new Response(JSON.stringify({ success: true, data: parsed }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

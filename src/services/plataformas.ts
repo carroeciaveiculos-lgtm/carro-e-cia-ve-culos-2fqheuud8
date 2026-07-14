@@ -81,12 +81,19 @@ export async function fetchVeiculosForPortais(
   search = '',
   page = 1,
   pageSize = 20,
+  sortBy = 'marca_modelo',
 ): Promise<{ vehicles: VeiculoSync[]; total: number }> {
   let query = supabase
     .from('veiculos')
     .select(VEHICLE_SELECT, { count: 'exact' })
     .eq('status', 'disponivel')
-    .order('modelo', { ascending: true })
+  if (sortBy === 'marca_modelo') {
+    query = query.order('marca', { ascending: true }).order('modelo', { ascending: true })
+  } else if (sortBy === 'recentes') {
+    query = query.order('created_at', { ascending: false })
+  } else {
+    query = query.order('modelo', { ascending: true })
+  }
   if (search) {
     query = query.or(`marca.ilike.%${search}%,modelo.ilike.%${search}%,placa.ilike.%${search}%`)
   }

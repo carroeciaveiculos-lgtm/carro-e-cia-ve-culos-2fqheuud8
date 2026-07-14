@@ -1,13 +1,14 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from 'jsr:@supabase/supabase-js@2'
 import { corsHeaders } from '../_shared/cors.ts'
+import { GeminiClient, CRM_FUNCTIONS } from '../_shared/gemini-client.ts'
 
 const supabase = createClient(
   Deno.env.get('SUPABASE_URL')!,
   Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
 )
 
-const geminiKey = Deno.env.get('GEMINI_API_KEY') || Deno.env.get('GEMINI_APY_KEY')!
+const gemini = new GeminiClient()
 const waToken = Deno.env.get('WHATSAPP_TOKEN') || Deno.env.get('META_WHATSAPP_ACCESS_TOKEN')!
 const waPhoneId =
   Deno.env.get('WHATSAPP_PHONE_NUMBER_ID') || Deno.env.get('META_PHONE_NUMBER_ID') || 'default_id'
@@ -46,17 +47,16 @@ Use consultar_estoque sempre que precisar verificar veículos disponíveis.`
 
 async function runGemini(history: any[]) {
   const systemPrompt = await getSystemPrompt()
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${geminiKey}`
-  const reqBody = {
-    systemInstruction: { parts: [{ text: systemPrompt }] },
-    contents: history,
-  }
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(reqBody),
+  const lastMessage = history[history.length - 1]?.parts?.[0]?.text ?? ''
+  const result = await gemini.generate(lastMessage, {
+    systemPrompt,
+    thinkingLevel: 'medium',
+    functions: CRM_FUNCTIONS,
   })
-  return res.json()
+  return {
+    candidates: [{ content: { parts: [{ text: result.text }] } }],
+    functionCalls: result.functionCalls,
+  }
 }
 
 async function sendWhatsApp(to: string, text: string) {

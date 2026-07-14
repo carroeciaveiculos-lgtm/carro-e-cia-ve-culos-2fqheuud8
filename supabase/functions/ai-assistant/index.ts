@@ -1,5 +1,6 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from 'jsr:@supabase/supabase-js@2'
+import { GeminiClient } from '../_shared/gemini-client.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -15,11 +16,7 @@ Deno.serve(async (req) => {
 
   try {
     const { prompt, context, lead_id } = await req.json()
-    const apiKey = Deno.env.get('GEMINI_APY_KEY') || Deno.env.get('GEMINI_API_KEY')
-
-    if (!apiKey) {
-      throw new Error('API Key missing. Configured as GEMINI_APY_KEY in secrets.')
-    }
+    const gemini = new GeminiClient()
 
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL')!,
@@ -81,19 +78,8 @@ Sua resposta deve ajudar a manter o CRM atualizado com essas entidades.
 
 Responda de forma humanizada, empática e demonstre como você aplicaria o conhecimento. Responda apenas com o texto final gerado, sem formatação markdown de bloco (\`\`\`) e sem aspas extras.`
 
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${apiKey}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: sysPrompt }] }],
-        }),
-      },
-    )
-
-    const data = await response.json()
-    const result = data.candidates?.[0]?.content?.parts?.[0]?.text || ''
+    const geminiResult = await gemini.generate(sysPrompt, { thinkingLevel: 'high' })
+    const result = geminiResult.text || ''
 
     return new Response(JSON.stringify({ result: result.trim() }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
