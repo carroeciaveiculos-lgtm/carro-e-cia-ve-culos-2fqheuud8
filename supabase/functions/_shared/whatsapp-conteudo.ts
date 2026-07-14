@@ -1,5 +1,4 @@
 import { createClient } from 'jsr:@supabase/supabase-js@2'
-import { GeminiClient } from './gemini-client.ts'
 
 type SupabaseClient = ReturnType<typeof createClient>
 
@@ -20,15 +19,36 @@ export async function handleSugerir(ctx: CommandContext): Promise<string> {
     .limit(10)
 
   const existingTopics = existing?.map((a: any) => a.tema).join(', ') || 'nenhum'
+  const apiKey = Deno.env.get('GEMINI_APY_KEY')
+
   let suggestions = ''
-  try {
-    const gemini = new GeminiClient()
-    const result = await gemini.generate(
-      `Sugira 3 temas de artigos para blog de veículos seminovos em Uberaba MG. Foque em SEO local e tendências automotivas 2026. Retorne apenas os 3 temas, um por linha, sem numeração. Temas já existentes: ${existingTopics}`,
-      { thinkingLevel: 'medium' },
-    )
-    suggestions = result.text || ''
-  } catch {
+  if (apiKey) {
+    try {
+      const res = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [
+              {
+                parts: [
+                  {
+                    text: `Sugira 3 temas de artigos para blog de veículos seminovos em Uberaba MG. Foque em SEO local e tendências automotivas 2026. Retorne apenas os 3 temas, um por linha, sem numeração. Temas já existentes: ${existingTopics}`,
+                  },
+                ],
+              },
+            ],
+          }),
+        },
+      )
+      const data = await res.json()
+      suggestions = data.candidates?.[0]?.content?.parts?.[0]?.text || ''
+    } catch {
+      suggestions =
+        'Financiamento de carros usados em Uberaba 2026\nMelhores SUVs seminovos para comprar\nComo avaliar seu carro para troca'
+    }
+  } else {
     suggestions =
       'Financiamento de carros usados em Uberaba 2026\nMelhores SUVs seminovos para comprar\nComo avaliar seu carro para troca'
   }
@@ -134,7 +154,6 @@ export async function handleCorrigir(instrucoes: string, ctx: CommandContext): P
         palavraChave: post.keyword || '',
         is_seo_copilot: true,
         title: post.title,
-        instrucoes_correcao: instrucoes,
       }),
     })
   } catch {
