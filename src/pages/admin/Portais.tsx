@@ -86,7 +86,7 @@ export default function Portais() {
   const handleToggle = async (slug: string, veiculoId: string, publicar: boolean) => {
     const key = `${veiculoId}-${slug}`
     setToggling(p => ({ ...p, [key]: true }))
-    setVehicles(prev => prev.map(v => v.id !== veiculoId ? v : { ...v, [`publicado_${slug}`]: publicar })))
+    setVehicles(prev => prev.map(v => v.id !== veiculoId ? v : { ...v, [`publicado_${slug}`]: publicar }))
     try { await toggleVehiclePublication(slug, veiculoId, publicar) }
     catch (err: any) {
       setVehicles(prev => prev.map(v => v.id !== veiculoId ? v : { ...v, [`publicado_${slug}`]: !publicar })))
