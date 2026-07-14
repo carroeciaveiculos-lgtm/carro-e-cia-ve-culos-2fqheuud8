@@ -2,7 +2,7 @@
   "_versions": {
     "send-lead-email": 80,
     "receive-leads": 106,
-    "sync-estoque": 82,
+    "sync-estoque": 83,
     "webhook-portais": 82,
     "on-lead-created": 80,
     "consultar-placa": 89,
@@ -30,7 +30,7 @@
     "whatsapp-webhook": 16,
     "ml-auth": 16,
     "daily-report-cron": 13,
-    "ml-sync": 18,
+    "ml-sync": 19,
     "ml-webhook": 15,
     "og-vehicle": 20,
     "meta-capi-postback": 2,
