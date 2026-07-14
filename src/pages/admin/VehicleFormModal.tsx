@@ -21,7 +21,7 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { CurrencyInput } from '@/components/ui/currency-input'
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart'
 import { Line, LineChart, CartesianGrid, XAxis, YAxis } from 'recharts'
-import { cn } from '@/lib/utils'
+import { cn, sanitizePhone, extractFinalPlaca } from '@/lib/utils'
 import { ImageEditorModal } from '@/components/admin/ImageEditorModal'
 import { DocumentPreviewDialog } from '@/components/admin/DocumentPreviewDialog'
 import { getFipeHistoryFromDB } from '@/services/fipe'
@@ -210,6 +210,7 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
     versao: '',
     descricao: '',
     em_preparacao: false,
+    notas_internas: '',
   })
 
   const handleDocumentoSearch = async (doc: string) => {
@@ -346,6 +347,9 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
           cilindrada: '',
           portas: '',
           ml_listing_type: 'gold_special',
+          versao: '',
+          cambio: 'Manual',
+          notas_internas: '',
         })
       }
       loadMediaAssets()
@@ -457,6 +461,12 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
         valor_fipe: sanitizeNumber(formData.valor_fipe),
         preco_venda: sanitizeNumber(formData.preco_venda),
         preco_minimo: sanitizeNumber(formData.preco_minimo),
+        proprietario_telefone: sanitizePhone(formData.proprietario_telefone),
+        proprietario_telefone_residencial: sanitizePhone(
+          formData.proprietario_telefone_residencial,
+        ),
+        proprietario_telefone_trabalho: sanitizePhone(formData.proprietario_telefone_trabalho),
+        final_placa: extractFinalPlaca(formData.placa),
         is_consignado: formData.tipo_entrada === 'consignacao',
         status,
         updated_at: new Date().toISOString(),
@@ -644,7 +654,7 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
     try {
       const { data, error } = await supabase.functions.invoke('gerar-conteudo', {
         body: {
-          tema: `${formData.marca} ${formData.modelo} ${formData.ano_fabricacao || ''} ${formData.versao || ''}`,
+          tema: `Veículo para anúncio: ${formData.marca} ${formData.modelo} ${formData.versao || ''} - Ano ${formData.ano_modelo || formData.ano_fabricacao || ''}. Combustível: ${formData.combustivel}. Cor: ${formData.cor}. Quilometragem: ${formData.quilometragem} km. Categoria: ${formData.categoria}. Câmbio: ${formData.cambio}. Notas do vendedor: ${formData.notas_internas || 'Nenhuma nota adicional'}.`,
           palavraChave: `${formData.marca} ${formData.modelo} seminovo uberaba`,
           tom: 'Conversacional',
         },
@@ -805,10 +815,23 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
                     </div>
                     <div>
                       <Label>Combustível</Label>
-                      <Input
+                      <Select
                         value={formData.combustivel || ''}
-                        onChange={(e) => setFormData({ ...formData, combustivel: e.target.value })}
-                      />
+                        onValueChange={(v) => setFormData({ ...formData, combustivel: v })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Gasolina">Gasolina</SelectItem>
+                          <SelectItem value="Álcool">Álcool</SelectItem>
+                          <SelectItem value="Flex">Flex</SelectItem>
+                          <SelectItem value="Diesel">Diesel</SelectItem>
+                          <SelectItem value="GNV">GNV</SelectItem>
+                          <SelectItem value="Híbrido">Híbrido</SelectItem>
+                          <SelectItem value="Elétrico">Elétrico</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
                     <div>
                       <Label>Km</Label>
@@ -870,6 +893,51 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
                         placeholder="Ex: 1.0, 2.0, 1598"
                       />
                     </div>
+                    <div>
+                      <Label>Versão</Label>
+                      <Input
+                        value={formData.versao || ''}
+                        onChange={(e) => setFormData({ ...formData, versao: e.target.value })}
+                        placeholder="Ex: 1.0 Flex, LTZ, GT-Line"
+                      />
+                    </div>
+                    <div>
+                      <Label>Categoria *</Label>
+                      <Select
+                        value={formData.categoria || 'Carro'}
+                        onValueChange={(v) => setFormData({ ...formData, categoria: v })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Hatch">Hatch</SelectItem>
+                          <SelectItem value="Sedan">Sedan</SelectItem>
+                          <SelectItem value="SUV">SUV</SelectItem>
+                          <SelectItem value="Picape">Picape</SelectItem>
+                          <SelectItem value="Esportivo">Esportivo</SelectItem>
+                          <SelectItem value="Van">Van</SelectItem>
+                          <SelectItem value="Moto">Moto</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label>Câmbio</Label>
+                      <Select
+                        value={formData.cambio || 'Manual'}
+                        onValueChange={(v) => setFormData({ ...formData, cambio: v })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Manual">Manual</SelectItem>
+                          <SelectItem value="Automático">Automático</SelectItem>
+                          <SelectItem value="Semi-automático">Semi-automático</SelectItem>
+                          <SelectItem value="CVT">CVT</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
                 </div>
 
@@ -895,6 +963,15 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
                     <CurrencyInput
                       value={formData.preco_minimo || ''}
                       onChange={(v) => setFormData({ ...formData, preco_minimo: v })}
+                    />
+                  </div>
+                  <div>
+                    <Label>Notas / Destaques (para IA)</Label>
+                    <Textarea
+                      value={formData.notas_internas || ''}
+                      onChange={(e) => setFormData({ ...formData, notas_internas: e.target.value })}
+                      className="h-20"
+                      placeholder="Ex: pneus novos, único dono, IPVA pago, revisões em concessionária..."
                     />
                   </div>
                   <div>
