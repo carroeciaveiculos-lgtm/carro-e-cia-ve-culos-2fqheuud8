@@ -18,6 +18,17 @@ export interface PlataformaDashboard {
   status_conexao: string
 }
 
+export interface PublicacaoStatus {
+  id: string
+  veiculo_id: string
+  platform: string
+  status: string | null
+  erro_msg: string | null
+  publicado_em: string | null
+  updated_at: string | null
+  url_publicacao: string | null
+}
+
 export interface VeiculoSync {
   id: string
   marca: string
@@ -44,7 +55,17 @@ export interface VeiculoSync {
   cilindrada: string | null
   direcao: string | null
   descricao: string | null
+  created_at: string | null
+  publicacoes?: PublicacaoStatus[]
 }
+
+const VEHICLE_SELECT = `
+  id, marca, modelo, versao, ano_modelo, ano_fabricacao, quilometragem,
+  placa, preco_venda, fotos, status, cor, combustivel, cambio, cilindrada,
+  direcao, descricao, ml_listing_type, created_at, elegivel_portais, ad_types,
+  publicado_mercadolivre, publicado_webmotors, publicado_olx,
+  publicado_icarros, publicado_napista
+`
 
 export async function fetchPlataformas(): Promise<Plataforma[]> {
   const { data, error } = await supabase
@@ -56,45 +77,29 @@ export async function fetchPlataformas(): Promise<Plataforma[]> {
   return data || []
 }
 
-export async function fetchVeiculosForPortais(search = ''): Promise<VeiculoSync[]> {
+export async function fetchVeiculosForPortais(
+  search = '',
+  page = 1,
+  pageSize = 20,
+): Promise<{ vehicles: VeiculoSync[]; total: number }> {
   let query = supabase
     .from('veiculos')
-    .select(`
-      id, marca, modelo, versao, ano_modelo, ano_fabricacao, quilometragem,
-      placa, preco_venda, fotos, status, cor, combustivel, cambio, cilindrada,
-      direcao, descricao, ml_listing_type,
-      publicado_mercadolivre, publicado_webmotors, publicado_olx,
-      publicado_icarros, publicado_napista
-    `)
+    .select(VEHICLE_SELECT, { count: 'exact' })
     .eq('status', 'disponivel')
     .order('modelo', { ascending: true })
-
   if (search) {
     query = query.or(`marca.ilike.%${search}%,modelo.ilike.%${search}%,placa.ilike.%${search}%`)
   }
-
-  const { data, error } = await query.limit(100)
+  query = query.range((page - 1) * pageSize, page * pageSize - 1)
+  const { data, count, error } = await query
   if (error) throw error
-  return (data || []) as unknown as VeiculoSync[]
+  return { vehicles: (data || []) as unknown as VeiculoSync[], total: count || 0 }
 }
 
 export async function fetchDashboard(slug: string): Promise<PlataformaDashboard> {
   const { data, error } = await supabase.functions.invoke('admin-plataformas-api', {
     method: 'POST',
     body: { path: `${slug}/dashboard` },
-  })
-  if (error) throw error
-  return data
-}
-
-export async function fetchVeiculosSync(
-  slug: string,
-  page = 1,
-  search = '',
-): Promise<{ veiculos: VeiculoSync[]; total: number }> {
-  const { data, error } = await supabase.functions.invoke('admin-plataformas-api', {
-    method: 'POST',
-    body: { path: `${slug}/veiculos`, page, search },
   })
   if (error) throw error
   return data
@@ -109,10 +114,7 @@ export async function forceSync(slug: string): Promise<void> {
 }
 
 export async function triggerSyncEstoque(): Promise<void> {
-  const { error } = await supabase.functions.invoke('sync-estoque', {
-    method: 'POST',
-    body: {},
-  })
+  const { error } = await supabase.functions.invoke('sync-estoque', { method: 'POST', body: {} })
   if (error) throw error
 }
 
@@ -125,14 +127,6 @@ export async function toggleVehiclePublication(
     method: 'POST',
     body: { path: `${slug}/veiculos/publicar`, veiculo_id: veiculoId, publicar },
   })
-  if (error) throw error
-}
-
-export async function updateListingType(veiculoId: string, listingType: string): Promise<void> {
-  const { error } = await supabase
-    .from('veiculos')
-    .update({ ml_listing_type: listingType })
-    .eq('id', veiculoId)
   if (error) throw error
 }
 
@@ -155,10 +149,9 @@ export async function updateAdType(
       .single()
     if (fetchError) throw fetchError
     const current = (vehicle?.ad_types as Record<string, string>) || {}
-    const updated = { ...current, [platform]: adType }
     const { error } = await supabase
       .from('veiculos')
-      .update({ ad_types: updated })
+      .update({ ad_types: { ...current, [platform]: adType } })
       .eq('id', veiculoId)
     if (error) throw error
   }

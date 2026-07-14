@@ -88,23 +88,23 @@ const OPCIONAIS_LIST = [
 ]
 
 const PHOTO_ROTEIRO = [
-  'Capa',
-  'Frente Ângulo',
-  'Traseira Ângulo',
-  'Lateral Esq',
-  'Lateral Dir',
-  'Frente Reta',
-  'Traseira Reta',
-  'Painel/Volante',
-  'Bancos Dianteiros',
-  'Bancos Traseiros',
-  'KM Painel',
-  'Multimídia',
-  'Rodas/Pneus',
+  'Capa principal (Frente/Esq.)',
+  'Frente ângulo',
+  'Traseira ângulo',
+  'Lateral esquerda',
+  'Lateral direita',
+  'Frente reta',
+  'Traseira reta',
+  'Painel e volante',
+  'Bancos dianteiros',
+  'Bancos traseiros',
+  'Quilometragem no painel',
+  'Central multimídia',
+  'Rodas e pneus',
   'Porta-malas',
   'Motor',
   'Step',
-  'Manual/Chave',
+  'Manual e chave reserva',
   'Teto',
 ]
 
@@ -429,7 +429,7 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
     if (!formData.combustivel) missing.push('Combustível')
     if (!formData.quilometragem) missing.push('KM')
     if (!formData.preco_venda) missing.push('Preço')
-    if (!formData.fotos || formData.fotos.length === 0) missing.push('Fotos')
+    if (!formData.fotos || formData.fotos.length === 0) missing.push('Fotos (mínimo 1)')
     if (missing.length > 0) {
       toast({
         title: '⚠️ Campos importantes ausentes',
@@ -1641,7 +1641,13 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
             <Button
               variant="outline"
               onClick={() => {
-                validatePortalFields()
+                const photoCount = formData.fotos?.length || 0
+                if (photoCount < 18) {
+                  toast({
+                    title: '⚠️ Roteiro de fotos incompleto',
+                    description: `${photoCount}/18 fotos cadastradas. Recomendamos 18 fotos para melhor performance nos portais.`,
+                  })
+                }
                 save('rascunho', true)
               }}
               disabled={loading}
@@ -1650,7 +1656,15 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
             </Button>
             <Button
               onClick={() => {
-                validatePortalFields()
+                const photoCount = formData.fotos?.length || 0
+                if (photoCount < 18) {
+                  toast({
+                    title: '⚠️ Roteiro de fotos incompleto',
+                    description: `${photoCount}/18 fotos. Complete o roteiro de 18 fotos para publicar.`,
+                    variant: 'destructive',
+                  })
+                }
+                if (!validatePortalFields()) return
                 save('disponivel', true)
               }}
               disabled={loading}

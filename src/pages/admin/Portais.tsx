@@ -1,14 +1,7 @@
-import { useState, useEffect, useCallback, useMemo } from 'react'
-import { Button } from '@/components/ui/button'
+import { useState, useEffect, useCallback } from 'react'
 import { Input } from '@/components/ui/input'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import { Loader2, Search, Zap } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Loader2, Search } from 'lucide-react'
 import {
   fetchPlataformas,
   fetchVeiculosForPortais,
@@ -16,13 +9,12 @@ import {
   triggerSyncEstoque,
   toggleVehiclePublication,
   updateAdType,
-  toggleElegivelPortais,
   type Plataforma,
   type VeiculoSync,
 } from '@/services/plataformas'
-import { VehicleSyncRow } from '@/components/admin/portais/VehicleSyncRow'
-import { PlatformDrawer } from '@/components/admin/portais/PlatformDrawer'
-import { calculateAdQualityScore } from '@/lib/ad-quality-score'
+import { fetchPublicacoes, bulkPublish, bulkUnpublish, bulkDelete } from '@/services/portais-sync'
+import { VehicleAccordion } from '@/components/admin/portais/VehicleAccordion'
+import { GlobalActionsBar } from '@/components/admin/portais/GlobalActionsBar'
 import { useToast } from '@/hooks/use-toast'
 
 export default function Portais() {
@@ -30,225 +22,166 @@ export default function Portais() {
   const [plataformas, setPlataformas] = useState<Plataforma[]>([])
   const [vehicles, setVehicles] = useState<VeiculoSync[]>([])
   const [search, setSearch] = useState('')
-  const [statusFilter, setStatusFilter] = useState('todos')
-  const [qualityFilter, setQualityFilter] = useState('todos')
-  const [sortBy, setSortBy] = useState('alpha')
+  const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(20)
+  const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(true)
   const [syncing, setSyncing] = useState(false)
-  const [selectedVehicle, setSelectedVehicle] = useState<VeiculoSync | null>(null)
+  const [syncingSlug, setSyncingSlug] = useState<string | null>(null)
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [toggling, setToggling] = useState<Record<string, boolean>>({})
 
   useEffect(() => {
-    fetchPlataformas()
-      .then(setPlataformas)
+    fetchPlataformas().then(setPlataformas)
       .catch(() => toast({ title: 'Erro ao carregar plataformas', variant: 'destructive' }))
   }, [toast])
 
   const loadVeiculos = useCallback(async () => {
     setLoading(true)
     try {
-      const data = await fetchVeiculosForPortais(search)
-      setVehicles(data || [])
+      const { vehicles: data, total: count } = await fetchVeiculosForPortais(search, page, pageSize)
+      const ids = data.map(v => v.id)
+      const pubMap = ids.length > 0 ? await fetchPublicacoes(ids) : {}
+      setVehicles(data.map(v => ({ ...v, publicacoes: pubMap[v.id] || [] })))
+      setTotal(count)
     } catch {
       setVehicles([])
     } finally {
       setLoading(false)
     }
-  }, [search])
+  }, [search, page, pageSize])
 
   useEffect(() => {
     const timer = setTimeout(loadVeiculos, 300)
     return () => clearTimeout(timer)
   }, [loadVeiculos])
 
-  const filteredVehicles = useMemo(() => {
-    let result = [...vehicles]
-    if (statusFilter === 'publicados') {
-      result = result.filter(
-        (v) =>
-          v.publicado_mercadolivre ||
-          v.publicado_webmotors ||
-          v.publicado_olx ||
-          v.publicado_icarros ||
-          v.publicado_napista,
-      )
-    } else if (statusFilter === 'nao_publicados') {
-      result = result.filter(
-        (v) =>
-          !v.publicado_mercadolivre &&
-          !v.publicado_webmotors &&
-          !v.publicado_olx &&
-          !v.publicado_icarros &&
-          !v.publicado_napista,
-      )
-    }
-    if (qualityFilter === 'alto')
-      result = result.filter((v) => calculateAdQualityScore(v).score >= 80)
-    else if (qualityFilter === 'medio')
-      result = result.filter((v) => {
-        const s = calculateAdQualityScore(v).score
-        return s >= 41 && s < 80
-      })
-    else if (qualityFilter === 'baixo')
-      result = result.filter((v) => calculateAdQualityScore(v).score < 41)
-    if (sortBy === 'alpha')
-      result.sort((a, b) => `${a.marca} ${a.modelo}`.localeCompare(`${b.marca} ${b.modelo}`))
-    else if (sortBy === 'preco') result.sort((a, b) => (b.preco_venda || 0) - (a.preco_venda || 0))
-    return result
-  }, [vehicles, statusFilter, qualityFilter, sortBy])
+  const allSelected = vehicles.length > 0 && vehicles.every(v => selectedIds.has(v.id))
+  const handleSelectAll = (checked: boolean) =>
+    setSelectedIds(checked ? new Set(vehicles.map(v => v.id)) : new Set())
+  const handleSelect = (id: string, checked: boolean) => {
+    const next = new Set(selectedIds)
+    if (checked) next.add(id); else next.delete(id)
+    setSelectedIds(next)
+  }
 
   const handleSyncAll = async () => {
     setSyncing(true)
     try {
-      await Promise.all(plataformas.map((p) => forceSync(p.slug).catch(() => {})))
+      await Promise.all(plataformas.map(p => forceSync(p.slug).catch(() => {})))
       await triggerSyncEstoque()
       toast({ title: 'Sincronização global iniciada!' })
       loadVeiculos()
-    } catch {
-      toast({ title: 'Erro ao sincronizar', variant: 'destructive' })
-    } finally {
-      setSyncing(false)
-    }
+    } catch { toast({ title: 'Erro ao sincronizar', variant: 'destructive' }) }
+    finally { setSyncing(false) }
+  }
+
+  const handleQuickSync = async (slug: string) => {
+    setSyncingSlug(slug); setSyncing(true)
+    try { await forceSync(slug); toast({ title: `Sync de ${slug} iniciado!` }); loadVeiculos() }
+    catch { toast({ title: 'Erro ao sincronizar', variant: 'destructive' }) }
+    finally { setSyncing(false); setSyncingSlug(null) }
   }
 
   const handleToggle = async (slug: string, veiculoId: string, publicar: boolean) => {
     const key = `${veiculoId}-${slug}`
-    setToggling((prev) => ({ ...prev, [key]: true }))
-    setVehicles((prev) =>
-      prev.map((v) => (v.id !== veiculoId ? v : { ...v, [`publicado_${slug}`]: publicar })),
-    )
-    if (selectedVehicle?.id === veiculoId) {
-      setSelectedVehicle((prev) => (prev ? { ...prev, [`publicado_${slug}`]: publicar } : null))
-    }
-    try {
-      await toggleVehiclePublication(slug, veiculoId, publicar)
-      toast({ title: publicar ? 'Veículo enviado para publicação' : 'Anúncio encerrado' })
-    } catch (err: any) {
-      setVehicles((prev) =>
-        prev.map((v) => (v.id !== veiculoId ? v : { ...v, [`publicado_${slug}`]: !publicar })),
-      )
+    setToggling(p => ({ ...p, [key]: true }))
+    setVehicles(prev => prev.map(v => v.id !== veiculoId ? v : { ...v, [`publicado_${slug}`]: publicar })))
+    try { await toggleVehiclePublication(slug, veiculoId, publicar) }
+    catch (err: any) {
+      setVehicles(prev => prev.map(v => v.id !== veiculoId ? v : { ...v, [`publicado_${slug}`]: !publicar })))
       toast({ title: 'Erro na operação', description: err.message, variant: 'destructive' })
-    } finally {
-      setToggling((prev) => ({ ...prev, [key]: false }))
-    }
+    } finally { setToggling(p => ({ ...p, [key]: false })) }
   }
 
   const handleUpdateAdType = async (veiculoId: string, platform: string, adType: string) => {
-    try {
-      await updateAdType(veiculoId, platform, adType)
-      toast({ title: 'Tipo de anúncio atualizado!' })
-    } catch (err: any) {
-      toast({ title: 'Erro ao atualizar', description: err.message, variant: 'destructive' })
-    }
+    try { await updateAdType(veiculoId, platform, adType); toast({ title: 'Tipo de anúncio atualizado!' }) }
+    catch (err: any) { toast({ title: 'Erro ao atualizar', description: err.message, variant: 'destructive' }) }
   }
 
-  const handleToggleElegivel = async (veiculoId: string, elegivel: boolean) => {
-    setVehicles((prev) =>
-      prev.map((v) => (v.id !== veiculoId ? v : { ...v, elegivel_portais: elegivel })),
-    )
+  const handleBulkPublish = async () => {
+    setSyncing(true)
     try {
-      await toggleElegivelPortais(veiculoId, elegivel)
-    } catch {
-      setVehicles((prev) =>
-        prev.map((v) => (v.id !== veiculoId ? v : { ...v, elegivel_portais: !elegivel })),
-      )
-    }
+      const slugs = plataformas.map(p => p.slug)
+      const { success, failed } = await bulkPublish([...selectedIds], slugs)
+      toast({ title: `${success} publicações enviadas${failed ? `, ${failed} falharam` : ''}` })
+      setSelectedIds(new Set()); loadVeiculos()
+    } catch { toast({ title: 'Erro na publicação', variant: 'destructive' }) }
+    finally { setSyncing(false) }
   }
+
+  const handleBulkUnpublish = async () => {
+    setSyncing(true)
+    try {
+      const slugs = plataformas.map(p => p.slug)
+      const { success } = await bulkUnpublish([...selectedIds], slugs)
+      toast({ title: `${success} anúncios desativados` })
+      setSelectedIds(new Set()); loadVeiculos()
+    } catch { toast({ title: 'Erro ao desativar', variant: 'destructive' }) }
+    finally { setSyncing(false) }
+  }
+
+  const handleBulkDelete = async () => {
+    if (!confirm(`Excluir ${selectedIds.size} veículos? Esta ação não pode ser desfeita.`)) return
+    setSyncing(true)
+    try { await bulkDelete([...selectedIds]); toast({ title: 'Veículos excluídos!' }); setSelectedIds(new Set()); loadVeiculos() }
+    catch (err: any) { toast({ title: 'Erro ao excluir', description: err.message, variant: 'destructive' }) }
+    finally { setSyncing(false) }
+  }
+
+  const totalPages = Math.ceil(total / pageSize)
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap items-center gap-3">
-        <h1 className="text-xl font-bold text-gray-800">Sincronização de Portais</h1>
-        <Button
-          size="sm"
-          onClick={handleSyncAll}
-          disabled={syncing}
-          className="ml-auto bg-[#0D47A1] hover:bg-[#0B3E8F]"
-        >
-          {syncing ? (
-            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-          ) : (
-            <Zap className="w-4 h-4 mr-2" />
-          )}
-          Sincronizar Tudo
-        </Button>
-      </div>
+    <div className="p-4 md:p-8 max-w-[1600px] mx-auto space-y-4">
+      <h1 className="text-xl font-bold text-gray-800">Sincronização de Portais</h1>
 
-      <div className="flex flex-wrap items-center gap-3 bg-white p-3 rounded-lg border">
-        <div className="relative flex-1 min-w-[200px]">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-          <Input
-            placeholder="Buscar veículo..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-9"
-          />
-        </div>
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-[140px]">
-            <SelectValue placeholder="Status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="todos">Todos</SelectItem>
-            <SelectItem value="publicados">Publicados</SelectItem>
-            <SelectItem value="nao_publicados">Não Publicados</SelectItem>
-          </SelectContent>
-        </Select>
-        <Select value={qualityFilter} onValueChange={setQualityFilter}>
-          <SelectTrigger className="w-[140px]">
-            <SelectValue placeholder="Qualidade" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="todos">Todas</SelectItem>
-            <SelectItem value="alto">Alta (80+)</SelectItem>
-            <SelectItem value="medio">Média (41-79)</SelectItem>
-            <SelectItem value="baixo">Baixa (0-40)</SelectItem>
-          </SelectContent>
-        </Select>
-        <Select value={sortBy} onValueChange={setSortBy}>
-          <SelectTrigger className="w-[140px]">
-            <SelectValue placeholder="Ordem" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="alpha">A-Z</SelectItem>
-            <SelectItem value="preco">Maior Preço</SelectItem>
-          </SelectContent>
-        </Select>
+      <GlobalActionsBar
+        plataformas={plataformas}
+        selectedCount={selectedIds.size}
+        totalCount={total}
+        allSelected={allSelected}
+        onSelectAll={handleSelectAll}
+        onBulkPublish={handleBulkPublish}
+        onBulkUnpublish={handleBulkUnpublish}
+        onBulkDelete={handleBulkDelete}
+        onQuickSync={handleQuickSync}
+        onSyncAll={handleSyncAll}
+        pageSize={pageSize}
+        onPageSizeChange={(s) => { setPageSize(s); setPage(1) }}
+        syncing={syncing}
+        syncingSlug={syncingSlug}
+      />
+
+      <div className="relative max-w-md">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+        <Input placeholder="Buscar veículo..." value={search} onChange={(e) => { setSearch(e.target.value); setPage(1) }} className="pl-9" />
       </div>
 
       {loading ? (
-        <div className="flex justify-center py-20">
-          <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
-        </div>
-      ) : filteredVehicles.length === 0 ? (
-        <div className="bg-white rounded-lg border text-center py-20 text-gray-500">
-          Nenhum veículo encontrado.
-        </div>
+        <div className="flex justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-gray-400" /></div>
+      ) : vehicles.length === 0 ? (
+        <div className="bg-white rounded-lg border text-center py-20 text-gray-500">Nenhum veículo encontrado.</div>
       ) : (
         <div className="bg-white rounded-lg border overflow-hidden">
-          {filteredVehicles.map((v) => (
-            <VehicleSyncRow
-              key={v.id}
-              veiculo={v}
-              plataformas={plataformas}
-              onClick={() => setSelectedVehicle(v)}
-              onToggleElegivel={handleToggleElegivel}
-            />
+          {vehicles.map(v => (
+            <VehicleAccordion key={v.id} veiculo={v} plataformas={plataformas}
+              isSelected={selectedIds.has(v.id)} onSelect={(c) => handleSelect(v.id, c)}
+              onToggle={handleToggle} onUpdateAdType={handleUpdateAdType} toggling={toggling} />
           ))}
         </div>
       )}
 
-      <PlatformDrawer
-        vehicle={selectedVehicle}
-        plataformas={plataformas}
-        open={!!selectedVehicle}
-        onOpenChange={(open) => {
-          if (!open) setSelectedVehicle(null)
-        }}
-        onToggle={handleToggle}
-        onUpdateAdType={handleUpdateAdType}
-        toggling={toggling}
-      />
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between">
+          <span className="text-sm text-gray-500">
+            Página {page} de {totalPages} · {total} veículos
+          </span>
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}>Anterior</Button>
+            <Button variant="outline" size="sm" onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page >= totalPages}>Próxima</Button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
