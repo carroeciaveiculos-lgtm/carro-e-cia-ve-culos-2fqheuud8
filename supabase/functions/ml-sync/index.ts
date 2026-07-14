@@ -19,7 +19,9 @@ Deno.serve(async (req: Request) => {
   )
 
   const logSync = (status: string, payload: any) =>
-    supabase.from('logs_integracao').insert({ portal: 'mercadolivre_sync', status, payload_erro: payload })
+    supabase
+      .from('logs_integracao')
+      .insert({ portal: 'mercadolivre_sync', status, payload_erro: payload })
 
   try {
     const { token, error: tokenError } = await getValidMLToken(supabase)
@@ -71,35 +73,158 @@ Deno.serve(async (req: Request) => {
         .maybeSingle()
 
       if (!veiculo) {
-        await supabase.from('ml_listings').update({ status: 'error', last_synced_at: new Date().toISOString() }).eq('id', listing.id)
+        await supabase
+          .from('ml_listings')
+          .update({ status: 'error', last_synced_at: new Date().toISOString() })
+          .eq('id', listing.id)
         results.push({ listing_id: listing.id, status: 'error', error: 'Vehicle not found' })
         continue
       }
 
       try {
         if (listing.status === 'pending_create') {
-          const errorMsg = await handleCreate(supabase, token, listing, veiculo, cachedMandatoryAttrs)
+          // Duplicate prevention: check for existing ML listing with ml_item_id
+          const { data: existingML } = await supabase
+            .from('ml_listings')
+            .select('id, ml_item_id')
+            .eq('veiculo_id', listing.veiculo_id)
+            .not('ml_item_id', 'is', null)
+            .maybeSingle()
+
+          if (existingML?.ml_item_id) {
+            // Auto-link: skip creation, mark as active
+            await supabase
+              .from('ml_listings')
+              .update({
+                status: 'active',
+                last_synced_at: new Date().toISOString(),
+              })
+              .eq('id', listing.id)
+            await supabase
+              .from('veiculos')
+              .update({ publicado_mercadolivre: true })
+              .eq('id', veiculo.id)
+            results.push({
+              listing_id: listing.id,
+              ml_item_id: existingML.ml_item_id,
+              status: 'linked',
+            })
+            continue
+          }
+
+          // Duplicate prevention: check same placa already published on ML
+          if (veiculo.placa) {
+            const { data: samePlaca } = await supabase
+              .from('veiculos')
+              .select('id')
+              .eq('placa', veiculo.placa)
+              .eq('publicado_mercadolivre', true)
+              .neq('id', veiculo.id)
+              .maybeSingle()
+
+            if (samePlaca) {
+              await supabase
+                .from('ml_listings')
+                .update({
+                  status: 'error',
+                  last_synced_at: new Date().toISOString(),
+                })
+                .eq('id', listing.id)
+              results.push({
+                listing_id: listing.id,
+                status: 'error',
+                error: 'Duplicado: veículo com mesma placa já publicado no Mercado Livre',
+              })
+              continue
+            }
+          }
+
+          // Also check estoque_publicacoes for existing listing
+          const { data: existingPub } = await supabase
+            .from('estoque_publicacoes')
+            .select('id, post_id')
+            .eq('veiculo_id', listing.veiculo_id)
+            .eq('platform', 'mercadolivre')
+            .not('post_id', 'is', null)
+            .maybeSingle()
+
+          if (existingPub?.post_id) {
+            // Auto-link using existing publication
+            await supabase
+              .from('ml_listings')
+              .update({
+                ml_item_id: existingPub.post_id,
+                status: 'active',
+                last_synced_at: new Date().toISOString(),
+              })
+              .eq('id', listing.id)
+            await supabase
+              .from('veiculos')
+              .update({ publicado_mercadolivre: true })
+              .eq('id', veiculo.id)
+            results.push({
+              listing_id: listing.id,
+              ml_item_id: existingPub.post_id,
+              status: 'linked',
+            })
+            continue
+          }
+
+          const errorMsg = await handleCreate(
+            supabase,
+            token,
+            listing,
+            veiculo,
+            cachedMandatoryAttrs,
+          )
           if (errorMsg.cachedAttrs) cachedMandatoryAttrs = errorMsg.cachedAttrs
           if (errorMsg.error) {
-            await supabase.from('ml_listings').update({ status: 'error', last_synced_at: new Date().toISOString() }).eq('id', listing.id)
+            await supabase
+              .from('ml_listings')
+              .update({ status: 'error', last_synced_at: new Date().toISOString() })
+              .eq('id', listing.id)
             results.push({ listing_id: listing.id, status: 'error', error: errorMsg.error })
           } else {
-            await supabase.from('veiculos').update({ publicado_mercadolivre: true }).eq('id', veiculo.id)
-            results.push({ listing_id: listing.id, ml_item_id: errorMsg.mlItemId, status: 'created' })
+            await supabase
+              .from('veiculos')
+              .update({ publicado_mercadolivre: true })
+              .eq('id', veiculo.id)
+            results.push({
+              listing_id: listing.id,
+              ml_item_id: errorMsg.mlItemId,
+              status: 'created',
+            })
           }
         } else if (listing.status === 'pending_update' && listing.ml_item_id) {
-          const updateRes = await fetch(`https://api.mercadolibre.com/items/${listing.ml_item_id}`, {
-            method: 'PUT',
-            headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-            body: JSON.stringify({ price: Number(veiculo.preco_venda) || 0 }),
-          })
+          const updateRes = await fetch(
+            `https://api.mercadolibre.com/items/${listing.ml_item_id}`,
+            {
+              method: 'PUT',
+              headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+              body: JSON.stringify({ price: Number(veiculo.preco_venda) || 0 }),
+            },
+          )
           if (updateRes.ok) {
-            await supabase.from('ml_listings').update({ status: 'active', last_synced_at: new Date().toISOString() }).eq('id', listing.id)
-            results.push({ listing_id: listing.id, ml_item_id: listing.ml_item_id, status: 'updated' })
+            await supabase
+              .from('ml_listings')
+              .update({ status: 'active', last_synced_at: new Date().toISOString() })
+              .eq('id', listing.id)
+            results.push({
+              listing_id: listing.id,
+              ml_item_id: listing.ml_item_id,
+              status: 'updated',
+            })
           } else {
             const errData = await updateRes.json()
-            await supabase.from('ml_listings').update({ status: 'error', last_synced_at: new Date().toISOString() }).eq('id', listing.id)
-            results.push({ listing_id: listing.id, status: 'error', error: JSON.stringify(errData) })
+            await supabase
+              .from('ml_listings')
+              .update({ status: 'error', last_synced_at: new Date().toISOString() })
+              .eq('id', listing.id)
+            results.push({
+              listing_id: listing.id,
+              status: 'error',
+              error: JSON.stringify(errData),
+            })
           }
         } else if (listing.status === 'pending_close' && listing.ml_item_id) {
           const closeRes = await fetch(`https://api.mercadolibre.com/items/${listing.ml_item_id}`, {
@@ -108,16 +233,33 @@ Deno.serve(async (req: Request) => {
             body: JSON.stringify({ status: 'closed' }),
           })
           if (closeRes.ok) {
-            await supabase.from('ml_listings').update({ status: 'closed', last_synced_at: new Date().toISOString() }).eq('id', listing.id)
-            await supabase.from('veiculos').update({ publicado_mercadolivre: false }).eq('id', veiculo.id)
-            results.push({ listing_id: listing.id, ml_item_id: listing.ml_item_id, status: 'closed' })
+            await supabase
+              .from('ml_listings')
+              .update({ status: 'closed', last_synced_at: new Date().toISOString() })
+              .eq('id', listing.id)
+            await supabase
+              .from('veiculos')
+              .update({ publicado_mercadolivre: false })
+              .eq('id', veiculo.id)
+            results.push({
+              listing_id: listing.id,
+              ml_item_id: listing.ml_item_id,
+              status: 'closed',
+            })
           } else {
             const errData = await closeRes.json()
-            results.push({ listing_id: listing.id, status: 'error', error: JSON.stringify(errData) })
+            results.push({
+              listing_id: listing.id,
+              status: 'error',
+              error: JSON.stringify(errData),
+            })
           }
         }
       } catch (err: any) {
-        await supabase.from('ml_listings').update({ status: 'error', last_synced_at: new Date().toISOString() }).eq('id', listing.id)
+        await supabase
+          .from('ml_listings')
+          .update({ status: 'error', last_synced_at: new Date().toISOString() })
+          .eq('id', listing.id)
         results.push({ listing_id: listing.id, status: 'error', error: err.message })
       }
     }
@@ -151,11 +293,14 @@ Deno.serve(async (req: Request) => {
     }
 
     const errorCount = results.filter((r) => r.status === 'error').length
-    await logSync(errorCount > 0 ? (errorCount === results.length ? 'error' : 'partial') : 'success', {
-      processed: results.length,
-      errors: errorCount,
-      details: results,
-    })
+    await logSync(
+      errorCount > 0 ? (errorCount === results.length ? 'error' : 'partial') : 'success',
+      {
+        processed: results.length,
+        errors: errorCount,
+        details: results,
+      },
+    )
 
     return new Response(JSON.stringify({ success: true, processed: results.length, results }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -217,12 +362,15 @@ async function handleCreate(
   const mlData = await mlRes.json()
 
   if (mlRes.ok) {
-    await supabase.from('ml_listings').update({
-      ml_item_id: mlData.id,
-      ml_listing_url: mlData.permalink,
-      status: 'active',
-      last_synced_at: new Date().toISOString(),
-    }).eq('id', listing.id)
+    await supabase
+      .from('ml_listings')
+      .update({
+        ml_item_id: mlData.id,
+        ml_listing_url: mlData.permalink,
+        status: 'active',
+        last_synced_at: new Date().toISOString(),
+      })
+      .eq('id', listing.id)
     return { error: null, mlItemId: mlData.id, cachedAttrs: mandatoryAttrs }
   }
 

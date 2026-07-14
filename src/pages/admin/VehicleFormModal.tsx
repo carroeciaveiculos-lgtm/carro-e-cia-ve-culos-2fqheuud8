@@ -87,6 +87,27 @@ const OPCIONAIS_LIST = [
   'Vidros elétricos',
 ]
 
+const PHOTO_ROTEIRO = [
+  'Capa',
+  'Frente Ângulo',
+  'Traseira Ângulo',
+  'Lateral Esq',
+  'Lateral Dir',
+  'Frente Reta',
+  'Traseira Reta',
+  'Painel/Volante',
+  'Bancos Dianteiros',
+  'Bancos Traseiros',
+  'KM Painel',
+  'Multimídia',
+  'Rodas/Pneus',
+  'Porta-malas',
+  'Motor',
+  'Step',
+  'Manual/Chave',
+  'Teto',
+]
+
 const chartConfig = { valor: { label: 'Valor (R$)', color: 'hsl(var(--primary))' } }
 
 export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess }: any) {
@@ -397,6 +418,26 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
     } finally {
       setLoadingPlaca(false)
     }
+  }
+
+  const validatePortalFields = () => {
+    const missing: string[] = []
+    if (!formData.marca) missing.push('Marca')
+    if (!formData.modelo) missing.push('Modelo')
+    if (!formData.ano_fabricacao) missing.push('Ano')
+    if (!formData.cor) missing.push('Cor')
+    if (!formData.combustivel) missing.push('Combustível')
+    if (!formData.quilometragem) missing.push('KM')
+    if (!formData.preco_venda) missing.push('Preço')
+    if (!formData.fotos || formData.fotos.length === 0) missing.push('Fotos')
+    if (missing.length > 0) {
+      toast({
+        title: '⚠️ Campos importantes ausentes',
+        description: `Para melhor performance nos portais: ${missing.join(', ')}`,
+        variant: 'destructive',
+      })
+    }
+    return missing.length === 0
   }
 
   const save = async (status = 'disponivel', shouldClose = true) => {
@@ -1305,6 +1346,37 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
                   </div>
                 )}
               </div>
+
+              <div className="bg-white p-6 rounded-lg border shadow-sm">
+                <h3 className="font-bold flex items-center gap-2 text-slate-800 mb-4">
+                  <Camera className="w-5 h-5 text-blue-600" /> Roteiro de Fotos (18 shots)
+                </h3>
+                <p className="text-xs text-slate-500 mb-3">
+                  Siga este guia para garantir anúncios de alta qualidade. Cada foto deve ser clara
+                  e bem iluminada.
+                </p>
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2">
+                  {PHOTO_ROTEIRO.map((item, i) => {
+                    const hasPhoto = (formData.fotos || []).length > i
+                    return (
+                      <div
+                        key={i}
+                        className={`flex items-center gap-2 text-xs p-2 rounded border ${hasPhoto ? 'bg-green-50 border-green-200' : 'bg-slate-50 border-slate-200'}`}
+                      >
+                        <span
+                          className={`w-5 h-5 rounded-full flex items-center justify-center font-bold shrink-0 ${hasPhoto ? 'bg-green-500 text-white' : 'bg-blue-100 text-blue-700'}`}
+                        >
+                          {hasPhoto ? '✓' : i + 1}
+                        </span>
+                        <span className="text-slate-600">{item}</span>
+                      </div>
+                    )
+                  })}
+                </div>
+                <p className="text-xs text-slate-400 mt-3">
+                  {formData.fotos?.length || 0} de 18 fotos cadastradas
+                </p>
+              </div>
             </TabsContent>
 
             <TabsContent value="financeiro" className="m-0 space-y-6">
@@ -1567,7 +1639,20 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
               Cancelar
             </Button>
             <Button
-              onClick={() => save('disponivel', true)}
+              variant="outline"
+              onClick={() => {
+                validatePortalFields()
+                save('rascunho', true)
+              }}
+              disabled={loading}
+            >
+              Salvar como Rascunho
+            </Button>
+            <Button
+              onClick={() => {
+                validatePortalFields()
+                save('disponivel', true)
+              }}
               disabled={loading}
               className="bg-blue-600 hover:bg-blue-700 text-white font-bold"
             >

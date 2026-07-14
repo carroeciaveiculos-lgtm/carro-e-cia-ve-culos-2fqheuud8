@@ -16,15 +16,15 @@ const ERROR_MAP: Record<string, { message: string; action: string }> = {
     action: 'Defina o preço de venda',
   },
   invalid_grant: {
-    message: 'Conexão expirada. Clique em "Reconectar" no painel.',
+    message: 'Conexão expirada. Reconecte a plataforma.',
     action: 'Reconectar plataforma',
   },
-  429: {
-    message: 'Muitas requisições. Aguarde 5 minutos e tente novamente.',
+  '429': {
+    message: 'Muitas requisições. Aguarde 5 minutos.',
     action: 'Aguarde e tente novamente',
   },
   ITEM_NOT_FOUND: {
-    message: 'Anúncio não encontrado na plataforma. Pode ter sido removido.',
+    message: 'Anúncio não encontrado na plataforma.',
     action: 'Recriar anúncio',
   },
   VALIDATION_ERROR: {
@@ -32,7 +32,7 @@ const ERROR_MAP: Record<string, { message: string; action: string }> = {
     action: 'Revisar dados do veículo',
   },
   unauthorized: {
-    message: 'Não autorizado. Verifique as credenciais da plataforma.',
+    message: 'Não autorizado. Verifique as credenciais.',
     action: 'Reconectar plataforma',
   },
   not_found: {
@@ -40,19 +40,19 @@ const ERROR_MAP: Record<string, { message: string; action: string }> = {
     action: 'Verificar configuração',
   },
   server_error: {
-    message: 'Erro interno da plataforma. Tente novamente mais tarde.',
+    message: 'Erro interno da plataforma.',
     action: 'Aguarde e tente novamente',
   },
   timeout: {
-    message: 'Tempo limite excedido. Tente novamente.',
+    message: 'Tempo limite excedido.',
     action: 'Tente novamente',
   },
   duplicate: {
-    message: 'Anúncio duplicado. Este veículo já está publicado nesta plataforma.',
+    message: 'Anúncio duplicado. Veículo já publicado.',
     action: 'Verificar anúncios existentes',
   },
   missing_attributes: {
-    message: 'Atributos obrigatórios ausentes. Verifique os dados técnicos do veículo.',
+    message: 'Atributos obrigatórios ausentes.',
     action: 'Completar ficha técnica',
   },
 }
