@@ -32,7 +32,8 @@ export default function Portais() {
   const [toggling, setToggling] = useState<Record<string, boolean>>({})
 
   useEffect(() => {
-    fetchPlataformas().then(setPlataformas)
+    fetchPlataformas()
+      .then(setPlataformas)
       .catch(() => toast({ title: 'Erro ao carregar plataformas', variant: 'destructive' }))
   }, [toast])
 
@@ -40,9 +41,9 @@ export default function Portais() {
     setLoading(true)
     try {
       const { vehicles: data, total: count } = await fetchVeiculosForPortais(search, page, pageSize)
-      const ids = data.map(v => v.id)
+      const ids = data.map((v) => v.id)
       const pubMap = ids.length > 0 ? await fetchPublicacoes(ids) : {}
-      setVehicles(data.map(v => ({ ...v, publicacoes: pubMap[v.id] || [] })))
+      setVehicles(data.map((v) => ({ ...v, publicacoes: pubMap[v.id] || [] })))
       setTotal(count)
     } catch {
       setVehicles([])
@@ -56,77 +57,115 @@ export default function Portais() {
     return () => clearTimeout(timer)
   }, [loadVeiculos])
 
-  const allSelected = vehicles.length > 0 && vehicles.every(v => selectedIds.has(v.id))
+  const allSelected = vehicles.length > 0 && vehicles.every((v) => selectedIds.has(v.id))
   const handleSelectAll = (checked: boolean) =>
-    setSelectedIds(checked ? new Set(vehicles.map(v => v.id)) : new Set())
+    setSelectedIds(checked ? new Set(vehicles.map((v) => v.id)) : new Set())
   const handleSelect = (id: string, checked: boolean) => {
     const next = new Set(selectedIds)
-    if (checked) next.add(id); else next.delete(id)
+    if (checked) next.add(id)
+    else next.delete(id)
     setSelectedIds(next)
   }
 
   const handleSyncAll = async () => {
     setSyncing(true)
     try {
-      await Promise.all(plataformas.map(p => forceSync(p.slug).catch(() => {})))
+      await Promise.all(plataformas.map((p) => forceSync(p.slug).catch(() => {})))
       await triggerSyncEstoque()
       toast({ title: 'Sincronização global iniciada!' })
       loadVeiculos()
-    } catch { toast({ title: 'Erro ao sincronizar', variant: 'destructive' }) }
-    finally { setSyncing(false) }
+    } catch {
+      toast({ title: 'Erro ao sincronizar', variant: 'destructive' })
+    } finally {
+      setSyncing(false)
+    }
   }
 
   const handleQuickSync = async (slug: string) => {
-    setSyncingSlug(slug); setSyncing(true)
-    try { await forceSync(slug); toast({ title: `Sync de ${slug} iniciado!` }); loadVeiculos() }
-    catch { toast({ title: 'Erro ao sincronizar', variant: 'destructive' }) }
-    finally { setSyncing(false); setSyncingSlug(null) }
+    setSyncingSlug(slug)
+    setSyncing(true)
+    try {
+      await forceSync(slug)
+      toast({ title: `Sync de ${slug} iniciado!` })
+      loadVeiculos()
+    } catch {
+      toast({ title: 'Erro ao sincronizar', variant: 'destructive' })
+    } finally {
+      setSyncing(false)
+      setSyncingSlug(null)
+    }
   }
 
   const handleToggle = async (slug: string, veiculoId: string, publicar: boolean) => {
     const key = `${veiculoId}-${slug}`
-    setToggling(p => ({ ...p, [key]: true }))
-    setVehicles(prev => prev.map(v => v.id !== veiculoId ? v : { ...v, [`publicado_${slug}`]: publicar }))
-    try { await toggleVehiclePublication(slug, veiculoId, publicar) }
-    catch (err: any) {
-      setVehicles(prev => prev.map(v => v.id !== veiculoId ? v : { ...v, [`publicado_${slug}`]: !publicar })))
+    setToggling((p) => ({ ...p, [key]: true }))
+    setVehicles((prev) =>
+      prev.map((v) => (v.id !== veiculoId ? v : { ...v, [`publicado_${slug}`]: publicar })),
+    )
+    try {
+      await toggleVehiclePublication(slug, veiculoId, publicar)
+    } catch (err: any) {
+      setVehicles((prev) =>
+        prev.map((v) => (v.id !== veiculoId ? v : { ...v, [`publicado_${slug}`]: !publicar })),
+      )
       toast({ title: 'Erro na operação', description: err.message, variant: 'destructive' })
-    } finally { setToggling(p => ({ ...p, [key]: false })) }
+    } finally {
+      setToggling((p) => ({ ...p, [key]: false }))
+    }
   }
 
   const handleUpdateAdType = async (veiculoId: string, platform: string, adType: string) => {
-    try { await updateAdType(veiculoId, platform, adType); toast({ title: 'Tipo de anúncio atualizado!' }) }
-    catch (err: any) { toast({ title: 'Erro ao atualizar', description: err.message, variant: 'destructive' }) }
+    try {
+      await updateAdType(veiculoId, platform, adType)
+      toast({ title: 'Tipo de anúncio atualizado!' })
+    } catch (err: any) {
+      toast({ title: 'Erro ao atualizar', description: err.message, variant: 'destructive' })
+    }
   }
 
   const handleBulkPublish = async () => {
     setSyncing(true)
     try {
-      const slugs = plataformas.map(p => p.slug)
+      const slugs = plataformas.map((p) => p.slug)
       const { success, failed } = await bulkPublish([...selectedIds], slugs)
       toast({ title: `${success} publicações enviadas${failed ? `, ${failed} falharam` : ''}` })
-      setSelectedIds(new Set()); loadVeiculos()
-    } catch { toast({ title: 'Erro na publicação', variant: 'destructive' }) }
-    finally { setSyncing(false) }
+      setSelectedIds(new Set())
+      loadVeiculos()
+    } catch {
+      toast({ title: 'Erro na publicação', variant: 'destructive' })
+    } finally {
+      setSyncing(false)
+    }
   }
 
   const handleBulkUnpublish = async () => {
     setSyncing(true)
     try {
-      const slugs = plataformas.map(p => p.slug)
+      const slugs = plataformas.map((p) => p.slug)
       const { success } = await bulkUnpublish([...selectedIds], slugs)
       toast({ title: `${success} anúncios desativados` })
-      setSelectedIds(new Set()); loadVeiculos()
-    } catch { toast({ title: 'Erro ao desativar', variant: 'destructive' }) }
-    finally { setSyncing(false) }
+      setSelectedIds(new Set())
+      loadVeiculos()
+    } catch {
+      toast({ title: 'Erro ao desativar', variant: 'destructive' })
+    } finally {
+      setSyncing(false)
+    }
   }
 
   const handleBulkDelete = async () => {
     if (!confirm(`Excluir ${selectedIds.size} veículos? Esta ação não pode ser desfeita.`)) return
     setSyncing(true)
-    try { await bulkDelete([...selectedIds]); toast({ title: 'Veículos excluídos!' }); setSelectedIds(new Set()); loadVeiculos() }
-    catch (err: any) { toast({ title: 'Erro ao excluir', description: err.message, variant: 'destructive' }) }
-    finally { setSyncing(false) }
+    try {
+      await bulkDelete([...selectedIds])
+      toast({ title: 'Veículos excluídos!' })
+      setSelectedIds(new Set())
+      loadVeiculos()
+    } catch (err: any) {
+      toast({ title: 'Erro ao excluir', description: err.message, variant: 'destructive' })
+    } finally {
+      setSyncing(false)
+    }
   }
 
   const totalPages = Math.ceil(total / pageSize)
@@ -147,26 +186,48 @@ export default function Portais() {
         onQuickSync={handleQuickSync}
         onSyncAll={handleSyncAll}
         pageSize={pageSize}
-        onPageSizeChange={(s) => { setPageSize(s); setPage(1) }}
+        onPageSizeChange={(s) => {
+          setPageSize(s)
+          setPage(1)
+        }}
         syncing={syncing}
         syncingSlug={syncingSlug}
       />
 
       <div className="relative max-w-md">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-        <Input placeholder="Buscar veículo..." value={search} onChange={(e) => { setSearch(e.target.value); setPage(1) }} className="pl-9" />
+        <Input
+          placeholder="Buscar veículo..."
+          value={search}
+          onChange={(e) => {
+            setSearch(e.target.value)
+            setPage(1)
+          }}
+          className="pl-9"
+        />
       </div>
 
       {loading ? (
-        <div className="flex justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-gray-400" /></div>
+        <div className="flex justify-center py-20">
+          <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
+        </div>
       ) : vehicles.length === 0 ? (
-        <div className="bg-white rounded-lg border text-center py-20 text-gray-500">Nenhum veículo encontrado.</div>
+        <div className="bg-white rounded-lg border text-center py-20 text-gray-500">
+          Nenhum veículo encontrado.
+        </div>
       ) : (
         <div className="bg-white rounded-lg border overflow-hidden">
-          {vehicles.map(v => (
-            <VehicleAccordion key={v.id} veiculo={v} plataformas={plataformas}
-              isSelected={selectedIds.has(v.id)} onSelect={(c) => handleSelect(v.id, c)}
-              onToggle={handleToggle} onUpdateAdType={handleUpdateAdType} toggling={toggling} />
+          {vehicles.map((v) => (
+            <VehicleAccordion
+              key={v.id}
+              veiculo={v}
+              plataformas={plataformas}
+              isSelected={selectedIds.has(v.id)}
+              onSelect={(c) => handleSelect(v.id, c)}
+              onToggle={handleToggle}
+              onUpdateAdType={handleUpdateAdType}
+              toggling={toggling}
+            />
           ))}
         </div>
       )}
@@ -177,8 +238,22 @@ export default function Portais() {
             Página {page} de {totalPages} · {total} veículos
           </span>
           <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}>Anterior</Button>
-            <Button variant="outline" size="sm" onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page >= totalPages}>Próxima</Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page === 1}
+            >
+              Anterior
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              disabled={page >= totalPages}
+            >
+              Próxima
+            </Button>
           </div>
         </div>
       )}
