@@ -5,6 +5,7 @@ import { Card } from '@/components/ui/card'
 import { MapPin, Mail, Clock, MessageCircle, Star, Users } from 'lucide-react'
 import { supabase } from '@/lib/supabase/client'
 import { getWhatsAppLink } from '@/lib/whatsapp'
+import { DEFAULT_BRAND } from '@/lib/brand'
 
 export default function Sobre() {
   const [equipe, setEquipe] = useState<any[]>([])
@@ -232,7 +233,10 @@ export default function Sobre() {
               </p>
               <Button className="w-full bg-[#25D366] hover:bg-[#128C7E] text-white mt-auto" asChild>
                 <a
-                  href={getWhatsAppLink('Olá Luiz! Vim pelo site e gostaria de mais informações.')}
+                  href={getWhatsAppLink(
+                    'Olá Luiz! Vim pelo site e gostaria de mais informações.',
+                    '5534984080000',
+                  )}
                   target="_blank"
                   rel="noopener noreferrer"
                 >
@@ -259,6 +263,7 @@ export default function Sobre() {
                 <a
                   href={getWhatsAppLink(
                     'Olá Gabriel! Vim pelo site e gostaria de falar sobre Seguro Auto.',
+                    '5534992000300',
                   )}
                   target="_blank"
                   rel="noopener noreferrer"
@@ -286,6 +291,7 @@ export default function Sobre() {
                 <a
                   href={getWhatsAppLink(
                     'Olá Adriana! Vim pelo site e gostaria de falar sobre consórcios e financiamentos.',
+                    '5534984080220',
                   )}
                   target="_blank"
                   rel="noopener noreferrer"
@@ -335,6 +341,9 @@ export default function Sobre() {
                     <a
                       href={getWhatsAppLink(
                         `Olá ${membro.nome}, gostaria de falar sobre veículos!`,
+                        DEFAULT_BRAND.team.find(
+                          (t) => t.name.toLowerCase().trim() === membro.nome?.toLowerCase().trim(),
+                        )?.whatsapp,
                       )}
                       target="_blank"
                       rel="noopener noreferrer"

@@ -7,9 +7,10 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
-import { RotateCw, Sparkles, Loader2, Save } from 'lucide-react'
+import { RotateCw, Sparkles, Loader2, Save, CheckCircle2, AlertCircle } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { supabase } from '@/lib/supabase/client'
+import { validateSinglePhoto, PHOTO_REQUIREMENTS } from '@/lib/photo-validation'
 
 export function ImageEditorModal({
   isOpen,
@@ -26,11 +27,26 @@ export function ImageEditorModal({
   const [processing, setProcessing] = useState(false)
   const [previewUrl, setPreviewUrl] = useState<string>(imageUrl)
   const [isAiOptimized, setIsAiOptimized] = useState(false)
+  const [photoValidation, setPhotoValidation] = useState<{
+    valid: boolean
+    issues: string[]
+    width?: number
+    height?: number
+  } | null>(null)
   const { toast } = useToast()
 
   useEffect(() => {
     setPreviewUrl(imageUrl)
     setIsAiOptimized(false)
+    setPhotoValidation(null)
+    validateSinglePhoto(imageUrl).then((r) => {
+      setPhotoValidation({
+        valid: r.valid,
+        issues: r.issues.map((i) => i.message),
+        width: r.width,
+        height: r.height,
+      })
+    })
   }, [imageUrl, isOpen])
 
   const loadImageToCanvas = (src: string, applyFilter = false, rotation = 0): Promise<string> => {
@@ -156,6 +172,39 @@ export function ImageEditorModal({
             </div>
           </div>
         </div>
+
+        {photoValidation && (
+          <div className="mt-4 p-3 bg-slate-100 rounded-lg border border-slate-200">
+            <div className="flex items-center gap-2 mb-2">
+              {photoValidation.valid ? (
+                <CheckCircle2 className="w-4 h-4 text-green-500" />
+              ) : (
+                <AlertCircle className="w-4 h-4 text-amber-500" />
+              )}
+              <span className="text-sm font-medium text-slate-700">
+                Validacao: {photoValidation.valid ? 'Aprovado' : 'Requer ajuste'}
+              </span>
+              {photoValidation.width && (
+                <span className="text-xs text-slate-500">
+                  {photoValidation.width}x{photoValidation.height}px
+                </span>
+              )}
+            </div>
+            {photoValidation.issues.length > 0 && (
+              <div className="flex flex-wrap gap-1">
+                {photoValidation.issues.map((issue, i) => (
+                  <span key={i} className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded">
+                    {issue}
+                  </span>
+                ))}
+              </div>
+            )}
+            <p className="text-xs text-slate-400 mt-1">
+              Requisitos: {PHOTO_REQUIREMENTS.minWidth}x{PHOTO_REQUIREMENTS.minHeight}px | Vertical
+              | ~{PHOTO_REQUIREMENTS.minFileSizeKB}KB
+            </p>
+          </div>
+        )}
 
         <DialogFooter className="mt-6 flex sm:justify-between items-center w-full">
           <div className="flex gap-2">

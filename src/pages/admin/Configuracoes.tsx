@@ -22,8 +22,10 @@ import {
   Download,
   Code,
   Globe,
+  Phone,
 } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { ContactsConfigPanel } from '@/components/admin/ContactsConfigPanel'
 
 export default function Configuracoes() {
   const [loading, setLoading] = useState(false)
@@ -224,6 +226,9 @@ export default function Configuracoes() {
           <TabsTrigger value="geral" className="flex items-center gap-2">
             <Globe className="w-4 h-4" /> Loja & SEO
           </TabsTrigger>
+          <TabsTrigger value="contatos" className="flex items-center gap-2">
+            <Phone className="w-4 h-4" /> Contatos
+          </TabsTrigger>
           <TabsTrigger value="scripts" className="flex items-center gap-2">
             <Code className="w-4 h-4" /> Scripts & Tracking
           </TabsTrigger>
@@ -325,6 +330,10 @@ export default function Configuracoes() {
               </Button>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="contatos" className="space-y-6">
+          <ContactsConfigPanel />
         </TabsContent>
 
         <TabsContent value="scripts" className="space-y-6">

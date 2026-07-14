@@ -1,8 +1,10 @@
 import { Link } from 'react-router-dom'
 import { Instagram, Facebook, MapPin, Phone, Mail } from 'lucide-react'
 import { getWhatsAppLink } from '@/lib/whatsapp'
+import { useBrandConfig } from '@/hooks/use-brand-config'
 
 export function Footer() {
+  const { config } = useBrandConfig()
   return (
     <footer className="bg-secondary text-secondary-foreground pt-16 pb-8">
       <div className="container max-w-6xl mx-auto px-4">
@@ -172,34 +174,20 @@ export function Footer() {
               <li className="flex gap-3">
                 <Phone className="w-5 h-5 text-[#25D366] shrink-0" />
                 <div className="flex flex-col text-muted-foreground">
-                  <a
-                    href={getWhatsAppLink('Olá! Vim pelo site e gostaria de falar com o Luiz.')}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="hover:text-white"
-                  >
-                    Luiz (Vendas): (34) 99948-4285
-                  </a>
-                  <a
-                    href={getWhatsAppLink(
-                      'Olá! Vim pelo site e gostaria de falar com o Gabriel sobre Seguro Auto.',
-                    )}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="hover:text-white"
-                  >
-                    Gabriel (Seguro Auto): (34) 99948-4285
-                  </a>
-                  <a
-                    href={getWhatsAppLink(
-                      'Olá! Vim pelo site e gostaria de falar com a Adriana sobre consórcios e financiamentos.',
-                    )}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="hover:text-white"
-                  >
-                    Adriana (Consórcios/Financiamentos): (34) 99948-4285
-                  </a>
+                  {config.team.slice(0, 5).map((member) => (
+                    <a
+                      key={member.whatsapp}
+                      href={getWhatsAppLink(
+                        `Olá! Vim pelo site e gostaria de falar com ${member.name.split(' ')[0]}.`,
+                        member.whatsapp,
+                      )}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="hover:text-white"
+                    >
+                      {member.name.split(' ')[0]} ({member.role}): {member.whatsappDisplay}
+                    </a>
+                  ))}
                 </div>
               </li>
               <li className="flex gap-3">

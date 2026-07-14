@@ -14,6 +14,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { getWhatsAppLink } from '@/lib/whatsapp'
+import { DEFAULT_BRAND } from '@/lib/brand'
 import { Phone, Mail, MessageCircle, MapPin, Clock, Instagram, Facebook } from 'lucide-react'
 import { useState } from 'react'
 import { useToast } from '@/hooks/use-toast'
@@ -96,9 +97,9 @@ export default function Contato() {
               onClick={() => trackCTAClick('WhatsApp Luiz', '/contato')}
             >
               <span className="flex items-center font-bold text-xl">
-                <MessageCircle className="mr-2 w-6 h-6" /> WhatsApp Luiz
+                <MessageCircle className="mr-2 w-6 h-6" /> WhatsApp
               </span>
-              <span className="text-sm font-normal opacity-90">Fale com a nossa equipe)</span>
+              <span className="text-sm font-normal opacity-90">Fale com a nossa equipe</span>
             </a>
           </Button>
           <Button
@@ -124,10 +125,7 @@ export default function Contato() {
             className="h-20 text-lg border-2 flex flex-col gap-1 items-center justify-center p-4 h-auto"
             asChild
           >
-            <a
-              href="tel:+5534999484285"
-              onClick={() => trackCTAClick('Ligação Direta', '/contato')}
-            >
+            <a href="tel:+553433159400" onClick={() => trackCTAClick('Ligação Direta', '/contato')}>
               <span className="flex items-center font-bold text-xl">
                 <Phone className="mr-2 w-6 h-6" /> Ligação Direta
               </span>
@@ -143,63 +141,28 @@ export default function Contato() {
         <div className="grid lg:grid-cols-5 gap-12">
           <div className="lg:col-span-2 space-y-6">
             <h2 className="text-2xl font-display font-bold mb-6">Informações de Contato</h2>
-
-            <Card className="p-6 border-border/50 shadow-sm">
-              <h3 className="font-bold text-lg text-primary mb-1">Luiz Fernando e Roberto Jr.</h3>
-              <p className="text-sm text-muted-foreground mb-4">Consignação e Vendas</p>
-              <ul className="space-y-3 text-sm">
-                <li className="flex items-center gap-2">
-                  <MessageCircle className="w-4 h-4 text-[#25D366]" />{' '}
-                  <a href="https://wa.me/5534999484285" className="hover:underline">
-                    (34) 99948-4285
-                  </a>
-                </li>
-                <li className="flex items-center gap-2">
-                  <Mail className="w-4 h-4" /> luiz@carroeciamotors.com.br
-                </li>
-                <li className="flex items-center gap-2">
-                  <Clock className="w-4 h-4" /> Seg-Sex, 9h-18h / Sab 8h - 12h
-                </li>
-              </ul>
-            </Card>
-
-            <Card className="p-6 border-border/50 shadow-sm">
-              <h3 className="font-bold text-lg text-primary mb-1">Gabriel Araújo</h3>
-              <p className="text-sm text-muted-foreground mb-4">Seguros Km Zero e Financiamento</p>
-              <ul className="space-y-3 text-sm">
-                <li className="flex items-center gap-2">
-                  <MessageCircle className="w-4 h-4 text-[#25D366]" />{' '}
-                  <a href="https://wa.me/5534992000300" className="hover:underline">
-                    (34) 99200-0300
-                  </a>
-                </li>
-                <li className="flex items-center gap-2">
-                  <Mail className="w-4 h-4" /> gabrielaraujo@kmzero.com.br
-                </li>
-                <li className="flex items-center gap-2">
-                  <Clock className="w-4 h-4" /> Seg-Sex, 9h-18h
-                </li>
-              </ul>
-            </Card>
-
-            <Card className="p-6 border-border/50 shadow-sm">
-              <h3 className="font-bold text-lg text-primary mb-1">Jessica Germano</h3>
-              <p className="text-sm text-muted-foreground mb-4">Documentação e Financeiro</p>
-              <ul className="space-y-3 text-sm">
-                <li className="flex items-center gap-2">
-                  <MessageCircle className="w-4 h-4 text-[#25D366]" />{' '}
-                  <a href="https://wa.me/5534998037651" className="hover:underline">
-                    (34) 99803-7651
-                  </a>
-                </li>
-                <li className="flex items-center gap-2">
-                  <Mail className="w-4 h-4" /> jessica@carroeciamotors.com.br
-                </li>
-                <li className="flex items-center gap-2">
-                  <Clock className="w-4 h-4" /> Seg-Sex, 8h-17h
-                </li>
-              </ul>
-            </Card>
+            {DEFAULT_BRAND.team.map((member) => (
+              <Card key={member.whatsapp} className="p-6 border-border/50 shadow-sm">
+                <h3 className="font-bold text-lg text-primary mb-1">{member.name}</h3>
+                <p className="text-sm text-muted-foreground mb-4">{member.role}</p>
+                <ul className="space-y-3 text-sm">
+                  <li className="flex items-center gap-2">
+                    <MessageCircle className="w-4 h-4 text-[#25D366]" />{' '}
+                    <a href={`https://wa.me/${member.whatsapp}`} className="hover:underline">
+                      {member.whatsappDisplay}
+                    </a>
+                  </li>
+                  {member.email && (
+                    <li className="flex items-center gap-2">
+                      <Mail className="w-4 h-4" /> {member.email}
+                    </li>
+                  )}
+                  <li className="flex items-center gap-2">
+                    <Clock className="w-4 h-4" /> Seg-Sex, 9h-18h
+                  </li>
+                </ul>
+              </Card>
+            ))}
           </div>
 
           <div className="lg:col-span-3">
@@ -396,7 +359,7 @@ export default function Contato() {
 
         <div className="mt-16 flex justify-center gap-6">
           <a
-            href="https://www.instagram.com/carroecia02"
+            href="https://www.instagram.com/carroecia_uberaba"
             className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors"
             target="_blank"
             rel="noopener noreferrer"
