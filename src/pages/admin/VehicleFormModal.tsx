@@ -47,6 +47,7 @@ import {
   GripHorizontal,
   Eye,
   Wand2,
+  CheckCircle,
 } from 'lucide-react'
 
 const CHECKLIST_INSPECAO = [
