@@ -9,12 +9,14 @@ Deno.serve(async (req) => {
 
     if (!marca || !modelo) {
       return new Response(JSON.stringify({ error: 'Missing vehicle data' }), {
-        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
 
     const formattedPrice = Number(preco_venda || 0).toLocaleString('pt-BR', {
-      style: 'currency', currency: 'BRL',
+      style: 'currency',
+      currency: 'BRL',
     })
 
     const message = [
@@ -28,9 +30,13 @@ Deno.serve(async (req) => {
       `Acesse o painel administrativo para mais detalhes.`,
     ].join('\n')
 
-    const waToken = Deno.env.get('WHATSAPP_TOKEN') || Deno.env.get('META_WHATSAPP_ACCESS_TOKEN') || ''
+    const waToken =
+      Deno.env.get('WHATSAPP_TOKEN') || Deno.env.get('META_WHATSAPP_ACCESS_TOKEN') || ''
     const waPhoneId = Deno.env.get('WHATSAPP_PHONE_NUMBER_ID') || ''
-    const salesTeamPhone = (Deno.env.get('WHATSAPP_SALES_TEAM_PHONE') || '5534997384177').replace(/\D/g, '')
+    const salesTeamPhone = (Deno.env.get('WHATSAPP_SALES_TEAM_PHONE') || '5534997384177').replace(
+      /\D/g,
+      '',
+    )
 
     if (waToken && waPhoneId) {
       const res = await fetch(`https://graph.facebook.com/v20.0/${waPhoneId}/messages`, {
@@ -57,7 +63,8 @@ Deno.serve(async (req) => {
     })
   } catch (error: any) {
     return new Response(JSON.stringify({ error: error.message }), {
-      status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
   }
 })

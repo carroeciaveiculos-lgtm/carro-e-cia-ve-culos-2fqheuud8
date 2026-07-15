@@ -87,10 +87,9 @@ export async function checkMLPackages(
   token: string,
 ): Promise<{ error: string | null; activeCount: number }> {
   try {
-    const res = await fetch(
-      `${ML_API_BASE}/users/me/items/search?status=active&limit=50`,
-      { headers: { Authorization: `Bearer ${token}` } },
-    )
+    const res = await fetch(`${ML_API_BASE}/users/me/items/search?status=active&limit=50`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
 
     if (!res.ok) {
       const errText = await res.text()
@@ -109,19 +108,16 @@ export async function fetchCategoryAttributes(
   token: string,
   categoryId: string = ML_CATEGORY,
 ): Promise<string[]> {
-  const res = await fetch(
-    `${ML_API_BASE}/categories/${categoryId}/attributes`,
-    { headers: { Authorization: `Bearer ${token}` } },
-  )
+  const res = await fetch(`${ML_API_BASE}/categories/${categoryId}/attributes`, {
+    headers: { Authorization: `Bearer ${token}` },
+  })
 
   if (!res.ok) return []
 
   const attrs = await res.json()
   if (!Array.isArray(attrs)) return []
 
-  return attrs
-    .filter((a: any) => a.tags?.required || a.tags?.fixed)
-    .map((a: any) => a.id)
+  return attrs.filter((a: any) => a.tags?.required || a.tags?.fixed).map((a: any) => a.id)
 }
 
 export function resolveListingType(tier: string | null | undefined): string {
@@ -138,7 +134,10 @@ export function buildMLItemPayload(
   listingType: string | null | undefined,
   mandatoryAttrs: string[],
 ): any {
-  const title = `${veiculo.marca || ''} ${veiculo.modelo || ''} ${veiculo.versao || ''} ${veiculo.ano_modelo || veiculo.ano_fabricacao || ''}`.trim().replace(/\s+/g, ' ')
+  const title =
+    `${veiculo.marca || ''} ${veiculo.modelo || ''} ${veiculo.versao || ''} ${veiculo.ano_modelo || veiculo.ano_fabricacao || ''}`
+      .trim()
+      .replace(/\s+/g, ' ')
   if (!title) throw new Error('Título do anúncio não pode ser vazio.')
 
   const price = Number(veiculo.preco_venda) || 0
@@ -158,21 +157,24 @@ export function buildMLItemPayload(
   }
   if (veiculo.combustivel) {
     const fuelMap: Record<string, string> = {
-      'Flex': 'Flex',
-      'Gasolina': 'Gasolina',
-      'Diesel': 'Diesel',
-      'Álcool': 'Álcool',
-      'Híbrido': 'Híbrido',
-      'Elétrico': 'Elétrico',
+      Flex: 'Flex',
+      Gasolina: 'Gasolina',
+      Diesel: 'Diesel',
+      Álcool: 'Álcool',
+      Híbrido: 'Híbrido',
+      Elétrico: 'Elétrico',
     }
-    attributes.push({ id: 'FUEL_TYPE', value_name: fuelMap[veiculo.combustivel] || veiculo.combustivel })
+    attributes.push({
+      id: 'FUEL_TYPE',
+      value_name: fuelMap[veiculo.combustivel] || veiculo.combustivel,
+    })
   }
   if (veiculo.cambio) {
     const transMap: Record<string, string> = {
-      'Automático': 'Automática',
-      'Manual': 'Manual',
-      'CVT': 'Automática',
-      'Automatizada': 'Automática',
+      Automático: 'Automática',
+      Manual: 'Manual',
+      CVT: 'Automática',
+      Automatizada: 'Automática',
     }
     attributes.push({ id: 'TRANSMISSION', value_name: transMap[veiculo.cambio] || veiculo.cambio })
   }
