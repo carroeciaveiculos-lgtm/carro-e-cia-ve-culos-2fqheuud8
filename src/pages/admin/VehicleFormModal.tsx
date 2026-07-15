@@ -563,33 +563,29 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
             .from('site-assets')
             .getPublicUrl(filePath)
           newPhotos.push(publicUrlData.publicUrl)
-          await supabase
-            .from('media_assets')
-            .insert([
-              {
-                file_name: file.name,
-                file_path: publicUrlData.publicUrl,
-                file_size: blob.size,
-                mime_type: blob.type || 'image/jpeg',
-                folder: folderName,
-                uploaded_by: userId,
-              },
-            ])
+          await supabase.from('media_assets').insert([
+            {
+              file_name: file.name,
+              file_path: publicUrlData.publicUrl,
+              file_size: blob.size,
+              mime_type: blob.type || 'image/jpeg',
+              folder: folderName,
+              uploaded_by: userId,
+            },
+          ])
         } else {
           const { data: publicUrlData } = supabase.storage.from('media').getPublicUrl(filePath)
           newPhotos.push(publicUrlData.publicUrl)
-          await supabase
-            .from('media_assets')
-            .insert([
-              {
-                file_name: file.name,
-                file_path: publicUrlData.publicUrl,
-                file_size: blob.size,
-                mime_type: blob.type || 'image/jpeg',
-                folder: folderName,
-                uploaded_by: userId,
-              },
-            ])
+          await supabase.from('media_assets').insert([
+            {
+              file_name: file.name,
+              file_path: publicUrlData.publicUrl,
+              file_size: blob.size,
+              mime_type: blob.type || 'image/jpeg',
+              folder: folderName,
+              uploaded_by: userId,
+            },
+          ])
         }
       }
 
