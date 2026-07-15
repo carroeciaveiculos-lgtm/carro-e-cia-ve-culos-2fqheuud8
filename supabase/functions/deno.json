@@ -2,7 +2,7 @@
   "_versions": {
     "send-lead-email": 82,
     "receive-leads": 108,
-    "sync-estoque": 85,
+    "sync-estoque": 86,
     "webhook-portais": 84,
     "on-lead-created": 82,
     "consultar-placa": 91,
@@ -20,7 +20,7 @@
     "content-workflow-notification": 24,
     "gerar-conteudo-social": 26,
     "publicar-social": 25,
-    "send-whatsapp": 29,
+    "send-whatsapp": 30,
     "social-actions": 25,
     "gerar-pdf-proposta": 23,
     "re-engagement-cron": 27,
@@ -39,7 +39,8 @@
     "wm-webhook-leads": 2,
     "wm-webhook-estoque": 2,
     "wm-auth": 1,
-    "wm-sync": 1,
-    "wm-process-lead": 1
+    "wm-sync": 2,
+    "wm-process-lead": 1,
+    "notify-new-vehicle": 1
   }
 }

@@ -1,217 +1,203 @@
-import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
+import { createClient } from 'jsr:@supabase/supabase-js@2'
+import { corsHeaders } from '../_shared/cors.ts'
+import {
+  buildAuthXML,
+  buildIncluirCarroXML,
+  buildAlterarCarroXML,
+  buildExcluirCarroXML,
+  callSOAP,
+  type WMCredentials,
+} from '../_shared/wm-soap.ts'
 
-const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-const supabase = createClient(supabaseUrl, supabaseKey);
+Deno.serve(async (req: Request) => {
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
 
-serve(async (req) => {
+  const supabase = createClient(
+    Deno.env.get('SUPABASE_URL')!,
+    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+  )
+
   try {
-    const body = await req.json().catch(() => ({}));
-    const { trigger, tipo, codigoAnuncio, lojaCnpj } = body;
+    const body = await req.json().catch(() => ({}))
+    const specificVeiculoId = body.veiculo_id
 
-    console.log(`[wm-sync] Iniciando sincronização - trigger: ${trigger || "automático"}`);
-
-    // 1. Obter token de acesso
-    const token = await getAccessToken();
-    if (!token) {
-      return new Response(JSON.stringify({ erro: "Falha na autenticação Webmotors" }), { status: 401 });
+    const creds: WMCredentials = {
+      email: Deno.env.get('WM_EMAIL') || '',
+      senha: Deno.env.get('WM_SENHA') || '',
+      cnpj: Deno.env.get('WM_CNPJ') || '',
+      clienteId: Deno.env.get('WM_CLIENT_ID') || '',
     }
 
-    // 2. Buscar plataforma Webmotors
-    const { data: plataforma } = await supabase
-      .from("plataformas")
-      .select("id")
-      .eq("slug", "webmotors")
-      .single();
-
-    if (!plataforma) {
-      return new Response(JSON.stringify({ erro: "Plataforma Webmotors não encontrada" }), { status: 400 });
+    if (!creds.email || !creds.senha) {
+      return new Response(JSON.stringify({ error: 'WM credentials not configured' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
     }
 
-    // 3. Se veio de callback (trigger manual de um anúncio específico)
-    if (trigger === "callback" && codigoAnuncio && tipo) {
-      await processarAcaoEspecifica(plataforma.id, { tipo, codigoAnuncio, lojaCnpj, token });
-      return new Response(JSON.stringify({ message: "Ação processada" }), { status: 200 });
+    const authResult = await callSOAP(buildAuthXML(creds), 'Autenticar')
+    if (!authResult.success || !authResult.hashAutenticacao) {
+      return new Response(
+        JSON.stringify({ error: 'WM authentication failed', details: authResult.error }),
+        {
+          status: 401,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        },
+      )
+    }
+    const hash = authResult.hashAutenticacao
+
+    const { data: integracao } = await supabase
+      .from('integracao_plataforma')
+      .select('id')
+      .eq('status', 'conectado')
+      .limit(1)
+      .maybeSingle()
+
+    if (integracao) {
+      await supabase
+        .from('integracao_plataforma')
+        .update({
+          credentials: { hashAutenticacao: hash },
+          ultima_sincronizacao: new Date().toISOString(),
+        })
+        .eq('id', integracao.id)
     }
 
-    // 4. Sincronização completa (batch) — listar veículos do CRM
-    const { data: veiculos } = await supabase
-      .from("veiculos")
-      .select("*")
-      .in("status", ["disponivel", "reservado", "vendido"]);
+    const { data: wmPlataforma } = await supabase
+      .from('plataformas')
+      .select('id')
+      .eq('slug', 'webmotors')
+      .maybeSingle()
 
-    if (!veiculos || veiculos.length === 0) {
-      await registrarLog(plataforma.id, null, "sincronizacao", "sucesso", "Nenhum veículo para sincronizar");
-      return new Response(JSON.stringify({ message: "Nenhum veículo para sincronizar" }), { status: 200 });
+    let pubQuery = supabase
+      .from('estoque_publicacoes')
+      .select('id, veiculo_id, platform, status, post_id')
+      .eq('platform', 'webmotors')
+      .in('status', ['agendado', 'pending_create', 'pending_update', 'pending_close'])
+
+    if (specificVeiculoId) {
+      pubQuery = pubQuery.eq('veiculo_id', specificVeiculoId)
     }
 
-    console.log(`[wm-sync] ${veiculos.length} veículos encontrados no CRM`);
+    const { data: pendingPubs } = await pubQuery.limit(50)
+    if (!pendingPubs || pendingPubs.length === 0) {
+      return new Response(JSON.stringify({ success: true, processed: 0 }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
 
-    // 5. Obter anúncios atuais da Webmotors (via REST ou SOAP)
-    const anunciosWM = await getAnunciosWebmotors(token);
-    const mapaAnuncios = new Map(anunciosWM.map((a: any) => [a.codigoAnuncio || a.id, a]));
+    const results: any[] = []
+    for (const pub of pendingPubs) {
+      const { data: veiculo } = await supabase
+        .from('veiculos')
+        .select('*')
+        .eq('id', pub.veiculo_id)
+        .maybeSingle()
 
-    // 6. Comparar e sincronizar
-    const resultados = {
-      criados: 0,
-      atualizados: 0,
-      encerrados: 0,
-      erros: 0,
-    };
+      if (!veiculo) {
+        await supabase
+          .from('estoque_publicacoes')
+          .update({ status: 'error', erro_msg: 'Vehicle not found' })
+          .eq('id', pub.id)
+        results.push({ id: pub.id, status: 'error', error: 'Vehicle not found' })
+        continue
+      }
 
-    for (const veiculo of veiculos) {
       try {
-        const anuncioExistente = veiculo.codigo_anuncio_wm
-          ? mapaAnuncios.get(String(veiculo.codigo_anuncio_wm))
-          : null;
-
-        if (veiculo.status === "vendido" || veiculo.status === "inativo") {
-          // Encerrar anúncio
-          if (anuncioExistente || veiculo.codigo_anuncio_wm) {
-            await encerrarAnuncio(token, veiculo.codigo_anuncio_wm);
-            await registrarLog(plataforma.id, veiculo.id, "encerrar", "sucesso",
-              `Anúncio ${veiculo.codigo_anuncio_wm} encerrado - veículo vendido`);
-            await supabase.from("veiculos").update({ codigo_anuncio_wm: null }).eq("id", veiculo.id);
-            resultados.encerrados++;
-          }
-        } else if (veiculo.status === "disponivel" || veiculo.status === "reservado") {
-          if (anuncioExistente) {
-            // Atualizar anúncio existente
-            await atualizarAnuncio(token, veiculo, veiculo.codigo_anuncio_wm);
-            await registrarLog(plataforma.id, veiculo.id, "atualizar", "sucesso",
-              `Anúncio ${veiculo.codigo_anuncio_wm} atualizado`);
-            resultados.atualizados++;
+        if (pub.status === 'pending_create' || pub.status === 'agendado') {
+          const xml = buildIncluirCarroXML(veiculo, hash, veiculo.categoria || 'Carro')
+          const res = await callSOAP(
+            xml,
+            veiculo.categoria === 'Moto' ? 'IncluirMoto' : 'IncluirCarro',
+          )
+          if (res.success && res.codigoAnuncio) {
+            await supabase
+              .from('estoque_publicacoes')
+              .update({
+                status: 'publicado',
+                post_id: res.codigoAnuncio,
+                publicado_em: new Date().toISOString(),
+                erro_msg: null,
+              })
+              .eq('id', pub.id)
+            await supabase
+              .from('veiculos')
+              .update({ publicado_webmotors: true })
+              .eq('id', veiculo.id)
+            results.push({ id: pub.id, status: 'created', codigoAnuncio: res.codigoAnuncio })
           } else {
-            // Criar novo anúncio
-            const novoId = await criarAnuncio(token, veiculo);
-            await supabase.from("veiculos").update({ codigo_anuncio_wm: novoId }).eq("id", veiculo.id);
-            await registrarLog(plataforma.id, veiculo.id, "publicar", "sucesso",
-              `Anúncio criado - ID: ${novoId}`);
-            resultados.criados++;
+            await supabase
+              .from('estoque_publicacoes')
+              .update({ status: 'error', erro_msg: res.error })
+              .eq('id', pub.id)
+            results.push({ id: pub.id, status: 'error', error: res.error })
+          }
+        } else if (pub.status === 'pending_update' && pub.post_id) {
+          const xml = buildAlterarCarroXML(veiculo, hash, pub.post_id)
+          const res = await callSOAP(xml, 'AlterarCarro')
+          if (res.success) {
+            await supabase
+              .from('estoque_publicacoes')
+              .update({ status: 'publicado', erro_msg: null })
+              .eq('id', pub.id)
+            results.push({ id: pub.id, status: 'updated' })
+          } else {
+            await supabase
+              .from('estoque_publicacoes')
+              .update({ status: 'error', erro_msg: res.error })
+              .eq('id', pub.id)
+            results.push({ id: pub.id, status: 'error', error: res.error })
+          }
+        } else if (pub.status === 'pending_close' && pub.post_id) {
+          const xml = buildExcluirCarroXML(hash, pub.post_id)
+          const res = await callSOAP(xml, 'ExcluirCarro')
+          if (res.success) {
+            await supabase
+              .from('estoque_publicacoes')
+              .update({ status: 'despublicado' })
+              .eq('id', pub.id)
+            await supabase
+              .from('veiculos')
+              .update({ publicado_webmotors: false })
+              .eq('id', veiculo.id)
+            results.push({ id: pub.id, status: 'closed' })
+          } else {
+            results.push({ id: pub.id, status: 'error', error: res.error })
           }
         }
-      } catch (err) {
-        console.error(`[wm-sync] Erro no veículo ${veiculo.id}:`, err);
-        await registrarLog(plataforma.id, veiculo.id, "erro", "erro",
-          `Falha: ${err.message}`);
-        resultados.erros++;
+      } catch (err: any) {
+        results.push({ id: pub.id, status: 'error', error: err.message })
       }
     }
 
-    // 7. Log geral da sincronização
-    await registrarLog(plataforma.id, null, "sincronizacao", "sucesso",
-      `Sincronização concluída: ${resultados.criados} criados, ${resultados.atualizados} atualizados, ${resultados.encerrados} encerrados, ${resultados.erros} erros`);
-
-    return new Response(JSON.stringify({
-      message: "Sincronização concluída",
-      resultados,
-    }), { status: 200 });
-
-  } catch (error) {
-    console.error("[wm-sync] Erro geral:", error);
-    return new Response(JSON.stringify({ erro: error.message }), { status: 500 });
-  }
-});
-
-// ─── Funções auxiliares ─────────────────────────────────────────
-
-async function getAccessToken(): Promise<string | null> {
-  // Tenta chamar a wm-auth para obter/renovar o token
-  try {
-    const response = await fetch(
-      `https://htpcqdbhktmvppfemnad.supabase.co/functions/v1/wm-auth`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "get_token" }),
-      }
-    );
-    const data = await response.json();
-    return data.access_token || null;
-  } catch (err) {
-    console.error("[wm-sync] Erro ao obter token:", err);
-    return null;
-  }
-}
-
-async function getAnunciosWebmotors(token: string): Promise<any[]> {
-  // Tenta REST - Estoque Canais API
-  try {
-    const response = await fetch(
-      "https://api-webmotors.sensedia.com/estoquecanais/v1/itens",
-      {
-        headers: {
-          "Authorization": `Bearer ${token}`,
-          "client_id": Deno.env.get("WM_CLIENT_ID")!,
-        },
-      }
-    );
-    if (response.ok) {
-      return await response.json();
+    if (wmPlataforma) {
+      const logs = results.map((r) => ({
+        plataforma_id: wmPlataforma.id,
+        veiculo_id: pendingPubs.find((p) => p.id === r.id)?.veiculo_id,
+        acao:
+          r.status === 'created'
+            ? 'create'
+            : r.status === 'updated'
+              ? 'update'
+              : r.status === 'closed'
+                ? 'close'
+                : 'error',
+        status: r.status === 'error' ? 'erro' : 'success',
+        mensagem: r.error || `WM sync ${r.status}`,
+        metadata: { codigoAnuncio: r.codigoAnuncio },
+      }))
+      if (logs.length > 0) await supabase.from('sync_log').insert(logs)
     }
-  } catch {
-    console.log("[wm-sync] REST não disponível, tentando SOAP...");
+
+    return new Response(JSON.stringify({ success: true, processed: results.length, results }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    })
+  } catch (err: any) {
+    return new Response(JSON.stringify({ error: err.message }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    })
   }
-
-  // Fallback: via dados do CRM (já temos os códigos salvos)
-  const { data } = await supabase
-    .from("veiculos")
-    .select("codigo_anuncio_wm")
-    .not("codigo_anuncio_wm", "is", null);
-
-  return (data || []).map((v: any) => ({ codigoAnuncio: v.codigo_anuncio_wm }));
-}
-
-async function criarAnuncio(token: string, veiculo: any): Promise<string> {
-  // Placeholder — implementar com SOAP (incluirCarro/incluirMoto)
-  // ou REST (POST /estoquecanais/v1/itens)
-  console.log(`[wm-sync] Criando anúncio para: ${veiculo.marca} ${veiculo.modelo}`);
-
-  // Simular criação — na implementação real, chamar SOAP ou REST
-  const codigo = `WM-${Date.now()}`;
-
-  await registrarLog(null, veiculo.id, "publicar", "sucesso",
-    `Anúncio criado com ID ${codigo}`);
-
-  return codigo;
-}
-
-async function atualizarAnuncio(token: string, veiculo: any, codigoAnuncio: string): Promise<void> {
-  console.log(`[wm-sync] Atualizando anúncio ${codigoAnuncio}: ${veiculo.marca} ${veiculo.modelo}`);
-  // Implementar com SOAP (alterarCarro/alterarMoto) ou REST (PATCH /itens/{id}/status)
-}
-
-async function encerrarAnuncio(token: string, codigoAnuncio: string): Promise<void> {
-  console.log(`[wm-sync] Encerrando anúncio ${codigoAnuncio}`);
-  // Implementar com SOAP (excluirCarro/excluirMoto) ou REST
-}
-
-async function processarAcaoEspecifica(plataformaId: string, params: any) {
-  const { tipo, codigoAnuncio, lojaCnpj, token } = params;
-  console.log(`[wm-sync] Ação específica: ${tipo} - anúncio ${codigoAnuncio}`);
-
-  await registrarLog(plataformaId, null, `estoque_${tipo}`, "pendente",
-    `Solicitação de ${tipo} do anúncio ${codigoAnuncio}`);
-}
-
-async function registrarLog(
-  plataformaId: string | null,
-  veiculoId: string | null,
-  acao: string,
-  status: string,
-  mensagem: string
-) {
-  try {
-    await supabase.from("sync_log").insert({
-      plataforma_id: plataformaId,
-      veiculo_id: veiculoId,
-      acao,
-      status,
-      mensagem,
-      metadata: {},
-    });
-  } catch (err) {
-    console.error("[wm-sync] Erro ao registrar log:", err);
-  }
-}
+})

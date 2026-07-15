@@ -39,6 +39,8 @@ import { useToast } from '@/hooks/use-toast'
 import VehicleFormModal from './VehicleFormModal'
 import { VehicleQuickViewModal } from '@/components/admin/VehicleQuickViewModal'
 import { VehicleShareModal } from '@/components/admin/VehicleShareModal'
+import { AIContentReview } from '@/components/admin/AIContentReview'
+import { Sparkles } from 'lucide-react'
 
 const STATUS_MAP: Record<string, string> = {
   ativos: 'disponivel',
@@ -62,6 +64,7 @@ export default function AdminEstoque() {
   const [shareVehicle, setShareVehicle] = useState<any>(null)
   const [quickViewVehicle, setQuickViewVehicle] = useState<any>(null)
   const [loadingQR, setLoadingQR] = useState(false)
+  const [showAIReview, setShowAIReview] = useState(false)
   const { toast } = useToast()
 
   const combustiveis = ['Flex', 'Gasolina', 'Álcool', 'Diesel', 'Híbrido', 'Elétrico']
@@ -256,6 +259,13 @@ export default function AdminEstoque() {
               <QrCode className="w-4 h-4 mr-2" /> {loadingQR ? 'Gerando...' : 'Gerar QR Codes'}
             </Button>
           )}
+          <Button
+            variant="outline"
+            onClick={() => setShowAIReview(true)}
+            className="hidden sm:flex border-purple-200 text-purple-700 bg-purple-50 hover:bg-purple-100"
+          >
+            <Sparkles className="w-4 h-4 mr-2" /> Revisão IA
+          </Button>
           <Button
             onClick={() => {
               setEditingId(null)
@@ -586,6 +596,7 @@ export default function AdminEstoque() {
           onSuccess={loadVehicles}
         />
       )}
+      <AIContentReview open={showAIReview} onOpenChange={setShowAIReview} />
     </div>
   )
 }

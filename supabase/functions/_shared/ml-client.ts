@@ -102,7 +102,11 @@ export async function validatePhotos(
       }
     } catch {
       try {
-        const res2 = await fetch(url, { method: 'GET', headers: { Range: 'bytes=0-0' }, signal: AbortSignal.timeout(10000) })
+        const res2 = await fetch(url, {
+          method: 'GET',
+          headers: { Range: 'bytes=0-0' },
+          signal: AbortSignal.timeout(10000),
+        })
         if (!res2.ok && res2.status !== 206) {
           errors.push(`Imagem inacessível (HTTP ${res2.status}): ${url}`)
         }
@@ -122,7 +126,11 @@ export async function checkMLPackages(
       headers: { Authorization: `Bearer ${token}` },
     })
     if (!userRes.ok) {
-      return { hasPackage: false, activeCount: 0, error: 'Não foi possível obter informações do usuário no Mercado Livre' }
+      return {
+        hasPackage: false,
+        activeCount: 0,
+        error: 'Não foi possível obter informações do usuário no Mercado Livre',
+      }
     }
     const user = await userRes.json()
 
@@ -131,7 +139,11 @@ export async function checkMLPackages(
       { headers: { Authorization: `Bearer ${token}` } },
     )
     if (!listingsRes.ok) {
-      return { hasPackage: false, activeCount: 0, error: 'Não foi possível verificar anúncios ativos no Mercado Livre' }
+      return {
+        hasPackage: false,
+        activeCount: 0,
+        error: 'Não foi possível verificar anúncios ativos no Mercado Livre',
+      }
     }
     const listings = await listingsRes.json()
     const activeCount = listings.results?.length || 0

@@ -22,6 +22,8 @@ import { CurrencyInput } from '@/components/ui/currency-input'
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart'
 import { Line, LineChart, CartesianGrid, XAxis, YAxis } from 'recharts'
 import { cn, sanitizePhone, extractFinalPlaca } from '@/lib/utils'
+import { resizeImages } from '@/lib/image-resize'
+import { BatchPhotoUploader } from '@/components/admin/BatchPhotoUploader'
 import { ImageEditorModal } from '@/components/admin/ImageEditorModal'
 import { DocumentPreviewDialog } from '@/components/admin/DocumentPreviewDialog'
 import { getFipeHistoryFromDB } from '@/services/fipe'
@@ -211,6 +213,7 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
     descricao: '',
     em_preparacao: false,
     notas_internas: '',
+    requires_review: false,
   })
 
   const handleDocumentoSearch = async (doc: string) => {
@@ -525,6 +528,7 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
     setIsUploadingPhotos(true)
 
     try {
+      const resizedBlobs = await resizeImages(files)
       const { data: userData } = await supabase.auth.getUser()
       const userId = userData?.user?.id
 
@@ -540,45 +544,52 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
 
       const newPhotos: string[] = []
 
-      for (const file of files) {
-        const fileExt = file.name.split('.').pop()
-        const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`
+      for (let i = 0; i < resizedBlobs.length; i++) {
+        const blob = resizedBlobs[i]
+        const file = files[i]
+        const fileExt = blob.type.includes('png') ? 'png' : 'jpg'
+        const fileName = `${Date.now()}_${i}_${Math.random().toString(36).substring(7)}.${fileExt}`
         const filePath = `${folderName}/${fileName}`
 
-        const { error: uploadError } = await supabase.storage.from('media').upload(filePath, file)
+        const { error: uploadError } = await supabase.storage
+          .from('media')
+          .upload(filePath, blob, { contentType: blob.type || 'image/jpeg' })
         if (uploadError) {
-          // Fallback para site-assets se media não existir
           const { error: uploadError2 } = await supabase.storage
             .from('site-assets')
-            .upload(filePath, file)
+            .upload(filePath, blob, { contentType: blob.type || 'image/jpeg' })
           if (uploadError2) throw uploadError2
           const { data: publicUrlData } = supabase.storage
             .from('site-assets')
             .getPublicUrl(filePath)
           newPhotos.push(publicUrlData.publicUrl)
-          await supabase.from('media_assets').insert([
-            {
-              file_name: file.name,
-              file_path: publicUrlData.publicUrl,
-              file_size: file.size,
-              mime_type: file.type,
-              folder: folderName,
-              uploaded_by: userId,
-            },
-          ])
+          await supabase
+            .from('media_assets')
+            .insert([
+              {
+                file_name: file.name,
+                file_path: publicUrlData.publicUrl,
+                file_size: blob.size,
+                mime_type: blob.type || 'image/jpeg',
+                folder: folderName,
+                uploaded_by: userId,
+              },
+            ])
         } else {
           const { data: publicUrlData } = supabase.storage.from('media').getPublicUrl(filePath)
           newPhotos.push(publicUrlData.publicUrl)
-          await supabase.from('media_assets').insert([
-            {
-              file_name: file.name,
-              file_path: publicUrlData.publicUrl,
-              file_size: file.size,
-              mime_type: file.type,
-              folder: folderName,
-              uploaded_by: userId,
-            },
-          ])
+          await supabase
+            .from('media_assets')
+            .insert([
+              {
+                file_name: file.name,
+                file_path: publicUrlData.publicUrl,
+                file_size: blob.size,
+                mime_type: blob.type || 'image/jpeg',
+                folder: folderName,
+                uploaded_by: userId,
+              },
+            ])
         }
       }
 
@@ -665,8 +676,12 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
         tempDiv.innerHTML = data.data.texto_html
         const plainText = tempDiv.textContent || tempDiv.innerText || ''
         const cleanedText = sanitizeAiText(plainText)
-        setFormData((p: any) => ({ ...p, descricao: cleanedText.substring(0, 1000) }))
-        toast({ title: 'Descrição gerada com IA!' })
+        setFormData((p: any) => ({
+          ...p,
+          descricao: cleanedText.substring(0, 1000),
+          requires_review: true,
+        }))
+        toast({ title: 'Descrição gerada com IA! Marque para revisão.' })
       }
     } catch {
       toast({ title: 'Erro ao gerar descrição', variant: 'destructive' })
@@ -1346,6 +1361,15 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
                       )}
                       Upload
                     </Button>
+                    <BatchPhotoUploader
+                      vehicleId={formData.id}
+                      modelo={formData.modelo}
+                      placa={formData.placa}
+                      onUploaded={(urls) => {
+                        setFormData((p: any) => ({ ...p, fotos: [...(p.fotos || []), ...urls] }))
+                        loadMediaAssets()
+                      }}
+                    />
                     <Button variant="outline" size="sm" onClick={() => setIsMediaCenterOpen(true)}>
                       <ImageIcon className="w-4 h-4 mr-2 text-blue-600" /> Biblioteca
                     </Button>
@@ -1730,6 +1754,18 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
               disabled={loading}
             >
               Salvar como Rascunho
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setFormData((p: any) => ({ ...p, requires_review: false }))
+                save('disponivel', true)
+                toast({ title: 'Veículo aprovado e publicado!' })
+              }}
+              disabled={loading}
+              className="bg-green-600 hover:bg-green-700 text-white font-bold"
+            >
+              <CheckCircle className="w-4 h-4 mr-2" /> Aprovar e Publicar
             </Button>
             <Button
               onClick={() => {

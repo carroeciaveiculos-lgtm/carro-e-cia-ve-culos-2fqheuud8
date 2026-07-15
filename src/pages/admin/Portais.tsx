@@ -17,6 +17,7 @@ import { VehicleAccordion } from '@/components/admin/portais/VehicleAccordion'
 import { GlobalActionsBar } from '@/components/admin/portais/GlobalActionsBar'
 import { ErrorHistoryPanel } from '@/components/admin/portais/ErrorHistoryPanel'
 import { ConversionMonitor } from '@/components/admin/portais/ConversionMonitor'
+import { WMDashboard } from '@/components/admin/portais/WMDashboard'
 import {
   Select,
   SelectContent,
@@ -299,6 +300,10 @@ export default function Portais() {
           <h2 className="text-sm font-bold text-gray-800 mb-3">Monitoramento de Conversão</h2>
           <ConversionMonitor />
         </div>
+      </div>
+
+      <div className="bg-white rounded-lg border p-4 mt-8">
+        <WMDashboard />
       </div>
     </div>
   )
