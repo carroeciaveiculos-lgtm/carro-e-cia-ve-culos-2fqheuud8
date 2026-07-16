@@ -5,7 +5,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { getTiersForPlatform, hasTiers } from '@/lib/platform-tiers'
+import { getTiersForPlatform, hasTiers, getDefaultTierValue } from '@/lib/platform-tiers'
 import type { VeiculoSync } from '@/services/plataformas'
 
 interface Props {
@@ -20,10 +20,11 @@ export function PortalTierSelector({ plataforma, veiculo, onUpdateAdType }: Prop
     return <span className="text-xs text-gray-400">Sem modalidade disponível</span>
   }
 
+  const defaultTier = getDefaultTierValue(plataforma.slug)
   const currentValue =
     plataforma.slug === 'mercadolivre'
-      ? veiculo.ml_listing_type || 'gold_special'
-      : (veiculo.ad_types?.[plataforma.slug] as string) || tiers[0]?.value || ''
+      ? veiculo.ml_listing_type || defaultTier
+      : (veiculo.ad_types?.[plataforma.slug] as string) || defaultTier
 
   return (
     <div className="flex items-center gap-2">

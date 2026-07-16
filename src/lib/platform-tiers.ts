@@ -5,9 +5,9 @@ export interface AdTier {
 
 export const PLATFORM_TIERS: Record<string, AdTier[]> = {
   mercadolivre: [
-    { value: 'diamante', label: 'Diamante' },
-    { value: 'ouro', label: 'Ouro' },
-    { value: 'prata', label: 'Prata' },
+    { value: 'gold_pro', label: 'Diamante' },
+    { value: 'gold_special', label: 'Ouro' },
+    { value: 'silver', label: 'Prata' },
   ],
   webmotors: [
     { value: 'super_acelerador_vip', label: 'Super Acelerador VIP' },
@@ -36,4 +36,9 @@ export function getTierLabel(slug: string, value: string): string {
 
 export function hasTiers(slug: string): boolean {
   return (PLATFORM_TIERS[slug] ?? []).length > 0
+}
+
+export function getDefaultTierValue(slug: string): string {
+  const tiers = PLATFORM_TIERS[slug] ?? []
+  return tiers[0]?.value ?? ''
 }

@@ -55,6 +55,26 @@ const ERROR_MAP: Record<string, { message: string; action: string }> = {
     message: 'Atributos obrigatórios ausentes. Verifique os dados técnicos do veículo.',
     action: 'Completar ficha técnica',
   },
+  INVALID_FORMAT: {
+    message: 'Formato de imagem inválido. Apenas JPEG ou PNG são aceitos.',
+    action: 'Converter imagens para JPEG ou PNG',
+  },
+  RESOLUTION_TOO_LOW: {
+    message: 'Resolução da imagem muito baixa. Mínimo 800x800px.',
+    action: 'Adicionar imagens com resolução maior',
+  },
+  IMAGE_TOO_LARGE: {
+    message: 'Imagem muito grande. Máximo 10MB por arquivo.',
+    action: 'Comprimir ou redimensionar a imagem',
+  },
+  IMAGE_UNREACHABLE: {
+    message: 'Imagem inacessível. A URL não retorna HTTP 200.',
+    action: 'Verificar a URL da imagem',
+  },
+  image_validation: {
+    message: 'Falha na validação de imagens. Verifique resolução, formato e acessibilidade.',
+    action: 'Revisar imagens do veículo',
+  },
 }
 
 export function translateError(errorCode: string): { message: string; action: string } {

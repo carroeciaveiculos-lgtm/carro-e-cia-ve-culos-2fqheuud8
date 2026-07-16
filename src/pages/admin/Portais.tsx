@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from 'react'
+import { Link } from 'react-router-dom'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
-import { Loader2, Search } from 'lucide-react'
+import { Loader2, Search, AlertCircle } from 'lucide-react'
 import {
   fetchPlataformas,
   fetchVeiculosForPortais,
@@ -188,7 +189,15 @@ export default function Portais() {
 
   return (
     <div className="p-4 md:p-8 max-w-[1600px] mx-auto space-y-4">
-      <h1 className="text-xl font-bold text-gray-800">Sincronização de Portais</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-xl font-bold text-gray-800">Sincronização de Portais</h1>
+        <Link to="/admin/portais/revisao">
+          <Button variant="outline" size="sm">
+            <AlertCircle className="w-4 h-4 mr-2" />
+            Revisão de Pendências
+          </Button>
+        </Link>
+      </div>
 
       <GlobalActionsBar
         plataformas={plataformas}
