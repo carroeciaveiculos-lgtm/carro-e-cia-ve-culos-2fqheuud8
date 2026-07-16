@@ -78,7 +78,11 @@ export function buildExcluirCarroXML(hash: string, codigoAnuncio: string): strin
 </soap:Envelope>`
 }
 
-export async function callSOAP(xml: string, action: string, maxRetries = 3): Promise<SOAPResult> {
+export async function callSOAP(
+  xml: string,
+  action: string,
+  maxRetries = 3
+): Promise<SOAPResult> {
   let lastError = ''
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
@@ -86,7 +90,7 @@ export async function callSOAP(xml: string, action: string, maxRetries = 3): Pro
         method: 'POST',
         headers: {
           'Content-Type': 'text/xml; charset=utf-8',
-          SOAPAction: `http://tempuri.org/${action}`,
+          'SOAPAction': `http://tempuri.org/${action}`,
         },
         body: xml,
       })
