@@ -1,4 +1,5 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
+import { createClient } from 'jsr:@supabase/supabase-js@2'
 import { GeminiClient } from '../_shared/gemini-client.ts'
 
 const corsHeaders = {
@@ -15,7 +16,20 @@ Deno.serve(async (req) => {
     const { product, audience, tone } = await req.json()
     const gemini = new GeminiClient()
 
-    const prompt = `You are an expert automotive marketing copywriter for "Carro e Cia Veículos", a used car dealership in Uberaba, MG, Brazil.
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+    )
+    const { data: promptConfig } = await supabase
+      .from('ai_prompts_config')
+      .select('prompt_text')
+      .eq('slug', 'ad_copy_generator')
+      .maybeSingle()
+    const adCopyPrompt =
+      promptConfig?.prompt_text ||
+      'You are an expert automotive marketing copywriter for a used car dealership.'
+
+    const prompt = `${adCopyPrompt}
 Generate exactly 3 variations of headlines and descriptions for "${product}" targeting "${audience}".
 Tone: ${tone || 'professional'}.
 

@@ -75,9 +75,33 @@ Deno.serve(async (req) => {
       .from('social_configuracoes')
       .select('ai_system_prompt, whatsapp_number')
       .maybeSingle()
-    const customPrompt =
-      socialConfig?.ai_system_prompt ||
-      'Você é um "Master Arquiteto de Conteúdo" especialista em veículos seminovos.'
+
+    const { data: promptsData } = await supabaseService
+      .from('ai_prompts_config')
+      .select('slug, prompt_text')
+    const getPromptText = (slug: string, defaultText: string) => {
+      const found = promptsData?.find((p: any) => p.slug === slug)
+      return found?.prompt_text || defaultText
+    }
+
+    const sysPromptSeoCopilot = getPromptText(
+      'seo_copilot',
+      'Você é um especialista em SEO e Copywriting focado no mercado automotivo.',
+    )
+    const sysPromptSeoOptimizer = getPromptText(
+      'seo_optimizer',
+      'Você é um Master Especialista em SEO.',
+    )
+    const sysPromptHeading = getPromptText(
+      'seo_heading_draft',
+      'Você é um especialista em SEO e estrutura de conteúdo.',
+    )
+    const sysPromptGeneral = getPromptText(
+      'ai_assistant',
+      'Você é um "Master Arquiteto de Conteúdo" especialista em veículos seminovos.',
+    )
+
+    const customPrompt = socialConfig?.ai_system_prompt || sysPromptGeneral
     const whatsappNumber = socialConfig?.whatsapp_number || '5534999999999'
 
     const basePrompt = `${customPrompt}
@@ -101,7 +125,7 @@ REGRAS ANTI-ALUCINAÇÃO:
 
     const prompt = is_heading_draft
       ? `${basePrompt}
-Você é um especialista em SEO e estrutura de conteúdo.
+${sysPromptHeading}
 Sua tarefa é criar uma estrutura otimizada de subtítulos (H2, H3) para um artigo com o título: "${article_title}".
 
 REGRAS:
@@ -121,7 +145,7 @@ Responda APENAS com um objeto JSON válido, sem formatação markdown:
 }`
       : is_seo_optimizer
         ? `${basePrompt}
-Você é um Master Especialista em SEO.
+${sysPromptSeoOptimizer}
 Sua missão é otimizar o rascunho a seguir para atingir a nota máxima (Score 100) em SEO.
 Ajuste os textos, o título, meta_title, meta_description, H1 e certifique-se de que a palavra-chave principal apareça no início do conteúdo e em subtítulos (H2/H3).
 
@@ -142,7 +166,7 @@ Responda APENAS com um objeto JSON válido, sem formatação markdown:
 }`
         : is_seo_copilot
           ? `${basePrompt}
-Você é um especialista em SEO e Copywriting focado no mercado automotivo.
+${sysPromptSeoCopilot}
 Sua tarefa é gerar um artigo de blog épico e altamente otimizado para SEO baseado no título fornecido: "${title}".
 
 REGRAS DE CONTEÚDO (EXTREMAMENTE IMPORTANTES):

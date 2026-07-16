@@ -19,7 +19,15 @@ async function getSystemPrompt() {
     .select('ai_system_prompt, whatsapp_number')
     .maybeSingle()
 
-  const basePrompt = data?.ai_system_prompt || 'Você é o Luiz, SDR digital da Carro e Cia Motors.'
+  const { data: promptConfig } = await supabase
+    .from('ai_prompts_config')
+    .select('prompt_text')
+    .eq('slug', 'sdr_whatsapp')
+    .maybeSingle()
+  const basePrompt =
+    promptConfig?.prompt_text ||
+    data?.ai_system_prompt ||
+    'Você é o Luiz, SDR digital da Carro e Cia Motors.'
   const waNumber = data?.whatsapp_number || ''
 
   const { data: brainKnowledge } = await supabase

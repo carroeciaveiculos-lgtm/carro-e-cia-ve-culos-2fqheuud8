@@ -23,6 +23,7 @@ import {
   Code,
   Globe,
   Phone,
+  Bot,
 } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ContactsConfigPanel } from '@/components/admin/ContactsConfigPanel'
@@ -64,6 +65,7 @@ export default function Configuracoes() {
   const [testResponse, setTestResponse] = useState('')
   const [isTesting, setIsTesting] = useState(false)
   const [uploadingDoc, setUploadingDoc] = useState(false)
+  const [prompts, setPrompts] = useState<any[]>([])
 
   const { toast } = useToast()
 
@@ -71,7 +73,13 @@ export default function Configuracoes() {
     loadConfig()
     loadMemoryCounts()
     loadKnowledge()
+    loadPrompts()
   }, [])
+
+  const loadPrompts = async () => {
+    const { data } = await supabase.from('ai_prompts_config').select('*').order('name')
+    if (data) setPrompts(data)
+  }
 
   const loadConfig = async () => {
     const { data: socialData } = await supabase
@@ -212,6 +220,32 @@ export default function Configuracoes() {
     }, 800)
   }
 
+  const handleUpdatePromptText = (index: number, val: string) => {
+    const newPrompts = [...prompts]
+    newPrompts[index].prompt_text = val
+    setPrompts(newPrompts)
+  }
+
+  const handleRestorePrompt = (index: number) => {
+    const newPrompts = [...prompts]
+    newPrompts[index].prompt_text = newPrompts[index].default_prompt
+    setPrompts(newPrompts)
+  }
+
+  const handleSavePrompt = async (prompt: any) => {
+    setLoading(true)
+    const { error } = await supabase
+      .from('ai_prompts_config')
+      .update({ prompt_text: prompt.prompt_text })
+      .eq('id', prompt.id)
+    setLoading(false)
+    if (error) {
+      toast({ title: 'Erro ao salvar', description: error.message, variant: 'destructive' })
+    } else {
+      toast({ title: 'Prompt salvo com sucesso!' })
+    }
+  }
+
   return (
     <div className="p-6 max-w-5xl mx-auto space-y-6">
       <div className="mb-8">
@@ -222,7 +256,7 @@ export default function Configuracoes() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="mb-4">
+        <TabsList className="mb-4 flex-wrap h-auto gap-1">
           <TabsTrigger value="geral" className="flex items-center gap-2">
             <Globe className="w-4 h-4" /> Loja & SEO
           </TabsTrigger>
@@ -234,6 +268,9 @@ export default function Configuracoes() {
           </TabsTrigger>
           <TabsTrigger value="brain" className="flex items-center gap-2">
             <BrainCircuit className="w-4 h-4" /> Brain IA
+          </TabsTrigger>
+          <TabsTrigger value="prompts" className="flex items-center gap-2">
+            <Bot className="w-4 h-4" /> Prompts IA
           </TabsTrigger>
           <TabsTrigger value="social" className="flex items-center gap-2">
             <Share2 className="w-4 h-4" /> Integrações
@@ -550,6 +587,45 @@ export default function Configuracoes() {
           </Card>
         </TabsContent>
 
+        <TabsContent value="prompts" className="space-y-6">
+          <div className="mb-4">
+            <h3 className="text-xl font-bold">Gerenciamento de Prompts da IA</h3>
+            <p className="text-slate-500 text-sm">
+              Personalize as instruções que guiam o comportamento da IA em cada setor da loja.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {prompts.map((prompt, index) => (
+              <Card key={prompt.id}>
+                <CardHeader>
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <Bot className="w-5 h-5 text-indigo-500" />
+                    {prompt.name}
+                  </CardTitle>
+                  <CardDescription>{prompt.description}</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <Textarea
+                    className="min-h-[150px] font-mono text-sm leading-relaxed"
+                    value={prompt.prompt_text}
+                    onChange={(e) => handleUpdatePromptText(index, e.target.value)}
+                  />
+                  <div className="flex justify-between items-center">
+                    <Button variant="outline" size="sm" onClick={() => handleRestorePrompt(index)}>
+                      Restaurar Padrão
+                    </Button>
+                    <Button size="sm" onClick={() => handleSavePrompt(prompt)} disabled={loading}>
+                      <Save className="w-4 h-4 mr-2" />
+                      Salvar
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </TabsContent>
+
         <TabsContent value="social">
           <Card>
             <CardHeader>
@@ -564,8 +640,8 @@ export default function Configuracoes() {
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2 md:col-span-2">
                   <Label className="flex items-center gap-2">
-                    <MessageCircle className="w-4 h-4 text-purple-600" /> System Prompt da IA (Tom
-                    de Voz)
+                    <MessageCircle className="w-4 h-4 text-purple-600" /> System Prompt da IA
+                    (Legado)
                   </Label>
                   <Textarea
                     value={socialConfig.ai_system_prompt || ''}
@@ -575,6 +651,9 @@ export default function Configuracoes() {
                     placeholder="Ex: Você é um assistente de marketing experiente focado em venda de seminovos..."
                     className="min-h-[100px]"
                   />
+                  <p className="text-xs text-slate-500">
+                    Nota: Migre suas configurações de IA para a aba "Prompts IA".
+                  </p>
                 </div>
                 <div className="space-y-2">
                   <Label className="flex items-center gap-2">

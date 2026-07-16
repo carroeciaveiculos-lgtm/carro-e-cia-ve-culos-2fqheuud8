@@ -82,7 +82,15 @@ Deno.serve(async (req: Request) => {
 
     const targetPlatform = platform || 'Instagram'
 
-    const prompt = `Você é um especialista em marketing automotivo.
+    const { data: promptConfig } = await supabase
+      .from('ai_prompts_config')
+      .select('prompt_text')
+      .eq('slug', 'social_media')
+      .maybeSingle()
+    const socialMediaPrompt =
+      promptConfig?.prompt_text || 'Você é um especialista em marketing automotivo.'
+
+    const prompt = `${socialMediaPrompt}
 Crie um post persuasivo para a rede social ${targetPlatform} vendendo o seguinte veículo:
 Marca: ${safeMarca}
 Modelo: ${safeModelo}
@@ -92,7 +100,7 @@ Cor: ${safeCor}
 Combustível: ${safeCombustivel}
 Descrição: ${safeDescricao}
 
-Inclua emojis, um tom atrativo e chamadas para ação. No final, adicione hashtags relevantes. Não coloque aspas no texto todo. O formato deve estar pronto para copiar e colar no ${targetPlatform}.`
+O formato deve estar pronto para copiar e colar no ${targetPlatform}.`
 
     const apiKey = Deno.env.get('GEMINI_APY_KEY') || Deno.env.get('GEMINI_API_KEY')
 
