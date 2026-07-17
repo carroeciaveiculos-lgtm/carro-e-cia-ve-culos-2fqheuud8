@@ -55,29 +55,11 @@ const ERROR_MAP: Record<string, { message: string; action: string }> = {
     message: 'Atributos obrigatórios ausentes.',
     action: 'Completar ficha técnica',
   },
-  INVALID_FORMAT: {
-    message: 'Formato de imagem inválido. Apenas JPEG ou PNG são aceitos.',
-    action: 'Converter imagens para JPEG ou PNG',
-  },
-  RESOLUTION_TOO_LOW: {
-    message: 'Resolução da imagem muito baixa. Mínimo 800x800px.',
-    action: 'Adicionar imagens com resolução maior',
-  },
-  IMAGE_TOO_LARGE: {
-    message: 'Imagem muito grande. Máximo 10MB por arquivo.',
-    action: 'Comprimir ou redimensionar a imagem',
-  },
-  IMAGE_UNREACHABLE: {
-    message: 'Imagem inacessível. A URL não retorna HTTP 200.',
-    action: 'Verificar a URL da imagem',
-  },
-  image_validation: {
-    message: 'Falha na validação de imagens.',
-    action: 'Revisar imagens do veículo',
-  },
 }
 
 export function translateError(errorCode: string): { message: string; action: string } {
-  const key = Object.keys(ERROR_MAP).find((k) => errorCode.toLowerCase().includes(k.toLowerCase()))
+  const key = Object.keys(ERROR_MAP).find((k) =>
+    errorCode.toLowerCase().includes(k.toLowerCase()),
+  )
   return key ? ERROR_MAP[key] : { message: errorCode, action: 'Verificar logs' }
 }
