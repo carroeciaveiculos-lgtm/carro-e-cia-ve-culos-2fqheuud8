@@ -55,6 +55,7 @@ export interface VeiculoSync {
   cilindrada: string | null
   direcao: string | null
   descricao: string | null
+  portas: number | null
   created_at: string | null
   publicacoes?: PublicacaoStatus[]
 }
@@ -62,7 +63,7 @@ export interface VeiculoSync {
 const VEHICLE_SELECT = `
   id, marca, modelo, versao, ano_modelo, ano_fabricacao, quilometragem,
   placa, preco_venda, fotos, status, cor, combustivel, cambio, cilindrada,
-  direcao, descricao, ml_listing_type, created_at, elegivel_portais, ad_types,
+  direcao, descricao, portas, ml_listing_type, created_at, elegivel_portais, ad_types,
   publicado_mercadolivre, publicado_webmotors, publicado_olx,
   publicado_icarros, publicado_napista
 `
@@ -170,4 +171,56 @@ export async function toggleElegivelPortais(veiculoId: string, elegivel: boolean
     .update({ elegivel_portais: elegivel })
     .eq('id', veiculoId)
   if (error) throw error
+}
+
+export async function ensureMLListings(veiculoIds: string[]): Promise<void> {
+  if (veiculoIds.length === 0) return
+  const { data: existing } = await supabase
+    .from('ml_listings')
+    .select('id, veiculo_id, ml_item_id, status')
+    .in('veiculo_id', veiculoIds)
+
+  const existingMap = new Map((existing || []).map((r: any) => [r.veiculo_id, r]))
+
+  for (const vid of veiculoIds) {
+    const record = existingMap.get(vid)
+    if (!record) {
+      await supabase
+        .from('ml_listings')
+        .insert({
+          veiculo_id: vid,
+          status: 'pending_create',
+          last_synced_at: new Date().toISOString(),
+        })
+    } else if (record.status !== 'pending_create' && record.status !== 'pending_update') {
+      const newStatus = record.ml_item_id ? 'pending_update' : 'pending_create'
+      await supabase
+        .from('ml_listings')
+        .update({ status: newStatus, last_synced_at: new Date().toISOString() })
+        .eq('id', record.id)
+    }
+  }
+}
+
+export async function fetchMLErrors(): Promise<
+  Array<{ veiculo_id: string; marca: string; modelo: string; error: string }>
+> {
+  const { data } = await supabase
+    .from('ml_listings')
+    .select('veiculo_id, veiculos(marca, modelo)')
+    .eq('status', 'error')
+    .order('last_synced_at', { ascending: false })
+    .limit(5)
+  return (data || []).map((r: any) => ({
+    veiculo_id: r.veiculo_id,
+    marca: r.veiculos?.marca || '',
+    modelo: r.veiculos?.modelo || '',
+    error: 'Erro na sincronização ML',
+  }))
+}
+
+export async function getMLAuthUrl(): Promise<string> {
+  const { data, error } = await supabase.functions.invoke('ml-auth', { method: 'POST', body: {} })
+  if (error || !data?.auth_url) throw new Error('Failed to get ML auth URL')
+  return data.auth_url
 }

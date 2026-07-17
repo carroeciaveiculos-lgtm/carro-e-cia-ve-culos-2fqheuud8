@@ -73,7 +73,10 @@ export const CRM_FUNCTIONS = [
       type: 'OBJECT',
       properties: {
         lead_id: { type: 'STRING' },
-        status: { type: 'STRING', enum: ['novo', 'contatado', 'qualificado', 'negociacao', 'fechado', 'perdido'] },
+        status: {
+          type: 'STRING',
+          enum: ['novo', 'contatado', 'qualificado', 'negociacao', 'fechado', 'perdido'],
+        },
       },
       required: ['lead_id', 'status'],
     },
@@ -128,7 +131,11 @@ export class GeminiClient {
     const text = candidate?.content?.parts?.[0]?.text ?? ''
     let json: Record<string, unknown> | null = null
     if (options.jsonSchema && text) {
-      try { json = JSON.parse(text) } catch { json = null }
+      try {
+        json = JSON.parse(text)
+      } catch {
+        json = null
+      }
     }
     const functionCalls = (candidate?.content?.parts ?? [])
       .filter((p: any) => p.functionCall)
@@ -138,15 +145,21 @@ export class GeminiClient {
       output: data.usageMetadata?.candidatesTokenCount ?? 0,
     }
 
-    await this.supabase.from('logs_ia').insert({
-      acao: 'gemini_generate',
-      provider: 'google',
-      modelo: MODEL,
-      status: 'sucesso',
-      tokens_input: tokenUsage.input,
-      tokens_output: tokenUsage.output,
-      certeza_reportada: `thinking:${thinkingLevel} | Input: ${tokenUsage.input}, Output: ${tokenUsage.output}`,
-    }).then(() => {}, () => {})
+    await this.supabase
+      .from('logs_ia')
+      .insert({
+        acao: 'gemini_generate',
+        provider: 'google',
+        modelo: MODEL,
+        status: 'sucesso',
+        tokens_input: tokenUsage.input,
+        tokens_output: tokenUsage.output,
+        certeza_reportada: `thinking:${thinkingLevel} | Input: ${tokenUsage.input}, Output: ${tokenUsage.output}`,
+      })
+      .then(
+        () => {},
+        () => {},
+      )
 
     return { text, json, functionCalls, tokenUsage }
   }

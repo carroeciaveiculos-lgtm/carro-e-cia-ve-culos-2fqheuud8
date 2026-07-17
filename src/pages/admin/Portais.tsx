@@ -2,7 +2,10 @@ import { useState, useEffect, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
-import { Loader2, Search, AlertCircle } from 'lucide-react'
+import { Loader2, Search, AlertCircle, AlertTriangle } from 'lucide-react'
+import { PreflightModal } from '@/components/admin/portais/PreflightModal'
+import { validateMLPreflight } from '@/lib/ml-preflight'
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import {
   fetchPlataformas,
   fetchVeiculosForPortais,
@@ -10,6 +13,8 @@ import {
   triggerSyncEstoque,
   toggleVehiclePublication,
   updateAdType,
+  ensureMLListings,
+  fetchMLErrors,
   type Plataforma,
   type VeiculoSync,
 } from '@/services/plataformas'
@@ -42,6 +47,13 @@ export default function Portais() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [toggling, setToggling] = useState<Record<string, boolean>>({})
   const [sortBy, setSortBy] = useState('marca_modelo')
+  const [preflightOpen, setPreflightOpen] = useState(false)
+  const [preflightResults, setPreflightResults] = useState<
+    Array<{ vehicleId: string; vehicleName: string; issues: string[] }>
+  >([])
+  const [mlErrors, setMLErrors] = useState<
+    Array<{ veiculo_id: string; marca: string; modelo: string; error: string }>
+  >([])
 
   useEffect(() => {
     fetchPlataformas()
@@ -74,6 +86,12 @@ export default function Portais() {
     return () => clearTimeout(timer)
   }, [loadVeiculos])
 
+  useEffect(() => {
+    fetchMLErrors()
+      .then(setMLErrors)
+      .catch(() => {})
+  }, [loadVeiculos])
+
   const allSelected = vehicles.length > 0 && vehicles.every((v) => selectedIds.has(v.id))
   const handleSelectAll = (checked: boolean) =>
     setSelectedIds(checked ? new Set(vehicles.map((v) => v.id)) : new Set())
@@ -98,10 +116,27 @@ export default function Portais() {
     }
   }
 
-  const handleQuickSync = async (slug: string) => {
+  const handleQuickSync = async (slug: string, skipPreflight = false) => {
+    if (slug === 'mercadolivre' && !skipPreflight) {
+      const allIssues = vehicles
+        .map((v) => ({
+          vehicleId: v.id,
+          vehicleName: `${v.marca} ${v.modelo}`,
+          issues: validateMLPreflight(v),
+        }))
+        .filter((v) => v.issues.length > 0)
+      if (allIssues.length > 0) {
+        setPreflightResults(allIssues)
+        setPreflightOpen(true)
+        return
+      }
+    }
     setSyncingSlug(slug)
     setSyncing(true)
     try {
+      if (slug === 'mercadolivre') {
+        await ensureMLListings(vehicles.map((v) => v.id))
+      }
       await forceSync(slug)
       toast({ title: `Sync de ${slug} iniciado!` })
       loadVeiculos()
@@ -114,6 +149,19 @@ export default function Portais() {
   }
 
   const handleToggle = async (slug: string, veiculoId: string, publicar: boolean) => {
+    if (slug === 'mercadolivre' && publicar) {
+      const vehicle = vehicles.find((v) => v.id === veiculoId)
+      if (vehicle) {
+        const issues = validateMLPreflight(vehicle)
+        if (issues.length > 0) {
+          setPreflightResults([
+            { vehicleId: veiculoId, vehicleName: `${vehicle.marca} ${vehicle.modelo}`, issues },
+          ])
+          setPreflightOpen(true)
+          return
+        }
+      }
+    }
     const key = `${veiculoId}-${slug}`
     setToggling((p) => ({ ...p, [key]: true }))
     setVehicles((prev) =>
@@ -134,7 +182,14 @@ export default function Portais() {
   const handleUpdateAdType = async (veiculoId: string, platform: string, adType: string) => {
     try {
       await updateAdType(veiculoId, platform, adType)
-      toast({ title: 'Tipo de anúncio atualizado!' })
+      setVehicles((prev) =>
+        prev.map((v) => {
+          if (v.id !== veiculoId) return v
+          if (platform === 'mercadolivre') return { ...v, ml_listing_type: adType }
+          return { ...v, ad_types: { ...(v.ad_types || {}), [platform]: adType } }
+        }),
+      )
+      toast({ title: 'Modalidade atualizada com sucesso!' })
     } catch (err: any) {
       toast({ title: 'Erro ao atualizar', description: err.message, variant: 'destructive' })
     }
@@ -218,6 +273,22 @@ export default function Portais() {
         syncing={syncing}
         syncingSlug={syncingSlug}
       />
+
+      {mlErrors.length > 0 && (
+        <Alert variant="destructive">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertTitle>Erros de Sincronização - Mercado Livre</AlertTitle>
+          <AlertDescription>
+            <ul className="list-disc pl-4 text-sm">
+              {mlErrors.map((e, i) => (
+                <li key={i}>
+                  {e.marca} {e.modelo}: {e.error}
+                </li>
+              ))}
+            </ul>
+          </AlertDescription>
+        </Alert>
+      )}
 
       <div className="flex gap-2 items-center">
         <div className="relative max-w-md flex-1">
@@ -314,6 +385,16 @@ export default function Portais() {
       <div className="bg-white rounded-lg border p-4 mt-8">
         <WMDashboard />
       </div>
+
+      <PreflightModal
+        open={preflightOpen}
+        onOpenChange={setPreflightOpen}
+        results={preflightResults}
+        onProceed={() => {
+          setPreflightOpen(false)
+          handleQuickSync('mercadolivre', true)
+        }}
+      />
     </div>
   )
 }

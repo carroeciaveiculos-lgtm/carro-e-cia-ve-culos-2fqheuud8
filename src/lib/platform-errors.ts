@@ -75,6 +75,30 @@ const ERROR_MAP: Record<string, { message: string; action: string }> = {
     message: 'Falha na validação de imagens. Verifique resolução, formato e acessibilidade.',
     action: 'Revisar imagens do veículo',
   },
+  401: {
+    message: 'Não autorizado no Mercado Livre. É necessário reconectar sua conta.',
+    action: 'Reconectar Mercado Livre',
+  },
+  TOKEN_EXPIRED: {
+    message: 'Token do Mercado Livre expirado. Clique em reconectar para continuar.',
+    action: 'Reconectar Mercado Livre',
+  },
+  mercadolivre_unauthorized: {
+    message: 'Sessão do Mercado Livre expirada. Reconecte para sincronizar.',
+    action: 'Reconectar Mercado Livre',
+  },
+  LTP_PICTURE_QTY: {
+    message: 'Quantidade insuficiente de fotos. Adicione mais imagens ao veículo.',
+    action: 'Adicionar mais fotos',
+  },
+  LTP_LISTING_TYPE: {
+    message: 'Tipo de anúncio inválido. Selecione uma modalidade disponível.',
+    action: 'Selecionar modalidade',
+  },
+  BODY_INVALID: {
+    message: 'Dados do veículo inválidos para o Mercado Livre. Verifique os campos obrigatórios.',
+    action: 'Revisar ficha técnica',
+  },
 }
 
 export function translateError(errorCode: string): { message: string; action: string } {
