@@ -15,19 +15,10 @@ Deno.serve(async (req) => {
   try {
     const { product, audience, tone } = await req.json()
     const gemini = new GeminiClient()
-
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL')!,
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
-    )
-    const { data: promptConfig } = await supabase
-      .from('ai_prompts_config')
-      .select('prompt_text')
-      .eq('slug', 'ad_copy_generator')
-      .maybeSingle()
-    const adCopyPrompt =
-      promptConfig?.prompt_text ||
-      'You are an expert automotive marketing copywriter for a used car dealership.'
+    
+    const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!)
+    const { data: promptConfig } = await supabase.from('ai_prompts_config').select('prompt_text').eq('slug', 'ad_copy_generator').maybeSingle()
+    const adCopyPrompt = promptConfig?.prompt_text || 'You are an expert automotive marketing copywriter for a used car dealership.'
 
     const prompt = `${adCopyPrompt}
 Generate exactly 3 variations of headlines and descriptions for "${product}" targeting "${audience}".
