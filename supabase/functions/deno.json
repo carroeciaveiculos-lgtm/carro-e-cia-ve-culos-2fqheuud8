@@ -41,6 +41,7 @@
     "wm-auth": 9,
     "wm-sync": 10,
     "wm-process-lead": 9,
-    "notify-new-vehicle": 9
+    "notify-new-vehicle": 9,
+    "get-r2-presigned-url": 1
   }
 }

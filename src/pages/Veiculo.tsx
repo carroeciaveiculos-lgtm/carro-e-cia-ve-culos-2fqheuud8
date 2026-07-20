@@ -59,6 +59,7 @@ import {
   getVehicleDescription,
   getVehicleDiferenciais,
 } from '@/lib/cta-router'
+import { getImageUrl } from '@/lib/image-utils'
 
 export default function Veiculo() {
   const { id } = useParams()
@@ -163,7 +164,7 @@ export default function Veiculo() {
 
   const formatCurrency = (val: number) =>
     new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val)
-  const photos = vehicle.fotos || []
+  const photos = ((vehicle.fotos || []) as string[]).map((p) => getImageUrl(p))
 
   const shareUrl = getShareUrl(vehicle)
 

@@ -18,3 +18,6 @@ verify_jwt = false
 
 [functions.notify-new-vehicle]
 verify_jwt = false
+
+[functions.get-r2-presigned-url]
+verify_jwt = true

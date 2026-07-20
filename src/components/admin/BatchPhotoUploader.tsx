@@ -1,9 +1,10 @@
 import { useState, useRef } from 'react'
 import { Button } from '@/components/ui/button'
-import { UploadCloud, Loader2, CheckCircle2 } from 'lucide-react'
+import { UploadCloud, Loader2 } from 'lucide-react'
 import { resizeImages } from '@/lib/image-resize'
 import { supabase } from '@/lib/supabase/client'
 import { useToast } from '@/hooks/use-toast'
+import { uploadToR2 } from '@/lib/r2-upload'
 
 interface Props {
   vehicleId?: string
@@ -39,35 +40,19 @@ export function BatchPhotoUploader({ vehicleId, modelo, placa, onUploaded }: Pro
 
       for (let i = 0; i < resizedBlobs.length; i++) {
         const blob = resizedBlobs[i]
-        const fileName = `${Date.now()}_${i}.${blob.type.includes('png') ? 'png' : 'jpg'}`
-        const filePath = `${folderName}/${fileName}`
+        const ext = blob.type.includes('png') ? 'png' : 'jpg'
+        const fileName = `${folderName}/${Date.now()}_${i}.${ext}`
+        const fileType = blob.type || 'image/jpeg'
 
-        const { error } = await supabase.storage.from('media').upload(filePath, blob, {
-          contentType: blob.type || 'image/jpeg',
-          upsert: true,
-        })
-
-        if (error) {
-          const { error: err2 } = await supabase.storage
-            .from('site-assets')
-            .upload(filePath, blob, {
-              contentType: blob.type || 'image/jpeg',
-              upsert: true,
-            })
-          if (err2) throw err2
-          const { data: pub } = supabase.storage.from('site-assets').getPublicUrl(filePath)
-          newUrls.push(pub.publicUrl)
-        } else {
-          const { data: pub } = supabase.storage.from('media').getPublicUrl(filePath)
-          newUrls.push(pub.publicUrl)
-        }
+        const { publicUrl } = await uploadToR2(blob, fileName, fileType, 'media')
+        newUrls.push(publicUrl)
 
         await supabase.from('media_assets').insert([
           {
             file_name: files[i].name,
-            file_path: newUrls[i],
+            file_path: publicUrl,
             file_size: blob.size,
-            mime_type: blob.type || 'image/jpeg',
+            mime_type: fileType,
             folder: folderName,
             uploaded_by: userId,
           },

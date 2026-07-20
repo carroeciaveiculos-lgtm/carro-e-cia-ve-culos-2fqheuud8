@@ -68,7 +68,7 @@ if (typeof window !== 'undefined') {
           img.dataset.fallbackApplied = 'true'
           // Substitui por logo oficial em caso de falha
           img.src =
-            'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/logos/logo-carro-e-cia.webp'
+            'https://imagens.carroeciamotors.com.br/logos-e-imagens/logos/logo-carro-e-cia.webp'
         } else if (img.dataset.fallbackApplied === 'true') {
           // Se o fallback também falhar, renderiza um pixel transparente em base64
           img.dataset.fallbackApplied = 'failed'

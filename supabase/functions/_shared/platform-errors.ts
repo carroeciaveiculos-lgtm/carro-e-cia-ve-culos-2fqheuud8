@@ -58,8 +58,6 @@ const ERROR_MAP: Record<string, { message: string; action: string }> = {
 }
 
 export function translateError(errorCode: string): { message: string; action: string } {
-  const key = Object.keys(ERROR_MAP).find((k) =>
-    errorCode.toLowerCase().includes(k.toLowerCase()),
-  )
+  const key = Object.keys(ERROR_MAP).find((k) => errorCode.toLowerCase().includes(k.toLowerCase()))
   return key ? ERROR_MAP[key] : { message: errorCode, action: 'Verificar logs' }
 }

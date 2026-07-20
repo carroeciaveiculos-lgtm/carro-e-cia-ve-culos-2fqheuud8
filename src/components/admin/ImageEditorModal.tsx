@@ -11,6 +11,7 @@ import { RotateCw, Sparkles, Loader2, Save, CheckCircle2, AlertCircle } from 'lu
 import { useToast } from '@/hooks/use-toast'
 import { supabase } from '@/lib/supabase/client'
 import { validateSinglePhoto, PHOTO_REQUIREMENTS } from '@/lib/photo-validation'
+import { uploadToR2 } from '@/lib/r2-upload'
 
 export function ImageEditorModal({
   isOpen,
@@ -116,24 +117,22 @@ export function ImageEditorModal({
       const blob = await res.blob()
 
       const fileName = `edited_${Date.now()}.jpg`
-      const filePath = `inventory/edited/${fileName}`
 
-      const { error } = await supabase.storage
-        .from('logos-e-imagens')
-        .upload(filePath, blob, { contentType: 'image/jpeg', upsert: true })
-
-      if (error) throw error
-
-      const { data } = supabase.storage.from('logos-e-imagens').getPublicUrl(filePath)
+      const { publicUrl } = await uploadToR2(
+        blob,
+        `inventory/edited/${fileName}`,
+        'image/jpeg',
+        'logos-e-imagens',
+      )
 
       await supabase.from('media_assets').insert({
         file_name: fileName,
-        file_path: data.publicUrl,
+        file_path: publicUrl,
         mime_type: 'image/jpeg',
         folder: 'Edições',
       })
 
-      onSave(data.publicUrl)
+      onSave(publicUrl)
       toast({ title: 'Imagem salva com sucesso!' })
       onClose()
     } catch (error: any) {

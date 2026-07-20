@@ -185,13 +185,11 @@ export async function ensureMLListings(veiculoIds: string[]): Promise<void> {
   for (const vid of veiculoIds) {
     const record = existingMap.get(vid)
     if (!record) {
-      await supabase
-        .from('ml_listings')
-        .insert({
-          veiculo_id: vid,
-          status: 'pending_create',
-          last_synced_at: new Date().toISOString(),
-        })
+      await supabase.from('ml_listings').insert({
+        veiculo_id: vid,
+        status: 'pending_create',
+        last_synced_at: new Date().toISOString(),
+      })
     } else if (record.status !== 'pending_create' && record.status !== 'pending_update') {
       const newStatus = record.ml_item_id ? 'pending_update' : 'pending_create'
       await supabase
