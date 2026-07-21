@@ -1,63 +1,65 @@
-const ERROR_MAP: Record<string, { message: string; action: string }> = {
-  LTP_PICTURE_REQUIRED: {
-    message: 'Fotos obrigatórias ausentes. Adicione pelo menos 1 foto ao cadastro.',
-    action: 'Adicione fotos ao veículo',
-  },
-  LTP_ITEM_TITLE_LENGTH: {
-    message: 'Título do anúncio muito longo. Máximo 60 caracteres.',
-    action: 'Encurte o título do veículo',
-  },
-  LTP_CATEGORY_REQUIRED: {
-    message: 'Categoria obrigatória não informada.',
-    action: 'Verifique a categoria do veículo',
-  },
-  LTP_PRICE_REQUIRED: {
-    message: 'Preço obrigatório não informado.',
-    action: 'Defina o preço de venda',
-  },
-  invalid_grant: {
-    message: 'Conexão expirada. Reconecte a plataforma.',
-    action: 'Reconectar plataforma',
-  },
-  '429': {
-    message: 'Muitas requisições. Aguarde 5 minutos.',
-    action: 'Aguarde e tente novamente',
-  },
-  ITEM_NOT_FOUND: {
-    message: 'Anúncio não encontrado na plataforma.',
-    action: 'Recriar anúncio',
-  },
-  VALIDATION_ERROR: {
-    message: 'Erro de validação. Verifique os dados do veículo.',
-    action: 'Revisar dados do veículo',
-  },
-  unauthorized: {
-    message: 'Não autorizado. Verifique as credenciais.',
-    action: 'Reconectar plataforma',
-  },
-  not_found: {
-    message: 'Recurso não encontrado na plataforma.',
-    action: 'Verificar configuração',
-  },
-  server_error: {
-    message: 'Erro interno da plataforma.',
-    action: 'Aguarde e tente novamente',
-  },
-  timeout: {
-    message: 'Tempo limite excedido.',
-    action: 'Tente novamente',
-  },
-  duplicate: {
-    message: 'Anúncio duplicado. Veículo já publicado.',
-    action: 'Verificar anúncios existentes',
-  },
-  missing_attributes: {
-    message: 'Atributos obrigatórios ausentes.',
-    action: 'Completar ficha técnica',
-  },
+export interface TranslatedError {
+  message: string
+  action: string
 }
 
-export function translateError(errorCode: string): { message: string; action: string } {
-  const key = Object.keys(ERROR_MAP).find((k) => errorCode.toLowerCase().includes(k.toLowerCase()))
-  return key ? ERROR_MAP[key] : { message: errorCode, action: 'Verificar logs' }
+interface ErrorPattern {
+  match: RegExp
+  message: string
+  action: string
+}
+
+const errorPatterns: ErrorPattern[] = [
+  {
+    match: /token|unauthor/i,
+    message: 'Token de acesso expirado ou inválido. Reautentique a integração.',
+    action: 'Reautenticar integração nas configurações do portal.',
+  },
+  {
+    match: /rate.?limit|429|too many/i,
+    message: 'Limite de requisições excedido no portal.',
+    action: 'Aguarde alguns minutos e tente novamente.',
+  },
+  {
+    match: /timeout|timed out/i,
+    message: 'Tempo limite excedido ao contatar o portal.',
+    action: 'Verifique a conectividade e tente novamente.',
+  },
+  {
+    match: /duplicate|already exist|conflict|409/i,
+    message: 'Já existe um anúncio duplicado para este veículo no portal.',
+    action: 'Remova o anúncio duplicado no portal ou use o ID existente.',
+  },
+  {
+    match: /not found|404/i,
+    message: 'Recurso não encontrado no portal.',
+    action: 'Verifique se o anúncio ainda existe no portal.',
+  },
+  {
+    match: /validation|invalid|400|bad request/i,
+    message: 'Dados inválidos enviados ao portal.',
+    action: 'Revise os campos obrigatórios do veículo e tente novamente.',
+  },
+  {
+    match: /quota|limit exceed/i,
+    message: 'Cota do portal excedida.',
+    action: 'Verifique o plano contratado no portal.',
+  },
+  {
+    match: /network|ECONNREFUSED|ENOTFOUND/i,
+    message: 'Erro de rede ao contatar o portal.',
+    action: 'Verifique a conectividade com a internet.',
+  },
+]
+
+export function translateError(rawError: string): TranslatedError {
+  for (const pattern of errorPatterns) {
+    if (pattern.match.test(rawError)) {
+      return { message: pattern.message, action: pattern.action }
+    }
+  }
+  return {
+    message: rawError || 'Erro desconhecido na sincronização com o portal.',
+    action: 'Consulte os logs detalhados para mais informações.',
+  }
 }

@@ -7,116 +7,129 @@ export interface WMCredentials {
 
 export interface SOAPResult {
   success: boolean
-  hashAutenticacao?: string
-  codigoAnuncio?: string
   error?: string
+  codigoAnuncio?: string
+  hashAutenticacao?: string
 }
 
-const WM_ENDPOINT = 'https://www.webmotors.com.br/webservice/'
+const WM_SOAP_URL = 'https://integration.webmotors.com.br/Integracao/Service.asmx'
+
+function extractTag(xml: string, tag: string): string | null {
+  const regex = new RegExp(`<(?:\\w+:)?${tag}[^>]*>([^<]*)</(?:\\w+:)?${tag}>`, 'i')
+  const match = xml.match(regex)
+  return match ? match[1].trim() : null
+}
+
+function wrapSOAP(action: string, innerXml: string): string {
+  return `<?xml version="1.0" encoding="utf-8"?>
+<soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+  <soap:Body>
+    <${action} xmlns="http://tempuri.org/">
+      ${innerXml}
+    </${action}>
+  </soap:Body>
+</soap:Envelope>`
+}
 
 export function buildAuthXML(creds: WMCredentials): string {
-  return `<?xml version="1.0" encoding="utf-8"?>
-<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
-  <soap:Body>
-    <Autenticar xmlns="http://tempuri.org/">
-      <Email>${creds.email}</Email>
-      <Senha>${creds.senha}</Senha>
-      <Cnpj>${creds.cnpj}</Cnpj>
-      <ClienteId>${creds.clienteId}</ClienteId>
-    </Autenticar>
-  </soap:Body>
-</soap:Envelope>`
+  const innerXml = `
+      <hashLogin>${creds.email}</hashLogin>
+      <hashSenha>${creds.senha}</hashSenha>
+      <hashCnpj>${creds.cnpj}</hashCnpj>
+      <hashClienteId>${creds.clienteId}</hashClienteId>`
+  return wrapSOAP('Autenticar', innerXml)
 }
 
-export function buildIncluirCarroXML(vehicle: any, hash: string, categoria: string): string {
-  const acao = categoria === 'Moto' ? 'IncluirMoto' : 'IncluirCarro'
-  return `<?xml version="1.0" encoding="utf-8"?>
-<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
-  <soap:Body>
-    <${acao} xmlns="http://tempuri.org/">
-      <HashAutenticacao>${hash}</HashAutenticacao>
-      <Marca>${vehicle.marca || ''}</Marca>
-      <Modelo>${vehicle.modelo || ''}</Modelo>
-      <AnoModelo>${vehicle.ano_modelo || ''}</AnoModelo>
-      <AnoFabricacao>${vehicle.ano_fabricacao || ''}</AnoFabricacao>
-      <Combustivel>${vehicle.combustivel || ''}</Combustivel>
-      <Cor>${vehicle.cor || ''}</Cor>
-      <Quilometragem>${vehicle.quilometragem || 0}</Quilometragem>
-      <Preco>${vehicle.preco_venda || 0}</Preco>
-      <Placa>${vehicle.placa || ''}</Placa>
-      <Observacao>${(vehicle.descricao || '').replace(/[<>&]/g, '')}</Observacao>
-      <Fotos>${JSON.stringify(vehicle.fotos || [])}</Fotos>
-    </${acao}>
-  </soap:Body>
-</soap:Envelope>`
+export function buildIncluirCarroXML(veiculo: any, hash: string, categoria: string): string {
+  const fotos = Array.isArray(veiculo.fotos)
+    ? veiculo.fotos
+        .slice(0, 15)
+        .map((f: string, i: number) => `<foto${i + 1}>${f}</foto${i + 1}>`)
+        .join('\n      ')
+    : ''
+
+  const innerXml = `
+      <hashAutenticacao>${hash}</hashAutenticacao>
+      <codigoCliente>${veiculo.clienteId || ''}</codigoCliente>
+      <marca>${veiculo.marca || ''}</marca>
+      <modelo>${veiculo.modelo || ''}</modelo>
+      <versao>${veiculo.versao || ''}</versao>
+      <anoFabricacao>${veiculo.ano_fabricacao || ''}</anoFabricacao>
+      <anoModelo>${veiculo.ano_modelo || ''}</anoModelo>
+      <preco>${veiculo.preco_venda || 0}</preco>
+      <km>${veiculo.quilometragem || 0}</km>
+      <cor>${veiculo.cor || ''}</cor>
+      <combustivel>${veiculo.combustivel || ''}</combustivel>
+      <cambio>${veiculo.cambio || ''}</cambio>
+      <portas>${veiculo.portas || 4}</portas>
+      <placa>${veiculo.placa || ''}</placa>
+      <observacao>${veiculo.descricao || ''}</observacao>
+      ${fotos}`
+
+  const action = categoria === 'Moto' ? 'IncluirMoto' : 'IncluirCarro'
+  return wrapSOAP(action, innerXml)
 }
 
-export function buildAlterarCarroXML(vehicle: any, hash: string, codigoAnuncio: string): string {
-  return `<?xml version="1.0" encoding="utf-8"?>
-<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
-  <soap:Body>
-    <AlterarCarro xmlns="http://tempuri.org/">
-      <HashAutenticacao>${hash}</HashAutenticacao>
-      <CodigoAnuncio>${codigoAnuncio}</CodigoAnuncio>
-      <Preco>${vehicle.preco_venda || 0}</Preco>
-      <Quilometragem>${vehicle.quilometragem || 0}</Quilometragem>
-      <Observacao>${(vehicle.descricao || '').replace(/[<>&]/g, '')}</Observacao>
-    </AlterarCarro>
-  </soap:Body>
-</soap:Envelope>`
+export function buildAlterarCarroXML(veiculo: any, hash: string, codigoAnuncio: string): string {
+  const innerXml = `
+      <hashAutenticacao>${hash}</hashAutenticacao>
+      <codigoAnuncio>${codigoAnuncio}</codigoAnuncio>
+      <preco>${veiculo.preco_venda || 0}</preco>
+      <km>${veiculo.quilometragem || 0}</km>
+      <observacao>${veiculo.descricao || ''}</observacao>`
+  return wrapSOAP('AlterarCarro', innerXml)
 }
 
 export function buildExcluirCarroXML(hash: string, codigoAnuncio: string): string {
-  return `<?xml version="1.0" encoding="utf-8"?>
-<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
-  <soap:Body>
-    <ExcluirCarro xmlns="http://tempuri.org/">
-      <HashAutenticacao>${hash}</HashAutenticacao>
-      <CodigoAnuncio>${codigoAnuncio}</CodigoAnuncio>
-    </ExcluirCarro>
-  </soap:Body>
-</soap:Envelope>`
+  const innerXml = `
+      <hashAutenticacao>${hash}</hashAutenticacao>
+      <codigoAnuncio>${codigoAnuncio}</codigoAnuncio>`
+  return wrapSOAP('ExcluirCarro', innerXml)
 }
 
-export async function callSOAP(xml: string, action: string, maxRetries = 3): Promise<SOAPResult> {
-  let lastError = ''
-  for (let attempt = 1; attempt <= maxRetries; attempt++) {
-    try {
-      const res = await fetch(WM_ENDPOINT, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'text/xml; charset=utf-8',
-          SOAPAction: `http://tempuri.org/${action}`,
-        },
-        body: xml,
-      })
-      if (!res.ok) {
-        lastError = `HTTP ${res.status}: ${await res.text()}`
-        if (attempt < maxRetries) {
-          await new Promise((r) => setTimeout(r, 1000 * attempt))
-          continue
-        }
-        return { success: false, error: lastError }
-      }
-      const responseText = await res.text()
-      const hashMatch = responseText.match(/<HashAutenticacao>([^<]+)<\/HashAutenticacao>/)
-      const codigoMatch = responseText.match(/<CodigoAnuncio>([^<]+)<\/CodigoAnuncio>/)
-      if (responseText.includes('<Error>') || responseText.includes('erro')) {
-        const errorMatch = responseText.match(/<Error>([^<]+)<\/Error>/)
-        return { success: false, error: errorMatch?.[1] || 'Unknown SOAP error' }
-      }
-      return {
-        success: true,
-        hashAutenticacao: hashMatch?.[1],
-        codigoAnuncio: codigoMatch?.[1],
-      }
-    } catch (err: any) {
-      lastError = err.message
-      if (attempt < maxRetries) {
-        await new Promise((r) => setTimeout(r, 1000 * attempt))
-        continue
-      }
+export async function callSOAP(xml: string, action: string): Promise<SOAPResult> {
+  try {
+    const res = await fetch(`${WM_SOAP_URL}?op=${action}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'text/xml; charset=utf-8',
+        SOAPAction: `http://tempuri.org/${action}`,
+      },
+      body: xml,
+    })
+
+    const responseText = await res.text()
+
+    if (!res.ok) {
+      return { success: false, error: `HTTP ${res.status}: ${responseText.substring(0, 500)}` }
     }
+
+    if (responseText.includes('<faultcode>') || responseText.includes('Fault')) {
+      const errorMsg = extractTag(responseText, 'faultstring') || 'SOAP fault occurred'
+      return { success: false, error: errorMsg }
+    }
+
+    const hash =
+      extractTag(responseText, 'hashAutenticacao') || extractTag(responseText, 'AutenticarResult')
+    const codigo =
+      extractTag(responseText, 'codigoAnuncio') || extractTag(responseText, 'IncluirCarroResult')
+
+    if (action === 'Autenticar') {
+      if (!hash) {
+        return { success: false, error: 'No hash returned from authentication' }
+      }
+      return { success: true, hashAutenticacao: hash }
+    }
+
+    if (action.startsWith('Incluir')) {
+      if (!codigo) {
+        return { success: false, error: 'No codigoAnuncio returned from inclusion' }
+      }
+      return { success: true, codigoAnuncio: codigo }
+    }
+
+    return { success: true }
+  } catch (err: any) {
+    return { success: false, error: err.message || 'Network error during SOAP call' }
   }
-  return { success: false, error: lastError }
 }
