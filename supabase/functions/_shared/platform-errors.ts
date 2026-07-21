@@ -1,12 +1,12 @@
 export interface TranslatedError {
-  message: string;
-  action: string;
+  message: string
+  action: string
 }
 
 interface ErrorPattern {
-  match: RegExp;
-  message: string;
-  action: string;
+  match: RegExp
+  message: string
+  action: string
 }
 
 const errorPatterns: ErrorPattern[] = [
@@ -50,16 +50,16 @@ const errorPatterns: ErrorPattern[] = [
     message: 'Erro de rede ao contatar o portal.',
     action: 'Verifique a conectividade com a internet.',
   },
-];
+]
 
 export function translateError(rawError: string): TranslatedError {
   for (const pattern of errorPatterns) {
     if (pattern.match.test(rawError)) {
-      return { message: pattern.message, action: pattern.action };
+      return { message: pattern.message, action: pattern.action }
     }
   }
   return {
     message: rawError || 'Erro desconhecido na sincronização com o portal.',
     action: 'Consulte os logs detalhados para mais informações.',
-  };
+  }
 }
