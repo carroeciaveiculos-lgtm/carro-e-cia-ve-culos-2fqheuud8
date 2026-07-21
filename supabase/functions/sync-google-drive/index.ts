@@ -2,17 +2,18 @@ import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from 'jsr:@supabase/supabase-js@2'
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3'
 import { corsHeaders } from '../_shared/cors.ts'
-import { getAccessToken, listDriveItems, downloadDriveFile } from '../_shared/google-drive.ts'
+import {
+  getAccessToken,
+  listDriveItems,
+  downloadDriveFile,
+} from '../_shared/google-drive.ts'
 
 const ROOT_FOLDER_ID = '1D6UAaVY7k_Hy1gKVmjQY-sDISchOhwEY'
 const R2_PUBLIC_BASE = 'https://imagens.carroeciamotors.com.br'
 const DEFAULT_BATCH_LIMIT = 5
 
 function sanitizeName(name: string): string {
-  return name
-    .trim()
-    .replace(/\s+/g, '_')
-    .replace(/[^a-zA-Z0-9_\-]/g, '')
+  return name.trim().replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_\-]/g, '')
 }
 
 function extractPlate(folderName: string): string | null {
@@ -71,10 +72,10 @@ Deno.serve(async (req: Request) => {
     const projectId = Deno.env.get('DRIVE_PROJECT_ID')
 
     if (!clientEmail || !privateKey || !projectId) {
-      return new Response(JSON.stringify({ error: 'Google Drive credentials not configured' }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      })
+      return new Response(
+        JSON.stringify({ error: 'Google Drive credentials not configured' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      )
     }
 
     const accessToken = await getAccessToken(clientEmail, privateKey)
@@ -140,11 +141,7 @@ Deno.serve(async (req: Request) => {
 
         if (vehicleError) {
           console.error(`❌ DB error for plate ${plate}: ${vehicleError.message}`)
-          errors.push({
-            plate,
-            folder: vehicleFolder.name,
-            error: `DB error: ${vehicleError.message}`,
-          })
+          errors.push({ plate, folder: vehicleFolder.name, error: `DB error: ${vehicleError.message}` })
           continue
         }
 
@@ -159,13 +156,11 @@ Deno.serve(async (req: Request) => {
 
         // List image files inside this vehicle's Drive folder
         const imageFiles = await listDriveItems(accessToken, vehicleFolder.id, false)
-        const imageFilesFiltered = imageFiles.filter(
-          (f: any) => f.mimeType && f.mimeType.startsWith('image/'),
+        const imageFilesFiltered = imageFiles.filter((f: any) =>
+          f.mimeType && f.mimeType.startsWith('image/')
         )
 
-        console.log(
-          `📸 ${imageFilesFiltered.length} images found for ${plate} (existing in DB: ${existingFotos.length})`,
-        )
+        console.log(`📸 ${imageFilesFiltered.length} images found for ${plate} (existing in DB: ${existingFotos.length})`)
 
         if (imageFilesFiltered.length === 0) {
           processedVehicles.push(plate)
@@ -219,21 +214,13 @@ Deno.serve(async (req: Request) => {
 
           if (updateError) {
             console.error(`❌ Failed to update DB for ${plate}: ${updateError.message}`)
-            errors.push({
-              plate,
-              folder: vehicleFolder.name,
-              error: `DB update failed: ${updateError.message}`,
-            })
+            errors.push({ plate, folder: vehicleFolder.name, error: `DB update failed: ${updateError.message}` })
           } else {
-            console.log(
-              `✅ Vehicle ${plate} updated with ${newPhotoUrls.length} new photos (skipped: ${imagesSkippedForVehicle})`,
-            )
+            console.log(`✅ Vehicle ${plate} updated with ${newPhotoUrls.length} new photos (skipped: ${imagesSkippedForVehicle})`)
             processedVehicles.push(plate)
           }
         } else {
-          console.log(
-            `✓ Vehicle ${plate}: no new photos to sync (skipped: ${imagesSkippedForVehicle})`,
-          )
+          console.log(`✓ Vehicle ${plate}: no new photos to sync (skipped: ${imagesSkippedForVehicle})`)
           processedVehicles.push(plate)
         }
 
@@ -272,23 +259,16 @@ Deno.serve(async (req: Request) => {
       elapsedSeconds: parseFloat(totalElapsed),
     }
 
-    console.log(
-      `📊 Batch complete: ${processedVehicles.length} vehicles, ${totalImagesSynced} images synced, ${errors.length} errors, ${totalElapsed}s`,
-    )
+    console.log(`📊 Batch complete: ${processedVehicles.length} vehicles, ${totalImagesSynced} images synced, ${errors.length} errors, ${totalElapsed}s`)
 
-    return new Response(JSON.stringify(summary), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    })
+    return new Response(
+      JSON.stringify(summary),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+    )
   } catch (err: any) {
     console.error(`❌ Fatal error: ${err.message}`)
     return new Response(
-      JSON.stringify({
-        success: false,
-        error: err.message,
-        processedVehicles: [],
-        totalImagesSynced: 0,
-        errors: [{ plate: 'FATAL', folder: '', error: err.message }],
-      }),
+      JSON.stringify({ success: false, error: err.message, processedVehicles: [], totalImagesSynced: 0, errors: [{ plate: 'FATAL', folder: '', error: err.message }] }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
     )
   }
