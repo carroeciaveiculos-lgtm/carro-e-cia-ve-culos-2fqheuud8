@@ -26,7 +26,7 @@ import { supabase } from '@/lib/supabase/client'
 import { Filter, Search, Car, Share2, CalendarDays, Settings2, Fuel, Gauge } from 'lucide-react'
 import { trackCTAClick } from '@/lib/tracking'
 import { toast } from 'sonner'
-import { getImageUrl, handleImageError } from '@/lib/image-utils'
+import { getImageUrl, handleImageError, CAR_PLACEHOLDER_IMAGE } from '@/lib/image-utils'
 import { handleShareCTA } from '@/lib/cta-router'
 
 export default function Estoque() {
@@ -309,7 +309,7 @@ export default function Estoque() {
                         ? [
                             'https://img.usecurling.com/p/400/300?q=car%20detailing%20workshop&color=gray',
                           ]
-                        : [getImageUrl('fotos/modelo-veiculo.webp')]
+                        : [CAR_PLACEHOLDER_IMAGE]
                   return (
                     <Card
                       key={v.id}

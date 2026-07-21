@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { getImageUrl, handleImageError } from '@/lib/image-utils'
+import { getImageUrl, handleImageError, CAR_PLACEHOLDER_IMAGE } from '@/lib/image-utils'
 import { CalendarDays, Settings2, Fuel, Gauge } from 'lucide-react'
 
 export function VehicleCard({ vehicle, priority = false }: { vehicle: any; priority?: boolean }) {
@@ -11,7 +11,7 @@ export function VehicleCard({ vehicle, priority = false }: { vehicle: any; prior
       ? getImageUrl(vehicle.fotos[0])
       : (vehicle as any).em_preparacao
         ? 'https://img.usecurling.com/p/400/300?q=car%20detailing%20workshop&color=gray'
-        : getImageUrl('fotos/modelo-veiculo.webp')
+        : CAR_PLACEHOLDER_IMAGE
 
   return (
     <Card className="overflow-hidden hover:shadow-lg transition-shadow border-border/50 group flex flex-col w-full bg-card">
