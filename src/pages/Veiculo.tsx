@@ -59,7 +59,7 @@ import {
   getVehicleDescription,
   getVehicleDiferenciais,
 } from '@/lib/cta-router'
-import { getImageUrl } from '@/lib/image-utils'
+import { getImageUrl, handleImageError, R2_PLACEHOLDER_URL } from '@/lib/image-utils'
 
 export default function Veiculo() {
   const { id } = useParams()
@@ -265,6 +265,9 @@ export default function Veiculo() {
                           loading={i === 0 ? 'eager' : 'lazy'}
                           decoding="async"
                           className="w-full h-full object-cover"
+                          onError={(e) =>
+                            handleImageError(e.currentTarget, `${vehicle.marca} ${vehicle.modelo}`)
+                          }
                         />
                       </div>
                     </CarouselItem>
@@ -283,7 +286,7 @@ export default function Veiculo() {
                         </div>
                       ) : (
                         <img
-                          src="https://img.usecurling.com/p/800/600?q=car"
+                          src={R2_PLACEHOLDER_URL}
                           alt="Sem foto"
                           width="800"
                           height="600"
@@ -324,6 +327,9 @@ export default function Veiculo() {
                       loading="lazy"
                       decoding="async"
                       className="w-full h-full object-cover"
+                      onError={(e) =>
+                        handleImageError(e.currentTarget, `${vehicle.marca} ${vehicle.modelo}`)
+                      }
                     />
                   </button>
                 ))}

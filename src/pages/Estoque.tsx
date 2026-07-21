@@ -26,7 +26,7 @@ import { supabase } from '@/lib/supabase/client'
 import { Filter, Search, Car, Share2, CalendarDays, Settings2, Fuel, Gauge } from 'lucide-react'
 import { trackCTAClick } from '@/lib/tracking'
 import { toast } from 'sonner'
-import { getImageUrl } from '@/lib/image-utils'
+import { getImageUrl, handleImageError } from '@/lib/image-utils'
 import { handleShareCTA } from '@/lib/cta-router'
 
 export default function Estoque() {
@@ -367,10 +367,9 @@ export default function Estoque() {
                                       fetchPriority={
                                         vehicleIndex === 0 && index === 0 ? 'high' : 'auto'
                                       }
-                                      onError={(e) => {
-                                        ;(e.target as HTMLImageElement).src =
-                                          'https://img.usecurling.com/p/400/300?q=car'
-                                      }}
+                                      onError={(e) =>
+                                        handleImageError(e.currentTarget, `${v.marca} ${v.modelo}`)
+                                      }
                                     />
                                   )}
                                 </Link>

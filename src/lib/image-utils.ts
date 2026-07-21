@@ -3,48 +3,91 @@ const SUPABASE_STORAGE_BASE = 'https://htpcqdbhktmvppfemnad.supabase.co/storage/
 const SUPABASE_RENDER_BASE =
   'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/render/image/public/'
 
-export function getImageUrl(
-  pathOrUrl: string | null | undefined,
-  bucket = 'logos-e-imagens',
-): string {
+const KNOWN_BUCKETS = ['media', 'veiculos-fotos', 'logos-e-imagens', 'site-assets']
+
+export const R2_PLACEHOLDER_URL = `${R2_BASE_URL}/logos-e-imagens/placeholder/sem-foto.jpg`
+export const LOCAL_FALLBACK_IMAGE = '/placeholder.svg'
+
+export function getImageUrl(pathOrUrl: string | null | undefined, bucket = 'media'): string {
+  // [TEMPORARY DIAGNOSTIC LOG - Remove after validation phase]
+  const original = pathOrUrl
+
   if (!pathOrUrl) {
-    return 'https://img.usecurling.com/p/400/300?q=car'
+    console.log('[IMAGE DIAGNOSTIC] Empty/null path, using placeholder', { original })
+    return R2_PLACEHOLDER_URL
   }
 
-  let resolvedBucket = bucket
-  if (resolvedBucket === 'veiculos-fotos') {
-    resolvedBucket = 'logos-e-imagens'
+  let result = pathOrUrl
+
+  if (result.startsWith(R2_BASE_URL)) {
+    console.log('[IMAGE DIAGNOSTIC] Already R2 URL', { original, processed: result })
+    return result
   }
 
-  let path = pathOrUrl
-  if (typeof path === 'string') {
-    path = path.replace('veiculos-fotos', 'logos-e-imagens')
+  if (result.startsWith(SUPABASE_STORAGE_BASE)) {
+    result = result.replace(SUPABASE_STORAGE_BASE, `${R2_BASE_URL}/`).split('?')[0]
+    console.log('[IMAGE DIAGNOSTIC] Converted Supabase storage URL', {
+      original,
+      processed: result,
+    })
+    return result
   }
 
-  if (path.startsWith(R2_BASE_URL)) {
-    return path
+  if (result.startsWith(SUPABASE_RENDER_BASE)) {
+    result = result.replace(SUPABASE_RENDER_BASE, `${R2_BASE_URL}/`).split('?')[0]
+    console.log('[IMAGE DIAGNOSTIC] Converted Supabase render URL', { original, processed: result })
+    return result
   }
 
-  if (path.startsWith(SUPABASE_STORAGE_BASE)) {
-    return path.replace(SUPABASE_STORAGE_BASE, `${R2_BASE_URL}/`)
+  if (result.startsWith('http://') || result.startsWith('https://')) {
+    console.log('[IMAGE DIAGNOSTIC] External URL', { original, processed: result })
+    return result
   }
 
-  if (path.startsWith(SUPABASE_RENDER_BASE)) {
-    return path.replace(SUPABASE_RENDER_BASE, `${R2_BASE_URL}/`).split('?')[0]
+  const startsWithBucket = KNOWN_BUCKETS.some((b) => result.startsWith(`${b}/`))
+
+  if (startsWithBucket) {
+    result = `${R2_BASE_URL}/${result}`
+  } else {
+    result = `${R2_BASE_URL}/${bucket}/${result}`
   }
 
-  if (path.startsWith('http://') || path.startsWith('https://')) {
-    return path
+  console.log('[IMAGE DIAGNOSTIC] Resolved relative path', { original, processed: result })
+  return result
+}
+
+export function handleImageError(img: HTMLImageElement, context?: string): void {
+  if (img.dataset.fallbackApplied === 'failed') {
+    return
   }
 
-  return `${R2_BASE_URL}/${resolvedBucket}/${path}`
+  if (img.dataset.fallbackApplied === 'true') {
+    console.log('[IMAGE DIAGNOSTIC] R2 placeholder failed, using local SVG', {
+      context,
+      failedSrc: img.src,
+    })
+    img.src = LOCAL_FALLBACK_IMAGE
+    img.dataset.fallbackApplied = 'failed'
+    return
+  }
+
+  console.log('[IMAGE DIAGNOSTIC] Image load error, trying R2 placeholder', {
+    context,
+    originalSrc: img.src,
+  })
+  img.src = R2_PLACEHOLDER_URL
+  img.dataset.fallbackApplied = 'true'
 }
 
 export function getSocialImageUrl(imageUrl?: string | null): string {
   const FALLBACK = 'https://www.carroeciamotors.com.br/og-image.jpeg'
   if (!imageUrl) return FALLBACK
-  if (imageUrl.includes('supabase.co') || imageUrl.includes('imagens.carroeciamotors.com.br')) {
-    return `https://images.weserv.nl/?url=${encodeURIComponent(imageUrl)}&output=jpg`
+
+  const resolved = getImageUrl(imageUrl)
+
+  if (resolved.includes('imagens.carroeciamotors.com.br') || resolved.includes('supabase.co')) {
+    return `https://images.weserv.nl/?url=${encodeURIComponent(resolved)}&output=jpg`
   }
-  return imageUrl
+
+  return resolved
 }

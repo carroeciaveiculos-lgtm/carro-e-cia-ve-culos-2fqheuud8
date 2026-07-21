@@ -31,8 +31,7 @@ export default function Index() {
     '@context': 'https://schema.org',
     '@type': 'LocalBusiness',
     name: 'Carro e Cia Veículos',
-    image:
-      'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/logos/logo-carro-e-cia.webp',
+    image: 'https://imagens.carroeciamotors.com.br/logos-e-imagens/logos/logo-carro-e-cia.webp',
     description:
       'Venda seu carro rápido e seguro. Compra, venda e consignação de veículos com transparência total. Carro e Cia Veículos: referência 20+ anos em Uberaba.',
     url: 'https://carroeciamotors.com.br',

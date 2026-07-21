@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { getImageUrl } from '@/lib/image-utils'
+import { getImageUrl, handleImageError } from '@/lib/image-utils'
 import { CalendarDays, Settings2, Fuel, Gauge } from 'lucide-react'
 
 export function VehicleCard({ vehicle, priority = false }: { vehicle: any; priority?: boolean }) {
@@ -33,9 +33,7 @@ export function VehicleCard({ vehicle, priority = false }: { vehicle: any; prior
             className="w-full h-full object-cover bg-muted group-hover:scale-105 transition-transform duration-500"
             loading={priority ? 'eager' : 'lazy'}
             fetchPriority={priority ? 'high' : 'auto'}
-            onError={(e) => {
-              ;(e.target as HTMLImageElement).src = 'https://img.usecurling.com/p/400/300?q=car'
-            }}
+            onError={(e) => handleImageError(e.currentTarget, `${vehicle.marca} ${vehicle.modelo}`)}
           />
         </Link>
       </div>
