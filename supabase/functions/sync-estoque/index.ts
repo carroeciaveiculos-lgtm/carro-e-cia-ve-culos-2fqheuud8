@@ -42,7 +42,10 @@ Deno.serve(async (req) => {
       )
     }
 
-    const { data: plataformas } = await supabase.from('plataformas').select('id, slug').eq('ativo', true)
+    const { data: plataformas } = await supabase
+      .from('plataformas')
+      .select('id, slug')
+      .eq('ativo', true)
 
     const allResults: any[] = []
     const logsToInsert: any[] = []
@@ -70,20 +73,31 @@ Deno.serve(async (req) => {
       if (veiculo.placa) {
         const { data: samePlacaVehicles } = await supabase
           .from('veiculos')
-          .select('id, publicado_mercadolivre, publicado_webmotors, publicado_olx, publicado_icarros, publicado_napista')
+          .select(
+            'id, publicado_mercadolivre, publicado_webmotors, publicado_olx, publicado_icarros, publicado_napista',
+          )
           .eq('placa', veiculo.placa)
           .neq('id', veiculo.id)
           .limit(1)
 
         if (samePlacaVehicles && samePlacaVehicles.length > 0) {
           const dupe = samePlacaVehicles[0]
-          if (dupe.publicado_mercadolivre || dupe.publicado_webmotors || dupe.publicado_olx || dupe.publicado_icarros || dupe.publicado_napista) {
+          if (
+            dupe.publicado_mercadolivre ||
+            dupe.publicado_webmotors ||
+            dupe.publicado_olx ||
+            dupe.publicado_icarros ||
+            dupe.publicado_napista
+          ) {
             placaDuplicate = true
             logsToInsert.push({
               veiculo_id: veiculo.id,
               portal: 'geral',
               status: 'duplicado',
-              payload_erro: { error: 'Veículo com mesma placa já publicado em outra plataforma', placa: veiculo.placa },
+              payload_erro: {
+                error: 'Veículo com mesma placa já publicado em outra plataforma',
+                placa: veiculo.placa,
+              },
             })
           }
         }
@@ -107,7 +121,12 @@ Deno.serve(async (req) => {
             opcionais: veiculo.diferenciais,
             caracteristicas: veiculo.caracteristicas,
           }
-          return { portal: config.portal, veiculo_id: veiculo.id, status: 'sucesso', payload_enviado: payload }
+          return {
+            portal: config.portal,
+            veiculo_id: veiculo.id,
+            status: 'sucesso',
+            payload_enviado: payload,
+          }
         }),
       )
 
@@ -115,9 +134,23 @@ Deno.serve(async (req) => {
         const portal = configs[idx].portal
         if (res.status === 'rejected') {
           const translated = translateError(res.reason?.message || 'Unknown error')
-          logsToInsert.push({ veiculo_id: veiculo.id, portal, status: 'falha', payload_erro: { error: translated.message, action: translated.action, raw: res.reason?.message } })
+          logsToInsert.push({
+            veiculo_id: veiculo.id,
+            portal,
+            status: 'falha',
+            payload_erro: {
+              error: translated.message,
+              action: translated.action,
+              raw: res.reason?.message,
+            },
+          })
         } else {
-          logsToInsert.push({ veiculo_id: veiculo.id, portal, status: 'sucesso', payload_erro: null })
+          logsToInsert.push({
+            veiculo_id: veiculo.id,
+            portal,
+            status: 'sucesso',
+            payload_erro: null,
+          })
           allResults.push(res.value)
         }
       })
@@ -126,7 +159,13 @@ Deno.serve(async (req) => {
         for (const p of plataformas) {
           const col = colMap[p.slug]
           if (col && (veiculo as any)[col]) {
-            syncLogsToInsert.push({ plataforma_id: p.id, veiculo_id: veiculo.id, acao: 'sync', status: 'success', mensagem: 'Veículo sincronizado via sync-estoque' })
+            syncLogsToInsert.push({
+              plataforma_id: p.id,
+              veiculo_id: veiculo.id,
+              acao: 'sync',
+              status: 'success',
+              mensagem: 'Veículo sincronizado via sync-estoque',
+            })
           }
         }
       }
@@ -139,9 +178,12 @@ Deno.serve(async (req) => {
       await supabase.from('sync_log').insert(syncLogsToInsert)
     }
 
-    return new Response(JSON.stringify({ success: true, synced: allResults.length, results: allResults }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    })
+    return new Response(
+      JSON.stringify({ success: true, synced: allResults.length, results: allResults }),
+      {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      },
+    )
   } catch (err: any) {
     return new Response(JSON.stringify({ error: err.message }), {
       status: 400,

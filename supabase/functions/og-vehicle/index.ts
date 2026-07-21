@@ -77,13 +77,12 @@ function formatCurrency(val: any): string {
 
 function getSocialImageUrl(imageUrl: string): string {
   if (!imageUrl) return DEFAULT_OG_IMAGE
-  if (imageUrl.includes('supabase.co')) {
+  if (imageUrl.includes('imagens.carroeciamotors.com.br') || imageUrl.includes('supabase.co')) {
     const cleanUrl = imageUrl.split('?')[0]
     return `https://images.weserv.nl/?url=${encodeURIComponent(cleanUrl)}&output=jpg`
   }
   if (!imageUrl.startsWith('http://') && !imageUrl.startsWith('https://')) {
-    const baseUrl = Deno.env.get('SUPABASE_URL') ?? ''
-    return `${baseUrl}/storage/v1/object/public/logos-e-imagens/${imageUrl}`
+    return `https://imagens.carroeciamotors.com.br/logos-e-imagens/${imageUrl}`
   }
   return imageUrl
 }
@@ -231,7 +230,7 @@ Deno.serve(async (req) => {
     const primaryImage = rawImage.startsWith('http')
       ? rawImage
       : rawImage
-        ? `https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/${rawImage}`
+        ? `https://imagens.carroeciamotors.com.br/logos-e-imagens/${rawImage}`
         : DEFAULT_OG_IMAGE
     const vehicleSlugOrId = vehicle.slug || vehicle.id
 

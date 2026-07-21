@@ -150,10 +150,13 @@ Deno.serve(async (req) => {
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
     )
   } catch (error: any) {
-    await supabase.from('lead_errors').insert({
-      lead_data: { source: 'lead-automation', timestamp: new Date().toISOString() },
-      error_message: error.message,
-    }).catch(() => {})
+    await supabase
+      .from('lead_errors')
+      .insert({
+        lead_data: { source: 'lead-automation', timestamp: new Date().toISOString() },
+        error_message: error.message,
+      })
+      .catch(() => {})
     return new Response(JSON.stringify({ error: error.message }), {
       status: 400,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

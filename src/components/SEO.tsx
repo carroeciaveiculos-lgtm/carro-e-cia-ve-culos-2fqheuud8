@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import { getImageUrl } from '@/lib/image-utils'
 
 interface SEOProps {
   title: string
@@ -44,7 +45,9 @@ export function SEO({
       setMeta('og:description', description, true)
       setMeta('og:type', 'website', true)
 
-      let finalImage = image || 'https://www.carroeciamotors.com.br/og-image.jpeg'
+      let finalImage = image
+        ? getImageUrl(image)
+        : 'https://www.carroeciamotors.com.br/og-image.jpeg'
       if (finalImage.startsWith('/')) {
         finalImage = `https://www.carroeciamotors.com.br${finalImage}`
       }

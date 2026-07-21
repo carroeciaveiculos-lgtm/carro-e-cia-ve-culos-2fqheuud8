@@ -32,7 +32,7 @@
     "daily-report-cron": 24,
     "ml-sync": 34,
     "ml-webhook": 27,
-    "og-vehicle": 31,
+    "og-vehicle": 32,
     "meta-capi-postback": 13,
     "admin-plataformas-api": 16,
     "ai-agents": 11,
@@ -42,6 +42,7 @@
     "wm-sync": 11,
     "wm-process-lead": 10,
     "notify-new-vehicle": 10,
-    "get-r2-presigned-url": 2
+    "get-r2-presigned-url": 2,
+    "sync-google-drive": 1
   }
 }
