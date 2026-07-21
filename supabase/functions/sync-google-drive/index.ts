@@ -2,17 +2,30 @@ import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from 'jsr:@supabase/supabase-js@2'
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3'
 import { corsHeaders } from '../_shared/cors.ts'
-import { getAccessToken, listDriveItems, downloadDriveFile } from '../_shared/google-drive.ts'
+import {
+  getAccessToken,
+  listDriveItems,
+  downloadDriveFile,
+} from '../_shared/google-drive.ts'
 
 const ROOT_FOLDER_ID = '1D6UAaVY7k_Hy1gKVmjQY-sDISchOhwEY'
 const R2_PUBLIC_BASE = 'https://imagens.carroeciamotors.com.br'
-const DEFAULT_BATCH_LIMIT = 3
+const BATCH_SIZE = 1
+const SYNC_CONTROL_KEY = 'drive_offset'
+const MAX_RETRIES = 3
+
+const s3Client = new S3Client({
+  region: 'auto',
+  endpoint: Deno.env.get('R2_ENDPOINT')!,
+  credentials: {
+    accessKeyId: Deno.env.get('R2_ACCESS_KEY_ID')!,
+    secretAccessKey: Deno.env.get('R2_SECRET_ACCESS_KEY')!,
+  },
+  forcePathStyle: true,
+})
 
 function sanitizeName(name: string): string {
-  return name
-    .trim()
-    .replace(/\s+/g, '_')
-    .replace(/[^a-zA-Z0-9_\-]/g, '')
+  return name.trim().replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_\-]/g, '')
 }
 
 function extractPlate(folderName: string): string | null {
@@ -21,29 +34,13 @@ function extractPlate(folderName: string): string | null {
   return plate.length >= 4 ? plate : null
 }
 
-function extractExistingUrls(fotos: unknown): string[] {
-  if (Array.isArray(fotos)) return fotos.filter((f): f is string => typeof f === 'string')
-  return []
+function safeError(err: unknown): string {
+  if (err instanceof Error) return `[${err.name}] ${err.message}`
+  if (typeof err === 'string') return err
+  try { return JSON.stringify(err) } catch { return String(err ?? 'Erro desconhecido') }
 }
 
-function createR2Client(): S3Client {
-  return new S3Client({
-    region: 'auto',
-    endpoint: Deno.env.get('R2_ENDPOINT')!,
-    credentials: {
-      accessKeyId: Deno.env.get('R2_ACCESS_KEY_ID')!,
-      secretAccessKey: Deno.env.get('R2_SECRET_ACCESS_KEY')!,
-    },
-    forcePathStyle: true,
-  })
-}
-
-async function uploadToR2(
-  s3Client: S3Client,
-  key: string,
-  blob: Blob,
-  contentType: string,
-): Promise<void> {
+async function uploadToR2(key: string, blob: Blob, contentType: string): Promise<void> {
   const buffer = await blob.arrayBuffer()
   await s3Client.send(
     new PutObjectCommand({
@@ -55,274 +52,147 @@ async function uploadToR2(
   )
 }
 
-interface VehicleSyncResult {
-  plate: string
-  folderName: string
-  imagesSynced: number
-  imagesSkipped: number
-  error?: string
+async function getOffset(supabase: any): Promise<number> {
+  try {
+    const { data } = await supabase.from('sync_control').select('current_offset').eq('sync_key', SYNC_CONTROL_KEY).maybeSingle()
+    return data?.current_offset ?? 0
+  } catch { return 0 }
+}
+
+async function saveOffset(supabase: any, offset: number): Promise<void> {
+  try {
+    await supabase.from('sync_control').upsert({ sync_key: SYNC_CONTROL_KEY, current_offset: offset, updated_at: new Date().toISOString() })
+  } catch (e) { console.warn(`⚠️ saveOffset: ${safeError(e)}`) }
 }
 
 Deno.serve(async (req: Request) => {
+  const startTime = Date.now()
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
 
-  const startTime = Date.now()
-
   try {
-    const body = await req.json().catch(() => ({}))
-    const limit = Math.min(Math.max(parseInt(body.limit) || DEFAULT_BATCH_LIMIT, 1), 50)
-    const offset = Math.max(parseInt(body.offset) || 0, 0)
-
     const clientEmail = Deno.env.get('DRIVE_CLIENT_EMAIL')
     const privateKey = (Deno.env.get('DRIVE_PRIVATE_KEY') || '').replace(/\\n/g, '\n')
-    const projectId = Deno.env.get('DRIVE_PROJECT_ID')
-
-    if (!clientEmail || !privateKey || !projectId) {
-      return new Response(JSON.stringify({ error: 'Google Drive credentials not configured' }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      })
+    if (!clientEmail || !privateKey || !Deno.env.get('DRIVE_PROJECT_ID')) {
+      return new Response(JSON.stringify({ error: 'Drive credentials not configured' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
     }
 
+    let payloadOffset: number | undefined, payloadLimit: number | undefined
+    try { const body = await req.json(); if (body && typeof body === 'object') { payloadOffset = body.offset; payloadLimit = body.limit } } catch {}
+
+    const limit = payloadLimit ?? BATCH_SIZE
+
+    console.log('🔑 Authenticating...')
     const accessToken = await getAccessToken(clientEmail, privateKey)
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL')!,
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
-    )
+    console.log('✅ Drive auth OK')
 
-    const s3Client = createR2Client()
+    const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!)
+    const offset = payloadOffset ?? (await getOffset(supabase))
+    console.log(`📋 limit=${limit}, offset=${offset}`)
 
-    console.log(`📋 Batch config: limit=${limit}, offset=${offset}`)
+    const allFolders = await listDriveItems(accessToken, ROOT_FOLDER_ID, true)
+    console.log(`📂 ${allFolders.length} folders`)
 
-    // 1. List ALL vehicle folders from the root Drive folder (with pagination)
-    const allVehicleFolders = await listDriveItems(accessToken, ROOT_FOLDER_ID, true)
-    console.log(`📂 Total folders found in Drive: ${allVehicleFolders.length}`)
+    const batch = allFolders.slice(offset, offset + limit)
+    console.log(`🔄 ${batch.length} folders (offset=${offset})`)
 
-    // 2. Slice to get only the current batch
-    const batchFolders = allVehicleFolders.slice(offset, offset + limit)
-    console.log(`🔄 Processing batch: ${batchFolders.length} folders (offset=${offset})`)
+    let totalSynced = 0, vehiclesUpdated = 0
 
-    if (batchFolders.length === 0) {
-      return new Response(
-        JSON.stringify({
-          success: true,
-          processedVehicles: [],
-          totalImagesSynced: 0,
-          totalImagesSkipped: 0,
-          errors: [],
-          nextOffset: null,
-          message: 'No more folders to process. Sync complete.',
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
-      )
-    }
+    for (const [idx, folder] of batch.entries()) {
+      const plate = extractPlate(folder.name)
+      if (!plate) { console.log(`⚠️ No plate: "${folder.name}"`); continue }
+      console.log(`🔍 [${idx + 1}] ${plate}`)
 
-    const processedVehicles: string[] = []
-    const errors: { plate: string; folder: string; error: string }[] = []
-    let totalImagesSynced = 0
-    let totalImagesSkipped = 0
-
-    // 3. Process each vehicle folder in the batch
-    for (const vehicleFolder of batchFolders) {
-      const vehicleStartTime = Date.now()
-
+      let vehicle: any, existingCount = 0, vehicleId: string | null = null
       try {
-        const plate = extractPlate(vehicleFolder.name)
-        if (!plate) {
-          console.log(`⚠️ Could not extract plate from: "${vehicleFolder.name}"`)
-          errors.push({
-            plate: 'UNKNOWN',
-            folder: vehicleFolder.name,
-            error: 'Could not extract plate from folder name',
-          })
-          continue
+        const res = await supabase.from('veiculos').select('id, fotos').eq('placa', plate).maybeSingle()
+        if (res.error) { console.error(`❌ Query: ${safeError(res.error)}`); continue }
+        if (res.data) {
+          vehicleId = res.data.id
+          existingCount = Array.isArray(res.data.fotos) ? (res.data.fotos as string[]).length : 0
         }
+      } catch (e) { console.error(`❌ Query threw: ${safeError(e)}`); continue }
 
-        console.log(`🔍 Looking up vehicle with plate: ${plate} (folder: "${vehicleFolder.name}")`)
+      if (!vehicleId) { console.log(`❌ Not found: ${plate}`); continue }
+      console.log(`📸 ${plate}: ${existingCount} fotos no DB`)
 
-        // Fetch vehicle from DB
-        const { data: vehicle, error: vehicleError } = await supabase
-          .from('veiculos')
-          .select('id, fotos')
-          .eq('placa', plate)
-          .maybeSingle()
+      let allImages: any[] = []
+      try {
+        const files = await listDriveItems(accessToken, folder.id, false)
+        allImages = files.filter((f: any) => f.mimeType?.startsWith('image/'))
+      } catch (e) { console.error(`❌ Drive list: ${safeError(e)}`); continue }
 
-        if (vehicleError) {
-          console.error(`❌ DB error for plate ${plate}: ${vehicleError.message}`)
-          errors.push({
-            plate,
-            folder: vehicleFolder.name,
-            error: `DB error: ${vehicleError.message}`,
-          })
-          continue
-        }
+      console.log(`📸 ${allImages.length} in Drive`)
 
-        if (!vehicle) {
-          console.log(`❌ Vehicle not found for plate: ${plate}`)
-          errors.push({ plate, folder: vehicleFolder.name, error: 'Vehicle not found in database' })
-          continue
-        }
-
-        // Get existing fotos URLs for idempotency check
-        const existingFotos = extractExistingUrls(vehicle.fotos)
-
-        // List image files inside this vehicle's Drive folder
-        const imageFiles = await listDriveItems(accessToken, vehicleFolder.id, false)
-        const imageFilesFiltered = imageFiles.filter(
-          (f: any) => f.mimeType && f.mimeType.startsWith('image/'),
-        )
-
-        console.log(
-          `📸 ${imageFilesFiltered.length} images found for ${plate} (existing in DB: ${existingFotos.length})`,
-        )
-
-        if (imageFilesFiltered.length === 0) {
-          processedVehicles.push(plate)
-          continue
-        }
-
-        // Extract model name from folder name (remove the plate prefix)
-        const modelName = vehicleFolder.name.trim().substring(plate.length).trim()
-        const sanitizedModel = sanitizeName(modelName || 'veiculo')
-
-        const newPhotoUrls: string[] = []
-        let imagesSkippedForVehicle = 0
-
-        for (const file of imageFilesFiltered) {
-          try {
-            const sanitizedFileName = file.name.replace(/\s+/g, '_')
-            const storageKey = `media/${plate}_${sanitizedModel}/${sanitizedFileName}`
-            const expectedUrl = `${R2_PUBLIC_BASE}/${storageKey}`
-
-            // Idempotency: skip if this URL already exists in the vehicle's fotos array
-            if (existingFotos.includes(expectedUrl)) {
-              console.log(`⏭️ Skipping already-synced image: ${storageKey}`)
-              imagesSkippedForVehicle++
-              continue
-            }
-
-            console.log(`⬆️ Uploading: ${storageKey}`)
-
-            // Download from Google Drive
-            const { blob, mimeType } = await downloadDriveFile(accessToken, file.id)
-
-            // Upload to Cloudflare R2 (reusing the shared s3Client)
-            await uploadToR2(s3Client, storageKey, blob, mimeType)
-
-            newPhotoUrls.push(expectedUrl)
-            totalImagesSynced++
-          } catch (fileErr: any) {
-            console.error(`❌ Error syncing ${file.name} for ${plate}: ${fileErr.message}`)
-          }
-        }
-
-        totalImagesSkipped += imagesSkippedForVehicle
-
-        // 4. Incremental DB update: update fotos immediately after this vehicle is processed
-        if (newPhotoUrls.length > 0) {
-          const updatedFotos = [...existingFotos, ...newPhotoUrls]
-
-          console.log(`📝 [DB UPDATE] About to update vehicle ${plate} (id: ${vehicle.id})`)
-          console.log(
-            `📝 [DB UPDATE] fotos array length: ${updatedFotos.length} (existing: ${existingFotos.length}, new: ${newPhotoUrls.length})`,
-          )
-
-          try {
-            const { error: updateError } = await supabase
-              .from('veiculos')
-              .update({ fotos: updatedFotos, updated_at: new Date().toISOString() })
-              .eq('id', vehicle.id)
-
-            if (updateError) {
-              console.error(
-                `❌ [DB UPDATE] Supabase returned error for ${plate}:`,
-                JSON.stringify(updateError, null, 2),
-              )
-              console.error(`❌ [DB UPDATE] Error message: ${updateError.message}`)
-              console.error(`❌ [DB UPDATE] Error code: ${updateError.code}`)
-              console.error(`❌ [DB UPDATE] Error details: ${updateError.details}`)
-              console.error(`❌ [DB UPDATE] Error hint: ${updateError.hint}`)
-              errors.push({
-                plate,
-                folder: vehicleFolder.name,
-                error: `DB update failed: ${updateError.message} (code: ${updateError.code})`,
-              })
-            } else {
-              console.log(
-                `✅ [DB UPDATE] Vehicle ${plate} updated successfully with ${newPhotoUrls.length} new photos (total: ${updatedFotos.length}, skipped: ${imagesSkippedForVehicle})`,
-              )
-              processedVehicles.push(plate)
-            }
-          } catch (dbErr: any) {
-            console.error(`❌ [DB UPDATE] Caught exception during DB update for ${plate}:`, dbErr)
-            console.error(`❌ [DB UPDATE] Exception name: ${dbErr.name}`)
-            console.error(`❌ [DB UPDATE] Exception message: ${dbErr.message}`)
-            console.error(`❌ [DB UPDATE] Exception stack: ${dbErr.stack}`)
-            errors.push({
-              plate,
-              folder: vehicleFolder.name,
-              error: `DB update exception: ${dbErr.message}`,
-            })
-          }
-        } else {
-          console.log(
-            `✓ Vehicle ${plate}: no new photos to sync (skipped: ${imagesSkippedForVehicle})`,
-          )
-          processedVehicles.push(plate)
-        }
-
-        const vehicleElapsed = ((Date.now() - vehicleStartTime) / 1000).toFixed(1)
-        console.log(`⏱️ Vehicle ${plate} took ${vehicleElapsed}s`)
-      } catch (vehicleErr: any) {
-        console.error(`❌ Error processing folder "${vehicleFolder.name}": ${vehicleErr.message}`)
-        errors.push({
-          plate: extractPlate(vehicleFolder.name) || 'UNKNOWN',
-          folder: vehicleFolder.name,
-          error: vehicleErr.message,
-        })
+      // 🛡️ Skip por contagem
+      if (existingCount >= allImages.length) {
+        console.log(`⏭️ ${plate}: ${existingCount} ≥ ${allImages.length} — pulando`)
+        continue
       }
 
-      // Safety check: if we're approaching the 150s timeout, stop processing
-      const elapsed = (Date.now() - startTime) / 1000
-      if (elapsed > 120) {
-        console.log(`⏰ Approaching timeout (${elapsed.toFixed(0)}s elapsed), stopping batch early`)
-        break
+      // 🎯 Processar APENAS a diferença (últimos N arquivos, ordenados por nome)
+      const sorted = [...allImages].sort((a, b) => a.name.localeCompare(b.name))
+      const diff = allImages.length - existingCount
+      const toProcess = sorted.slice(-diff)
+
+      console.log(`🎯 ${toProcess.length} imagens para processar (diferença entre Drive=${allImages.length} e DB=${existingCount})`)
+
+      const modelName = folder.name.trim().substring(plate.length).trim()
+      const sanitizedModel = sanitizeName(modelName || 'veiculo')
+      const newUrls: string[] = []
+
+      for (const file of toProcess) {
+        try {
+          const fileName = file.name.replace(/\s+/g, '_')
+          const storageKey = `media/${plate}_${sanitizedModel}/${fileName}`
+          const publicUrl = `${R2_PUBLIC_BASE}/${storageKey}`
+
+          console.log(`⬇️ ${file.name}`)
+          const { blob, mimeType } = await downloadDriveFile(accessToken, file.id)
+
+          console.log(`⬆️ ${storageKey}`)
+          await uploadToR2(storageKey, blob, mimeType)
+
+          newUrls.push(publicUrl)
+          totalSynced++
+        } catch (e) {
+          console.error(`❌ ${file.name}: ${safeError(e)}`)
+        }
+      }
+
+      if (newUrls.length > 0) {
+        // 🔄 Buscar fotos atuais do banco (pode ter mudado desde o início)
+        let currentFotos: string[] = []
+        try {
+          const r = await supabase.from('veiculos').select('fotos').eq('id', vehicleId).single()
+          if (r.data && Array.isArray(r.data.fotos)) currentFotos = r.data.fotos as string[]
+        } catch { currentFotos = [] }
+
+        const updated = [...currentFotos, ...newUrls]
+        console.log(`💾 ${plate}: ${currentFotos.length} → ${updated.length}`)
+
+        try {
+          const r = await supabase.from('veiculos').update({ fotos: updated, updated_at: new Date().toISOString() }).eq('id', vehicleId)
+          if (r.error) console.error(`❌ DB update: ${safeError(r.error)}`)
+          else { vehiclesUpdated++; console.log(`✅ ${plate}: +${newUrls.length}`) }
+        } catch (e) { console.error(`❌ DB update threw: ${safeError(e)}`) }
+      } else {
+        console.log(`⏭️ Nenhuma foto nova para ${plate}`)
       }
     }
 
-    const totalElapsed = ((Date.now() - startTime) / 1000).toFixed(1)
-    const nextOffset = offset + processedVehicles.length + errors.length
-    const hasMore = offset + batchFolders.length < allVehicleFolders.length
+    const newOffset = offset + batch.length
+    await saveOffset(supabase, newOffset)
 
-    const summary = {
-      success: true,
-      processedVehicles,
-      totalImagesSynced,
-      totalImagesSkipped,
-      errors,
-      nextOffset: hasMore ? nextOffset : null,
-      hasMore,
-      elapsedSeconds: parseFloat(totalElapsed),
-    }
+    const elapsed = ((Date.now() - startTime) / 1000).toFixed(1)
+    const remaining = Math.max(0, allFolders.length - newOffset)
+    const result = { success: true, totalPhotosSynced: totalSynced, vehiclesUpdated, offset: newOffset, remaining, elapsedSeconds: `${elapsed}s` }
+    console.log(`✅ Complete: ${JSON.stringify(result)}`)
+    return new Response(JSON.stringify(result), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
 
-    console.log(
-      `📊 Batch complete: ${processedVehicles.length} vehicles, ${totalImagesSynced} images synced, ${errors.length} errors, ${totalElapsed}s`,
-    )
-
-    return new Response(JSON.stringify(summary), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    })
-  } catch (err: any) {
-    console.error(`❌ Fatal error: ${err.message}`)
-    return new Response(
-      JSON.stringify({
-        success: false,
-        error: err.message,
-        processedVehicles: [],
-        totalImagesSynced: 0,
-        errors: [{ plate: 'FATAL', folder: '', error: err.message }],
-      }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
-    )
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err ?? 'Unknown')
+    if (err instanceof Error && err.stack) console.error(`📊 Stack: ${err.stack}`)
+    console.error(`❌ FATAL: ${msg}`)
+    return new Response(JSON.stringify({ error: msg }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
   }
 })

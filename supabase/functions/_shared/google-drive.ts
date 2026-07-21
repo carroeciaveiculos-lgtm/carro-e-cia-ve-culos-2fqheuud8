@@ -82,27 +82,15 @@ export async function listDriveItems(
     : `and mimeType!='application/vnd.google-apps.folder'`
 
   const q = `'${folderId}' in parents and trashed=false ${mimeTypeFilter}`
+  const url = `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(q)}&fields=files(id,name,mimeType)&pageSize=1000`
 
-  let allFiles: DriveItem[] = []
-  let pageToken: string | undefined
+  const res = await fetch(url, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  })
 
-  do {
-    let url = `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(q)}&fields=files(id,name,mimeType),nextPageToken&pageSize=1000`
-    if (pageToken) {
-      url += `&pageToken=${encodeURIComponent(pageToken)}`
-    }
-
-    const res = await fetch(url, {
-      headers: { Authorization: `Bearer ${accessToken}` },
-    })
-
-    if (!res.ok) throw new Error(`Drive API error: ${await res.text()}`)
-    const data = await res.json()
-    allFiles = allFiles.concat(data.files || [])
-    pageToken = data.nextPageToken
-  } while (pageToken)
-
-  return allFiles
+  if (!res.ok) throw new Error(`Drive API error: ${await res.text()}`)
+  const data = await res.json()
+  return data.files || []
 }
 
 export async function downloadDriveFile(
