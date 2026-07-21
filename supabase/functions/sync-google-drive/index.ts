@@ -87,11 +87,13 @@ async function getOffset(supabase: any): Promise<number> {
 
 async function saveOffset(supabase: any, offset: number): Promise<void> {
   try {
-    await supabase.from('sync_control').upsert({
-      sync_key: SYNC_CONTROL_KEY,
-      current_offset: offset,
-      updated_at: new Date().toISOString(),
-    })
+    await supabase
+      .from('sync_control')
+      .upsert({
+        sync_key: SYNC_CONTROL_KEY,
+        current_offset: offset,
+        updated_at: new Date().toISOString(),
+      })
   } catch (e) {
     console.warn(`⚠️ saveOffset: ${safeError(e)}`)
   }
@@ -104,12 +106,14 @@ async function logError(
   payload: any,
 ): Promise<void> {
   try {
-    await supabase.from('logs_integracao').insert({
-      veiculo_id: veiculoId,
-      portal: 'google-drive',
-      payload_erro: { error, ...payload },
-      status: 'error',
-    })
+    await supabase
+      .from('logs_integracao')
+      .insert({
+        veiculo_id: veiculoId,
+        portal: 'google-drive',
+        payload_erro: { error, ...payload },
+        status: 'error',
+      })
   } catch (e) {
     console.error(`Failed to log error: ${safeError(e)}`)
   }
