@@ -2,18 +2,17 @@ import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from 'jsr:@supabase/supabase-js@2'
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3'
 import { corsHeaders } from '../_shared/cors.ts'
-import {
-  getAccessToken,
-  listDriveItems,
-  downloadDriveFile,
-} from '../_shared/google-drive.ts'
+import { getAccessToken, listDriveItems, downloadDriveFile } from '../_shared/google-drive.ts'
 
 const ROOT_FOLDER_ID = '1D6UAaVY7k_Hy1gKVmjQY-sDISchOhwEY'
 const R2_PUBLIC_BASE = 'https://imagens.carroeciamotors.com.br'
-const DEFAULT_BATCH_LIMIT = 5
+const DEFAULT_BATCH_LIMIT = 3
 
 function sanitizeName(name: string): string {
-  return name.trim().replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_\-]/g, '')
+  return name
+    .trim()
+    .replace(/\s+/g, '_')
+    .replace(/[^a-zA-Z0-9_\-]/g, '')
 }
 
 function extractPlate(folderName: string): string | null {
@@ -27,8 +26,8 @@ function extractExistingUrls(fotos: unknown): string[] {
   return []
 }
 
-async function uploadToR2(key: string, blob: Blob, contentType: string): Promise<void> {
-  const s3Client = new S3Client({
+function createR2Client(): S3Client {
+  return new S3Client({
     region: 'auto',
     endpoint: Deno.env.get('R2_ENDPOINT')!,
     credentials: {
@@ -37,7 +36,14 @@ async function uploadToR2(key: string, blob: Blob, contentType: string): Promise
     },
     forcePathStyle: true,
   })
+}
 
+async function uploadToR2(
+  s3Client: S3Client,
+  key: string,
+  blob: Blob,
+  contentType: string,
+): Promise<void> {
   const buffer = await blob.arrayBuffer()
   await s3Client.send(
     new PutObjectCommand({
@@ -72,10 +78,10 @@ Deno.serve(async (req: Request) => {
     const projectId = Deno.env.get('DRIVE_PROJECT_ID')
 
     if (!clientEmail || !privateKey || !projectId) {
-      return new Response(
-        JSON.stringify({ error: 'Google Drive credentials not configured' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
-      )
+      return new Response(JSON.stringify({ error: 'Google Drive credentials not configured' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
     }
 
     const accessToken = await getAccessToken(clientEmail, privateKey)
@@ -83,6 +89,8 @@ Deno.serve(async (req: Request) => {
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
     )
+
+    const s3Client = createR2Client()
 
     console.log(`📋 Batch config: limit=${limit}, offset=${offset}`)
 
@@ -141,7 +149,11 @@ Deno.serve(async (req: Request) => {
 
         if (vehicleError) {
           console.error(`❌ DB error for plate ${plate}: ${vehicleError.message}`)
-          errors.push({ plate, folder: vehicleFolder.name, error: `DB error: ${vehicleError.message}` })
+          errors.push({
+            plate,
+            folder: vehicleFolder.name,
+            error: `DB error: ${vehicleError.message}`,
+          })
           continue
         }
 
@@ -156,11 +168,13 @@ Deno.serve(async (req: Request) => {
 
         // List image files inside this vehicle's Drive folder
         const imageFiles = await listDriveItems(accessToken, vehicleFolder.id, false)
-        const imageFilesFiltered = imageFiles.filter((f: any) =>
-          f.mimeType && f.mimeType.startsWith('image/')
+        const imageFilesFiltered = imageFiles.filter(
+          (f: any) => f.mimeType && f.mimeType.startsWith('image/'),
         )
 
-        console.log(`📸 ${imageFilesFiltered.length} images found for ${plate} (existing in DB: ${existingFotos.length})`)
+        console.log(
+          `📸 ${imageFilesFiltered.length} images found for ${plate} (existing in DB: ${existingFotos.length})`,
+        )
 
         if (imageFilesFiltered.length === 0) {
           processedVehicles.push(plate)
@@ -192,8 +206,8 @@ Deno.serve(async (req: Request) => {
             // Download from Google Drive
             const { blob, mimeType } = await downloadDriveFile(accessToken, file.id)
 
-            // Upload to Cloudflare R2
-            await uploadToR2(storageKey, blob, mimeType)
+            // Upload to Cloudflare R2 (reusing the shared s3Client)
+            await uploadToR2(s3Client, storageKey, blob, mimeType)
 
             newPhotoUrls.push(expectedUrl)
             totalImagesSynced++
@@ -207,20 +221,53 @@ Deno.serve(async (req: Request) => {
         // 4. Incremental DB update: update fotos immediately after this vehicle is processed
         if (newPhotoUrls.length > 0) {
           const updatedFotos = [...existingFotos, ...newPhotoUrls]
-          const { error: updateError } = await supabase
-            .from('veiculos')
-            .update({ fotos: updatedFotos, updated_at: new Date().toISOString() })
-            .eq('id', vehicle.id)
 
-          if (updateError) {
-            console.error(`❌ Failed to update DB for ${plate}: ${updateError.message}`)
-            errors.push({ plate, folder: vehicleFolder.name, error: `DB update failed: ${updateError.message}` })
-          } else {
-            console.log(`✅ Vehicle ${plate} updated with ${newPhotoUrls.length} new photos (skipped: ${imagesSkippedForVehicle})`)
-            processedVehicles.push(plate)
+          console.log(`📝 [DB UPDATE] About to update vehicle ${plate} (id: ${vehicle.id})`)
+          console.log(
+            `📝 [DB UPDATE] fotos array length: ${updatedFotos.length} (existing: ${existingFotos.length}, new: ${newPhotoUrls.length})`,
+          )
+
+          try {
+            const { error: updateError } = await supabase
+              .from('veiculos')
+              .update({ fotos: updatedFotos, updated_at: new Date().toISOString() })
+              .eq('id', vehicle.id)
+
+            if (updateError) {
+              console.error(
+                `❌ [DB UPDATE] Supabase returned error for ${plate}:`,
+                JSON.stringify(updateError, null, 2),
+              )
+              console.error(`❌ [DB UPDATE] Error message: ${updateError.message}`)
+              console.error(`❌ [DB UPDATE] Error code: ${updateError.code}`)
+              console.error(`❌ [DB UPDATE] Error details: ${updateError.details}`)
+              console.error(`❌ [DB UPDATE] Error hint: ${updateError.hint}`)
+              errors.push({
+                plate,
+                folder: vehicleFolder.name,
+                error: `DB update failed: ${updateError.message} (code: ${updateError.code})`,
+              })
+            } else {
+              console.log(
+                `✅ [DB UPDATE] Vehicle ${plate} updated successfully with ${newPhotoUrls.length} new photos (total: ${updatedFotos.length}, skipped: ${imagesSkippedForVehicle})`,
+              )
+              processedVehicles.push(plate)
+            }
+          } catch (dbErr: any) {
+            console.error(`❌ [DB UPDATE] Caught exception during DB update for ${plate}:`, dbErr)
+            console.error(`❌ [DB UPDATE] Exception name: ${dbErr.name}`)
+            console.error(`❌ [DB UPDATE] Exception message: ${dbErr.message}`)
+            console.error(`❌ [DB UPDATE] Exception stack: ${dbErr.stack}`)
+            errors.push({
+              plate,
+              folder: vehicleFolder.name,
+              error: `DB update exception: ${dbErr.message}`,
+            })
           }
         } else {
-          console.log(`✓ Vehicle ${plate}: no new photos to sync (skipped: ${imagesSkippedForVehicle})`)
+          console.log(
+            `✓ Vehicle ${plate}: no new photos to sync (skipped: ${imagesSkippedForVehicle})`,
+          )
           processedVehicles.push(plate)
         }
 
@@ -233,7 +280,6 @@ Deno.serve(async (req: Request) => {
           folder: vehicleFolder.name,
           error: vehicleErr.message,
         })
-        // Continue to next vehicle — do NOT stop the batch
       }
 
       // Safety check: if we're approaching the 150s timeout, stop processing
@@ -259,16 +305,23 @@ Deno.serve(async (req: Request) => {
       elapsedSeconds: parseFloat(totalElapsed),
     }
 
-    console.log(`📊 Batch complete: ${processedVehicles.length} vehicles, ${totalImagesSynced} images synced, ${errors.length} errors, ${totalElapsed}s`)
-
-    return new Response(
-      JSON.stringify(summary),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+    console.log(
+      `📊 Batch complete: ${processedVehicles.length} vehicles, ${totalImagesSynced} images synced, ${errors.length} errors, ${totalElapsed}s`,
     )
+
+    return new Response(JSON.stringify(summary), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    })
   } catch (err: any) {
     console.error(`❌ Fatal error: ${err.message}`)
     return new Response(
-      JSON.stringify({ success: false, error: err.message, processedVehicles: [], totalImagesSynced: 0, errors: [{ plate: 'FATAL', folder: '', error: err.message }] }),
+      JSON.stringify({
+        success: false,
+        error: err.message,
+        processedVehicles: [],
+        totalImagesSynced: 0,
+        errors: [{ plate: 'FATAL', folder: '', error: err.message }],
+      }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
     )
   }
