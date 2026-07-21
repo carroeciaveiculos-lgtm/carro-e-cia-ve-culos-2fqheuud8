@@ -32,3 +32,19 @@ export const getContratoByVeiculoId = async (veiculoId: string) => {
 
   return { data, error }
 }
+
+export const getVeiculosWithoutPhotos = async () => {
+  const { data, error } = await supabase
+    .from('veiculos')
+    .select('id, placa, marca, modelo')
+    .or('fotos.is.null,fotos.eq.[]')
+    .eq('status', 'disponivel')
+  return { data, error }
+}
+
+export const triggerDriveSync = async (limit?: number) => {
+  const { data, error } = await supabase.functions.invoke('sync-google-drive', {
+    body: limit ? { limit } : {},
+  })
+  return { data, error }
+}

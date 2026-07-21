@@ -28,6 +28,7 @@ import { trackCTAClick } from '@/lib/tracking'
 import { toast } from 'sonner'
 import { getImageUrl, handleImageError, CAR_PLACEHOLDER_IMAGE } from '@/lib/image-utils'
 import { handleShareCTA } from '@/lib/cta-router'
+import { triggerDriveSync } from '@/services/veiculos'
 
 export default function Estoque() {
   const [veiculos, setVeiculos] = useState<any[]>([])
@@ -54,6 +55,17 @@ export default function Estoque() {
         setLoading(false)
       })
   }, [])
+
+  useEffect(() => {
+    if (!loading && veiculos.length > 0) {
+      const hasMissingPhotos = veiculos.some(
+        (v) => !v.fotos || !Array.isArray(v.fotos) || v.fotos.length === 0,
+      )
+      if (hasMissingPhotos) {
+        triggerDriveSync().catch(() => {})
+      }
+    }
+  }, [loading, veiculos])
 
   const marcas = ['Todas', ...Array.from(new Set(veiculos.map((v) => v.marca)))]
   const anos = [
