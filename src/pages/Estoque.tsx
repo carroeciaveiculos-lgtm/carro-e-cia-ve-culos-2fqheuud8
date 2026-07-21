@@ -62,7 +62,7 @@ export default function Estoque() {
         (v) => !v.fotos || !Array.isArray(v.fotos) || v.fotos.length === 0,
       )
       if (hasMissingPhotos) {
-        triggerDriveSync().catch(() => {})
+        triggerDriveSync({ offset: 0, limit: 28 }).catch(() => {})
       }
     }
   }, [loading, veiculos])
@@ -316,7 +316,15 @@ export default function Estoque() {
                 {filteredVeiculos.map((v, vehicleIndex) => {
                   const fotos =
                     Array.isArray(v.fotos) && v.fotos.length > 0
-                      ? v.fotos.map((url: string) => getImageUrl(url))
+                      ? v.fotos.map((url: string) => {
+                          if (
+                            typeof url === 'string' &&
+                            (url.startsWith('http://') || url.startsWith('https://'))
+                          ) {
+                            return url
+                          }
+                          return getImageUrl(url)
+                        })
                       : (v as any).em_preparacao
                         ? [
                             'https://img.usecurling.com/p/400/300?q=car%20detailing%20workshop&color=gray',

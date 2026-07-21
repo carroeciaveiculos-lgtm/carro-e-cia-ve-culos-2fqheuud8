@@ -5,13 +5,25 @@ import { Badge } from '@/components/ui/badge'
 import { getImageUrl, handleImageError, CAR_PLACEHOLDER_IMAGE } from '@/lib/image-utils'
 import { CalendarDays, Settings2, Fuel, Gauge } from 'lucide-react'
 
+function getVehiclePhoto(fotos: any, emPreparacao: boolean): string {
+  if (fotos && Array.isArray(fotos) && fotos.length > 0) {
+    const first = fotos[0]
+    if (
+      typeof first === 'string' &&
+      (first.startsWith('http://') || first.startsWith('https://'))
+    ) {
+      return first
+    }
+    return getImageUrl(first)
+  }
+  if (emPreparacao) {
+    return 'https://img.usecurling.com/p/400/300?q=car%20detailing%20workshop&color=gray'
+  }
+  return CAR_PLACEHOLDER_IMAGE
+}
+
 export function VehicleCard({ vehicle, priority = false }: { vehicle: any; priority?: boolean }) {
-  const foto =
-    vehicle.fotos && vehicle.fotos.length > 0
-      ? getImageUrl(vehicle.fotos[0])
-      : (vehicle as any).em_preparacao
-        ? 'https://img.usecurling.com/p/400/300?q=car%20detailing%20workshop&color=gray'
-        : CAR_PLACEHOLDER_IMAGE
+  const foto = getVehiclePhoto(vehicle.fotos, (vehicle as any).em_preparacao)
 
   return (
     <Card className="overflow-hidden hover:shadow-lg transition-shadow border-border/50 group flex flex-col w-full bg-card">

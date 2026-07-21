@@ -42,9 +42,9 @@ export const getVeiculosWithoutPhotos = async () => {
   return { data, error }
 }
 
-export const triggerDriveSync = async (limit?: number) => {
+export const triggerDriveSync = async (params?: { offset?: number; limit?: number }) => {
   const { data, error } = await supabase.functions.invoke('sync-google-drive', {
-    body: limit ? { limit } : {},
+    body: params ?? {},
   })
   return { data, error }
 }
