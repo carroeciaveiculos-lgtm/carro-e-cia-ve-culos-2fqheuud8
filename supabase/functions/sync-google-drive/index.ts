@@ -168,7 +168,11 @@ async function processVehicle(
 
   let vehicle: any
   try {
-    const res = await supabase.from('veiculos').select('id, fotos').eq('placa', plate).maybeSingle()
+    const res = await supabase
+      .from('veiculos')
+      .select('id, fotos')
+      .eq('placa', plate)
+      .maybeSingle()
     if (res.error) {
       console.error(`❌ Query error: ${safeError(res.error)}`)
       return { synced: 0, updated: false }
@@ -299,9 +303,7 @@ Deno.serve(async (req: Request) => {
       })
     }
 
-    let payloadOffset: number | undefined,
-      payloadLimit: number | undefined,
-      payloadPlaca: string | undefined
+    let payloadOffset: number | undefined, payloadLimit: number | undefined, payloadPlaca: string | undefined
     try {
       const body = await req.json()
       if (body && typeof body === 'object') {
@@ -332,16 +334,13 @@ Deno.serve(async (req: Request) => {
       })
 
       if (!matchingFolder) {
-        return new Response(
-          JSON.stringify({
-            success: false,
-            error: `Nenhuma pasta encontrada no Drive para a placa: ${targetPlate}`,
-          }),
-          {
-            status: 404,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          },
-        )
+        return new Response(JSON.stringify({
+          success: false,
+          error: `Nenhuma pasta encontrada no Drive para a placa: ${targetPlate}`,
+        }), {
+          status: 404,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
       }
 
       console.log(`📂 Found folder: "${matchingFolder.name}"`)
@@ -380,9 +379,7 @@ Deno.serve(async (req: Request) => {
       const elapsed = Date.now() - startTime
       const remaining = 120000 - elapsed
       if (remaining < TIME_BUFFER_MS) {
-        console.log(
-          `⏰ Remaining time: ${remaining}ms < ${TIME_BUFFER_MS}ms, stopping early at vehicle ${idx + 1}`,
-        )
+        console.log(`⏰ Remaining time: ${remaining}ms < ${TIME_BUFFER_MS}ms, stopping early at vehicle ${idx + 1}`)
         break
       }
 
