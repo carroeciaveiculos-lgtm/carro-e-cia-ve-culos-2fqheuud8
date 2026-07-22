@@ -225,8 +225,7 @@ Deno.serve(async (req: Request) => {
               .eq('id', listing.veiculo_id)
               .maybeSingle()
             if (veiculo) {
-              veiculoInteresse =
-                `${veiculo.marca} ${veiculo.modelo} ${veiculo.ano_modelo || ''}`.trim()
+              veiculoInteresse = `${veiculo.marca} ${veiculo.modelo} ${veiculo.ano_modelo || ''}`.trim()
             }
           }
         }
