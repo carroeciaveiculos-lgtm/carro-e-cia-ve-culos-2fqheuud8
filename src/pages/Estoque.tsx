@@ -26,7 +26,7 @@ import { supabase } from '@/lib/supabase/client'
 import { Filter, Search, Car, Share2, CalendarDays, Settings2, Fuel, Gauge } from 'lucide-react'
 import { trackCTAClick } from '@/lib/tracking'
 import { toast } from 'sonner'
-import { getImageUrl, handleImageError, CAR_PLACEHOLDER_IMAGE } from '@/lib/image-utils'
+import { handleImageError, CAR_PLACEHOLDER_IMAGE, getVehiclePhotos } from '@/lib/image-utils'
 import { handleShareCTA } from '@/lib/cta-router'
 import { triggerDriveSync } from '@/services/veiculos'
 
@@ -44,7 +44,7 @@ export default function Estoque() {
     supabase
       .from('veiculos')
       .select(
-        'id, slug, marca, modelo, versao, ano_fabricacao, ano_modelo, preco_venda, quilometragem, combustivel, cambio, cor, fotos, is_zero_km, status, is_consignado, categoria, exibir_no_site, nao_exibir_km, em_preparacao',
+        'id, slug, marca, modelo, versao, ano_fabricacao, ano_modelo, preco_venda, quilometragem, combustivel, cambio, cor, fotos, videos, is_zero_km, status, is_consignado, categoria, exibir_no_site, nao_exibir_km, em_preparacao',
       )
       .eq('status', 'disponivel')
       .eq('exibir_no_site', true)
@@ -314,17 +314,10 @@ export default function Estoque() {
             ) : (
               <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 {filteredVeiculos.map((v, vehicleIndex) => {
+                  const vehiclePhotos = getVehiclePhotos(v.fotos)
                   const fotos =
-                    Array.isArray(v.fotos) && v.fotos.length > 0
-                      ? v.fotos.map((url: string) => {
-                          if (
-                            typeof url === 'string' &&
-                            (url.startsWith('http://') || url.startsWith('https://'))
-                          ) {
-                            return url
-                          }
-                          return getImageUrl(url)
-                        })
+                    vehiclePhotos.length > 0
+                      ? vehiclePhotos
                       : (v as any).em_preparacao
                         ? [
                             'https://img.usecurling.com/p/400/300?q=car%20detailing%20workshop&color=gray',

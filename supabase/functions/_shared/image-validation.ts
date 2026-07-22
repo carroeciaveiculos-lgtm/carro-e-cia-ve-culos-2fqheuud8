@@ -34,7 +34,13 @@ async function getImageDimensions(blob: Blob): Promise<{ width: number; height: 
         continue
       }
       const marker = bytes[i + 1]
-      if (marker >= 0xc0 && marker <= 0xcf && marker !== 0xc4 && marker !== 0xc8 && marker !== 0xcc) {
+      if (
+        marker >= 0xc0 &&
+        marker <= 0xcf &&
+        marker !== 0xc4 &&
+        marker !== 0xc8 &&
+        marker !== 0xcc
+      ) {
         const height = (bytes[i + 5] << 8) | bytes[i + 6]
         const width = (bytes[i + 7] << 8) | bytes[i + 8]
         return { width, height }

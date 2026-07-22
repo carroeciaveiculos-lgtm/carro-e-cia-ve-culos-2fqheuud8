@@ -59,7 +59,12 @@ import {
   getVehicleDescription,
   getVehicleDiferenciais,
 } from '@/lib/cta-router'
-import { getImageUrl, handleImageError, R2_PLACEHOLDER_URL } from '@/lib/image-utils'
+import {
+  handleImageError,
+  CAR_PLACEHOLDER_IMAGE,
+  getVehiclePhotos,
+  getVehicleVideos,
+} from '@/lib/image-utils'
 
 export default function Veiculo() {
   const { id } = useParams()
@@ -164,7 +169,8 @@ export default function Veiculo() {
 
   const formatCurrency = (val: number) =>
     new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val)
-  const photos = ((vehicle.fotos || []) as string[]).map((p) => getImageUrl(p))
+  const photos = getVehiclePhotos(vehicle.fotos)
+  const videos = getVehicleVideos(vehicle.videos, vehicle.fotos)
 
   const shareUrl = getShareUrl(vehicle)
 
@@ -286,7 +292,7 @@ export default function Veiculo() {
                         </div>
                       ) : (
                         <img
-                          src={R2_PLACEHOLDER_URL}
+                          src={CAR_PLACEHOLDER_IMAGE}
                           alt="Sem foto"
                           width="800"
                           height="600"
@@ -336,14 +342,19 @@ export default function Veiculo() {
               </div>
             )}
 
-            {vehicle.video_url && (
-              <div className="mt-8 aspect-video rounded-xl overflow-hidden bg-black">
-                <iframe
-                  title={`Vídeo de apresentação do veículo ${vehicle.marca} ${vehicle.modelo}`}
-                  src={vehicle.video_url}
-                  className="w-full h-full"
-                  allowFullScreen
-                ></iframe>
+            {videos.length > 0 && (
+              <div className="mt-8 space-y-4">
+                {videos.map((videoUrl: string, i: number) => (
+                  <div key={i} className="aspect-video rounded-xl overflow-hidden bg-black">
+                    <video
+                      src={videoUrl}
+                      className="w-full h-full"
+                      controls
+                      playsInline
+                      preload="metadata"
+                    />
+                  </div>
+                ))}
               </div>
             )}
           </div>

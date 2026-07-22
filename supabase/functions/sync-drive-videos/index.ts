@@ -1,14 +1,14 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from 'jsr:@supabase/supabase-js@2'
 import { S3Client, PutObjectCommand } from 'npm:@aws-sdk/client-s3@3'
+import { Readable } from 'node:stream'
 import { corsHeaders } from '../_shared/cors.ts'
-import { getAccessToken, listDriveItems, downloadDriveFile } from '../_shared/google-drive.ts'
+import { getAccessToken, listDriveItems } from '../_shared/google-drive.ts'
 
 const ROOT_FOLDER_ID = '1D6UAaVY7k_Hy1gKVmjQY-sDISchOhwEY'
 const R2_PUBLIC_BASE = 'https://imagens.carroeciamotors.com.br'
-const SITE_BASE_URL = 'https://www.carroeciamotors.com.br'
-const BATCH_SIZE = 2
-const SYNC_CONTROL_KEY = 'drive_offset'
+const BATCH_SIZE = 1
+const SYNC_CONTROL_KEY = 'drive_video_offset'
 const MAX_EXECUTION_MS = 140000
 
 const s3Client = new S3Client({
@@ -44,32 +44,38 @@ function safeError(err: unknown): string {
   }
 }
 
-function getRemainingMs(startTime: number): number {
-  return MAX_EXECUTION_MS - (Date.now() - startTime)
+async function* streamToAsyncIterator(
+  stream: ReadableStream<Uint8Array>,
+): AsyncIterable<Uint8Array> {
+  const reader = stream.getReader()
+  try {
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
+      yield value
+    }
+  } finally {
+    reader.releaseLock()
+  }
 }
 
-async function uploadToR2(
+async function streamUploadToR2(
   key: string,
-  data: Blob | Uint8Array,
+  webStream: ReadableStream<Uint8Array>,
   contentType: string,
+  contentLength: number,
 ): Promise<void> {
-  const body =
-    data instanceof Uint8Array ? data : new Uint8Array(await (data as Blob).arrayBuffer())
-  await s3Client.send(
-    new PutObjectCommand({
-      Bucket: Deno.env.get('R2_BUCKET') || 'carroeciamotors-imagens',
-      Key: key,
-      Body: body,
-      ContentType: contentType,
-    }),
-  )
-}
-
-async function generateQrCodeBlob(url: string): Promise<Blob> {
-  const apiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&margin=1&data=${encodeURIComponent(url)}`
-  const res = await fetch(apiUrl)
-  if (!res.ok) throw new Error(`QR code generation failed: ${res.status}`)
-  return res.blob()
+  const nodeStream = Readable.from(streamToAsyncIterator(webStream))
+  const params: any = {
+    Bucket: Deno.env.get('R2_BUCKET') || 'carroeciamotors-imagens',
+    Key: key,
+    Body: nodeStream,
+    ContentType: contentType,
+  }
+  if (contentLength > 0) {
+    params.ContentLength = contentLength
+  }
+  await s3Client.send(new PutObjectCommand(params))
 }
 
 async function getOffset(supabase: any): Promise<number> {
@@ -106,7 +112,7 @@ async function logError(
   try {
     await supabase.from('logs_integracao').insert({
       veiculo_id: veiculoId,
-      portal: 'google-drive',
+      portal: 'google-drive-videos',
       payload_erro: { error, ...payload },
       status: 'error',
     })
@@ -129,16 +135,14 @@ Deno.serve(async (req: Request) => {
       })
     }
 
-    let payloadOffset: number | undefined, payloadLimit: number | undefined
+    let payloadOffset: number | undefined
     try {
       const body = await req.json()
       if (body && typeof body === 'object') {
         payloadOffset = body.offset
-        payloadLimit = body.limit
       }
     } catch {}
 
-    const limit = payloadLimit ?? BATCH_SIZE
     console.log('🔑 Authenticating...')
     const accessToken = await getAccessToken(clientEmail, privateKey)
     console.log('✅ Drive auth OK')
@@ -148,43 +152,40 @@ Deno.serve(async (req: Request) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
     )
     const offset = payloadOffset ?? (await getOffset(supabase))
-    console.log(`📋 limit=${limit}, offset=${offset}`)
+    console.log(`📋 offset=${offset}, batch_size=${BATCH_SIZE}`)
 
     const allFolders = await listDriveItems(accessToken, ROOT_FOLDER_ID, true)
     console.log(`📂 ${allFolders.length} folders`)
 
-    const batch = allFolders.slice(offset, offset + limit)
+    const batch = allFolders.slice(offset, offset + BATCH_SIZE)
     console.log(`🔄 ${batch.length} folders (offset=${offset})`)
 
-    let totalSynced = 0,
-      vehiclesUpdated = 0,
-      processedCount = 0
+    let totalSynced = 0
+    let vehiclesUpdated = 0
+    let processedCount = 0
 
     for (const [idx, folder] of batch.entries()) {
-      const remaining = getRemainingMs(startTime)
+      const remaining = MAX_EXECUTION_MS - (Date.now() - startTime)
       if (remaining < 30000) {
-        console.log(
-          `⏰ Remaining time: ${remaining}ms < 30000ms, stopping early at vehicle ${idx + 1}`,
-        )
+        console.log(`⏰ Remaining time: ${remaining}ms, stopping early`)
         break
       }
 
       const plate = extractPlate(folder.name)
       if (!plate) {
         console.log(`⚠️ No plate: "${folder.name}"`)
+        processedCount++
         continue
       }
       console.log(`🔍 [${idx + 1}] ${plate}`)
 
-      let vehicleId: string | null = null,
-        vehicleSlug: string | null = null
-      let existingCount = 0,
-        existingQrUrl: string | null = null
+      let vehicleId: string | null = null
+      let existingVideos: string[] = []
 
       try {
         const res = await supabase
           .from('veiculos')
-          .select('id, fotos, slug, qrcode_url')
+          .select('id, videos')
           .eq('placa', plate)
           .maybeSingle()
         if (res.error) {
@@ -197,9 +198,7 @@ Deno.serve(async (req: Request) => {
         }
         if (res.data) {
           vehicleId = res.data.id
-          vehicleSlug = res.data.slug
-          existingQrUrl = res.data.qrcode_url
-          existingCount = Array.isArray(res.data.fotos) ? (res.data.fotos as string[]).length : 0
+          existingVideos = Array.isArray(res.data.videos) ? (res.data.videos as string[]) : []
         }
       } catch (e) {
         console.error(`❌ Query threw: ${safeError(e)}`)
@@ -212,117 +211,106 @@ Deno.serve(async (req: Request) => {
 
       if (!vehicleId) {
         console.log(`❌ Not found: ${plate}`)
+        processedCount++
         continue
       }
-      console.log(`📸 ${plate}: ${existingCount} fotos, qr: ${existingQrUrl ? 'yes' : 'no'}`)
+      console.log(`🎥 ${plate}: ${existingVideos.length} existing videos`)
 
-      let allImages: any[] = []
+      let videoFiles: any[] = []
       try {
         const files = await listDriveItems(accessToken, folder.id, false)
-        allImages = files.filter((f: any) => f.mimeType?.startsWith('image/'))
+        videoFiles = files.filter(
+          (f: any) => f.mimeType?.startsWith('video/') || f.name?.toLowerCase().endsWith('.mp4'),
+        )
       } catch (e) {
         console.error(`❌ Drive list: ${safeError(e)}`)
-        await logError(supabase, vehicleId, `Drive list error`, { plate, error: safeError(e) })
+        await logError(supabase, vehicleId, `Drive list error`, {
+          plate,
+          error: safeError(e),
+        })
+        processedCount++
         continue
       }
 
-      console.log(`📸 ${allImages.length} images in Drive`)
+      console.log(`🎥 ${videoFiles.length} videos in Drive for ${plate}`)
 
-      const hasAllPhotos = existingCount >= allImages.length
-      const hasQrCode = existingQrUrl
-      if (hasAllPhotos && hasQrCode) {
-        console.log(`⏭️ ${plate}: all media synced, skipping`)
+      if (videoFiles.length === 0) {
+        console.log(`⏭️ ${plate}: no videos`)
         processedCount++
         continue
       }
 
       const modelName = folder.name.trim().substring(plate.length).trim()
       const sanitizedModel = sanitizeName(modelName || 'veiculo')
-      const newUrls: string[] = []
+      const newVideoUrls: string[] = []
 
-      if (!hasAllPhotos) {
-        const sorted = [...allImages].sort((a, b) => a.name.localeCompare(b.name))
-        const diff = allImages.length - existingCount
-        const toProcess = sorted.slice(-diff)
-        console.log(
-          `🎯 ${toProcess.length} new images to process (Drive=${allImages.length}, DB=${existingCount})`,
-        )
+      for (const file of videoFiles) {
+        const fileName = file.name.replace(/\s+/g, '_')
+        const storageKey = `media/${plate}_${sanitizedModel}/${fileName}`
+        const publicUrl = `${R2_PUBLIC_BASE}/${storageKey}`
 
-        for (const file of toProcess) {
-          try {
-            const fileName = file.name.replace(/\s+/g, '_')
-            const storageKey = `media/${plate}_${sanitizedModel}/${fileName}`
-            const publicUrl = `${R2_PUBLIC_BASE}/${storageKey}`
-            console.log(`⬇️ ${file.name}`)
-            const { blob, mimeType } = await downloadDriveFile(accessToken, file.id)
-            console.log(`⬆️ ${storageKey}`)
-            await uploadToR2(storageKey, blob, mimeType)
-            newUrls.push(publicUrl)
-            totalSynced++
-          } catch (e) {
-            console.error(`❌ ${file.name}: ${safeError(e)}`)
+        if (existingVideos.includes(publicUrl)) {
+          console.log(`⏭️ Already synced: ${file.name}`)
+          continue
+        }
+
+        try {
+          console.log(`⬇️ Streaming video: ${file.name}`)
+          const downloadRes = await fetch(
+            `https://www.googleapis.com/drive/v3/files/${file.id}?alt=media`,
+            { headers: { Authorization: `Bearer ${accessToken}` } },
+          )
+          if (!downloadRes.ok || !downloadRes.body) {
+            const errText = await downloadRes.text()
+            throw new Error(`Download failed: ${downloadRes.status} ${errText}`)
           }
-        }
-      }
 
-      let qrCodeUrl: string | null = null
-      if (!hasQrCode && vehicleSlug) {
-        try {
-          const vehicleUrl = `${SITE_BASE_URL}/estoque/${vehicleSlug}`
-          const qrKey = `media/${plate}_${sanitizedModel}/qrcode.png`
-          qrCodeUrl = `${R2_PUBLIC_BASE}/${qrKey}`
-          console.log(`🔢 Generating QR code for ${vehicleUrl}`)
-          const qrBlob = await generateQrCodeBlob(vehicleUrl)
-          await uploadToR2(qrKey, qrBlob, 'image/png')
+          const contentType = downloadRes.headers.get('content-type') || 'video/mp4'
+          const contentLength = parseInt(downloadRes.headers.get('content-length') || '0')
+
+          console.log(`⬆️ Streaming to R2: ${storageKey}`)
+          await streamUploadToR2(storageKey, downloadRes.body, contentType, contentLength)
+
+          newVideoUrls.push(publicUrl)
           totalSynced++
+          console.log(`✅ Uploaded: ${file.name}`)
         } catch (e) {
-          console.error(`❌ QR Code: ${safeError(e)}`)
-        }
-      }
-
-      let currentFotos: string[] = []
-      if (newUrls.length > 0) {
-        try {
-          const r = await supabase.from('veiculos').select('fotos').eq('id', vehicleId).single()
-          if (r.data && Array.isArray(r.data.fotos)) currentFotos = r.data.fotos as string[]
-        } catch {
-          currentFotos = []
-        }
-      }
-      const updated = [...currentFotos, ...newUrls]
-
-      const updateData: any = { updated_at: new Date().toISOString() }
-      if (newUrls.length > 0) updateData.fotos = updated
-      if (qrCodeUrl) updateData.qrcode_url = qrCodeUrl
-
-      console.log(
-        `💾 DB UPDATE START - veiculo_id: ${vehicleId}, plate: ${plate}, fotos: ${updateData.fotos ? updated.length + ' URLs' : 'no change'}, qrcode_url: ${updateData.qrcode_url || 'no change'}`,
-      )
-
-      try {
-        const r = await supabase.from('veiculos').update(updateData).eq('id', vehicleId)
-        if (r.error) {
-          console.error(
-            `❌ DB UPDATE FAILED - veiculo_id: ${vehicleId}, error: ${safeError(r.error)}`,
-          )
-          await logError(supabase, vehicleId, `DB update failed: ${safeError(r.error)}`, {
+          console.error(`❌ ${file.name}: ${safeError(e)}`)
+          await logError(supabase, vehicleId, `Video upload failed: ${safeError(e)}`, {
             plate,
-            fotos_count: updated.length,
-            qrcode_url: qrCodeUrl,
+            file: file.name,
+            error: safeError(e),
           })
-        } else {
-          vehiclesUpdated++
-          console.log(
-            `✅ DB UPDATE SUCCESS - veiculo_id: ${vehicleId}, fotos_count: ${updated.length}, qrcode_url: ${qrCodeUrl || 'no change'}`,
-          )
         }
-      } catch (e) {
-        console.error(`❌ DB UPDATE THREW - veiculo_id: ${vehicleId}, error: ${safeError(e)}`)
-        await logError(supabase, vehicleId, `DB update threw: ${safeError(e)}`, {
-          plate,
-          fotos_count: updated.length,
-          qrcode_url: qrCodeUrl,
-        })
+      }
+
+      if (newVideoUrls.length > 0) {
+        const updatedVideos = [...existingVideos, ...newVideoUrls]
+        try {
+          const r = await supabase
+            .from('veiculos')
+            .update({
+              videos: updatedVideos,
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', vehicleId)
+          if (r.error) {
+            console.error(`❌ DB update failed: ${safeError(r.error)}`)
+            await logError(supabase, vehicleId, `DB update failed: ${safeError(r.error)}`, {
+              plate,
+              videos_count: updatedVideos.length,
+            })
+          } else {
+            vehiclesUpdated++
+            console.log(`✅ DB updated: ${vehicleId}, videos: ${updatedVideos.length}`)
+          }
+        } catch (e) {
+          console.error(`❌ DB update threw: ${safeError(e)}`)
+          await logError(supabase, vehicleId, `DB update threw: ${safeError(e)}`, {
+            plate,
+            videos_count: updatedVideos.length,
+          })
+        }
       }
 
       processedCount++
@@ -335,7 +323,7 @@ Deno.serve(async (req: Request) => {
     const remainingFolders = Math.max(0, allFolders.length - newOffset)
     const result = {
       success: true,
-      totalMediaSynced: totalSynced,
+      totalVideosSynced: totalSynced,
       vehiclesUpdated,
       offset: newOffset,
       remaining: remainingFolders,

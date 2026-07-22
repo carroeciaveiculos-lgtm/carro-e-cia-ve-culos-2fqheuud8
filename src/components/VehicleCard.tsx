@@ -2,19 +2,13 @@ import { Link } from 'react-router-dom'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { getImageUrl, handleImageError, CAR_PLACEHOLDER_IMAGE } from '@/lib/image-utils'
+import { handleImageError, CAR_PLACEHOLDER_IMAGE, getVehiclePhotos } from '@/lib/image-utils'
 import { CalendarDays, Settings2, Fuel, Gauge } from 'lucide-react'
 
 function getVehiclePhoto(fotos: any, emPreparacao: boolean): string {
-  if (fotos && Array.isArray(fotos) && fotos.length > 0) {
-    const first = fotos[0]
-    if (
-      typeof first === 'string' &&
-      (first.startsWith('http://') || first.startsWith('https://'))
-    ) {
-      return first
-    }
-    return getImageUrl(first)
+  const photos = getVehiclePhotos(fotos)
+  if (photos.length > 0) {
+    return photos[0]
   }
   if (emPreparacao) {
     return 'https://img.usecurling.com/p/400/300?q=car%20detailing%20workshop&color=gray'

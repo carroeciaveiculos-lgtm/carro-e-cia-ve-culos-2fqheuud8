@@ -45,6 +45,29 @@ export function handleImageError(img: HTMLImageElement, context?: string): void 
   img.dataset.fallbackApplied = 'true'
 }
 
+export function getVehiclePhotos(fotos: any): string[] {
+  if (!fotos || !Array.isArray(fotos)) return []
+  return fotos.filter((url: any) => {
+    if (typeof url !== 'string') return false
+    return !url.match(/\.(mp4|mov|webm|avi|mkv)$/i)
+  })
+}
+
+export function getVehicleVideos(videos: any, fotos?: any): string[] {
+  const result: string[] = []
+  if (videos && Array.isArray(videos)) {
+    result.push(...videos.filter((v: any) => typeof v === 'string'))
+  }
+  if (fotos && Array.isArray(fotos)) {
+    result.push(
+      ...fotos.filter(
+        (url: any) => typeof url === 'string' && url.match(/\.(mp4|mov|webm|avi|mkv)$/i),
+      ),
+    )
+  }
+  return [...new Set(result)]
+}
+
 export function getSocialImageUrl(imageUrl?: string | null): string {
   const FALLBACK = 'https://www.carroeciamotors.com.br/og-image.jpeg'
   if (!imageUrl) return FALLBACK
