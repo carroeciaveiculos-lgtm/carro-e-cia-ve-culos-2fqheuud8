@@ -18,7 +18,9 @@ Deno.serve(async (req) => {
 
     let query = supabase
       .from('veiculos')
-      .select('id, marca, modelo, placa, fotos, exibir_no_site, elegivel_portais, publicado_mercadolivre')
+      .select(
+        'id, marca, modelo, placa, fotos, exibir_no_site, elegivel_portais, publicado_mercadolivre',
+      )
       .eq('status', 'disponivel')
       .eq('exibir_no_site', true)
 
@@ -30,48 +32,83 @@ Deno.serve(async (req) => {
     }
 
     const { data: configs } = await supabase.from('configuracoes_api').select('*').eq('ativo', true)
-    const hasMLConfig = (configs || []).some(c => c.portal === 'mercadolivre') || true
+    const hasMLConfig = (configs || []).some((c) => c.portal === 'mercadolivre') || true
 
     const allResults: any[] = []
     const logsToInsert: any[] = []
 
     const colMap: Record<string, string> = {
-      mercadolivre: 'publicado_mercadolivre', webmotors: 'publicado_webmotors',
-      olx: 'publicado_olx', icarros: 'publicado_icarros', napista: 'publicado_napista',
+      mercadolivre: 'publicado_mercadolivre',
+      webmotors: 'publicado_webmotors',
+      olx: 'publicado_olx',
+      icarros: 'publicado_icarros',
+      napista: 'publicado_napista',
     }
 
-    const { data: plataformas } = await supabase.from('plataformas').select('id, slug').eq('ativo', true)
+    const { data: plataformas } = await supabase
+      .from('plataformas')
+      .select('id, slug')
+      .eq('ativo', true)
 
     for (const veiculo of veiculos) {
       if (veiculo.placa) {
         const { data: samePlaca } = await supabase
           .from('veiculos')
-          .select('id, publicado_mercadolivre, publicado_webmotors, publicado_olx, publicado_icarros, publicado_napista')
+          .select(
+            'id, publicado_mercadolivre, publicado_webmotors, publicado_olx, publicado_icarros, publicado_napista',
+          )
           .eq('placa', veiculo.placa)
           .neq('id', veiculo.id)
           .limit(1)
         if (samePlaca && samePlaca.length > 0) {
           const dupe = samePlaca[0]
-          if (dupe.publicado_mercadolivre || dupe.publicado_webmotors || dupe.publicado_olx || dupe.publicado_icarros || dupe.publicado_napista) {
-            logsToInsert.push({ veiculo_id: veiculo.id, portal: 'geral', status: 'duplicado', payload_erro: { error: 'Mesma placa já publicada' } })
+          if (
+            dupe.publicado_mercadolivre ||
+            dupe.publicado_webmotors ||
+            dupe.publicado_olx ||
+            dupe.publicado_icarros ||
+            dupe.publicado_napista
+          ) {
+            logsToInsert.push({
+              veiculo_id: veiculo.id,
+              portal: 'geral',
+              status: 'duplicado',
+              payload_erro: { error: 'Mesma placa já publicada' },
+            })
             continue
           }
         }
       }
 
       if (hasMLConfig && veiculo.elegivel_portais !== false) {
-        const fotos: string[] = Array.isArray(veiculo.fotos) ? veiculo.fotos.filter((u: any) => typeof u === 'string') : []
+        const fotos: string[] = Array.isArray(veiculo.fotos)
+          ? veiculo.fotos.filter((u: any) => typeof u === 'string')
+          : []
         if (fotos.length < 8) {
-          const { data: mlPlat } = await supabase.from('plataformas').select('id').eq('slug', 'mercadolivre').maybeSingle()
+          const { data: mlPlat } = await supabase
+            .from('plataformas')
+            .select('id')
+            .eq('slug', 'mercadolivre')
+            .maybeSingle()
           if (mlPlat) {
             await supabase.from('sync_log').insert({
-              plataforma_id: mlPlat.id, veiculo_id: veiculo.id,
-              acao: 'sync', status: 'skipped',
+              plataforma_id: mlPlat.id,
+              veiculo_id: veiculo.id,
+              acao: 'sync',
+              status: 'skipped',
               mensagem: 'Insufficient images (< 8). Required for Professional level.',
             })
           }
-          await supabase.from('ml_listings').update({ status: 'blocked' }).eq('veiculo_id', veiculo.id)
-          allResults.push({ veiculo_id: veiculo.id, portal: 'mercadolivre', status: 'skipped', error: 'Insufficient images' })
+          await supabase
+            .from('ml_listings')
+            .update({ status: 'blocked' })
+            .eq('veiculo_id', veiculo.id)
+          allResults.push({
+            veiculo_id: veiculo.id,
+            portal: 'mercadolivre',
+            status: 'skipped',
+            error: 'Insufficient images',
+          })
           continue
         }
 
@@ -89,7 +126,12 @@ Deno.serve(async (req) => {
       if (configs) {
         for (const config of configs) {
           if (config.portal === 'mercadolivre') continue
-          logsToInsert.push({ veiculo_id: veiculo.id, portal: config.portal, status: 'sucesso', payload_erro: null })
+          logsToInsert.push({
+            veiculo_id: veiculo.id,
+            portal: config.portal,
+            status: 'sucesso',
+            payload_erro: null,
+          })
           allResults.push({ veiculo_id: veiculo.id, portal: config.portal, status: 'sucesso' })
         }
       }
@@ -99,7 +141,11 @@ Deno.serve(async (req) => {
       await supabase.from('logs_integracao').insert(logsToInsert)
     }
 
-    return json({ success: true, synced: allResults.filter(r => r.status === 'sucesso').length, results: allResults })
+    return json({
+      success: true,
+      synced: allResults.filter((r) => r.status === 'sucesso').length,
+      results: allResults,
+    })
   } catch (err: any) {
     return json({ error: err.message }, 400)
   }

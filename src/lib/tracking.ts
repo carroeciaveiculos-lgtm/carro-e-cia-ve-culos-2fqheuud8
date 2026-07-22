@@ -39,7 +39,12 @@ if (typeof window !== 'undefined') {
     const url =
       typeof args[0] === 'string' ? args[0] : args[0] && 'url' in args[0] ? args[0].url : ''
     if (url && typeof url === 'string' && url.includes('imagens.carroeciamotors.com.br')) {
-      return originalFetch.apply(this, args)
+      try {
+        return await originalFetch.apply(this, args)
+      } catch (e) {
+        console.debug('R2 CDN fetch silently failed (likely html-to-image CORS)')
+        return new Response('', { status: 200, statusText: 'OK' })
+      }
     }
     const isTracker =
       url &&

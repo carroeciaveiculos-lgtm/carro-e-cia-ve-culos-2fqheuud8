@@ -21,7 +21,15 @@ if (typeof window !== 'undefined') {
     const reqUrl =
       typeof args[0] === 'string' ? args[0] : args[0] instanceof Request ? args[0].url : ''
     if (reqUrl.includes('imagens.carroeciamotors.com.br')) {
-      return originalFetch.apply(this, args)
+      try {
+        return await originalFetch.apply(this, args)
+      } catch (e) {
+        console.debug('R2 CDN fetch silently failed (likely html-to-image CORS)')
+        return new Response('{}', {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        })
+      }
     }
     try {
       const response = await originalFetch.apply(this, args)
