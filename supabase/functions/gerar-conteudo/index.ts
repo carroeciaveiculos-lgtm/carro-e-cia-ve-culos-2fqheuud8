@@ -75,31 +75,17 @@ Deno.serve(async (req) => {
       .from('social_configuracoes')
       .select('ai_system_prompt, whatsapp_number')
       .maybeSingle()
-
-    const { data: promptsData } = await supabaseService
-      .from('ai_prompts_config')
-      .select('slug, prompt_text')
+      
+    const { data: promptsData } = await supabaseService.from('ai_prompts_config').select('slug, prompt_text')
     const getPromptText = (slug: string, defaultText: string) => {
       const found = promptsData?.find((p: any) => p.slug === slug)
       return found?.prompt_text || defaultText
     }
 
-    const sysPromptSeoCopilot = getPromptText(
-      'seo_copilot',
-      'Você é um especialista em SEO e Copywriting focado no mercado automotivo.',
-    )
-    const sysPromptSeoOptimizer = getPromptText(
-      'seo_optimizer',
-      'Você é um Master Especialista em SEO.',
-    )
-    const sysPromptHeading = getPromptText(
-      'seo_heading_draft',
-      'Você é um especialista em SEO e estrutura de conteúdo.',
-    )
-    const sysPromptGeneral = getPromptText(
-      'ai_assistant',
-      'Você é um "Master Arquiteto de Conteúdo" especialista em veículos seminovos.',
-    )
+    const sysPromptSeoCopilot = getPromptText('seo_copilot', 'Você é um especialista em SEO e Copywriting focado no mercado automotivo.')
+    const sysPromptSeoOptimizer = getPromptText('seo_optimizer', 'Você é um Master Especialista em SEO.')
+    const sysPromptHeading = getPromptText('seo_heading_draft', 'Você é um especialista em SEO e estrutura de conteúdo.')
+    const sysPromptGeneral = getPromptText('ai_assistant', 'Você é um "Master Arquiteto de Conteúdo" especialista em veículos seminovos.')
 
     const customPrompt = socialConfig?.ai_system_prompt || sysPromptGeneral
     const whatsappNumber = socialConfig?.whatsapp_number || '5534999999999'
