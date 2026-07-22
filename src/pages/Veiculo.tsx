@@ -66,6 +66,14 @@ import {
   getVehicleVideos,
 } from '@/lib/image-utils'
 
+function extractFirstPhoto(fotos: any): string | null {
+  if (!Array.isArray(fotos)) return null
+  const photo = fotos.find(
+    (url: any) => typeof url === 'string' && !url.match(/\.(mp4|mov|webm|avi|mkv)$/i),
+  )
+  return photo || null
+}
+
 export default function Veiculo() {
   const { id } = useParams()
   const [vehicle, setVehicle] = useState<any>(null)
@@ -171,6 +179,7 @@ export default function Veiculo() {
     new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val)
   const photos = getVehiclePhotos(vehicle.fotos)
   const videos = getVehicleVideos(vehicle.videos, vehicle.fotos)
+  const primaryPhoto = extractFirstPhoto(vehicle.fotos)
 
   const shareUrl = getShareUrl(vehicle)
 
@@ -225,7 +234,7 @@ export default function Veiculo() {
     '@context': 'https://schema.org',
     '@type': 'Product',
     name: `${vehicle.marca} ${vehicle.modelo} ${vehicle.versao}`,
-    image: photos.length > 0 ? photos[0] : undefined,
+    image: primaryPhoto || (photos.length > 0 ? photos[0] : undefined),
     description: getVehicleDescription(vehicle),
     offers: {
       '@type': 'Offer',

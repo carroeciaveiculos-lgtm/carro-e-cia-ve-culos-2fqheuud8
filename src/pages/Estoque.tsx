@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { SEO } from '@/components/SEO'
 import { Link } from 'react-router-dom'
 import { Card, CardContent } from '@/components/ui/card'
@@ -23,12 +23,23 @@ import { Slider } from '@/components/ui/slider'
 import { Label } from '@/components/ui/label'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
 import { supabase } from '@/lib/supabase/client'
-import { Filter, Search, Car, Share2, CalendarDays, Settings2, Fuel, Gauge } from 'lucide-react'
+import {
+  Filter,
+  Search,
+  Car,
+  Share2,
+  CalendarDays,
+  Settings2,
+  Fuel,
+  Gauge,
+  Loader2,
+  RefreshCw,
+} from 'lucide-react'
 import { trackCTAClick } from '@/lib/tracking'
 import { toast } from 'sonner'
 import { handleImageError, CAR_PLACEHOLDER_IMAGE, getVehiclePhotos } from '@/lib/image-utils'
 import { handleShareCTA } from '@/lib/cta-router'
-import { triggerDriveSync } from '@/services/veiculos'
+import { useRecursiveSync } from '@/hooks/use-recursive-sync'
 
 export default function Estoque() {
   const [veiculos, setVeiculos] = useState<any[]>([])
@@ -40,8 +51,11 @@ export default function Estoque() {
   const [categoria, setCategoria] = useState('Todas')
   const [maxPrice, setMaxPrice] = useState([1000000])
 
-  useEffect(() => {
-    supabase
+  const { isSyncing, progress, error: syncError, lastOffset, runSync } = useRecursiveSync()
+  const hasSyncedRef = useRef(false)
+
+  const fetchVeiculos = useCallback(async () => {
+    const { data } = await supabase
       .from('veiculos')
       .select(
         'id, slug, marca, modelo, versao, ano_fabricacao, ano_modelo, preco_venda, quilometragem, combustivel, cambio, cor, fotos, videos, is_zero_km, status, is_consignado, categoria, exibir_no_site, nao_exibir_km, em_preparacao',
@@ -50,22 +64,25 @@ export default function Estoque() {
       .eq('exibir_no_site', true)
       .order('destaque', { ascending: false })
       .order('created_at', { ascending: false })
-      .then(({ data }) => {
-        setVeiculos(data || [])
-        setLoading(false)
-      })
+    setVeiculos(data || [])
+    setLoading(false)
   }, [])
 
   useEffect(() => {
-    if (!loading && veiculos.length > 0) {
+    fetchVeiculos()
+  }, [fetchVeiculos])
+
+  useEffect(() => {
+    if (!loading && veiculos.length > 0 && !isSyncing && !hasSyncedRef.current) {
       const hasMissingPhotos = veiculos.some(
         (v) => !v.fotos || !Array.isArray(v.fotos) || v.fotos.length === 0,
       )
       if (hasMissingPhotos) {
-        triggerDriveSync({ offset: 0, limit: 2 }).catch(() => {})
+        hasSyncedRef.current = true
+        runSync(0, fetchVeiculos)
       }
     }
-  }, [loading, veiculos])
+  }, [loading, veiculos, isSyncing, runSync, fetchVeiculos])
 
   const marcas = ['Todas', ...Array.from(new Set(veiculos.map((v) => v.marca)))]
   const anos = [
@@ -295,6 +312,37 @@ export default function Estoque() {
             <div className="mb-4 text-sm text-muted-foreground font-medium">
               Mostrando {filteredVeiculos.length} carros
             </div>
+
+            {(isSyncing || syncError) && (
+              <div className="mb-4 p-3 rounded-lg border bg-card flex items-center gap-3 text-sm">
+                {isSyncing && (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin text-primary shrink-0" />
+                    <span className="text-muted-foreground">
+                      Sincronizando fotos da nuvem...{' '}
+                      {progress ? `${progress.current}/${progress.total}` : ''}
+                    </span>
+                    {progress && progress.photosSynced > 0 && (
+                      <span className="text-muted-foreground/70">
+                        ({progress.photosSynced} fotos sincronizadas)
+                      </span>
+                    )}
+                  </>
+                )}
+                {!isSyncing && syncError && (
+                  <>
+                    <span className="text-destructive text-xs flex-1">{syncError}</span>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => runSync(lastOffset, fetchVeiculos)}
+                    >
+                      <RefreshCw className="w-3 h-3 mr-1" /> Retomar
+                    </Button>
+                  </>
+                )}
+              </div>
+            )}
 
             {loading ? (
               <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
