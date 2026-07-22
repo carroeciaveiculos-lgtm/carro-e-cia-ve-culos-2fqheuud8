@@ -1,6 +1,6 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from 'jsr:@supabase/supabase-js@2'
-import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3'
+import { S3Client, PutObjectCommand } from 'npm:@aws-sdk/client-s3@3'
 import { corsHeaders } from '../_shared/cors.ts'
 import { getAccessToken, listDriveItems, downloadDriveFile } from '../_shared/google-drive.ts'
 
