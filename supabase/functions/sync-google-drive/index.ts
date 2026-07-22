@@ -1,15 +1,19 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from 'jsr:@supabase/supabase-js@2'
-import { S3Client, PutObjectCommand } from 'npm:@aws-sdk/client-s3@3'
+import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3'
 import { corsHeaders } from '../_shared/cors.ts'
-import { getAccessToken, listDriveItems, downloadDriveFile } from '../_shared/google-drive.ts'
+import {
+  getAccessToken,
+  listDriveItems,
+  downloadDriveFile,
+} from '../_shared/google-drive.ts'
 
 const ROOT_FOLDER_ID = '1D6UAaVY7k_Hy1gKVmjQY-sDISchOhwEY'
 const R2_PUBLIC_BASE = 'https://imagens.carroeciamotors.com.br'
-const SITE_BASE_URL = 'https://www.carroeciamotors.com.br'
-const BATCH_SIZE = 2
+const BATCH_SIZE = 1
 const SYNC_CONTROL_KEY = 'drive_offset'
-const MAX_EXECUTION_MS = 140000
+const MAX_RETRIES = 3
+const TIME_BUFFER_MS = 30000 // 30s de margem antes do timeout
 
 const s3Client = new S3Client({
   region: 'auto',
@@ -21,11 +25,10 @@ const s3Client = new S3Client({
   forcePathStyle: true,
 })
 
+// ─── Helpers ───
+
 function sanitizeName(name: string): string {
-  return name
-    .trim()
-    .replace(/\s+/g, '_')
-    .replace(/[^a-zA-Z0-9_\-]/g, '')
+  return name.trim().replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_\-]/g, '')
 }
 
 function extractPlate(folderName: string): string | null {
@@ -35,41 +38,91 @@ function extractPlate(folderName: string): string | null {
 }
 
 function safeError(err: unknown): string {
-  if (err instanceof Error) return `[${err.name}] ${err.message}`
-  if (typeof err === 'string') return err
-  try {
-    return JSON.stringify(err)
-  } catch {
-    return String(err ?? 'Erro desconhecido')
+  if (err instanceof Error) {
+    return `[${err.name}] ${err.message}${err.cause ? ' | cause: ' + String(err.cause) : ''}`
   }
+  if (typeof err === 'string') return err
+  try { return JSON.stringify(err) } catch { return String(err ?? 'Erro desconhecido') }
 }
 
-function getRemainingMs(startTime: number): number {
-  return MAX_EXECUTION_MS - (Date.now() - startTime)
+/**
+ * Normaliza nome de arquivo para comparação de dedup.
+ * Remove espaços, parênteses com números (1), (2), etc.,
+ * underscores duplicados e converte para minúsculas.
+ */
+function normalizeFileName(fileName: string): string {
+  return fileName
+    .replace(/\s+/g, '_')
+    .replace(/\(\d+\)/g, '')       // remove (1), (2), etc.
+    .replace(/_+/g, '_')           // remove underscores duplicados
+    .replace(/^_|_$/g, '')         // remove underscore inicial/final
+    .toLowerCase()
 }
 
-async function uploadToR2(
-  key: string,
-  data: Blob | Uint8Array,
-  contentType: string,
-): Promise<void> {
-  const body =
-    data instanceof Uint8Array ? data : new Uint8Array(await (data as Blob).arrayBuffer())
-  await s3Client.send(
-    new PutObjectCommand({
-      Bucket: Deno.env.get('R2_BUCKET') || 'carroeciamotors-imagens',
-      Key: key,
-      Body: body,
-      ContentType: contentType,
-    }),
-  )
+/**
+ * Verifica se um nome de arquivo normalizado já existe no array de URLs do DB.
+ */
+function urlExistsInDb(existingUrls: string[], normalizedCandidate: string): boolean {
+  return existingUrls.some(url => {
+    const urlNormalized = url.split('/').pop()?.toLowerCase().replace(/\(\d+\)/g, '') ?? ''
+    return urlNormalized === normalizedCandidate
+  })
 }
 
-async function generateQrCodeBlob(url: string): Promise<Blob> {
-  const apiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&margin=1&data=${encodeURIComponent(url)}`
-  const res = await fetch(apiUrl)
-  if (!res.ok) throw new Error(`QR code generation failed: ${res.status}`)
-  return res.blob()
+/**
+ * Remove URLs duplicadas de um array mantendo a ordem.
+ */
+function dedupUrls(urls: string[]): string[] {
+  const seen = new Set<string>()
+  return urls.filter(url => {
+    const key = url.toLowerCase()
+    if (seen.has(key)) return false
+    seen.add(key)
+    return true
+  })
+}
+
+async function uploadToR2(key: string, blob: Blob, contentType: string): Promise<void> {
+  let lastError: unknown
+  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      const buffer = await blob.arrayBuffer()
+      await s3Client.send(
+        new PutObjectCommand({
+          Bucket: Deno.env.get('R2_BUCKET') || 'carroeciamotors-imagens',
+          Key: key,
+          Body: new Uint8Array(buffer),
+          ContentType: contentType,
+        }),
+      )
+      return
+    } catch (e) {
+      lastError = e
+      if (attempt < MAX_RETRIES) {
+        const wait = 2000 * attempt
+        console.warn(`⚠️ Upload retry ${attempt}/${MAX_RETRIES}: ${safeError(e)}. Aguardando ${wait}ms...`)
+        await new Promise(resolve => setTimeout(resolve, wait))
+      }
+    }
+  }
+  throw lastError
+}
+
+async function downloadWithRetry(accessToken: string, fileId: string): Promise<{ blob: Blob; mimeType: string }> {
+  let lastError: unknown
+  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      return await downloadDriveFile(accessToken, fileId)
+    } catch (e) {
+      lastError = e
+      if (attempt < MAX_RETRIES) {
+        const wait = 2000 * attempt
+        console.warn(`⚠️ Download retry ${attempt}/${MAX_RETRIES}: ${safeError(e)}. Aguardando ${wait}ms...`)
+        await new Promise(resolve => setTimeout(resolve, wait))
+      }
+    }
+  }
+  throw lastError
 }
 
 async function getOffset(supabase: any): Promise<number> {
@@ -80,38 +133,20 @@ async function getOffset(supabase: any): Promise<number> {
       .eq('sync_key', SYNC_CONTROL_KEY)
       .maybeSingle()
     return data?.current_offset ?? 0
-  } catch {
-    return 0
-  }
+  } catch { return 0 }
 }
 
 async function saveOffset(supabase: any, offset: number): Promise<void> {
   try {
-    await supabase.from('sync_control').upsert({
-      sync_key: SYNC_CONTROL_KEY,
-      current_offset: offset,
-      updated_at: new Date().toISOString(),
-    })
+    await supabase
+      .from('sync_control')
+      .upsert({
+        sync_key: SYNC_CONTROL_KEY,
+        current_offset: offset,
+        updated_at: new Date().toISOString(),
+      })
   } catch (e) {
     console.warn(`⚠️ saveOffset: ${safeError(e)}`)
-  }
-}
-
-async function logError(
-  supabase: any,
-  veiculoId: string | null,
-  error: string,
-  payload: any,
-): Promise<void> {
-  try {
-    await supabase.from('logs_integracao').insert({
-      veiculo_id: veiculoId,
-      portal: 'google-drive',
-      payload_erro: { error, ...payload },
-      status: 'error',
-    })
-  } catch (e) {
-    console.error(`Failed to log error: ${safeError(e)}`)
   }
 }
 
@@ -123,10 +158,10 @@ Deno.serve(async (req: Request) => {
     const clientEmail = Deno.env.get('DRIVE_CLIENT_EMAIL')
     const privateKey = (Deno.env.get('DRIVE_PRIVATE_KEY') || '').replace(/\\n/g, '\n')
     if (!clientEmail || !privateKey || !Deno.env.get('DRIVE_PROJECT_ID')) {
-      return new Response(JSON.stringify({ error: 'Drive credentials not configured' }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      })
+      return new Response(
+        JSON.stringify({ error: 'Google Drive credentials not configured' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      )
     }
 
     let payloadOffset: number | undefined, payloadLimit: number | undefined
@@ -139,6 +174,7 @@ Deno.serve(async (req: Request) => {
     } catch {}
 
     const limit = payloadLimit ?? BATCH_SIZE
+
     console.log('🔑 Authenticating...')
     const accessToken = await getAccessToken(clientEmail, privateKey)
     console.log('✅ Drive auth OK')
@@ -156,196 +192,173 @@ Deno.serve(async (req: Request) => {
     const batch = allFolders.slice(offset, offset + limit)
     console.log(`🔄 ${batch.length} folders (offset=${offset})`)
 
-    let totalSynced = 0,
-      vehiclesUpdated = 0,
-      processedCount = 0
+    let totalSynced = 0
+    let vehiclesUpdated = 0
 
     for (const [idx, folder] of batch.entries()) {
-      const remaining = getRemainingMs(startTime)
-      if (remaining < 30000) {
-        console.log(
-          `⏰ Remaining time: ${remaining}ms < 30000ms, stopping early at vehicle ${idx + 1}`,
-        )
+      // ⏰ Verificar tempo restante antes de processar cada veículo
+      const elapsed = Date.now() - startTime
+      const remaining = 120000 - elapsed // Supabase Edge Function: ~2min
+      if (remaining < TIME_BUFFER_MS) {
+        console.log(`⏰ Remaining time: ${remaining}ms < ${TIME_BUFFER_MS}ms, stopping early at vehicle ${idx + 1}`)
         break
       }
 
       const plate = extractPlate(folder.name)
-      if (!plate) {
-        console.log(`⚠️ No plate: "${folder.name}"`)
-        continue
-      }
+      if (!plate) { console.log(`⚠️ No plate: "${folder.name}"`); continue }
+
       console.log(`🔍 [${idx + 1}] ${plate}`)
 
-      let vehicleId: string | null = null,
-        vehicleSlug: string | null = null
-      let existingCount = 0,
-        existingQrUrl: string | null = null
-
+      // ─── Buscar veículo no banco ───
+      let vehicle: any
       try {
         const res = await supabase
           .from('veiculos')
-          .select('id, fotos, slug, qrcode_url')
+          .select('id, fotos')
           .eq('placa', plate)
           .maybeSingle()
-        if (res.error) {
-          console.error(`❌ Query: ${safeError(res.error)}`)
-          await logError(supabase, null, `Query error for plate ${plate}`, {
-            plate,
-            error: safeError(res.error),
-          })
-          continue
-        }
-        if (res.data) {
-          vehicleId = res.data.id
-          vehicleSlug = res.data.slug
-          existingQrUrl = res.data.qrcode_url
-          existingCount = Array.isArray(res.data.fotos) ? (res.data.fotos as string[]).length : 0
-        }
+        if (res.error) { console.error(`❌ Query error: ${safeError(res.error)}`); continue }
+        vehicle = res.data
       } catch (e) {
         console.error(`❌ Query threw: ${safeError(e)}`)
-        await logError(supabase, null, `Query threw for plate ${plate}`, {
-          plate,
-          error: safeError(e),
-        })
         continue
       }
 
-      if (!vehicleId) {
-        console.log(`❌ Not found: ${plate}`)
+      if (!vehicle) {
+        console.log(`❌ Veículo não encontrado: ${plate}`)
         continue
       }
-      console.log(`📸 ${plate}: ${existingCount} fotos, qr: ${existingQrUrl ? 'yes' : 'no'}`)
 
+      // ─── Extrair URLs existentes e dedup ───
+      const existingFotos = Array.isArray(vehicle.fotos)
+        ? dedupUrls(vehicle.fotos as string[])
+        : []
+      console.log(`📸 ${plate}: ${existingFotos.length} fotos no DB (após dedup)`)
+
+      // ─── Listar imagens do Drive ───
       let allImages: any[] = []
       try {
         const files = await listDriveItems(accessToken, folder.id, false)
         allImages = files.filter((f: any) => f.mimeType?.startsWith('image/'))
       } catch (e) {
         console.error(`❌ Drive list: ${safeError(e)}`)
-        await logError(supabase, vehicleId, `Drive list error`, { plate, error: safeError(e) })
         continue
       }
 
       console.log(`📸 ${allImages.length} images in Drive`)
 
-      const hasAllPhotos = existingCount >= allImages.length
-      const hasQrCode = existingQrUrl
-      if (hasAllPhotos && hasQrCode) {
-        console.log(`⏭️ ${plate}: all media synced, skipping`)
-        processedCount++
+      // ─── Skip por quantidade (já sincronizado) ───
+      if (existingFotos.length >= allImages.length) {
+        console.log(`⏭️ ${plate}: ${existingFotos.length} ≥ ${allImages.length} — pulando`)
         continue
       }
 
+      // ─── Filtrar APENAS imagens realmente novas ───
+      const newImages = allImages.filter(file => {
+        const normalized = normalizeFileName(file.name)
+        return !urlExistsInDb(existingFotos, normalized)
+      })
+
+      if (newImages.length === 0) {
+        console.log(`⏭️ Nenhuma imagem nova para ${plate} (diferença de contagem pode ser arquivo duplicado no Drive)`)
+        continue
+      }
+
+      console.log(`🎯 ${newImages.length} imagens NOVAS (de ${allImages.length} no Drive)`)
+
       const modelName = folder.name.trim().substring(plate.length).trim()
       const sanitizedModel = sanitizeName(modelName || 'veiculo')
+
+      // 🛡️ Usar um Set para garantir que URLs processadas nesta execução
+      // não sejam adicionadas duas vezes ao array final
+      const processedUrls = new Set<string>()
       const newUrls: string[] = []
 
-      if (!hasAllPhotos) {
-        const sorted = [...allImages].sort((a, b) => a.name.localeCompare(b.name))
-        const diff = allImages.length - existingCount
-        const toProcess = sorted.slice(-diff)
-        console.log(
-          `🎯 ${toProcess.length} new images to process (Drive=${allImages.length}, DB=${existingCount})`,
-        )
-
-        for (const file of toProcess) {
-          try {
-            const fileName = file.name.replace(/\s+/g, '_')
-            const storageKey = `media/${plate}_${sanitizedModel}/${fileName}`
-            const publicUrl = `${R2_PUBLIC_BASE}/${storageKey}`
-            console.log(`⬇️ ${file.name}`)
-            const { blob, mimeType } = await downloadDriveFile(accessToken, file.id)
-            console.log(`⬆️ ${storageKey}`)
-            await uploadToR2(storageKey, blob, mimeType)
-            newUrls.push(publicUrl)
-            totalSynced++
-          } catch (e) {
-            console.error(`❌ ${file.name}: ${safeError(e)}`)
-          }
+      for (const file of newImages) {
+        // ⏰ Verificar tempo antes de cada download
+        const elapsed2 = Date.now() - startTime
+        const remaining2 = 120000 - elapsed2
+        if (remaining2 < TIME_BUFFER_MS) {
+          console.log(`⏰ Tempo baixo (${remaining2}ms), interrompendo downloads para ${plate}`)
+          break
         }
-      }
 
-      let qrCodeUrl: string | null = null
-      if (!hasQrCode && vehicleSlug) {
         try {
-          const vehicleUrl = `${SITE_BASE_URL}/estoque/${vehicleSlug}`
-          const qrKey = `media/${plate}_${sanitizedModel}/qrcode.png`
-          qrCodeUrl = `${R2_PUBLIC_BASE}/${qrKey}`
-          console.log(`🔢 Generating QR code for ${vehicleUrl}`)
-          const qrBlob = await generateQrCodeBlob(vehicleUrl)
-          await uploadToR2(qrKey, qrBlob, 'image/png')
+          const fileName = file.name.replace(/\s+/g, '_')
+          const storageKey = `media/${plate}_${sanitizedModel}/${fileName}`
+          const publicUrl = `${R2_PUBLIC_BASE}/${storageKey}`
+
+          // 🛡️ Verificar se a URL já foi processada no batch atual
+          if (processedUrls.has(publicUrl)) {
+            console.log(`⏭️ Duplicata no batch: ${fileName}`)
+            continue
+          }
+
+          console.log(`⬇️ ${file.name}`)
+          const { blob, mimeType } = await downloadWithRetry(accessToken, file.id)
+
+          console.log(`⬆️ ${storageKey}`)
+          await uploadToR2(storageKey, blob, mimeType)
+
+          // 🛡️ Adicionar ao Set de URLs processadas
+          processedUrls.add(publicUrl)
+          newUrls.push(publicUrl)
           totalSynced++
         } catch (e) {
-          console.error(`❌ QR Code: ${safeError(e)}`)
+          console.error(`❌ ${file.name}: ${safeError(e)}`)
         }
       }
 
-      let currentFotos: string[] = []
+      // ─── Atualizar banco com URLs deduplicadas ───
       if (newUrls.length > 0) {
+        // 🛡️ Concatenar + dedup completo antes de salvar
+        const combined = [...existingFotos, ...newUrls]
+        const finalUrls = dedupUrls(combined)
+
+        console.log(`💾 ${plate}: ${existingFotos.length} → ${finalUrls.length} fotos`)
+
         try {
-          const r = await supabase.from('veiculos').select('fotos').eq('id', vehicleId).single()
-          if (r.data && Array.isArray(r.data.fotos)) currentFotos = r.data.fotos as string[]
-        } catch {
-          currentFotos = []
+          const r = await supabase
+            .from('veiculos')
+            .update({
+              fotos: finalUrls,
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', vehicle.id)
+
+          if (r.error) {
+            console.error(`❌ DB update error: ${safeError(r.error)}`)
+          } else {
+            vehiclesUpdated++
+            console.log(`✅ ${plate}: +${newUrls.length} fotos (dedup aplicado)`)
+          }
+        } catch (e) {
+          console.error(`❌ DB update threw: ${safeError(e)}`)
         }
+      } else {
+        console.log(`⏭️ Nenhuma foto nova processada para ${plate}`)
       }
-      const updated = [...currentFotos, ...newUrls]
-
-      const updateData: any = { updated_at: new Date().toISOString() }
-      if (newUrls.length > 0) updateData.fotos = updated
-      if (qrCodeUrl) updateData.qrcode_url = qrCodeUrl
-
-      console.log(
-        `💾 DB UPDATE START - veiculo_id: ${vehicleId}, plate: ${plate}, fotos: ${updateData.fotos ? updated.length + ' URLs' : 'no change'}, qrcode_url: ${updateData.qrcode_url || 'no change'}`,
-      )
-
-      try {
-        const r = await supabase.from('veiculos').update(updateData).eq('id', vehicleId)
-        if (r.error) {
-          console.error(
-            `❌ DB UPDATE FAILED - veiculo_id: ${vehicleId}, error: ${safeError(r.error)}`,
-          )
-          await logError(supabase, vehicleId, `DB update failed: ${safeError(r.error)}`, {
-            plate,
-            fotos_count: updated.length,
-            qrcode_url: qrCodeUrl,
-          })
-        } else {
-          vehiclesUpdated++
-          console.log(
-            `✅ DB UPDATE SUCCESS - veiculo_id: ${vehicleId}, fotos_count: ${updated.length}, qrcode_url: ${qrCodeUrl || 'no change'}`,
-          )
-        }
-      } catch (e) {
-        console.error(`❌ DB UPDATE THREW - veiculo_id: ${vehicleId}, error: ${safeError(e)}`)
-        await logError(supabase, vehicleId, `DB update threw: ${safeError(e)}`, {
-          plate,
-          fotos_count: updated.length,
-          qrcode_url: qrCodeUrl,
-        })
-      }
-
-      processedCount++
     }
 
-    const newOffset = offset + processedCount
+    const newOffset = offset + batch.length
     await saveOffset(supabase, newOffset)
 
     const elapsed = ((Date.now() - startTime) / 1000).toFixed(1)
-    const remainingFolders = Math.max(0, allFolders.length - newOffset)
+    const remaining = Math.max(0, allFolders.length - newOffset)
     const result = {
       success: true,
-      totalMediaSynced: totalSynced,
+      totalPhotosSynced: totalSynced,
       vehiclesUpdated,
       offset: newOffset,
-      remaining: remainingFolders,
+      remaining,
       elapsedSeconds: `${elapsed}s`,
-      stoppedEarly: processedCount < batch.length,
     }
     console.log(`✅ Complete: ${JSON.stringify(result)}`)
+
     return new Response(JSON.stringify(result), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
+
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err ?? 'Unknown')
     if (err instanceof Error && err.stack) console.error(`📊 Stack: ${err.stack}`)
