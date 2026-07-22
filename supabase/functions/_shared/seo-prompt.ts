@@ -17,5 +17,5 @@ Retorne SOMENTE um JSON válido com o formato exato abaixo:
   "keyword_principal": "${palavraChave}",
   "certeza": "alta",
   "texto_html": "<h2>Introdução</h2><p>Conteúdo formatado em HTML válido...</p>"
-}`;
+}`
 }

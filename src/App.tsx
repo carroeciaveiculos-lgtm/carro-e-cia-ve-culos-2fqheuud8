@@ -18,6 +18,11 @@ import Index from './pages/Index'
 if (typeof window !== 'undefined') {
   const originalFetch = window.fetch
   window.fetch = async function (...args: Parameters<typeof fetch>): Promise<Response> {
+    const reqUrl =
+      typeof args[0] === 'string' ? args[0] : args[0] instanceof Request ? args[0].url : ''
+    if (reqUrl.includes('imagens.carroeciamotors.com.br')) {
+      return originalFetch.apply(this, args)
+    }
     try {
       const response = await originalFetch.apply(this, args)
       const reqMethod = (

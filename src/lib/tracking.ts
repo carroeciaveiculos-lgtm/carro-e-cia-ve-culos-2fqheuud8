@@ -38,6 +38,9 @@ if (typeof window !== 'undefined') {
   window.fetch = async function (...args) {
     const url =
       typeof args[0] === 'string' ? args[0] : args[0] && 'url' in args[0] ? args[0].url : ''
+    if (url && typeof url === 'string' && url.includes('imagens.carroeciamotors.com.br')) {
+      return originalFetch.apply(this, args)
+    }
     const isTracker =
       url &&
       typeof url === 'string' &&

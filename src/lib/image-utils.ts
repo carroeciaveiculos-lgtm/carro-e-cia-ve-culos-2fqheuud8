@@ -9,6 +9,11 @@ export const R2_PLACEHOLDER_URL = `${R2_BASE_URL}/logos-e-imagens/placeholder/se
 export const LOCAL_FALLBACK_IMAGE = '/placeholder-car.svg'
 export const CAR_PLACEHOLDER_IMAGE = '/placeholder-car.svg'
 
+export function isR2ImageUrl(url: string | null | undefined): boolean {
+  if (!url) return false
+  return url.includes(R2_BASE_URL)
+}
+
 export function getImageUrl(pathOrUrl: string | null | undefined, bucket = 'media'): string {
   if (!pathOrUrl) return CAR_PLACEHOLDER_IMAGE
 
@@ -41,6 +46,7 @@ export function getImageUrl(pathOrUrl: string | null | undefined, bucket = 'medi
 
 export function handleImageError(img: HTMLImageElement, context?: string): void {
   if (img.dataset.fallbackApplied === 'true') return
+  img.removeAttribute('crossorigin')
   img.src = CAR_PLACEHOLDER_IMAGE
   img.dataset.fallbackApplied = 'true'
 }
