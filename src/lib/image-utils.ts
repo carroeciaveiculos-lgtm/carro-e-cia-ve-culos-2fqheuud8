@@ -41,11 +41,6 @@ export function getImageUrl(pathOrUrl: string | null | undefined, bucket = 'medi
 
 export function handleImageError(img: HTMLImageElement, context?: string): void {
   if (img.dataset.fallbackApplied === 'true') return
-  const currentSrc = img.getAttribute('src') || ''
-  if (currentSrc.includes('imagens.carroeciamotors.com.br')) {
-    img.dataset.fallbackApplied = 'true'
-    return
-  }
   img.src = CAR_PLACEHOLDER_IMAGE
   img.dataset.fallbackApplied = 'true'
 }

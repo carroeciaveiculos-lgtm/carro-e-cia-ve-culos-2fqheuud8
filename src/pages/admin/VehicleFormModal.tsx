@@ -48,6 +48,8 @@ import {
   Eye,
   Wand2,
   CheckCircle,
+  RefreshCw,
+  Loader2,
 } from 'lucide-react'
 
 const CHECKLIST_INSPECAO = [
@@ -135,6 +137,7 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [previewDoc, setPreviewDoc] = useState<any>(null)
   const [fipeHistory, setFipeHistory] = useState<any[]>([])
+  const [isSyncingDrive, setIsSyncingDrive] = useState(false)
 
   const [novaDespesa, setNovaDespesa] = useState({
     categoria: 'Mecânica',
@@ -367,6 +370,45 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
       .order('created_at', { ascending: false })
       .limit(50)
       .then(({ data }) => setMediaAssets(data || []))
+  }
+
+  const handleSyncGoogleDrive = async () => {
+    if (!formData.placa) {
+      toast({ title: 'Informe a placa do veículo primeiro', variant: 'destructive' })
+      return
+    }
+    setIsSyncingDrive(true)
+    try {
+      const { data, error } = await supabase.functions.invoke('sync-google-drive', {
+        body: { placa: formData.placa.toUpperCase().replace(/[^A-Z0-9]/g, '') },
+      })
+      if (error) throw error
+      if (data?.success !== false) {
+        const synced = data?.totalPhotosSynced || 0
+        if (synced > 0 && formData.id) {
+          const { data: updated } = await supabase
+            .from('veiculos')
+            .select('fotos')
+            .eq('id', formData.id)
+            .single()
+          if (updated?.fotos) {
+            setFormData((p: any) => ({ ...p, fotos: updated.fotos }))
+          }
+        }
+        toast({
+          title:
+            synced > 0
+              ? `Sincronização concluída: ${synced} fotos`
+              : 'Nenhuma foto nova encontrada',
+        })
+      } else {
+        throw new Error(data?.error || 'Falha na sincronização')
+      }
+    } catch (err: any) {
+      toast({ title: 'Erro na sincronização', description: err.message, variant: 'destructive' })
+    } finally {
+      setIsSyncingDrive(false)
+    }
   }
 
   useEffect(() => {
@@ -1369,6 +1411,25 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
                     />
                     <Button variant="outline" size="sm" onClick={() => setIsMediaCenterOpen(true)}>
                       <ImageIcon className="w-4 h-4 mr-2 text-blue-600" /> Biblioteca
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleSyncGoogleDrive}
+                      disabled={isSyncingDrive || !formData.placa}
+                      className="border-green-200 text-green-700 bg-green-50 hover:bg-green-100"
+                      title={
+                        formData.placa
+                          ? `Sincronizar fotos da placa ${formData.placa}`
+                          : 'Informe a placa primeiro'
+                      }
+                    >
+                      {isSyncingDrive ? (
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      ) : (
+                        <RefreshCw className="w-4 h-4 mr-2" />
+                      )}
+                      {isSyncingDrive ? 'Sincronizando...' : 'Sync Drive'}
                     </Button>
                   </div>
                 </div>
