@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { SEO } from '@/components/SEO'
 import { Link } from 'react-router-dom'
 import { Card, CardContent } from '@/components/ui/card'
@@ -23,23 +23,11 @@ import { Slider } from '@/components/ui/slider'
 import { Label } from '@/components/ui/label'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
 import { supabase } from '@/lib/supabase/client'
-import {
-  Filter,
-  Search,
-  Car,
-  Share2,
-  CalendarDays,
-  Settings2,
-  Fuel,
-  Gauge,
-  Loader2,
-  RefreshCw,
-} from 'lucide-react'
+import { Filter, Search, Car, Share2, CalendarDays, Settings2, Fuel, Gauge } from 'lucide-react'
 import { trackCTAClick } from '@/lib/tracking'
 import { toast } from 'sonner'
-import { handleImageError, CAR_PLACEHOLDER_IMAGE, getVehiclePhotos } from '@/lib/image-utils'
+import { handleImageError, CAR_PLACEHOLDER_IMAGE } from '@/lib/image-utils'
 import { handleShareCTA } from '@/lib/cta-router'
-import { useRecursiveSync } from '@/hooks/use-recursive-sync'
 
 export default function Estoque() {
   const [veiculos, setVeiculos] = useState<any[]>([])
@@ -50,9 +38,6 @@ export default function Estoque() {
   const [combustivel, setCombustivel] = useState('Todos')
   const [categoria, setCategoria] = useState('Todas')
   const [maxPrice, setMaxPrice] = useState([1000000])
-
-  const { isSyncing, progress, error: syncError, lastOffset, runSync } = useRecursiveSync()
-  const hasSyncedRef = useRef(false)
 
   const fetchVeiculos = useCallback(async () => {
     const { data } = await supabase
@@ -71,18 +56,6 @@ export default function Estoque() {
   useEffect(() => {
     fetchVeiculos()
   }, [fetchVeiculos])
-
-  useEffect(() => {
-    if (!loading && veiculos.length > 0 && !isSyncing && !hasSyncedRef.current) {
-      const hasMissingPhotos = veiculos.some(
-        (v) => !v.fotos || !Array.isArray(v.fotos) || v.fotos.length === 0,
-      )
-      if (hasMissingPhotos) {
-        hasSyncedRef.current = true
-        runSync(0, fetchVeiculos)
-      }
-    }
-  }, [loading, veiculos, isSyncing, runSync, fetchVeiculos])
 
   const marcas = ['Todas', ...Array.from(new Set(veiculos.map((v) => v.marca)))]
   const anos = [
@@ -313,37 +286,6 @@ export default function Estoque() {
               Mostrando {filteredVeiculos.length} carros
             </div>
 
-            {(isSyncing || syncError) && (
-              <div className="mb-4 p-3 rounded-lg border bg-card flex items-center gap-3 text-sm">
-                {isSyncing && (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin text-primary shrink-0" />
-                    <span className="text-muted-foreground">
-                      Sincronizando fotos da nuvem...{' '}
-                      {progress ? `${progress.current}/${progress.total}` : ''}
-                    </span>
-                    {progress && progress.photosSynced > 0 && (
-                      <span className="text-muted-foreground/70">
-                        ({progress.photosSynced} fotos sincronizadas)
-                      </span>
-                    )}
-                  </>
-                )}
-                {!isSyncing && syncError && (
-                  <>
-                    <span className="text-destructive text-xs flex-1">{syncError}</span>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => runSync(lastOffset, fetchVeiculos)}
-                    >
-                      <RefreshCw className="w-3 h-3 mr-1" /> Retomar
-                    </Button>
-                  </>
-                )}
-              </div>
-            )}
-
             {loading ? (
               <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 {[1, 2, 3, 4, 5, 6].map((i) => (
@@ -362,10 +304,9 @@ export default function Estoque() {
             ) : (
               <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 {filteredVeiculos.map((v, vehicleIndex) => {
-                  const vehiclePhotos = getVehiclePhotos(v.fotos)
                   const fotos =
-                    vehiclePhotos.length > 0
-                      ? vehiclePhotos
+                    Array.isArray(v.fotos) && v.fotos.length > 0
+                      ? v.fotos
                       : (v as any).em_preparacao
                         ? [
                             'https://img.usecurling.com/p/400/300?q=car%20detailing%20workshop&color=gray',
