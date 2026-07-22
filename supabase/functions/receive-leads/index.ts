@@ -339,13 +339,10 @@ Deno.serve(async (req: Request) => {
     })
   } catch (err: any) {
     console.error('Error processing webhook:', err)
-    await supabase
-      .from('lead_errors')
-      .insert({
-        lead_data: { source: 'receive-leads', timestamp: new Date().toISOString() },
-        error_message: err.message,
-      })
-      .catch(() => {})
+    await supabase.from('lead_errors').insert({
+      lead_data: { source: 'receive-leads', timestamp: new Date().toISOString() },
+      error_message: err.message,
+    }).catch(() => {})
     return new Response(JSON.stringify({ error: err.message }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
