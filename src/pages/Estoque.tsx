@@ -62,7 +62,7 @@ export default function Estoque() {
         (v) => !v.fotos || !Array.isArray(v.fotos) || v.fotos.length === 0,
       )
       if (hasMissingPhotos) {
-        triggerDriveSync({ offset: 0, limit: 28 }).catch(() => {})
+        triggerDriveSync({ offset: 0, limit: 2 }).catch(() => {})
       }
     }
   }, [loading, veiculos])

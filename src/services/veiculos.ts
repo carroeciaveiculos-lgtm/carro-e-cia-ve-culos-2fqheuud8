@@ -42,9 +42,46 @@ export const getVeiculosWithoutPhotos = async () => {
   return { data, error }
 }
 
+const MAX_RETRIES = 2
+const MIN_BATCH_SIZE = 1
+const RESOURCE_LIMIT_STATUS = 546
+
 export const triggerDriveSync = async (params?: { offset?: number; limit?: number }) => {
-  const { data, error } = await supabase.functions.invoke('sync-google-drive', {
-    body: params ?? {},
-  })
-  return { data, error }
+  const limit = Math.min(params?.limit ?? 2, 2)
+  let currentLimit = limit
+  let lastError: unknown = null
+
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    const { data, error } = await supabase.functions.invoke('sync-google-drive', {
+      body: { ...params, limit: currentLimit },
+    })
+
+    if (!error) {
+      return { data, error: null }
+    }
+
+    const isResourceLimit =
+      (error as any)?.context?.status === RESOURCE_LIMIT_STATUS ||
+      (error as any)?.status === RESOURCE_LIMIT_STATUS ||
+      String((error as any)?.message ?? '').includes('546') ||
+      String((error as any)?.message ?? '')
+        .toLowerCase()
+        .includes('resource_limit')
+
+    if (isResourceLimit && currentLimit > MIN_BATCH_SIZE) {
+      currentLimit = MIN_BATCH_SIZE
+      lastError = error
+      continue
+    }
+
+    if (isResourceLimit) {
+      console.warn('sync-google-drive: resource limit reached, stopping sync gracefully')
+      return { data: null, error: null }
+    }
+
+    return { data, error }
+  }
+
+  console.warn('sync-google-drive: exhausted retries due to resource limits, stopping gracefully')
+  return { data: null, error: null }
 }

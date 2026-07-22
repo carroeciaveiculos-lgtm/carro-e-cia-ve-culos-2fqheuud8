@@ -2,11 +2,7 @@ import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from 'jsr:@supabase/supabase-js@2'
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3'
 import { corsHeaders } from '../_shared/cors.ts'
-import {
-  getAccessToken,
-  listDriveItems,
-  downloadDriveFile,
-} from '../_shared/google-drive.ts'
+import { getAccessToken, listDriveItems, downloadDriveFile } from '../_shared/google-drive.ts'
 
 const ROOT_FOLDER_ID = '1D6UAaVY7k_Hy1gKVmjQY-sDISchOhwEY'
 const R2_PUBLIC_BASE = 'https://imagens.carroeciamotors.com.br'
@@ -28,7 +24,10 @@ const s3Client = new S3Client({
 // ─── Helpers ───
 
 function sanitizeName(name: string): string {
-  return name.trim().replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_\-]/g, '')
+  return name
+    .trim()
+    .replace(/\s+/g, '_')
+    .replace(/[^a-zA-Z0-9_\-]/g, '')
 }
 
 function extractPlate(folderName: string): string | null {
@@ -42,7 +41,11 @@ function safeError(err: unknown): string {
     return `[${err.name}] ${err.message}${err.cause ? ' | cause: ' + String(err.cause) : ''}`
   }
   if (typeof err === 'string') return err
-  try { return JSON.stringify(err) } catch { return String(err ?? 'Erro desconhecido') }
+  try {
+    return JSON.stringify(err)
+  } catch {
+    return String(err ?? 'Erro desconhecido')
+  }
 }
 
 /**
@@ -53,9 +56,9 @@ function safeError(err: unknown): string {
 function normalizeFileName(fileName: string): string {
   return fileName
     .replace(/\s+/g, '_')
-    .replace(/\(\d+\)/g, '')       // remove (1), (2), etc.
-    .replace(/_+/g, '_')           // remove underscores duplicados
-    .replace(/^_|_$/g, '')         // remove underscore inicial/final
+    .replace(/\(\d+\)/g, '') // remove (1), (2), etc.
+    .replace(/_+/g, '_') // remove underscores duplicados
+    .replace(/^_|_$/g, '') // remove underscore inicial/final
     .toLowerCase()
 }
 
@@ -63,8 +66,13 @@ function normalizeFileName(fileName: string): string {
  * Verifica se um nome de arquivo normalizado já existe no array de URLs do DB.
  */
 function urlExistsInDb(existingUrls: string[], normalizedCandidate: string): boolean {
-  return existingUrls.some(url => {
-    const urlNormalized = url.split('/').pop()?.toLowerCase().replace(/\(\d+\)/g, '') ?? ''
+  return existingUrls.some((url) => {
+    const urlNormalized =
+      url
+        .split('/')
+        .pop()
+        ?.toLowerCase()
+        .replace(/\(\d+\)/g, '') ?? ''
     return urlNormalized === normalizedCandidate
   })
 }
@@ -74,7 +82,7 @@ function urlExistsInDb(existingUrls: string[], normalizedCandidate: string): boo
  */
 function dedupUrls(urls: string[]): string[] {
   const seen = new Set<string>()
-  return urls.filter(url => {
+  return urls.filter((url) => {
     const key = url.toLowerCase()
     if (seen.has(key)) return false
     seen.add(key)
@@ -100,15 +108,20 @@ async function uploadToR2(key: string, blob: Blob, contentType: string): Promise
       lastError = e
       if (attempt < MAX_RETRIES) {
         const wait = 2000 * attempt
-        console.warn(`⚠️ Upload retry ${attempt}/${MAX_RETRIES}: ${safeError(e)}. Aguardando ${wait}ms...`)
-        await new Promise(resolve => setTimeout(resolve, wait))
+        console.warn(
+          `⚠️ Upload retry ${attempt}/${MAX_RETRIES}: ${safeError(e)}. Aguardando ${wait}ms...`,
+        )
+        await new Promise((resolve) => setTimeout(resolve, wait))
       }
     }
   }
   throw lastError
 }
 
-async function downloadWithRetry(accessToken: string, fileId: string): Promise<{ blob: Blob; mimeType: string }> {
+async function downloadWithRetry(
+  accessToken: string,
+  fileId: string,
+): Promise<{ blob: Blob; mimeType: string }> {
   let lastError: unknown
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
     try {
@@ -117,8 +130,10 @@ async function downloadWithRetry(accessToken: string, fileId: string): Promise<{
       lastError = e
       if (attempt < MAX_RETRIES) {
         const wait = 2000 * attempt
-        console.warn(`⚠️ Download retry ${attempt}/${MAX_RETRIES}: ${safeError(e)}. Aguardando ${wait}ms...`)
-        await new Promise(resolve => setTimeout(resolve, wait))
+        console.warn(
+          `⚠️ Download retry ${attempt}/${MAX_RETRIES}: ${safeError(e)}. Aguardando ${wait}ms...`,
+        )
+        await new Promise((resolve) => setTimeout(resolve, wait))
       }
     }
   }
@@ -133,18 +148,18 @@ async function getOffset(supabase: any): Promise<number> {
       .eq('sync_key', SYNC_CONTROL_KEY)
       .maybeSingle()
     return data?.current_offset ?? 0
-  } catch { return 0 }
+  } catch {
+    return 0
+  }
 }
 
 async function saveOffset(supabase: any, offset: number): Promise<void> {
   try {
-    await supabase
-      .from('sync_control')
-      .upsert({
-        sync_key: SYNC_CONTROL_KEY,
-        current_offset: offset,
-        updated_at: new Date().toISOString(),
-      })
+    await supabase.from('sync_control').upsert({
+      sync_key: SYNC_CONTROL_KEY,
+      current_offset: offset,
+      updated_at: new Date().toISOString(),
+    })
   } catch (e) {
     console.warn(`⚠️ saveOffset: ${safeError(e)}`)
   }
@@ -158,10 +173,10 @@ Deno.serve(async (req: Request) => {
     const clientEmail = Deno.env.get('DRIVE_CLIENT_EMAIL')
     const privateKey = (Deno.env.get('DRIVE_PRIVATE_KEY') || '').replace(/\\n/g, '\n')
     if (!clientEmail || !privateKey || !Deno.env.get('DRIVE_PROJECT_ID')) {
-      return new Response(
-        JSON.stringify({ error: 'Google Drive credentials not configured' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
-      )
+      return new Response(JSON.stringify({ error: 'Google Drive credentials not configured' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
     }
 
     let payloadOffset: number | undefined, payloadLimit: number | undefined
@@ -200,12 +215,17 @@ Deno.serve(async (req: Request) => {
       const elapsed = Date.now() - startTime
       const remaining = 120000 - elapsed // Supabase Edge Function: ~2min
       if (remaining < TIME_BUFFER_MS) {
-        console.log(`⏰ Remaining time: ${remaining}ms < ${TIME_BUFFER_MS}ms, stopping early at vehicle ${idx + 1}`)
+        console.log(
+          `⏰ Remaining time: ${remaining}ms < ${TIME_BUFFER_MS}ms, stopping early at vehicle ${idx + 1}`,
+        )
         break
       }
 
       const plate = extractPlate(folder.name)
-      if (!plate) { console.log(`⚠️ No plate: "${folder.name}"`); continue }
+      if (!plate) {
+        console.log(`⚠️ No plate: "${folder.name}"`)
+        continue
+      }
 
       console.log(`🔍 [${idx + 1}] ${plate}`)
 
@@ -217,7 +237,10 @@ Deno.serve(async (req: Request) => {
           .select('id, fotos')
           .eq('placa', plate)
           .maybeSingle()
-        if (res.error) { console.error(`❌ Query error: ${safeError(res.error)}`); continue }
+        if (res.error) {
+          console.error(`❌ Query error: ${safeError(res.error)}`)
+          continue
+        }
         vehicle = res.data
       } catch (e) {
         console.error(`❌ Query threw: ${safeError(e)}`)
@@ -230,9 +253,7 @@ Deno.serve(async (req: Request) => {
       }
 
       // ─── Extrair URLs existentes e dedup ───
-      const existingFotos = Array.isArray(vehicle.fotos)
-        ? dedupUrls(vehicle.fotos as string[])
-        : []
+      const existingFotos = Array.isArray(vehicle.fotos) ? dedupUrls(vehicle.fotos as string[]) : []
       console.log(`📸 ${plate}: ${existingFotos.length} fotos no DB (após dedup)`)
 
       // ─── Listar imagens do Drive ───
@@ -254,13 +275,15 @@ Deno.serve(async (req: Request) => {
       }
 
       // ─── Filtrar APENAS imagens realmente novas ───
-      const newImages = allImages.filter(file => {
+      const newImages = allImages.filter((file) => {
         const normalized = normalizeFileName(file.name)
         return !urlExistsInDb(existingFotos, normalized)
       })
 
       if (newImages.length === 0) {
-        console.log(`⏭️ Nenhuma imagem nova para ${plate} (diferença de contagem pode ser arquivo duplicado no Drive)`)
+        console.log(
+          `⏭️ Nenhuma imagem nova para ${plate} (diferença de contagem pode ser arquivo duplicado no Drive)`,
+        )
         continue
       }
 
@@ -358,7 +381,6 @@ Deno.serve(async (req: Request) => {
     return new Response(JSON.stringify(result), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
-
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err ?? 'Unknown')
     if (err instanceof Error && err.stack) console.error(`📊 Stack: ${err.stack}`)
