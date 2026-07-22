@@ -2,6 +2,7 @@ import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from 'jsr:@supabase/supabase-js@2'
 import { corsHeaders } from '../_shared/cors.ts'
 import { getValidMLToken, fetchWithBackoff } from '../_shared/ml-client.ts'
+import { validateHMACAsync } from '../_shared/hmac-validator.ts'
 
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
@@ -12,270 +13,58 @@ Deno.serve(async (req: Request) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
     )
 
-    const payload = await req.json()
+    const rawBody = await req.text()
+    const webhookSecret =
+      Deno.env.get('ML_WEBHOOK_SECRET') || Deno.env.get('ML_CLIENT_SECRET') || ''
 
-    if (payload.topic && payload.resource) {
-      const { token, error: tokenError } = await getValidMLToken(supabase)
-      if (tokenError || !token) {
-        return new Response(JSON.stringify({ error: tokenError || 'No ML token' }), {
+    if (webhookSecret) {
+      const signature = req.headers.get('x-signature') || ''
+      const isValid = await validateHMACAsync(rawBody, signature, webhookSecret)
+      if (!isValid) {
+        return new Response(JSON.stringify({ error: 'Invalid signature' }), {
           status: 401,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         })
       }
+    }
 
-      const resourceUrl = payload.resource
-      const detailRes = await fetch(resourceUrl, {
-        headers: { Authorization: `Bearer ${token}` },
+    const payload = JSON.parse(rawBody)
+
+    const { token, error: tokenError } = await getValidMLToken(supabase)
+    if (tokenError || !token) {
+      return new Response(JSON.stringify({ error: tokenError || 'No ML token' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
+    }
 
+    if (payload.topic && payload.resource) {
+      const resourceUrl = payload.resource
+      const detailRes = await fetch(resourceUrl, { headers: { Authorization: `Bearer ${token}` } })
       if (!detailRes.ok) {
-        return new Response(JSON.stringify({ error: 'Failed to fetch resource details' }), {
+        return new Response(JSON.stringify({ error: 'Failed to fetch resource' }), {
           status: 200,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         })
       }
-
       const resource = await detailRes.json()
 
       if (payload.topic === 'questions' && resource.text) {
-        const buyerId = resource.from?.id
-        const buyerName = resource.from?.nickname || 'Cliente ML'
-        const itemId = resource.item_id
-        const questionText = resource.text
-
-        let veiculoId: string | null = null
-        let veiculoInteresse = ''
-
-        if (itemId) {
-          const { data: listing } = await supabase
-            .from('ml_listings')
-            .select('veiculo_id')
-            .eq('ml_item_id', itemId)
-            .maybeSingle()
-
-          if (listing) {
-            veiculoId = listing.veiculo_id
-            const { data: veiculo } = await supabase
-              .from('veiculos')
-              .select('marca, modelo, ano_modelo')
-              .eq('id', listing.veiculo_id)
-              .maybeSingle()
-            if (veiculo) {
-              veiculoInteresse =
-                `${veiculo.marca} ${veiculo.modelo} ${veiculo.ano_modelo || ''}`.trim()
-            }
-          }
-        }
-
-        const { data: existingLead } = await supabase
-          .from('leads')
-          .select('id, telefone')
-          .eq('external_lead_id', String(buyerId))
-          .eq('source', 'mercadolivre')
-          .maybeSingle()
-
-        let leadId = existingLead?.id
-
-        if (!leadId) {
-          const { data: newLead, error: leadError } = await supabase
-            .from('leads')
-            .insert({
-              nome: buyerName,
-              external_lead_id: String(buyerId),
-              origem: 'mercadolivre',
-              source: 'mercadolivre',
-              tipo: 'compra',
-              status: 'novo',
-              temperatura: 'morno',
-              veiculo_id: veiculoId,
-              veiculo_interesse: veiculoInteresse,
-              observacoes: `Pergunta ML: ${questionText}`,
-            })
-            .select()
-            .single()
-
-          if (leadError) throw leadError
-          leadId = newLead?.id
-
-          if (leadId) {
-            try {
-              await supabase.functions.invoke('ai-sdr', {
-                body: {
-                  action: 'init_conversation',
-                  lead_id: leadId,
-                  source: 'mercadolivre',
-                  veiculo: veiculoInteresse || 'nosso estoque',
-                },
-              })
-            } catch (aiErr) {
-              console.error('AI SDR invocation failed:', aiErr)
-            }
-          }
-        }
+        await handleQuestion(supabase, token, resource)
       }
 
       if (payload.topic === 'items' && resource.contact) {
-        const buyerName = resource.buyer?.nickname || 'Cliente ML'
-        const buyerPhone = resource.buyer?.phone?.number || ''
-        const buyerEmail = resource.buyer?.email || ''
-        const itemId = resource.item_id
-
-        let veiculoId: string | null = null
-        let veiculoInteresse = ''
-
-        if (itemId) {
-          const { data: listing } = await supabase
-            .from('ml_listings')
-            .select('veiculo_id')
-            .eq('ml_item_id', itemId)
-            .maybeSingle()
-
-          if (listing) {
-            veiculoId = listing.veiculo_id
-            const { data: veiculo } = await supabase
-              .from('veiculos')
-              .select('marca, modelo, ano_modelo')
-              .eq('id', listing.veiculo_id)
-              .maybeSingle()
-            if (veiculo) {
-              veiculoInteresse =
-                `${veiculo.marca} ${veiculo.modelo} ${veiculo.ano_modelo || ''}`.trim()
-            }
-          }
-        }
-
-        const { data: newLead, error: leadError } = await supabase
-          .from('leads')
-          .insert({
-            nome: buyerName,
-            telefone: buyerPhone || null,
-            email: buyerEmail || null,
-            origem: 'mercadolivre',
-            source: 'mercadolivre',
-            tipo: 'compra',
-            status: 'novo',
-            temperatura: 'quente',
-            veiculo_id: veiculoId,
-            veiculo_interesse: veiculoInteresse,
-          })
-          .select()
-          .single()
-
-        if (leadError) throw leadError
-
-        if (newLead) {
-          if (buyerPhone) {
-            try {
-              await supabase.functions.invoke('send-whatsapp', {
-                body: {
-                  action: 'text',
-                  to: buyerPhone,
-                  text: `Olá ${buyerName}! Recebemos seu contato sobre o ${veiculoInteresse || 'veículo'} na nossa loja. Sou o Luiz, consultor da Carro e Cia. Como posso te ajudar hoje?`,
-                  leadId: newLead.id,
-                },
-              })
-            } catch (waErr) {
-              console.error('WhatsApp send failed:', waErr)
-            }
-          }
-
-          try {
-            await supabase.functions.invoke('ai-sdr', {
-              body: {
-                action: 'init_conversation',
-                lead_id: newLead.id,
-                source: 'mercadolivre',
-                veiculo: veiculoInteresse || 'nosso estoque',
-              },
-            })
-          } catch (aiErr) {
-            console.error('AI SDR invocation failed:', aiErr)
-          }
-        }
+        await handleItemContact(supabase, token, resource)
       }
     }
 
-    if (payload.topic === 'leads') {
-      const leadRes = await fetchWithBackoff(resourceUrl, {
+    if (payload.topic === 'leads' && payload.resource) {
+      const leadRes = await fetchWithBackoff(payload.resource, {
         headers: { Authorization: `Bearer ${token}` },
       })
-
       if (leadRes.ok) {
         const leadData = await leadRes.json()
-        const buyerName = leadData.buyer?.nickname || leadData.buyer?.name || 'Cliente ML'
-        const buyerPhone = leadData.buyer?.phone?.number || ''
-        const buyerEmail = leadData.buyer?.email || ''
-        const itemId = leadData.item_id || leadData.inventory_id
-
-        let veiculoId: string | null = null
-        let veiculoInteresse = ''
-
-        if (itemId) {
-          const { data: listing } = await supabase
-            .from('ml_listings')
-            .select('veiculo_id')
-            .eq('ml_item_id', itemId)
-            .maybeSingle()
-
-          if (listing) {
-            veiculoId = listing.veiculo_id
-            const { data: veiculo } = await supabase
-              .from('veiculos')
-              .select('marca, modelo, ano_modelo')
-              .eq('id', listing.veiculo_id)
-              .maybeSingle()
-            if (veiculo) {
-              veiculoInteresse = `${veiculo.marca} ${veiculo.modelo} ${veiculo.ano_modelo || ''}`.trim()
-            }
-          }
-        }
-
-        const { data: newLead, error: leadError } = await supabase
-          .from('leads')
-          .insert({
-            nome: buyerName,
-            telefone: buyerPhone || null,
-            email: buyerEmail || null,
-            origem: 'mercadolivre',
-            source: 'mercadolivre',
-            tipo: 'compra',
-            status: 'novo',
-            temperatura: 'quente',
-            veiculo_id: veiculoId,
-            veiculo_interesse: veiculoInteresse,
-          })
-          .select()
-          .single()
-
-        if (!leadError && newLead && buyerPhone) {
-          try {
-            await supabase.functions.invoke('send-whatsapp', {
-              body: {
-                action: 'text',
-                to: buyerPhone,
-                text: `Olá ${buyerName}! Recebemos seu contato sobre o ${veiculoInteresse || 'veículo'} na nossa loja. Como podemos te ajudar?`,
-                leadId: newLead.id,
-              },
-            })
-          } catch (waErr) {
-            console.error('WhatsApp send failed:', waErr)
-          }
-        }
-
-        if (!leadError && newLead) {
-          try {
-            await supabase.functions.invoke('ai-sdr', {
-              body: {
-                action: 'init_conversation',
-                lead_id: newLead.id,
-                source: 'mercadolivre',
-                veiculo: veiculoInteresse || 'nosso estoque',
-              },
-            })
-          } catch (aiErr) {
-            console.error('AI SDR invocation failed:', aiErr)
-          }
-        }
+        await handleLead(supabase, leadData)
       }
     }
 
@@ -291,3 +80,150 @@ Deno.serve(async (req: Request) => {
     })
   }
 })
+
+async function resolveVehicle(
+  supabase: any,
+  itemId: string,
+): Promise<{ veiculoId: string | null; veiculoInteresse: string }> {
+  if (!itemId) return { veiculoId: null, veiculoInteresse: '' }
+  const { data: listing } = await supabase
+    .from('ml_listings')
+    .select('veiculo_id')
+    .eq('ml_item_id', itemId)
+    .maybeSingle()
+  if (!listing) return { veiculoId: null, veiculoInteresse: '' }
+  const { data: veiculo } = await supabase
+    .from('veiculos')
+    .select('marca, modelo, ano_modelo')
+    .eq('id', listing.veiculo_id)
+    .maybeSingle()
+  return {
+    veiculoId: listing.veiculo_id,
+    veiculoInteresse: veiculo
+      ? `${veiculo.marca} ${veiculo.modelo} ${veiculo.ano_modelo || ''}`.trim()
+      : '',
+  }
+}
+
+async function handleQuestion(supabase: any, _token: string, resource: any) {
+  const buyerId = resource.from?.id
+  const buyerName = resource.from?.nickname || 'Cliente ML'
+  const questionText = resource.text
+  const { veiculoId, veiculoInteresse } = await resolveVehicle(supabase, resource.item_id)
+
+  const { data: existingLead } = await supabase
+    .from('leads')
+    .select('id')
+    .eq('external_lead_id', String(buyerId))
+    .eq('source', 'mercadolivre')
+    .maybeSingle()
+
+  if (!existingLead) {
+    await supabase.from('leads').insert({
+      nome: buyerName,
+      external_lead_id: String(buyerId),
+      origem: 'mercadolivre',
+      source: 'mercadolivre',
+      tipo: 'compra',
+      status: 'novo',
+      temperatura: 'morno',
+      veiculo_id: veiculoId,
+      veiculo_interesse: veiculoInteresse,
+      observacoes: `Pergunta ML: ${questionText}`,
+    })
+  }
+}
+
+async function handleItemContact(supabase: any, _token: string, resource: any) {
+  const buyerName = resource.buyer?.nickname || 'Cliente ML'
+  const buyerPhone = resource.buyer?.phone?.number || ''
+  const buyerEmail = resource.buyer?.email || ''
+  const { veiculoId, veiculoInteresse } = await resolveVehicle(supabase, resource.item_id)
+
+  const { data: newLead } = await supabase
+    .from('leads')
+    .insert({
+      nome: buyerName,
+      telefone: buyerPhone || null,
+      email: buyerEmail || null,
+      origem: 'mercadolivre',
+      source: 'mercadolivre',
+      tipo: 'compra',
+      status: 'novo',
+      temperatura: 'quente',
+      veiculo_id: veiculoId,
+      veiculo_interesse: veiculoInteresse,
+    })
+    .select()
+    .single()
+
+  if (newLead && buyerPhone) {
+    try {
+      await supabase.functions.invoke('send-whatsapp', {
+        body: {
+          action: 'text',
+          to: buyerPhone,
+          text: `Olá ${buyerName}! Recebemos seu contato sobre o ${veiculoInteresse}. Como podemos te ajudar?`,
+          leadId: newLead.id,
+        },
+      })
+    } catch {
+      /* non-critical */
+    }
+  }
+}
+
+async function handleLead(supabase: any, leadData: any) {
+  const buyerName = leadData.buyer?.nickname || leadData.buyer?.name || 'Cliente ML'
+  const buyerPhone = leadData.buyer?.phone?.number || ''
+  const buyerEmail = leadData.buyer?.email || ''
+  const itemId = leadData.item_id || leadData.inventory_id
+  const { veiculoId, veiculoInteresse } = await resolveVehicle(supabase, itemId)
+
+  const { data: newLead, error } = await supabase
+    .from('leads')
+    .insert({
+      nome: buyerName,
+      telefone: buyerPhone || null,
+      email: buyerEmail || null,
+      origem: 'mercadolivre',
+      source: 'mercadolivre',
+      tipo: 'compra',
+      status: 'novo',
+      temperatura: 'quente',
+      veiculo_id: veiculoId,
+      veiculo_interesse: veiculoInteresse,
+    })
+    .select()
+    .single()
+
+  if (error || !newLead) return
+
+  if (buyerPhone) {
+    try {
+      await supabase.functions.invoke('send-whatsapp', {
+        body: {
+          action: 'text',
+          to: buyerPhone,
+          text: `Olá ${buyerName}! Recebemos seu contato sobre o ${veiculoInteresse}. Como podemos te ajudar?`,
+          leadId: newLead.id,
+        },
+      })
+    } catch {
+      /* non-critical */
+    }
+  }
+
+  try {
+    await supabase.functions.invoke('ai-sdr', {
+      body: {
+        action: 'init_conversation',
+        lead_id: newLead.id,
+        source: 'mercadolivre',
+        veiculo: veiculoInteresse || 'nosso estoque',
+      },
+    })
+  } catch {
+    /* non-critical */
+  }
+}
