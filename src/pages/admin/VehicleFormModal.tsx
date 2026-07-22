@@ -572,15 +572,25 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
         const num = Number(val.toString().replace(/\./g, '').replace(',', '.'))
         return isNaN(num) ? null : num
       }
+      const numericFields = [
+        'ano_fabricacao',
+        'ano_modelo',
+        'quilometragem',
+        'portas',
+        'valor_fipe',
+        'preco_venda',
+        'preco_minimo',
+        'preco_classificados',
+        'cliques_whatsapp',
+        'visualizacoes_site',
+      ]
+      const sanitizedNumeric: Record<string, number | null> = {}
+      for (const field of numericFields) {
+        sanitizedNumeric[field] = sanitizeNumber(formData[field])
+      }
       const payload = {
         ...formData,
-        ano_fabricacao: sanitizeNumber(formData.ano_fabricacao),
-        ano_modelo: sanitizeNumber(formData.ano_modelo),
-        quilometragem: sanitizeNumber(formData.quilometragem),
-        portas: sanitizeNumber(formData.portas),
-        valor_fipe: sanitizeNumber(formData.valor_fipe),
-        preco_venda: sanitizeNumber(formData.preco_venda),
-        preco_minimo: sanitizeNumber(formData.preco_minimo),
+        ...sanitizedNumeric,
         proprietario_telefone: sanitizePhone(formData.proprietario_telefone),
         proprietario_telefone_residencial: sanitizePhone(
           formData.proprietario_telefone_residencial,
