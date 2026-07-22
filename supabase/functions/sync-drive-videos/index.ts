@@ -93,11 +93,13 @@ async function getOffset(supabase: any): Promise<number> {
 
 async function saveOffset(supabase: any, offset: number): Promise<void> {
   try {
-    await supabase.from('sync_control').upsert({
-      sync_key: SYNC_CONTROL_KEY,
-      current_offset: offset,
-      updated_at: new Date().toISOString(),
-    })
+    await supabase
+      .from('sync_control')
+      .upsert({
+        sync_key: SYNC_CONTROL_KEY,
+        current_offset: offset,
+        updated_at: new Date().toISOString(),
+      })
   } catch (e) {
     console.warn(`⚠️ saveOffset: ${safeError(e)}`)
   }
@@ -110,12 +112,14 @@ async function logError(
   payload: any,
 ): Promise<void> {
   try {
-    await supabase.from('logs_integracao').insert({
-      veiculo_id: veiculoId,
-      portal: 'google-drive-videos',
-      payload_erro: { error, ...payload },
-      status: 'error',
-    })
+    await supabase
+      .from('logs_integracao')
+      .insert({
+        veiculo_id: veiculoId,
+        portal: 'google-drive-videos',
+        payload_erro: { error, ...payload },
+        status: 'error',
+      })
   } catch (e) {
     console.error(`Failed to log error: ${safeError(e)}`)
   }
@@ -198,7 +202,9 @@ Deno.serve(async (req: Request) => {
         }
         if (res.data) {
           vehicleId = res.data.id
-          existingVideos = Array.isArray(res.data.videos) ? (res.data.videos as string[]) : []
+          existingVideos = Array.isArray(res.data.videos)
+            ? (res.data.videos as string[])
+            : []
         }
       } catch (e) {
         console.error(`❌ Query threw: ${safeError(e)}`)
@@ -220,7 +226,8 @@ Deno.serve(async (req: Request) => {
       try {
         const files = await listDriveItems(accessToken, folder.id, false)
         videoFiles = files.filter(
-          (f: any) => f.mimeType?.startsWith('video/') || f.name?.toLowerCase().endsWith('.mp4'),
+          (f: any) =>
+            f.mimeType?.startsWith('video/') || f.name?.toLowerCase().endsWith('.mp4'),
         )
       } catch (e) {
         console.error(`❌ Drive list: ${safeError(e)}`)
@@ -266,10 +273,17 @@ Deno.serve(async (req: Request) => {
           }
 
           const contentType = downloadRes.headers.get('content-type') || 'video/mp4'
-          const contentLength = parseInt(downloadRes.headers.get('content-length') || '0')
+          const contentLength = parseInt(
+            downloadRes.headers.get('content-length') || '0',
+          )
 
           console.log(`⬆️ Streaming to R2: ${storageKey}`)
-          await streamUploadToR2(storageKey, downloadRes.body, contentType, contentLength)
+          await streamUploadToR2(
+            storageKey,
+            downloadRes.body,
+            contentType,
+            contentLength,
+          )
 
           newVideoUrls.push(publicUrl)
           totalSynced++
@@ -296,13 +310,17 @@ Deno.serve(async (req: Request) => {
             .eq('id', vehicleId)
           if (r.error) {
             console.error(`❌ DB update failed: ${safeError(r.error)}`)
-            await logError(supabase, vehicleId, `DB update failed: ${safeError(r.error)}`, {
-              plate,
-              videos_count: updatedVideos.length,
-            })
+            await logError(
+              supabase,
+              vehicleId,
+              `DB update failed: ${safeError(r.error)}`,
+              { plate, videos_count: updatedVideos.length },
+            )
           } else {
             vehiclesUpdated++
-            console.log(`✅ DB updated: ${vehicleId}, videos: ${updatedVideos.length}`)
+            console.log(
+              `✅ DB updated: ${vehicleId}, videos: ${updatedVideos.length}`,
+            )
           }
         } catch (e) {
           console.error(`❌ DB update threw: ${safeError(e)}`)
