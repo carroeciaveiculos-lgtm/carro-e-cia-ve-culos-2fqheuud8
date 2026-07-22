@@ -23,6 +23,7 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/
 import { Line, LineChart, CartesianGrid, XAxis, YAxis } from 'recharts'
 import { cn, sanitizePhone, extractFinalPlaca } from '@/lib/utils'
 import { resizeImages } from '@/lib/image-resize'
+import { uploadToR2 } from '@/lib/r2-upload'
 import { BatchPhotoUploader } from '@/components/admin/BatchPhotoUploader'
 import { ImageEditorModal } from '@/components/admin/ImageEditorModal'
 import { DocumentPreviewDialog } from '@/components/admin/DocumentPreviewDialog'
@@ -198,7 +199,7 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
     cilindrada: '',
     portas: '',
     ml_listing_type: 'gold_special',
-    status: 'disponivel',
+    status: 'rascunho',
     tipo_entrada: 'consignacao',
     proprietario_nome: '',
     proprietario_telefone: '',
@@ -343,21 +344,46 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
         setFormData({
           categoria: 'Carro',
           placa: '',
-          tipo_entrada: 'consignacao',
-          caracteristicas: [],
-          fotos: [],
-          diferenciais: [],
-          info_personalizadas: {},
-          em_preparacao: false,
-          proprietario_estado_civil: '',
+          chassi: '',
+          renavam: '',
+          marca: '',
+          modelo: '',
+          ano_fabricacao: '',
+          ano_modelo: '',
+          cor: '',
+          combustivel: '',
+          valor_fipe: '',
+          preco_venda: '',
+          preco_minimo: '',
+          preco_classificados: '',
+          quilometragem: '',
+          cambio: 'Manual',
           direcao: '',
           cilindrada: '',
           portas: '',
           ml_listing_type: 'gold_special',
+          status: 'rascunho',
+          tipo_entrada: 'consignacao',
+          proprietario_nome: '',
+          proprietario_telefone: '',
+          proprietario_telefone_residencial: '',
+          proprietario_telefone_trabalho: '',
+          proprietario_email: '',
+          proprietario_cpf: '',
+          proprietario_estado_civil: '',
+          diferenciais: [],
+          caracteristicas: [],
+          fotos: [],
+          info_personalizadas: {},
+          publicado_olx: false,
+          fipe_ref: 'Atual',
           versao: '',
-          cambio: 'Manual',
+          descricao: '',
+          em_preparacao: false,
           notas_internas: '',
+          requires_review: false,
         })
+        setValidationErrors({})
       }
       loadMediaAssets()
     }
@@ -373,6 +399,13 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
   }
 
   const handleSyncGoogleDrive = async () => {
+    if (!formData.id) {
+      toast({
+        title: 'Por favor, salve o veículo primeiro antes de utilizar esta ferramenta.',
+        variant: 'destructive',
+      })
+      return
+    }
     if (!formData.placa) {
       toast({ title: 'Informe a placa do veículo primeiro', variant: 'destructive' })
       return
@@ -470,6 +503,43 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
     }
   }
 
+  const validateNumericField = (
+    field: string,
+    value: string,
+    opts: { min?: number; max?: number; integer?: boolean },
+  ) => {
+    if (value === '' || value === undefined || value === null) {
+      setValidationErrors((p) => {
+        const n = { ...p }
+        delete n[field]
+        return n
+      })
+      return
+    }
+    const num = Number(value)
+    if (isNaN(num)) {
+      setValidationErrors((p) => ({ ...p, [field]: 'Valor inválido' }))
+      return
+    }
+    if (opts.integer && !Number.isInteger(num)) {
+      setValidationErrors((p) => ({ ...p, [field]: 'Apenas números inteiros' }))
+      return
+    }
+    if (opts.min !== undefined && num < opts.min) {
+      setValidationErrors((p) => ({ ...p, [field]: `Valor mínimo: ${opts.min}` }))
+      return
+    }
+    if (opts.max !== undefined && num > opts.max) {
+      setValidationErrors((p) => ({ ...p, [field]: `Valor máximo: ${opts.max}` }))
+      return
+    }
+    setValidationErrors((p) => {
+      const n = { ...p }
+      delete n[field]
+      return n
+    })
+  }
+
   const validatePortalFields = () => {
     const missing: string[] = []
     if (!formData.marca) missing.push('Marca')
@@ -491,6 +561,10 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
   }
 
   const save = async (status = 'disponivel', shouldClose = true) => {
+    if (Object.keys(validationErrors).length > 0) {
+      toast({ title: 'Corrija os erros de validação antes de salvar', variant: 'destructive' })
+      return
+    }
     setLoading(true)
     try {
       const sanitizeNumber = (val: any) => {
@@ -527,11 +601,15 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
         : await supabase.from('veiculos').insert([payload]).select()
       if (error) throw error
       if (data && data[0]) setFormData((p: any) => ({ ...p, id: data[0].id }))
-      toast({ title: 'Veículo salvo!' })
+      toast({ title: 'Veículo salvo com sucesso!' })
       onSuccess()
       if (shouldClose) onClose()
     } catch (err: any) {
-      toast({ title: 'Erro ao salvar', variant: 'destructive' })
+      toast({
+        title: 'Erro ao salvar',
+        description: err.message || 'Falha ao salvar o veículo',
+        variant: 'destructive',
+      })
     } finally {
       setLoading(false)
     }
@@ -590,46 +668,23 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
       for (let i = 0; i < resizedBlobs.length; i++) {
         const blob = resizedBlobs[i]
         const file = files[i]
-        const fileExt = blob.type.includes('png') ? 'png' : 'jpg'
-        const fileName = `${Date.now()}_${i}_${Math.random().toString(36).substring(7)}.${fileExt}`
-        const filePath = `${folderName}/${fileName}`
+        const ext = blob.type.includes('png') ? 'png' : 'jpg'
+        const fileName = `${folderName}/${Date.now()}_${i}.${ext}`
+        const fileType = blob.type || 'image/jpeg'
 
-        const { error: uploadError } = await supabase.storage
-          .from('media')
-          .upload(filePath, blob, { contentType: blob.type || 'image/jpeg' })
-        if (uploadError) {
-          const { error: uploadError2 } = await supabase.storage
-            .from('site-assets')
-            .upload(filePath, blob, { contentType: blob.type || 'image/jpeg' })
-          if (uploadError2) throw uploadError2
-          const { data: publicUrlData } = supabase.storage
-            .from('site-assets')
-            .getPublicUrl(filePath)
-          newPhotos.push(publicUrlData.publicUrl)
-          await supabase.from('media_assets').insert([
-            {
-              file_name: file.name,
-              file_path: publicUrlData.publicUrl,
-              file_size: blob.size,
-              mime_type: blob.type || 'image/jpeg',
-              folder: folderName,
-              uploaded_by: userId,
-            },
-          ])
-        } else {
-          const { data: publicUrlData } = supabase.storage.from('media').getPublicUrl(filePath)
-          newPhotos.push(publicUrlData.publicUrl)
-          await supabase.from('media_assets').insert([
-            {
-              file_name: file.name,
-              file_path: publicUrlData.publicUrl,
-              file_size: blob.size,
-              mime_type: blob.type || 'image/jpeg',
-              folder: folderName,
-              uploaded_by: userId,
-            },
-          ])
-        }
+        const { publicUrl } = await uploadToR2(blob, fileName, fileType, 'media')
+        newPhotos.push(publicUrl)
+
+        await supabase.from('media_assets').insert([
+          {
+            file_name: file.name,
+            file_path: publicUrl,
+            file_size: blob.size,
+            mime_type: fileType,
+            folder: folderName,
+            uploaded_by: userId,
+          },
+        ])
       }
 
       const updatedFotos = [...(formData.fotos || []), ...newPhotos]
@@ -686,6 +741,8 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
   const [adKitContent, setAdKitContent] = useState<string | null>(null)
   const [loadingAdKit, setLoadingAdKit] = useState(false)
   const [loadingDescricao, setLoadingDescricao] = useState(false)
+  const [aiTone, setAiTone] = useState('Persuasivo')
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({})
 
   const sanitizeAiText = (raw: string): string => {
     if (!raw) return ''
@@ -702,11 +759,16 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
   const handleGerarDescricao = async () => {
     setLoadingDescricao(true)
     try {
+      const primeiraFoto = (formData.fotos || [])[0] || ''
+      const diferenciaisText = Array.isArray(formData.diferenciais)
+        ? formData.diferenciais.join(', ')
+        : ''
+      const tema = `Gere uma descrição persuasiva de vendedor para o veículo: ${formData.marca} ${formData.modelo} ${formData.versao || ''} - Ano Fab: ${formData.ano_fabricacao || 'N/A'}, Ano Mod: ${formData.ano_modelo || 'N/A'}. Cor: ${formData.cor}. Quilometragem: ${formData.quilometragem} km. Combustível: ${formData.combustivel}. Câmbio: ${formData.cambio}. Portas: ${formData.portas || 'N/A'}. Preço: R$ ${formData.preco_venda || 'N/A'}. Diferenciais e opcionais: ${diferenciaisText || 'Nenhum'}. ${primeiraFoto ? `Foto de referência: ${primeiraFoto}` : ''}. REGRAS OBRIGATÓRIAS: Foque no estilo, apelo visual, diferenciais exclusivos e desempenho do veículo. NÃO mencione serviços da concessionária, garantias, financiamento, informações de contato ou frases como "nossa loja" ou "entre em contato".`
       const { data, error } = await supabase.functions.invoke('gerar-conteudo', {
         body: {
-          tema: `Veículo para anúncio: ${formData.marca} ${formData.modelo} ${formData.versao || ''} - Ano ${formData.ano_modelo || formData.ano_fabricacao || ''}. Combustível: ${formData.combustivel}. Cor: ${formData.cor}. Quilometragem: ${formData.quilometragem} km. Categoria: ${formData.categoria}. Câmbio: ${formData.cambio}. Notas do vendedor: ${formData.notas_internas || 'Nenhuma nota adicional'}.`,
+          tema,
           palavraChave: `${formData.marca} ${formData.modelo} seminovo uberaba`,
-          tom: 'Conversacional',
+          tom: aiTone,
         },
       })
       if (error) throw error
@@ -730,7 +792,13 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
   }
 
   const handleGerarAdKit = async () => {
-    if (!formData.id) return toast({ title: 'Salve primeiro' })
+    if (!formData.id) {
+      toast({
+        title: 'Por favor, salve o veículo primeiro antes de utilizar esta ferramenta.',
+        variant: 'destructive',
+      })
+      return
+    }
     setLoadingAdKit(true)
     try {
       const { data, error } = await supabase.functions.invoke('gerar-conteudo-social', {
@@ -891,11 +959,21 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
                       <Label>Km</Label>
                       <Input
                         type="number"
+                        min={0}
                         value={formData.quilometragem || ''}
-                        onChange={(e) =>
+                        onChange={(e) => {
                           setFormData({ ...formData, quilometragem: e.target.value })
-                        }
+                          validateNumericField('quilometragem', e.target.value, {
+                            min: 1,
+                            integer: true,
+                          })
+                        }}
                       />
+                      {validationErrors.quilometragem && (
+                        <p className="text-xs text-red-500 mt-1">
+                          {validationErrors.quilometragem}
+                        </p>
+                      )}
                     </div>
                     <div>
                       <Label>Chassi</Label>
@@ -917,10 +995,22 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
                       <Label>Portas</Label>
                       <Input
                         type="number"
+                        min={1}
+                        max={10}
                         value={formData.portas || ''}
-                        onChange={(e) => setFormData({ ...formData, portas: e.target.value })}
+                        onChange={(e) => {
+                          setFormData({ ...formData, portas: e.target.value })
+                          validateNumericField('portas', e.target.value, {
+                            min: 1,
+                            max: 10,
+                            integer: true,
+                          })
+                        }}
                         placeholder="Ex: 4"
                       />
+                      {validationErrors.portas && (
+                        <p className="text-xs text-red-500 mt-1">{validationErrors.portas}</p>
+                      )}
                     </div>
                     <div>
                       <Label>Direção</Label>
@@ -1001,23 +1091,41 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
                     <Label>Valor FIPE</Label>
                     <CurrencyInput
                       value={formData.valor_fipe || ''}
-                      onChange={(v) => setFormData({ ...formData, valor_fipe: v })}
+                      onChange={(v) => {
+                        setFormData({ ...formData, valor_fipe: v })
+                        validateNumericField('valor_fipe', v, { min: 0 })
+                      }}
                     />
+                    {validationErrors.valor_fipe && (
+                      <p className="text-xs text-red-500 mt-1">{validationErrors.valor_fipe}</p>
+                    )}
                   </div>
                   <div>
                     <Label>Preço de Venda (Site)</Label>
                     <CurrencyInput
                       value={formData.preco_venda || ''}
-                      onChange={(v) => setFormData({ ...formData, preco_venda: v })}
+                      onChange={(v) => {
+                        setFormData({ ...formData, preco_venda: v })
+                        validateNumericField('preco_venda', v, { min: 0 })
+                      }}
                       className="text-green-700 font-bold"
                     />
+                    {validationErrors.preco_venda && (
+                      <p className="text-xs text-red-500 mt-1">{validationErrors.preco_venda}</p>
+                    )}
                   </div>
                   <div>
                     <Label>Preço Mínimo</Label>
                     <CurrencyInput
                       value={formData.preco_minimo || ''}
-                      onChange={(v) => setFormData({ ...formData, preco_minimo: v })}
+                      onChange={(v) => {
+                        setFormData({ ...formData, preco_minimo: v })
+                        validateNumericField('preco_minimo', v, { min: 0 })
+                      }}
                     />
+                    {validationErrors.preco_minimo && (
+                      <p className="text-xs text-red-500 mt-1">{validationErrors.preco_minimo}</p>
+                    )}
                   </div>
                   <div>
                     <Label>Notas / Destaques (para IA)</Label>
@@ -1031,17 +1139,31 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
                   <div>
                     <div className="flex items-center justify-between mb-1">
                       <Label>Observações / Descrição</Label>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        className="h-7 text-xs bg-purple-50 text-purple-700 hover:bg-purple-100 border-purple-200"
-                        onClick={handleGerarDescricao}
-                        disabled={loadingDescricao}
-                      >
-                        <Wand2 className="w-3 h-3 mr-1" />
-                        {loadingDescricao ? 'Gerando...' : 'Gerar com IA'}
-                      </Button>
+                      <div className="flex items-center gap-2">
+                        <Select value={aiTone} onValueChange={setAiTone}>
+                          <SelectTrigger className="h-7 w-36 text-xs">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="Persuasivo">Persuasivo</SelectItem>
+                            <SelectItem value="Técnico">Técnico</SelectItem>
+                            <SelectItem value="Emocional">Emocional</SelectItem>
+                            <SelectItem value="Formal">Formal</SelectItem>
+                            <SelectItem value="Descontraído">Descontraído</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="h-7 text-xs bg-purple-50 text-purple-700 hover:bg-purple-100 border-purple-200"
+                          onClick={handleGerarDescricao}
+                          disabled={loadingDescricao}
+                        >
+                          <Wand2 className="w-3 h-3 mr-1" />
+                          {loadingDescricao ? 'Gerando...' : 'Gerar com IA'}
+                        </Button>
+                      </div>
                     </div>
                     <Textarea
                       value={formData.descricao || ''}
@@ -1931,12 +2053,25 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
           <ImageEditorModal
             isOpen={!!editingImage}
             imageUrl={editingImage}
+            vehicleData={{
+              marca: formData.marca,
+              modelo: formData.modelo,
+              cor: formData.cor,
+              ano_modelo: formData.ano_modelo,
+            }}
             onClose={() => setEditingImage(null)}
-            onSave={(newUrl) => {
-              setFormData((p: any) => ({
-                ...p,
-                fotos: p.fotos.map((f: string) => (f === editingImage ? newUrl : f)),
-              }))
+            onSave={(newUrl, isAiGenerated) => {
+              if (isAiGenerated) {
+                setFormData((p: any) => ({
+                  ...p,
+                  fotos: [...(p.fotos || []), newUrl],
+                }))
+              } else {
+                setFormData((p: any) => ({
+                  ...p,
+                  fotos: p.fotos.map((f: string) => (f === editingImage ? newUrl : f)),
+                }))
+              }
               loadMediaAssets()
             }}
           />

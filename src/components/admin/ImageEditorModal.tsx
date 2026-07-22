@@ -17,12 +17,14 @@ export function ImageEditorModal({
   isOpen,
   onClose,
   imageUrl,
+  vehicleData,
   onSave,
 }: {
   isOpen: boolean
   onClose: () => void
   imageUrl: string
-  onSave: (newUrl: string) => void
+  vehicleData?: { marca?: string; modelo?: string; cor?: string; ano_modelo?: string }
+  onSave: (newUrl: string, isAiGenerated?: boolean) => void
 }) {
   const [loading, setLoading] = useState(false)
   const [processing, setProcessing] = useState(false)
@@ -98,13 +100,20 @@ export function ImageEditorModal({
   const handleOptimizeAI = async () => {
     setProcessing(true)
     try {
-      await new Promise((r) => setTimeout(r, 1500))
-      const optimized = await loadImageToCanvas(previewUrl, true, 0)
-      setPreviewUrl(optimized)
-      setIsAiOptimized(true)
-      toast({ title: 'Imagem otimizada com sucesso!' })
-    } catch (e) {
-      toast({ title: 'Erro ao otimizar imagem', variant: 'destructive' })
+      const prompt = `Professional automotive photography of a ${vehicleData?.cor || ''} ${vehicleData?.marca || ''} ${vehicleData?.modelo || ''} ${vehicleData?.ano_modelo || ''}, studio quality, high detail, clean background, exterior shot`
+      const { data, error } = await supabase.functions.invoke('gerar-imagem', {
+        body: { prompt },
+      })
+      if (error) throw error
+      if (data?.success && data?.url) {
+        setPreviewUrl(data.url)
+        setIsAiOptimized(true)
+        toast({ title: 'Imagem gerada com IA!' })
+      } else {
+        throw new Error(data?.error || 'Falha ao gerar imagem')
+      }
+    } catch (e: any) {
+      toast({ title: 'Erro ao gerar imagem', description: e.message, variant: 'destructive' })
     } finally {
       setProcessing(false)
     }
@@ -132,7 +141,7 @@ export function ImageEditorModal({
         folder: 'Edições',
       })
 
-      onSave(publicUrl)
+      onSave(publicUrl, isAiOptimized)
       toast({ title: 'Imagem salva com sucesso!' })
       onClose()
     } catch (error: any) {

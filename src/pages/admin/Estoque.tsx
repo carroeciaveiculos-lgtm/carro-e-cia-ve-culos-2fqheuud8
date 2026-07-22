@@ -34,6 +34,7 @@ import {
   Power,
   Share2,
   Trash2,
+  Send,
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import VehicleFormModal from './VehicleFormModal'
@@ -44,6 +45,7 @@ import { Sparkles } from 'lucide-react'
 
 const STATUS_MAP: Record<string, string> = {
   ativos: 'disponivel',
+  rascunhos: 'rascunho',
   vendidos: 'vendido',
   devolvidos: 'devolvido',
 }
@@ -133,6 +135,15 @@ export default function AdminEstoque() {
     if (error) toast({ title: 'Erro ao registrar venda', variant: 'destructive' })
     else {
       toast({ title: 'Venda registrada com sucesso! 🎉' })
+      loadVehicles()
+    }
+  }
+
+  const handlePublicar = async (id: string) => {
+    const { error } = await supabase.from('veiculos').update({ status: 'disponivel' }).eq('id', id)
+    if (error) toast({ title: 'Erro ao publicar', variant: 'destructive' })
+    else {
+      toast({ title: 'Veículo publicado com sucesso!' })
       loadVehicles()
     }
   }
@@ -349,6 +360,7 @@ export default function AdminEstoque() {
       >
         <TabsList className="bg-white border rounded-t-xl w-full justify-start px-4 gap-2">
           <TabsTrigger value="ativos">Ativos</TabsTrigger>
+          <TabsTrigger value="rascunhos">Rascunhos</TabsTrigger>
           <TabsTrigger value="vendidos">Vendidos</TabsTrigger>
           <TabsTrigger value="devolvidos">Devolvidos</TabsTrigger>
         </TabsList>
@@ -510,6 +522,17 @@ export default function AdminEstoque() {
                             <Undo2 className="w-4 h-4" />
                           </Button>
                         </>
+                      )}
+                      {activeTab === 'rascunhos' && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handlePublicar(v.id)}
+                          className="text-green-600 hover:bg-green-50"
+                          title="Publicar Veículo"
+                        >
+                          <Send className="w-4 h-4" />
+                        </Button>
                       )}
                       {activeTab === 'devolvidos' && (
                         <Button
