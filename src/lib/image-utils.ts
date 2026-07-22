@@ -9,6 +9,12 @@ export const R2_PLACEHOLDER_URL = `${R2_BASE_URL}/logos-e-imagens/placeholder/se
 export const LOCAL_FALLBACK_IMAGE = '/placeholder-car.svg'
 export const CAR_PLACEHOLDER_IMAGE = '/placeholder-car.svg'
 
+export const TRANSPARENT_PLACEHOLDER =
+  'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=='
+
+const PLACEHOLDER_GIF_1X1 =
+  'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7'
+
 export function isR2ImageUrl(url: string | null | undefined): boolean {
   if (!url) return false
   return url.includes(R2_BASE_URL)
@@ -61,10 +67,33 @@ export function getImageUrl(pathOrUrl: string | null | undefined, bucket = 'medi
 
 export function handleImageError(img: HTMLImageElement, context?: string): void {
   if (img.dataset.fallbackApplied === 'true') return
-  img.removeAttribute('crossorigin')
+  if (img.dataset.retrying === 'true') return
+
+  if (img.crossOrigin && img.dataset.crossOriginRetried !== 'true') {
+    img.dataset.retrying = 'true'
+    img.removeAttribute('crossorigin')
+    img.dataset.crossOriginRetried = 'true'
+    const currentSrc = img.src
+    img.src = PLACEHOLDER_GIF_1X1
+    setTimeout(() => {
+      img.dataset.retrying = 'false'
+      img.src = currentSrc
+    }, 50)
+    return
+  }
+
   img.onerror = null
   img.src = CAR_PLACEHOLDER_IMAGE
   img.dataset.fallbackApplied = 'true'
+}
+
+export function getSafeImageUrlForCapture(url: string | null | undefined): string {
+  if (!url) return TRANSPARENT_PLACEHOLDER
+  try {
+    return getImageUrl(url)
+  } catch {
+    return TRANSPARENT_PLACEHOLDER
+  }
 }
 
 export function getVehiclePhotos(fotos: any): string[] {
