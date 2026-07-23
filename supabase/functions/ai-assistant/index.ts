@@ -59,14 +59,8 @@ Exemplos do Estoque atual (limite de 5):
 ${vehicles?.map((v: any) => `${v.marca} ${v.modelo} - R$ ${v.preco_venda}`).join('\n')}
     `
 
-    const { data: promptConfig } = await supabase
-      .from('ai_prompts_config')
-      .select('prompt_text')
-      .eq('slug', 'ai_assistant')
-      .maybeSingle()
-    const assistantPrompt =
-      promptConfig?.prompt_text ||
-      'Você é a Brain IA, o assistente central e especializado da Carro e Cia Veículos.'
+    const { data: promptConfig } = await supabase.from('ai_prompts_config').select('prompt_text').eq('slug', 'ai_assistant').maybeSingle()
+    const assistantPrompt = promptConfig?.prompt_text || 'Você é a Brain IA, o assistente central e especializado da Carro e Cia Veículos.'
 
     const sysPrompt = `${assistantPrompt}
 Sua missão é responder com base nas diretrizes e informações aprendidas da Memória Ativa.

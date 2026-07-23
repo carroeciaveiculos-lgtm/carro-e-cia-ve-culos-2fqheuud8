@@ -18,10 +18,7 @@ export async function getAttributeValueId(
   return data?.ml_value_id ?? null
 }
 
-export async function getCityId(
-  supabase: SupabaseClient,
-  cityName = 'Uberaba',
-): Promise<string | null> {
+export async function getCityId(supabase: SupabaseClient, cityName = 'Uberaba'): Promise<string | null> {
   const { data } = await supabase
     .from('ml_cities_cache')
     .select('ml_city_id')
@@ -48,15 +45,14 @@ export async function populateAttributeCache(
 
     if (brandAttr?.values) {
       for (const v of brandAttr.values) {
-        const { error } = await supabase.from('ml_attribute_cache').upsert(
-          {
+        const { error } = await supabase
+          .from('ml_attribute_cache')
+          .upsert({
             attribute_id: 'BRAND',
             ml_value_id: v.id,
             ml_value_name: v.name,
             crm_value: v.name,
-          },
-          { onConflict: 'attribute_id,ml_value_id' },
-        )
+          }, { onConflict: 'attribute_id,ml_value_id' })
         if (!error) brandsInserted++
       }
     }
@@ -80,15 +76,14 @@ export async function populateAttributeCache(
           const searchData = await searchRes.json()
           if (searchData.values && searchData.values.length > 0) {
             const match = searchData.values[0]
-            await supabase.from('ml_attribute_cache').upsert(
-              {
+            await supabase
+              .from('ml_attribute_cache')
+              .upsert({
                 attribute_id: 'MODEL',
                 ml_value_id: match.id,
                 ml_value_name: match.name,
                 crm_value: modelName,
-              },
-              { onConflict: 'attribute_id,ml_value_id' },
-            )
+              }, { onConflict: 'attribute_id,ml_value_id' })
             modelsInserted++
           }
         }
@@ -113,14 +108,13 @@ export async function populateCityCache(
     const data = await res.json()
     if (data.cities) {
       for (const city of data.cities) {
-        await supabase.from('ml_cities_cache').upsert(
-          {
+        await supabase
+          .from('ml_cities_cache')
+          .upsert({
             ml_city_id: city.id,
             name: city.name,
             state_id: 'BR-MG',
-          },
-          { onConflict: 'ml_city_id' },
-        )
+          }, { onConflict: 'ml_city_id' })
       }
     }
     return { error: null }
@@ -147,10 +141,7 @@ export async function checkAvailableListingTypes(
     for (const lt of data) {
       const ltIdx = tierOrder.indexOf(lt.id)
       if (ltIdx >= 0 && ltIdx < currentIdx) {
-        return {
-          valid: false,
-          error: `Listing type ${currentListingType} would be downgraded to ${lt.id}`,
-        }
+        return { valid: false, error: `Listing type ${currentListingType} would be downgraded to ${lt.id}` }
       }
     }
     return { valid: true, error: null }
