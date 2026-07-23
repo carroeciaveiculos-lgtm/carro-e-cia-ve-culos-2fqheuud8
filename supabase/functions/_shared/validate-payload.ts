@@ -37,13 +37,7 @@ export interface ValidationResult {
 }
 
 const LISTING_TYPE_HIERARCHY = [
-  'gold_premium',
-  'gold_pro',
-  'gold_special',
-  'gold',
-  'silver',
-  'classic',
-  'bronze',
+  'gold_premium', 'gold_pro', 'gold_special', 'gold', 'silver', 'classic', 'bronze',
 ]
 
 export function montarTituloML(veiculo: VeiculoRecord): {
@@ -104,15 +98,9 @@ export function filtrarDescricao(descricao: string): string {
   filtered = filtered.replace(/[\w._%+-]+@[\w.-]+\.[A-Za-z]{2,}/g, '')
   filtered = filtered.replace(/https?:\/\/(?:wa\.me|whatsapp\.com|api\.whatsapp)[^\s]*/gi, '')
   filtered = filtered.replace(/wa\.me\/\d+/gi, '')
-  filtered = filtered.replace(
-    /https?:\/\/(?:www\.)?(?:facebook|instagram|twitter|telegram)[^\s]*/gi,
-    '',
-  )
+  filtered = filtered.replace(/https?:\/\/(?:www\.)?(?:facebook|instagram|twitter|telegram)[^\s]*/gi, '')
   filtered = filtered.replace(/\b(?:whatsapp|wpp|zap\s+zap|ligue\s+para)\b/gi, '')
-  filtered = filtered
-    .replace(/\n{3,}/g, '\n\n')
-    .replace(/\s{2,}/g, ' ')
-    .trim()
+  filtered = filtered.replace(/\n{3,}/g, '\n\n').replace(/\s{2,}/g, ' ').trim()
   return filtered
 }
 
@@ -150,9 +138,7 @@ export async function validarPayloadML(
   if (veiculo.descricao) {
     const filtered = filtrarDescricao(veiculo.descricao)
     if (filtered !== veiculo.descricao) {
-      warnings.push(
-        'Informações de contato removidas da descrição para conformidade com regras do ML.',
-      )
+      warnings.push('Informações de contato removidas da descrição para conformidade com regras do ML.')
       corrections.description = filtered
     }
   }
@@ -162,7 +148,9 @@ export async function validarPayloadML(
   if (precoVenda > 0 && valorFipe > 0) {
     const diff = Math.abs(precoVenda - valorFipe) / valorFipe
     if (diff > 0.3) {
-      warnings.push(`Preço de venda difere mais de 30% do valor FIPE (R$ ${valorFipe.toFixed(2)}).`)
+      warnings.push(
+        `Preço de venda difere mais de 30% do valor FIPE (R$ ${valorFipe.toFixed(2)}).`,
+      )
     }
   }
 
@@ -186,7 +174,9 @@ export async function validarPayloadML(
   if (config.allowedListingTypes.length > 0 && veiculo.ml_listing_type) {
     const resolvedType = veiculo.ml_listing_type
     if (!config.allowedListingTypes.includes(resolvedType)) {
-      const downgrade = LISTING_TYPE_HIERARCHY.find((t) => config.allowedListingTypes.includes(t))
+      const downgrade = LISTING_TYPE_HIERARCHY.find((t) =>
+        config.allowedListingTypes.includes(t),
+      )
       if (downgrade) {
         warnings.push(`Tipo ${resolvedType} indisponível. Downgrade automático para ${downgrade}.`)
         corrections.listing_type_id = downgrade
