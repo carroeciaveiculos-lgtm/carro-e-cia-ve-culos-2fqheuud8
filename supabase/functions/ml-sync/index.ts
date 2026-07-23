@@ -14,6 +14,9 @@ import {
 import { validateImagesForML } from '../_shared/image-validation.ts'
 import { validatePayload, filtrarDescricao } from '../_shared/validate-payload.ts'
 import { fetchAndStorePerformance } from '../_shared/ml-performance.ts'
+import { checkListingQuota } from '../_shared/ml-quota.ts'
+import { resolveListingType } from '../_shared/ml-client.ts'
+import { translateError } from '../_shared/error-map.ts'
 
 async function checkQuotaAndNotify(supabase: any, token: string): Promise<void> {
   try {
@@ -335,11 +338,33 @@ async function handleCreate(
     payload.description = { plain_text: validation.corrections.description as string }
   }
 
-  const mlRes = await fetchWithBackoff('https://api.mercadolibre.com/items', {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
-  })
+  const resolvedType = resolveListingType(veiculo.ml_listing_type)
+  const quotaCheck = await checkListingQuota(supabase, resolvedType)
+  if (!quotaCheck.hasQuota) {
+    return {
+      error:
+        quotaCheck.error ||
+        'Cota insuficiente para o plano selecionado. Consulte seu plano no Mercado Livre.',
+      cachedAttrs: mandatoryAttrs,
+      cachedCityId: cityId,
+    }
+  }
+
+  const tokenRefresher = async () => {
+    const { token: newToken } = await getValidMLToken(supabase)
+    return newToken
+  }
+
+  const mlRes = await fetchWithBackoff(
+    'https://api.mercadolibre.com/items',
+    {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    },
+    3,
+    tokenRefresher,
+  )
 
   const mlData = await mlRes.json()
 

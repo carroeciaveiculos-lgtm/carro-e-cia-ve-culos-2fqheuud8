@@ -87,8 +87,12 @@ export async function fetchReviewVehicles(): Promise<ReviewVehicle[]> {
     .neq('erro_msg', '')
 
   const syncMap: Record<string, SyncErrorDetail[]> = {}
+  const seenSyncErrors = new Set<string>()
   for (const log of syncLogs || []) {
     if (!log.veiculo_id) continue
+    const dedupKey = `${log.veiculo_id}-${log.mensagem}`
+    if (seenSyncErrors.has(dedupKey)) continue
+    seenSyncErrors.add(dedupKey)
     if (!syncMap[log.veiculo_id]) syncMap[log.veiculo_id] = []
     const translated = translateError(log.mensagem || '')
     syncMap[log.veiculo_id].push({
@@ -104,7 +108,11 @@ export async function fetchReviewVehicles(): Promise<ReviewVehicle[]> {
   }
 
   const pubMap: Record<string, PublicacaoErrorDetail[]> = {}
+  const seenPubErrors = new Set<string>()
   for (const pub of pubErrors || []) {
+    const dedupKey = `${pub.veiculo_id}-${pub.erro_msg}`
+    if (seenPubErrors.has(dedupKey)) continue
+    seenPubErrors.add(dedupKey)
     if (!pubMap[pub.veiculo_id]) pubMap[pub.veiculo_id] = []
     const translated = translateError(pub.erro_msg || '')
     pubMap[pub.veiculo_id].push({

@@ -74,22 +74,55 @@ export function resolveListingType(mlListingType: string | null | undefined): st
 export async function fetchWithBackoff(
   url: string,
   options: RequestInit,
-  maxRetries = 3,
+  maxRetriesOrConfig:
+    | number
+    | {
+        maxRetries?: number
+        onTokenRefresh?: () => Promise<string | null>
+      } = 3,
 ): Promise<Response> {
+  const config =
+    typeof maxRetriesOrConfig === 'number' ? { maxRetries: maxRetriesOrConfig } : maxRetriesOrConfig
+  const maxRetries = config.maxRetries ?? 3
+  const BACKOFF_DELAYS = [5000, 15000, 45000]
   let lastError: Error | null = null
+  let tokenRefreshed = false
+
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
       const res = await fetch(url, options)
+
+      if (res.status === 401 && !tokenRefreshed && config.onTokenRefresh) {
+        tokenRefreshed = true
+        const newToken = await config.onTokenRefresh()
+        if (newToken) {
+          const newOptions: RequestInit = {
+            ...options,
+            headers: { ...options.headers, Authorization: `Bearer ${newToken}` },
+          }
+          return fetch(url, newOptions)
+        }
+      }
+
       if (res.status === 429 && attempt < maxRetries) {
-        const delay = Math.pow(2, attempt) * 1000 + Math.random() * 500
+        const retryAfter = parseInt(res.headers.get('Retry-After') || '1', 10)
+        const delay = Math.max(retryAfter, 1) * 1000
         await new Promise((r) => setTimeout(r, delay))
         continue
       }
+
+      if (res.status >= 500 && attempt < maxRetries) {
+        const delay = BACKOFF_DELAYS[attempt] || 45000
+        await new Promise((r) => setTimeout(r, delay))
+        continue
+      }
+
       return res
     } catch (err: any) {
       lastError = err
       if (attempt < maxRetries) {
-        await new Promise((r) => setTimeout(r, Math.pow(2, attempt) * 1000))
+        const delay = BACKOFF_DELAYS[attempt] || 45000
+        await new Promise((r) => setTimeout(r, delay))
         continue
       }
     }

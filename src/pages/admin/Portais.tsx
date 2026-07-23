@@ -2,9 +2,14 @@ import { useState, useEffect, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
-import { Loader2, Search, AlertCircle, AlertTriangle } from 'lucide-react'
+import { Loader2, Search, AlertCircle, AlertTriangle, FlaskConical } from 'lucide-react'
 import { PreflightModal } from '@/components/admin/portais/PreflightModal'
+import { MLDiagnosisPanel } from '@/components/admin/portais/MLDiagnosisPanel'
+import { DryRunModal } from '@/components/admin/portais/DryRunModal'
+import { SelectiveSyncToolbar } from '@/components/admin/portais/SelectiveSyncToolbar'
 import { validateMLPreflight } from '@/lib/ml-preflight'
+import { validarPayloadMLFrontend } from '@/lib/ml-validation'
+import { buildMLPayloadPreview } from '@/lib/ml-payload'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import {
   fetchPlataformas,
@@ -51,6 +56,14 @@ export default function Portais() {
   const [preflightResults, setPreflightResults] = useState<
     Array<{ vehicleId: string; vehicleName: string; issues: string[] }>
   >([])
+  const [dryRunOpen, setDryRunOpen] = useState(false)
+  const [dryRunVehicleId, setDryRunVehicleId] = useState<string | null>(null)
+  const [dryRunVehicleName, setDryRunVehicleName] = useState<string>('')
+  const [selectedPlans, setSelectedPlans] = useState<Record<string, string>>({})
+  const [dryRunOpen, setDryRunOpen] = useState(false)
+  const [dryRunPayload, setDryRunPayload] = useState<any>(null)
+  const [dryRunValidation, setDryRunValidation] = useState<any>(null)
+  const [dryRunVehicleName, setDryRunVehicleName] = useState('')
   const [mlErrors, setMLErrors] = useState<
     Array<{ veiculo_id: string; marca: string; modelo: string; error: string }>
   >([])
@@ -114,6 +127,19 @@ export default function Portais() {
     } finally {
       setSyncing(false)
     }
+  }
+
+  const handleDryRun = async (veiculoId?: string) => {
+    const targetId = veiculoId || [...selectedIds][0]
+    if (!targetId) return
+    const vehicle = vehicles.find((v) => v.id === targetId)
+    if (!vehicle) return
+    const payload = buildMLPayloadPreview(vehicle)
+    const validation = await validarPayloadMLFrontend(vehicle)
+    setDryRunPayload(payload)
+    setDryRunValidation(validation)
+    setDryRunVehicleName(`${vehicle.marca} ${vehicle.modelo}`)
+    setDryRunOpen(true)
   }
 
   const handleQuickSync = async (slug: string, skipPreflight = false) => {
@@ -245,13 +271,21 @@ export default function Portais() {
   return (
     <div className="p-4 md:p-8 max-w-[1600px] mx-auto space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold text-gray-800">Sincronização de Portais</h1>
-        <Link to="/admin/portais/revisao">
-          <Button variant="outline" size="sm">
-            <AlertCircle className="w-4 h-4 mr-2" />
-            Revisão de Pendências
-          </Button>
-        </Link>
+        <div className="flex items-center gap-2">
+          <h1 className="text-xl font-bold text-gray-800">Sincronização de Portais</h1>
+          <Link to="/admin/ml-diagnosis">
+            <Button variant="outline" size="sm">
+              <FlaskConical className="w-4 h-4 mr-2" />
+              Diagnóstico ML
+            </Button>
+          </Link>
+          <Link to="/admin/portais/revisao">
+            <Button variant="outline" size="sm">
+              <AlertCircle className="w-4 h-4 mr-2" />
+              Revisão de Pendências
+            </Button>
+          </Link>
+        </div>
       </div>
 
       <GlobalActionsBar
@@ -272,6 +306,33 @@ export default function Portais() {
         }}
         syncing={syncing}
         syncingSlug={syncingSlug}
+      />
+
+      <SelectiveSyncBar
+        selectedIds={[...selectedIds]}
+        onClear={() => setSelectedIds(new Set())}
+        onDryRun={(vid) => {
+          const v = vehicles.find((x) => x.id === vid)
+          setDryRunVehicleId(vid)
+          setDryRunVehicleName(v ? `${v.marca} ${v.modelo}` : '')
+          setDryRunOpen(true)
+        }}
+        onSyncComplete={loadVeiculos}
+      />
+
+      <DryRunModal
+        open={dryRunOpen}
+        onOpenChange={setDryRunOpen}
+        vehicleId={dryRunVehicleId}
+        vehicleName={dryRunVehicleName}
+      />
+
+      <SelectiveSyncToolbar
+        selectedIds={selectedIds}
+        selectedPlans={selectedPlans}
+        vehicleNames={Object.fromEntries(vehicles.map((v) => [v.id, `${v.marca} ${v.modelo}`]))}
+        onSyncComplete={loadVeiculos}
+        onDryRun={() => handleDryRun()}
       />
 
       {mlErrors.length > 0 && (
@@ -385,6 +446,18 @@ export default function Portais() {
       <div className="bg-white rounded-lg border p-4 mt-8">
         <WMDashboard />
       </div>
+
+      <div className="mt-8">
+        <MLDiagnosisPanel />
+      </div>
+
+      <DryRunModal
+        open={dryRunOpen}
+        onOpenChange={setDryRunOpen}
+        payload={dryRunPayload}
+        validation={dryRunValidation}
+        vehicleName={dryRunVehicleName}
+      />
 
       <PreflightModal
         open={preflightOpen}

@@ -178,6 +178,7 @@ const Financiamento = lazyWithRetry(() => import('./pages/admin/Financiamento'))
 const Administrativo = lazyWithRetry(() => import('./pages/admin/Administrativo'))
 const Portais = lazyWithRetry(() => import('./pages/admin/Portais'))
 const PortalReview = lazyWithRetry(() => import('./pages/admin/PortalReview'))
+const MLDiagnosis = lazyWithRetry(() => import('./pages/admin/MLDiagnosis'))
 const Relatorios = lazyWithRetry(() => import('./pages/admin/Relatorios'))
 const Configuracoes = lazyWithRetry(() => import('./pages/admin/Configuracoes'))
 const Logs = lazyWithRetry(() => import('./pages/admin/Logs'))
@@ -346,6 +347,7 @@ const MainApp = () => (
 
         <Route path="portais" element={<Portais />} />
         <Route path="portais/revisao" element={<PortalReview />} />
+        <Route path="ml-diagnosis" element={<MLDiagnosis />} />
         <Route path="relatorios" element={<Relatorios />} />
         <Route path="configuracoes" element={<Configuracoes />} />
         <Route path="logs" element={<Logs />} />
