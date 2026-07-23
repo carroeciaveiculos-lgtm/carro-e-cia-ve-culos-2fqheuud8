@@ -1,10 +1,5 @@
 import { createClient } from 'jsr:@supabase/supabase-js@2'
-import {
-  getValidMLToken,
-  fetchWithBackoff,
-  formatVehicleTitle,
-  resolveListingType,
-} from '../_shared/ml-client.ts'
+import { getValidMLToken, fetchWithBackoff, formatVehicleTitle, resolveListingType } from '../_shared/ml-client.ts'
 import { validateImagesForML } from '../_shared/image-validation.ts'
 import { getAttributeValueId, getCityId, checkAvailableListingTypes } from '../_shared/ml-cache.ts'
 import { fetchAndStorePerformance } from '../_shared/ml-performance.ts'
@@ -12,44 +7,23 @@ import { fetchAndStorePerformance } from '../_shared/ml-performance.ts'
 type SupabaseClient = ReturnType<typeof createClient>
 
 const ML_FUEL_MAP: Record<string, string> = {
-  flex: 'Flex',
-  gasolina: 'Gasolina',
-  diesel: 'Diesel',
-  álcool: 'Álcool',
-  alcool: 'Álcool',
-  híbrido: 'Híbrido',
-  hibrido: 'Híbrido',
-  elétrico: 'Elétrico',
-  eletrico: 'Elétrico',
+  'flex': 'Flex', 'gasolina': 'Gasolina', 'diesel': 'Diesel',
+  'álcool': 'Álcool', 'alcool': 'Álcool', 'híbrido': 'Híbrido',
+  'hibrido': 'Híbrido', 'elétrico': 'Elétrico', 'eletrico': 'Elétrico',
 }
 const ML_TRANSMISSION_MAP: Record<string, string> = {
-  manual: 'Manual',
-  automática: 'Automática',
-  automatica: 'Automática',
-  automatizada: 'Automatizada',
-  cvt: 'CVT',
+  'manual': 'Manual', 'automática': 'Automática', 'automatica': 'Automática',
+  'automatizada': 'Automatizada', 'cvt': 'CVT',
 }
 const ML_COLOR_MAP: Record<string, string> = {
-  branco: 'Branco',
-  preto: 'Preto',
-  prata: 'Prata',
-  vermelho: 'Vermelho',
-  azul: 'Azul',
-  verde: 'Verde',
-  amarelo: 'Amarelo',
-  cinza: 'Cinza',
-  marrom: 'Marrom',
-  bege: 'Bege',
-  dourado: 'Dourado',
-  vinho: 'Vinho',
+  'branco': 'Branco', 'preto': 'Preto', 'prata': 'Prata', 'vermelho': 'Vermelho',
+  'azul': 'Azul', 'verde': 'Verde', 'amarelo': 'Amarelo', 'cinza': 'Cinza',
+  'marrom': 'Marrom', 'bege': 'Bege', 'dourado': 'Dourado', 'vinho': 'Vinho',
 }
 const ML_STEERING_MAP: Record<string, string> = {
-  hidráulica: 'Hidráulica',
-  hidraulica: 'Hidráulica',
-  elétrica: 'Elétrica',
-  eletrica: 'Elétrica',
-  mecânica: 'Mecânica',
-  mecanica: 'Mecânica',
+  'hidráulica': 'Hidráulica', 'hidraulica': 'Hidráulica',
+  'elétrica': 'Elétrica', 'eletrica': 'Elétrica',
+  'mecânica': 'Mecânica', 'mecanica': 'Mecânica',
 }
 
 function normalizeValue(value: string, map: Record<string, string>): string {
@@ -82,15 +56,11 @@ export async function syncVehicleToML(
     .maybeSingle()
   if (!veiculo) return { success: false, error: 'Vehicle not found' }
 
-  const fotos: string[] = Array.isArray(veiculo.fotos)
-    ? veiculo.fotos.filter((u: any) => typeof u === 'string')
-    : []
+  const fotos: string[] = Array.isArray(veiculo.fotos) ? veiculo.fotos.filter((u: any) => typeof u === 'string') : []
 
   if (fotos.length < 8) {
     await supabase.from('sync_log').insert({
-      plataforma_id: (
-        await supabase.from('plataformas').select('id').eq('slug', 'mercadolivre').maybeSingle()
-      ).data?.id,
+      plataforma_id: (await supabase.from('plataformas').select('id').eq('slug', 'mercadolivre').maybeSingle()).data?.id,
       veiculo_id: veiculoId,
       acao: 'sync',
       status: 'skipped',
@@ -111,10 +81,7 @@ export async function syncVehicleToML(
   const cityId = await getCityId(supabase, 'Uberaba')
 
   if (!brandId) {
-    return {
-      success: false,
-      error: `Brand "${veiculo.marca}" not found in ML attribute cache. Run cache population.`,
-    }
+    return { success: false, error: `Brand "${veiculo.marca}" not found in ML attribute cache. Run cache population.` }
   }
 
   const imageValidation = await validateImagesForML(fotos)
@@ -126,9 +93,7 @@ export async function syncVehicleToML(
   const typeCheck = await checkAvailableListingTypes(token, 'MLB1744', listingType)
   if (!typeCheck.valid) {
     await supabase.from('logs_integracao').insert({
-      veiculo_id: veiculoId,
-      portal: 'mercadolivre',
-      status: 'falha',
+      veiculo_id: veiculoId, portal: 'mercadolivre', status: 'falha',
       payload_erro: { error: typeCheck.error },
     })
     return { success: false, error: typeCheck.error }
@@ -141,38 +106,14 @@ export async function syncVehicleToML(
 
   const attributes = [
     { id: 'BRAND', value_id: String(brandId) },
-    {
-      id: 'MODEL',
-      value_id: modelId ? String(modelId) : undefined,
-      value_name: veiculo.modelo || undefined,
-    },
+    { id: 'MODEL', value_id: modelId ? String(modelId) : undefined, value_name: veiculo.modelo || undefined },
     { id: 'VEHICLE_YEAR', value_name: veiculo.ano_modelo ? String(veiculo.ano_modelo) : undefined },
-    {
-      id: 'KILOMETERS',
-      value_struct:
-        veiculo.quilometragem != null
-          ? { number: Number(veiculo.quilometragem), unit: 'km' }
-          : undefined,
-    },
-    {
-      id: 'COLOR',
-      value_name: veiculo.cor ? normalizeValue(veiculo.cor, ML_COLOR_MAP) : undefined,
-    },
-    {
-      id: 'FUEL_TYPE',
-      value_name: veiculo.combustivel
-        ? normalizeValue(veiculo.combustivel, ML_FUEL_MAP)
-        : undefined,
-    },
-    {
-      id: 'TRANSMISSION',
-      value_name: veiculo.cambio ? normalizeValue(veiculo.cambio, ML_TRANSMISSION_MAP) : undefined,
-    },
+    { id: 'KILOMETERS', value_struct: veiculo.quilometragem != null ? { number: Number(veiculo.quilometragem), unit: 'km' } : undefined },
+    { id: 'COLOR', value_name: veiculo.cor ? normalizeValue(veiculo.cor, ML_COLOR_MAP) : undefined },
+    { id: 'FUEL_TYPE', value_name: veiculo.combustivel ? normalizeValue(veiculo.combustivel, ML_FUEL_MAP) : undefined },
+    { id: 'TRANSMISSION', value_name: veiculo.cambio ? normalizeValue(veiculo.cambio, ML_TRANSMISSION_MAP) : undefined },
     { id: 'DOORS', value_name: veiculo.portas ? String(veiculo.portas) : undefined },
-    {
-      id: 'STEERING',
-      value_name: veiculo.direcao ? normalizeValue(veiculo.direcao, ML_STEERING_MAP) : undefined,
-    },
+    { id: 'STEERING', value_name: veiculo.direcao ? normalizeValue(veiculo.direcao, ML_STEERING_MAP) : undefined },
     { id: 'TRIM', value_name: veiculo.versao || undefined },
     { id: 'ITEM_CONDITION', value_name: isZeroKm ? 'Nuevo' : 'Usado' },
   ].filter((a: any) => a.value_id !== undefined || a.value_name !== undefined)
@@ -181,39 +122,26 @@ export async function syncVehicleToML(
   if (cityId) location.city_id = cityId
 
   const payload: any = {
-    title,
-    category_id: 'MLB1744',
-    price,
-    currency_id: 'BRL',
-    available_quantity: 1,
-    buying_mode: 'classified',
-    condition: isZeroKm ? 'new' : 'used',
-    listing_type_id: listingType,
+    title, category_id: 'MLB1744', price, currency_id: 'BRL',
+    available_quantity: 1, buying_mode: 'classified',
+    condition: isZeroKm ? 'new' : 'used', listing_type_id: listingType,
     channels: ['marketplace'],
     pictures: imageValidation.validUrls.map((url: string) => ({ source: url })),
-    attributes,
-    location,
+    attributes, location,
     description: { plain_text: description },
   }
 
-  const mlPlataforma = await supabase
-    .from('plataformas')
-    .select('id')
-    .eq('slug', 'mercadolivre')
-    .maybeSingle()
+  const mlPlataforma = await supabase.from('plataformas').select('id').eq('slug', 'mercadolivre').maybeSingle()
   const mlPid = mlPlataforma.data?.id
 
   try {
     let mlData: any
     if (existingListing?.ml_item_id) {
-      const updateRes = await fetchWithBackoff(
-        `https://api.mercadolibre.com/items/${existingListing.ml_item_id}`,
-        {
-          method: 'PUT',
-          headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ title, price, pictures: payload.pictures, attributes, location }),
-        },
-      )
+      const updateRes = await fetchWithBackoff(`https://api.mercadolibre.com/items/${existingListing.ml_item_id}`, {
+        method: 'PUT',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title, price, pictures: payload.pictures, attributes, location }),
+      })
       mlData = await updateRes.json()
       if (!updateRes.ok) throw new Error(JSON.stringify(mlData))
     } else {
@@ -226,25 +154,20 @@ export async function syncVehicleToML(
       if (!createRes.ok) throw new Error(JSON.stringify(mlData))
     }
 
-    await supabase.from('ml_listings').upsert(
-      {
-        veiculo_id: veiculoId,
-        ml_item_id: mlData.id,
-        ml_listing_url: mlData.permalink,
-        status: 'active',
-        last_synced_at: new Date().toISOString(),
-      },
-      { onConflict: 'veiculo_id' },
-    )
+    await supabase.from('ml_listings').upsert({
+      veiculo_id: veiculoId,
+      ml_item_id: mlData.id,
+      ml_listing_url: mlData.permalink,
+      status: 'active',
+      last_synced_at: new Date().toISOString(),
+    }, { onConflict: 'veiculo_id' })
 
     await supabase.from('veiculos').update({ publicado_mercadolivre: true }).eq('id', veiculoId)
 
     if (mlPid) {
       await supabase.from('sync_log').insert({
-        plataforma_id: mlPid,
-        veiculo_id: veiculoId,
-        acao: 'sync',
-        status: 'success',
+        plataforma_id: mlPid, veiculo_id: veiculoId,
+        acao: 'sync', status: 'success',
         mensagem: `ML item ${mlData.id} ${existingListing?.ml_item_id ? 'updated' : 'created'}`,
       })
     }
@@ -254,17 +177,13 @@ export async function syncVehicleToML(
     return { success: true, ml_item_id: mlData.id }
   } catch (err: any) {
     await supabase.from('logs_integracao').insert({
-      veiculo_id: veiculoId,
-      portal: 'mercadolivre',
-      status: 'falha',
+      veiculo_id: veiculoId, portal: 'mercadolivre', status: 'falha',
       payload_erro: { error: err.message, request_body: payload },
     })
     if (mlPid) {
       await supabase.from('sync_log').insert({
-        plataforma_id: mlPid,
-        veiculo_id: veiculoId,
-        acao: 'sync',
-        status: 'erro',
+        plataforma_id: mlPid, veiculo_id: veiculoId,
+        acao: 'sync', status: 'erro',
         mensagem: err.message.substring(0, 500),
       })
     }

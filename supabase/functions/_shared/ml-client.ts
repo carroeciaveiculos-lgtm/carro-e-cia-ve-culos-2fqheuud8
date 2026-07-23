@@ -17,47 +17,27 @@ const LISTING_TYPE_MAP: Record<string, string> = {
 }
 
 const ML_FUEL_MAP: Record<string, string> = {
-  flex: 'Flex',
-  gasolina: 'Gasolina',
-  diesel: 'Diesel',
-  álcool: 'Álcool',
-  alcool: 'Álcool',
-  híbrido: 'Híbrido',
-  hibrido: 'Híbrido',
-  elétrico: 'Elétrico',
-  eletrico: 'Elétrico',
+  'flex': 'Flex', 'gasolina': 'Gasolina', 'diesel': 'Diesel',
+  'álcool': 'Álcool', 'alcool': 'Álcool', 'híbrido': 'Híbrido',
+  'hibrido': 'Híbrido', 'elétrico': 'Elétrico', 'eletrico': 'Elétrico',
 }
 
 const ML_TRANSMISSION_MAP: Record<string, string> = {
-  manual: 'Manual',
-  automática: 'Automática',
-  automatica: 'Automática',
-  automatizada: 'Automatizada',
-  cvt: 'CVT',
+  'manual': 'Manual', 'automática': 'Automática', 'automatica': 'Automática',
+  'automatizada': 'Automatizada', 'cvt': 'CVT',
 }
 
 const ML_STEERING_MAP: Record<string, string> = {
-  hidráulica: 'Hidráulica',
-  hidraulica: 'Hidráulica',
-  elétrica: 'Elétrica',
-  eletrica: 'Elétrica',
-  mecânica: 'Mecânica',
-  mecanica: 'Mecânica',
+  'hidráulica': 'Hidráulica', 'hidraulica': 'Hidráulica',
+  'elétrica': 'Elétrica', 'eletrica': 'Elétrica',
+  'mecânica': 'Mecânica', 'mecanica': 'Mecânica',
 }
 
 const ML_COLOR_MAP: Record<string, string> = {
-  branco: 'Branco',
-  preto: 'Preto',
-  prata: 'Prata',
-  vermelho: 'Vermelho',
-  azul: 'Azul',
-  verde: 'Verde',
-  amarelo: 'Amarelo',
-  cinza: 'Cinza',
-  marrom: 'Marrom',
-  bege: 'Bege',
-  dourado: 'Dourado',
-  vinho: 'Vinho',
+  'branco': 'Branco', 'preto': 'Preto', 'prata': 'Prata',
+  'vermelho': 'Vermelho', 'azul': 'Azul', 'verde': 'Verde',
+  'amarelo': 'Amarelo', 'cinza': 'Cinza', 'marrom': 'Marrom',
+  'bege': 'Bege', 'dourado': 'Dourado', 'vinho': 'Vinho',
 }
 
 function normalizeValue(value: string, map: Record<string, string>): string {
@@ -74,55 +54,22 @@ export function resolveListingType(mlListingType: string | null | undefined): st
 export async function fetchWithBackoff(
   url: string,
   options: RequestInit,
-  maxRetriesOrConfig:
-    | number
-    | {
-        maxRetries?: number
-        onTokenRefresh?: () => Promise<string | null>
-      } = 3,
+  maxRetries = 3,
 ): Promise<Response> {
-  const config =
-    typeof maxRetriesOrConfig === 'number' ? { maxRetries: maxRetriesOrConfig } : maxRetriesOrConfig
-  const maxRetries = config.maxRetries ?? 3
-  const BACKOFF_DELAYS = [5000, 15000, 45000]
   let lastError: Error | null = null
-  let tokenRefreshed = false
-
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
       const res = await fetch(url, options)
-
-      if (res.status === 401 && !tokenRefreshed && config.onTokenRefresh) {
-        tokenRefreshed = true
-        const newToken = await config.onTokenRefresh()
-        if (newToken) {
-          const newOptions: RequestInit = {
-            ...options,
-            headers: { ...options.headers, Authorization: `Bearer ${newToken}` },
-          }
-          return fetch(url, newOptions)
-        }
-      }
-
       if (res.status === 429 && attempt < maxRetries) {
-        const retryAfter = parseInt(res.headers.get('Retry-After') || '1', 10)
-        const delay = Math.max(retryAfter, 1) * 1000
+        const delay = Math.pow(2, attempt) * 1000 + Math.random() * 500
         await new Promise((r) => setTimeout(r, delay))
         continue
       }
-
-      if (res.status >= 500 && attempt < maxRetries) {
-        const delay = BACKOFF_DELAYS[attempt] || 45000
-        await new Promise((r) => setTimeout(r, delay))
-        continue
-      }
-
       return res
     } catch (err: any) {
       lastError = err
       if (attempt < maxRetries) {
-        const delay = BACKOFF_DELAYS[attempt] || 45000
-        await new Promise((r) => setTimeout(r, delay))
+        await new Promise((r) => setTimeout(r, Math.pow(2, attempt) * 1000))
         continue
       }
     }
@@ -215,11 +162,7 @@ export async function checkMLPackages(
       headers: { Authorization: `Bearer ${token}` },
     })
     if (!userRes.ok) {
-      return {
-        hasPackage: false,
-        activeCount: 0,
-        error: 'Não foi possível obter informações do usuário',
-      }
+      return { hasPackage: false, activeCount: 0, error: 'Não foi possível obter informações do usuário' }
     }
     const user = await userRes.json()
     const listingsRes = await fetchWithBackoff(
@@ -227,11 +170,7 @@ export async function checkMLPackages(
       { headers: { Authorization: `Bearer ${token}` } },
     )
     if (!listingsRes.ok) {
-      return {
-        hasPackage: false,
-        activeCount: 0,
-        error: 'Não foi possível verificar anúncios ativos',
-      }
+      return { hasPackage: false, activeCount: 0, error: 'Não foi possível verificar anúncios ativos' }
     }
     const listings = await listingsRes.json()
     return { hasPackage: true, activeCount: listings.results?.length || 0, error: null }
@@ -259,11 +198,7 @@ export async function fetchCategoryAttributes(
 }
 
 function buildLocation(v: any, cityId?: string | null): any {
-  const addressParts = [
-    v.proprietario_logradouro,
-    v.proprietario_numero,
-    v.proprietario_bairro,
-  ].filter(Boolean)
+  const addressParts = [v.proprietario_logradouro, v.proprietario_numero, v.proprietario_bairro].filter(Boolean)
   const addressLine = addressParts.length > 0 ? addressParts.join(', ') : 'Endereço não informado'
   const zipCode = v.proprietario_cep?.replace(/\D/g, '') || undefined
   const location: any = { address_line: addressLine }
@@ -277,31 +212,13 @@ function buildAttributes(v: any, isZeroKm: boolean): any[] {
     { id: 'BRAND', value_name: v.marca || undefined },
     { id: 'MODEL', value_name: v.modelo || undefined },
     { id: 'VEHICLE_YEAR', value_name: v.ano_modelo ? String(v.ano_modelo) : undefined },
-    {
-      id: 'KILOMETERS',
-      value_struct:
-        v.quilometragem != null ? { number: Number(v.quilometragem), unit: 'km' } : undefined,
-    },
+    { id: 'KILOMETERS', value_struct: v.quilometragem != null ? { number: Number(v.quilometragem), unit: 'km' } : undefined },
     { id: 'COLOR', value_name: v.cor ? normalizeValue(v.cor, ML_COLOR_MAP) : undefined },
-    {
-      id: 'FUEL_TYPE',
-      value_name: v.combustivel ? normalizeValue(v.combustivel, ML_FUEL_MAP) : undefined,
-    },
-    {
-      id: 'TRANSMISSION',
-      value_name: v.cambio ? normalizeValue(v.cambio, ML_TRANSMISSION_MAP) : undefined,
-    },
+    { id: 'FUEL_TYPE', value_name: v.combustivel ? normalizeValue(v.combustivel, ML_FUEL_MAP) : undefined },
+    { id: 'TRANSMISSION', value_name: v.cambio ? normalizeValue(v.cambio, ML_TRANSMISSION_MAP) : undefined },
     { id: 'DOORS', value_name: v.portas ? String(v.portas) : undefined },
-    {
-      id: 'STEERING',
-      value_name: v.direcao ? normalizeValue(v.direcao, ML_STEERING_MAP) : undefined,
-    },
-    {
-      id: 'ENGINE_DISPLACEMENT',
-      value_struct: v.cilindrada
-        ? { number: parseInt(String(v.cilindrada).replace(/\D/g, '')) || undefined, unit: 'cc' }
-        : undefined,
-    },
+    { id: 'STEERING', value_name: v.direcao ? normalizeValue(v.direcao, ML_STEERING_MAP) : undefined },
+    { id: 'ENGINE_DISPLACEMENT', value_struct: v.cilindrada ? { number: parseInt(String(v.cilindrada).replace(/\D/g, '')) || undefined, unit: 'cc' } : undefined },
     { id: 'TRIM', value_name: v.versao || undefined },
     { id: 'PLATE_FINAL_DIGIT', value_name: v.final_placa || undefined },
     { id: 'ITEM_CONDITION', value_name: isZeroKm ? 'Nuevo' : 'Usado' },
@@ -314,9 +231,7 @@ export function buildMLItemPayload(
   mandatoryAttrs?: string[],
   cityId?: string | null,
 ): any {
-  const fotos: string[] = Array.isArray(v.fotos)
-    ? v.fotos.filter((url: any) => typeof url === 'string')
-    : []
+  const fotos: string[] = Array.isArray(v.fotos) ? v.fotos.filter((url: any) => typeof url === 'string') : []
   const resolvedListingType = resolveListingType(listingType || v.ml_listing_type)
   const isZeroKm = v.is_zero_km === true
   const condition = isZeroKm ? 'new' : 'used'
@@ -352,9 +267,7 @@ export function buildMLUpdatePayload(
   mandatoryAttrs?: string[],
   cityId?: string | null,
 ): any {
-  const fotos: string[] = Array.isArray(v.fotos)
-    ? v.fotos.filter((url: any) => typeof url === 'string')
-    : []
+  const fotos: string[] = Array.isArray(v.fotos) ? v.fotos.filter((url: any) => typeof url === 'string') : []
   const isZeroKm = v.is_zero_km === true
   const attributes = buildAttributes(v, isZeroKm)
 
@@ -392,11 +305,7 @@ export async function validatePhotos(
       }
     } catch {
       try {
-        const res2 = await fetch(url, {
-          method: 'GET',
-          headers: { Range: 'bytes=0-0' },
-          signal: AbortSignal.timeout(10000),
-        })
+        const res2 = await fetch(url, { method: 'GET', headers: { Range: 'bytes=0-0' }, signal: AbortSignal.timeout(10000) })
         if (!res2.ok && res2.status !== 206) {
           errors.push(`Imagem inacessível (HTTP ${res2.status}): ${url}`)
         }

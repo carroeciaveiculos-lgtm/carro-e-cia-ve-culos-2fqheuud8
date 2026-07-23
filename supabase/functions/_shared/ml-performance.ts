@@ -41,11 +41,10 @@ export async function fetchAndStorePerformance(
           ? `${veiculo.marca || ''} ${veiculo.modelo || ''}`.trim()
           : 'Veículo'
 
-        const placa = veiculo?.placa || 'S/ Placa'
         await supabase.from('notificacoes').insert({
-          tipo: 'ml_quality',
+          tipo: 'ml_low_performance',
           titulo: 'Qualidade do anúncio baixa',
-          mensagem: `Veículo ${veiculoNome} (${placa}) tem score de performance = ${score} — abaixo do ideal.`,
+          mensagem: `${veiculoNome} tem score ${score} — abaixo do ideal.`,
         })
 
         const { data: vehicle } = await supabase
