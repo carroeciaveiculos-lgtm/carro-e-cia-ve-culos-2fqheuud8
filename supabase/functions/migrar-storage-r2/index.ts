@@ -1,12 +1,7 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from 'jsr:@supabase/supabase-js@2'
 import { corsHeaders } from '../_shared/cors.ts'
-import {
-  getR2PublicUrl,
-  checkR2FileExists,
-  uploadToR2,
-  getR2Bucket,
-} from '../_shared/r2-storage.ts'
+import { getR2PublicUrl, checkR2FileExists, uploadToR2, getR2Bucket } from '../_shared/r2-storage.ts'
 
 const SUPABASE_OLD_BASE = 'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/'
 const IMAGE_EXTS = ['.jpg', '.jpeg', '.png']
@@ -27,10 +22,7 @@ Deno.serve(async (req: Request) => {
     )
 
     const token = authHeader.replace('Bearer ', '')
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser(token)
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token)
     if (authError || !user) return json({ error: 'Invalid token' }, 401)
 
     const body = await req.json().catch(() => ({}))
@@ -56,12 +48,7 @@ Deno.serve(async (req: Request) => {
   }
 })
 
-async function listAllFiles(
-  supabase: any,
-  bucket: string,
-  prefix = '',
-  limit: number,
-): Promise<any[]> {
+async function listAllFiles(supabase: any, bucket: string, prefix = '', limit: number): Promise<any[]> {
   const allFiles: any[] = []
   let offset = 0
   while (allFiles.length < limit) {
@@ -73,12 +60,7 @@ async function listAllFiles(
     if (data.length === 0) break
     for (const item of data) {
       if (item.name.endsWith('/')) {
-        const subFiles = await listAllFiles(
-          supabase,
-          bucket,
-          prefix ? `${prefix}/${item.name}` : item.name,
-          limit - allFiles.length,
-        )
+        const subFiles = await listAllFiles(supabase, bucket, prefix ? `${prefix}/${item.name}` : item.name, limit - allFiles.length)
         allFiles.push(...subFiles)
         if (allFiles.length >= limit) break
       } else {
@@ -107,9 +89,7 @@ async function runMigration(supabase: any, bucket: string, limit: number, includ
         results.push({ file: file.fullPath, status: 'skipped' })
         continue
       }
-      const { data: blob, error: dlError } = await supabase.storage
-        .from(bucket)
-        .download(file.fullPath)
+      const { data: blob, error: dlError } = await supabase.storage.from(bucket).download(file.fullPath)
       if (dlError || !blob) throw new Error(`Download failed: ${dlError?.message}`)
       const contentType = file.metadata?.mimetype || 'application/octet-stream'
       await uploadToR2(r2Key, blob, contentType)
@@ -143,18 +123,12 @@ async function updateVehicleUrls(supabase: any) {
       }
       if (typeof url === 'object' && url?.url?.includes(SUPABASE_OLD_BASE)) {
         changed = true
-        return {
-          ...url,
-          url: url.url.replace(SUPABASE_OLD_BASE, 'https://imagens.carroeciamotors.com.br/'),
-        }
+        return { ...url, url: url.url.replace(SUPABASE_OLD_BASE, 'https://imagens.carroeciamotors.com.br/') }
       }
       return url
     })
     if (changed) {
-      await supabase
-        .from('veiculos')
-        .update({ fotos: newFotos, updated_at: new Date().toISOString() })
-        .eq('id', v.id)
+      await supabase.from('veiculos').update({ fotos: newFotos, updated_at: new Date().toISOString() }).eq('id', v.id)
       updated++
     }
   }
@@ -167,11 +141,9 @@ async function cleanupStorage(supabase: any, bucketFilter: string) {
 
   for (const bucket of buckets) {
     const files = await listAllFiles(supabase, bucket, '', 1000)
-    const toDelete = files.filter((f) =>
-      IMAGE_EXTS.includes(f.name.toLowerCase().match(/\.[^.]+$/)?.[0] || ''),
-    )
+    const toDelete = files.filter(f => IMAGE_EXTS.includes(f.name.toLowerCase().match(/\.[^.]+$/)?.[0] || ''))
     for (let i = 0; i < toDelete.length; i += 50) {
-      const batch = toDelete.slice(i, i + 50).map((f) => f.fullPath)
+      const batch = toDelete.slice(i, i + 50).map(f => f.fullPath)
       const { error } = await supabase.storage.from(bucket).remove(batch)
       if (!error) {
         deleted.push(...batch)
@@ -184,18 +156,9 @@ async function cleanupStorage(supabase: any, bucketFilter: string) {
   return json({ deleted: deleted.length, files: deleted.slice(0, 50) })
 }
 
-async function logMigration(
-  supabase: any,
-  filePath: string,
-  bucket: string,
-  status: string,
-  error: string | null,
-) {
+async function logMigration(supabase: any, filePath: string, bucket: string, status: string, error: string | null) {
   await supabase.from('r2_migration_log').insert({
-    file_path: filePath,
-    bucket,
-    status,
-    error_message: error,
+    file_path: filePath, bucket, status, error_message: error,
   })
 }
 

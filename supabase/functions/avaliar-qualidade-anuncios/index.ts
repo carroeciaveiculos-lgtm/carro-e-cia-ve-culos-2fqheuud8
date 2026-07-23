@@ -14,10 +14,10 @@ Deno.serve(async (req: Request) => {
   try {
     const { token, error: tokenError } = await getValidMLToken(supabase)
     if (tokenError || !token) {
-      return new Response(JSON.stringify({ error: tokenError || 'No token' }), {
-        status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      })
+      return new Response(
+        JSON.stringify({ error: tokenError || 'No token' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      )
     }
 
     const { data: activeListings, error: listingsError } = await supabase
@@ -28,9 +28,10 @@ Deno.serve(async (req: Request) => {
 
     if (listingsError) throw listingsError
     if (!activeListings || activeListings.length === 0) {
-      return new Response(JSON.stringify({ success: true, processed: 0 }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      })
+      return new Response(
+        JSON.stringify({ success: true, processed: 0 }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      )
     }
 
     let processed = 0
@@ -72,8 +73,7 @@ Deno.serve(async (req: Request) => {
           await supabase.from('notificacoes').insert({
             tipo: 'qualidade_baixa',
             titulo: 'Qualidade do anúncio baixa no Mercado Livre',
-            mensagem:
-              `O anúncio "${veiculoNome}" no ML obteve score ${score}/100. ` +
+            mensagem: `O anúncio "${veiculoNome}" no ML obteve score ${score}/100. ` +
               `Acesse: /admin/estoque para revisar. Item ML: ${listing.ml_item_id}`,
           })
 
@@ -89,13 +89,14 @@ Deno.serve(async (req: Request) => {
       }
     }
 
-    return new Response(JSON.stringify({ success: true, processed, lowScoreCount }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    })
+    return new Response(
+      JSON.stringify({ success: true, processed, lowScoreCount }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+    )
   } catch (err: any) {
-    return new Response(JSON.stringify({ error: err.message }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    })
+    return new Response(
+      JSON.stringify({ error: err.message }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+    )
   }
 })
