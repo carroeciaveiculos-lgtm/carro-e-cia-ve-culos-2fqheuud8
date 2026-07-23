@@ -13,11 +13,12 @@ export function validateHMAC(rawBody: string, signatureHeader: string, secret: s
   const key = new TextEncoder().encode(secret)
   const message = new TextEncoder().encode(rawBody)
   const crypto = globalThis.crypto
-  return crypto.subtle.importKey('raw', key, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign'])
+  return crypto.subtle
+    .importKey('raw', key, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign'])
     .then((cryptoKey) => crypto.subtle.sign('HMAC', cryptoKey, message))
     .then((signature) => {
       const hashArray = Array.from(new Uint8Array(signature))
-      const computedHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('')
+      const computedHash = hashArray.map((b) => b.toString(16).padStart(2, '0')).join('')
       return constantTimeEqual(computedHash, receivedHash)
     })
 }
@@ -31,7 +32,11 @@ function constantTimeEqual(a: string, b: string): boolean {
   return result === 0
 }
 
-export async function validateHMACAsync(rawBody: string, signatureHeader: string, secret: string): Promise<boolean> {
+export async function validateHMACAsync(
+  rawBody: string,
+  signatureHeader: string,
+  secret: string,
+): Promise<boolean> {
   try {
     return await validateHMAC(rawBody, signatureHeader, secret)
   } catch {

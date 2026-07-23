@@ -10,9 +10,12 @@ export async function fetchAndStorePerformance(
   veiculoId: string,
 ): Promise<void> {
   try {
-    const res = await fetchWithBackoff(`https://api.mercadolibre.com/items/${mlItemId}/performance`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
+    const res = await fetchWithBackoff(
+      `https://api.mercadolibre.com/items/${mlItemId}/performance`,
+      {
+        headers: { Authorization: `Bearer ${token}` },
+      },
+    )
     if (!res.ok) return
     const data = await res.json()
     const score = typeof data.score === 'number' ? data.score : null
@@ -35,10 +38,13 @@ export async function fetchAndStorePerformance(
         const existingNotes = vehicle?.notas_internas || ''
         const note = 'ML Performance Score below 70 — requires optimization'
         if (!existingNotes.includes(note)) {
-          await supabase.from('veiculos').update({
-            requires_review: true,
-            notas_internas: existingNotes ? `${existingNotes}\n${note}` : note,
-          }).eq('id', veiculoId)
+          await supabase
+            .from('veiculos')
+            .update({
+              requires_review: true,
+              notas_internas: existingNotes ? `${existingNotes}\n${note}` : note,
+            })
+            .eq('id', veiculoId)
         }
       }
     }

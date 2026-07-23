@@ -99,6 +99,30 @@ const ERROR_MAP: Record<string, { message: string; action: string }> = {
     message: 'Dados do veículo inválidos para o Mercado Livre. Verifique os campos obrigatórios.',
     action: 'Revisar ficha técnica',
   },
+  LTP_ATTRIBUTE_REQUIRED: {
+    message: 'Atributo obrigatório ausente no Mercado Livre. Verifique a ficha técnica do veículo.',
+    action: 'Completar atributos obrigatórios',
+  },
+  QUOTA_EXCEEDED: {
+    message: 'Cota de anúncios do Mercado Livre excedida.',
+    action: 'Fechar anúncios antigos ou contratar mais quota',
+  },
+  FORBIDDEN: {
+    message: 'Acesso negado no Mercado Livre. Verifique permissões da conta.',
+    action: 'Verificar permissões da conta ML',
+  },
+  BODY_PARSE_ERROR: {
+    message: 'Erro ao processar dados enviados ao Mercado Livre.',
+    action: 'Verificar formato dos dados do veículo',
+  },
+  LTP_DESCRIPTION_FIELD: {
+    message: 'Conteúdo não permitido na descrição do Mercado Livre.',
+    action: 'Remover informações de contato da descrição',
+  },
+  CONTACT_INFO_FORBIDDEN: {
+    message: 'Informações de contato não são permitidas pelo Mercado Livre.',
+    action: 'Remover telefones, emails e links da descrição',
+  },
 }
 
 export function translateError(errorCode: string): { message: string; action: string } {

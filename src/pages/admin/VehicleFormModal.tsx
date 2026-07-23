@@ -28,6 +28,7 @@ import { BatchPhotoUploader } from '@/components/admin/BatchPhotoUploader'
 import { ImageEditorModal } from '@/components/admin/ImageEditorModal'
 import { DocumentPreviewDialog } from '@/components/admin/DocumentPreviewDialog'
 import { getFipeHistoryFromDB } from '@/services/fipe'
+import { montarTituloMLPreview } from '@/lib/ml-title'
 import {
   Camera,
   Search,
@@ -51,6 +52,7 @@ import {
   CheckCircle,
   RefreshCw,
   Loader2,
+  AlertTriangle,
 } from 'lucide-react'
 
 const CHECKLIST_INSPECAO = [
@@ -1183,6 +1185,78 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
                   </div>
                 </div>
               </div>
+
+              {(() => {
+                const titlePreview = montarTituloMLPreview(formData)
+                const fipeDiff =
+                  formData.valor_fipe && formData.preco_venda
+                    ? Math.abs(Number(formData.preco_venda) - Number(formData.valor_fipe)) /
+                      Number(formData.valor_fipe)
+                    : 0
+                const showFipeWarning =
+                  formData.valor_fipe && formData.preco_venda && fipeDiff > 0.3
+
+                return (
+                  <div className="space-y-4">
+                    {showFipeWarning && (
+                      <div className="flex items-start gap-3 p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+                        <AlertTriangle className="w-5 h-5 text-yellow-600 shrink-0 mt-0.5" />
+                        <div>
+                          <p className="text-sm font-bold text-yellow-800">
+                            Atenção: Divergência de Preço FIPE
+                          </p>
+                          <p className="text-xs text-yellow-700 mt-1">
+                            O preço de venda difere mais de 30% do valor FIPE (R${' '}
+                            {Number(formData.valor_fipe).toLocaleString('pt-BR', {
+                              minimumFractionDigits: 2,
+                            })}
+                            ). Considere reavaliar o preço ou a classificação do anúncio.
+                          </p>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="bg-white p-4 rounded-lg border">
+                      <div className="flex items-center justify-between mb-2">
+                        <h3 className="font-bold text-sm flex items-center gap-2">
+                          <Car className="w-4 h-4 text-blue-600" /> Preview do Título Mercado Livre
+                        </h3>
+                        <span
+                          className={cn(
+                            'text-xs font-bold px-2 py-1 rounded-full',
+                            titlePreview.length > 60
+                              ? 'bg-red-100 text-red-700'
+                              : titlePreview.truncado
+                                ? 'bg-yellow-100 text-yellow-700'
+                                : 'bg-green-100 text-green-700',
+                          )}
+                        >
+                          Título: {titlePreview.length}/60 caracteres
+                        </span>
+                      </div>
+                      <p className="text-sm text-slate-700 bg-slate-50 p-2 rounded border mb-2">
+                        {titlePreview.titulo || '(preencha os campos para ver o título)'}
+                      </p>
+                      {titlePreview.truncado ? (
+                        <div className="flex items-start gap-2 text-xs text-yellow-700 bg-yellow-50 p-2 rounded">
+                          <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                          <span>
+                            <strong>Truncação ativa:</strong> Campos removidos:{' '}
+                            {titlePreview.campos_removidos.join(', ')}. Ordem de remoção: Versão →
+                            Combustível → Câmbio → corte em 60 caracteres.
+                          </span>
+                        </div>
+                      ) : (
+                        <p className="text-xs text-slate-500">
+                          O título é montado com: Ano Modelo + Marca + Modelo + Versão + Combustível
+                          + Câmbio. Se passar de 60 caracteres, campos serão removidos
+                          progressivamente.
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                )
+              })()}
 
               <div className="bg-blue-50 p-6 rounded-lg border border-blue-100">
                 <h3 className="font-bold text-blue-900 mb-4">Proprietário / Entrada</h3>

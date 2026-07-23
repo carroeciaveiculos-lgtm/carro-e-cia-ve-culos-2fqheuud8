@@ -7,8 +7,11 @@ import { populateAttributeCache, populateCityCache } from '../_shared/ml-cache.t
 import { syncVehicleToML } from '../_shared/ml-sync-core.ts'
 
 const colMap: Record<string, string> = {
-  mercadolivre: 'publicado_mercadolivre', webmotors: 'publicado_webmotors',
-  olx: 'publicado_olx', icarros: 'publicado_icarros', napista: 'publicado_napista',
+  mercadolivre: 'publicado_mercadolivre',
+  webmotors: 'publicado_webmotors',
+  olx: 'publicado_olx',
+  icarros: 'publicado_icarros',
+  napista: 'publicado_napista',
 }
 
 Deno.serve(async (req: Request) => {
@@ -20,9 +23,15 @@ Deno.serve(async (req: Request) => {
   const authHeader = req.headers.get('Authorization')
   if (!authHeader?.startsWith('Bearer ')) return json({ error: 'Não autorizado' }, 401)
 
-  const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!)
+  const supabase = createClient(
+    Deno.env.get('SUPABASE_URL')!,
+    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+  )
   const token = authHeader.replace('Bearer ', '')
-  const { data: { user }, error: authError } = await supabase.auth.getUser(token)
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser(token)
   if (authError || !user) return json({ error: 'Token inválido' }, 401)
 
   try {
@@ -33,7 +42,11 @@ Deno.serve(async (req: Request) => {
     const action = segments[1]
 
     if (!slug || slug === 'plataformas') {
-      const { data } = await supabase.from('plataformas').select('*').eq('ativo', true).order('nome')
+      const { data } = await supabase
+        .from('plataformas')
+        .select('*')
+        .eq('ativo', true)
+        .order('nome')
       return json({ plataformas: data || [] })
     }
 
@@ -45,15 +58,22 @@ Deno.serve(async (req: Request) => {
       return await handleCachePopulate(supabase)
     }
 
-    const { data: plataforma } = await supabase.from('plataformas').select('id, slug, nome').eq('slug', slug).single()
+    const { data: plataforma } = await supabase
+      .from('plataformas')
+      .select('id, slug, nome')
+      .eq('slug', slug)
+      .single()
     if (!plataforma) return json({ error: 'Plataforma não encontrada' }, 404)
 
     if (action === 'dashboard') return await handleDashboard(supabase, slug, plataforma.id)
     if (action === 'sync') return await handleSync(supabase, body)
-    if (action === 'veiculos' && segments[2] !== 'publicar') return await handleVeiculos(supabase, body)
-    if (action === 'veiculos' && segments[2] === 'publicar') return await handlePublish(supabase, slug, plataforma.id, body)
+    if (action === 'veiculos' && segments[2] !== 'publicar')
+      return await handleVeiculos(supabase, body)
+    if (action === 'veiculos' && segments[2] === 'publicar')
+      return await handlePublish(supabase, slug, plataforma.id, body)
     if (action === 'status') return await handleStatus(supabase, body)
-    if (action === 'sync' && segments[2] === 'forcar') return await handleForceSync(supabase, slug, plataforma)
+    if (action === 'sync' && segments[2] === 'forcar')
+      return await handleForceSync(supabase, slug, plataforma)
 
     return json({ error: 'Endpoint não encontrado' }, 404)
   } catch (err: any) {
@@ -64,7 +84,10 @@ Deno.serve(async (req: Request) => {
 async function handleLogs(supabase: any, body: any) {
   const page = body.page || 1
   const pageSize = 20
-  let query = supabase.from('sync_log').select('*', { count: 'exact' }).order('created_at', { ascending: false })
+  let query = supabase
+    .from('sync_log')
+    .select('*', { count: 'exact' })
+    .order('created_at', { ascending: false })
   if (body.acao) query = query.eq('acao', body.acao)
   if (body.status) query = query.eq('status', body.status)
   query = query.range((page - 1) * pageSize, page * pageSize - 1)
@@ -127,19 +150,49 @@ async function handleStatus(supabase: any, body: any) {
 
 async function handleDashboard(supabase: any, slug: string, plataformaId: string) {
   const col = colMap[slug]
-  const { count: ativos } = await supabase.from('veiculos').select('*', { count: 'exact', head: true }).eq(col, true).eq('status', 'disponivel')
-  const { count: erros } = await supabase.from('sync_log').select('*', { count: 'exact', head: true }).eq('plataforma_id', plataformaId).eq('status', 'erro')
-  const { count: pendentes } = await supabase.from('sync_log').select('*', { count: 'exact', head: true }).eq('plataforma_id', plataformaId).eq('status', 'pending')
-  const { data: integracao } = await supabase.from('integracao_plataforma').select('status, ultima_sincronizacao, ultimo_erro').eq('plataforma_id', plataformaId).order('updated_at', { ascending: false }).limit(1).maybeSingle()
+  const { count: ativos } = await supabase
+    .from('veiculos')
+    .select('*', { count: 'exact', head: true })
+    .eq(col, true)
+    .eq('status', 'disponivel')
+  const { count: erros } = await supabase
+    .from('sync_log')
+    .select('*', { count: 'exact', head: true })
+    .eq('plataforma_id', plataformaId)
+    .eq('status', 'erro')
+  const { count: pendentes } = await supabase
+    .from('sync_log')
+    .select('*', { count: 'exact', head: true })
+    .eq('plataforma_id', plataformaId)
+    .eq('status', 'pending')
+  const { data: integracao } = await supabase
+    .from('integracao_plataforma')
+    .select('status, ultima_sincronizacao, ultimo_erro')
+    .eq('plataforma_id', plataformaId)
+    .order('updated_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
   let statusConexao = integracao?.status || 'desconectado'
   if (slug === 'mercadolivre') {
-    const { data: mlCreds } = await supabase.from('ml_credentials').select('access_token, expires_at').limit(1).maybeSingle()
+    const { data: mlCreds } = await supabase
+      .from('ml_credentials')
+      .select('access_token, expires_at')
+      .limit(1)
+      .maybeSingle()
     if (mlCreds?.access_token) {
-      statusConexao = mlCreds.expires_at && new Date(mlCreds.expires_at) < new Date() ? 'expirando' : 'conectado'
+      statusConexao =
+        mlCreds.expires_at && new Date(mlCreds.expires_at) < new Date() ? 'expirando' : 'conectado'
     } else statusConexao = 'desconectado'
   }
   if ((erros || 0) > 0 && statusConexao === 'conectado') statusConexao = 'erro'
-  return json({ ativos: ativos || 0, erros: erros || 0, pendentes: pendentes || 0, ultima_sincronizacao: integracao?.ultima_sincronizacao || null, ultimo_erro: integracao?.ultimo_erro || null, status_conexao: statusConexao })
+  return json({
+    ativos: ativos || 0,
+    erros: erros || 0,
+    pendentes: pendentes || 0,
+    ultima_sincronizacao: integracao?.ultima_sincronizacao || null,
+    ultimo_erro: integracao?.ultimo_erro || null,
+    status_conexao: statusConexao,
+  })
 }
 
 async function handleVeiculos(supabase: any, body: any) {
@@ -147,8 +200,17 @@ async function handleVeiculos(supabase: any, body: any) {
   const search = body.search || ''
   const pageSize = 24
   const offset = (page - 1) * pageSize
-  let query = supabase.from('veiculos').select('id,marca,modelo,versao,ano_modelo,quilometragem,placa,preco_venda,fotos,publicado_mercadolivre,publicado_webmotors,publicado_olx,publicado_icarros,publicado_napista,status,ml_listing_type', { count: 'exact' }).eq('status', 'disponivel').order('created_at', { ascending: false }).range(offset, offset + pageSize - 1)
-  if (search) query = query.or(`marca.ilike.%${search}%,modelo.ilike.%${search}%,placa.ilike.%${search}%`)
+  let query = supabase
+    .from('veiculos')
+    .select(
+      'id,marca,modelo,versao,ano_modelo,quilometragem,placa,preco_venda,fotos,publicado_mercadolivre,publicado_webmotors,publicado_olx,publicado_icarros,publicado_napista,status,ml_listing_type',
+      { count: 'exact' },
+    )
+    .eq('status', 'disponivel')
+    .order('created_at', { ascending: false })
+    .range(offset, offset + pageSize - 1)
+  if (search)
+    query = query.or(`marca.ilike.%${search}%,modelo.ilike.%${search}%,placa.ilike.%${search}%`)
   const { data, count } = await query
   return json({ veiculos: data || [], total: count || 0 })
 }
@@ -157,13 +219,23 @@ async function handlePublish(supabase: any, slug: string, plataformaId: string, 
   const veiculoId = body.veiculo_id
   const publicar = body.publicar
   if (slug === 'mercadolivre' && publicar) {
-    const { data: veiculo } = await supabase.from('veiculos').select('*').eq('id', veiculoId).single()
+    const { data: veiculo } = await supabase
+      .from('veiculos')
+      .select('*')
+      .eq('id', veiculoId)
+      .single()
     if (!veiculo) return json({ error: 'Veículo não encontrado' }, 404)
-    const fotos = Array.isArray(veiculo.fotos) ? veiculo.fotos.filter((u: any) => typeof u === 'string') : []
-    if (fotos.length < 8) return json({ error: 'Mínimo de 8 fotos required para publicação no ML' }, 400)
+    const fotos = Array.isArray(veiculo.fotos)
+      ? veiculo.fotos.filter((u: any) => typeof u === 'string')
+      : []
+    if (fotos.length < 8)
+      return json({ error: 'Mínimo de 8 fotos required para publicação no ML' }, 400)
   }
   const col = colMap[slug]
-  const { error } = await supabase.from('veiculos').update({ [col]: publicar }).eq('id', veiculoId)
+  const { error } = await supabase
+    .from('veiculos')
+    .update({ [col]: publicar })
+    .eq('id', veiculoId)
   if (error) return json({ error: error.message }, 400)
   if (slug === 'mercadolivre') {
     if (publicar) {
@@ -171,10 +243,21 @@ async function handlePublish(supabase: any, slug: string, plataformaId: string, 
       if (!result.success) return json({ error: result.error, ml_item_id: result.ml_item_id }, 400)
       return json({ success: true, ml_item_id: result.ml_item_id })
     } else {
-      await supabase.from('ml_listings').update({ status: 'pending_close' }).eq('veiculo_id', veiculoId)
+      await supabase
+        .from('ml_listings')
+        .update({ status: 'pending_close' })
+        .eq('veiculo_id', veiculoId)
     }
   }
-  await supabase.from('sync_log').insert({ plataforma_id: plataformaId, veiculo_id: veiculoId, acao: publicar ? 'publish' : 'close', status: 'pending', mensagem: publicar ? 'Publicação solicitada' : 'Encerramento solicitado' })
+  await supabase
+    .from('sync_log')
+    .insert({
+      plataforma_id: plataformaId,
+      veiculo_id: veiculoId,
+      acao: publicar ? 'publish' : 'close',
+      status: 'pending',
+      mensagem: publicar ? 'Publicação solicitada' : 'Encerramento solicitado',
+    })
   return json({ success: true })
 }
 
@@ -182,20 +265,43 @@ async function handleForceSync(supabase: any, slug: string, plataforma: any) {
   if (slug === 'mercadolivre') {
     await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/ml-sync`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}` },
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
+      },
       body: '{}',
     })
   }
   await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/sync-estoque`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}` },
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
+    },
     body: JSON.stringify({ plataforma: slug }),
   })
-  await supabase.from('sync_log').insert({ plataforma_id: plataforma.id, acao: 'force_sync', status: 'success', mensagem: `Sincronização forçada para ${plataforma.nome}` })
-  await supabase.from('integracao_plataforma').update({ status: 'conectado', ultima_sincronizacao: new Date().toISOString(), ultimo_erro: null }).eq('plataforma_id', plataforma.id)
+  await supabase
+    .from('sync_log')
+    .insert({
+      plataforma_id: plataforma.id,
+      acao: 'force_sync',
+      status: 'success',
+      mensagem: `Sincronização forçada para ${plataforma.nome}`,
+    })
+  await supabase
+    .from('integracao_plataforma')
+    .update({
+      status: 'conectado',
+      ultima_sincronizacao: new Date().toISOString(),
+      ultimo_erro: null,
+    })
+    .eq('plataforma_id', plataforma.id)
   return json({ success: true, message: `Sincronização forçada iniciada para ${plataforma.nome}` })
 }
 
 function json(data: any, status = 200) {
-  return new Response(JSON.stringify(data), { status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+  })
 }
