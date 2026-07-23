@@ -1,8 +1,10 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Loader2, RefreshCw, Car, AlertCircle, Clock, TrendingUp } from 'lucide-react'
 import { WMStatusBadge } from './WMStatusBadge'
+import { useToast } from '@/hooks/use-toast'
 import {
   getWMDashboard,
   triggerWMSync,
@@ -20,6 +22,8 @@ export function WMDashboard() {
   const [logs, setLogs] = useState<WMSyncLog[]>([])
   const [loading, setLoading] = useState(true)
   const [syncing, setSyncing] = useState(false)
+  const [syncError, setSyncError] = useState<string | null>(null)
+  const { toast } = useToast()
 
   const loadAll = useCallback(async () => {
     setLoading(true)
@@ -43,11 +47,20 @@ export function WMDashboard() {
 
   const handleSync = async () => {
     setSyncing(true)
+    setSyncError(null)
     try {
       await triggerWMSync()
       await loadAll()
-    } catch {
-      /* handled by reload */
+      toast({
+        title: 'Sincronização concluída',
+        description: 'Webmotors sincronizado com sucesso.',
+      })
+    } catch (err: any) {
+      const msg =
+        err?.message ||
+        'Não foi possível conectar ao serviço da Webmotors. Tente novamente mais tarde.'
+      setSyncError(msg)
+      toast({ variant: 'destructive', title: 'Erro na sincronização', description: msg })
     } finally {
       setSyncing(false)
     }
@@ -89,6 +102,13 @@ export function WMDashboard() {
 
   return (
     <div className="space-y-4">
+      {syncError && (
+        <Alert variant="destructive">
+          <AlertCircle className="w-4 h-4" />
+          <AlertDescription>{syncError}</AlertDescription>
+        </Alert>
+      )}
+
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-bold text-gray-800">Dashboard Webmotors</h3>
         <Button

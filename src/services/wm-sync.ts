@@ -39,10 +39,15 @@ export async function getWMDashboard(): Promise<WMDashboardData> {
 }
 
 export async function triggerWMSync(veiculoId?: string): Promise<void> {
-  const { error } = await supabase.functions.invoke('wm-sync', {
+  const { data, error } = await supabase.functions.invoke('wm-sync', {
     body: veiculoId ? { veiculo_id: veiculoId } : {},
   })
-  if (error) throw error
+  if (error) {
+    throw new Error(error.message || 'Failed to sync with Webmotors. Please try again later.')
+  }
+  if (data && data.error) {
+    throw new Error(data.error)
+  }
 }
 
 export async function getWMVehicles(limit = 20): Promise<WMVehicleRow[]> {
