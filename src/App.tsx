@@ -65,6 +65,20 @@ if (typeof window !== 'undefined') {
           },
         })
       }
+
+      if (url.includes('/functions/v1/')) {
+        const funcName = url.match(/\/functions\/v1\/([^/?]+)/)?.[1] || 'unknown'
+        console.debug(`Edge function "${funcName}" fetch failed (network error):`, error?.message)
+        return new Response(
+          JSON.stringify({
+            error: true,
+            message: `Network error: ${error?.message || 'Failed to fetch'}`,
+            status: 0,
+          }),
+          { status: 200, headers: { 'Content-Type': 'application/json' } },
+        )
+      }
+
       throw error
     }
   }

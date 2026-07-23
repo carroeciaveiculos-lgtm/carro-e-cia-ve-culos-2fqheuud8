@@ -73,6 +73,40 @@ if (typeof window !== 'undefined') {
         return new Response(JSON.stringify({ success: true }), { status: 200, statusText: 'OK' })
       }
     }
+
+    const isEdgeFunction = url && typeof url === 'string' && url.includes('/functions/v1/')
+
+    if (isEdgeFunction) {
+      try {
+        const response = await originalFetch.apply(this, args)
+        return response
+      } catch (e: any) {
+        const funcName = url.match(/\/functions\/v1\/([^/?]+)/)?.[1] || 'unknown'
+        console.debug(`Edge function "${funcName}" fetch failed (network error):`, e?.message)
+        return new Response(
+          JSON.stringify({
+            error: true,
+            message: `Network error: ${e?.message || 'Failed to fetch'}`,
+            status: 0,
+          }),
+          { status: 200, statusText: 'OK', headers: { 'Content-Type': 'application/json' } },
+        )
+      }
+    }
+
+    const isSupabaseFunction =
+      url && typeof url === 'string' && url.includes('supabase.co/functions/v1/')
+    if (isSupabaseFunction) {
+      try {
+        return await originalFetch.apply(this, args)
+      } catch (e: any) {
+        console.debug('Supabase Edge Function fetch silently failed:', e?.message)
+        return new Response(
+          JSON.stringify({ error: true, message: 'Network request failed', status: 0 }),
+          { status: 200, headers: { 'Content-Type': 'application/json' } },
+        )
+      }
+    }
     return originalFetch.apply(this, args)
   }
 

@@ -32,22 +32,76 @@ export interface WMSyncLog {
   veiculo_id: string | null
 }
 
+export interface WMSyncResult {
+  success: boolean
+  processed?: number
+  error?: string
+  isNetworkError?: boolean
+}
+
+const MAX_RETRIES = 2
+const RETRY_DELAY_MS = 1500
+
+async function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
+export async function triggerWMSync(veiculoId?: string): Promise<WMSyncResult> {
+  let lastError: string = ''
+
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      const { data, error } = await supabase.functions.invoke('wm-sync', {
+        body: veiculoId ? { veiculo_id: veiculoId } : {},
+      })
+
+      if (error) {
+        const errMsg = error.message || 'Failed to sync with Webmotors.'
+        if (
+          attempt < MAX_RETRIES &&
+          (errMsg.includes('Failed to fetch') || errMsg.includes('Network error'))
+        ) {
+          lastError = errMsg
+          await sleep(RETRY_DELAY_MS * (attempt + 1))
+          continue
+        }
+        return {
+          success: false,
+          error: errMsg,
+          isNetworkError: errMsg.includes('Failed to fetch') || errMsg.includes('Network error'),
+        }
+      }
+
+      if (data && data.error) {
+        return { success: false, error: data.error }
+      }
+
+      return { success: true, processed: data?.processed ?? 0 }
+    } catch (err: any) {
+      const errMsg = err?.message || 'Failed to sync with Webmotors.'
+      lastError = errMsg
+      const isNetwork =
+        errMsg.includes('Failed to fetch') ||
+        errMsg.includes('Network error') ||
+        err?.name === 'TypeError'
+
+      if (attempt < MAX_RETRIES && isNetwork) {
+        await sleep(RETRY_DELAY_MS * (attempt + 1))
+        continue
+      }
+
+      console.debug(`wm-sync failed after ${attempt + 1} attempt(s):`, errMsg)
+      return { success: false, error: errMsg, isNetworkError: isNetwork }
+    }
+  }
+
+  return { success: false, error: lastError, isNetworkError: true }
+}
+
 export async function getWMDashboard(): Promise<WMDashboardData> {
   const { data, error } = await supabase.rpc('get_wm_dashboard')
   if (error) throw error
   return data as WMDashboardData
-}
-
-export async function triggerWMSync(veiculoId?: string): Promise<void> {
-  const { data, error } = await supabase.functions.invoke('wm-sync', {
-    body: veiculoId ? { veiculo_id: veiculoId } : {},
-  })
-  if (error) {
-    throw new Error(error.message || 'Failed to sync with Webmotors. Please try again later.')
-  }
-  if (data && data.error) {
-    throw new Error(data.error)
-  }
 }
 
 export async function getWMVehicles(limit = 20): Promise<WMVehicleRow[]> {
