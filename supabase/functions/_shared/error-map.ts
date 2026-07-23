@@ -1,5 +1,6 @@
 const ERROR_MAP: Record<string, string> = {
-  pictures_does_not_comply_requirements: 'As fotos não atendem aos requisitos do ML. Verifique formato, tamanho e conteúdo.',
+  pictures_does_not_comply_requirements:
+    'As fotos não atendem aos requisitos do ML. Verifique formato, tamanho e conteúdo.',
   title_too_long: 'Título do anúncio muito longo. Máximo 60 caracteres.',
   missing_location: 'Localização não informada. Preencha o endereço do proprietário.',
   exceeded_quota: 'Cota de anúncios do ML excedida. Feche anúncios antigos ou contrate mais quota.',
