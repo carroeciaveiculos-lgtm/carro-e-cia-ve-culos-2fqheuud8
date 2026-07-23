@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabase/client'
-import { validarPayloadMLFrontend, type MLValidationResult } from '@/lib/ml-validation'
+import { validateVehicleForML, type MLValidationResult } from '@/lib/ml-validation'
 
 export interface DiagnosisVehicle {
   id: string
@@ -44,7 +44,7 @@ export async function fetchDiagnosisVehicles(): Promise<DiagnosisVehicle[]> {
 
   const results = await Promise.all(
     data.map(async (v) => {
-      const validation = await validarPayloadMLFrontend(v as any)
+      const validation = await validateVehicleForML(v as any)
       let status: 'ready' | 'pending' | 'blocked' = 'ready'
       if (validation.blockingErrors.length > 0) status = 'blocked'
       else if (validation.qualityAlerts.length > 0) status = 'pending'

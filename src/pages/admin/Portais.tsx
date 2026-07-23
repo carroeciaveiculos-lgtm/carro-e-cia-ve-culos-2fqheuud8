@@ -9,7 +9,7 @@ import { DryRunModal } from '@/components/admin/portais/DryRunModal'
 import { SelectiveSyncToolbar } from '@/components/admin/portais/SelectiveSyncToolbar'
 import { SelectiveSyncBar } from '@/components/admin/portais/SelectiveSyncBar'
 import { validateMLPreflight } from '@/lib/ml-preflight'
-import { validarPayloadMLFrontend } from '@/lib/ml-validation'
+import { validateVehicleForML } from '@/lib/ml-validation'
 import { buildMLPayloadPreview } from '@/lib/ml-payload'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import {
@@ -134,7 +134,7 @@ export default function Portais() {
     const vehicle = vehicles.find((v) => v.id === targetId)
     if (!vehicle) return
     const payload = buildMLPayloadPreview(vehicle)
-    const validation = await validarPayloadMLFrontend(vehicle)
+    const validation = await validateVehicleForML(vehicle)
     setDryRunPayload(payload)
     setDryRunValidation(validation)
     setDryRunVehicleName(`${vehicle.marca} ${vehicle.modelo}`)
