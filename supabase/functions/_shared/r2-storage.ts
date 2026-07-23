@@ -39,12 +39,10 @@ export async function checkR2FileExists(key: string): Promise<boolean> {
 export async function uploadToR2(key: string, body: Blob, contentType: string): Promise<void> {
   const client = getR2Client()
   const arrayBuffer = await body.arrayBuffer()
-  await client.send(
-    new PutObjectCommand({
-      Bucket: getR2Bucket(),
-      Key: key,
-      Body: new Uint8Array(arrayBuffer),
-      ContentType: contentType,
-    }),
-  )
+  await client.send(new PutObjectCommand({
+    Bucket: getR2Bucket(),
+    Key: key,
+    Body: new Uint8Array(arrayBuffer),
+    ContentType: contentType,
+  }))
 }

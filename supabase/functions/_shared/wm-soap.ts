@@ -1,24 +1,24 @@
 export interface WMCredentials {
-  email: string
-  senha: string
-  cnpj: string
-  clienteId: string
+  email: string;
+  senha: string;
+  cnpj: string;
+  clienteId: string;
 }
 
 export interface SOAPResult {
-  success: boolean
-  error?: string
-  codigoAnuncio?: string
-  hashAutenticacao?: string
-  networkError?: boolean
+  success: boolean;
+  error?: string;
+  codigoAnuncio?: string;
+  hashAutenticacao?: string;
+  networkError?: boolean;
 }
 
-const WM_SOAP_URL = 'https://integration.webmotors.com.br/Integracao/Service.asmx'
+const WM_SOAP_URL = 'https://integration.webmotors.com.br/Integracao/Service.asmx';
 
 function extractTag(xml: string, tag: string): string | null {
-  const regex = new RegExp(`<(?:\\w+:)?${tag}[^>]*>([^<]*)</(?:\\w+:)?${tag}>`, 'i')
-  const match = xml.match(regex)
-  return match ? match[1].trim() : null
+  const regex = new RegExp(`<(?:\\w+:)?${tag}[^>]*>([^<]*)</(?:\\w+:)?${tag}>`, 'i');
+  const match = xml.match(regex);
+  return match ? match[1].trim() : null;
 }
 
 function wrapSOAP(action: string, innerXml: string): string {
@@ -29,7 +29,7 @@ function wrapSOAP(action: string, innerXml: string): string {
       ${innerXml}
     </${action}>
   </soap:Body>
-</soap:Envelope>`
+</soap:Envelope>`;
 }
 
 export function buildAuthXML(creds: WMCredentials): string {
@@ -37,17 +37,18 @@ export function buildAuthXML(creds: WMCredentials): string {
       <hashLogin>${creds.email}</hashLogin>
       <hashSenha>${creds.senha}</hashSenha>
       <hashCnpj>${creds.cnpj}</hashCnpj>
-      <hashClienteId>${creds.clienteId}</hashClienteId>`
-  return wrapSOAP('Autenticar', innerXml)
+      <hashClienteId>${creds.clienteId}</hashClienteId>`;
+  return wrapSOAP('Autenticar', innerXml);
 }
 
-export function buildIncluirCarroXML(veiculo: any, hash: string, categoria: string): string {
+export function buildIncluirCarroXML(
+  veiculo: any,
+  hash: string,
+  categoria: string,
+): string {
   const fotos = Array.isArray(veiculo.fotos)
-    ? veiculo.fotos
-        .slice(0, 15)
-        .map((f: string, i: number) => `<foto${i + 1}>${f}</foto${i + 1}>`)
-        .join('\n      ')
-    : ''
+    ? veiculo.fotos.slice(0, 15).map((f: string, i: number) => `<foto${i + 1}>${f}</foto${i + 1}>`).join('\n      ')
+    : '';
 
   const innerXml = `
       <hashAutenticacao>${hash}</hashAutenticacao>
@@ -65,68 +66,73 @@ export function buildIncluirCarroXML(veiculo: any, hash: string, categoria: stri
       <portas>${veiculo.portas || 4}</portas>
       <placa>${veiculo.placa || ''}</placa>
       <observacao>${veiculo.descricao || ''}</observacao>
-      ${fotos}`
+      ${fotos}`;
 
-  const action = categoria === 'Moto' ? 'IncluirMoto' : 'IncluirCarro'
-  return wrapSOAP(action, innerXml)
+  const action = categoria === 'Moto' ? 'IncluirMoto' : 'IncluirCarro';
+  return wrapSOAP(action, innerXml);
 }
 
-export function buildAlterarCarroXML(veiculo: any, hash: string, codigoAnuncio: string): string {
+export function buildAlterarCarroXML(
+  veiculo: any,
+  hash: string,
+  codigoAnuncio: string,
+): string {
   const innerXml = `
       <hashAutenticacao>${hash}</hashAutenticacao>
       <codigoAnuncio>${codigoAnuncio}</codigoAnuncio>
       <preco>${veiculo.preco_venda || 0}</preco>
       <km>${veiculo.quilometragem || 0}</km>
-      <observacao>${veiculo.descricao || ''}</observacao>`
-  return wrapSOAP('AlterarCarro', innerXml)
+      <observacao>${veiculo.descricao || ''}</observacao>`;
+  return wrapSOAP('AlterarCarro', innerXml);
 }
 
 export function buildExcluirCarroXML(hash: string, codigoAnuncio: string): string {
   const innerXml = `
       <hashAutenticacao>${hash}</hashAutenticacao>
-      <codigoAnuncio>${codigoAnuncio}</codigoAnuncio>`
-  return wrapSOAP('ExcluirCarro', innerXml)
+      <codigoAnuncio>${codigoAnuncio}</codigoAnuncio>`;
+  return wrapSOAP('ExcluirCarro', innerXml);
 }
 
-export async function callSOAP(xml: string, action: string): Promise<SOAPResult> {
+export async function callSOAP(
+  xml: string,
+  action: string,
+): Promise<SOAPResult> {
   try {
     const res = await fetch(`${WM_SOAP_URL}?op=${action}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'text/xml; charset=utf-8',
-        SOAPAction: `http://tempuri.org/${action}`,
+        'SOAPAction': `http://tempuri.org/${action}`,
       },
       body: xml,
-    })
+    });
 
-    const responseText = await res.text()
+    const responseText = await res.text();
 
     if (!res.ok) {
-      return { success: false, error: `HTTP ${res.status}: ${responseText.substring(0, 500)}` }
+      return { success: false, error: `HTTP ${res.status}: ${responseText.substring(0, 500)}` };
     }
 
-    const hash =
-      extractTag(responseText, 'hashAutenticacao') || extractTag(responseText, 'AutenticarResult')
-    const codigo =
-      extractTag(responseText, 'codigoAnuncio') || extractTag(responseText, 'IncluirCarroResult')
+    const hash = extractTag(responseText, 'hashAutenticacao') || extractTag(responseText, 'AutenticarResult');
+    const codigo = extractTag(responseText, 'codigoAnuncio') || extractTag(responseText, 'IncluirCarroResult');
 
     if (action === 'Autenticar') {
       if (!hash) {
-        return { success: false, error: 'No hash returned from authentication' }
+        return { success: false, error: 'No hash returned from authentication' };
       }
-      return { success: true, hashAutenticacao: hash }
+      return { success: true, hashAutenticacao: hash };
     }
 
     if (action.startsWith('Incluir')) {
       if (!codigo) {
-        return { success: false, error: 'No codigoAnuncio returned from inclusion' }
+        return { success: false, error: 'No codigoAnuncio returned from inclusion' };
       }
-      return { success: true, codigoAnuncio: codigo }
+      return { success: true, codigoAnuncio: codigo };
     }
 
-    return { success: true }
+    return { success: true };
   } catch (err: any) {
-    const msg = err.message || 'Network error during SOAP call'
+    const msg = err.message || 'Network error during SOAP call';
     const isNetwork =
       msg.includes('dns') ||
       msg.includes('DNS') ||
@@ -139,31 +145,31 @@ export async function callSOAP(xml: string, action: string): Promise<SOAPResult>
       msg.includes('ECONNRESET') ||
       msg.includes('fetch') ||
       msg.includes('network') ||
-      msg.includes('Network')
-    return { success: false, error: msg, networkError: isNetwork }
+      msg.includes('Network');
+    return { success: false, error: msg, networkError: isNetwork };
   }
 }
 
-if (responseText.includes('<faultcode>') || responseText.includes('Fault')) {
-  const errorMsg = extractTag(responseText, 'faultstring') || 'SOAP fault occurred'
-  return { success: false, error: errorMsg }
-}
+    if (responseText.includes('<faultcode>') || responseText.includes('Fault')) {
+      const errorMsg = extractTag(responseText, 'faultstring') || 'SOAP fault occurred';
+      return { success: false, error: errorMsg };
+    }
 
-const hash =
-  extractTag(responseText, 'hashAutenticacao') || extractTag(responseText, 'AutenticarResult')
-const codigo =
-  extractTag(responseText, 'codigoAnuncio') || extractTag(responseText, 'IncluirCarroResult')
+    const hash = extractTag(responseText, 'hashAutenticacao') || extractTag(responseText, 'AutenticarResult');
+    const codigo = extractTag(responseText, 'codigoAnuncio') || extractTag(responseText, 'IncluirCarroResult');
 
-if (action === 'Autenticar') {
-  if (!hash) {
-    return { success: false, error: 'No hash returned from authentication' }
-  }
-  return { success: true, hashAutenticacao: hash }
-}
+    if (action === 'Autenticar') {
+      if (!hash) {
+        return { success: false, error: 'No hash returned from authentication' };
+      }
+      return { success: true, hashAutenticacao: hash };
+    }
 
-if (action.startsWith('Incluir')) {
-  if (!codigo) {
-    return { success: false, error: 'No codigoAnuncio returned from inclusion' }
-  }
-  return { success: true, codigoAnuncio: codigo }
-}
+    if (action.startsWith('Incluir')) {
+      if (!codigo) {
+        return { success: false, error: 'No codigoAnuncio returned from inclusion' };
+      }
+      return { success: true, codigoAnuncio: codigo };
+    }
+
+

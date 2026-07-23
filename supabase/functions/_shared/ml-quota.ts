@@ -8,8 +8,7 @@ export async function checkListingQuota(
   listingType: string,
 ): Promise<{ hasQuota: boolean; available: number; error: string | null }> {
   const { token, error: tokenError } = await getValidMLToken(supabase)
-  if (tokenError || !token)
-    return { hasQuota: false, available: 0, error: tokenError || 'No token' }
+  if (tokenError || !token) return { hasQuota: false, available: 0, error: tokenError || 'No token' }
 
   try {
     const userRes = await fetch('https://api.mercadolibre.com/users/me', {
@@ -28,16 +27,11 @@ export async function checkListingQuota(
     if (!Array.isArray(quotaData)) return { hasQuota: true, available: 999, error: null }
 
     const matching = quotaData.find((q: any) => q.id === listingType)
-    if (!matching)
-      return { hasQuota: false, available: 0, error: `Plano ${listingType} não disponível` }
+    if (!matching) return { hasQuota: false, available: 0, error: `Plano ${listingType} não disponível` }
 
     const available = matching.available ?? matching.quantity ?? 0
     if (available <= 0) {
-      return {
-        hasQuota: false,
-        available: 0,
-        error: 'Cota insuficiente para o plano selecionado. Consulte seu plano no Mercado Livre.',
-      }
+      return { hasQuota: false, available: 0, error: 'Cota insuficiente para o plano selecionado. Consulte seu plano no Mercado Livre.' }
     }
     return { hasQuota: true, available, error: null }
   } catch (err: any) {
