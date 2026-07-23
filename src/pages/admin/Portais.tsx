@@ -7,6 +7,7 @@ import { PreflightModal } from '@/components/admin/portais/PreflightModal'
 import { MLDiagnosisPanel } from '@/components/admin/portais/MLDiagnosisPanel'
 import { DryRunModal } from '@/components/admin/portais/DryRunModal'
 import { SelectiveSyncToolbar } from '@/components/admin/portais/SelectiveSyncToolbar'
+import { SelectiveSyncBar } from '@/components/admin/portais/SelectiveSyncBar'
 import { validateMLPreflight } from '@/lib/ml-preflight'
 import { validarPayloadMLFrontend } from '@/lib/ml-validation'
 import { buildMLPayloadPreview } from '@/lib/ml-payload'
@@ -60,10 +61,8 @@ export default function Portais() {
   const [dryRunVehicleId, setDryRunVehicleId] = useState<string | null>(null)
   const [dryRunVehicleName, setDryRunVehicleName] = useState<string>('')
   const [selectedPlans, setSelectedPlans] = useState<Record<string, string>>({})
-  const [dryRunOpen, setDryRunOpen] = useState(false)
   const [dryRunPayload, setDryRunPayload] = useState<any>(null)
   const [dryRunValidation, setDryRunValidation] = useState<any>(null)
-  const [dryRunVehicleName, setDryRunVehicleName] = useState('')
   const [mlErrors, setMLErrors] = useState<
     Array<{ veiculo_id: string; marca: string; modelo: string; error: string }>
   >([])
@@ -320,13 +319,6 @@ export default function Portais() {
         onSyncComplete={loadVeiculos}
       />
 
-      <DryRunModal
-        open={dryRunOpen}
-        onOpenChange={setDryRunOpen}
-        vehicleId={dryRunVehicleId}
-        vehicleName={dryRunVehicleName}
-      />
-
       <SelectiveSyncToolbar
         selectedIds={selectedIds}
         selectedPlans={selectedPlans}
@@ -454,6 +446,7 @@ export default function Portais() {
       <DryRunModal
         open={dryRunOpen}
         onOpenChange={setDryRunOpen}
+        vehicleId={dryRunVehicleId}
         payload={dryRunPayload}
         validation={dryRunValidation}
         vehicleName={dryRunVehicleName}

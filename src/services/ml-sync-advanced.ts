@@ -35,9 +35,7 @@ export async function fetchDiagnosisVehicles(): Promise<DiagnosisVehicle[]> {
   })
 }
 
-export async function generateDryRunPayload(
-  vehicleId: string,
-): Promise<{
+export async function generateDryRunPayload(vehicleId: string): Promise<{
   payload: Record<string, any>
   validation: MLValidationResult
   vehicle: VehicleForValidation | null
