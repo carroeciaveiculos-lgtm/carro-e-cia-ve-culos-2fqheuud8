@@ -34,6 +34,9 @@ export function validateVehicleForML(vehicle: VehicleForValidation): MLValidatio
   const blockingErrors: string[] = []
   const qualityAlerts: string[] = []
 
+  if (!vehicle.marca || vehicle.marca.trim().length === 0)
+    blockingErrors.push('Marca não informada')
+
   const ano = vehicle.ano_modelo ? String(vehicle.ano_modelo) : ''
   const base = `${ano} ${vehicle.marca || ''} ${vehicle.modelo || ''}`.trim().replace(/\s+/g, ' ')
   if (!base || base.trim().length < 5)

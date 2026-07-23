@@ -1,30 +1,23 @@
-import { useState, useEffect, useCallback } from 'react'
-import { Link } from 'react-router-dom'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
-import { Loader2, Search, AlertCircle, AlertTriangle, FlaskConical } from 'lucide-react'
+import { Loader2, Search, AlertTriangle } from 'lucide-react'
 import { PreflightModal } from '@/components/admin/portais/PreflightModal'
 import { MLDiagnosisPanel } from '@/components/admin/portais/MLDiagnosisPanel'
 import { DryRunModal } from '@/components/admin/portais/DryRunModal'
-import { SelectiveSyncToolbar } from '@/components/admin/portais/SelectiveSyncToolbar'
-import { SelectiveSyncBar } from '@/components/admin/portais/SelectiveSyncBar'
 import { validateMLPreflight } from '@/lib/ml-preflight'
-import { validateVehicleForML } from '@/lib/ml-validation'
-import { buildMLPayloadPreview } from '@/lib/ml-payload'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import {
   fetchPlataformas,
   fetchVeiculosForPortais,
-  forceSync,
-  triggerSyncEstoque,
   toggleVehiclePublication,
   updateAdType,
-  ensureMLListings,
   fetchMLErrors,
   type Plataforma,
   type VeiculoSync,
 } from '@/services/plataformas'
-import { fetchPublicacoes, bulkPublish, bulkUnpublish, bulkDelete } from '@/services/portais-sync'
+import { fetchPublicacoes } from '@/services/portais-sync'
+import { syncSelectedVehicles } from '@/services/ml-selective-sync'
 import { VehicleAccordion } from '@/components/admin/portais/VehicleAccordion'
 import { GlobalActionsBar } from '@/components/admin/portais/GlobalActionsBar'
 import { ErrorHistoryPanel } from '@/components/admin/portais/ErrorHistoryPanel'
@@ -39,6 +32,14 @@ import {
 } from '@/components/ui/select'
 import { useToast } from '@/hooks/use-toast'
 
+const SLUG_MAP: Record<string, keyof VeiculoSync> = {
+  mercadolivre: 'publicado_mercadolivre',
+  webmotors: 'publicado_webmotors',
+  olx: 'publicado_olx',
+  icarros: 'publicado_icarros',
+  napista: 'publicado_napista',
+}
+
 export default function Portais() {
   const { toast } = useToast()
   const [plataformas, setPlataformas] = useState<Plataforma[]>([])
@@ -49,7 +50,6 @@ export default function Portais() {
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(true)
   const [syncing, setSyncing] = useState(false)
-  const [syncingSlug, setSyncingSlug] = useState<string | null>(null)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [toggling, setToggling] = useState<Record<string, boolean>>({})
   const [sortBy, setSortBy] = useState('marca_modelo')
@@ -60,12 +60,12 @@ export default function Portais() {
   const [dryRunOpen, setDryRunOpen] = useState(false)
   const [dryRunVehicleId, setDryRunVehicleId] = useState<string | null>(null)
   const [dryRunVehicleName, setDryRunVehicleName] = useState<string>('')
-  const [selectedPlans, setSelectedPlans] = useState<Record<string, string>>({})
-  const [dryRunPayload, setDryRunPayload] = useState<any>(null)
-  const [dryRunValidation, setDryRunValidation] = useState<any>(null)
   const [mlErrors, setMLErrors] = useState<
     Array<{ veiculo_id: string; marca: string; modelo: string; error: string }>
   >([])
+  const [activePortalFilter, setActivePortalFilter] = useState<string | null>(null)
+  const [showDiagnosis, setShowDiagnosis] = useState(false)
+  const preflightProceedRef = useRef<(() => void) | null>(null)
 
   useEffect(() => {
     fetchPlataformas()
@@ -104,9 +104,16 @@ export default function Portais() {
       .catch(() => {})
   }, [loadVeiculos])
 
-  const allSelected = vehicles.length > 0 && vehicles.every((v) => selectedIds.has(v.id))
+  const filteredVehicles = activePortalFilter
+    ? vehicles.filter((v) => v[SLUG_MAP[activePortalFilter]] as boolean)
+    : vehicles
+
+  const allSelected =
+    filteredVehicles.length > 0 && filteredVehicles.every((v) => selectedIds.has(v.id))
+
   const handleSelectAll = (checked: boolean) =>
-    setSelectedIds(checked ? new Set(vehicles.map((v) => v.id)) : new Set())
+    setSelectedIds(checked ? new Set(filteredVehicles.map((v) => v.id)) : new Set())
+
   const handleSelect = (id: string, checked: boolean) => {
     const next = new Set(selectedIds)
     if (checked) next.add(id)
@@ -114,67 +121,77 @@ export default function Portais() {
     setSelectedIds(next)
   }
 
-  const handleSyncAll = async () => {
+  const handleBulkSync = async (skipPreflight = false) => {
+    if (selectedIds.size === 0) return
     setSyncing(true)
-    try {
-      await Promise.all(plataformas.map((p) => forceSync(p.slug).catch(() => {})))
-      await triggerSyncEstoque()
-      toast({ title: 'Sincronização global iniciada!' })
-      loadVeiculos()
-    } catch {
-      toast({ title: 'Erro ao sincronizar', variant: 'destructive' })
-    } finally {
-      setSyncing(false)
-    }
-  }
 
-  const handleDryRun = async (veiculoId?: string) => {
-    const targetId = veiculoId || [...selectedIds][0]
-    if (!targetId) return
-    const vehicle = vehicles.find((v) => v.id === targetId)
-    if (!vehicle) return
-    const payload = buildMLPayloadPreview(vehicle)
-    const validation = await validateVehicleForML(vehicle)
-    setDryRunPayload(payload)
-    setDryRunValidation(validation)
-    setDryRunVehicleName(`${vehicle.marca} ${vehicle.modelo}`)
-    setDryRunOpen(true)
-  }
-
-  const handleQuickSync = async (slug: string, skipPreflight = false) => {
-    if (slug === 'mercadolivre' && !skipPreflight) {
+    if (!skipPreflight) {
       const allIssues = vehicles
+        .filter((v) => selectedIds.has(v.id))
         .map((v) => ({
           vehicleId: v.id,
           vehicleName: `${v.marca} ${v.modelo}`,
           issues: validateMLPreflight(v),
         }))
         .filter((v) => v.issues.length > 0)
+
       if (allIssues.length > 0) {
         setPreflightResults(allIssues)
+        preflightProceedRef.current = () => {
+          handleBulkSync(true)
+        }
         setPreflightOpen(true)
+        setSyncing(false)
         return
       }
     }
-    setSyncingSlug(slug)
-    setSyncing(true)
+
     try {
-      if (slug === 'mercadolivre') {
-        await ensureMLListings(vehicles.map((v) => v.id))
-      }
-      await forceSync(slug)
-      toast({ title: `Sync de ${slug} iniciado!` })
+      const selections = [...selectedIds].map((id) => {
+        const v = vehicles.find((x) => x.id === id)
+        return {
+          veiculoId: id,
+          plan: v?.ml_listing_type === 'gold_pro' ? 'diamante' : 'prata',
+        }
+      })
+
+      const results = await syncSelectedVehicles(selections)
+      const successCount = results.filter((r) => r.success).length
+      const failCount = results.filter((r) => !r.success).length
+      toast({
+        title: 'Sincronização concluída',
+        description: `${successCount} sucesso, ${failCount} falha(s)`,
+      })
+      setSelectedIds(new Set())
       loadVeiculos()
-    } catch {
-      toast({ title: 'Erro ao sincronizar', variant: 'destructive' })
+    } catch (err: any) {
+      toast({
+        title: 'Erro na sincronização',
+        description: err.message,
+        variant: 'destructive',
+      })
     } finally {
       setSyncing(false)
-      setSyncingSlug(null)
     }
   }
 
-  const handleToggle = async (slug: string, veiculoId: string, publicar: boolean) => {
-    if (slug === 'mercadolivre' && publicar) {
+  const handleDryRun = () => {
+    const targetId = [...selectedIds][0]
+    if (!targetId) return
+    const vehicle = vehicles.find((v) => v.id === targetId)
+    if (!vehicle) return
+    setDryRunVehicleId(targetId)
+    setDryRunVehicleName(`${vehicle.marca} ${vehicle.modelo}`)
+    setDryRunOpen(true)
+  }
+
+  const handleToggle = async (
+    slug: string,
+    veiculoId: string,
+    publicar: boolean,
+    skipPreflight = false,
+  ) => {
+    if (slug === 'mercadolivre' && publicar && !skipPreflight) {
       const vehicle = vehicles.find((v) => v.id === veiculoId)
       if (vehicle) {
         const issues = validateMLPreflight(vehicle)
@@ -182,6 +199,9 @@ export default function Portais() {
           setPreflightResults([
             { vehicleId: veiculoId, vehicleName: `${vehicle.marca} ${vehicle.modelo}`, issues },
           ])
+          preflightProceedRef.current = () => {
+            handleToggle(slug, veiculoId, publicar, true)
+          }
           setPreflightOpen(true)
           return
         }
@@ -220,111 +240,25 @@ export default function Portais() {
     }
   }
 
-  const handleBulkPublish = async () => {
-    setSyncing(true)
-    try {
-      const slugs = plataformas.map((p) => p.slug)
-      const { success, failed } = await bulkPublish([...selectedIds], slugs)
-      toast({ title: `${success} publicações enviadas${failed ? `, ${failed} falharam` : ''}` })
-      setSelectedIds(new Set())
-      loadVeiculos()
-    } catch {
-      toast({ title: 'Erro na publicação', variant: 'destructive' })
-    } finally {
-      setSyncing(false)
-    }
-  }
-
-  const handleBulkUnpublish = async () => {
-    setSyncing(true)
-    try {
-      const slugs = plataformas.map((p) => p.slug)
-      const { success } = await bulkUnpublish([...selectedIds], slugs)
-      toast({ title: `${success} anúncios desativados` })
-      setSelectedIds(new Set())
-      loadVeiculos()
-    } catch {
-      toast({ title: 'Erro ao desativar', variant: 'destructive' })
-    } finally {
-      setSyncing(false)
-    }
-  }
-
-  const handleBulkDelete = async () => {
-    if (!confirm(`Excluir ${selectedIds.size} veículos? Esta ação não pode ser desfeita.`)) return
-    setSyncing(true)
-    try {
-      await bulkDelete([...selectedIds])
-      toast({ title: 'Veículos excluídos!' })
-      setSelectedIds(new Set())
-      loadVeiculos()
-    } catch (err: any) {
-      toast({ title: 'Erro ao excluir', description: err.message, variant: 'destructive' })
-    } finally {
-      setSyncing(false)
-    }
-  }
-
   const totalPages = Math.ceil(total / pageSize)
 
   return (
     <div className="p-4 md:p-8 max-w-[1600px] mx-auto space-y-4">
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <h1 className="text-xl font-bold text-gray-800">Sincronização de Portais</h1>
-          <Link to="/admin/ml-diagnosis">
-            <Button variant="outline" size="sm">
-              <FlaskConical className="w-4 h-4 mr-2" />
-              Diagnóstico ML
-            </Button>
-          </Link>
-          <Link to="/admin/portais/revisao">
-            <Button variant="outline" size="sm">
-              <AlertCircle className="w-4 h-4 mr-2" />
-              Revisão de Pendências
-            </Button>
-          </Link>
-        </div>
+        <h1 className="text-xl font-bold text-gray-800">Sincronização de Portais</h1>
       </div>
 
       <GlobalActionsBar
         plataformas={plataformas}
         selectedCount={selectedIds.size}
-        totalCount={total}
         allSelected={allSelected}
         onSelectAll={handleSelectAll}
-        onBulkPublish={handleBulkPublish}
-        onBulkUnpublish={handleBulkUnpublish}
-        onBulkDelete={handleBulkDelete}
-        onQuickSync={handleQuickSync}
-        onSyncAll={handleSyncAll}
-        pageSize={pageSize}
-        onPageSizeChange={(s) => {
-          setPageSize(s)
-          setPage(1)
-        }}
+        onBulkSync={() => handleBulkSync()}
+        onDryRun={handleDryRun}
+        onToggleDiagnosis={() => setShowDiagnosis((p) => !p)}
+        activePortalFilter={activePortalFilter}
+        onPortalFilter={setActivePortalFilter}
         syncing={syncing}
-        syncingSlug={syncingSlug}
-      />
-
-      <SelectiveSyncBar
-        selectedIds={[...selectedIds]}
-        onClear={() => setSelectedIds(new Set())}
-        onDryRun={(vid) => {
-          const v = vehicles.find((x) => x.id === vid)
-          setDryRunVehicleId(vid)
-          setDryRunVehicleName(v ? `${v.marca} ${v.modelo}` : '')
-          setDryRunOpen(true)
-        }}
-        onSyncComplete={loadVeiculos}
-      />
-
-      <SelectiveSyncToolbar
-        selectedIds={selectedIds}
-        selectedPlans={selectedPlans}
-        vehicleNames={Object.fromEntries(vehicles.map((v) => [v.id, `${v.marca} ${v.modelo}`]))}
-        onSyncComplete={loadVeiculos}
-        onDryRun={() => handleDryRun()}
       />
 
       {mlErrors.length > 0 && (
@@ -377,13 +311,15 @@ export default function Portais() {
         <div className="flex justify-center py-20">
           <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
         </div>
-      ) : vehicles.length === 0 ? (
+      ) : filteredVehicles.length === 0 ? (
         <div className="bg-white rounded-lg border text-center py-20 text-gray-500">
-          Nenhum veículo encontrado.
+          {activePortalFilter
+            ? 'Nenhum veículo publicado neste portal.'
+            : 'Nenhum veículo encontrado.'}
         </div>
       ) : (
         <div className="bg-white rounded-lg border overflow-hidden">
-          {vehicles.map((v) => (
+          {filteredVehicles.map((v) => (
             <VehicleAccordion
               key={v.id}
               veiculo={v}
@@ -399,11 +335,27 @@ export default function Portais() {
       )}
 
       {totalPages > 1 && (
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between flex-wrap gap-2">
           <span className="text-sm text-gray-500">
             Página {page} de {totalPages} · {total} veículos
           </span>
-          <div className="flex gap-2">
+          <div className="flex items-center gap-2">
+            <Select
+              value={String(pageSize)}
+              onValueChange={(v) => {
+                setPageSize(Number(v))
+                setPage(1)
+              }}
+            >
+              <SelectTrigger className="w-[80px] h-8">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="20">20</SelectItem>
+                <SelectItem value="50">50</SelectItem>
+                <SelectItem value="100">100</SelectItem>
+              </SelectContent>
+            </Select>
             <Button
               variant="outline"
               size="sm"
@@ -439,16 +391,16 @@ export default function Portais() {
         <WMDashboard />
       </div>
 
-      <div className="mt-8">
-        <MLDiagnosisPanel />
-      </div>
+      {showDiagnosis && (
+        <div className="mt-8 animate-fade-in">
+          <MLDiagnosisPanel />
+        </div>
+      )}
 
       <DryRunModal
         open={dryRunOpen}
         onOpenChange={setDryRunOpen}
         vehicleId={dryRunVehicleId}
-        payload={dryRunPayload}
-        validation={dryRunValidation}
         vehicleName={dryRunVehicleName}
       />
 
@@ -458,7 +410,8 @@ export default function Portais() {
         results={preflightResults}
         onProceed={() => {
           setPreflightOpen(false)
-          handleQuickSync('mercadolivre', true)
+          preflightProceedRef.current?.()
+          preflightProceedRef.current = null
         }}
       />
     </div>

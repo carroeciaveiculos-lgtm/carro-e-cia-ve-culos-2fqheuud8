@@ -33,7 +33,6 @@ import {
   checkDiamondQuota,
   saveListingPreference,
   mlListingTypeToPreference,
-  getDiamondQuota,
 } from '@/services/listing-preferences'
 import {
   Camera,
@@ -394,7 +393,6 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
         setValidationErrors({})
       }
       loadMediaAssets()
-      getDiamondQuota().then(setDiamondQuota)
     }
   }, [isOpen, vehicleId])
 
@@ -638,7 +636,6 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
           'mercadolivre',
           mlListingTypeToPreference(formData.ml_listing_type || 'silver'),
         )
-        getDiamondQuota().then(setDiamondQuota)
       }
       toast({ title: 'Veículo salvo com sucesso!' })
       onSuccess()
@@ -782,10 +779,6 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
   const [loadingDescricao, setLoadingDescricao] = useState(false)
   const [aiTone, setAiTone] = useState('Persuasivo')
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({})
-  const [diamondQuota, setDiamondQuota] = useState<{ used: number; limit: number }>({
-    used: 0,
-    limit: 15,
-  })
 
   const sanitizeAiText = (raw: string): string => {
     if (!raw) return ''
@@ -1288,52 +1281,6 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
                   </div>
                 )
               })()}
-
-              <div className="bg-white p-4 rounded-lg border">
-                <h3 className="font-bold text-sm flex items-center gap-2 mb-3">
-                  <Car className="w-4 h-4 text-blue-600" /> Tipo de Anúncio Mercado Livre
-                </h3>
-                <div className="flex items-center gap-3 flex-wrap">
-                  <Select
-                    value={formData.ml_listing_type || 'silver'}
-                    onValueChange={(v) => setFormData({ ...formData, ml_listing_type: v })}
-                  >
-                    <SelectTrigger className="w-40 h-9 text-sm">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem
-                        value="gold_pro"
-                        disabled={
-                          formData.ml_listing_type !== 'gold_pro' &&
-                          diamondQuota.used >= diamondQuota.limit
-                        }
-                      >
-                        Diamante
-                      </SelectItem>
-                      <SelectItem value="silver">Prata</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  {diamondQuota && (
-                    <span
-                      className={cn(
-                        'text-xs font-medium',
-                        diamondQuota.used >= diamondQuota.limit ? 'text-red-600' : 'text-gray-500',
-                      )}
-                    >
-                      {diamondQuota.used}/{diamondQuota.limit} anúncios Diamante utilizados
-                    </span>
-                  )}
-                </div>
-                {formData.ml_listing_type === 'gold_pro' &&
-                  diamondQuota.used >= diamondQuota.limit &&
-                  formData.id && (
-                    <p className="text-xs text-red-600 mt-2">
-                      Limite de 15 veículos Diamante atingido. Altere outro veículo para Prata antes
-                      de promover este.
-                    </p>
-                  )}
-              </div>
 
               <div className="bg-blue-50 p-6 rounded-lg border border-blue-100">
                 <h3 className="font-bold text-blue-900 mb-4">Proprietário / Entrada</h3>

@@ -60,70 +60,93 @@ export interface VeiculoSync {
   publicacoes?: PublicacaoStatus[]
 }
 
-const VEHICLE_SELECT = `
-  id, marca, modelo, versao, ano_modelo, ano_fabricacao, quilometragem,
-  placa, preco_venda, fotos, status, cor, combustivel, cambio, cilindrada,
-  direcao, descricao, portas, ml_listing_type, created_at, elegivel_portais, ad_types,
-  publicado_mercadolivre, publicado_webmotors, publicado_olx,
-  publicado_icarros, publicado_napista
-`
-
 export async function fetchPlataformas(): Promise<Plataforma[]> {
   const { data, error } = await supabase
     .from('plataformas')
     .select('*')
     .eq('ativo', true)
     .order('nome')
-  if (error) throw error
-  return data || []
+  if (error) return []
+  return (data || []) as Plataforma[]
 }
 
 export async function fetchVeiculosForPortais(
-  search = '',
-  page = 1,
-  pageSize = 20,
-  sortBy = 'marca_modelo',
+  search?: string,
+  page?: number,
+  pageSize?: number,
+  sortBy?: string,
 ): Promise<{ vehicles: VeiculoSync[]; total: number }> {
-  let query = supabase
-    .from('veiculos')
-    .select(VEHICLE_SELECT, { count: 'exact' })
-    .eq('status', 'disponivel')
-  if (sortBy === 'marca_modelo') {
-    query = query.order('marca', { ascending: true }).order('modelo', { ascending: true })
-  } else if (sortBy === 'recentes') {
-    query = query.order('created_at', { ascending: false })
-  } else {
-    query = query.order('modelo', { ascending: true })
-  }
+  const currentPage = page || 1
+  const size = pageSize || 20
+  const from = (currentPage - 1) * size
+  const to = from + size - 1
+
+  let query = supabase.from('veiculos').select('*', { count: 'exact' }).eq('status', 'disponivel')
+
   if (search) {
     query = query.or(`marca.ilike.%${search}%,modelo.ilike.%${search}%,placa.ilike.%${search}%`)
   }
-  query = query.range((page - 1) * pageSize, page * pageSize - 1)
-  const { data, count, error } = await query
-  if (error) throw error
-  return { vehicles: (data || []) as unknown as VeiculoSync[], total: count || 0 }
+
+  if (sortBy === 'recentes') {
+    query = query.order('created_at', { ascending: false })
+  } else {
+    query = query.order('marca', { ascending: true }).order('modelo', { ascending: true })
+  }
+
+  query = query.range(from, to)
+
+  const { data, error, count } = await query
+  if (error) return { vehicles: [], total: 0 }
+  return { vehicles: (data || []) as VeiculoSync[], total: count || 0 }
 }
 
 export async function fetchDashboard(slug: string): Promise<PlataformaDashboard> {
-  const { data, error } = await supabase.functions.invoke('admin-plataformas-api', {
-    method: 'POST',
-    body: { path: `${slug}/dashboard` },
-  })
-  if (error) throw error
-  return data
+  const { count: ativos } = await supabase
+    .from('estoque_publicacoes')
+    .select('*', { count: 'exact', head: true })
+    .eq('platform', slug)
+    .in('status', ['published', 'ativo'])
+
+  const { count: erros } = await supabase
+    .from('estoque_publicacoes')
+    .select('*', { count: 'exact', head: true })
+    .eq('platform', slug)
+    .in('status', ['error', 'erro'])
+
+  const { count: pendentes } = await supabase
+    .from('estoque_publicacoes')
+    .select('*', { count: 'exact', head: true })
+    .eq('platform', slug)
+    .in('status', ['pending', 'agendado'])
+
+  const { data: lastSync } = await supabase
+    .from('estoque_publicacoes')
+    .select('publicado_em, erro_msg, updated_at')
+    .eq('platform', slug)
+    .order('updated_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+
+  return {
+    ativos: ativos || 0,
+    erros: erros || 0,
+    pendentes: pendentes || 0,
+    ultima_sincronizacao: lastSync?.publicado_em || lastSync?.updated_at || null,
+    ultimo_erro: lastSync?.erro_msg || null,
+    status_conexao: 'connected',
+  }
 }
 
 export async function forceSync(slug: string): Promise<void> {
-  const { error } = await supabase.functions.invoke('admin-plataformas-api', {
-    method: 'POST',
-    body: { path: `${slug}/sync/forcar` },
+  await supabase.functions.invoke('sync-estoque', {
+    body: { platform: slug },
   })
-  if (error) throw error
 }
 
 export async function triggerSyncEstoque(): Promise<void> {
-  const { error } = await supabase.functions.invoke('sync-estoque', { method: 'POST', body: {} })
-  if (error) throw error
+  await supabase.functions.invoke('sync-estoque', {
+    body: { force: true },
+  })
 }
 
 export async function toggleVehiclePublication(
@@ -131,10 +154,11 @@ export async function toggleVehiclePublication(
   veiculoId: string,
   publicar: boolean,
 ): Promise<void> {
-  const { error } = await supabase.functions.invoke('admin-plataformas-api', {
-    method: 'POST',
-    body: { path: `${slug}/veiculos/publicar`, veiculo_id: veiculoId, publicar },
-  })
+  const column = `publicado_${slug}`
+  const { error } = await supabase
+    .from('veiculos')
+    .update({ [column]: publicar })
+    .eq('id', veiculoId)
   if (error) throw error
 }
 
@@ -150,16 +174,15 @@ export async function updateAdType(
       .eq('id', veiculoId)
     if (error) throw error
   } else {
-    const { data: vehicle, error: fetchError } = await supabase
+    const { data: veiculo } = await supabase
       .from('veiculos')
       .select('ad_types')
       .eq('id', veiculoId)
       .single()
-    if (fetchError) throw fetchError
-    const current = (vehicle?.ad_types as Record<string, string>) || {}
+    const currentAdTypes = (veiculo?.ad_types as Record<string, string>) || {}
     const { error } = await supabase
       .from('veiculos')
-      .update({ ad_types: { ...current, [platform]: adType } })
+      .update({ ad_types: { ...currentAdTypes, [platform]: adType } })
       .eq('id', veiculoId)
     if (error) throw error
   }
@@ -175,50 +198,60 @@ export async function toggleElegivelPortais(veiculoId: string, elegivel: boolean
 
 export async function ensureMLListings(veiculoIds: string[]): Promise<void> {
   if (veiculoIds.length === 0) return
+
   const { data: existing } = await supabase
     .from('ml_listings')
-    .select('id, veiculo_id, ml_item_id, status')
+    .select('veiculo_id')
     .in('veiculo_id', veiculoIds)
 
-  const existingMap = new Map((existing || []).map((r: any) => [r.veiculo_id, r]))
+  const existingIds = new Set((existing || []).map((r: any) => r.veiculo_id))
+  const newIds = veiculoIds.filter((id) => !existingIds.has(id))
 
-  for (const vid of veiculoIds) {
-    const record = existingMap.get(vid)
-    if (!record) {
-      await supabase.from('ml_listings').insert({
-        veiculo_id: vid,
-        status: 'pending_create',
-        last_synced_at: new Date().toISOString(),
-      })
-    } else if (record.status !== 'pending_create' && record.status !== 'pending_update') {
-      const newStatus = record.ml_item_id ? 'pending_update' : 'pending_create'
-      await supabase
-        .from('ml_listings')
-        .update({ status: newStatus, last_synced_at: new Date().toISOString() })
-        .eq('id', record.id)
-    }
-  }
+  if (newIds.length === 0) return
+
+  const inserts = newIds.map((veiculo_id) => ({
+    veiculo_id,
+    status: 'pending_create',
+    last_synced_at: new Date().toISOString(),
+  }))
+
+  const { error } = await supabase.from('ml_listings').insert(inserts)
+  if (error) throw error
 }
 
 export async function fetchMLErrors(): Promise<
   Array<{ veiculo_id: string; marca: string; modelo: string; error: string }>
 > {
-  const { data } = await supabase
-    .from('ml_listings')
-    .select('veiculo_id, veiculos(marca, modelo)')
-    .eq('status', 'error')
-    .order('last_synced_at', { ascending: false })
-    .limit(5)
-  return (data || []).map((r: any) => ({
-    veiculo_id: r.veiculo_id,
-    marca: r.veiculos?.marca || '',
-    modelo: r.veiculos?.modelo || '',
-    error: 'Erro na sincronização ML',
+  const { data: pubs, error } = await supabase
+    .from('estoque_publicacoes')
+    .select('veiculo_id, erro_msg')
+    .eq('platform', 'mercadolivre')
+    .in('status', ['error', 'erro'])
+    .order('updated_at', { ascending: false })
+    .limit(20)
+
+  if (error || !pubs || pubs.length === 0) return []
+
+  const veiculoIds = [...new Set(pubs.map((p: any) => p.veiculo_id))]
+  const { data: veiculos } = await supabase
+    .from('veiculos')
+    .select('id, marca, modelo')
+    .in('id', veiculoIds)
+
+  const veiculoMap = new Map((veiculos || []).map((v: any) => [v.id, v]))
+
+  return pubs.map((p: any) => ({
+    veiculo_id: p.veiculo_id,
+    marca: veiculoMap.get(p.veiculo_id)?.marca || '',
+    modelo: veiculoMap.get(p.veiculo_id)?.modelo || '',
+    error: p.erro_msg || 'Erro desconhecido',
   }))
 }
 
 export async function getMLAuthUrl(): Promise<string> {
-  const { data, error } = await supabase.functions.invoke('ml-auth', { method: 'POST', body: {} })
-  if (error || !data?.auth_url) throw new Error('Failed to get ML auth URL')
-  return data.auth_url
+  const { data, error } = await supabase.functions.invoke('ml-auth', {
+    body: { action: 'get_auth_url' },
+  })
+  if (error) throw error
+  return data?.auth_url || ''
 }

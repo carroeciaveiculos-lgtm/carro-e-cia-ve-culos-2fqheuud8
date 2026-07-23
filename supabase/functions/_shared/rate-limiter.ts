@@ -23,7 +23,9 @@ export function checkRateLimit(ip: string): boolean {
 }
 
 export function getClientIP(req: Request): string {
-  return req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
+  return (
+    req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
     req.headers.get('x-real-ip') ||
     'unknown'
+  )
 }
