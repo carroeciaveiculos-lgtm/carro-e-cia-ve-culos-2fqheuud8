@@ -123,6 +123,31 @@ const ERROR_MAP: Record<string, { message: string; action: string }> = {
     message: 'Informações de contato não são permitidas pelo Mercado Livre.',
     action: 'Remover telefones, emails e links da descrição',
   },
+  pictures_does_not_comply_requirements: {
+    message:
+      'As fotos não atendem aos requisitos do Mercado Livre. Verifique formato, tamanho e conteúdo.',
+    action: 'Revisar fotos do veículo',
+  },
+  title_too_long: {
+    message: 'Título do anúncio muito longo. Máximo 60 caracteres.',
+    action: 'Encurtar o título do veículo',
+  },
+  missing_location: {
+    message: 'Localização não informada. Preencha o endereço do proprietário.',
+    action: 'Preencher endereço do proprietário',
+  },
+  exceeded_quota: {
+    message: 'Cota de anúncios do Mercado Livre excedida.',
+    action: 'Fechar anúncios antigos ou contratar mais quota',
+  },
+  invalid_attributes: {
+    message: 'Atributos inválidos. Verifique os dados técnicos do veículo.',
+    action: 'Revisar ficha técnica do veículo',
+  },
+  image_not_found: {
+    message: 'Imagem não encontrada. Verifique as URLs das fotos.',
+    action: 'Verificar URLs das fotos',
+  },
 }
 
 export function translateError(errorCode: string): { message: string; action: string } {

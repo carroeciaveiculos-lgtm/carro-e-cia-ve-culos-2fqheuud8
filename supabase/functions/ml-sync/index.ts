@@ -12,7 +12,8 @@ import {
   lookupMLCityId,
 } from '../_shared/ml-client.ts'
 import { validateImagesForML } from '../_shared/image-validation.ts'
-import { validarPayloadML, filtrarDescricao } from '../_shared/validate-payload.ts'
+import { validatePayload, filtrarDescricao } from '../_shared/validate-payload.ts'
+import { fetchAndStorePerformance } from '../_shared/ml-performance.ts'
 
 async function checkQuotaAndNotify(supabase: any, token: string): Promise<void> {
   try {
@@ -41,46 +42,6 @@ async function checkQuotaAndNotify(supabase: any, token: string): Promise<void> 
   }
 }
 
-async function monitorPerformance(
-  supabase: any,
-  token: string,
-  mlItemId: string,
-  veiculoId: string,
-  veiculoNome: string,
-): Promise<void> {
-  try {
-    await new Promise((resolve) => setTimeout(resolve, 5000))
-    const perfRes = await fetchWithBackoff(
-      `https://api.mercadolibre.com/items/${mlItemId}/performance`,
-      { headers: { Authorization: `Bearer ${token}` } },
-    )
-    if (!perfRes.ok) return
-    const perfData = await perfRes.json()
-    const score = typeof perfData.score === 'number' ? perfData.score : null
-    const level = perfData.level || null
-    if (score === null) return
-
-    await supabase.from('ml_quality_scores').insert({
-      ml_item_id: mlItemId,
-      score,
-      level,
-      veiculo_id: veiculoId,
-      checked_at: new Date().toISOString(),
-    })
-
-    if (score < 70) {
-      await supabase.from('notificacoes').insert({
-        tipo: 'performance_baixa',
-        titulo: 'Performance do anúncio baixa',
-        mensagem: `O anúncio "${veiculoNome}" no Mercado Livre (item ${mlItemId}) obteve score de performance ${score}/100. Revise o anúncio.`,
-      })
-      await supabase.from('veiculos').update({ requires_review: true }).eq('id', veiculoId)
-    }
-  } catch {
-    // Performance monitoring is non-critical
-  }
-}
-
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
 
@@ -90,7 +51,9 @@ Deno.serve(async (req: Request) => {
   )
 
   const logSync = (status: string, payload: any) =>
-    supabase.from('logs_integracao').insert({ portal: 'mercadolivre_sync', status, payload_erro: payload })
+    supabase
+      .from('logs_integracao')
+      .insert({ portal: 'mercadolivre_sync', status, payload_erro: payload })
 
   try {
     const { token, error: tokenError } = await getValidMLToken(supabase)
@@ -148,74 +111,145 @@ Deno.serve(async (req: Request) => {
         .maybeSingle()
 
       if (!veiculo) {
-        await supabase.from('ml_listings').update({ status: 'error', last_synced_at: new Date().toISOString() }).eq('id', listing.id)
+        await supabase
+          .from('ml_listings')
+          .update({ status: 'error', last_synced_at: new Date().toISOString() })
+          .eq('id', listing.id)
         results.push({ listing_id: listing.id, status: 'error', error: 'Vehicle not found' })
         continue
       }
 
       try {
         if (listing.status === 'pending_create') {
-          const errMsg = await handleCreate(supabase, token, listing, veiculo, cachedMandatoryAttrs, mlPlataformaId)
+          const errMsg = await handleCreate(
+            supabase,
+            token,
+            listing,
+            veiculo,
+            cachedMandatoryAttrs,
+            mlPlataformaId,
+          )
           if (errMsg.cachedAttrs) cachedMandatoryAttrs = errMsg.cachedAttrs
           if (errMsg.cachedCityId !== undefined) cachedCityId = errMsg.cachedCityId
           if (errMsg.error) {
-            await supabase.from('ml_listings').update({ status: 'error', last_synced_at: new Date().toISOString() }).eq('id', listing.id)
+            await supabase
+              .from('ml_listings')
+              .update({ status: 'error', last_synced_at: new Date().toISOString() })
+              .eq('id', listing.id)
             results.push({ listing_id: listing.id, status: 'error', error: errMsg.error })
           } else {
-            await supabase.from('veiculos').update({ publicado_mercadolivre: true }).eq('id', veiculo.id)
+            await supabase
+              .from('veiculos')
+              .update({ publicado_mercadolivre: true })
+              .eq('id', veiculo.id)
             results.push({ listing_id: listing.id, ml_item_id: errMsg.mlItemId, status: 'created' })
           }
         } else if (listing.status === 'pending_update' && listing.ml_item_id) {
-          const updateErr = await handleUpdate(supabase, token, listing, veiculo, cachedMandatoryAttrs, cachedCityId, mlPlataformaId)
+          const updateErr = await handleUpdate(
+            supabase,
+            token,
+            listing,
+            veiculo,
+            cachedMandatoryAttrs,
+            cachedCityId,
+            mlPlataformaId,
+          )
           if (updateErr.cachedAttrs) cachedMandatoryAttrs = updateErr.cachedAttrs
           if (updateErr.cachedCityId !== undefined) cachedCityId = updateErr.cachedCityId
           if (updateErr.error) {
-            await supabase.from('ml_listings').update({ status: 'error', last_synced_at: new Date().toISOString() }).eq('id', listing.id)
+            await supabase
+              .from('ml_listings')
+              .update({ status: 'error', last_synced_at: new Date().toISOString() })
+              .eq('id', listing.id)
             results.push({ listing_id: listing.id, status: 'error', error: updateErr.error })
           } else {
-            await supabase.from('ml_listings').update({ status: 'active', last_synced_at: new Date().toISOString() }).eq('id', listing.id)
-            results.push({ listing_id: listing.id, ml_item_id: listing.ml_item_id, status: 'updated' })
+            await supabase
+              .from('ml_listings')
+              .update({ status: 'active', last_synced_at: new Date().toISOString() })
+              .eq('id', listing.id)
+            results.push({
+              listing_id: listing.id,
+              ml_item_id: listing.ml_item_id,
+              status: 'updated',
+            })
           }
         } else if (listing.status === 'pending_close' && listing.ml_item_id) {
-          const closeRes = await fetchWithBackoff(`https://api.mercadolibre.com/items/${listing.ml_item_id}`, {
-            method: 'PUT',
-            headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-            body: JSON.stringify({ status: 'closed' }),
-          })
+          const closeRes = await fetchWithBackoff(
+            `https://api.mercadolibre.com/items/${listing.ml_item_id}`,
+            {
+              method: 'PUT',
+              headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+              body: JSON.stringify({ status: 'closed' }),
+            },
+          )
           if (closeRes.ok) {
-            await supabase.from('ml_listings').update({ status: 'closed', last_synced_at: new Date().toISOString() }).eq('id', listing.id)
-            await supabase.from('veiculos').update({ publicado_mercadolivre: false }).eq('id', veiculo.id)
-            results.push({ listing_id: listing.id, ml_item_id: listing.ml_item_id, status: 'closed' })
+            await supabase
+              .from('ml_listings')
+              .update({ status: 'closed', last_synced_at: new Date().toISOString() })
+              .eq('id', listing.id)
+            await supabase
+              .from('veiculos')
+              .update({ publicado_mercadolivre: false })
+              .eq('id', veiculo.id)
+            results.push({
+              listing_id: listing.id,
+              ml_item_id: listing.ml_item_id,
+              status: 'closed',
+            })
           } else {
             const errData = await closeRes.json()
-            results.push({ listing_id: listing.id, status: 'error', error: JSON.stringify(errData) })
+            results.push({
+              listing_id: listing.id,
+              status: 'error',
+              error: JSON.stringify(errData),
+            })
           }
         }
       } catch (err: any) {
-        await supabase.from('ml_listings').update({ status: 'error', last_synced_at: new Date().toISOString() }).eq('id', listing.id)
+        await supabase
+          .from('ml_listings')
+          .update({ status: 'error', last_synced_at: new Date().toISOString() })
+          .eq('id', listing.id)
         results.push({ listing_id: listing.id, status: 'error', error: err.message })
       }
     }
 
     if (mlPlataformaId && pendingListings.length > 0) {
-      const successIds = results.filter((r) => r.status === 'created' || r.status === 'updated' || r.status === 'closed')
-        .map((r) => pendingListings.find((l) => l.id === r.listing_id)?.veiculo_id).filter(Boolean) as string[]
-      const errorIds = results.filter((r) => r.status === 'error')
-        .map((r) => pendingListings.find((l) => l.id === r.listing_id)?.veiculo_id).filter(Boolean) as string[]
+      const successIds = results
+        .filter((r) => r.status === 'created' || r.status === 'updated' || r.status === 'closed')
+        .map((r) => pendingListings.find((l) => l.id === r.listing_id)?.veiculo_id)
+        .filter(Boolean) as string[]
+      const errorIds = results
+        .filter((r) => r.status === 'error')
+        .map((r) => pendingListings.find((l) => l.id === r.listing_id)?.veiculo_id)
+        .filter(Boolean) as string[]
       if (successIds.length > 0) {
-        await supabase.from('sync_log').update({ status: 'success', mensagem: 'Sincronizacao via ml-sync' })
-          .eq('plataforma_id', mlPlataformaId).in('veiculo_id', successIds).eq('status', 'pending')
+        await supabase
+          .from('sync_log')
+          .update({ status: 'success', mensagem: 'Sincronizacao via ml-sync' })
+          .eq('plataforma_id', mlPlataformaId)
+          .in('veiculo_id', successIds)
+          .eq('status', 'pending')
       }
       if (errorIds.length > 0) {
-        await supabase.from('sync_log').update({ status: 'erro', mensagem: 'Erro na sincronizacao via ml-sync' })
-          .eq('plataforma_id', mlPlataformaId).in('veiculo_id', errorIds).eq('status', 'pending')
+        await supabase
+          .from('sync_log')
+          .update({ status: 'erro', mensagem: 'Erro na sincronizacao via ml-sync' })
+          .eq('plataforma_id', mlPlataformaId)
+          .in('veiculo_id', errorIds)
+          .eq('status', 'pending')
       }
     }
 
     const errorCount = results.filter((r) => r.status === 'error').length
-    await logSync(errorCount > 0 ? (errorCount === results.length ? 'error' : 'partial') : 'success', {
-      processed: results.length, errors: errorCount, details: results,
-    })
+    await logSync(
+      errorCount > 0 ? (errorCount === results.length ? 'error' : 'partial') : 'success',
+      {
+        processed: results.length,
+        errors: errorCount,
+        details: results,
+      },
+    )
 
     return new Response(JSON.stringify({ success: true, processed: results.length, results }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -237,20 +271,37 @@ async function handleCreate(
   cachedAttrs: string[] | null,
   mlPlataformaId: string | null,
   cachedCityId?: string | null,
-): Promise<{ error: string | null; mlItemId?: string; cachedAttrs?: string[]; cachedCityId?: string | null }> {
+): Promise<{
+  error: string | null
+  mlItemId?: string
+  cachedAttrs?: string[]
+  cachedCityId?: string | null
+}> {
   const photos: string[] = Array.isArray(veiculo.fotos) ? veiculo.fotos : []
   if (photos.length === 0) {
-    return { error: 'Nenhuma foto encontrada. Adicione pelo menos 1 foto ao veículo.', cachedAttrs, cachedCityId }
+    return {
+      error: 'Nenhuma foto encontrada. Adicione pelo menos 1 foto ao veículo.',
+      cachedAttrs,
+      cachedCityId,
+    }
   }
 
   const imageValidation = await validateImagesForML(photos)
   if (imageValidation.validUrls.length === 0) {
-    return { error: 'Nenhuma imagem válida (mín 800x800, JPEG/PNG, máx 10MB)', cachedAttrs, cachedCityId }
+    return {
+      error: 'Nenhuma imagem válida (mín 800x800, JPEG/PNG, máx 10MB)',
+      cachedAttrs,
+      cachedCityId,
+    }
   }
 
   const pkgCheck = await checkMLPackages(token)
   if (pkgCheck.error) {
-    return { error: `Verificação de pacote ML falhou: ${pkgCheck.error}`, cachedAttrs, cachedCityId }
+    return {
+      error: `Verificação de pacote ML falhou: ${pkgCheck.error}`,
+      cachedAttrs,
+      cachedCityId,
+    }
   }
 
   let mandatoryAttrs = cachedAttrs
@@ -271,13 +322,13 @@ async function handleCreate(
     return { error: buildErr.message, cachedAttrs: mandatoryAttrs, cachedCityId: cityId }
   }
 
-  if (pkgCheck.activeCount >= 15 && payload.listing_type_id === 'gold_pro') {
-    payload.listing_type_id = resolveListingType('prata')
-  }
-
-  const validation = await validarPayloadML(veiculo, { allowedListingTypes: [], supabase })
+  const validation = await validatePayload(payload, veiculo, { supabase })
   if (!validation.valid) {
-    return { error: validation.errors.join('; '), cachedAttrs: mandatoryAttrs, cachedCityId: cityId }
+    return {
+      error: validation.errors.join('; '),
+      cachedAttrs: mandatoryAttrs,
+      cachedCityId: cityId,
+    }
   }
   if (validation.corrections.title) payload.title = validation.corrections.title
   if (validation.corrections.description) {
@@ -293,12 +344,16 @@ async function handleCreate(
   const mlData = await mlRes.json()
 
   if (mlRes.ok) {
-    await supabase.from('ml_listings').update({
-      ml_item_id: mlData.id, ml_listing_url: mlData.permalink,
-      status: 'active', last_synced_at: new Date().toISOString(),
-    }).eq('id', listing.id)
-    const veiculoNome = `${veiculo.marca || ''} ${veiculo.modelo || ''}`.trim()
-    await monitorPerformance(supabase, token, mlData.id, veiculo.id, veiculoNome)
+    await supabase
+      .from('ml_listings')
+      .update({
+        ml_item_id: mlData.id,
+        ml_listing_url: mlData.permalink,
+        status: 'active',
+        last_synced_at: new Date().toISOString(),
+      })
+      .eq('id', listing.id)
+    await fetchAndStorePerformance(supabase, token, mlData.id, veiculo.id)
     return { error: null, mlItemId: mlData.id, cachedAttrs: mandatoryAttrs, cachedCityId: cityId }
   }
 
@@ -325,30 +380,41 @@ async function handleUpdate(
   }
 
   const photos: string[] = Array.isArray(veiculo.fotos) ? veiculo.fotos : []
-  const imageValidation = photos.length > 0 ? await validateImagesForML(photos) : { validUrls: [] as string[] }
+  const imageValidation =
+    photos.length > 0 ? await validateImagesForML(photos) : { validUrls: [] as string[] }
 
   let payload: any
   try {
-    const validVehicle = imageValidation.validUrls.length > 0 ? { ...veiculo, fotos: imageValidation.validUrls } : veiculo
+    const validVehicle =
+      imageValidation.validUrls.length > 0
+        ? { ...veiculo, fotos: imageValidation.validUrls }
+        : veiculo
     payload = buildMLUpdatePayload(validVehicle, mandatoryAttrs, cityId)
   } catch (buildErr: any) {
     return { error: buildErr.message, cachedAttrs: mandatoryAttrs, cachedCityId: cityId }
   }
 
-  const validation = await validarPayloadML(veiculo, { allowedListingTypes: [], supabase })
+  const validation = await validatePayload(payload, veiculo, { supabase })
   if (!validation.valid) {
-    return { error: validation.errors.join('; '), cachedAttrs: mandatoryAttrs, cachedCityId: cityId }
+    return {
+      error: validation.errors.join('; '),
+      cachedAttrs: mandatoryAttrs,
+      cachedCityId: cityId,
+    }
   }
   if (validation.corrections.title) payload.title = validation.corrections.title
   if (validation.corrections.description && payload.description) {
     payload.description.plain_text = validation.corrections.description as string
   }
 
-  const updateRes = await fetchWithBackoff(`https://api.mercadolibre.com/items/${listing.ml_item_id}`, {
-    method: 'PUT',
-    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
-  })
+  const updateRes = await fetchWithBackoff(
+    `https://api.mercadolibre.com/items/${listing.ml_item_id}`,
+    {
+      method: 'PUT',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    },
+  )
 
   if (!updateRes.ok) {
     const errData = await updateRes.json()
@@ -358,18 +424,20 @@ async function handleUpdate(
   if (veiculo.descricao && veiculo.descricao.length > 0) {
     try {
       const filteredDesc = filtrarDescricao(veiculo.descricao)
-      await fetchWithBackoff(`https://api.mercadolibre.com/items/${listing.ml_item_id}/description`, {
-        method: 'PUT',
-        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ plain_text: filteredDesc }),
-      })
+      await fetchWithBackoff(
+        `https://api.mercadolibre.com/items/${listing.ml_item_id}/description`,
+        {
+          method: 'PUT',
+          headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ plain_text: filteredDesc }),
+        },
+      )
     } catch {
       // Description update is non-critical
     }
   }
 
-  const veiculoNome = `${veiculo.marca || ''} ${veiculo.modelo || ''}`.trim()
-  await monitorPerformance(supabase, token, listing.ml_item_id, veiculo.id, veiculoNome)
+  await fetchAndStorePerformance(supabase, token, listing.ml_item_id, veiculo.id)
 
   return { error: null, cachedAttrs: mandatoryAttrs, cachedCityId: cityId }
 }

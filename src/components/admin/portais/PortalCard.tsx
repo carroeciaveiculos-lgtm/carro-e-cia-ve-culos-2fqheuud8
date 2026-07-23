@@ -1,21 +1,9 @@
 import { Switch } from '@/components/ui/switch'
 import { Badge } from '@/components/ui/badge'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import { AlertCircle, Clock, ExternalLink } from 'lucide-react'
 import { translateError } from '@/lib/platform-errors'
+import { PortalTierSelector } from './PortalTierSelector'
 import type { Plataforma, PublicacaoStatus, VeiculoSync } from '@/services/plataformas'
-
-const AD_TYPE_OPTIONS = [
-  { value: 'gold_pro', label: 'Diamante' },
-  { value: 'gold_special', label: 'Ouro' },
-  { value: 'silver', label: 'Prata' },
-]
 
 const SLUG_MAP: Record<string, keyof VeiculoSync> = {
   mercadolivre: 'publicado_mercadolivre',
@@ -57,10 +45,6 @@ export function PortalCard({
   const hasError = publicacao?.status === 'error' || publicacao?.status === 'erro'
   const errorMsg =
     hasError && publicacao?.erro_msg ? translateError(publicacao.erro_msg).message : null
-  const getAdType = () => {
-    if (plataforma.slug === 'mercadolivre') return veiculo.ml_listing_type || 'gold_special'
-    return ((veiculo.ad_types as Record<string, string>) || {})[plataforma.slug] || 'gold_special'
-  }
 
   return (
     <div
@@ -98,21 +82,11 @@ export function PortalCard({
         )}
       </div>
 
-      <Select
-        value={getAdType()}
-        onValueChange={(v) => onUpdateAdType(veiculo.id, plataforma.slug, v)}
-      >
-        <SelectTrigger className="h-8 text-xs">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          {AD_TYPE_OPTIONS.map((o) => (
-            <SelectItem key={o.value} value={o.value}>
-              {o.label}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+      <PortalTierSelector
+        plataforma={plataforma}
+        veiculo={veiculo}
+        onUpdateAdType={onUpdateAdType}
+      />
 
       <div className="flex items-center gap-1 text-[10px] text-gray-500">
         <Clock className="w-3 h-3" />

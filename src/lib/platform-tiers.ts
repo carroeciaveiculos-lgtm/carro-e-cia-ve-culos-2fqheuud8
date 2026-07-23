@@ -6,7 +6,6 @@ export interface AdTier {
 export const PLATFORM_TIERS: Record<string, AdTier[]> = {
   mercadolivre: [
     { value: 'gold_pro', label: 'Diamante' },
-    { value: 'gold_special', label: 'Ouro' },
     { value: 'silver', label: 'Prata' },
   ],
   webmotors: [

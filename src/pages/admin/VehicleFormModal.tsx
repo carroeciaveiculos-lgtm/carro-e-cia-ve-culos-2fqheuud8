@@ -30,6 +30,12 @@ import { DocumentPreviewDialog } from '@/components/admin/DocumentPreviewDialog'
 import { getFipeHistoryFromDB } from '@/services/fipe'
 import { montarTituloMLPreview } from '@/lib/ml-title'
 import {
+  checkDiamondQuota,
+  saveListingPreference,
+  mlListingTypeToPreference,
+  getDiamondQuota,
+} from '@/services/listing-preferences'
+import {
   Camera,
   Search,
   Trash2,
@@ -200,7 +206,7 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
     direcao: '',
     cilindrada: '',
     portas: '',
-    ml_listing_type: 'gold_special',
+    ml_listing_type: 'silver',
     status: 'rascunho',
     tipo_entrada: 'consignacao',
     proprietario_nome: '',
@@ -363,7 +369,7 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
           direcao: '',
           cilindrada: '',
           portas: '',
-          ml_listing_type: 'gold_special',
+          ml_listing_type: 'silver',
           status: 'rascunho',
           tipo_entrada: 'consignacao',
           proprietario_nome: '',
@@ -388,6 +394,7 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
         setValidationErrors({})
       }
       loadMediaAssets()
+      getDiamondQuota().then(setDiamondQuota)
     }
   }, [isOpen, vehicleId])
 
@@ -568,6 +575,18 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
       return
     }
     setLoading(true)
+    if (formData.ml_listing_type === 'gold_pro') {
+      const { canPromote } = await checkDiamondQuota(formData.id)
+      if (!canPromote) {
+        toast({
+          title: 'Limite de 15 veículos Diamante atingido',
+          description: 'Altere outro veículo para Prata antes de promover este.',
+          variant: 'destructive',
+        })
+        setLoading(false)
+        return
+      }
+    }
     try {
       const sanitizeNumber = (val: any) => {
         if (!val) return null
@@ -612,7 +631,15 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
         ? await supabase.from('veiculos').update(payload).eq('id', payload.id).select()
         : await supabase.from('veiculos').insert([payload]).select()
       if (error) throw error
-      if (data && data[0]) setFormData((p: any) => ({ ...p, id: data[0].id }))
+      if (data && data[0]) {
+        setFormData((p: any) => ({ ...p, id: data[0].id }))
+        await saveListingPreference(
+          data[0].id,
+          'mercadolivre',
+          mlListingTypeToPreference(formData.ml_listing_type || 'silver'),
+        )
+        getDiamondQuota().then(setDiamondQuota)
+      }
       toast({ title: 'Veículo salvo com sucesso!' })
       onSuccess()
       if (shouldClose) onClose()
@@ -755,6 +782,10 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
   const [loadingDescricao, setLoadingDescricao] = useState(false)
   const [aiTone, setAiTone] = useState('Persuasivo')
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({})
+  const [diamondQuota, setDiamondQuota] = useState<{ used: number; limit: number }>({
+    used: 0,
+    limit: 15,
+  })
 
   const sanitizeAiText = (raw: string): string => {
     if (!raw) return ''
@@ -1257,6 +1288,52 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
                   </div>
                 )
               })()}
+
+              <div className="bg-white p-4 rounded-lg border">
+                <h3 className="font-bold text-sm flex items-center gap-2 mb-3">
+                  <Car className="w-4 h-4 text-blue-600" /> Tipo de Anúncio Mercado Livre
+                </h3>
+                <div className="flex items-center gap-3 flex-wrap">
+                  <Select
+                    value={formData.ml_listing_type || 'silver'}
+                    onValueChange={(v) => setFormData({ ...formData, ml_listing_type: v })}
+                  >
+                    <SelectTrigger className="w-40 h-9 text-sm">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem
+                        value="gold_pro"
+                        disabled={
+                          formData.ml_listing_type !== 'gold_pro' &&
+                          diamondQuota.used >= diamondQuota.limit
+                        }
+                      >
+                        Diamante
+                      </SelectItem>
+                      <SelectItem value="silver">Prata</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {diamondQuota && (
+                    <span
+                      className={cn(
+                        'text-xs font-medium',
+                        diamondQuota.used >= diamondQuota.limit ? 'text-red-600' : 'text-gray-500',
+                      )}
+                    >
+                      {diamondQuota.used}/{diamondQuota.limit} anúncios Diamante utilizados
+                    </span>
+                  )}
+                </div>
+                {formData.ml_listing_type === 'gold_pro' &&
+                  diamondQuota.used >= diamondQuota.limit &&
+                  formData.id && (
+                    <p className="text-xs text-red-600 mt-2">
+                      Limite de 15 veículos Diamante atingido. Altere outro veículo para Prata antes
+                      de promover este.
+                    </p>
+                  )}
+              </div>
 
               <div className="bg-blue-50 p-6 rounded-lg border border-blue-100">
                 <h3 className="font-bold text-blue-900 mb-4">Proprietário / Entrada</h3>

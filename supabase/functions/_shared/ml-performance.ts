@@ -10,9 +10,12 @@ export async function fetchAndStorePerformance(
   veiculoId: string,
 ): Promise<void> {
   try {
-    const res = await fetchWithBackoff(`https://api.mercadolibre.com/items/${mlItemId}/performance`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
+    await new Promise((resolve) => setTimeout(resolve, 5000))
+
+    const res = await fetchWithBackoff(
+      `https://api.mercadolibre.com/items/${mlItemId}/performance`,
+      { headers: { Authorization: `Bearer ${token}` } },
+    )
     if (!res.ok) return
     const data = await res.json()
     const score = typeof data.score === 'number' ? data.score : null
@@ -24,21 +27,42 @@ export async function fetchAndStorePerformance(
         score,
         level,
         veiculo_id: veiculoId,
+        checked_at: new Date().toISOString(),
       })
 
       if (score < 70) {
+        const { data: veiculo } = await supabase
+          .from('veiculos')
+          .select('marca, modelo')
+          .eq('id', veiculoId)
+          .maybeSingle()
+
+        const veiculoNome = veiculo
+          ? `${veiculo.marca || ''} ${veiculo.modelo || ''}`.trim()
+          : 'Veículo'
+
+        await supabase.from('notificacoes').insert({
+          tipo: 'ml_low_performance',
+          titulo: 'Qualidade do anúncio baixa',
+          mensagem: `${veiculoNome} tem score ${score} — abaixo do ideal.`,
+        })
+
         const { data: vehicle } = await supabase
           .from('veiculos')
           .select('notas_internas')
           .eq('id', veiculoId)
           .maybeSingle()
+
         const existingNotes = vehicle?.notas_internas || ''
-        const note = 'ML Performance Score below 70 — requires optimization'
+        const note = `ML Performance Score: ${score}/100 — requires optimization`
         if (!existingNotes.includes(note)) {
-          await supabase.from('veiculos').update({
-            requires_review: true,
-            notas_internas: existingNotes ? `${existingNotes}\n${note}` : note,
-          }).eq('id', veiculoId)
+          await supabase
+            .from('veiculos')
+            .update({
+              requires_review: true,
+              notas_internas: existingNotes ? `${existingNotes}\n${note}` : note,
+            })
+            .eq('id', veiculoId)
         }
       }
     }
