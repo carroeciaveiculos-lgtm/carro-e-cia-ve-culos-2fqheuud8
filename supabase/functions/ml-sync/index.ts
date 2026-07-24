@@ -10,6 +10,7 @@ import {
   fetchCategoryAttributes,
   resolveListingType,
   lookupMLCityId,
+  getVehicleBodyType,
 } from '../_shared/ml-client.ts'
 import { validateImagesForML } from '../_shared/image-validation.ts'
 import { validatePayload, filtrarDescricao } from '../_shared/validate-payload.ts'
@@ -133,7 +134,9 @@ Deno.serve(async (req: Request) => {
           )
           if (errMsg.cachedAttrs) cachedMandatoryAttrs = errMsg.cachedAttrs
           if (errMsg.cachedCityId !== undefined) cachedCityId = errMsg.cachedCityId
-          if (errMsg.error) {
+          if (errMsg.blocked) {
+            results.push({ listing_id: listing.id, status: 'blocked', error: errMsg.error })
+          } else if (errMsg.error) {
             await supabase
               .from('ml_listings')
               .update({ status: 'error', last_synced_at: new Date().toISOString() })
@@ -158,7 +161,9 @@ Deno.serve(async (req: Request) => {
           )
           if (updateErr.cachedAttrs) cachedMandatoryAttrs = updateErr.cachedAttrs
           if (updateErr.cachedCityId !== undefined) cachedCityId = updateErr.cachedCityId
-          if (updateErr.error) {
+          if (updateErr.blocked) {
+            results.push({ listing_id: listing.id, status: 'blocked', error: updateErr.error })
+          } else if (updateErr.error) {
             await supabase
               .from('ml_listings')
               .update({ status: 'error', last_synced_at: new Date().toISOString() })
@@ -222,7 +227,7 @@ Deno.serve(async (req: Request) => {
         .map((r) => pendingListings.find((l) => l.id === r.listing_id)?.veiculo_id)
         .filter(Boolean) as string[]
       const errorIds = results
-        .filter((r) => r.status === 'error')
+        .filter((r) => r.status === 'error' || r.status === 'blocked')
         .map((r) => pendingListings.find((l) => l.id === r.listing_id)?.veiculo_id)
         .filter(Boolean) as string[]
       if (successIds.length > 0) {
@@ -278,7 +283,26 @@ async function handleCreate(
   mlItemId?: string
   cachedAttrs?: string[]
   cachedCityId?: string | null
+  blocked?: boolean
 }> {
+  const validation = await validatePayload(null as any, veiculo, { supabase })
+  if (!validation.valid) {
+    await supabase.from('ml_listings').update({ status: 'blocked' }).eq('id', listing.id)
+    await supabase.from('veiculos').update({ requires_review: true }).eq('id', veiculo.id)
+    if (mlPlataformaId) {
+      const categoria = veiculo.categoria || ''
+      await supabase.from('sync_log').insert({
+        plataforma_id: mlPlataformaId,
+        veiculo_id: veiculo.id,
+        acao: 'sync',
+        status: 'erro',
+        mensagem: `VEHICLE_BODY_TYPE inválido: categoria='${categoria}'`,
+        metadata: { categoria, atributo: 'VEHICLE_BODY_TYPE', motivo: 'sem_mapeamento' },
+      })
+    }
+    return { error: validation.errors.join('; '), blocked: true, cachedAttrs, cachedCityId }
+  }
+
   const photos: string[] = Array.isArray(veiculo.fotos) ? veiculo.fotos : []
   if (photos.length === 0) {
     return {
@@ -324,14 +348,6 @@ async function handleCreate(
     return { error: buildErr.message, cachedAttrs: mandatoryAttrs, cachedCityId: cityId }
   }
 
-  const validation = await validatePayload(payload, veiculo, { supabase })
-  if (!validation.valid) {
-    return {
-      error: validation.errors.join('; '),
-      cachedAttrs: mandatoryAttrs,
-      cachedCityId: cityId,
-    }
-  }
   if (validation.corrections.title) payload.title = validation.corrections.title
   if (validation.corrections.description) {
     payload.description = { plain_text: validation.corrections.description as string }
@@ -378,6 +394,20 @@ async function handleCreate(
       })
       .eq('id', listing.id)
     await fetchAndStorePerformance(supabase, token, mlData.id, veiculo.id)
+    if (mlPlataformaId) {
+      const bodyType = getVehicleBodyType(veiculo.categoria)
+      const logMetadata: Record<string, any> = bodyType?.esportivo_fallback
+        ? { esportivo_sync: 'fallback_coupe' }
+        : {}
+      await supabase.from('sync_log').insert({
+        plataforma_id: mlPlataformaId,
+        veiculo_id: veiculo.id,
+        acao: 'sync',
+        status: 'success',
+        mensagem: `ML item ${mlData.id} created`,
+        metadata: logMetadata,
+      })
+    }
     return { error: null, mlItemId: mlData.id, cachedAttrs: mandatoryAttrs, cachedCityId: cityId }
   }
 
@@ -392,7 +422,30 @@ async function handleUpdate(
   cachedAttrs: string[] | null,
   cachedCityId?: string | null,
   mlPlataformaId?: string | null,
-): Promise<{ error: string | null; cachedAttrs?: string[]; cachedCityId?: string | null }> {
+): Promise<{
+  error: string | null
+  cachedAttrs?: string[]
+  cachedCityId?: string | null
+  blocked?: boolean
+}> {
+  const validation = await validatePayload(null as any, veiculo, { supabase })
+  if (!validation.valid) {
+    await supabase.from('ml_listings').update({ status: 'blocked' }).eq('id', listing.id)
+    await supabase.from('veiculos').update({ requires_review: true }).eq('id', veiculo.id)
+    if (mlPlataformaId) {
+      const categoria = veiculo.categoria || ''
+      await supabase.from('sync_log').insert({
+        plataforma_id: mlPlataformaId,
+        veiculo_id: veiculo.id,
+        acao: 'sync',
+        status: 'erro',
+        mensagem: `VEHICLE_BODY_TYPE inválido: categoria='${categoria}'`,
+        metadata: { categoria, atributo: 'VEHICLE_BODY_TYPE', motivo: 'sem_mapeamento' },
+      })
+    }
+    return { error: validation.errors.join('; '), blocked: true, cachedAttrs, cachedCityId }
+  }
+
   let mandatoryAttrs = cachedAttrs
   if (!mandatoryAttrs) {
     mandatoryAttrs = await fetchCategoryAttributes(token, 'MLB1744')
@@ -418,14 +471,6 @@ async function handleUpdate(
     return { error: buildErr.message, cachedAttrs: mandatoryAttrs, cachedCityId: cityId }
   }
 
-  const validation = await validatePayload(payload, veiculo, { supabase })
-  if (!validation.valid) {
-    return {
-      error: validation.errors.join('; '),
-      cachedAttrs: mandatoryAttrs,
-      cachedCityId: cityId,
-    }
-  }
   if (validation.corrections.title) payload.title = validation.corrections.title
   if (validation.corrections.description && payload.description) {
     payload.description.plain_text = validation.corrections.description as string
@@ -462,6 +507,21 @@ async function handleUpdate(
   }
 
   await fetchAndStorePerformance(supabase, token, listing.ml_item_id, veiculo.id)
+
+  if (mlPlataformaId) {
+    const bodyType = getVehicleBodyType(veiculo.categoria)
+    const logMetadata: Record<string, any> = bodyType?.esportivo_fallback
+      ? { esportivo_sync: 'fallback_coupe' }
+      : {}
+    await supabase.from('sync_log').insert({
+      plataforma_id: mlPlataformaId,
+      veiculo_id: veiculo.id,
+      acao: 'sync',
+      status: 'success',
+      mensagem: `ML item ${listing.ml_item_id} updated`,
+      metadata: logMetadata,
+    })
+  }
 
   return { error: null, cachedAttrs: mandatoryAttrs, cachedCityId: cityId }
 }

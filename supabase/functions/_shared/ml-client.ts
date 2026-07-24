@@ -60,6 +60,25 @@ const ML_COLOR_MAP: Record<string, string> = {
   vinho: 'Vinho',
 }
 
+export const ML_BODY_TYPE_MAP: Record<
+  string,
+  { id: string; name: string; esportivo_fallback?: boolean }
+> = {
+  suv: { id: '452759', name: 'SUV' },
+  picape: { id: '452756', name: 'Picape' },
+  hatch: { id: '479344', name: 'Hatch' },
+  sedan: { id: '452758', name: 'Sedán' },
+  van: { id: '452755', name: 'Van' },
+  esportivo: { id: '452749', name: 'Coupé', esportivo_fallback: true },
+}
+
+export function getVehicleBodyType(
+  categoria: string | null | undefined,
+): { id: string; name: string; esportivo_fallback?: boolean } | null {
+  if (!categoria) return null
+  return ML_BODY_TYPE_MAP[categoria.toLowerCase().trim()] || null
+}
+
 function normalizeValue(value: string, map: Record<string, string>): string {
   const key = value.toLowerCase().trim()
   return map[key] || value
@@ -240,7 +259,13 @@ function buildLocation(v: any, cityId?: string | null): any {
 }
 
 function buildAttributes(v: any, isZeroKm: boolean): any[] {
+  const bodyType = getVehicleBodyType(v.categoria)
+  if (!bodyType) {
+    throw new Error(`VEHICLE_BODY_TYPE inválido: categoria='${v.categoria || ''}'`)
+  }
   return [
+    { id: 'VEHICLE_TYPE', value_id: '398351', value_name: 'Carros e caminhonetes' },
+    { id: 'VEHICLE_BODY_TYPE', value_id: bodyType.id, value_name: bodyType.name },
     { id: 'BRAND', value_name: v.marca || undefined },
     { id: 'MODEL', value_name: v.modelo || undefined },
     { id: 'VEHICLE_YEAR', value_name: v.ano_modelo ? String(v.ano_modelo) : undefined },

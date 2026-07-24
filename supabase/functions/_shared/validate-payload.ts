@@ -1,4 +1,5 @@
 import { createClient } from 'jsr:@supabase/supabase-js@2'
+import { ML_BODY_TYPE_MAP } from './ml-client.ts'
 
 type SupabaseClient = ReturnType<typeof createClient>
 
@@ -123,6 +124,11 @@ export async function validarPayloadML(
   const blockingErrors: string[] = []
   const qualityAlerts: string[] = []
   const corrections: any = {}
+
+  const categoriaRaw = (veiculo.categoria || '').toLowerCase().trim()
+  if (!ML_BODY_TYPE_MAP[categoriaRaw]) {
+    blockingErrors.push(`VEHICLE_BODY_TYPE inválido: categoria='${veiculo.categoria || ''}'`)
+  }
 
   const titleResult = montarTituloML(veiculo)
   corrections.title = titleResult.titulo
