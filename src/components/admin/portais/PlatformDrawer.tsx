@@ -8,9 +8,11 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
+import { AlertCircle, Loader2 } from 'lucide-react'
 import { AdQualityBadge } from './AdQualityBadge'
 import { calculateAdQualityScore, getQualityLabel } from '@/lib/ad-quality-score'
 import { getImageUrl } from '@/lib/image-utils'
+import { useDebouncedToggle } from '@/hooks/use-debounced-toggle'
 import type { VeiculoSync, Plataforma } from '@/services/plataformas'
 
 const SLUG_MAP: Record<string, keyof VeiculoSync> = {
@@ -32,9 +34,12 @@ interface Props {
   plataformas: Plataforma[]
   open: boolean
   onOpenChange: (open: boolean) => void
-  onToggle: (slug: string, veiculoId: string, publicar: boolean) => void
+  onSync: (
+    slug: string,
+    veiculoId: string,
+    publicar: boolean,
+  ) => Promise<{ success: boolean; message: string }>
   onUpdateAdType: (veiculoId: string, platform: string, adType: string) => void
-  toggling: Record<string, boolean>
 }
 
 function ScoreBar({ label, value, max }: { label: string; value: number; max: number }) {
@@ -55,24 +60,88 @@ function ScoreBar({ label, value, max }: { label: string; value: number; max: nu
   )
 }
 
+function PlatformToggleRow({
+  plataforma,
+  vehicle,
+  onSync,
+  onUpdateAdType,
+}: {
+  plataforma: Plataforma
+  vehicle: VeiculoSync
+  onSync: Props['onSync']
+  onUpdateAdType: Props['onUpdateAdType']
+}) {
+  const field = SLUG_MAP[plataforma.slug]
+  const published = vehicle[field] as boolean
+  const { isLoading, error, handleToggle } = useDebouncedToggle(async (checked: boolean) => {
+    const result = await onSync(plataforma.slug, vehicle.id, checked)
+    if (!result.success) {
+      throw new Error(result.message)
+    }
+  })
+
+  const getAdType = () => {
+    if (plataforma.slug === 'mercadolivre') return vehicle.ml_listing_type || 'gold_special'
+    return ((vehicle.ad_types as Record<string, string>) || {})[plataforma.slug] || 'gold_special'
+  }
+
+  return (
+    <div className={`flex flex-col gap-1 p-3 border rounded-lg ${error ? 'border-red-200' : ''}`}>
+      <div className="flex items-center gap-3">
+        <div
+          className="w-3 h-3 rounded-full shrink-0"
+          style={{ backgroundColor: plataforma.cor || '#999' }}
+        />
+        <div className="flex-1 min-w-0">
+          <p className="font-medium text-sm">{plataforma.nome}</p>
+          <Badge
+            variant={published ? 'default' : 'secondary'}
+            className={`text-[10px] ${published ? 'bg-green-100 text-green-700' : ''}`}
+          >
+            {published ? 'Publicado' : 'Não publicado'}
+          </Badge>
+        </div>
+        <Select
+          value={getAdType()}
+          onValueChange={(v) => onUpdateAdType(vehicle.id, plataforma.slug, v)}
+        >
+          <SelectTrigger className="w-28 h-8 text-xs">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {AD_TYPE_OPTIONS.map((o) => (
+              <SelectItem key={o.value} value={o.value}>
+                {o.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        {isLoading && <Loader2 className="w-3.5 h-3.5 animate-spin text-blue-600 shrink-0" />}
+        <Switch checked={published || false} disabled={isLoading} onCheckedChange={handleToggle} />
+      </div>
+      {error && (
+        <div className="flex items-start gap-1.5 text-[10px] text-red-700 bg-red-50 rounded p-1.5">
+          <AlertCircle className="w-3 h-3 shrink-0 mt-0.5" />
+          <span className="break-words">{error}</span>
+        </div>
+      )}
+    </div>
+  )
+}
+
 export function PlatformDrawer({
   vehicle,
   plataformas,
   open,
   onOpenChange,
-  onToggle,
+  onSync,
   onUpdateAdType,
-  toggling,
 }: Props) {
   if (!vehicle) return null
   const score = calculateAdQualityScore(vehicle)
   const foto = vehicle.fotos?.[0]
     ? getImageUrl(vehicle.fotos[0])
     : 'https://img.usecurling.com/p/400/300?q=car'
-  const getAdType = (slug: string) => {
-    if (slug === 'mercadolivre') return vehicle.ml_listing_type || 'gold_special'
-    return ((vehicle.ad_types as Record<string, string>) || {})[slug] || 'gold_special'
-  }
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -119,48 +188,15 @@ export function PlatformDrawer({
 
         <div className="mt-4 space-y-3">
           <h4 className="font-bold text-sm text-gray-700">Plataformas</h4>
-          {plataformas.map((p) => {
-            const field = SLUG_MAP[p.slug]
-            const published = vehicle[field] as boolean
-            const toggleKey = `${vehicle.id}-${p.slug}`
-            return (
-              <div key={p.slug} className="flex items-center gap-3 p-3 border rounded-lg">
-                <div
-                  className="w-3 h-3 rounded-full shrink-0"
-                  style={{ backgroundColor: p.cor || '#999' }}
-                />
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium text-sm">{p.nome}</p>
-                  <Badge
-                    variant={published ? 'default' : 'secondary'}
-                    className={`text-[10px] ${published ? 'bg-green-100 text-green-700' : ''}`}
-                  >
-                    {published ? 'Publicado' : 'Não publicado'}
-                  </Badge>
-                </div>
-                <Select
-                  value={getAdType(p.slug)}
-                  onValueChange={(v) => onUpdateAdType(vehicle.id, p.slug, v)}
-                >
-                  <SelectTrigger className="w-28 h-8 text-xs">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {AD_TYPE_OPTIONS.map((o) => (
-                      <SelectItem key={o.value} value={o.value}>
-                        {o.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Switch
-                  checked={published || false}
-                  disabled={toggling[toggleKey]}
-                  onCheckedChange={(val) => onToggle(p.slug, vehicle.id, val)}
-                />
-              </div>
-            )
-          })}
+          {plataformas.map((p) => (
+            <PlatformToggleRow
+              key={p.slug}
+              plataforma={p}
+              vehicle={vehicle}
+              onSync={onSync}
+              onUpdateAdType={onUpdateAdType}
+            />
+          ))}
         </div>
       </SheetContent>
     </Sheet>

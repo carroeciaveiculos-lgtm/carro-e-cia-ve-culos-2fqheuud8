@@ -32,9 +32,12 @@ interface Props {
   plataformas: Plataforma[]
   isSelected: boolean
   onSelect: (checked: boolean) => void
-  onToggle: (slug: string, veiculoId: string, publicar: boolean) => void
+  onSync: (
+    slug: string,
+    veiculoId: string,
+    publicar: boolean,
+  ) => Promise<{ success: boolean; message: string }>
   onUpdateAdType: (veiculoId: string, platform: string, adType: string) => void
-  toggling: Record<string, boolean>
 }
 
 export function VehicleAccordion({
@@ -42,9 +45,8 @@ export function VehicleAccordion({
   plataformas,
   isSelected,
   onSelect,
-  onToggle,
+  onSync,
   onUpdateAdType,
-  toggling,
 }: Props) {
   const [expanded, setExpanded] = useState(false)
   const score = calculateAdQualityScore(veiculo)
@@ -124,16 +126,14 @@ export function VehicleAccordion({
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
             {plataformas.map((p) => {
               const pub = publicacoes.find((x) => x.platform === p.slug)
-              const toggleKey = `${veiculo.id}-${p.slug}`
               return (
                 <PortalCard
                   key={p.slug}
                   plataforma={p}
                   veiculo={veiculo}
                   publicacao={pub}
-                  onToggle={onToggle}
+                  onSync={onSync}
                   onUpdateAdType={onUpdateAdType}
-                  toggling={toggling[toggleKey] || false}
                 />
               )
             })}

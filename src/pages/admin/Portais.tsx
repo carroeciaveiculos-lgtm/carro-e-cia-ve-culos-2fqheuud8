@@ -17,7 +17,7 @@ import {
   type VeiculoSync,
 } from '@/services/plataformas'
 import { fetchPublicacoes } from '@/services/portais-sync'
-import { syncSelectedVehicles } from '@/services/ml-selective-sync'
+import { syncVehicleToPlatform, batchSyncVehicles } from '@/services/sync-plataforma'
 import { VehicleAccordion } from '@/components/admin/portais/VehicleAccordion'
 import { GlobalActionsBar } from '@/components/admin/portais/GlobalActionsBar'
 import { ErrorHistoryPanel } from '@/components/admin/portais/ErrorHistoryPanel'
@@ -51,7 +51,6 @@ export default function Portais() {
   const [loading, setLoading] = useState(true)
   const [syncing, setSyncing] = useState(false)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
-  const [toggling, setToggling] = useState<Record<string, boolean>>({})
   const [sortBy, setSortBy] = useState('marca_modelo')
   const [preflightOpen, setPreflightOpen] = useState(false)
   const [preflightResults, setPreflightResults] = useState<
@@ -147,20 +146,11 @@ export default function Portais() {
     }
 
     try {
-      const selections = [...selectedIds].map((id) => {
-        const v = vehicles.find((x) => x.id === id)
-        return {
-          veiculoId: id,
-          plan: v?.ml_listing_type === 'gold_pro' ? 'diamante' : 'prata',
-        }
-      })
-
-      const results = await syncSelectedVehicles(selections)
-      const successCount = results.filter((r) => r.success).length
-      const failCount = results.filter((r) => !r.success).length
+      const ids = [...selectedIds]
+      const result = await batchSyncVehicles(ids, 'mercadolivre')
       toast({
         title: 'Sincronização concluída',
-        description: `${successCount} sucesso, ${failCount} falha(s)`,
+        description: `${result.successCount} sucesso, ${result.failCount} falha(s)`,
       })
       setSelectedIds(new Set())
       loadVeiculos()
@@ -185,42 +175,41 @@ export default function Portais() {
     setDryRunOpen(true)
   }
 
-  const handleToggle = async (
+  const handleSync = async (
     slug: string,
     veiculoId: string,
     publicar: boolean,
-    skipPreflight = false,
-  ) => {
-    if (slug === 'mercadolivre' && publicar && !skipPreflight) {
-      const vehicle = vehicles.find((v) => v.id === veiculoId)
-      if (vehicle) {
-        const issues = validateMLPreflight(vehicle)
-        if (issues.length > 0) {
-          setPreflightResults([
-            { vehicleId: veiculoId, vehicleName: `${vehicle.marca} ${vehicle.modelo}`, issues },
-          ])
-          preflightProceedRef.current = () => {
-            handleToggle(slug, veiculoId, publicar, true)
-          }
-          setPreflightOpen(true)
-          return
-        }
-      }
-    }
-    const key = `${veiculoId}-${slug}`
-    setToggling((p) => ({ ...p, [key]: true }))
-    setVehicles((prev) =>
-      prev.map((v) => (v.id !== veiculoId ? v : { ...v, [`publicado_${slug}`]: publicar })),
-    )
-    try {
-      await toggleVehiclePublication(slug, veiculoId, publicar)
-    } catch (err: any) {
-      setVehicles((prev) =>
-        prev.map((v) => (v.id !== veiculoId ? v : { ...v, [`publicado_${slug}`]: !publicar })),
+  ): Promise<{ success: boolean; message: string }> => {
+    if (slug === 'mercadolivre') {
+      const result = await syncVehicleToPlatform(
+        veiculoId,
+        'mercadolivre',
+        publicar ? 'publish' : 'unpublish',
       )
-      toast({ title: 'Erro na operação', description: err.message, variant: 'destructive' })
-    } finally {
-      setToggling((p) => ({ ...p, [key]: false }))
+      setVehicles((prev) =>
+        prev.map((v) => {
+          if (v.id !== veiculoId) return v
+          return { ...v, [`publicado_${slug}`]: result.success ? publicar : !publicar }
+        }),
+      )
+      if (!result.success) {
+        toast({
+          title: 'Erro na sincronização',
+          description: result.message,
+          variant: 'destructive',
+        })
+      }
+      return result
+    } else {
+      try {
+        await toggleVehiclePublication(slug, veiculoId, publicar)
+        setVehicles((prev) =>
+          prev.map((v) => (v.id !== veiculoId ? v : { ...v, [`publicado_${slug}`]: publicar })),
+        )
+        return { success: true, message: 'Status atualizado' }
+      } catch (err: any) {
+        return { success: false, message: err.message }
+      }
     }
   }
 
@@ -326,9 +315,8 @@ export default function Portais() {
               plataformas={plataformas}
               isSelected={selectedIds.has(v.id)}
               onSelect={(c) => handleSelect(v.id, c)}
-              onToggle={handleToggle}
+              onSync={handleSync}
               onUpdateAdType={handleUpdateAdType}
-              toggling={toggling}
             />
           ))}
         </div>

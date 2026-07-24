@@ -1,8 +1,9 @@
 import { Switch } from '@/components/ui/switch'
 import { Badge } from '@/components/ui/badge'
-import { AlertCircle, Clock, ExternalLink } from 'lucide-react'
+import { AlertCircle, Clock, ExternalLink, Loader2 } from 'lucide-react'
 import { translateError } from '@/lib/platform-errors'
 import { PortalTierSelector } from './PortalTierSelector'
+import { useDebouncedToggle } from '@/hooks/use-debounced-toggle'
 import type { Plataforma, PublicacaoStatus, VeiculoSync } from '@/services/plataformas'
 
 const SLUG_MAP: Record<string, keyof VeiculoSync> = {
@@ -27,28 +28,31 @@ interface Props {
   plataforma: Plataforma
   veiculo: VeiculoSync
   publicacao?: PublicacaoStatus
-  onToggle: (slug: string, veiculoId: string, publicar: boolean) => void
+  onSync: (
+    slug: string,
+    veiculoId: string,
+    publicar: boolean,
+  ) => Promise<{ success: boolean; message: string }>
   onUpdateAdType: (veiculoId: string, platform: string, adType: string) => void
-  toggling: boolean
 }
 
-export function PortalCard({
-  plataforma,
-  veiculo,
-  publicacao,
-  onToggle,
-  onUpdateAdType,
-  toggling,
-}: Props) {
+export function PortalCard({ plataforma, veiculo, publicacao, onSync, onUpdateAdType }: Props) {
   const field = SLUG_MAP[plataforma.slug]
   const published = veiculo[field] as boolean
   const hasError = publicacao?.status === 'error' || publicacao?.status === 'erro'
   const errorMsg =
     hasError && publicacao?.erro_msg ? translateError(publicacao.erro_msg).message : null
 
+  const { isLoading, error, handleToggle } = useDebouncedToggle(async (checked: boolean) => {
+    const result = await onSync(plataforma.slug, veiculo.id, checked)
+    if (!result.success) {
+      throw new Error(result.message)
+    }
+  })
+
   return (
     <div
-      className={`border rounded-lg p-3 space-y-2 ${hasError ? 'border-red-200 bg-red-50/30' : 'border-gray-200 bg-white'}`}
+      className={`border rounded-lg p-3 space-y-2 ${error ? 'border-red-200 bg-red-50/30' : 'border-gray-200 bg-white'}`}
     >
       <div className="flex items-center gap-2">
         <div
@@ -56,11 +60,8 @@ export function PortalCard({
           style={{ backgroundColor: plataforma.cor || '#999' }}
         />
         <span className="font-medium text-sm flex-1 truncate">{plataforma.nome}</span>
-        <Switch
-          checked={published || false}
-          disabled={toggling}
-          onCheckedChange={(val) => onToggle(plataforma.slug, veiculo.id, val)}
-        />
+        {isLoading && <Loader2 className="w-3.5 h-3.5 animate-spin text-blue-600 shrink-0" />}
+        <Switch checked={published || false} disabled={isLoading} onCheckedChange={handleToggle} />
       </div>
 
       <div className="flex items-center gap-2">
@@ -93,7 +94,14 @@ export function PortalCard({
         <span>{formatLastSync(publicacao?.publicado_em || publicacao?.updated_at || null)}</span>
       </div>
 
-      {errorMsg && (
+      {error && (
+        <div className="flex items-start gap-1.5 text-[10px] text-red-700 bg-red-50 rounded p-1.5">
+          <AlertCircle className="w-3 h-3 shrink-0 mt-0.5" />
+          <span className="break-words">{error}</span>
+        </div>
+      )}
+
+      {!error && errorMsg && (
         <div className="flex items-start gap-1.5 text-[10px] text-red-700 bg-red-50 rounded p-1.5">
           <AlertCircle className="w-3 h-3 shrink-0 mt-0.5" />
           <span>{errorMsg}</span>

@@ -32,7 +32,7 @@ Deno.serve(async (req) => {
     }
 
     const { data: configs } = await supabase.from('configuracoes_api').select('*').eq('ativo', true)
-    const hasMLConfig = (configs || []).some((c) => c.portal === 'mercadolivre') || true
+    const hasMLConfig = (configs || []).some((c) => c.portal === 'mercadolivre')
 
     const allResults: any[] = []
     const logsToInsert: any[] = []
