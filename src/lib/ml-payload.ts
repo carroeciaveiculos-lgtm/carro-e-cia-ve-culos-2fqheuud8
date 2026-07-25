@@ -1,52 +1,12 @@
 import { montarTituloMLPreview } from '@/lib/ml-title'
-
-const ML_FUEL_MAP: Record<string, string> = {
-  flex: 'Flex',
-  gasolina: 'Gasolina',
-  diesel: 'Diesel',
-  álcool: 'Álcool',
-  alcool: 'Álcool',
-  híbrido: 'Híbrido',
-  hibrido: 'Híbrido',
-  elétrico: 'Elétrico',
-  eletrico: 'Elétrico',
-}
-
-const ML_TRANSMISSION_MAP: Record<string, string> = {
-  manual: 'Manual',
-  automática: 'Automática',
-  automatica: 'Automática',
-  automatizada: 'Automatizada',
-  cvt: 'CVT',
-}
-
-const ML_COLOR_MAP: Record<string, string> = {
-  branco: 'Branco',
-  preto: 'Preto',
-  prata: 'Prata',
-  vermelho: 'Vermelho',
-  azul: 'Azul',
-  verde: 'Verde',
-  amarelo: 'Amarelo',
-  cinza: 'Cinza',
-  marrom: 'Marrom',
-  bege: 'Bege',
-  dourado: 'Dourado',
-  vinho: 'Vinho',
-}
-
-const ML_STEERING_MAP: Record<string, string> = {
-  hidráulica: 'Hidráulica',
-  hidraulica: 'Hidráulica',
-  elétrica: 'Elétrica',
-  eletrica: 'Elétrica',
-  mecânica: 'Mecânica',
-  mecanica: 'Mecânica',
-}
-
-function normalizeValue(value: string, map: Record<string, string>): string {
-  return map[value.toLowerCase().trim()] || value
-}
+import {
+  normalizeValue,
+  lookupNormalized,
+  ML_FUEL_MAP,
+  ML_TRANSMISSION_MAP,
+  ML_COLOR_MAP,
+  ML_STEERING_MAP,
+} from '@/lib/ml-normalize'
 
 export function buildMLPayloadPreview(vehicle: any): any {
   const titleResult = montarTituloMLPreview(vehicle)
@@ -71,22 +31,34 @@ export function buildMLPayloadPreview(vehicle: any): any {
     },
     {
       id: 'COLOR',
-      value_name: vehicle.cor ? normalizeValue(vehicle.cor, ML_COLOR_MAP) : undefined,
+      value_name: vehicle.cor
+        ? (lookupNormalized(vehicle.cor, ML_COLOR_MAP) ?? normalizeValue(vehicle.cor) ?? undefined)
+        : undefined,
     },
     {
       id: 'FUEL_TYPE',
       value_name: vehicle.combustivel
-        ? normalizeValue(vehicle.combustivel, ML_FUEL_MAP)
+        ? (lookupNormalized(vehicle.combustivel, ML_FUEL_MAP) ??
+          normalizeValue(vehicle.combustivel) ??
+          undefined)
         : undefined,
     },
     {
       id: 'TRANSMISSION',
-      value_name: vehicle.cambio ? normalizeValue(vehicle.cambio, ML_TRANSMISSION_MAP) : undefined,
+      value_name: vehicle.cambio
+        ? (lookupNormalized(vehicle.cambio, ML_TRANSMISSION_MAP) ??
+          normalizeValue(vehicle.cambio) ??
+          undefined)
+        : undefined,
     },
     { id: 'DOORS', value_name: vehicle.portas ? String(vehicle.portas) : undefined },
     {
       id: 'STEERING',
-      value_name: vehicle.direcao ? normalizeValue(vehicle.direcao, ML_STEERING_MAP) : undefined,
+      value_name: vehicle.direcao
+        ? (lookupNormalized(vehicle.direcao, ML_STEERING_MAP) ??
+          normalizeValue(vehicle.direcao) ??
+          undefined)
+        : undefined,
     },
     { id: 'TRIM', value_name: vehicle.versao || undefined },
     { id: 'ITEM_CONDITION', value_name: isZeroKm ? 'Nuevo' : 'Usado' },

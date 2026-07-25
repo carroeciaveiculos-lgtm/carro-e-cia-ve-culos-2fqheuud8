@@ -1,3 +1,12 @@
+import {
+  normalizeValue,
+  lookupNormalized,
+  ML_FUEL_MAP,
+  ML_TRANSMISSION_MAP,
+  ML_COLOR_MAP,
+  ML_STEERING_MAP,
+} from '@/lib/ml-normalize'
+
 export interface MLValidationResult {
   success: boolean
   blockingErrors: string[]
@@ -126,11 +135,39 @@ export function generateMLPayloadPreview(vehicle: VehicleForValidation): Record<
             ? { number: Number(vehicle.quilometragem), unit: 'km' }
             : undefined,
       },
-      { id: 'COLOR', value_name: vehicle.cor || undefined },
-      { id: 'FUEL_TYPE', value_name: vehicle.combustivel || undefined },
-      { id: 'TRANSMISSION', value_name: vehicle.cambio || undefined },
+      {
+        id: 'COLOR',
+        value_name: vehicle.cor
+          ? (lookupNormalized(vehicle.cor, ML_COLOR_MAP) ??
+            normalizeValue(vehicle.cor) ??
+            undefined)
+          : undefined,
+      },
+      {
+        id: 'FUEL_TYPE',
+        value_name: vehicle.combustivel
+          ? (lookupNormalized(vehicle.combustivel, ML_FUEL_MAP) ??
+            normalizeValue(vehicle.combustivel) ??
+            undefined)
+          : undefined,
+      },
+      {
+        id: 'TRANSMISSION',
+        value_name: vehicle.cambio
+          ? (lookupNormalized(vehicle.cambio, ML_TRANSMISSION_MAP) ??
+            normalizeValue(vehicle.cambio) ??
+            undefined)
+          : undefined,
+      },
       { id: 'DOORS', value_name: vehicle.portas ? String(vehicle.portas) : undefined },
-      { id: 'STEERING', value_name: vehicle.direcao || undefined },
+      {
+        id: 'STEERING',
+        value_name: vehicle.direcao
+          ? (lookupNormalized(vehicle.direcao, ML_STEERING_MAP) ??
+            normalizeValue(vehicle.direcao) ??
+            undefined)
+          : undefined,
+      },
       { id: 'TRIM', value_name: vehicle.versao || undefined },
     ].filter((a) => a.value_name !== undefined),
     location: {

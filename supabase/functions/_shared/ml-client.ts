@@ -16,32 +16,42 @@ const LISTING_TYPE_MAP: Record<string, string> = {
   silver: 'silver',
 }
 
+export function normalizeValue(value: unknown): string | null {
+  if (typeof value !== 'string') return null
+  const trimmed = value.trim().toLowerCase()
+  if (trimmed.length === 0) return null
+  const noDiacritics = trimmed.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+  const collapsed = noDiacritics.replace(/\s+/g, ' ').trim()
+  if (collapsed.length === 0) return null
+  return collapsed
+}
+
+function lookupNormalized(value: unknown, map: Record<string, string>): string | null {
+  const normalized = normalizeValue(value)
+  if (normalized === null) return null
+  return map[normalized] || null
+}
+
 const ML_FUEL_MAP: Record<string, string> = {
   flex: 'Flex',
   gasolina: 'Gasolina',
   diesel: 'Diesel',
-  álcool: 'Álcool',
   alcool: 'Álcool',
-  híbrido: 'Híbrido',
   hibrido: 'Híbrido',
-  elétrico: 'Elétrico',
   eletrico: 'Elétrico',
 }
 
 const ML_TRANSMISSION_MAP: Record<string, string> = {
   manual: 'Manual',
-  automática: 'Automática',
+  automatico: 'Automática',
   automatica: 'Automática',
   automatizada: 'Automatizada',
   cvt: 'CVT',
 }
 
 const ML_STEERING_MAP: Record<string, string> = {
-  hidráulica: 'Hidráulica',
   hidraulica: 'Hidráulica',
-  elétrica: 'Elétrica',
   eletrica: 'Elétrica',
-  mecânica: 'Mecânica',
   mecanica: 'Mecânica',
 }
 
@@ -77,11 +87,6 @@ export function getVehicleBodyType(
 ): { id: string; name: string; esportivo_fallback?: boolean } | null {
   if (!categoria) return null
   return ML_BODY_TYPE_MAP[categoria.toLowerCase().trim()] || null
-}
-
-function normalizeValue(value: string, map: Record<string, string>): string {
-  const key = value.toLowerCase().trim()
-  return map[key] || value
 }
 
 export function resolveListingType(mlListingType: string | null | undefined): string {
@@ -274,19 +279,32 @@ function buildAttributes(v: any, isZeroKm: boolean): any[] {
       value_struct:
         v.quilometragem != null ? { number: Number(v.quilometragem), unit: 'km' } : undefined,
     },
-    { id: 'COLOR', value_name: v.cor ? normalizeValue(v.cor, ML_COLOR_MAP) : undefined },
+    {
+      id: 'COLOR',
+      value_name: v.cor
+        ? (lookupNormalized(v.cor, ML_COLOR_MAP) ?? normalizeValue(v.cor) ?? undefined)
+        : undefined,
+    },
     {
       id: 'FUEL_TYPE',
-      value_name: v.combustivel ? normalizeValue(v.combustivel, ML_FUEL_MAP) : undefined,
+      value_name: v.combustivel
+        ? (lookupNormalized(v.combustivel, ML_FUEL_MAP) ??
+          normalizeValue(v.combustivel) ??
+          undefined)
+        : undefined,
     },
     {
       id: 'TRANSMISSION',
-      value_name: v.cambio ? normalizeValue(v.cambio, ML_TRANSMISSION_MAP) : undefined,
+      value_name: v.cambio
+        ? (lookupNormalized(v.cambio, ML_TRANSMISSION_MAP) ?? normalizeValue(v.cambio) ?? undefined)
+        : undefined,
     },
     { id: 'DOORS', value_name: v.portas ? String(v.portas) : undefined },
     {
       id: 'STEERING',
-      value_name: v.direcao ? normalizeValue(v.direcao, ML_STEERING_MAP) : undefined,
+      value_name: v.direcao
+        ? (lookupNormalized(v.direcao, ML_STEERING_MAP) ?? normalizeValue(v.direcao) ?? undefined)
+        : undefined,
     },
     {
       id: 'ENGINE_DISPLACEMENT',
