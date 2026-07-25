@@ -1,9 +1,41 @@
+function fixMojibakeLatin1ToUtf8(input: string): string {
+  // Conserta o caso clássico de mojibake: UTF-8 interpretado como Latin-1
+  // Ex.: "AutomÃ¡tica" -> "Automática", "HÃ­brido" -> "Híbrido"
+  return input
+    .replace(/Ã£/g, 'ã')
+    .replace(/Ã§/g, 'ç')
+    .replace(/Ã¡/g, 'á')
+    .replace(/Ã©/g, 'é')
+    .replace(/Ãª/g, 'ê')
+    .replace(/Ã­/g, 'í')
+    .replace(/Ã³/g, 'ó')
+    .replace(/Ã´/g, 'ô')
+    .replace(/Ãµ/g, 'õ')
+    .replace(/Ãº/g, 'ú')
+    .replace(/Ãœ/g, 'Ü')
+    .replace(/Ã/g, 'Á')
+    .replace(/Ã‰/g, 'É')
+    .replace(/ÃŠ/g, 'Ê')
+    .replace(/Ã/g, 'Í')
+    .replace(/Ã“/g, 'Ó')
+    .replace(/Ã”/g, 'Ô')
+    .replace(/Ã•/g, 'Õ')
+    .replace(/Ãš/g, 'Ú')
+}
+
 export function normalizeValue(value: unknown): string | null {
   if (typeof value !== 'string') return null
-  const trimmed = value.trim().toLowerCase()
+
+  // Corrige mojibake antes do normalize/matching
+  const fixed = fixMojibakeLatin1ToUtf8(value)
+
+  const trimmed = fixed.trim().toLowerCase()
   if (trimmed.length === 0) return null
+
+  // Remove diacríticos para permitir matching mais simples (ex.: hídrido -> hibrido)
   const noDiacritics = trimmed.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
   const collapsed = noDiacritics.replace(/\s+/g, ' ').trim()
+
   if (collapsed.length === 0) return null
   return collapsed
 }
