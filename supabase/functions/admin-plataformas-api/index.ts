@@ -249,13 +249,15 @@ async function handlePublish(supabase: any, slug: string, plataformaId: string, 
         .eq('veiculo_id', veiculoId)
     }
   }
-  await supabase.from('sync_log').insert({
-    plataforma_id: plataformaId,
-    veiculo_id: veiculoId,
-    acao: publicar ? 'publish' : 'close',
-    status: 'pending',
-    mensagem: publicar ? 'Publicação solicitada' : 'Encerramento solicitado',
-  })
+  await supabase
+    .from('sync_log')
+    .insert({
+      plataforma_id: plataformaId,
+      veiculo_id: veiculoId,
+      acao: publicar ? 'publish' : 'close',
+      status: 'pending',
+      mensagem: publicar ? 'Publicação solicitada' : 'Encerramento solicitado',
+    })
   return json({ success: true })
 }
 
@@ -278,12 +280,14 @@ async function handleForceSync(supabase: any, slug: string, plataforma: any) {
     },
     body: JSON.stringify({ plataforma: slug }),
   })
-  await supabase.from('sync_log').insert({
-    plataforma_id: plataforma.id,
-    acao: 'force_sync',
-    status: 'success',
-    mensagem: `Sincronização forçada para ${plataforma.nome}`,
-  })
+  await supabase
+    .from('sync_log')
+    .insert({
+      plataforma_id: plataforma.id,
+      acao: 'force_sync',
+      status: 'success',
+      mensagem: `Sincronização forçada para ${plataforma.nome}`,
+    })
   await supabase
     .from('integracao_plataforma')
     .update({

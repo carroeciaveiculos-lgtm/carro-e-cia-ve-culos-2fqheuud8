@@ -88,12 +88,14 @@ export async function syncVehicleToML(
   const listingType = resolveListingType(veiculo.ml_listing_type)
   const typeCheck = await checkAvailableListingTypes(token, 'MLB1744', listingType)
   if (!typeCheck.valid) {
-    await supabase.from('logs_integracao').insert({
-      veiculo_id: veiculoId,
-      portal: 'mercadolivre',
-      status: 'falha',
-      payload_erro: { error: typeCheck.error },
-    })
+    await supabase
+      .from('logs_integracao')
+      .insert({
+        veiculo_id: veiculoId,
+        portal: 'mercadolivre',
+        status: 'falha',
+        payload_erro: { error: typeCheck.error },
+      })
     return { success: false, error: typeCheck.error }
   }
 
@@ -161,20 +163,24 @@ export async function syncVehicleToML(
     await fetchAndStorePerformance(supabase, token, mlData.id, veiculoId)
     return { success: true, ml_item_id: mlData.id }
   } catch (err: any) {
-    await supabase.from('logs_integracao').insert({
-      veiculo_id: veiculoId,
-      portal: 'mercadolivre',
-      status: 'falha',
-      payload_erro: { error: err.message },
-    })
-    if (mlPid) {
-      await supabase.from('sync_log').insert({
-        plataforma_id: mlPid,
+    await supabase
+      .from('logs_integracao')
+      .insert({
         veiculo_id: veiculoId,
-        acao: 'sync',
-        status: 'erro',
-        mensagem: err.message.substring(0, 500),
+        portal: 'mercadolivre',
+        status: 'falha',
+        payload_erro: { error: err.message },
       })
+    if (mlPid) {
+      await supabase
+        .from('sync_log')
+        .insert({
+          plataforma_id: mlPid,
+          veiculo_id: veiculoId,
+          acao: 'sync',
+          status: 'erro',
+          mensagem: err.message.substring(0, 500),
+        })
     }
     await supabase.from('veiculos').update({ requires_review: true }).eq('id', veiculoId)
     return { success: false, error: err.message }

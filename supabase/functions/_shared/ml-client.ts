@@ -16,9 +16,33 @@ const LISTING_TYPE_MAP: Record<string, string> = {
   silver: 'silver',
 }
 
+function fixMojibakeLatin1ToUtf8(input: string): string {
+  return input
+    .replace(/Ã£/g, 'ã')
+    .replace(/Ã§/g, 'ç')
+    .replace(/Ã¡/g, 'á')
+    .replace(/Ã©/g, 'é')
+    .replace(/Ãª/g, 'ê')
+    .replace(/Ã­/g, 'í')
+    .replace(/Ã³/g, 'ó')
+    .replace(/Ã´/g, 'ô')
+    .replace(/Ãµ/g, 'õ')
+    .replace(/Ãº/g, 'ú')
+    .replace(/Ãœ/g, 'Ü')
+    .replace(/Ã/g, 'Á')
+    .replace(/Ã‰/g, 'É')
+    .replace(/ÃŠ/g, 'Ê')
+    .replace(/Ã/g, 'Í')
+    .replace(/Ã“/g, 'Ó')
+    .replace(/Ã”/g, 'Ô')
+    .replace(/Ã•/g, 'Õ')
+    .replace(/Ãš/g, 'Ú')
+}
+
 export function normalizeValue(value: unknown): string | null {
   if (typeof value !== 'string') return null
-  const trimmed = value.trim().toLowerCase()
+  const fixed = fixMojibakeLatin1ToUtf8(value)
+  const trimmed = fixed.trim().toLowerCase()
   if (trimmed.length === 0) return null
   const noDiacritics = trimmed.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
   const collapsed = noDiacritics.replace(/\s+/g, ' ').trim()
