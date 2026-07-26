@@ -31,6 +31,30 @@ if (typeof window !== 'undefined') {
         })
       }
     }
+    if (
+      reqUrl.includes('htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/')
+    ) {
+      try {
+        const response = await originalFetch.apply(this, args)
+        if (!response.ok) {
+          console.debug(
+            'Supabase storage image request failed (%d), returning placeholder',
+            response.status,
+          )
+          return new Response('', {
+            status: 200,
+            headers: { 'Content-Type': 'image/png' },
+          })
+        }
+        return response
+      } catch (e) {
+        console.debug('Supabase storage image fetch silently failed')
+        return new Response('', {
+          status: 200,
+          headers: { 'Content-Type': 'image/png' },
+        })
+      }
+    }
     try {
       const response = await originalFetch.apply(this, args)
       const reqMethod = (
