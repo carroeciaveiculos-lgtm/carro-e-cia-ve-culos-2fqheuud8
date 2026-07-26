@@ -79,7 +79,9 @@ export function SEO({
     const scripts: HTMLScriptElement[] = []
 
     let orgScript = document.querySelector('script#schema-org') as HTMLScriptElement
-    if (!orgScript) {
+    if (orgScript) {
+      orgScript.text = JSON.stringify(organizationSchema)
+    } else {
       orgScript = document.createElement('script')
       orgScript.type = 'application/ld+json'
       orgScript.id = 'schema-org'

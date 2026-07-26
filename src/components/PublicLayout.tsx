@@ -113,7 +113,7 @@ export default function PublicLayout() {
             aria-label="Página Inicial"
           >
             <img
-              src="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/logos/logo-carro-e-cia.webp"
+              src="https://imagens.carroeciamotors.com.br/logos-e-imagens/logos/logo-carro-e-cia.webp"
               alt="Carro e Cia Logo Oficial"
               className="h-12 max-h-12 w-auto max-w-full object-contain block"
               width="220"

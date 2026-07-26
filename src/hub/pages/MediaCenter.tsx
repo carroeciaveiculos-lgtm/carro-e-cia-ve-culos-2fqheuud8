@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useToast } from '@/hooks/use-toast'
 import { supabase } from '@/lib/supabase/client'
+import { uploadToR2 } from '@/lib/r2-upload'
 import { ImageEditorModal } from '@/components/admin/ImageEditorModal'
 import {
   Image as ImageIcon,
@@ -115,15 +116,13 @@ export default function MediaCenterPage() {
         }
 
         const filename = `inventory/${activeFolder.replace(/[^a-zA-Z0-9_-]/g, '')}/${Date.now()}_${finalFilename}`
-        const { error: uploadError } = await supabase.storage
-          .from('logos-e-imagens')
-          .upload(filename, fileToUpload)
+        const { publicUrl } = await uploadToR2(
+          fileToUpload,
+          filename,
+          contentType,
+          'logos-e-imagens',
+        )
 
-        if (uploadError) throw uploadError
-
-        const {
-          data: { publicUrl },
-        } = supabase.storage.from('logos-e-imagens').getPublicUrl(filename)
         await supabase.from('media_assets').insert({
           file_name: finalFilename,
           file_path: publicUrl,
@@ -145,8 +144,6 @@ export default function MediaCenterPage() {
   const handleDelete = async (id: string, url: string) => {
     if (!confirm('Deseja realmente excluir esta imagem?')) return
     try {
-      const path = url.split('/logos-e-imagens/')[1]
-      if (path) await supabase.storage.from('logos-e-imagens').remove([path])
       await supabase.from('media_assets').delete().eq('id', id)
 
       toast({ title: 'Imagem excluída' })

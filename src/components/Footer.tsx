@@ -14,16 +14,16 @@ export function Footer() {
               <picture className="inline-block mb-2">
                 <source
                   media="(max-width: 480px)"
-                  srcSet="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/logos/logo-carro-e-cia.webp"
+                  srcSet="https://imagens.carroeciamotors.com.br/logos-e-imagens/logos/logo-carro-e-cia.webp"
                   type="image/webp"
                 />
                 <source
                   media="(min-width: 481px)"
-                  srcSet="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/logos/logo-carro-e-cia.webp"
+                  srcSet="https://imagens.carroeciamotors.com.br/logos-e-imagens/logos/logo-carro-e-cia.webp"
                   type="image/webp"
                 />
                 <img
-                  src="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/logos/logo-carro-e-cia.webp"
+                  src="https://imagens.carroeciamotors.com.br/logos-e-imagens/logos/logo-carro-e-cia.webp"
                   alt="Carro e Cia"
                   loading="lazy"
                   width="150"
@@ -117,7 +117,7 @@ export function Footer() {
             <ul className="flex flex-wrap gap-4 items-center mb-6">
               <li>
                 <img
-                  src="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/parceiros/Bradesco.webp"
+                  src="https://imagens.carroeciamotors.com.br/logos-e-imagens/parceiros/Bradesco.webp"
                   alt="Bradesco"
                   className="h-6 filter grayscale invert opacity-70 hover:opacity-100 transition-opacity"
                   loading="lazy"
@@ -125,7 +125,7 @@ export function Footer() {
               </li>
               <li>
                 <img
-                  src="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/parceiros/BV.webp"
+                  src="https://imagens.carroeciamotors.com.br/logos-e-imagens/parceiros/BV.webp"
                   alt="BV"
                   className="h-6 filter grayscale invert opacity-70 hover:opacity-100 transition-opacity"
                   loading="lazy"
@@ -133,7 +133,7 @@ export function Footer() {
               </li>
               <li>
                 <img
-                  src="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/parceiros/Logo-km-zero-fundo-transparente.webp"
+                  src="https://imagens.carroeciamotors.com.br/logos-e-imagens/parceiros/Logo-km-zero-fundo-transparente.webp"
                   alt="Km Zero"
                   className="h-6 filter grayscale invert opacity-70 hover:opacity-100 transition-opacity"
                   loading="lazy"
@@ -141,7 +141,7 @@ export function Footer() {
               </li>
               <li>
                 <img
-                  src="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/parceiros/santander.webp"
+                  src="https://imagens.carroeciamotors.com.br/logos-e-imagens/parceiros/santander.webp"
                   alt="Santander"
                   className="h-6 filter grayscale invert opacity-70 hover:opacity-100 transition-opacity"
                   loading="lazy"
@@ -149,7 +149,7 @@ export function Footer() {
               </li>
               <li>
                 <img
-                  src="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/parceiros/Safra.webp"
+                  src="https://imagens.carroeciamotors.com.br/logos-e-imagens/parceiros/Safra.webp"
                   alt="Safra"
                   className="h-6 filter grayscale invert opacity-70 hover:opacity-100 transition-opacity"
                   loading="lazy"

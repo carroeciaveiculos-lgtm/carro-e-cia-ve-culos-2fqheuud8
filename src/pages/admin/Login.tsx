@@ -36,7 +36,7 @@ export default function Login() {
       <div className="w-full max-w-[400px] bg-card rounded-2xl shadow-xl border overflow-hidden">
         <div className="bg-secondary p-8 text-center flex flex-col items-center justify-center">
           <img
-            src="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/logos/logo-carro-e-cia.webp"
+            src="https://imagens.carroeciamotors.com.br/logos-e-imagens/logos/logo-carro-e-cia.webp"
             alt="Logo"
             className="w-20 h-20 mb-4 rounded-xl shadow-md object-contain bg-white p-1"
             onError={(e) => {
