@@ -26,7 +26,6 @@ Deno.serve(async (req: Request) => {
       email: Deno.env.get('WM_EMAIL') || '',
       senha: Deno.env.get('WM_SENHA') || '',
       cnpj: Deno.env.get('WM_CNPJ') || '',
-      clienteId: Deno.env.get('WM_CLIENT_ID') || '',
     }
 
     if (!creds.email || !creds.senha) {
@@ -36,7 +35,7 @@ Deno.serve(async (req: Request) => {
       })
     }
 
-    const authResult = await callSOAP(buildAuthXML(creds), 'Autenticar')
+    const authResult = await callSOAP(buildAuthXML(creds), 'LoginSistemaRevendedor')
     if (!authResult.success || !authResult.hashAutenticacao) {
       if (authResult.networkError) {
         return new Response(

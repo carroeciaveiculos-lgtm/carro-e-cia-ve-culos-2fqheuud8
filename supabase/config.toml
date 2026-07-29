@@ -72,3 +72,18 @@ verify_jwt = false
 
 [functions.sync-plataforma]
 verify_jwt = false
+
+[functions.wm-auth]
+verify_jwt = false
+
+[functions.wm-sync]
+verify_jwt = false
+
+[functions.wm-process-lead]
+verify_jwt = false
+
+[functions.wm-webhook-leads]
+verify_jwt = false
+
+[functions.wm-webhook-estoque]
+verify_jwt = false

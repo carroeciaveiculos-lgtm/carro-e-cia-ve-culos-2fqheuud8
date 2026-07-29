@@ -2,7 +2,6 @@ export interface WMCredentials {
   email: string
   senha: string
   cnpj: string
-  clienteId: string
 }
 
 export interface SOAPResult {
@@ -34,11 +33,10 @@ function wrapSOAP(action: string, innerXml: string): string {
 
 export function buildAuthXML(creds: WMCredentials): string {
   const innerXml = `
-      <hashLogin>${creds.email}</hashLogin>
-      <hashSenha>${creds.senha}</hashSenha>
-      <hashCnpj>${creds.cnpj}</hashCnpj>
-      <hashClienteId>${creds.clienteId}</hashClienteId>`
-  return wrapSOAP('Autenticar', innerXml)
+      <usuario>${creds.email}</usuario>
+      <senha>${creds.senha}</senha>
+      <cnpj>${creds.cnpj}</cnpj>`
+  return wrapSOAP('LoginSistemaRevendedor', innerXml)
 }
 
 export function buildIncluirCarroXML(veiculo: any, hash: string, categoria: string): string {
@@ -51,7 +49,6 @@ export function buildIncluirCarroXML(veiculo: any, hash: string, categoria: stri
 
   const innerXml = `
       <hashAutenticacao>${hash}</hashAutenticacao>
-      <codigoCliente>${veiculo.clienteId || ''}</codigoCliente>
       <marca>${veiculo.marca || ''}</marca>
       <modelo>${veiculo.modelo || ''}</modelo>
       <versao>${veiculo.versao || ''}</versao>
@@ -88,6 +85,8 @@ export function buildExcluirCarroXML(hash: string, codigoAnuncio: string): strin
   return wrapSOAP('ExcluirCarro', innerXml)
 }
 
+const AUTH_ACTIONS = new Set(['Autenticar', 'LoginSistemaRevendedor'])
+
 export async function callSOAP(xml: string, action: string): Promise<SOAPResult> {
   try {
     const res = await fetch(`${WM_SOAP_URL}?op=${action}`, {
@@ -105,12 +104,19 @@ export async function callSOAP(xml: string, action: string): Promise<SOAPResult>
       return { success: false, error: `HTTP ${res.status}: ${responseText.substring(0, 500)}` }
     }
 
+    if (responseText.includes('<faultcode>') || responseText.includes('Fault')) {
+      const errorMsg = extractTag(responseText, 'faultstring') || 'SOAP fault occurred'
+      return { success: false, error: errorMsg }
+    }
+
     const hash =
-      extractTag(responseText, 'hashAutenticacao') || extractTag(responseText, 'AutenticarResult')
+      extractTag(responseText, 'hashAutenticacao') ||
+      extractTag(responseText, 'AutenticarResult') ||
+      extractTag(responseText, 'LoginSistemaRevendedorResult')
     const codigo =
       extractTag(responseText, 'codigoAnuncio') || extractTag(responseText, 'IncluirCarroResult')
 
-    if (action === 'Autenticar') {
+    if (AUTH_ACTIONS.has(action)) {
       if (!hash) {
         return { success: false, error: 'No hash returned from authentication' }
       }
@@ -142,28 +148,4 @@ export async function callSOAP(xml: string, action: string): Promise<SOAPResult>
       msg.includes('Network')
     return { success: false, error: msg, networkError: isNetwork }
   }
-}
-
-if (responseText.includes('<faultcode>') || responseText.includes('Fault')) {
-  const errorMsg = extractTag(responseText, 'faultstring') || 'SOAP fault occurred'
-  return { success: false, error: errorMsg }
-}
-
-const hash =
-  extractTag(responseText, 'hashAutenticacao') || extractTag(responseText, 'AutenticarResult')
-const codigo =
-  extractTag(responseText, 'codigoAnuncio') || extractTag(responseText, 'IncluirCarroResult')
-
-if (action === 'Autenticar') {
-  if (!hash) {
-    return { success: false, error: 'No hash returned from authentication' }
-  }
-  return { success: true, hashAutenticacao: hash }
-}
-
-if (action.startsWith('Incluir')) {
-  if (!codigo) {
-    return { success: false, error: 'No codigoAnuncio returned from inclusion' }
-  }
-  return { success: true, codigoAnuncio: codigo }
 }
