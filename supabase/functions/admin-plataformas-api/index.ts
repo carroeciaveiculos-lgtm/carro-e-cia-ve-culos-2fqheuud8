@@ -47,9 +47,7 @@ export default {
       }
 
       if (slug === 'cache' && action === 'populate') {
-        // Se você quiser PROIBIR populate para user JWT (recomendado),
-        // descomente:
-        // if (ctx.authMode !== 'secret') return json({ error: 'Forbidden' }, 403)
+        if (ctx.authMode !== 'secret') return json({ error: 'Forbidden' }, 403)
 
         return await handleCachePopulate(supabase)
       }
@@ -302,25 +300,23 @@ async function handleForceSync(supabase: any, slug: string, plataforma: any) {
   // Se você estiver migrado para new keys, troque isso para SUPABASE_SECRET_KEYS['default'].
   const serviceRoleLegacy = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 
+  const serviceHeaders: Record<string, string> = {
+    'Content-Type': 'application/json',
+    Authorization: `Bearer ${serviceRoleLegacy}`,
+    apikey: serviceRoleLegacy,
+  }
+
   if (slug === 'mercadolivre') {
     await fetch(`${SUPABASE_URL}/functions/v1/ml-sync`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        // ⚠️ idealmente seria apikey (secret key) e não Authorization.
-        // Mantive legado para não quebrar seu sistema atual:
-        Authorization: `Bearer ${serviceRoleLegacy}`,
-      },
+      headers: serviceHeaders,
       body: '{}',
     })
   }
 
   await fetch(`${SUPABASE_URL}/functions/v1/sync-estoque`, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${serviceRoleLegacy}`,
-    },
+    headers: serviceHeaders,
     body: JSON.stringify({ plataforma: slug }),
   })
 
