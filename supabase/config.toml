@@ -30,3 +30,45 @@ verify_jwt = false
 
 [functions.ml-webhook]
 verify_jwt = false
+
+[functions.whatsapp-webhook]
+verify_jwt = false
+
+[functions.webhook-portais]
+verify_jwt = false
+
+[functions.webhook-autentique]
+verify_jwt = false
+
+[functions.ml-auth]
+verify_jwt = false
+
+[functions.ml-sync]
+verify_jwt = false
+
+[functions.on-lead-created]
+verify_jwt = false
+
+[functions.daily-report-cron]
+verify_jwt = false
+
+[functions.re-engagement-cron]
+verify_jwt = false
+
+[functions.public-inventory-feed]
+verify_jwt = false
+
+[functions.send-whatsapp]
+verify_jwt = false
+
+[functions.ai-sdr]
+verify_jwt = false
+
+[functions.crm-inventory-feed]
+verify_jwt = false
+
+[functions.lead-automation]
+verify_jwt = false
+
+[functions.sync-plataforma]
+verify_jwt = false

@@ -17,15 +17,33 @@ Deno.serve(async (req: Request) => {
     const webhookSecret =
       Deno.env.get('ML_WEBHOOK_SECRET') || Deno.env.get('ML_CLIENT_SECRET') || ''
 
-    if (webhookSecret) {
-      const signature = req.headers.get('x-signature') || ''
-      const isValid = await validateHMACAsync(rawBody, signature, webhookSecret)
-      if (!isValid) {
-        return new Response(JSON.stringify({ error: 'Invalid signature' }), {
-          status: 401,
+    if (!webhookSecret) {
+      return new Response(
+        JSON.stringify({
+          error: 'Webhook secret not configured (ML_WEBHOOK_SECRET / ML_CLIENT_SECRET not set)',
+        }),
+        {
+          status: 500,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        })
-      }
+        },
+      )
+    }
+
+    const signature = req.headers.get('x-signature') || ''
+    if (!signature) {
+      return new Response(JSON.stringify({ error: 'Missing x-signature header' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    const isValid = await validateHMACAsync(rawBody, signature, webhookSecret)
+
+    if (!isValid) {
+      return new Response(JSON.stringify({ error: 'Invalid signature' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
     }
 
     const payload = JSON.parse(rawBody)
@@ -41,12 +59,14 @@ Deno.serve(async (req: Request) => {
     if (payload.topic && payload.resource) {
       const resourceUrl = payload.resource
       const detailRes = await fetch(resourceUrl, { headers: { Authorization: `Bearer ${token}` } })
+
       if (!detailRes.ok) {
         return new Response(JSON.stringify({ error: 'Failed to fetch resource' }), {
           status: 200,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         })
       }
+
       const resource = await detailRes.json()
 
       if (payload.topic === 'questions' && resource.text) {
@@ -62,6 +82,7 @@ Deno.serve(async (req: Request) => {
       const leadRes = await fetchWithBackoff(payload.resource, {
         headers: { Authorization: `Bearer ${token}` },
       })
+
       if (leadRes.ok) {
         const leadData = await leadRes.json()
         await handleLead(supabase, leadData)
@@ -86,17 +107,21 @@ async function resolveVehicle(
   itemId: string,
 ): Promise<{ veiculoId: string | null; veiculoInteresse: string }> {
   if (!itemId) return { veiculoId: null, veiculoInteresse: '' }
+
   const { data: listing } = await supabase
     .from('ml_listings')
     .select('veiculo_id')
     .eq('ml_item_id', itemId)
     .maybeSingle()
+
   if (!listing) return { veiculoId: null, veiculoInteresse: '' }
+
   const { data: veiculo } = await supabase
     .from('veiculos')
     .select('marca, modelo, ano_modelo')
     .eq('id', listing.veiculo_id)
     .maybeSingle()
+
   return {
     veiculoId: listing.veiculo_id,
     veiculoInteresse: veiculo
@@ -109,6 +134,7 @@ async function handleQuestion(supabase: any, _token: string, resource: any) {
   const buyerId = resource.from?.id
   const buyerName = resource.from?.nickname || 'Cliente ML'
   const questionText = resource.text
+
   const { veiculoId, veiculoInteresse } = await resolveVehicle(supabase, resource.item_id)
 
   const { data: existingLead } = await supabase
@@ -138,6 +164,7 @@ async function handleItemContact(supabase: any, _token: string, resource: any) {
   const buyerName = resource.buyer?.nickname || 'Cliente ML'
   const buyerPhone = resource.buyer?.phone?.number || ''
   const buyerEmail = resource.buyer?.email || ''
+
   const { veiculoId, veiculoInteresse } = await resolveVehicle(supabase, resource.item_id)
 
   const { data: newLead } = await supabase
@@ -178,6 +205,7 @@ async function handleLead(supabase: any, leadData: any) {
   const buyerPhone = leadData.buyer?.phone?.number || ''
   const buyerEmail = leadData.buyer?.email || ''
   const itemId = leadData.item_id || leadData.inventory_id
+
   const { veiculoId, veiculoInteresse } = await resolveVehicle(supabase, itemId)
 
   const { data: newLead, error } = await supabase

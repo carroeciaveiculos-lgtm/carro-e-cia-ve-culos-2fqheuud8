@@ -2381,6 +2381,7 @@ export type Database = {
           access_token: string | null
           expires_at: string | null
           id: string
+          ml_user_id: number | null
           refresh_token: string | null
           updated_at: string | null
         }
@@ -2388,6 +2389,7 @@ export type Database = {
           access_token?: string | null
           expires_at?: string | null
           id?: string
+          ml_user_id?: number | null
           refresh_token?: string | null
           updated_at?: string | null
         }
@@ -2395,6 +2397,7 @@ export type Database = {
           access_token?: string | null
           expires_at?: string | null
           id?: string
+          ml_user_id?: number | null
           refresh_token?: string | null
           updated_at?: string | null
         }

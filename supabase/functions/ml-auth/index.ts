@@ -78,9 +78,54 @@ Deno.serve(async (req: Request) => {
     const tokenData = await tokenRes.json()
     const expiresAt = new Date(Date.now() + tokenData.expires_in * 1000).toISOString()
 
+    // 🔥 Busca o user_id do Mercado Livre
+    const meRes = await fetch('https://api.mercadolibre.com/users/me', {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${tokenData.access_token}`,
+      },
+    })
+
+    if (!meRes.ok) {
+      const errText = await meRes.text()
+      await supabase.from('logs_integracao').insert({
+        portal: 'mercadolivre_auth',
+        status: 'error',
+        payload_erro: {
+          error: 'Failed to fetch ML user_id',
+          details: errText,
+          status_code: meRes.status,
+        },
+      })
+      return new Response(
+        JSON.stringify({ error: 'Failed to fetch ML user_id', details: errText }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      )
+    }
+
+    const meData = await meRes.json()
+    const mlUserId = meData?.id ?? meData?.user_id ?? meData?.userId
+    if (!mlUserId) {
+      await supabase.from('logs_integracao').insert({
+        portal: 'mercadolivre_auth',
+        status: 'error',
+        payload_erro: {
+          error: 'ML user_id not found in /users/me response',
+          meData,
+        },
+      })
+      return new Response(
+        JSON.stringify({ error: 'ML user_id not found in /users/me response', meData }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      )
+    }
+
+    // Mantém sua lógica atual de limpar credenciais (ajuste se precisar multi-usuário)
     await supabase.from('ml_credentials').delete().neq('id', '00000000-0000-0000-0000-000000000000')
 
+    // ✅ Salva ml_user_id junto com os tokens
     await supabase.from('ml_credentials').insert({
+      ml_user_id: Number(mlUserId), // bigint
       access_token: tokenData.access_token,
       refresh_token: tokenData.refresh_token,
       expires_at: expiresAt,
@@ -90,7 +135,11 @@ Deno.serve(async (req: Request) => {
     await supabase.from('logs_integracao').insert({
       portal: 'mercadolivre_auth',
       status: 'success',
-      payload_erro: { action: 'oauth_exchange', expires_at: expiresAt },
+      payload_erro: {
+        action: 'oauth_exchange',
+        expires_at: expiresAt,
+        ml_user_id: Number(mlUserId),
+      },
     })
 
     const html = `<!DOCTYPE html><html><body style="font-family:Arial,sans-serif;text-align:center;padding:40px">
