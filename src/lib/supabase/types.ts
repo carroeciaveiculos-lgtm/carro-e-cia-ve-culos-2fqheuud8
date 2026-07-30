@@ -529,6 +529,60 @@ export type Database = {
           },
         ]
       }
+      autonomia_config: {
+        Row: {
+          created_at: string
+          enabled: boolean
+          id: string
+          label: string
+          rule: string | null
+          slug: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          label: string
+          rule?: string | null
+          slug: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          label?: string
+          rule?: string | null
+          slug?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      autonomia_log: {
+        Row: {
+          action: string
+          created_at: string
+          details: Json | null
+          id: string
+          result: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+          result?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+          result?: string | null
+        }
+        Relationships: []
+      }
       avaliacoes: {
         Row: {
           ano: string | null
@@ -3321,6 +3375,14 @@ export type Database = {
           video_url: string | null
           videos: Json | null
           visualizacoes_site: number | null
+          wm_adaptado_deficiente: boolean | null
+          wm_blindado: boolean | null
+          wm_garantia_fabrica: boolean | null
+          wm_ipva_pago: boolean | null
+          wm_kit_gas: boolean | null
+          wm_licenciado: boolean | null
+          wm_unico_dono: boolean | null
+          wm_veiculo_troca: boolean | null
         }
         Insert: {
           ad_types?: Json | null
@@ -3406,6 +3468,14 @@ export type Database = {
           video_url?: string | null
           videos?: Json | null
           visualizacoes_site?: number | null
+          wm_adaptado_deficiente?: boolean | null
+          wm_blindado?: boolean | null
+          wm_garantia_fabrica?: boolean | null
+          wm_ipva_pago?: boolean | null
+          wm_kit_gas?: boolean | null
+          wm_licenciado?: boolean | null
+          wm_unico_dono?: boolean | null
+          wm_veiculo_troca?: boolean | null
         }
         Update: {
           ad_types?: Json | null
@@ -3491,6 +3561,14 @@ export type Database = {
           video_url?: string | null
           videos?: Json | null
           visualizacoes_site?: number | null
+          wm_adaptado_deficiente?: boolean | null
+          wm_blindado?: boolean | null
+          wm_garantia_fabrica?: boolean | null
+          wm_ipva_pago?: boolean | null
+          wm_kit_gas?: boolean | null
+          wm_licenciado?: boolean | null
+          wm_unico_dono?: boolean | null
+          wm_veiculo_troca?: boolean | null
         }
         Relationships: [
           {

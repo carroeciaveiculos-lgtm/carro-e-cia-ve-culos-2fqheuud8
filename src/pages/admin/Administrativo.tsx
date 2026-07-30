@@ -54,6 +54,7 @@ export default function Administrativo() {
   const [uploadFile, setUploadFile] = useState<File | null>(null)
   const [uploading, setUploading] = useState(false)
   const [veiculos, setVeiculos] = useState<any[]>([])
+  const [quickDocVeiculoId, setQuickDocVeiculoId] = useState('')
 
   useEffect(() => {
     fetchDocuments()
@@ -132,19 +133,30 @@ export default function Administrativo() {
   }
 
   const gerarDocumento = async (tipo: string) => {
+    if (!quickDocVeiculoId) {
+      toast({
+        variant: 'destructive',
+        title: 'Selecione um veículo',
+        description: 'Escolha um veículo para gerar o documento.',
+      })
+      return
+    }
     setLoading(tipo)
     try {
       const { data, error } = await supabase.functions.invoke('gerar-pdf-contrato', {
-        body: { tipo, dados: {} },
+        body: { veiculo_id: quickDocVeiculoId },
       })
       if (error) throw error
-      if (data?.document) {
+      if (data?.html) {
+        const blob = new Blob([data.html], { type: 'text/html' })
+        const url = URL.createObjectURL(blob)
         const link = document.createElement('a')
-        link.href = `data:application/vnd.openxmlformats-officedocument.wordprocessingml.document;base64,${data.document}`
-        link.download = `${tipo}.docx`
+        link.href = url
+        link.download = `${tipo}.html`
         document.body.appendChild(link)
         link.click()
         document.body.removeChild(link)
+        URL.revokeObjectURL(url)
       }
       toast({
         title: 'Documento gerado',
@@ -245,39 +257,53 @@ export default function Administrativo() {
             </CardTitle>
             <CardDescription>Gere documentos em branco rapidamente</CardDescription>
           </CardHeader>
-          <CardContent className="grid grid-cols-2 gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => gerarDocumento('compra')}
-              disabled={loading === 'compra'}
-            >
-              <FileText className="mr-2 h-4 w-4" /> Compra
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => gerarDocumento('venda')}
-              disabled={loading === 'venda'}
-            >
-              <FileText className="mr-2 h-4 w-4" /> Venda
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => gerarDocumento('recibo_sinal')}
-              disabled={loading === 'recibo_sinal'}
-            >
-              <Printer className="mr-2 h-4 w-4" /> Sinal
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => gerarDocumento('termo_entrega')}
-              disabled={loading === 'termo_entrega'}
-            >
-              <Download className="mr-2 h-4 w-4" /> Entrega
-            </Button>
+          <CardContent className="space-y-3">
+            <Select value={quickDocVeiculoId} onValueChange={setQuickDocVeiculoId}>
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione um veículo..." />
+              </SelectTrigger>
+              <SelectContent>
+                {veiculos.map((v) => (
+                  <SelectItem key={v.id} value={v.id}>
+                    {v.modelo} ({v.placa})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <div className="grid grid-cols-2 gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => gerarDocumento('compra')}
+                disabled={loading === 'compra'}
+              >
+                <FileText className="mr-2 h-4 w-4" /> Compra
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => gerarDocumento('venda')}
+                disabled={loading === 'venda'}
+              >
+                <FileText className="mr-2 h-4 w-4" /> Venda
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => gerarDocumento('recibo_sinal')}
+                disabled={loading === 'recibo_sinal'}
+              >
+                <Printer className="mr-2 h-4 w-4" /> Sinal
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => gerarDocumento('termo_entrega')}
+                disabled={loading === 'termo_entrega'}
+              >
+                <Download className="mr-2 h-4 w-4" /> Entrega
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </div>
