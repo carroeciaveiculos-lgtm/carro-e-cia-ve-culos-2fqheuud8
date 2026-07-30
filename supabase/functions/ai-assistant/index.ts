@@ -87,7 +87,21 @@ Sua resposta deve ajudar a manter o CRM atualizado com essas entidades.
 
 Responda de forma humanizada, empática e demonstre como você aplicaria o conhecimento. Responda apenas com o texto final gerado, sem formatação markdown de bloco (\`\`\`) e sem aspas extras.`
 
-    const geminiResult = await gemini.generate(sysPrompt, { thinkingLevel: 'high' })
+    const { data: activeDirective } = await supabase
+      .from('system_directives')
+      .select('title, content')
+      .eq('active', true)
+      .order('updated_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+
+    const directiveContext = activeDirective
+      ? `\n\n--- Diretriz do Sistema Ativa (${activeDirective.title}) ---\n${activeDirective.content}\n`
+      : ''
+
+    const geminiResult = await gemini.generate(sysPrompt + directiveContext, {
+      thinkingLevel: 'high',
+    })
     const result = geminiResult.text || ''
 
     return new Response(JSON.stringify({ result: result.trim() }), {

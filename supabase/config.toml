@@ -87,3 +87,6 @@ verify_jwt = false
 
 [functions.wm-webhook-estoque]
 verify_jwt = false
+
+[functions.auto-migrate-r2]
+verify_jwt = false

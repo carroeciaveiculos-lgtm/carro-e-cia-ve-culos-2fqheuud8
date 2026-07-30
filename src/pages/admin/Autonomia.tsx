@@ -20,6 +20,7 @@ import {
   type AutonomiaConfig,
   type AutonomiaLog,
 } from '@/services/autonomia'
+import { SystemDirectives } from '@/components/admin/SystemDirectives'
 
 const GROUPS = [
   {
@@ -204,6 +205,8 @@ export default function AutonomiaPage() {
           )}
         </CardContent>
       </Card>
+
+      <SystemDirectives />
     </div>
   )
 }
