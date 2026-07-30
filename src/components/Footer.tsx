@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { Instagram, Facebook, MapPin, Phone, Mail } from 'lucide-react'
+import { Instagram, Facebook, MapPin, Phone, Mail, Clock } from 'lucide-react'
 import { getWhatsAppLink } from '@/lib/whatsapp'
 import { useBrandConfig } from '@/hooks/use-brand-config'
 
@@ -164,11 +164,19 @@ export function Footer() {
               <li className="flex gap-3">
                 <MapPin className="w-5 h-5 text-primary shrink-0" />
                 <span className="text-muted-foreground">
-                  Av. Guilherme Ferreira, 1119
+                  AV GUILHERME FERREIRA, 1119 - São Benedito
                   <br />
-                  São Benedito
-                  <br />
-                  Uberaba - MG · CEP 38022-200
+                  Uberaba - MG · CEP 38.022-200
+                </span>
+              </li>
+              <li className="flex gap-3">
+                <Phone className="w-5 h-5 text-primary shrink-0" />
+                <span className="text-muted-foreground">(34) 3316-7701</span>
+              </li>
+              <li className="flex gap-3">
+                <Clock className="w-5 h-5 text-primary shrink-0" />
+                <span className="text-muted-foreground">
+                  Horário: Seg-Sex 08:00-18:00 · Sáb 08:00-12:00
                 </span>
               </li>
               <li className="flex gap-3">
@@ -220,9 +228,13 @@ export function Footer() {
 
         <div className="border-t border-border pt-8 flex flex-col md:flex-row items-center justify-between text-sm text-muted-foreground">
           <p>
-            &copy; {new Date().getFullYear()} Carro e Cia Veículos. Todos os direitos reservados.
+            &copy; {new Date().getFullYear()} TRANSLUGA ADMINISTRACAO DE VEICULOS LTDA · CNPJ:
+            10.196.974/0001-46
           </p>
           <div className="flex gap-4 mt-4 md:mt-0">
+            <Link to="/termos" className="hover:text-white">
+              Termos de Uso
+            </Link>
             <Link to="/politica-de-privacidade" className="hover:text-white">
               Política de Privacidade
             </Link>

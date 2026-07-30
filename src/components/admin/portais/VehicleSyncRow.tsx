@@ -1,4 +1,3 @@
-import { Checkbox } from '@/components/ui/checkbox'
 import { AdQualityBadge } from './AdQualityBadge'
 import { calculateAdQualityScore } from '@/lib/ad-quality-score'
 import { getImageUrl } from '@/lib/image-utils'
@@ -17,10 +16,10 @@ interface Props {
   veiculo: VeiculoSync
   plataformas: Plataforma[]
   onClick: () => void
-  onToggleElegivel: (veiculoId: string, elegivel: boolean) => void
+  onToggleElegivel?: (veiculoId: string, elegivel: boolean) => void
 }
 
-export function VehicleSyncRow({ veiculo, plataformas, onClick, onToggleElegivel }: Props) {
+export function VehicleSyncRow({ veiculo, plataformas, onClick }: Props) {
   const score = calculateAdQualityScore(veiculo)
   const foto = veiculo.fotos?.[0]
     ? getImageUrl(veiculo.fotos[0])
@@ -31,11 +30,6 @@ export function VehicleSyncRow({ veiculo, plataformas, onClick, onToggleElegivel
       onClick={onClick}
       className="flex items-center gap-3 px-4 py-3 border-b last:border-0 hover:bg-slate-50 cursor-pointer transition-colors"
     >
-      <Checkbox
-        checked={veiculo.elegivel_portais !== false}
-        onCheckedChange={(checked) => onToggleElegivel(veiculo.id, checked === true)}
-        onClick={(e) => e.stopPropagation()}
-      />
       <img
         src={foto}
         alt={`${veiculo.marca} ${veiculo.modelo}`}

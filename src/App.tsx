@@ -174,6 +174,7 @@ const Sobre = lazyWithRetry(() => import('./pages/Sobre'))
 const Servicos = lazyWithRetry(() => import('./pages/Servicos'))
 const Contato = lazyWithRetry(() => import('./pages/Contato'))
 const PoliticaPrivacidade = lazyWithRetry(() => import('./pages/PoliticaPrivacidade'))
+const Termos = lazyWithRetry(() => import('./pages/Termos'))
 const Seguranca = lazyWithRetry(() => import('./pages/consignacao/Seguranca'))
 const Praticidade = lazyWithRetry(() => import('./pages/consignacao/Praticidade'))
 const Troca = lazyWithRetry(() => import('./pages/consignacao/Troca'))
@@ -218,6 +219,7 @@ const Ajuda = lazyWithRetry(() => import('./pages/admin/Ajuda'))
 const AdsManager = lazyWithRetry(() => import('./pages/admin/AdsManager'))
 const Autonomia = lazyWithRetry(() => import('./pages/admin/Autonomia'))
 const PromptsIA = lazyWithRetry(() => import('./pages/admin/PromptsIA'))
+const DocumentTemplates = lazyWithRetry(() => import('./pages/admin/DocumentTemplates'))
 
 // MotoresHub Pages (Lazy loaded)
 const HubLogin = lazyWithRetry(() => import('./hub/pages/Login'))
@@ -294,6 +296,7 @@ const MainApp = () => (
       <Route path="/servicos" element={<Servicos />} />
       <Route path="/contato" element={<Contato />} />
       <Route path="/politica-de-privacidade" element={<PoliticaPrivacidade />} />
+      <Route path="/termos" element={<Termos />} />
 
       {/* Landing Pages LPs */}
       <Route path="/lp/venda-segura" element={<Seguranca />} />
@@ -391,6 +394,7 @@ const MainApp = () => (
         <Route path="anuncios" element={<AdsManager />} />
         <Route path="autonomia" element={<Autonomia />} />
         <Route path="prompts-ia" element={<PromptsIA />} />
+        <Route path="modelos-documentos" element={<DocumentTemplates />} />
         <Route path="ajuda" element={<Ajuda />} />
 
         {/* Controle de Acesso */}

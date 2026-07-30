@@ -1,57 +1,60 @@
-import React, { useState } from 'react'
-import { downloadBlob } from '@/utils/downloadFile'
+import { useState } from 'react'
 import { supabase } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Loader2, FileText } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
-import { ContratoData } from '@/types/contrato'
 
 interface ContratoPdfGeneratorProps {
-  contratoData: ContratoData
+  veiculoId: string
+  documentType?: string
+  label?: string
+  variant?: 'default' | 'outline' | 'ghost' | 'secondary'
+  size?: 'default' | 'sm' | 'lg' | 'icon'
 }
 
-export function ContratoPdfGenerator({ contratoData }: ContratoPdfGeneratorProps) {
+export function ContratoPdfGenerator({
+  veiculoId,
+  documentType = 'consignacao',
+  label = 'Gerar PDF',
+  variant = 'outline',
+  size = 'sm',
+}: ContratoPdfGeneratorProps) {
   const [isLoading, setIsLoading] = useState(false)
   const { toast } = useToast()
 
-  const handleGenerateAndDownloadPdf = async () => {
+  const handleGenerate = async () => {
     setIsLoading(true)
-
     try {
-      if (!contratoData || !contratoData.proprietario?.nome) {
-        throw new Error('Dados do contrato incompletos para geração do PDF.')
-      }
-
       const { data, error } = await supabase.functions.invoke('gerar-pdf-contrato', {
-        body: { contratoData },
+        body: { veiculo_id: veiculoId, document_type: documentType },
       })
 
-      if (error) throw new Error(`Erro ao invocar função de PDF: ${error.message}`)
-      if (!data?.success) throw new Error(data?.error || 'Falha ao gerar PDF')
+      if (error) throw new Error(`Erro ao invocar função: ${error.message}`)
+      if (!data?.success) throw new Error(data?.error || 'Falha ao gerar documento')
 
-      const { file_path } = data
-      const filename = `contrato_consignacao_${contratoData.numeroContrato || Date.now()}.pdf`
-
-      // Baixar o PDF gerado do Supabase Storage
-      const { data: blobData, error: downloadError } = await supabase.storage
-        .from('contratos-consignacao')
-        .download(file_path)
-
-      if (downloadError) throw new Error(`Erro ao baixar o PDF: ${downloadError.message}`)
-
-      const pdfBlob = new Blob([blobData], { type: 'application/pdf' })
-
-      toast({
-        title: 'Sucesso',
-        description: `Contrato PDF gerado e salvo no repositório. O download iniciará em instantes.`,
-      })
-
-      downloadBlob(pdfBlob, filename)
+      const printWindow = window.open('', '_blank')
+      if (printWindow) {
+        printWindow.document.write(data.html)
+        printWindow.document.close()
+        printWindow.focus()
+        setTimeout(() => {
+          printWindow.print()
+        }, 500)
+        toast({
+          title: 'Documento gerado',
+          description: 'Use a opção "Salvar como PDF" na janela de impressão.',
+        })
+      } else {
+        toast({
+          title: 'Erro',
+          description: 'Pop-up bloqueado. Permita pop-ups para gerar o PDF.',
+          variant: 'destructive',
+        })
+      }
     } catch (err: any) {
-      console.error('Erro ao gerar ou baixar PDF:', err)
       toast({
         title: 'Erro',
-        description: err.message || 'Erro ao gerar documento PDF.',
+        description: err.message || 'Erro ao gerar documento.',
         variant: 'destructive',
       })
     } finally {
@@ -62,10 +65,10 @@ export function ContratoPdfGenerator({ contratoData }: ContratoPdfGeneratorProps
   return (
     <Button
       type="button"
-      variant="outline"
-      size="sm"
+      variant={variant}
+      size={size}
       className="text-xs bg-white text-red-700 border-red-200 hover:bg-red-50"
-      onClick={handleGenerateAndDownloadPdf}
+      onClick={handleGenerate}
       disabled={isLoading}
     >
       {isLoading ? (
@@ -73,7 +76,7 @@ export function ContratoPdfGenerator({ contratoData }: ContratoPdfGeneratorProps
       ) : (
         <FileText className="w-3 h-3 mr-2" />
       )}
-      Gerar e Baixar PDF
+      {label}
     </Button>
   )
 }

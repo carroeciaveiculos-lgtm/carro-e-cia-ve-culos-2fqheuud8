@@ -21,6 +21,8 @@ import { syncVehicleToPlatform, batchSyncVehicles } from '@/services/sync-plataf
 import { VehicleAccordion } from '@/components/admin/portais/VehicleAccordion'
 import { GlobalActionsBar } from '@/components/admin/portais/GlobalActionsBar'
 import { ErrorHistoryPanel } from '@/components/admin/portais/ErrorHistoryPanel'
+import { SyncFailureModal } from '@/components/admin/portais/SyncFailureModal'
+import type { SyncFailure } from '@/components/admin/portais/SyncFailureModal'
 import { ConversionMonitor } from '@/components/admin/portais/ConversionMonitor'
 import { WMDashboard } from '@/components/admin/portais/WMDashboard'
 import {
@@ -65,6 +67,8 @@ export default function Portais() {
   const [activePortalFilter, setActivePortalFilter] = useState<string | null>(null)
   const [showDiagnosis, setShowDiagnosis] = useState(false)
   const preflightProceedRef = useRef<(() => void) | null>(null)
+  const [syncFailures, setSyncFailures] = useState<SyncFailure[]>([])
+  const [failureModalOpen, setFailureModalOpen] = useState(false)
 
   useEffect(() => {
     fetchPlataformas()
@@ -148,6 +152,23 @@ export default function Portais() {
     try {
       const ids = [...selectedIds]
       const result = await batchSyncVehicles(ids, 'mercadolivre')
+
+      const failures: SyncFailure[] = result.results
+        .map((r, i) => {
+          const v = vehicles.find((v) => v.id === ids[i])
+          return {
+            vehicleId: ids[i],
+            vehicleName: v ? `${v.marca} ${v.modelo}` : ids[i],
+            error: r.success ? '' : r.message,
+          }
+        })
+        .filter((f) => f.error)
+
+      if (failures.length > 0) {
+        setSyncFailures(failures)
+        setFailureModalOpen(true)
+      }
+
       toast({
         title: 'Sincronização concluída',
         description: `${result.successCount} sucesso, ${result.failCount} falha(s)`,
@@ -401,6 +422,12 @@ export default function Portais() {
           preflightProceedRef.current?.()
           preflightProceedRef.current = null
         }}
+      />
+
+      <SyncFailureModal
+        open={failureModalOpen}
+        onOpenChange={setFailureModalOpen}
+        failures={syncFailures}
       />
     </div>
   )

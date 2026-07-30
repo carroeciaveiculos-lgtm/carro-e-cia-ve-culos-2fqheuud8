@@ -18,6 +18,11 @@ import {
   HelpCircle,
   MessageSquareWarning,
   Megaphone,
+  Cpu,
+  Bot,
+  FileCode,
+  ScrollText,
+  Share2,
 } from 'lucide-react'
 import { useAuth } from '@/hooks/use-auth'
 import { useState, useEffect } from 'react'
@@ -38,6 +43,7 @@ const SIDEBAR_MENUS = [
       { label: 'Avaliações', path: '/admin/avaliacao', icon: ShieldCheck },
       { label: 'Financiamentos', path: '/admin/financiamento', icon: DollarSign },
       { label: 'Administrativo', path: '/admin/administrativo', icon: FileText },
+      { label: 'Modelos de Documentos', path: '/admin/modelos-documentos', icon: FileCode },
       { label: 'Portais', path: '/admin/portais', icon: Globe },
     ],
   },
@@ -46,6 +52,7 @@ const SIDEBAR_MENUS = [
     items: [
       { label: 'Marketing', path: '/admin/marketing', icon: Activity },
       { label: 'Gestão de Anúncios', path: '/admin/anuncios', icon: Megaphone },
+      { label: 'Redes Sociais', path: '/admin/redes-sociais', icon: Share2 },
       { label: 'Moderador de Posts', path: '/admin/moderador-posts', icon: MessageSquareWarning },
     ],
   },
@@ -58,8 +65,17 @@ const SIDEBAR_MENUS = [
     ],
   },
   {
+    title: 'Automações & IA',
+    items: [
+      { label: 'Autonomia', path: '/admin/autonomia', icon: Cpu },
+      { label: 'Prompts IA', path: '/admin/prompts-ia', icon: Bot },
+    ],
+  },
+  {
     title: 'Sistema & Suporte',
     items: [
+      { label: 'Usuários', path: '/admin/usuarios', icon: Users },
+      { label: 'Auditoria', path: '/admin/auditoria', icon: ScrollText },
       { label: 'Logs do Sistema', path: '/admin/logs', icon: Activity },
       { label: 'Central de Ajuda', path: '/admin/ajuda', icon: HelpCircle },
     ],
