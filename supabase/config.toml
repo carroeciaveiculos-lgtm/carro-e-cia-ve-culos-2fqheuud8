@@ -13,8 +13,17 @@ verify_jwt = false
 [functions.meta-capi-postback]
 verify_jwt = false
 
+[functions.consultar-cpf]
+verify_jwt = true
+
+[functions.consultar-cnpj]
+verify_jwt = true
+
+[functions.consultar-placa]
+verify_jwt = true
+
 [functions.admin-plataformas-api]
-verify_jwt = false
+verify_jwt = true
 
 [functions.notify-new-vehicle]
 verify_jwt = false
