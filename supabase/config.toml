@@ -7,11 +7,44 @@ verify_jwt = false
 [functions.og-vehicle]
 verify_jwt = false
 
+[functions.ad-copy-generator]
+verify_jwt = true
+
 [functions.ads-agent]
-verify_jwt = false
+verify_jwt = true
+
+[functions.ai-agents]
+verify_jwt = true
+
+[functions.ai-assistant]
+verify_jwt = true
+
+[functions.content-workflow-notification]
+verify_jwt = true
+
+[functions.enviar-para-assinatura]
+verify_jwt = true
+
+[functions.gerar-conteudo]
+verify_jwt = true
+
+[functions.gerar-conteudo-social]
+verify_jwt = true
+
+[functions.gerar-imagem]
+verify_jwt = true
+
+[functions.gerar-pdf-contrato]
+verify_jwt = true
+
+[functions.gerar-pdf-proposta]
+verify_jwt = true
 
 [functions.meta-capi-postback]
 verify_jwt = false
+
+[functions.social-actions]
+verify_jwt = true
 
 [functions.consultar-cpf]
 verify_jwt = true
