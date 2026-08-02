@@ -26,6 +26,24 @@ export default {
     // - 'secret' => ctx.supabaseAdmin (bypass RLS)
     const supabase = ctx.authMode === 'secret' ? ctx.supabaseAdmin : ctx.supabase
 
+    if (ctx.authMode === 'user') {
+      const {
+        data: { user },
+        error: userError,
+      } = await ctx.supabase.auth.getUser()
+
+      if (userError || !user) {
+        return json({ error: 'JWT inválido ou ausente' }, 401)
+      }
+
+      if (user.email?.toLowerCase() !== 'adriana.araujo@kmzero.com.br'.toLowerCase()) {
+        return json(
+          { error: 'Acesso negado: e-mail do usuário não corresponde à administradora autorizada.' },
+          403,
+        )
+      }
+    }
+
     try {
       const body = await req.json().catch(() => ({}))
       const path = body.path || ''
