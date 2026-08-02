@@ -38,7 +38,9 @@ export default {
 
       if (user.email?.toLowerCase() !== 'adriana.araujo@kmzero.com.br'.toLowerCase()) {
         return json(
-          { error: 'Acesso negado: e-mail do usuário não corresponde à administradora autorizada.' },
+          {
+            error: 'Acesso negado: e-mail do usuário não corresponde à administradora autorizada.',
+          },
           403,
         )
       }

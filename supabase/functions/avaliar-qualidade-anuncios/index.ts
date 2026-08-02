@@ -2,9 +2,11 @@ import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from 'jsr:@supabase/supabase-js@2'
 import { corsHeaders } from '../_shared/cors.ts'
 import { getValidMLToken, fetchWithBackoff } from '../_shared/ml-client.ts'
+import { isInternalRequestAuthorized, unauthorizedResponse } from '../_shared/internal-auth.ts'
 
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
+  if (!isInternalRequestAuthorized(req)) return unauthorizedResponse(corsHeaders)
 
   const supabase = createClient(
     Deno.env.get('SUPABASE_URL')!,

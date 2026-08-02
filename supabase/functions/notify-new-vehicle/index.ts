@@ -1,8 +1,10 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 import { corsHeaders } from '../_shared/cors.ts'
+import { isInternalRequestAuthorized, unauthorizedResponse } from '../_shared/internal-auth.ts'
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
+  if (!isInternalRequestAuthorized(req)) return unauthorizedResponse(corsHeaders)
 
   try {
     const { veiculo_id, marca, modelo, ano_modelo, preco_venda, placa } = await req.json()
