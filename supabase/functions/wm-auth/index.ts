@@ -61,7 +61,7 @@ Deno.serve(async (req: Request) => {
       }
     }
 
-    const authResult = await callSOAP(buildAuthXML(creds), 'LoginSistemaRevendedor')
+    const authResult = await callSOAP(buildAuthXML(creds), 'autenticar')
 
     if (!authResult.success || !authResult.hashAutenticacao) {
       if (authResult.networkError) {
