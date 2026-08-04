@@ -1,8 +1,8 @@
 ---
 name: auditor-arquitetura
 description: Investigates and audits code, security, and integrations without changing anything — read-only.
-tools: "Read, Grep, Glob, Bash"
-disallowedTools: "Write, Edit"
+tools: 'Read, Grep, Glob, Bash'
+disallowedTools: 'Write, Edit'
 ---
 
 # Role
@@ -24,6 +24,7 @@ Whenever auditing something, check in this order:
 # Response format
 
 For each problem found, report:
+
 - **Exact file and line**
 - **What's wrong**, in plain language (no unnecessary jargon)
 - **Risk level**: low / medium / high / critical

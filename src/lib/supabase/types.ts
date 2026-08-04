@@ -2947,6 +2947,36 @@ export type Database = {
         }
         Relationships: []
       }
+      r2_migration_progress: {
+        Row: {
+          bucket: string
+          completed_at: string | null
+          error_message: string | null
+          file_path: string
+          id: string
+          started_at: string | null
+          status: string
+        }
+        Insert: {
+          bucket: string
+          completed_at?: string | null
+          error_message?: string | null
+          file_path: string
+          id?: string
+          started_at?: string | null
+          status?: string
+        }
+        Update: {
+          bucket?: string
+          completed_at?: string | null
+          error_message?: string | null
+          file_path?: string
+          id?: string
+          started_at?: string | null
+          status?: string
+        }
+        Relationships: []
+      }
       simulacoes: {
         Row: {
           cliente_cpf: string | null
@@ -3274,6 +3304,33 @@ export type Database = {
             referencedColumns: ['id']
           },
         ]
+      }
+      system_directives: {
+        Row: {
+          active: boolean
+          content: string
+          created_at: string
+          id: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          content: string
+          created_at?: string
+          id?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          content?: string
+          created_at?: string
+          id?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       usuarios: {
         Row: {
@@ -3888,6 +3945,7 @@ export type Database = {
     }
     Functions: {
       auto_retry_stuck_ml_listings: { Args: never; Returns: undefined }
+      get_internal_service_secret: { Args: never; Returns: string }
       get_or_create_conversa: {
         Args: {
           p_cliente_id_externo?: string
@@ -3900,6 +3958,10 @@ export type Database = {
       }
       get_wm_dashboard: { Args: { p_loja_id?: string }; Returns: Json }
       increment_page_view: { Args: { p_slug: string }; Returns: undefined }
+      replace_storage_url: {
+        Args: { p_bucket: string; p_file_path: string }
+        Returns: undefined
+      }
       slugify: { Args: { input_text: string }; Returns: string }
       unaccent: { Args: { '': string }; Returns: string }
     }
