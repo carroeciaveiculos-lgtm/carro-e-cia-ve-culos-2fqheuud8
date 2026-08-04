@@ -1,5 +1,2 @@
 # Proxy sharing route to edge function for social media previews
-/s/:slug  https://htpcqdbhktmvppfemnad.supabase.co/functions/v1/og-vehicle?slug=:slug  200
-
-# SPA fallback (handles /estoque/:id and all other routes)
-/*  /index.html  200
+/s/:slug  https://htpcqdbhktmvppfemnad.supabase.co/functions/v1/og-vehicle?slug=:slug  301
