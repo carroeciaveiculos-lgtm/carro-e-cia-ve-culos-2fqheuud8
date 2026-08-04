@@ -55,6 +55,7 @@ async function waitForInstagramMediaReady(
 
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
+  if (!isInternalRequestAuthorized(req)) return unauthorizedResponse(corsHeaders)
 
   try {
     const supabase = createClient(

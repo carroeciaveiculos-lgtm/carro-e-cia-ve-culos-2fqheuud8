@@ -110,7 +110,10 @@ export async function handleAprovar(ctx: CommandContext): Promise<string> {
   try {
     await fetch(`${ctx.supabaseUrl}/functions/v1/publicar-social`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'x-internal-secret': Deno.env.get('INTERNAL_SERVICE_SECRET') || '',
+      },
       body: JSON.stringify({}),
     })
   } catch {

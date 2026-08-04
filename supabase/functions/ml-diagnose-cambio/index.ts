@@ -69,6 +69,7 @@ serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
+  if (!isInternalRequestAuthorized(req)) return unauthorizedResponse(corsHeaders)
 
   try {
     const url = new URL(req.url)

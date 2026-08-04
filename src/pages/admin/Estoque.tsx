@@ -110,10 +110,19 @@ export default function AdminEstoque() {
       if (error) throw error
       if (data) setVehicles(data)
       if (count !== null) setTotalCount(count)
-    } catch {
-      toast({ title: 'Erro ao carregar estoque', variant: 'destructive' })
+    } catch (err: any) {
+      if (err?.code === 'PGRST103' || err?.status === 416) {
+        setVehicles([])
+        setTotalCount(0)
+      } else {
+        toast({ title: 'Erro ao carregar estoque', variant: 'destructive' })
+      }
     }
   }
+
+  useEffect(() => {
+    setPage(0)
+  }, [debouncedSearch, sortBy, diasFilter, combustivelFilter, elegibilidadeFilter])
 
   useEffect(() => {
     loadVehicles()
