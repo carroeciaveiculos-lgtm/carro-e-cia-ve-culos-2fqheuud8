@@ -115,43 +115,43 @@ export function Footer() {
           <div>
             <h3 className="font-display font-bold text-xl mb-6 text-white">Parceiros</h3>
             <ul className="flex flex-wrap gap-4 items-center mb-6">
-              <li>
+              <li className="h-6 w-16 flex items-center justify-center">
                 <img
                   src="https://imagens.carroeciamotors.com.br/logos-e-imagens/parceiros/Bradesco.webp"
                   alt="Bradesco"
-                  className="h-6 filter grayscale invert opacity-70 hover:opacity-100 transition-opacity"
+                  className="max-h-full max-w-full w-auto h-auto object-contain filter grayscale invert opacity-70 hover:opacity-100 transition-opacity"
                   loading="lazy"
                 />
               </li>
-              <li>
+              <li className="h-6 w-16 flex items-center justify-center">
                 <img
                   src="https://imagens.carroeciamotors.com.br/logos-e-imagens/parceiros/BV.webp"
                   alt="BV"
-                  className="h-6 filter grayscale invert opacity-70 hover:opacity-100 transition-opacity"
+                  className="max-h-full max-w-full w-auto h-auto object-contain filter grayscale invert opacity-70 hover:opacity-100 transition-opacity"
                   loading="lazy"
                 />
               </li>
-              <li>
+              <li className="h-6 w-16 flex items-center justify-center">
                 <img
                   src="https://imagens.carroeciamotors.com.br/logos-e-imagens/parceiros/Logo-km-zero-fundo-transparente.webp"
                   alt="Km Zero"
-                  className="h-6 filter grayscale invert opacity-70 hover:opacity-100 transition-opacity"
+                  className="max-h-full max-w-full w-auto h-auto object-contain filter grayscale invert opacity-70 hover:opacity-100 transition-opacity"
                   loading="lazy"
                 />
               </li>
-              <li>
+              <li className="h-6 w-16 flex items-center justify-center">
                 <img
                   src="https://imagens.carroeciamotors.com.br/logos-e-imagens/parceiros/santander.webp"
                   alt="Santander"
-                  className="h-6 filter grayscale invert opacity-70 hover:opacity-100 transition-opacity"
+                  className="max-h-full max-w-full w-auto h-auto object-contain filter grayscale invert opacity-70 hover:opacity-100 transition-opacity"
                   loading="lazy"
                 />
               </li>
-              <li>
+              <li className="h-6 w-16 flex items-center justify-center">
                 <img
                   src="https://imagens.carroeciamotors.com.br/logos-e-imagens/parceiros/Safra.webp"
                   alt="Safra"
-                  className="h-6 filter grayscale invert opacity-70 hover:opacity-100 transition-opacity"
+                  className="max-h-full max-w-full w-auto h-auto object-contain filter grayscale invert opacity-70 hover:opacity-100 transition-opacity"
                   loading="lazy"
                 />
               </li>
@@ -176,7 +176,7 @@ export function Footer() {
               <li className="flex gap-3">
                 <Clock className="w-5 h-5 text-primary shrink-0" />
                 <span className="text-muted-foreground">
-                  Horário: Seg-Sex 08:00-18:00 · Sáb 08:00-12:00
+                  Horário: Seg-Sex 08:00-18:00 · Sáb 08:00-13:00
                 </span>
               </li>
               <li className="flex gap-3">

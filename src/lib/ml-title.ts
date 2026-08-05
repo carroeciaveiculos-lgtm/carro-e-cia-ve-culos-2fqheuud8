@@ -1,3 +1,5 @@
+import { getVersaoComplementar } from './vehicle-title'
+
 export interface TitlePreviewResult {
   titulo: string
   truncado: boolean
@@ -16,7 +18,7 @@ export function montarTituloMLPreview(vehicle: {
   const ano = vehicle.ano_modelo ? String(vehicle.ano_modelo) : ''
   const marca = vehicle.marca || ''
   const modelo = vehicle.modelo || ''
-  const versao = vehicle.versao || ''
+  const versao = getVersaoComplementar(vehicle.modelo, vehicle.versao)
   const combustivel = vehicle.combustivel || ''
   const cambio = vehicle.cambio || ''
 

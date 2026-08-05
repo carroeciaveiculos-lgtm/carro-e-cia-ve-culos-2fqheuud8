@@ -217,7 +217,11 @@ export async function getValidMLToken(
 }
 
 export function formatVehicleTitle(v: any): string {
-  const parts = [v.marca, v.modelo, v.versao].filter(Boolean)
+  const modelo = (v.modelo || '').trim()
+  const versao = (v.versao || '').trim()
+  const versaoComplementar =
+    versao && !modelo.toLowerCase().includes(versao.toLowerCase()) ? versao : ''
+  const parts = [v.marca, modelo, versaoComplementar].filter(Boolean)
   const yearPart = v.ano_modelo ? ` ${v.ano_modelo}` : ''
   return `${parts.join(' ')}${yearPart}`.substring(0, 60)
 }

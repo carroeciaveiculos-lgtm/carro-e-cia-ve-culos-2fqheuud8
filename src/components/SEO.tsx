@@ -60,10 +60,13 @@ export function SEO({
 
     const organizationSchema = {
       '@context': 'https://schema.org',
-      '@type': 'Organization',
+      '@type': 'AutoDealer',
       name: 'Carro e Cia Veículos',
+      legalName: 'Transluga Administração de Veículos LTDA',
+      taxID: '10.196.974/0001-46',
       url: 'https://www.carroeciamotors.com.br',
       logo: 'https://imagens.carroeciamotors.com.br/logos-e-imagens/logos/logo-carro-e-cia.webp',
+      image: 'https://imagens.carroeciamotors.com.br/logos-e-imagens/logos/logo-carro-e-cia.webp',
       telephone: '+5534999484285',
       address: {
         '@type': 'PostalAddress',
@@ -73,6 +76,20 @@ export function SEO({
         postalCode: '38022-200',
         addressCountry: 'BR',
       },
+      openingHoursSpecification: [
+        {
+          '@type': 'OpeningHoursSpecification',
+          dayOfWeek: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'],
+          opens: '08:00',
+          closes: '18:00',
+        },
+        {
+          '@type': 'OpeningHoursSpecification',
+          dayOfWeek: ['Saturday'],
+          opens: '08:00',
+          closes: '13:00',
+        },
+      ],
       sameAs: ['https://www.instagram.com/carroeciaveiculos', 'https://wa.me/5534999484285'],
     }
 

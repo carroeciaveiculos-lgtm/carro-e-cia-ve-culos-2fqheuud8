@@ -48,18 +48,20 @@ function PartnerLogo({ name, src }: { name: string; src: string }) {
   const [imgSrc, setImgSrc] = useState(src)
 
   return (
-    <picture>
-      <source srcSet={imgSrc} type="image/webp" />
-      <img
-        src={imgSrc}
-        alt={`Logo do banco parceiro ${name} - Carro e Cia Veículos`}
-        width="200"
-        height="80"
-        loading="lazy"
-        decoding="async"
-        className="h-14 w-auto max-w-[200px] object-contain transition-all duration-300"
-        onError={() => setImgSrc(FALLBACK_IMG)}
-      />
-    </picture>
+    <div className="h-14 w-[140px] flex items-center justify-center">
+      <picture>
+        <source srcSet={imgSrc} type="image/webp" />
+        <img
+          src={imgSrc}
+          alt={`Logo do banco parceiro ${name} - Carro e Cia Veículos`}
+          width="200"
+          height="80"
+          loading="lazy"
+          decoding="async"
+          className="max-h-full max-w-full w-auto h-auto object-contain grayscale opacity-70 hover:grayscale-0 hover:opacity-100 transition-all duration-300"
+          onError={() => setImgSrc(FALLBACK_IMG)}
+        />
+      </picture>
+    </div>
   )
 }

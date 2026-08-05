@@ -65,6 +65,7 @@ import {
   getVehiclePhotos,
   getVehicleVideos,
 } from '@/lib/image-utils'
+import { buildVehicleTitle, getVersaoComplementar } from '@/lib/vehicle-title'
 
 function extractFirstPhoto(fotos: any): string | null {
   if (!Array.isArray(fotos)) return null
@@ -230,10 +231,12 @@ export default function Veiculo() {
     }
   }
 
+  const versaoComplementar = getVersaoComplementar(vehicle.modelo, vehicle.versao)
+
   const schema = {
     '@context': 'https://schema.org',
     '@type': 'Product',
-    name: `${vehicle.marca} ${vehicle.modelo} ${vehicle.versao}`,
+    name: buildVehicleTitle([vehicle.marca, vehicle.modelo, versaoComplementar]),
     image: primaryPhoto || (photos.length > 0 ? photos[0] : undefined),
     description: getVehicleDescription(vehicle),
     offers: {
@@ -251,7 +254,7 @@ export default function Veiculo() {
   return (
     <div className="bg-background min-h-screen pb-20">
       <SEO
-        title={`${vehicle.marca} ${vehicle.modelo} ${vehicle.versao || ''} ${vehicle.ano_modelo || ''} à venda em Uberaba | Carro e Cia Motors`}
+        title={`${buildVehicleTitle([vehicle.marca, vehicle.modelo, versaoComplementar, vehicle.ano_modelo])} à venda em Uberaba | Carro e Cia Motors`}
         description={`Confira as fotos e detalhes deste lindo ${vehicle.marca} ${vehicle.modelo} no valor de ${formatCurrency(vehicle.preco_venda || 0)}. Financiamos e aceitamos troca. Entre em contato!`}
         schema={schema}
         isVehicle={true}
@@ -279,7 +282,7 @@ export default function Veiculo() {
                           height="600"
                           loading={i === 0 ? 'eager' : 'lazy'}
                           decoding="async"
-                          className="w-full h-full object-cover"
+                          className="w-full h-full object-cover object-[center_65%]"
                           onError={(e) =>
                             handleImageError(e.currentTarget, `${vehicle.marca} ${vehicle.modelo}`)
                           }
@@ -307,7 +310,7 @@ export default function Veiculo() {
                           height="600"
                           loading="eager"
                           decoding="async"
-                          className="w-full h-full object-cover"
+                          className="w-full h-full object-cover object-[center_65%]"
                         />
                       )}
                     </div>
@@ -341,7 +344,7 @@ export default function Veiculo() {
                       height="90"
                       loading="lazy"
                       decoding="async"
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-cover object-[center_65%]"
                       onError={(e) =>
                         handleImageError(e.currentTarget, `${vehicle.marca} ${vehicle.modelo}`)
                       }
@@ -373,7 +376,9 @@ export default function Veiculo() {
               <h1 className="text-3xl md:text-4xl font-display font-extrabold mb-2">
                 {vehicle.marca} {vehicle.modelo}
               </h1>
-              <p className="text-xl text-muted-foreground">{vehicle.versao}</p>
+              {versaoComplementar && (
+                <p className="text-xl text-muted-foreground">{versaoComplementar}</p>
+              )}
             </div>
 
             <div className="bg-card rounded-xl p-6 border shadow-sm mb-8 w-full min-w-0">

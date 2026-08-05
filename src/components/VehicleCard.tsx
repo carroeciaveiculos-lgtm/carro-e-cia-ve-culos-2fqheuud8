@@ -3,6 +3,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { handleImageError, CAR_PLACEHOLDER_IMAGE, getImageUrl } from '@/lib/image-utils'
+import { buildVehicleTitle, getVersaoComplementar } from '@/lib/vehicle-title'
 import { CalendarDays, Settings2, Fuel, Gauge } from 'lucide-react'
 
 function getVehiclePhoto(fotos: any, emPreparacao: boolean): string {
@@ -38,7 +39,7 @@ export function VehicleCard({ vehicle, priority = false }: { vehicle: any; prior
           <img
             src={foto}
             alt={`${vehicle.marca} ${vehicle.modelo}`}
-            className="w-full h-full object-cover bg-muted group-hover:scale-105 transition-transform duration-500"
+            className="w-full h-full object-cover object-[center_65%] bg-muted group-hover:scale-105 transition-transform duration-500"
             loading={priority ? 'eager' : 'lazy'}
             fetchPriority={priority ? 'high' : 'auto'}
             onError={(e) => handleImageError(e.currentTarget, `${vehicle.marca} ${vehicle.modelo}`)}
@@ -48,7 +49,11 @@ export function VehicleCard({ vehicle, priority = false }: { vehicle: any; prior
       <CardContent className="p-3 flex-1 flex flex-col">
         <div className="mb-2">
           <h2 className="font-bold text-base leading-tight group-hover:text-primary transition-colors mb-2">
-            {vehicle.marca} {vehicle.modelo} {vehicle.versao}
+            {buildVehicleTitle([
+              vehicle.marca,
+              vehicle.modelo,
+              getVersaoComplementar(vehicle.modelo, vehicle.versao),
+            ])}
           </h2>
           <div className="flex flex-wrap gap-1.5 mb-2">
             <Badge

@@ -39,6 +39,7 @@ import { trackCTAClick } from '@/lib/tracking'
 import { toast } from 'sonner'
 import { handleImageError, CAR_PLACEHOLDER_IMAGE } from '@/lib/image-utils'
 import { handleShareCTA } from '@/lib/cta-router'
+import { buildVehicleTitle, getVersaoComplementar } from '@/lib/vehicle-title'
 
 const PAGE_SIZE = 10
 
@@ -414,7 +415,7 @@ export default function Estoque() {
                                     <img
                                       src={url}
                                       alt={`${v.marca} ${v.modelo} - Foto ${index + 1}`}
-                                      className="w-full aspect-video object-cover bg-muted max-w-[640px] mx-auto md:max-w-full"
+                                      className="w-full aspect-video object-cover object-[center_65%] bg-muted max-w-[640px] mx-auto md:max-w-full"
                                       loading={vehicleIndex === 0 && index === 0 ? 'eager' : 'lazy'}
                                       fetchPriority={
                                         vehicleIndex === 0 && index === 0 ? 'high' : 'auto'
@@ -439,7 +440,11 @@ export default function Estoque() {
                       <CardContent className="p-3 flex-1 flex flex-col">
                         <div className="mb-3">
                           <h2 className="font-bold text-base md:text-lg leading-tight group-hover:text-primary transition-colors mb-3">
-                            {v.marca} {v.modelo} {v.versao}
+                            {buildVehicleTitle([
+                              v.marca,
+                              v.modelo,
+                              getVersaoComplementar(v.modelo, v.versao),
+                            ])}
                           </h2>
                           <div className="flex flex-wrap gap-1.5 mb-2">
                             <Badge
