@@ -51,7 +51,7 @@ export default function Servicos() {
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div>
               <img
-                src="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/fotos/consignacao.webp"
+                src="https://imagens.carroeciamotors.com.br/logos-e-imagens/fotos/consignacao.webp"
                 alt="Consignação Segura"
                 className="rounded-2xl shadow-xl w-full"
                 loading="lazy"
@@ -62,16 +62,16 @@ export default function Servicos() {
                 <picture className="inline-block">
                   <source
                     media="(max-width: 480px)"
-                    srcSet="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/logos/logo-carro-e-cia1.webp"
+                    srcSet="https://imagens.carroeciamotors.com.br/logos-e-imagens/logos/logo-carro-e-cia.webp"
                     type="image/webp"
                   />
                   <source
                     media="(min-width: 481px)"
-                    srcSet="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/logos/logo-carro-e-cia1.webp"
+                    srcSet="https://imagens.carroeciamotors.com.br/logos-e-imagens/logos/logo-carro-e-cia.webp"
                     type="image/webp"
                   />
                   <img
-                    src="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/logos/logo-carro-e-cia1.webp"
+                    src="https://imagens.carroeciamotors.com.br/logos-e-imagens/logos/logo-carro-e-cia.webp"
                     alt="Carro e Cia"
                     loading="lazy"
                     width="120"
@@ -164,7 +164,7 @@ export default function Servicos() {
             </div>
             <div className="order-1 lg:order-2">
               <img
-                src="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/fotos/modelo-veiculo.webp"
+                src="https://imagens.carroeciamotors.com.br/logos-e-imagens/fotos/modelo-veiculo.webp"
                 alt="Compra Segura"
                 className="rounded-2xl shadow-xl w-full"
                 loading="lazy"
@@ -181,7 +181,7 @@ export default function Servicos() {
             <div>
               <div className="bg-white p-8 rounded-2xl mb-8 w-fit shadow-xl">
                 <img
-                  src="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/fotos/Logo-km-zero-fundo-transparente.webp"
+                  src="https://imagens.carroeciamotors.com.br/logos-e-imagens/parceiros/Logo-km-zero-fundo-transparente.webp"
                   alt="Km Zero"
                   className="h-16"
                   loading="lazy"
@@ -195,25 +195,25 @@ export default function Servicos() {
               </p>
               <div className="flex flex-wrap gap-4 mb-8 bg-white/5 p-4 rounded-xl items-center justify-center">
                 <img
-                  src="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/parceiros/Bradesco.webp"
+                  src="https://imagens.carroeciamotors.com.br/logos-e-imagens/parceiros/Bradesco.webp"
                   alt="Bradesco"
                   className="h-8 object-contain filter brightness-0 invert"
                   loading="lazy"
                 />
                 <img
-                  src="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/parceiros/BV.webp"
+                  src="https://imagens.carroeciamotors.com.br/logos-e-imagens/parceiros/BV.webp"
                   alt="BV"
                   className="h-8 object-contain filter brightness-0 invert"
                   loading="lazy"
                 />
                 <img
-                  src="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/parceiros/Safra.webp"
+                  src="https://imagens.carroeciamotors.com.br/logos-e-imagens/parceiros/Safra.webp"
                   alt="Safra"
                   className="h-8 object-contain filter brightness-0 invert"
                   loading="lazy"
                 />
                 <img
-                  src="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/parceiros/santander.webp"
+                  src="https://imagens.carroeciamotors.com.br/logos-e-imagens/parceiros/santander.webp"
                   alt="Santander"
                   className="h-8 object-contain filter brightness-0 invert"
                   loading="lazy"
@@ -315,7 +315,7 @@ export default function Servicos() {
             <div className="order-1 lg:order-2 flex justify-center">
               <div className="bg-muted p-12 rounded-full shadow-inner">
                 <img
-                  src="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/fotos/Logo-km-zero-fundo-transparente.webp"
+                  src="https://imagens.carroeciamotors.com.br/logos-e-imagens/parceiros/Logo-km-zero-fundo-transparente.webp"
                   alt="Km Zero Seguros"
                   className="w-48 h-48 object-contain"
                   loading="lazy"

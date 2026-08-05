@@ -154,7 +154,7 @@ export default function SeguroAuto() {
         title="Seguro Auto em Uberaba | Km Zero Corretora de Seguros"
         description="Cote seu seguro auto em Uberaba com a Km Zero Corretora. Adriana Araújo — SUSEP desde 2003, 20+ anos de experiência. Atendimento humanizado, cotação em minutos. Fale agora."
         canonical="https://carroeciamotors.com.br/seguro-auto"
-        image="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/fotos/Adriana-foto-profissional.webp"
+        image="https://imagens.carroeciamotors.com.br/logos-e-imagens/fotos/Adriana-foto-profissional.webp"
         schema={SCHEMA}
       />
       <div className="bg-slate-100 py-3 px-4 border-b border-slate-200 hidden md:block">
@@ -258,11 +258,11 @@ export default function SeguroAuto() {
               >
                 <picture>
                   <source
-                    srcSet={`https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/fotos/${p.img}`}
+                    srcSet={`https://imagens.carroeciamotors.com.br/logos-e-imagens/fotos/${p.img}`}
                     type="image/webp"
                   />
                   <img
-                    src={`https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/fotos/${p.img}`}
+                    src={`https://imagens.carroeciamotors.com.br/logos-e-imagens/fotos/${p.img}`}
                     alt={p.alt}
                     width="160"
                     height="160"
@@ -325,15 +325,24 @@ export default function SeguroAuto() {
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-6">
             {[
               { name: 'Porto Seguro', file: 'Porto Seguro.webp' },
-              { name: 'Bradesco Seguros', file: 'Bradesco.webp' },
               { name: 'Allianz', file: 'Allianz.webp' },
               { name: 'Tokio Marine', file: 'Tokio Marine.webp' },
               { name: 'Mapfre', file: 'Mapfre.webp' },
               { name: 'Azul Seguros', file: 'Azul.webp' },
-              { name: 'Yelum', file: 'Yelum.webp' },
-              { name: 'HDI Seguros', file: 'HDI.webp' },
-              { name: 'Suhai Seguradora', file: 'Suhai.webp' },
               { name: 'BP Seguros', file: 'BP Seguros.webp' },
+              { name: 'AIG', file: 'AIG.webp' },
+              { name: 'Akad Seguros', file: 'Akad.webp' },
+              { name: 'Alfa Seguradora', file: 'Alfa.webp' },
+              { name: 'Aliro Seguro', file: 'Aliro.webp' },
+              { name: 'Ezze Seguros', file: 'Ezze.webp' },
+              { name: 'Itaú Seguros', file: 'Itau.webp' },
+              { name: 'Justos', file: 'Justos.webp' },
+              { name: 'Mitsui Sumitomo Insurance', file: 'Mitsui.webp' },
+              { name: 'Novo Seguros', file: 'Novo.webp' },
+              { name: 'Pottencial Seguradora', file: 'Pottencial.webp' },
+              { name: 'Sancor Seguros', file: 'Sancor.webp' },
+              { name: 'SulAmérica', file: 'SulAmerica.webp' },
+              { name: 'Zurich', file: 'Zurich.webp' },
             ].map((s) => (
               <div
                 key={s.name}
@@ -341,11 +350,11 @@ export default function SeguroAuto() {
               >
                 <picture>
                   <source
-                    srcSet={`https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Seguradoras/${s.file.replace(/ /g, '%20')}`}
+                    srcSet={`https://imagens.carroeciamotors.com.br/logos-e-imagens/Seguradoras/${s.file.replace(/ /g, '%20')}`}
                     type="image/webp"
                   />
                   <img
-                    src={`https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Seguradoras/${s.file.replace(/ /g, '%20')}`}
+                    src={`https://imagens.carroeciamotors.com.br/logos-e-imagens/Seguradoras/${s.file.replace(/ /g, '%20')}`}
                     alt={`Logo ${s.name} — parceira Km Zero Corretora Uberaba MG`}
                     title={`${s.name} — Seguro Auto em Uberaba`}
                     className="max-h-10 object-contain"

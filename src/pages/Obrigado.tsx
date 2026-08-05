@@ -31,7 +31,7 @@ export default function Obrigado() {
         <div className="bg-muted p-6 rounded-xl mb-8 flex flex-col items-center">
           <div className="w-24 h-24 rounded-full overflow-hidden mb-4 border-4 border-background shadow-md">
             <img
-              src="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/fotos/Luiz-Fernando-foto-profissional.webp"
+              src="https://imagens.carroeciamotors.com.br/logos-e-imagens/fotos/Luiz-Fernando-foto-profissional.webp"
               alt="Luiz Fernando"
               className="w-full h-full object-cover object-top"
             />

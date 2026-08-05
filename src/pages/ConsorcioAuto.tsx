@@ -108,7 +108,7 @@ export default function ConsorcioAuto() {
         title="Consórcio de Carro em Uberaba | Km Zero Corretora"
         description="Faça seu consórcio de veículo em Uberaba sem juros. Adriana Araújo — Km Zero Corretora. Use seu carro atual como lance e realize seu próximo veículo com planejamento."
         canonical="https://carroeciamotors.com.br/consorcio-auto"
-        image="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Fotos/Formato%20webp/Adriana-foto-profissional.webp"
+        image="https://imagens.carroeciamotors.com.br/logos-e-imagens/fotos/Adriana-foto-profissional.webp"
         schema={SCHEMA}
       />
 
@@ -372,7 +372,7 @@ export default function ConsorcioAuto() {
           <div className="bg-white rounded-3xl overflow-hidden shadow-md flex flex-col md:flex-row border border-slate-100">
             <div className="md:w-5/12 bg-slate-200 aspect-square md:aspect-auto">
               <img
-                src="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/Fotos/Formato%20webp/Adriana-foto-profissional.webp"
+                src="https://imagens.carroeciamotors.com.br/logos-e-imagens/fotos/Adriana-foto-profissional.webp"
                 alt="Adriana Araújo — Corretora de Seguros SUSEP em Uberaba MG | Km Zero Corretora"
                 title="Adriana Araújo — Consultora de Consórcios em Uberaba"
                 loading="lazy"

@@ -6,27 +6,27 @@ export function Partners() {
   const partners = [
     {
       name: 'Santander',
-      src: 'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/parceiros/santander.webp',
+      src: 'https://imagens.carroeciamotors.com.br/logos-e-imagens/parceiros/santander.webp',
     },
     {
       name: 'Safra',
-      src: 'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/parceiros/Safra.webp',
+      src: 'https://imagens.carroeciamotors.com.br/logos-e-imagens/parceiros/Safra.webp',
     },
     {
       name: 'BV',
-      src: 'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/parceiros/BV.webp',
+      src: 'https://imagens.carroeciamotors.com.br/logos-e-imagens/parceiros/BV.webp',
     },
     {
       name: 'Bradesco',
-      src: 'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/parceiros/Bradesco.webp',
+      src: 'https://imagens.carroeciamotors.com.br/logos-e-imagens/parceiros/Bradesco.webp',
     },
     {
       name: 'C6 Financeira',
-      src: 'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/parceiros/C6-FINANCEIRA.webp',
+      src: 'https://imagens.carroeciamotors.com.br/logos-e-imagens/parceiros/C6-FINANCEIRA.webp',
     },
     {
       name: 'Km Zero',
-      src: 'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/parceiros/Logo-km-zero-fundo-transparente.webp',
+      src: 'https://imagens.carroeciamotors.com.br/logos-e-imagens/parceiros/Logo-km-zero-fundo-transparente.webp',
     },
   ]
 

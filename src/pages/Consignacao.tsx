@@ -182,7 +182,7 @@ export default function Consignacao() {
             </Card>
             <Card className="overflow-hidden">
               <img
-                src="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/fotos/Luiz-Fernando-foto-profissional.webp"
+                src="https://imagens.carroeciamotors.com.br/logos-e-imagens/fotos/Luiz-Fernando-foto-profissional.webp"
                 alt="Luiz Fernando"
                 className="w-full h-48 object-cover object-top"
                 loading="lazy"
@@ -196,7 +196,7 @@ export default function Consignacao() {
             </Card>
             <Card className="overflow-hidden bg-muted/20 flex flex-col items-center justify-center p-6 text-center">
               <img
-                src="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/fotos/Logo-km-zero-fundo-transparente.webp"
+                src="https://imagens.carroeciamotors.com.br/logos-e-imagens/parceiros/Logo-km-zero-fundo-transparente.webp"
                 alt="Km Zero"
                 className="w-32 h-32 object-contain mb-4"
                 loading="lazy"

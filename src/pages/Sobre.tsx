@@ -69,7 +69,7 @@ export default function Sobre() {
             <div className="text-left mb-8">
               <picture className="inline-block">
                 <img
-                  src="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/logos/logo-carro-e-cia1.webp"
+                  src="https://imagens.carroeciamotors.com.br/logos-e-imagens/logos/logo-carro-e-cia.webp"
                   alt="Carro e Cia - 20+ anos"
                   loading="eager"
                   className="max-w-full h-auto object-contain w-48"
@@ -80,7 +80,7 @@ export default function Sobre() {
             <div className="bg-card p-6 md:p-8 rounded-2xl shadow-sm border border-border/50 text-center md:text-left">
               <div className="flex flex-col md:flex-row gap-6 items-center md:items-start">
                 <img
-                  src="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/fotos/Luiz-Fernando-foto-profissional.webp"
+                  src="https://imagens.carroeciamotors.com.br/logos-e-imagens/fotos/Luiz-Fernando-foto-profissional.webp"
                   alt="Luiz Fernando, CEO Carro e Cia"
                   className="w-40 h-40 md:w-48 md:h-48 rounded-full object-cover shadow-lg border-4 border-white"
                   loading="eager"
@@ -139,7 +139,7 @@ export default function Sobre() {
           <div className="relative">
             <div className="absolute inset-0 bg-gradient-to-tr from-primary/20 to-transparent rounded-2xl transform translate-x-4 translate-y-4 -z-10"></div>
             <img
-              src="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/fotos/fachada%20da%20loja.jpg"
+              src="https://imagens.carroeciamotors.com.br/logos-e-imagens/fotos/fachada%20da%20loja.jpg"
               alt="Showroom Carro e Cia Veículos"
               className="rounded-2xl shadow-2xl object-cover w-full h-[200px] md:h-[400px]"
               loading="lazy"
@@ -219,7 +219,7 @@ export default function Sobre() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
             <Card className="overflow-hidden border-border/50 flex flex-col p-6 items-center text-center shadow-sm">
               <img
-                src="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/fotos/Luiz-Fernando-foto-profissional.webp"
+                src="https://imagens.carroeciamotors.com.br/logos-e-imagens/fotos/Luiz-Fernando-foto-profissional.webp"
                 alt="Luiz Fernando, CEO Carro e Cia"
                 className="w-24 h-24 rounded-full object-cover shadow-md border-4 border-background mb-4"
                 loading="lazy"
@@ -247,7 +247,7 @@ export default function Sobre() {
 
             <Card className="overflow-hidden border-border/50 flex flex-col p-6 items-center text-center shadow-sm">
               <img
-                src="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/fotos/gabriel%20na%20mesa.jpeg"
+                src="https://imagens.carroeciamotors.com.br/logos-e-imagens/fotos/gabriel%20na%20mesa.jpeg"
                 alt="Gabriel Araújo, especialista em Seguro Auto"
                 className="w-24 h-24 rounded-full object-cover shadow-md border-4 border-background mb-4"
                 loading="lazy"
@@ -275,7 +275,7 @@ export default function Sobre() {
 
             <Card className="overflow-hidden border-border/50 flex flex-col p-6 items-center text-center shadow-sm">
               <img
-                src="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/fotos/adriana%20na%20mesa.jpeg"
+                src="https://imagens.carroeciamotors.com.br/logos-e-imagens/fotos/adriana%20na%20mesa.jpeg"
                 alt="Adriana Araújo, especialista em seguros, consórcios e financiamentos"
                 className="w-24 h-24 rounded-full object-cover shadow-md border-4 border-background mb-4"
                 loading="lazy"

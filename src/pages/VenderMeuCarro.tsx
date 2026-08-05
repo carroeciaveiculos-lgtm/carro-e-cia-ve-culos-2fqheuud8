@@ -17,19 +17,19 @@ const team = [
     name: 'Luiz Fernando',
     role: 'CEO & Fundador',
     bio: '20+ anos de experiência. Apaixonado por carros e dedicado a oferecer a melhor solução para seus clientes.',
-    img: 'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/fotos/Luiz-Fernando-foto-profissional.webp',
+    img: 'https://imagens.carroeciamotors.com.br/logos-e-imagens/fotos/Luiz-Fernando-foto-profissional.webp',
   },
   {
     name: 'Roberto Junior',
     role: 'Vendedor & Suporte Comercial',
     bio: 'Especialista em vendas com foco em relacionamento e satisfação do cliente.',
-    img: 'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/fotos/Roberto-Junior-foto-profissional.webp',
+    img: 'https://imagens.carroeciamotors.com.br/logos-e-imagens/fotos/Roberto-Junior-foto-profissional.webp',
   },
   {
     name: 'Jessica Germano',
     role: 'Assistente Financeira',
     bio: 'Responsável pela gestão financeira com transparência e segurança em cada transação.',
-    img: 'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/fotos/Ljessica-foto-profissional.webp',
+    img: 'https://imagens.carroeciamotors.com.br/logos-e-imagens/fotos/Ljessica-foto-profissional.webp',
   },
 ]
 
@@ -105,16 +105,16 @@ export default function VenderMeuCarro() {
           <picture className="w-full h-full block">
             <source
               media="(max-width: 768px)"
-              srcSet="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/fotos/fachada%20da%20loja.jpg"
+              srcSet="https://imagens.carroeciamotors.com.br/logos-e-imagens/fotos/fachada%20da%20loja.jpg"
               type="image/jpeg"
             />
             <source
               media="(min-width: 769px)"
-              srcSet="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/fotos/fachada%20da%20loja.jpg"
+              srcSet="https://imagens.carroeciamotors.com.br/logos-e-imagens/fotos/fachada%20da%20loja.jpg"
               type="image/jpeg"
             />
             <img
-              src="https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/fotos/fachada%20da%20loja.jpg"
+              src="https://imagens.carroeciamotors.com.br/logos-e-imagens/fotos/fachada%20da%20loja.jpg"
               alt="Fachada Carro e Cia Veículos Uberaba"
               width="1920"
               height="1080"
