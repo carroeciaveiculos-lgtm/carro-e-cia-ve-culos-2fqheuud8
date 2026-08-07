@@ -76,6 +76,26 @@ export async function triggerWMSync(veiculoId?: string): Promise<WMSyncResult> {
         return { success: false, error: data.error }
       }
 
+      // wm-sync sempre responde 200 com success:true no nível do lote, mesmo
+      // quando o item individual falha (ex.: bloqueado por falta de mapeamento
+      // de catálogo) — o resultado real de cada veículo fica em data.results[].
+      // Sem checar isso aqui, o chamador via um "sucesso" que nunca aconteceu.
+      const results: Array<{ status?: string; error?: string }> = Array.isArray(data?.results)
+        ? data.results
+        : []
+      const falhas = results.filter((r) => r.status === 'error')
+      if (falhas.length > 0) {
+        return {
+          success: false,
+          processed: data?.processed ?? 0,
+          error:
+            falhas
+              .map((r) => r.error)
+              .filter(Boolean)
+              .join(' | ') || 'Falha ao sincronizar com a Webmotors',
+        }
+      }
+
       return { success: true, processed: data?.processed ?? 0 }
     } catch (err: any) {
       const errMsg = err?.message || 'Failed to sync with Webmotors.'
