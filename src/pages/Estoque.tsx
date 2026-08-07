@@ -34,17 +34,33 @@ import {
   Gauge,
   ChevronLeft,
   ChevronRight,
+  MessageCircle,
+  ShieldCheck,
+  FileCheck,
 } from 'lucide-react'
 import { trackCTAClick } from '@/lib/tracking'
 import { toast } from 'sonner'
 import { handleImageError, CAR_PLACEHOLDER_IMAGE } from '@/lib/image-utils'
 import { handleShareCTA } from '@/lib/cta-router'
 import { buildVehicleTitle, getVersaoComplementar } from '@/lib/vehicle-title'
+import { getWhatsAppLink } from '@/lib/whatsapp'
+import { TestimonialBanner } from '@/components/estoque/TestimonialBanner'
 
 const PAGE_SIZE = 10
 
 const VEHICLE_FIELDS =
-  'id, slug, marca, modelo, versao, ano_fabricacao, ano_modelo, preco_venda, quilometragem, combustivel, cambio, cor, fotos, videos, is_zero_km, status, is_consignado, categoria, exibir_no_site, nao_exibir_km, em_preparacao'
+  'id, slug, marca, modelo, versao, ano_fabricacao, ano_modelo, preco_venda, quilometragem, combustivel, cambio, cor, fotos, videos, is_zero_km, status, is_consignado, categoria, exibir_no_site, nao_exibir_km, em_preparacao, garantia, laudo_cautelar, tag_promocional'
+
+const TAG_STYLES: Record<string, string> = {
+  oferta: 'bg-red-600',
+  novidade: 'bg-blue-600',
+  reservado: 'bg-gray-500',
+}
+const TAG_LABELS: Record<string, string> = {
+  oferta: 'OFERTA',
+  novidade: 'NOVIDADE',
+  reservado: 'RESERVADO',
+}
 
 export default function Estoque() {
   const [veiculos, setVeiculos] = useState<any[]>([])
@@ -59,6 +75,7 @@ export default function Estoque() {
   const [combustivel, setCombustivel] = useState('Todos')
   const [categoria, setCategoria] = useState('Todas')
   const [maxPrice, setMaxPrice] = useState([1000000])
+  const [priceCeiling, setPriceCeiling] = useState(1000000)
 
   const [marcas, setMarcas] = useState<string[]>(['Todas'])
   const [anos, setAnos] = useState<string[]>(['Todos'])
@@ -74,7 +91,7 @@ export default function Estoque() {
     const fetchOptions = async () => {
       const { data } = await supabase
         .from('veiculos')
-        .select('marca, ano_fabricacao, combustivel, categoria')
+        .select('marca, ano_fabricacao, combustivel, categoria, preco_venda')
         .eq('status', 'disponivel')
         .eq('exibir_no_site', true)
       if (data) {
@@ -93,6 +110,11 @@ export default function Estoque() {
           'Todas',
           ...Array.from(new Set(data.map((v) => v.categoria).filter(Boolean))),
         ])
+        const maiorPreco = Math.max(0, ...data.map((v) => v.preco_venda || 0))
+        const ceiling =
+          maiorPreco > 0 ? Math.ceil((maiorPreco * 1.1) / 10000) * 10000 : 1000000
+        setPriceCeiling(ceiling)
+        setMaxPrice([ceiling])
       }
     }
     fetchOptions()
@@ -174,7 +196,7 @@ export default function Estoque() {
     setAno('Todos')
     setCombustivel('Todos')
     setCategoria('Todas')
-    setMaxPrice([1000000])
+    setMaxPrice([priceCeiling])
     setPage(0)
   }
 
@@ -250,7 +272,21 @@ export default function Estoque() {
       </div>
       <div className="space-y-2">
         <Label>Preço Máximo: R$ {maxPrice[0].toLocaleString('pt-BR')}</Label>
-        <Slider value={maxPrice} onValueChange={setMaxPrice} max={1000000} step={10000} />
+        <Slider value={maxPrice} onValueChange={setMaxPrice} max={priceCeiling} step={10000} />
+        <div className="flex flex-wrap gap-1.5 pt-1">
+          {[50000, 100000, 200000, priceCeiling].map((valor) => (
+            <Button
+              key={valor}
+              type="button"
+              size="sm"
+              variant={maxPrice[0] === valor ? 'default' : 'outline'}
+              className="h-7 text-xs px-2.5"
+              onClick={() => setMaxPrice([valor])}
+            >
+              {valor === priceCeiling ? 'Todos' : `Até ${valor / 1000}k`}
+            </Button>
+          ))}
+        </div>
       </div>
       <Button variant="outline" className="w-full" onClick={clearFilters}>
         Limpar Filtros
@@ -354,7 +390,7 @@ export default function Estoque() {
               </div>
             ) : (
               <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {veiculos.map((v, vehicleIndex) => {
+                {veiculos.flatMap((v, vehicleIndex) => {
                   const fotos =
                     Array.isArray(v.fotos) && v.fotos.length > 0
                       ? v.fotos
@@ -363,18 +399,33 @@ export default function Estoque() {
                             'https://img.usecurling.com/p/400/300?q=car%20detailing%20workshop&color=gray',
                           ]
                         : [CAR_PLACEHOLDER_IMAGE]
-                  return (
+                  const card = (
                     <Card
                       key={v.id}
                       className="overflow-hidden hover:shadow-lg transition-shadow border-border/50 group flex flex-col w-full"
                     >
                       <div className="relative w-full aspect-video bg-muted group-hover:scale-105 transition-transform duration-500">
-                        {v.is_zero_km && (
-                          <Badge className="absolute top-3 left-3 z-10 bg-primary">0 KM</Badge>
-                        )}
-                        {(v as any).em_preparacao && !v.is_zero_km && (
-                          <Badge className="absolute top-3 left-3 z-10 bg-amber-500">
-                            Em Preparação
+                        <div className="absolute top-3 left-3 z-10 flex flex-col items-start gap-1.5">
+                          {v.is_zero_km && <Badge className="bg-primary">0 KM</Badge>}
+                          {(v as any).em_preparacao && !v.is_zero_km && (
+                            <Badge className="bg-amber-500">Em Preparação</Badge>
+                          )}
+                          {(v as any).garantia && (
+                            <Badge className="bg-slate-900 flex items-center gap-1">
+                              <ShieldCheck className="w-3 h-3" /> Garantia
+                            </Badge>
+                          )}
+                          {(v as any).laudo_cautelar && (
+                            <Badge className="bg-slate-900 flex items-center gap-1">
+                              <FileCheck className="w-3 h-3" /> Laudo Cautelar
+                            </Badge>
+                          )}
+                        </div>
+                        {(v as any).tag_promocional && (
+                          <Badge
+                            className={`absolute bottom-3 left-3 z-10 ${TAG_STYLES[(v as any).tag_promocional] || 'bg-gray-500'}`}
+                          >
+                            {TAG_LABELS[(v as any).tag_promocional] || (v as any).tag_promocional}
                           </Badge>
                         )}
                         <Button
@@ -490,23 +541,46 @@ export default function Estoque() {
                           </p>
                         </div>
 
-                        <Button
-                          asChild
-                          variant="outline"
-                          className="w-full h-10 font-bold text-sm rounded-lg"
-                        >
-                          <Link
-                            to={`/estoque/${v.slug || v.id}`}
-                            onClick={() =>
-                              trackCTAClick(`Ver Detalhes: ${v.marca} ${v.modelo}`, '/estoque')
-                            }
+                        <div className="flex gap-2">
+                          <Button
+                            asChild
+                            variant="outline"
+                            className="flex-1 h-10 font-bold text-sm rounded-lg"
                           >
-                            Ver Detalhes
-                          </Link>
-                        </Button>
+                            <Link
+                              to={`/estoque/${v.slug || v.id}`}
+                              onClick={() =>
+                                trackCTAClick(`Ver Detalhes: ${v.marca} ${v.modelo}`, '/estoque')
+                              }
+                            >
+                              Ver Detalhes
+                            </Link>
+                          </Button>
+                          <Button
+                            asChild
+                            className="flex-1 h-10 font-bold text-sm rounded-lg bg-[#25D366] hover:bg-[#1ebe5a] text-white"
+                          >
+                            <a
+                              href={getWhatsAppLink(
+                                `Olá, tenho interesse no ${buildVehicleTitle([v.marca, v.modelo, getVersaoComplementar(v.modelo, v.versao)])} - ${v.ano_modelo || v.ano_fabricacao} no valor de ${v.preco_venda ? `R$ ${v.preco_venda.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : 'consulte'}`,
+                              )}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              onClick={() =>
+                                trackCTAClick(`WhatsApp Card: ${v.marca} ${v.modelo}`, '/estoque')
+                              }
+                            >
+                              <MessageCircle className="w-4 h-4 mr-1.5" />
+                              WhatsApp
+                            </a>
+                          </Button>
+                        </div>
                       </CardContent>
                     </Card>
                   )
+                  return vehicleIndex > 0 && (vehicleIndex + 1) % 6 === 0
+                    ? [card, <TestimonialBanner key={`depoimento-${vehicleIndex}`} />]
+                    : [card]
                 })}
               </div>
             )}
@@ -542,7 +616,7 @@ export default function Estoque() {
                   Nós podemos encontrar para você ou ajudá-lo a vender o seu atual.
                 </p>
                 <div className="flex flex-wrap justify-center gap-4">
-                  <Button asChild>
+                  <Button asChild className="bg-slate-900 hover:bg-slate-800 text-white">
                     <Link
                       to="/consignacao"
                       onClick={() => trackCTAClick('Consigne seu carro conosco', '/estoque')}

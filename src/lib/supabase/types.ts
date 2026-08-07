@@ -3405,11 +3405,13 @@ export type Database = {
           final_placa: string | null
           fipe_ref: string | null
           fotos: Json | null
+          garantia: boolean | null
           id: string
           info_personalizadas: Json | null
           ipva_pago: boolean | null
           is_consignado: boolean | null
           is_zero_km: boolean | null
+          laudo_cautelar: boolean | null
           marca: string
           mes_referencia: string | null
           mesma_obs_classificados: boolean | null
@@ -3455,6 +3457,7 @@ export type Database = {
           responsavel_id: string | null
           slug: string | null
           status: string | null
+          tag_promocional: string | null
           updated_at: string | null
           url_fipe: string | null
           valor_fipe: number | null
@@ -3498,11 +3501,13 @@ export type Database = {
           final_placa?: string | null
           fipe_ref?: string | null
           fotos?: Json | null
+          garantia?: boolean | null
           id?: string
           info_personalizadas?: Json | null
           ipva_pago?: boolean | null
           is_consignado?: boolean | null
           is_zero_km?: boolean | null
+          laudo_cautelar?: boolean | null
           marca: string
           mes_referencia?: string | null
           mesma_obs_classificados?: boolean | null
@@ -3563,6 +3568,7 @@ export type Database = {
           wm_licenciado?: boolean | null
           wm_unico_dono?: boolean | null
           wm_veiculo_troca?: boolean | null
+          tag_promocional?: string | null
         }
         Update: {
           ad_types?: Json | null
@@ -3591,11 +3597,13 @@ export type Database = {
           final_placa?: string | null
           fipe_ref?: string | null
           fotos?: Json | null
+          garantia?: boolean | null
           id?: string
           info_personalizadas?: Json | null
           ipva_pago?: boolean | null
           is_consignado?: boolean | null
           is_zero_km?: boolean | null
+          laudo_cautelar?: boolean | null
           marca?: string
           mes_referencia?: string | null
           mesma_obs_classificados?: boolean | null
@@ -3656,6 +3664,7 @@ export type Database = {
           wm_licenciado?: boolean | null
           wm_unico_dono?: boolean | null
           wm_veiculo_troca?: boolean | null
+          tag_promocional?: string | null
         }
         Relationships: [
           {

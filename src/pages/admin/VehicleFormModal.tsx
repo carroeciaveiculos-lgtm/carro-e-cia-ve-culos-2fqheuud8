@@ -224,6 +224,9 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
     versao: '',
     descricao: '',
     em_preparacao: false,
+    garantia: false,
+    laudo_cautelar: false,
+    tag_promocional: '',
     notas_internas: '',
     requires_review: false,
   })
@@ -927,6 +930,47 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
                     setFormData({ ...formData, em_preparacao: checked })
                   }
                 />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-white rounded-lg border">
+                <div className="flex items-center justify-between gap-2">
+                  <Label className="font-bold">Garantia</Label>
+                  <Switch
+                    checked={formData.garantia || false}
+                    onCheckedChange={(checked) => setFormData({ ...formData, garantia: checked })}
+                  />
+                </div>
+                <div className="flex items-center justify-between gap-2">
+                  <Label className="font-bold">Laudo Cautelar</Label>
+                  <Switch
+                    checked={formData.laudo_cautelar || false}
+                    onCheckedChange={(checked) =>
+                      setFormData({ ...formData, laudo_cautelar: checked })
+                    }
+                  />
+                </div>
+                <div>
+                  <Label>Etiqueta Promocional</Label>
+                  <Select
+                    value={formData.tag_promocional || 'nenhuma'}
+                    onValueChange={(v) =>
+                      setFormData({
+                        ...formData,
+                        tag_promocional: v === 'nenhuma' ? null : v,
+                      })
+                    }
+                  >
+                    <SelectTrigger className="bg-white">
+                      <SelectValue placeholder="Nenhuma" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="nenhuma">Nenhuma</SelectItem>
+                      <SelectItem value="oferta">Oferta</SelectItem>
+                      <SelectItem value="novidade">Novidade</SelectItem>
+                      <SelectItem value="reservado">Reservado</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-white p-6 rounded-lg border">

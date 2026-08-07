@@ -4,7 +4,18 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { handleImageError, CAR_PLACEHOLDER_IMAGE, getImageUrl } from '@/lib/image-utils'
 import { buildVehicleTitle, getVersaoComplementar } from '@/lib/vehicle-title'
-import { CalendarDays, Settings2, Fuel, Gauge } from 'lucide-react'
+import { CalendarDays, Settings2, Fuel, Gauge, ShieldCheck, FileCheck } from 'lucide-react'
+
+const TAG_STYLES: Record<string, string> = {
+  oferta: 'bg-red-600',
+  novidade: 'bg-blue-600',
+  reservado: 'bg-gray-500',
+}
+const TAG_LABELS: Record<string, string> = {
+  oferta: 'OFERTA',
+  novidade: 'NOVIDADE',
+  reservado: 'RESERVADO',
+}
 
 function getVehiclePhoto(fotos: any, emPreparacao: boolean): string {
   if (Array.isArray(fotos)) {
@@ -25,14 +36,33 @@ export function VehicleCard({ vehicle, priority = false }: { vehicle: any; prior
   return (
     <Card className="overflow-hidden hover:shadow-lg transition-shadow border-border/50 group flex flex-col w-full bg-card">
       <div className="relative w-full aspect-video bg-muted overflow-hidden">
-        {vehicle.is_zero_km && (
-          <div className="absolute top-3 left-3 z-10 bg-primary text-primary-foreground px-2 py-1 text-xs font-bold rounded shadow-sm">
-            0 KM
-          </div>
-        )}
-        {(vehicle as any).em_preparacao && (
-          <div className="absolute top-3 left-3 z-10 bg-amber-500 text-white px-2 py-1 text-xs font-bold rounded shadow-sm">
-            Em Preparação
+        <div className="absolute top-3 left-3 z-10 flex flex-col items-start gap-1.5">
+          {vehicle.is_zero_km && (
+            <div className="bg-primary text-primary-foreground px-2 py-1 text-xs font-bold rounded shadow-sm">
+              0 KM
+            </div>
+          )}
+          {(vehicle as any).em_preparacao && (
+            <div className="bg-amber-500 text-white px-2 py-1 text-xs font-bold rounded shadow-sm">
+              Em Preparação
+            </div>
+          )}
+          {(vehicle as any).garantia && (
+            <div className="bg-slate-900 text-white px-2 py-1 text-xs font-bold rounded shadow-sm flex items-center gap-1">
+              <ShieldCheck className="w-3 h-3" /> Garantia
+            </div>
+          )}
+          {(vehicle as any).laudo_cautelar && (
+            <div className="bg-slate-900 text-white px-2 py-1 text-xs font-bold rounded shadow-sm flex items-center gap-1">
+              <FileCheck className="w-3 h-3" /> Laudo Cautelar
+            </div>
+          )}
+        </div>
+        {(vehicle as any).tag_promocional && (
+          <div
+            className={`absolute bottom-3 left-3 z-10 text-white px-2 py-1 text-xs font-bold rounded shadow-sm ${TAG_STYLES[(vehicle as any).tag_promocional] || 'bg-gray-500'}`}
+          >
+            {TAG_LABELS[(vehicle as any).tag_promocional] || (vehicle as any).tag_promocional}
           </div>
         )}
         <Link to={`/estoque/${vehicle.slug || vehicle.id}`} className="w-full h-full block">
