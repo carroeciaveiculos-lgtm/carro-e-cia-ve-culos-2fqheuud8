@@ -18,6 +18,8 @@ import {
 } from '@/services/plataformas'
 import { fetchPublicacoes } from '@/services/portais-sync'
 import { syncVehicleToPlatform, batchSyncVehicles } from '@/services/sync-plataforma'
+import { triggerWMSync } from '@/services/wm-sync'
+import { supabase } from '@/lib/supabase/client'
 import { VehicleAccordion } from '@/components/admin/portais/VehicleAccordion'
 import { GlobalActionsBar } from '@/components/admin/portais/GlobalActionsBar'
 import { ErrorHistoryPanel } from '@/components/admin/portais/ErrorHistoryPanel'
@@ -221,6 +223,47 @@ export default function Portais() {
         })
       }
       return result
+    } else if (slug === 'webmotors') {
+      try {
+        await toggleVehiclePublication(slug, veiculoId, publicar)
+        setVehicles((prev) =>
+          prev.map((v) => (v.id !== veiculoId ? v : { ...v, [`publicado_${slug}`]: publicar })),
+        )
+
+        // Sem isso, o toggle só marcava a flag local e nunca disparava o
+        // wm-sync de verdade — o veículo ficava marcado como "publicado" no
+        // nosso banco sem nenhuma tentativa real de IncluirCarro/ExcluirCarro
+        // na Webmotors. Garante que existe uma linha pendente antes de chamar.
+        const { data: existingPub } = await supabase
+          .from('estoque_publicacoes')
+          .select('id, status, post_id')
+          .eq('veiculo_id', veiculoId)
+          .eq('platform', 'webmotors')
+          .maybeSingle()
+
+        const novoStatus = publicar ? 'pending_create' : 'pending_close'
+        if (existingPub) {
+          await supabase
+            .from('estoque_publicacoes')
+            .update({ status: novoStatus, erro_msg: null })
+            .eq('id', existingPub.id)
+        } else {
+          await supabase
+            .from('estoque_publicacoes')
+            .insert({ veiculo_id: veiculoId, platform: 'webmotors', status: novoStatus })
+        }
+
+        const wmResult = await triggerWMSync(veiculoId)
+        if (!wmResult.success) {
+          setVehicles((prev) =>
+            prev.map((v) => (v.id !== veiculoId ? v : { ...v, [`publicado_${slug}`]: !publicar })),
+          )
+          return { success: false, message: wmResult.error || 'Falha ao sincronizar com a Webmotors' }
+        }
+        return { success: true, message: `${wmResult.processed ?? 0} processado(s) na Webmotors` }
+      } catch (err: any) {
+        return { success: false, message: err.message }
+      }
     } else {
       try {
         await toggleVehiclePublication(slug, veiculoId, publicar)

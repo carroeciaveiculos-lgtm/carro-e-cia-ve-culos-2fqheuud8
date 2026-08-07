@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 import { AlertCircle, Clock, ExternalLink, RefreshCw } from 'lucide-react'
 import { translateError } from '@/lib/platform-errors'
 import { PortalTierSelector } from './PortalTierSelector'
+import { useToast } from '@/hooks/use-toast'
 import type { Plataforma, PublicacaoStatus, VeiculoSync } from '@/services/plataformas'
 
 const SLUG_MAP: Record<string, keyof VeiculoSync> = {
@@ -52,6 +53,7 @@ interface Props {
 
 export function PortalCard({ plataforma, veiculo, publicacao, onSync, onUpdateAdType }: Props) {
   const [syncing, setSyncing] = useState(false)
+  const { toast } = useToast()
   const field = SLUG_MAP[plataforma.slug]
   const published = veiculo[field] as boolean
   const hasError = publicacao?.status === 'error' || publicacao?.status === 'erro'
@@ -62,7 +64,12 @@ export function PortalCard({ plataforma, veiculo, publicacao, onSync, onUpdateAd
   const handleSync = async () => {
     setSyncing(true)
     try {
-      await onSync(plataforma.slug, veiculo.id, true)
+      const result = await onSync(plataforma.slug, veiculo.id, true)
+      toast({
+        title: result.success ? 'Sincronizado com sucesso' : 'Erro na sincronização',
+        description: result.message,
+        variant: result.success ? 'default' : 'destructive',
+      })
     } finally {
       setSyncing(false)
     }
