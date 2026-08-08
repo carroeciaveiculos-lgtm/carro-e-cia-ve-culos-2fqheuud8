@@ -1,5 +1,15 @@
 import { useState, useEffect, useRef } from 'react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { AssinaturaDialog } from '@/components/consignacao/AssinaturaDialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -58,6 +68,7 @@ import {
   RefreshCw,
   Loader2,
   AlertTriangle,
+  X,
 } from 'lucide-react'
 
 const CHECKLIST_INSPECAO = [
@@ -100,12 +111,14 @@ const OPCIONAIS_LIST = [
   'Vidros elétricos',
 ]
 
+// Roteiro Padrão de Fotografia de Veículos — Carro&Cia (08/2026), 20 fotos por carro.
+// A ordem aqui é a ordem final publicada no site quando o operador salva o roteiro.
 const PHOTO_ROTEIRO = [
-  'Capa principal (Frente/Esq.)',
-  'Frente ângulo',
-  'Traseira ângulo',
-  'Lateral esquerda',
-  'Lateral direita',
+  'Capa principal (frente 3/4)',
+  'Frente em ângulo',
+  'Traseira em ângulo',
+  'Lateral esquerda inteira',
+  'Lateral direita inteira',
   'Frente reta',
   'Traseira reta',
   'Painel e volante',
@@ -116,10 +129,31 @@ const PHOTO_ROTEIRO = [
   'Rodas e pneus',
   'Porta-malas',
   'Motor',
-  'Step',
-  'Manual e chave reserva',
-  'Teto',
+  'Painel aceso',
+  'Detalhe acabamento porta dianteira',
+  'Detalhe pneu traseiro',
+  'Teto solar / detalhe exclusivo',
+  'Visão geral do interior',
 ]
+
+// Reconhece o prefixo numérico do roteiro (01_capa.jpg, 02_frente_angulo.jpg...)
+// no nome do arquivo. Retorna o índice do slot (0-based) ou null se não reconhecer.
+function extractRoteiroSlot(url: string): number | null {
+  const fileName = url.split('/').pop() || ''
+  const match = fileName.match(/^0*(\d{1,2})[_-]/)
+  if (!match) return null
+  const n = parseInt(match[1], 10)
+  return n >= 1 && n <= PHOTO_ROTEIRO.length ? n - 1 : null
+}
+
+function sanitizeFolderName(str: string): string {
+  if (!str) return 'desconhecido'
+  return str
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '')
+    .replace(/[^a-zA-Z0-9]/g, '_')
+    .toLowerCase()
+}
 
 const chartConfig = { valor: { label: 'Valor (R$)', color: 'hsl(var(--primary))' } }
 
@@ -135,9 +169,16 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
   const [cpfInfo, setCpfInfo] = useState<any>(null)
   const [isMediaCenterOpen, setIsMediaCenterOpen] = useState(false)
   const [mediaSearch, setMediaSearch] = useState('')
+  const [roteiroAssign, setRoteiroAssign] = useState<(string | null)[]>(() =>
+    Array(PHOTO_ROTEIRO.length).fill(null),
+  )
+  const [roteiroExpandedSlot, setRoteiroExpandedSlot] = useState<number | null>(null)
+  const [roteiroConfirmOpen, setRoteiroConfirmOpen] = useState(false)
   const [editingImage, setEditingImage] = useState<string | null>(null)
   const [isUploadingPhotos, setIsUploadingPhotos] = useState(false)
   const photoInputRef = useRef<HTMLInputElement>(null)
+  const [isUploadingVideo, setIsUploadingVideo] = useState(false)
+  const videoInputRef = useRef<HTMLInputElement>(null)
   const [selectedFolder, setSelectedFolder] = useState<string | null>(null)
 
   const [newCaracteristica, setNewCaracteristica] = useState('')
@@ -218,6 +259,7 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
     diferenciais: [],
     caracteristicas: [],
     fotos: [],
+    videos: [],
     info_personalizadas: {},
     publicado_olx: false,
     fipe_ref: 'Atual',
@@ -384,6 +426,7 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
           diferenciais: [],
           caracteristicas: [],
           fotos: [],
+    videos: [],
           info_personalizadas: {},
           publicado_olx: false,
           fipe_ref: 'Atual',
@@ -407,6 +450,26 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
       .limit(50)
       .then(({ data }) => setMediaAssets(data || []))
   }
+
+  // Recalcula os slots do roteiro sempre que a lista de fotos muda (upload manual,
+  // sync do Drive, etc.) — preserva referências manuais já feitas e reconhece
+  // automaticamente pelo prefixo numérico do arquivo o que ainda estiver livre.
+  useEffect(() => {
+    const fotos: string[] = Array.isArray(formData.fotos) ? formData.fotos : []
+    setRoteiroAssign((prev) => {
+      const next: (string | null)[] = Array(PHOTO_ROTEIRO.length).fill(null)
+      prev.forEach((url, i) => {
+        if (url && fotos.includes(url)) next[i] = url
+      })
+      fotos.forEach((url) => {
+        if (next.includes(url)) return
+        const slot = extractRoteiroSlot(url)
+        if (slot !== null && next[slot] === null) next[slot] = url
+      })
+      return next
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formData.fotos])
 
   const handleSyncGoogleDrive = async () => {
     if (!formData.id) {
@@ -692,14 +755,6 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
       const { data: userData } = await supabase.auth.getUser()
       const userId = userData?.user?.id
 
-      const sanitizeFolderName = (str: string) =>
-        str
-          ? str
-              .normalize('NFD')
-              .replace(/[\u0300-\u036f]/g, '')
-              .replace(/[^a-zA-Z0-9]/g, '_')
-              .toLowerCase()
-          : 'desconhecido'
       const folderName = `${sanitizeFolderName(formData.modelo)}_${sanitizeFolderName(formData.placa)}`
 
       const newPhotos: string[] = []
@@ -743,6 +798,74 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
     } finally {
       setIsUploadingPhotos(false)
       if (photoInputRef.current) photoInputRef.current.value = ''
+    }
+  }
+
+  // Separado de handlePhotoUpload de propósito: vídeo nunca passa por resizeImages
+  // (que é só pra imagem) nem recebe extensão .jpg/.png forçada — isso já causou
+  // vídeo sendo salvo com nome de foto e content-type divergente. Vai direto pra
+  // formData.videos, nunca pra formData.fotos.
+  const handleVideoUpload = async (e: any) => {
+    const files = Array.from(e.target.files || []) as File[]
+    if (!files.length) return
+    setIsUploadingVideo(true)
+
+    try {
+      const { data: userData } = await supabase.auth.getUser()
+      const userId = userData?.user?.id
+
+      const folderName = `${sanitizeFolderName(formData.modelo)}_${sanitizeFolderName(formData.placa)}`
+
+      const newVideos: string[] = []
+
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i]
+        if (!file.type.startsWith('video/')) {
+          toast({
+            title: `"${file.name}" não é um vídeo`,
+            description: 'Use o botão "Fotos" para imagens.',
+            variant: 'destructive',
+          })
+          continue
+        }
+        const ext = file.name.split('.').pop()?.toLowerCase() || 'mp4'
+        const fileName = `${folderName}/${Date.now()}_${i}.${ext}`
+        const fileType = file.type || 'video/mp4'
+
+        const { publicUrl } = await uploadToR2(file, fileName, fileType, 'media')
+        newVideos.push(publicUrl)
+
+        await supabase.from('media_assets').insert([
+          {
+            file_name: file.name,
+            file_path: publicUrl,
+            file_size: file.size,
+            mime_type: fileType,
+            folder: folderName,
+            uploaded_by: userId,
+          },
+        ])
+      }
+
+      if (newVideos.length > 0) {
+        const updatedVideos = [...(formData.videos || []), ...newVideos]
+        setFormData((p: any) => ({
+          ...p,
+          videos: updatedVideos,
+        }))
+
+        if (formData.id) {
+          await supabase.from('veiculos').update({ videos: updatedVideos }).eq('id', formData.id)
+        }
+
+        toast({ title: 'Vídeo(s) enviado(s) com sucesso' })
+        loadMediaAssets()
+      }
+    } catch (err: any) {
+      toast({ title: 'Erro ao enviar vídeo', description: err.message, variant: 'destructive' })
+    } finally {
+      setIsUploadingVideo(false)
+      if (videoInputRef.current) videoInputRef.current.value = ''
     }
   }
 
@@ -1656,7 +1779,7 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
                     <input
                       type="file"
                       multiple
-                      accept="image/*,video/*"
+                      accept="image/*"
                       className="hidden"
                       ref={photoInputRef}
                       onChange={handlePhotoUpload}
@@ -1672,7 +1795,28 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
                       ) : (
                         <UploadCloud className="w-4 h-4 mr-2" />
                       )}
-                      Upload
+                      Fotos
+                    </Button>
+                    <input
+                      type="file"
+                      multiple
+                      accept="video/*"
+                      className="hidden"
+                      ref={videoInputRef}
+                      onChange={handleVideoUpload}
+                    />
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => videoInputRef.current?.click()}
+                      disabled={isUploadingVideo}
+                    >
+                      {isUploadingVideo ? (
+                        <span className="animate-spin mr-2">...</span>
+                      ) : (
+                        <UploadCloud className="w-4 h-4 mr-2" />
+                      )}
+                      Vídeo
                     </Button>
                     <BatchPhotoUploader
                       vehicleId={formData.id}
@@ -1781,35 +1925,208 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
               </div>
 
               <div className="bg-white p-6 rounded-lg border shadow-sm">
-                <h3 className="font-bold flex items-center gap-2 text-slate-800 mb-4">
-                  <Camera className="w-5 h-5 text-blue-600" /> Roteiro de Fotos (18 shots)
+                <h3 className="font-bold flex items-center gap-2 text-slate-800 border-b pb-2 mb-4">
+                  <Camera className="w-5 h-5 text-blue-600" /> Vídeos
                 </h3>
                 <p className="text-xs text-slate-500 mb-3">
-                  Siga este guia para garantir anúncios de alta qualidade. Cada foto deve ser clara
-                  e bem iluminada.
+                  Fica separado das fotos de propósito — vídeo tem proporção e player
+                  diferentes, e a página de detalhes do veículo já mostra cada vídeo no seu
+                  próprio bloco, abaixo da galeria de fotos.
                 </p>
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2">
+                {formData.videos?.length > 0 ? (
+                  <div className="flex flex-col gap-3">
+                    {formData.videos.map((v: string, i: number) => (
+                      <div
+                        key={v}
+                        className="flex items-center gap-4 bg-slate-50 p-3 rounded-xl border"
+                      >
+                        <div className="relative w-24 h-16 rounded-md overflow-hidden bg-slate-800 shrink-0">
+                          <video src={v} className="w-full h-full object-cover" muted />
+                        </div>
+                        <div className="flex-1 truncate">
+                          <p className="text-sm font-medium truncate">{v.split('/').pop()}</p>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="text-red-500 hover:bg-red-50"
+                          onClick={async () => {
+                            const newVideos = formData.videos.filter(
+                              (_: any, x: number) => x !== i,
+                            )
+                            setFormData((p: any) => ({ ...p, videos: newVideos }))
+                            if (formData.id) {
+                              await supabase
+                                .from('veiculos')
+                                .update({ videos: newVideos })
+                                .eq('id', formData.id)
+                            }
+                          }}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="border-2 border-dashed rounded-xl p-6 text-center text-slate-500 bg-slate-50 text-sm">
+                    Nenhum vídeo. Use o botão "Vídeo" acima ou o Sync Drive (que já traz vídeos
+                    separadamente das fotos).
+                  </div>
+                )}
+              </div>
+
+              <div className="bg-white p-6 rounded-lg border shadow-sm">
+                <div className="flex items-center justify-between mb-1 flex-wrap gap-2">
+                  <h3 className="font-bold flex items-center gap-2 text-slate-800">
+                    <Camera className="w-5 h-5 text-blue-600" /> Roteiro de Fotos (20 shots)
+                  </h3>
+                  <Button
+                    type="button"
+                    size="sm"
+                    disabled={!formData.id || roteiroAssign.every((u) => !u)}
+                    onClick={() => setRoteiroConfirmOpen(true)}
+                  >
+                    Salvar roteiro ({roteiroAssign.filter(Boolean).length}/{PHOTO_ROTEIRO.length})
+                  </Button>
+                </div>
+                <p className="text-xs text-slate-500 mb-3">
+                  Fotos sincronizadas do Drive com nome no padrão <code>01_capa.jpg</code>,{' '}
+                  <code>02_frente_angulo.jpg</code>... são encaixadas automaticamente. Pra o resto,
+                  clique no slot vazio e escolha manualmente. Ao salvar, a lista de fotos do site
+                  passa a ser exatamente as fotos referenciadas aqui, nessa ordem.
+                </p>
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2">
                   {PHOTO_ROTEIRO.map((item, i) => {
-                    const hasPhoto = (formData.fotos || []).length > i
+                    const assignedUrl = roteiroAssign[i]
+                    const unassignedPool = (formData.fotos || []).filter(
+                      (url: string) => !roteiroAssign.includes(url),
+                    )
                     return (
                       <div
                         key={i}
-                        className={`flex items-center gap-2 text-xs p-2 rounded border ${hasPhoto ? 'bg-green-50 border-green-200' : 'bg-slate-50 border-slate-200'}`}
+                        className={`relative rounded border p-1.5 text-xs ${assignedUrl ? 'bg-green-50 border-green-200' : 'bg-slate-50 border-slate-200'}`}
                       >
-                        <span
-                          className={`w-5 h-5 rounded-full flex items-center justify-center font-bold shrink-0 ${hasPhoto ? 'bg-green-500 text-white' : 'bg-blue-100 text-blue-700'}`}
-                        >
-                          {hasPhoto ? '✓' : i + 1}
-                        </span>
-                        <span className="text-slate-600">{item}</span>
+                        <div className="flex items-center gap-1.5 mb-1">
+                          <span
+                            className={`w-5 h-5 rounded-full flex items-center justify-center font-bold shrink-0 text-[10px] ${assignedUrl ? 'bg-green-500 text-white' : 'bg-blue-100 text-blue-700'}`}
+                          >
+                            {assignedUrl ? '✓' : i + 1}
+                          </span>
+                          <span className="text-slate-600 truncate" title={item}>
+                            {item}
+                          </span>
+                        </div>
+                        {assignedUrl ? (
+                          <div className="relative">
+                            <img
+                              src={assignedUrl}
+                              alt={item}
+                              className="w-full aspect-[4/3] object-cover rounded"
+                            />
+                            <button
+                              type="button"
+                              title="Remover referência"
+                              className="absolute top-1 right-1 bg-white/90 rounded-full w-5 h-5 flex items-center justify-center text-red-600 shadow hover:bg-white"
+                              onClick={() =>
+                                setRoteiroAssign((prev) =>
+                                  prev.map((u, x) => (x === i ? null : u)),
+                                )
+                              }
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            type="button"
+                            className="w-full aspect-[4/3] border-2 border-dashed rounded flex items-center justify-center text-slate-400 hover:border-blue-400 hover:text-blue-500 text-center px-1"
+                            onClick={() =>
+                              setRoteiroExpandedSlot(roteiroExpandedSlot === i ? null : i)
+                            }
+                          >
+                            Referenciar
+                          </button>
+                        )}
+                        {roteiroExpandedSlot === i && (
+                          <div className="absolute z-20 top-full left-0 mt-1 w-64 bg-white border rounded-lg shadow-lg p-2 grid grid-cols-4 gap-1 max-h-56 overflow-y-auto">
+                            {unassignedPool.length === 0 ? (
+                              <p className="col-span-4 text-slate-400 text-center py-4">
+                                Nenhuma foto disponível
+                              </p>
+                            ) : (
+                              unassignedPool.map((url: string) => (
+                                <button
+                                  key={url}
+                                  type="button"
+                                  onClick={() => {
+                                    setRoteiroAssign((prev) =>
+                                      prev.map((u, x) => (x === i ? url : u)),
+                                    )
+                                    setRoteiroExpandedSlot(null)
+                                  }}
+                                >
+                                  <img
+                                    src={url}
+                                    className="w-full aspect-square object-cover rounded hover:ring-2 hover:ring-blue-400"
+                                  />
+                                </button>
+                              ))
+                            )}
+                          </div>
+                        )}
                       </div>
                     )
                   })}
                 </div>
                 <p className="text-xs text-slate-400 mt-3">
-                  {formData.fotos?.length || 0} de 18 fotos cadastradas
+                  {formData.fotos?.length || 0} fotos no armazenamento · {roteiroAssign.filter(Boolean).length} de{' '}
+                  {PHOTO_ROTEIRO.length} referenciadas no roteiro
                 </p>
               </div>
+
+              <AlertDialog open={roteiroConfirmOpen} onOpenChange={setRoteiroConfirmOpen}>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Salvar roteiro de fotos?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      O site vai passar a mostrar exatamente as{' '}
+                      <strong>{roteiroAssign.filter(Boolean).length} fotos referenciadas</strong>{' '}
+                      acima, nessa ordem.{' '}
+                      {(formData.fotos?.length || 0) > roteiroAssign.filter(Boolean).length && (
+                        <>
+                          As outras{' '}
+                          {(formData.fotos?.length || 0) - roteiroAssign.filter(Boolean).length}{' '}
+                          foto(s) sincronizada(s) continuam salvas, mas deixam de aparecer no site
+                          e na lista de fotos do veículo até serem referenciadas em algum slot.
+                        </>
+                      )}
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={async () => {
+                        const finalFotos = roteiroAssign.filter((u): u is string => !!u)
+                        setFormData((p: any) => ({ ...p, fotos: finalFotos }))
+                        if (formData.id) {
+                          await supabase
+                            .from('veiculos')
+                            .update({ fotos: finalFotos })
+                            .eq('id', formData.id)
+                        }
+                        toast({
+                          title: 'Roteiro salvo',
+                          description: `${finalFotos.length}/${PHOTO_ROTEIRO.length} fotos publicadas na ordem do roteiro.`,
+                        })
+                        setRoteiroConfirmOpen(false)
+                      }}
+                    >
+                      Salvar
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             </TabsContent>
 
             <TabsContent value="financeiro" className="m-0 space-y-6">
@@ -2075,10 +2392,10 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
               variant="outline"
               onClick={() => {
                 const photoCount = formData.fotos?.length || 0
-                if (photoCount < 18) {
+                if (photoCount < 20) {
                   toast({
                     title: '⚠️ Roteiro de fotos incompleto',
-                    description: `${photoCount}/18 fotos cadastradas. Recomendamos 18 fotos para melhor performance nos portais.`,
+                    description: `${photoCount}/20 fotos cadastradas. Recomendamos 20 fotos para melhor performance nos portais.`,
                   })
                 }
                 save('rascunho', true)
@@ -2102,10 +2419,10 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
             <Button
               onClick={() => {
                 const photoCount = formData.fotos?.length || 0
-                if (photoCount < 18) {
+                if (photoCount < 20) {
                   toast({
                     title: '⚠️ Roteiro de fotos incompleto',
-                    description: `${photoCount}/18 fotos. Complete o roteiro de 18 fotos para publicar.`,
+                    description: `${photoCount}/20 fotos. Complete o roteiro de 20 fotos para publicar.`,
                     variant: 'destructive',
                   })
                 }

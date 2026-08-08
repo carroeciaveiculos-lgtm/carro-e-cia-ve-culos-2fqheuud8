@@ -17,16 +17,15 @@ const TAG_LABELS: Record<string, string> = {
   reservado: 'RESERVADO',
 }
 
-function getVehiclePhoto(fotos: any, emPreparacao: boolean): string {
+function getVehiclePhoto(fotos: any, _emPreparacao: boolean): string {
   if (Array.isArray(fotos)) {
     const firstPhoto = fotos.find(
       (url: any) => typeof url === 'string' && !url.match(/\.(mp4|mov|webm|avi|mkv)$/i),
     )
-    if (firstPhoto) return getImageUrl(firstPhoto)
+    if (firstPhoto) return getImageUrl(firstPhoto, 'media', { width: 400 })
   }
-  if (emPreparacao) {
-    return 'https://img.usecurling.com/p/400/300?q=car%20detailing%20workshop&color=gray'
-  }
+  // Sem fotos (inclusive quando em preparação): usa o placeholder local.
+  // O badge "Em Preparação" já é exibido sobre a imagem quando aplicável.
   return CAR_PLACEHOLDER_IMAGE
 }
 
@@ -35,7 +34,7 @@ export function VehicleCard({ vehicle, priority = false }: { vehicle: any; prior
 
   return (
     <Card className="overflow-hidden hover:shadow-lg transition-shadow border-border/50 group flex flex-col w-full bg-card">
-      <div className="relative w-full aspect-video bg-muted overflow-hidden">
+      <div className="relative w-full aspect-[4/3] bg-muted overflow-hidden">
         <div className="absolute top-3 left-3 z-10 flex flex-col items-start gap-1.5">
           {vehicle.is_zero_km && (
             <div className="bg-primary text-primary-foreground px-2 py-1 text-xs font-bold rounded shadow-sm">
@@ -71,6 +70,7 @@ export function VehicleCard({ vehicle, priority = false }: { vehicle: any; prior
             alt={`${vehicle.marca} ${vehicle.modelo}`}
             className="w-full h-full object-cover object-[center_65%] bg-muted group-hover:scale-105 transition-transform duration-500"
             loading={priority ? 'eager' : 'lazy'}
+            decoding="async"
             fetchPriority={priority ? 'high' : 'auto'}
             onError={(e) => handleImageError(e.currentTarget, `${vehicle.marca} ${vehicle.modelo}`)}
           />

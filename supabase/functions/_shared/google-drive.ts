@@ -82,7 +82,10 @@ export async function listDriveItems(
     : `and mimeType!='application/vnd.google-apps.folder'`
 
   const q = `'${folderId}' in parents and trashed=false ${mimeTypeFilter}`
-  const url = `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(q)}&fields=files(id,name,mimeType)&pageSize=1000`
+  // orderBy=name garante que arquivos numerados (01_capa.jpg, 02_frente_angulo.jpg...)
+  // cheguem na ordem certa — sem isso a API do Drive devolve em ordem própria dela
+  // (normalmente por data de criação), quebrando o roteiro de fotos.
+  const url = `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(q)}&orderBy=name&fields=files(id,name,mimeType)&pageSize=1000`
 
   const res = await fetch(url, {
     headers: { Authorization: `Bearer ${accessToken}` },

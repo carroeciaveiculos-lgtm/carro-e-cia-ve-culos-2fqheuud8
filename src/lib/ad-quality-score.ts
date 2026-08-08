@@ -28,8 +28,8 @@ export function calculateAdQualityScore(vehicle: {
 }): QualityScoreResult {
   const missingItems: string[] = []
   const photoCount = Array.isArray(vehicle.fotos) ? vehicle.fotos.length : 0
-  const photos = photoCount >= 18 ? 40 : Math.round((photoCount / 18) * 40)
-  if (photoCount < 18) missingItems.push(`${photoCount}/18 fotos do roteiro`)
+  const photos = photoCount >= 20 ? 40 : Math.round((photoCount / 20) * 40)
+  if (photoCount < 20) missingItems.push(`${photoCount}/20 fotos do roteiro`)
 
   let basicInfo = 0
   if (vehicle.ano_modelo || vehicle.ano_fabricacao) basicInfo += 5

@@ -64,6 +64,7 @@ import {
   CAR_PLACEHOLDER_IMAGE,
   getVehiclePhotos,
   getVehicleVideos,
+  getImageUrl,
 } from '@/lib/image-utils'
 import { buildVehicleTitle, getVersaoComplementar } from '@/lib/vehicle-title'
 
@@ -276,7 +277,7 @@ export default function Veiculo() {
                     <CarouselItem key={i}>
                       <div className="aspect-[4/3] rounded-xl overflow-hidden bg-muted relative w-full">
                         <img
-                          src={p}
+                          src={getImageUrl(p, 'media', { width: 800 })}
                           alt={`Foto ${i + 1} do veículo ${vehicle.marca} ${vehicle.modelo}`}
                           width="800"
                           height="600"
@@ -338,7 +339,7 @@ export default function Veiculo() {
                     }`}
                   >
                     <img
-                      src={p}
+                      src={getImageUrl(p, 'media', { width: 200 })}
                       alt={`Miniatura ${i + 1} do ${vehicle.modelo}`}
                       width="160"
                       height="90"

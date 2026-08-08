@@ -34,21 +34,51 @@ function sanitizeUrlSpecialChars(url: string): string {
   }
 }
 
-export function getImageUrl(pathOrUrl: string | null | undefined, bucket = 'media'): string {
+export interface ImageResizeOptions {
+  /** Largura desejada em pixels (CSS px do maior breakpoint esperado). */
+  width: number
+  /** Qualidade JPEG/WebP de saída (1-100). Padrão: 75. */
+  quality?: number
+}
+
+/**
+ * Aplica o transform de Cloudflare Image Resizing (/cdn-cgi/image/...) a uma URL
+ * já resolvida da zona R2 (imagens.carroeciamotors.com.br). Não faz nada em URLs
+ * externas, locais (ex.: /placeholder-car.svg) ou que já tenham um transform aplicado.
+ *
+ * Confirmado via teste manual (curl) em 08/2026 que a zona imagens.carroeciamotors.com.br
+ * tem o Cloudflare Image Resizing habilitado.
+ */
+function applyCloudflareResize(url: string, resize?: ImageResizeOptions): string {
+  if (!resize?.width) return url
+  if (!url.startsWith(R2_BASE_URL)) return url
+  if (url.includes('/cdn-cgi/image/')) return url
+
+  const quality = resize.quality ?? 75
+  const pathAndQuery = url.slice(R2_BASE_URL.length) // mantém a barra inicial
+  return `${R2_BASE_URL}/cdn-cgi/image/width=${resize.width},quality=${quality},format=auto${pathAndQuery}`
+}
+
+export function getImageUrl(
+  pathOrUrl: string | null | undefined,
+  bucket = 'media',
+  resize?: ImageResizeOptions,
+): string {
   if (!pathOrUrl) return CAR_PLACEHOLDER_IMAGE
 
   let result = pathOrUrl
 
-  if (result.startsWith(R2_BASE_URL)) return sanitizeUrlSpecialChars(result)
+  if (result.startsWith(R2_BASE_URL))
+    return applyCloudflareResize(sanitizeUrlSpecialChars(result), resize)
 
   if (result.startsWith(SUPABASE_STORAGE_BASE)) {
     result = result.replace(SUPABASE_STORAGE_BASE, `${R2_BASE_URL}/`).split('?')[0]
-    return result
+    return applyCloudflareResize(result, resize)
   }
 
   if (result.startsWith(SUPABASE_RENDER_BASE)) {
     result = result.replace(SUPABASE_RENDER_BASE, `${R2_BASE_URL}/`).split('?')[0]
-    return result
+    return applyCloudflareResize(result, resize)
   }
 
   if (result.startsWith('http://') || result.startsWith('https://'))
@@ -62,7 +92,7 @@ export function getImageUrl(pathOrUrl: string | null | undefined, bucket = 'medi
     result = `${R2_BASE_URL}/${bucket}/${result}`
   }
 
-  return sanitizeUrlSpecialChars(result)
+  return applyCloudflareResize(sanitizeUrlSpecialChars(result), resize)
 }
 
 export function handleImageError(img: HTMLImageElement, context?: string): void {

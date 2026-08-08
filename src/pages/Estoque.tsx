@@ -6,13 +6,6 @@ import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import {
-  Carousel,
-  CarouselContent,
-  CarouselItem,
-  CarouselNext,
-  CarouselPrevious,
-} from '@/components/ui/carousel'
-import {
   Select,
   SelectContent,
   SelectItem,
@@ -40,13 +33,13 @@ import {
 } from 'lucide-react'
 import { trackCTAClick } from '@/lib/tracking'
 import { toast } from 'sonner'
-import { handleImageError, CAR_PLACEHOLDER_IMAGE } from '@/lib/image-utils'
+import { handleImageError, CAR_PLACEHOLDER_IMAGE, getImageUrl } from '@/lib/image-utils'
 import { handleShareCTA } from '@/lib/cta-router'
 import { buildVehicleTitle, getVersaoComplementar } from '@/lib/vehicle-title'
 import { getWhatsAppLink } from '@/lib/whatsapp'
 import { TestimonialBanner } from '@/components/estoque/TestimonialBanner'
 
-const PAGE_SIZE = 10
+const PAGE_SIZE = 12
 
 const VEHICLE_FIELDS =
   'id, slug, marca, modelo, versao, ano_fabricacao, ano_modelo, preco_venda, quilometragem, combustivel, cambio, cor, fotos, videos, is_zero_km, status, is_consignado, categoria, exibir_no_site, nao_exibir_km, em_preparacao, garantia, laudo_cautelar, tag_promocional'
@@ -375,8 +368,8 @@ export default function Estoque() {
 
             {loading ? (
               <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {[1, 2, 3, 4, 5, 6].map((i) => (
-                  <Card key={i} className="h-[420px] animate-pulse bg-muted/50 border-0" />
+                {Array.from({ length: PAGE_SIZE }).map((_, i) => (
+                  <Card key={i} className="h-[460px] animate-pulse bg-muted/50 border-0" />
                 ))}
               </div>
             ) : veiculos.length === 0 ? (
@@ -394,17 +387,13 @@ export default function Estoque() {
                   const fotos =
                     Array.isArray(v.fotos) && v.fotos.length > 0
                       ? v.fotos
-                      : (v as any).em_preparacao
-                        ? [
-                            'https://img.usecurling.com/p/400/300?q=car%20detailing%20workshop&color=gray',
-                          ]
-                        : [CAR_PLACEHOLDER_IMAGE]
+                      : [CAR_PLACEHOLDER_IMAGE]
                   const card = (
                     <Card
                       key={v.id}
                       className="overflow-hidden hover:shadow-lg transition-shadow border-border/50 group flex flex-col w-full"
                     >
-                      <div className="relative w-full aspect-video bg-muted group-hover:scale-105 transition-transform duration-500">
+                      <div className="relative w-full aspect-[4/3] bg-muted group-hover:scale-105 transition-transform duration-500">
                         <div className="absolute top-3 left-3 z-10 flex flex-col items-start gap-1.5">
                           {v.is_zero_km && <Badge className="bg-primary">0 KM</Badge>}
                           {(v as any).em_preparacao && !v.is_zero_km && (
@@ -443,61 +432,50 @@ export default function Estoque() {
                         >
                           <Share2 className="w-4 h-4" />
                         </Button>
-                        <Carousel className="w-full h-full">
-                          <CarouselContent className="h-full ml-0">
-                            {fotos.map((url: string, index: number) => (
-                              <CarouselItem key={index} className="pl-0 h-full">
-                                <Link
-                                  to={`/estoque/${v.slug || v.id}`}
-                                  onClick={() =>
-                                    trackCTAClick(`Ver Veiculo: ${v.marca} ${v.modelo}`, '/estoque')
-                                  }
-                                  className="w-full h-full block"
-                                >
-                                  {url.match(/\.(mp4|mov|webm)$/i) ? (
-                                    <video
-                                      src={url}
-                                      className="w-full aspect-video object-cover"
-                                      muted
-                                      loop
-                                      playsInline
-                                    />
-                                  ) : (
-                                    <img
-                                      src={url}
-                                      alt={`${v.marca} ${v.modelo} - Foto ${index + 1}`}
-                                      className="w-full aspect-video object-cover object-[center_65%] bg-muted max-w-[640px] mx-auto md:max-w-full"
-                                      loading={vehicleIndex === 0 && index === 0 ? 'eager' : 'lazy'}
-                                      fetchPriority={
-                                        vehicleIndex === 0 && index === 0 ? 'high' : 'auto'
-                                      }
-                                      onError={(e) =>
-                                        handleImageError(e.currentTarget, `${v.marca} ${v.modelo}`)
-                                      }
-                                    />
-                                  )}
-                                </Link>
-                              </CarouselItem>
-                            ))}
-                          </CarouselContent>
-                          {fotos.length > 1 && (
-                            <>
-                              <CarouselPrevious className="left-2 bg-black/50 text-white border-0 hover:bg-black/70" />
-                              <CarouselNext className="right-2 bg-black/50 text-white border-0 hover:bg-black/70" />
-                            </>
+                        <Link
+                          to={`/estoque/${v.slug || v.id}`}
+                          onClick={() =>
+                            trackCTAClick(`Ver Veiculo: ${v.marca} ${v.modelo}`, '/estoque')
+                          }
+                          className="w-full h-full block"
+                        >
+                          {fotos[0].match(/\.(mp4|mov|webm)$/i) ? (
+                            <video
+                              src={fotos[0]}
+                              className="w-full aspect-video object-cover"
+                              muted
+                              loop
+                              playsInline
+                            />
+                          ) : (
+                            <img
+                              src={
+                                fotos[0].startsWith('http')
+                                  ? getImageUrl(fotos[0], 'media', { width: 400 })
+                                  : fotos[0]
+                              }
+                              alt={`${v.marca} ${v.modelo}`}
+                              className="w-full h-full object-cover object-[center_65%] bg-muted"
+                              loading={vehicleIndex === 0 ? 'eager' : 'lazy'}
+                              decoding="async"
+                              fetchPriority={vehicleIndex === 0 ? 'high' : 'auto'}
+                              onError={(e) =>
+                                handleImageError(e.currentTarget, `${v.marca} ${v.modelo}`)
+                              }
+                            />
                           )}
-                        </Carousel>
+                        </Link>
                       </div>
                       <CardContent className="p-3 flex-1 flex flex-col">
                         <div className="mb-3">
-                          <h2 className="font-bold text-base md:text-lg leading-tight group-hover:text-primary transition-colors mb-3">
+                          <h2 className="font-bold text-base md:text-lg leading-tight group-hover:text-primary transition-colors mb-3 min-h-10 md:min-h-[45px]">
                             {buildVehicleTitle([
                               v.marca,
                               v.modelo,
                               getVersaoComplementar(v.modelo, v.versao),
                             ])}
                           </h2>
-                          <div className="flex flex-wrap gap-1.5 mb-2">
+                          <div className="flex flex-wrap gap-1.5 mb-2 min-h-[58px] content-start">
                             <Badge
                               variant="secondary"
                               className="bg-muted/50 text-muted-foreground text-xs font-medium flex items-center gap-1 py-1 px-2"

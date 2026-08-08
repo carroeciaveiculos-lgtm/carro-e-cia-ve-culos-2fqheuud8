@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Car, ChevronRight } from 'lucide-react'
-import { getImageUrl } from '@/lib/image-utils'
+import { getImageUrl, handleImageError } from '@/lib/image-utils'
 
 export function HomeFeatures() {
   const [vehicles, setVehicles] = useState<any[]>([])
@@ -68,8 +68,8 @@ export function HomeFeatures() {
             {vehicles.map((v) => {
               const foto =
                 v.fotos && v.fotos.length > 0
-                  ? getImageUrl(v.fotos[0])
-                  : getImageUrl('fotos/modelo-veiculo.webp')
+                  ? getImageUrl(v.fotos[0], 'media', { width: 400 })
+                  : getImageUrl('fotos/modelo-veiculo.webp', 'media', { width: 400 })
               return (
                 <Card
                   key={v.id}
@@ -87,10 +87,8 @@ export function HomeFeatures() {
                         alt={`${v.marca} ${v.modelo}`}
                         className="w-full h-full object-cover bg-muted"
                         loading="lazy"
-                        onError={(e) => {
-                          ;(e.target as HTMLImageElement).src =
-                            'https://img.usecurling.com/p/400/300?q=car'
-                        }}
+                        decoding="async"
+                        onError={(e) => handleImageError(e.currentTarget, `${v.marca} ${v.modelo}`)}
                       />
                     </Link>
                   </div>
