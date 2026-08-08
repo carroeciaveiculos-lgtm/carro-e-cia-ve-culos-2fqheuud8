@@ -19,18 +19,44 @@ const CATALOGOS_SEM_PARAMETRO: Record<string, string> = {
   combustiveis: 'ObterCombustivel',
 }
 
+// ObterVersao precisa de pCodigoModelo + intervalo de datas — não se encaixa
+// no mapa "sem parâmetro" acima. Adicionado especificamente para revalidar,
+// com os parâmetros exatos que o suporte da Webmotors (Gabriel, 08/2026)
+// pediu para testar: pCodigoModelo=730, pDataInicioAtualizacao=2010-01-01,
+// pDataFimAtualizacao=2026-05-01.
+function buildObterVersaoXML(hash: string, codigoModelo: string, dataInicio: string, dataFim: string): string {
+  return `<?xml version="1.0" encoding="utf-8"?>
+<soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+  <soap:Body>
+    <ObterVersao xmlns="www.webmotors.com.br/wsEstoqueRevendedorWebMotors">
+      <pHashAutenticacao>${hash}</pHashAutenticacao>
+      <pCodigoModelo>${codigoModelo}</pCodigoModelo>
+      <pDataInicioAtualizacao>${dataInicio}</pDataInicioAtualizacao>
+      <pDataFimAtualizacao>${dataFim}</pDataFimAtualizacao>
+    </ObterVersao>
+  </soap:Body>
+</soap:Envelope>`
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
 
   try {
     const body = await req.json().catch(() => ({}))
     const catalogo = body.catalogo || 'cores'
-    const action = CATALOGOS_SEM_PARAMETRO[catalogo]
+    const isVersao = catalogo === 'versao'
+    const action = isVersao ? 'ObterVersao' : CATALOGOS_SEM_PARAMETRO[catalogo]
     if (!action) {
       return new Response(
         JSON.stringify({
-          error: `catalogo "${catalogo}" desconhecido. Use um de: ${Object.keys(CATALOGOS_SEM_PARAMETRO).join(', ')}`,
+          error: `catalogo "${catalogo}" desconhecido. Use um de: ${[...Object.keys(CATALOGOS_SEM_PARAMETRO), 'versao'].join(', ')}`,
         }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      )
+    }
+    if (isVersao && !body.codigo_modelo) {
+      return new Response(
+        JSON.stringify({ error: 'catalogo "versao" exige o parâmetro codigo_modelo' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
       )
     }
@@ -53,7 +79,14 @@ Deno.serve(async (req: Request) => {
     }
     const hash = authResult.hashAutenticacao
 
-    const xml = `<?xml version="1.0" encoding="utf-8"?>
+    const xml = isVersao
+      ? buildObterVersaoXML(
+          hash,
+          String(body.codigo_modelo),
+          body.data_inicio || '2010-01-01',
+          body.data_fim || '2026-05-01',
+        )
+      : `<?xml version="1.0" encoding="utf-8"?>
 <soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
   <soap:Body>
     <${action} xmlns="www.webmotors.com.br/wsEstoqueRevendedorWebMotors">
