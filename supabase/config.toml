@@ -118,8 +118,11 @@ verify_jwt = false
 [functions.wm-auth]
 verify_jwt = false
 
+# Chamada só pelo admin autenticado, via src/services/wm-sync.ts (functions.invoke).
+# Estava declarada como false aqui enquanto produção rodava true — um deploy pelo
+# CLI teria aberto a publicação no portal para qualquer chamada sem sessão.
 [functions.wm-sync]
-verify_jwt = false
+verify_jwt = true
 
 [functions.wm-process-lead]
 verify_jwt = false
@@ -130,5 +133,37 @@ verify_jwt = false
 [functions.wm-webhook-estoque]
 verify_jwt = false
 
+# --- Catálogo e mapeamento Webmotors ---
+# Estas seis existiam só no servidor até 06/08/2026; os valores abaixo espelham
+# o verify_jwt que já estava em produção.
+
+# Telas de mapeamento do admin (browser autenticado).
+[functions.wm-mapear-veiculo]
+verify_jwt = true
+
+[functions.wm-confirmar-mapeamento]
+verify_jwt = true
+
+[functions.wm-catalog-fetch]
+verify_jwt = true
+
+# Carga em lote do catálogo, disparada fora do browser.
+[functions.wm-sync-catalogo]
+verify_jwt = false
+
+# Estava órfã (uma das 8 pendências do CLAUDE.md). Produção já roda false;
+# declarar aqui não muda comportamento, só impede que um deploy a vire 401.
+[functions.wm-catalogue]
+verify_jwt = false
+
 [functions.auto-migrate-r2]
+verify_jwt = false
+
+[functions.avaliar-qualidade-anuncios]
+verify_jwt = false
+
+[functions.publicar-social]
+verify_jwt = false
+
+[functions.ml-diagnose-cambio]
 verify_jwt = false

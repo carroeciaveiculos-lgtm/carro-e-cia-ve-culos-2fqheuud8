@@ -81,10 +81,13 @@ Isso quebra sincronizações de estoque, automações de leads, disparos de What
 | `og-vehicle`                    | Public                  | Geração de imagem OG                                                    |
 | `ml-diagnose-cambio`            | Server-to-Server        | Diagnóstico de câmbio ML                                                |
 | `wm-auth`                       | Server-to-Server        | Autenticação Webmotors                                                  |
-| `wm-sync`                       | Server-to-Server / Cron | Sincronização Webmotors                                                 |
 | `wm-webhook-leads`              | Webhook                 | Webhook de leads Webmotors                                              |
 | `wm-webhook-estoque`            | Webhook                 | Webhook de estoque Webmotors                                            |
 | `wm-process-lead`               | Server-to-Server        | Processamento de lead Webmotors                                         |
+| `wm-catalogue`                  | Server-to-Server        | Catálogo Webmotors (era órfã até 06/08/2026)                            |
+| `wm-sync-catalogo`              | Server-to-Server        | Carga em lote de marcas/modelos do catálogo Webmotors                   |
+| `wm-sync-test`                  | —                       | **Inerte**: `export default` em vez de `Deno.serve`; aponta para outra API |
+| `wm-sync-validator-test`        | —                       | **Inerte**: `export ... handler`; valida strings fixas, não chama a WM   |
 | `sync-google-drive`             | Server-to-Server        | Sincronização Google Drive                                              |
 | `sync-drive-videos`             | Server-to-Server        | Sincronização de vídeos do Drive                                        |
 | `avaliar-qualidade-anuncios`    | Cron / Server-to-Server | Avaliação de qualidade de anúncios                                      |
@@ -93,9 +96,19 @@ Isso quebra sincronizações de estoque, automações de leads, disparos de What
 
 | Função                 | Motivo                                                       |
 | ---------------------- | ------------------------------------------------------------ |
-| `get-r2-presigned-url` | Gera URLs assinadas do R2; requer JWT do usuário autenticado |
-| `migrar-storage-r2`    | Migração de storage; operação privilegiada com JWT do admin  |
-| `populate-cache-test`  | Função de teste com JWT verification                         |
+| `get-r2-presigned-url`    | Gera URLs assinadas do R2; requer JWT do usuário autenticado |
+| `migrar-storage-r2`       | Migração de storage; operação privilegiada com JWT do admin  |
+| `populate-cache-test`     | Função de teste com JWT verification                         |
+| `wm-sync`                 | Publica anúncio no portal; chamada só pelo admin via `src/services/wm-sync.ts` |
+| `wm-mapear-veiculo`       | Tela de mapeamento do admin                                  |
+| `wm-confirmar-mapeamento` | Tela de pendências do admin                                  |
+| `wm-catalog-fetch`        | Consulta de catálogo a partir do admin                       |
+
+> `wm-sync` estava classificada aqui como Server-to-Server / Cron e declarada
+> `false` no `config.toml`, enquanto produção rodava `true`. O único chamador é
+> `supabase.functions.invoke('wm-sync')` em `src/services/wm-sync.ts` — browser
+> autenticado. Corrigido em 06/08/2026: um deploy pelo CLI teria aberto a
+> publicação no portal para qualquer chamada sem sessão.
 
 ---
 

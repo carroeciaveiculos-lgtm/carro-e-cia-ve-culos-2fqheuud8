@@ -42,7 +42,39 @@ You are a specialist in Webmotors' dealer integration systems. Your job is to **
 
 The legacy "Integração Revendedor" system's car listing object (`AnuncioWM`) requires these fields (non-exhaustive — see full manual for enum codes): `CodigoAnuncio`, `CodigoMarca`, `CodigoModelo`, `CodigoVersao`, `AnoDoModelo`, `AnoFabricacao`, `NrPortas`, `Combustivel`, `Cambio`, `CorExterna`, `Placa` (required only for used cars), `PrecoVenda`, `TipoAnuncio`, plus several boolean-like "Sim/Não" flags (`Alienado`, `Blindado`, `UnicoDono`, `GarantiaDeFabrica`, `IpvaPago`, `Licenciado`, etc. — required only for used cars in most cases). Most fields expect specific enum codes "defined by Webmotors" (brand, model, version, fuel, gearbox, color) rather than free text — a common source of silent validation failures if the code sends raw text instead of the Webmotors-defined codes for these fields.
 
-# IMPORTANT — possible read-only limitation of the legacy SOAP API
+# RESOLVED (2026-08-06) — `IncluirCarro` exists. Ignore the read-only hypothesis below.
+
+The section that follows argued that `IncluirCarro`/`AlterarCarro`/`ExcluirCarro`
+are "likely fictitious" and that publishing can only happen through the Cockpit UI.
+**That is wrong, and it was disproven by live traffic.** Keeping it here only as a
+record of a wrong turn — do not act on it.
+
+Evidence: on 2026-08-06 the homologação endpoint answered a real `IncluirCarro`
+call with a well-formed `<IncluirCarroResponse>` that echoed the entire `AnuncioWM`
+object back (`CodigoMarca`, `CodigoModelo`, `CodigoVersao`, `Km`, `Placa`, the S/N
+flags, `PrecoVenda`) plus a `<CodigoRetorno>`. A service that doesn't implement an
+operation returns a SOAPAction fault, not a populated response object.
+
+The earlier conclusion came from probing the **wrong host**. The operations live on:
+
+- `hportal.webmotors.com.br/IntegracaoRevendedor/wsEstoqueRevendedorWebMotors.asmx`
+  (homologação), namespace `www.webmotors.com.br/wsEstoqueRevendedorWebMotors`
+
+not on `integracao.webmotors.com.br`. Note also that the WSDL is unreachable from
+an arbitrary IP — CloudFront answers `403 Request blocked`. Only the fixed IP
+behind `WM_PROXY_URL` is allowed through, so "I couldn't fetch the WSDL" is not
+evidence that an operation is missing.
+
+Two more things worth knowing before diagnosing:
+
+- The payload is wrapped: `<pHashAutenticacao>` + `<pAnuncio>…</pAnuncio>`, with
+  `pAnuncio` carrying the `AnuncioWM` fields. A flat field list gets rejected.
+- The `CodigoRetorno` tables in the code are of **unverified provenance** and
+  contradict each other between `wm-sync` and `_shared/wm-soap.ts`. Do not present
+  a translated code as a diagnosis. `wm-sync` now persists the raw request and
+  response in `wm_mapeamento_veiculos.ultima_resposta_xml` — read that instead.
+
+# SUPERSEDED — possible read-only limitation of the legacy SOAP API
 
 Investigation found a confirmed **read** operation in `wsEstoqueRevendedorWebMotors.asmx` (`ObterEstoqueAtual`, returns current inventory) but **no confirmed write/insert/update operation** in the same legacy SOAP service family. Multiple Webmotors support articles describe inventory publication as something the dealer does **inside the Cockpit web interface** ("o lojista solicita via Cockpit a publicação de um veículo" / "captura do anúncio"), with the "Integração Revendedor" API used mainly to **read** what's already been published there — not to push new listings or price/status changes programmatically.
 
