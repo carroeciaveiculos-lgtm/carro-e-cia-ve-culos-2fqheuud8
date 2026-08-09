@@ -34,3 +34,9 @@ screenshot.png
 
 # Environment variables
 .env*
+
+# Atalhos (junctions) criados pelo instalador de skills.
+# Sao apenas ponteiros para .agents/skills/, que ESTA versionado.
+# Versionar os dois causaria arquivos duplicados no repositorio.
+.claude/skills/supabase
+.claude/skills/supabase-postgres-best-practices
