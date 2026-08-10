@@ -169,7 +169,21 @@ específico aqui, menos eu erro:
 - **Status de veículo**: existem `disponivel`, `devolvido`, `em_preparacao`,
   `rascunho`. Qual é o fluxo válido entre eles? Veículo vendido pode ser deletado
   ou só muda status?
-- **Preço**: está em centavos (integer) ou decimal? Onde é formatado?
+- ~~**Preço**~~ **RESPONDIDO em 10/08/2026.** Decimal com 2 casas (`numeric`), não
+  centavos. Dois campos, com donos bem diferentes:
+
+  - `preco_venda` é o **"Por"** — o valor que o cliente paga. Definido por quem
+    cadastra o veículo em `src/pages/admin/VehicleFormModal.tsx`, e usado em todo
+    o resto (site, card, página do veículo, documentos, Mercado Livre).
+  - `preco_revenda` é o **"De"** — o preço riscado de vitrine, só referência.
+    **Campo órfão:** nenhuma tela, função ou migration escreve nele; só o
+    `_shared/wm-soap.ts` o lê, para mandar como `<PrecoReal>` à Webmotors. Os
+    valores que existem hoje foram postos direto no banco.
+
+  A Webmotors exige `PrecoReal` **estritamente maior** que `PrecoVenda`; iguais
+  dão `22|78` e **bloqueiam** a publicação (`CodigoAnuncio` volta 0). Ela também
+  valida o "De" contra a FIPE (código `105`), então não dá para simplesmente
+  inflar o valor. Ver `docs/webmotors-integracao.md`.
 - **Leads**: o que nunca pode faltar num lead? Qual o SLA/fluxo depois que entra?
 - **Publicação em portais**: existe aprovação manual antes de subir anúncio?
 - **O que eu nunca devo mexer sem te perguntar?** (ex.: migrations em produção,
