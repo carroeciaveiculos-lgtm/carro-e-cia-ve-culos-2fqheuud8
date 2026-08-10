@@ -138,12 +138,20 @@ Deno.serve(async (req: Request) => {
     let versoes = versoesCache || []
     if (versoes.length === 0) {
       const hash = await autenticar()
+      // O ObterVersao exige o intervalo de atualização além do pCodigoModelo —
+      // indicado pelo suporte da Webmotors (Gabriel, 08/2026). Até aqui essa
+      // chamada mandava só o código do modelo. A data final é calculada na hora,
+      // e não fixada no 2026-05-01 do exemplo dele, senão versões lançadas depois
+      // dessa data parariam de aparecer conforme o código envelhecesse.
+      const dataFimAtualizacao = new Date().toISOString().slice(0, 10)
       const obterVersaoXml = `<?xml version="1.0" encoding="utf-8"?>
 <soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
   <soap:Body>
     <ObterVersao xmlns="${WM_ESTOQUE_NAMESPACE}">
       <pHashAutenticacao>${hash}</pHashAutenticacao>
       <pCodigoModelo>${melhorModelo.codigo_wm}</pCodigoModelo>
+      <pDataInicioAtualizacao>2010-01-01</pDataInicioAtualizacao>
+      <pDataFimAtualizacao>${dataFimAtualizacao}</pDataFimAtualizacao>
     </ObterVersao>
   </soap:Body>
 </soap:Envelope>`
