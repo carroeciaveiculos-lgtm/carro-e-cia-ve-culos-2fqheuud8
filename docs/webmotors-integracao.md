@@ -103,10 +103,39 @@ traduz para gasolina + elétrico, o que vale para os 5 híbridos do estoque em
 
 ## Em aberto
 
-- **`CodigoAnuncio` volta 0** com validação limpa. Hipótese vigente desde
-  10/08/2026: faltava o campo `PrecoReal`, agora corrigido — **não testado
-  ainda**, porque o teste esbarrou na fila de publicação. Hipótese anterior
-  (conta de homologação não provisiona anúncio real) fica em segundo plano.
+- ~~`CodigoAnuncio` volta 0~~ **RESOLVIDO em 10/08/2026.** Primeiro anúncio
+  criado: VW up! move, `CodigoAnuncio` **26117966**, status `created`. A causa
+  era o campo `CodigoCambio` ausente, não a conta de homologação — a hipótese de
+  "conta genérica não provisiona anúncio" estava **errada**. A homologação cria
+  anúncio de verdade.
+
+- **BUG — laço de republicação.** O trigger `trigger_wm_sync_veiculos` em
+  `veiculos` (função `trigger_wm_sync_on_veiculo_change`) enfileira um
+  `pending_create` quando `publicado_webmotors` passa de false/null para true. E
+  o `wm-sync`, ao publicar com sucesso, marca exatamente esse campo. Resultado:
+  toda publicação bem-sucedida se reenfileira, e a próxima execução chamaria
+  `IncluirCarro` de novo, **criando anúncio duplicado na Webmotors**.
+  Observado ao vivo: publicação às 21:04:37, `pending_create` às 21:04:38.
+
+  Correção proposta: no primeiro ramo do trigger, só inserir `pending_create` se
+  `existing_post_id IS NULL`. A variável já é carregada logo acima, só não é
+  usada nessa condição.
+
+  Mitigação até a correção: cancelar as linhas órfãs antes de rodar o `wm-sync`
+  sem `veiculo_id`.
+
+  ```sql
+  update estoque_publicacoes p set status = 'cancelado'
+  where p.platform = 'webmotors' and p.status = 'pending_create'
+    and exists (select 1 from estoque_publicacoes q
+                where q.veiculo_id = p.veiculo_id and q.platform = p.platform
+                  and q.status = 'publicado');
+  ```
+
+- **`processed` do `wm-sync` não conta item que falhou.** Uma publicação que
+  falha devolve `{"success":true,"processed":0}`, que parece sucesso. A verdade
+  está em `estoque_publicacoes.erro_msg` e em
+  `wm_mapeamento_veiculos.ultima_resposta_xml`.
 
 ### Estado do estoque em 10/08/2026, depois do de/para
 

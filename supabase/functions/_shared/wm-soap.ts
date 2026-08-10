@@ -99,6 +99,20 @@ export function escapeXml(s: string): string {
 // as 4 tags vazias que a collection tinha (DataInclusao/DataUltimaAlteracao/
 // Opcional/CodigoRetorno) — isolando se isso afeta o CodigoAnuncio=0.
 //
+// 5ª rodada (10/08/2026) — ATENÇÃO: as conclusões das rodadas 1 a 4 acima estão
+// PARCIALMENTE INVALIDADAS. Gabriel Moreira da Silva (suporte Webmotors) confirmou
+// que 22|78 significa "PrecoReal (De) deve ser maior que PrecoVenda (Por)" — regra
+// de preço, não de cor. As rodadas que "trouxeram de volta o 22|78" ao usar
+// DescricaoCor o fizeram porque mandavam PrecoReal IGUAL ao PrecoVenda ao mesmo
+// tempo. O nome do campo de cor nunca foi o problema.
+//
+// A resposta do IncluirCarro ecoa o que foi recebido, e isso decidiu o schema de
+// entrada de uma vez: com <CorExterna> e <Cambio> a resposta voltava
+// DescricaoCor vazia, CodigoCambio 0 e DescricaoCambio vazia, enquanto o par
+// <CodigoCombustivel>+<DescricaoCombustivel> voltava intacto. Ou seja: a API quer
+// pares Codigo*/Descricao*, e ignora CorExterna/Cambio (que são nomes do schema
+// de SAÍDA). Daí a troca para CodigoCambio+DescricaoCambio e CodigoCor+DescricaoCor.
+//
 // Pendência conhecida: nenhuma página consultada até agora fala em
 // CodigoVersaoAno como parte do request real (só apareceu na tabela do
 // AnuncioWM.html, que já se mostrou não confiável para o schema de entrada).
@@ -122,10 +136,11 @@ export function buildAnuncioXML(
       <Alienado>${snField(veiculo.alienado)}</Alienado>
       <AnoFabricacao>${veiculo.ano_fabricacao || 0}</AnoFabricacao>
       <Blindado>${snField(veiculo.blindado)}</Blindado>
-      <Cambio>${escapeXml(mapa.descricao_cambio)}</Cambio>
+      <CodigoCambio>${mapa.codigo_cambio_wm}</CodigoCambio>
+      <DescricaoCambio>${escapeXml(mapa.descricao_cambio)}</DescricaoCambio>
       <CodigoModalidade>${mapa.codigo_modalidade_wm}</CodigoModalidade>
-      <CorExterna>${escapeXml(mapa.descricao_cor)}</CorExterna>
       <CodigoCor>${mapa.codigo_cor_wm}</CodigoCor>
+      <DescricaoCor>${escapeXml(mapa.descricao_cor)}</DescricaoCor>
       <GarantiaDeFabrica>${snField(veiculo.garantia_fabrica)}</GarantiaDeFabrica>
       <IpvaPago>${snField(veiculo.ipva_pago)}</IpvaPago>
       <Km>${veiculo.quilometragem || 0}</Km>
