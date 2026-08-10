@@ -16,7 +16,24 @@ veiculos (CRM)
      ├─ confiança ≥ 0,35 → status "mapeado"
      └─ abaixo           → status "revisao_necessaria" + candidatos
                              └─ wm-confirmar-mapeamento  (escolha humana)
-  └─ wm-sync                monta o XML e chama IncluirCarro
+  └─ estoque_publicacoes    FILA — precisa de um registro aqui!
+     │                      platform='webmotors', status em
+     │                      agendado / pending_create / pending_update /
+     │                      pending_close
+     └─ wm-sync             monta o XML e chama IncluirCarro
+```
+
+**Estar `mapeado` não publica nada.** `wm-sync` não lê
+`wm_mapeamento_veiculos` — ele lê a fila `estoque_publicacoes` e só processa o
+que estiver lá com status pendente. Sem registro na fila a resposta é
+`{"success":true,"processed":0}`, que parece sucesso e não é. Descoberto em
+10/08/2026 depois de mapear 7 veículos e não publicar nenhum.
+
+Enfileirar um veículo (o `status` já tem default `'agendado'`):
+
+```sql
+insert into estoque_publicacoes (veiculo_id, platform)
+values ('<uuid do veiculo>', 'webmotors');
 ```
 
 Tabelas: `wm_mapeamento_veiculos` (um registro por veículo),
@@ -88,8 +105,28 @@ traduz para gasolina + elétrico, o que vale para os 5 híbridos do estoque em
 
 - **`CodigoAnuncio` volta 0** com validação limpa. Hipótese vigente desde
   10/08/2026: faltava o campo `PrecoReal`, agora corrigido — **não testado
-  ainda**. Hipótese anterior (conta de homologação não provisiona anúncio real)
-  fica em segundo plano.
+  ainda**, porque o teste esbarrou na fila de publicação. Hipótese anterior
+  (conta de homologação não provisiona anúncio real) fica em segundo plano.
+
+### Estado do estoque em 10/08/2026, depois do de/para
+
+Mapeamento rodado nos 26 disponíveis: **7 `mapeado`**, 18 em revisão por
+**versão**, 1 por **modelo**. Nenhuma falha por catálogo — o de/para resolveu
+essa porta inteira.
+
+Dos 7 mapeados, **só 1 tem "De" maior que "Por"**: o VW up! move
+(`cbaa3a69-3db9-4fa2-b4c2-7de9ba53e50b`, 52.497 por / 54.897 de). Os outros 6
+têm `preco_revenda` igual ao `preco_venda` e cairiam no `22|78`.
+
+Os 18 em revisão por versão são o efeito do limiar 0,35 contra texto duplicado —
+o candidato certo costuma vir em 1º lugar, só abaixo do limiar. Confirmar via
+`wm-confirmar-mapeamento` resolve, mas **atenção**: essa função grava apenas
+modelo e versão. Se o veículo travou antes da etapa de cor/câmbio/combustível,
+esses códigos ficam vazios e o guard do `wm-sync` bloqueia. Depois do de/para
+isso deixou de acontecer para quem passa da versão, mas vale conferir.
+
+A fila `estoque_publicacoes` tinha 2 registros `webmotors` com status `error`,
+resíduo das tentativas anteriores ao `PrecoReal`.
 - **20 dos 26 disponíveis têm `preco_revenda` igual ao `preco_venda`**, o que
   viola a regra do `22|78`. Só 6 têm "De" maior. Preencher um "De" fictício é
   decisão comercial da Adriana, não técnica.
