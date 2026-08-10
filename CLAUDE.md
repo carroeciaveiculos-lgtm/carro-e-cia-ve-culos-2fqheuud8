@@ -125,7 +125,7 @@ Configuração de CORS do bucket em `docs/R2_CORS_CONFIGURATION.md`.
 | Plataforma | Onde |
 |---|---|
 | Mercado Livre | `functions/ml-*`, `_shared/ml-*`, `lib/ml-*` |
-| Webmotors | `functions/wm-*`, `_shared/wm-soap.ts` (SOAP) |
+| Webmotors | `functions/wm-*`, `_shared/wm-soap.ts` (SOAP) — **leia `docs/webmotors-integracao.md` antes de mexer** |
 | WhatsApp / Meta | `functions/whatsapp-webhook`, `send-whatsapp`, `_shared/whatsapp-*` |
 | Autentique (assinatura) | `enviar-para-assinatura`, `webhook-autentique` |
 | Google Drive (fotos/vídeos) | `sync-google-drive`, `sync-drive-videos` |
@@ -133,6 +133,15 @@ Configuração de CORS do bucket em `docs/R2_CORS_CONFIGURATION.md`.
 
 Existem agentes especializados em `.claude/agents/` para Mercado Livre e Webmotors —
 use-os antes de mexer nessas integrações.
+
+**Referências técnicas atualizáveis** — vá direto à seção do assunto em vez de
+reinvestigar. Cada uma tem uma seção "becos sem saída" com o que já foi testado e
+falhou; ao descobrir algo novo, acrescente lá com data e fonte.
+
+- `docs/webmotors-integracao.md` — pipeline, fatos confirmados pelo suporte,
+  de/para de vocabulário, pendências e consultas de diagnóstico
+- `docs/edge-functions-rules.md` — classificação de `verify_jwt` por função
+- `docs/R2_CORS_CONFIGURATION.md` — CORS do bucket de imagens
 
 ## Migrations
 

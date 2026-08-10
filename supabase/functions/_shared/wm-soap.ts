@@ -132,7 +132,7 @@ export function buildAnuncioXML(
       <Licenciado>${snField(veiculo.licenciado, 'S')}</Licenciado>
       <Observacao>${escapeXml((veiculo.descricao || '').slice(0, 500))}</Observacao>
       <Placa>${escapeXml(veiculo.placa || '')}</Placa>
-      <PrecoRevenda>${precoRevenda.toFixed(2)}</PrecoRevenda>
+      <PrecoReal>${precoRevenda.toFixed(2)}</PrecoReal>
       <PrecoVenda>${precoVenda.toFixed(2)}</PrecoVenda>
       <RevisadoOficinaAgendaDoCarro>${snField(veiculo.revisado_oficina)}</RevisadoOficinaAgendaDoCarro>
       <RevisoesEmConcessionaria>${snField(veiculo.revisoes_concessionaria)}</RevisoesEmConcessionaria>
@@ -253,11 +253,24 @@ const CODIGO_RETORNO_MENSAGENS: Record<string, string> = {
   '82': 'Campo contém números inválidos',
 }
 
+// Traduções CONFIRMADAS pelo suporte da Webmotors — não decompor por posição.
+// "22|78" foi confirmado por Gabriel Moreira da Silva em 10/08/2026: é uma regra
+// de relação entre preços, e NÃO "Cor (22) + Preço de Venda (78)" como a
+// decomposição por posição sugeria. Foi essa leitura errada que levou a 4 rodadas
+// de teste trocando nomes de campo de cor à toa.
+const CODIGO_RETORNO_CONFIRMADOS: Record<string, string> = {
+  '22|78':
+    'O campo PrecoReal (De) deve ser maior que o campo PrecoVenda (Por) — confirmado pelo suporte Webmotors em 10/08/2026',
+}
+
 // Formatos observados ao vivo: "22|78" (posições cruas separadas por "|") e
 // "43|52,43|30" (cada posição prefixada por "43|", unidades separadas por
 // vírgula). O "43" nunca é uma posição real (não existe na CODIGO_RETORNO_43),
 // então é seguro tratá-lo sempre como prefixo e descartar.
 function decodeCodigoRetorno(codigoRetorno: string): string {
+  const confirmado = CODIGO_RETORNO_CONFIRMADOS[codigoRetorno]
+  if (confirmado) return confirmado
+
   const direto = CODIGO_RETORNO_MENSAGENS[codigoRetorno]
   if (direto) return `${direto} (tradução não confirmada)`
 

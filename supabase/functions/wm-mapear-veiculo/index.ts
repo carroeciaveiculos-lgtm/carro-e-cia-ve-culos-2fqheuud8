@@ -57,18 +57,33 @@ async function autenticar(): Promise<string> {
 // fuzzy-match usado ali embaixo; se não achar, vai pra revisão manual igual
 // marca/modelo, em vez de deixar o código vazio (o guard em wm-sync bloqueia
 // publicação sem esses códigos).
+// Compara contra as DUAS colunas de nome, não só nome_wm:
+//   nome_wm  = termo da Webmotors ("Automática", "Preto", "Gasolina e álcool")
+//   nome_crm = termo equivalente no CRM ("Automático", "Preta", "Flex")
+// Verificado em 10/08/2026: dos 26 disponíveis, ZERO casavam olhando só nome_wm.
+// Precisa das duas porque o CRM tem grafias concorrentes para a mesma cor —
+// "PRETA" (11 veículos) casa por nome_crm e "preto" (1) casa por nome_wm.
+// A comparação é feita em memória: as três tabelas são minúsculas (17 cores,
+// 6 câmbios, 11 combustíveis) e assim se evita montar filtro com valor vindo
+// do banco, que quebraria em texto com vírgula (ex.: "Gasolina, álcool e gás
+// natural").
 async function matchCatalogoExato(
   supabase: any,
   tabela: string,
   valor: string | null | undefined,
 ): Promise<{ codigo_wm: string; nome_wm: string } | null> {
   if (!valor) return null
-  const { data } = await supabase
-    .from(tabela)
-    .select('codigo_wm, nome_wm')
-    .ilike('nome_wm', valor)
-    .maybeSingle()
-  return data || null
+  const alvo = valor.trim().toLowerCase()
+  if (!alvo) return null
+  const { data } = await supabase.from(tabela).select('codigo_wm, nome_wm, nome_crm')
+  const achado = (data || []).find(
+    (r: any) =>
+      (r.nome_crm || '').trim().toLowerCase() === alvo ||
+      (r.nome_wm || '').trim().toLowerCase() === alvo,
+  )
+  // Devolve sempre o nome_wm: é ele que vai no XML da Webmotors (CorExterna,
+  // Cambio, DescricaoCombustivel). Mandar o termo do CRM seria erro de dado.
+  return achado ? { codigo_wm: achado.codigo_wm, nome_wm: achado.nome_wm } : null
 }
 
 Deno.serve(async (req: Request) => {
@@ -160,7 +175,14 @@ Deno.serve(async (req: Request) => {
         throw new Error(versaoResult.error || 'Falha ao obter versões da Webmotors')
       }
       const xml = versaoResult.raw || ''
-      const itens = parseItems(xml, 'VersaoWM')
+      // A tag do item é <Versao>, NÃO <VersaoWM>. Verificado no XML real em
+      // 10/08/2026: 21 ocorrências de <Versao> e zero de <VersaoWM>. O sufixo
+      // WM existe nessa API (o ObterModelo devolve <ModeloWM>, e aqui mesmo há
+      // <AnoModeloWM> aninhado), mas não no item de versão — a API é
+      // inconsistente. Com 'VersaoWM' o parser não achava nada e a falha era
+      // silenciosa: wm_versoes ficava vazia e todo veículo caía em
+      // revisao_necessaria com motivo "versao", sem erro registrado.
+      const itens = parseItems(xml, 'Versao')
       const novasVersoes = itens
         .filter((v) => v.CodigoVersao)
         .map((v) => ({
