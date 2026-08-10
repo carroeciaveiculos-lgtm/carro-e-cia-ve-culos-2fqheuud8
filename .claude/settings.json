@@ -1,8 +1,46 @@
 {
   "permissions": {
     "allow": [
-      "Bash(supabase functions *)",
+      "Read(./**)",
+      "Skill(claude-api)",
+      "Skill(claude-api:*)"
+    ],
+    "deny": [
+      "Read(//c/Users/adria/.ssh/**)",
+      "Read(~/.ssh/**)",
+      "Read(**/id_rsa*)",
+      "Read(**/id_dsa*)",
+      "Read(**/id_ecdsa*)",
+      "Read(**/id_ed25519*)",
+      "Read(**/*.pem)",
+      "Read(**/*.ppk)",
+      "Read(**/*.p12)",
+      "Read(**/*.pfx)",
+      "Read(**/*.key)",
+      "Read(./.env)",
+      "Read(./.env.*)",
+      "Bash(git push *)",
+      "Bash(rm -rf *)",
+      "Bash(rm -r *)",
+      "Bash(git reset --hard *)",
+      "Bash(git clean *)",
+      "Bash(supabase functions deploy *)",
+      "Bash(npx supabase functions deploy *)",
+      "Bash(npx wrangler deploy *)",
+      "Bash(bunx wrangler deploy *)",
       "mcp__claude_ai_Supabase__apply_migration",
+      "mcp__claude_ai_Supabase__deploy_edge_function"
+    ],
+    "ask": [
+      "Bash(python -c *)",
+      "Bash(python3 -c *)",
+      "Bash(node -e *)",
+      "Bash(bun -e *)",
+      "Bash(curl *)",
+      "Bash(git commit *)",
+      "Bash(git checkout *)",
+      "Bash(supabase functions *)",
+      "Bash(npx supabase functions *)",
       "mcp__claude_ai_Supabase__execute_sql"
     ]
   }
