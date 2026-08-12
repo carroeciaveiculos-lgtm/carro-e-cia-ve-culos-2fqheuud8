@@ -39,7 +39,9 @@ import { buildVehicleTitle, getVersaoComplementar } from '@/lib/vehicle-title'
 import { getWhatsAppLink } from '@/lib/whatsapp'
 import { TestimonialBanner } from '@/components/estoque/TestimonialBanner'
 
-const PAGE_SIZE = 12
+// Aumentado de 12 pra 48 (12/08/2026, pedido da Adriana) — o estoque atual
+// (27 veículos) inteiro cabe numa página só, sem precisar paginar.
+const PAGE_SIZE = 48
 
 const VEHICLE_FIELDS =
   'id, slug, marca, modelo, versao, ano_fabricacao, ano_modelo, preco_venda, quilometragem, combustivel, cambio, cor, fotos, videos, is_zero_km, status, is_consignado, categoria, exibir_no_site, nao_exibir_km, em_preparacao, garantia, laudo_cautelar, tag_promocional'
@@ -393,7 +395,12 @@ export default function Estoque() {
                       key={v.id}
                       className="overflow-hidden hover:shadow-lg transition-shadow border-border/50 group flex flex-col w-full"
                     >
-                      <div className="relative w-full aspect-[4/3] bg-muted group-hover:scale-105 transition-transform duration-500">
+                      {/* Corrigido em 12/08/2026: o zoom de hover estava no
+                          container (sem overflow-hidden), então a "caixa"
+                          inteira crescia 5% e invadia a descrição/preço
+                          abaixo. Movido pro <img> (ver mais abaixo), igual
+                          já era feito certo em VehicleCard.tsx. */}
+                      <div className="relative w-full aspect-[4/3] bg-muted overflow-hidden">
                         <div className="absolute top-3 left-3 z-10 flex flex-col items-start gap-1.5">
                           {v.is_zero_km && <Badge className="bg-primary">0 KM</Badge>}
                           {(v as any).em_preparacao && !v.is_zero_km && (
@@ -455,7 +462,7 @@ export default function Estoque() {
                                   : fotos[0]
                               }
                               alt={`${v.marca} ${v.modelo}`}
-                              className="w-full h-full object-cover object-[center_65%] bg-muted"
+                              className="w-full h-full object-cover object-[center_65%] bg-muted group-hover:scale-105 transition-transform duration-500"
                               loading={vehicleIndex === 0 ? 'eager' : 'lazy'}
                               decoding="async"
                               fetchPriority={vehicleIndex === 0 ? 'high' : 'auto'}

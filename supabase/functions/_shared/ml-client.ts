@@ -56,8 +56,14 @@ function lookupNormalized(value: unknown, map: Record<string, string>): string |
   return map[normalized] || null
 }
 
+// Valores conferidos direto na API pública do ML (GET
+// /categories/MLB1744/attributes) em 12/08/2026 — achado real: "Flex" não é
+// um valor aceito pro atributo FUEL_TYPE (causava erro 400 silencioso, só
+// visível como JSON cru no log). Nomes errados nunca usados ainda (Prata,
+// Vinho, CVT, Automatizada, Sedán, Picape) também corrigidos aqui antes de
+// darem o mesmo problema em outro veículo.
 const ML_FUEL_MAP: Record<string, string> = {
-  flex: 'Flex',
+  flex: 'Gasolina e álcool',
   gasolina: 'Gasolina',
   diesel: 'Diesel',
   alcool: 'Álcool',
@@ -69,8 +75,8 @@ const ML_TRANSMISSION_MAP: Record<string, string> = {
   manual: 'Manual',
   automatico: 'Automática',
   automatica: 'Automática',
-  automatizada: 'Automatizada',
-  cvt: 'CVT',
+  automatizada: 'Semiautomática',
+  cvt: 'Automática CVT',
 }
 
 const ML_STEERING_MAP: Record<string, string> = {
@@ -82,7 +88,7 @@ const ML_STEERING_MAP: Record<string, string> = {
 const ML_COLOR_MAP: Record<string, string> = {
   branco: 'Branco',
   preto: 'Preto',
-  prata: 'Prata',
+  prata: 'Prateado',
   vermelho: 'Vermelho',
   azul: 'Azul',
   verde: 'Verde',
@@ -91,7 +97,7 @@ const ML_COLOR_MAP: Record<string, string> = {
   marrom: 'Marrom',
   bege: 'Bege',
   dourado: 'Dourado',
-  vinho: 'Vinho',
+  vinho: 'Bordô',
 }
 
 export const ML_BODY_TYPE_MAP: Record<
@@ -99,11 +105,67 @@ export const ML_BODY_TYPE_MAP: Record<
   { id: string; name: string; esportivo_fallback?: boolean }
 > = {
   suv: { id: '452759', name: 'SUV' },
-  picape: { id: '452756', name: 'Picape' },
+  picape: { id: '452756', name: 'Pick-Up' },
   hatch: { id: '479344', name: 'Hatch' },
-  sedan: { id: '452758', name: 'Sedán' },
+  sedan: { id: '452758', name: 'Sedã' },
   van: { id: '452755', name: 'Van' },
   esportivo: { id: '452749', name: 'Coupé', esportivo_fallback: true },
+}
+
+// Traduz erro de sincronização (nosso ou do ML) pra uma frase curta em
+// português que o operador entenda, sem precisar ler JSON. Usado por
+// sync-plataforma na hora de gravar o erro e mostrar na tela.
+const ML_ATTR_LABELS: Record<string, string> = {
+  FUEL_TYPE: 'Tipo de combustível',
+  VEHICLE_BODY_TYPE: 'Tipo de carroceria',
+  COLOR: 'Cor',
+  TRANSMISSION: 'Câmbio',
+  STEERING: 'Direção',
+  KILOMETERS: 'Quilometragem',
+  ENGINE_DISPLACEMENT: 'Cilindrada',
+  PLATE_FINAL_DIGIT: 'Final da placa',
+  BRAND: 'Marca',
+  MODEL: 'Modelo',
+  VEHICLE_YEAR: 'Ano',
+  DOORS: 'Portas',
+  TRIM: 'Versão',
+}
+
+export function traduzirErroSyncML(rawMessage: string): string {
+  const missingMatch = /Missing mandatory attribute\(s\): (.+)/i.exec(rawMessage)
+  if (missingMatch) {
+    const labels = missingMatch[1]
+      .split(',')
+      .map((id) => ML_ATTR_LABELS[id.trim()] || id.trim())
+    return `Faltam informações obrigatórias no cadastro pro Mercado Livre: ${labels.join(', ')}.`
+  }
+
+  try {
+    const data = JSON.parse(rawMessage)
+    const causas = Array.isArray(data?.cause) ? data.cause : []
+    const bloqueantes = causas.filter((c: any) => !c.type || c.type === 'error')
+    if (bloqueantes.length > 0) {
+      const frases = bloqueantes.map((c: any) => {
+        if (c.code === 'item.address.city_id.not_found') {
+          return 'a cidade cadastrada no sistema não é reconhecida pelo Mercado Livre'
+        }
+        const attrId = /\[([A-Z_]+)\]/.exec(c.message || '')?.[1]
+        const label = attrId ? ML_ATTR_LABELS[attrId] || attrId : null
+        if (label && c.code === 'item.attributes.missing_required') {
+          return `o campo "${label}" é obrigatório e não foi enviado`
+        }
+        return label
+          ? `o campo "${label}" foi rejeitado pelo Mercado Livre (valor não reconhecido)`
+          : c.message || 'erro de validação não identificado'
+      })
+      const unicas = [...new Set(frases)]
+      return `Mercado Livre recusou o anúncio: ${unicas.join('; ')}.`
+    }
+    if (data?.message) return `Mercado Livre recusou o anúncio: ${data.message}`
+  } catch {
+    // não é JSON — provavelmente já é uma mensagem nossa, em português
+  }
+  return rawMessage
 }
 
 export function getVehicleBodyType(
@@ -293,15 +355,34 @@ function buildLocation(_v: any, cityId?: string | null): any {
   const location: any = {
     address_line: `${ENDERECO_LOJA.logradouro}, ${ENDERECO_LOJA.bairro}`,
   }
-  if (cityId) location.city_id = cityId
+  // Formato conferido na documentação oficial do ML (publicacao-de-automoveis):
+  // a cidade vai aninhada em location.city.id, não em location.city_id "solto"
+  // — o ML não reconhecia o campo solto e recusava o anúncio.
+  if (cityId) location.city = { id: cityId }
   if (ENDERECO_LOJA.cep) location.zip_code = ENDERECO_LOJA.cep
   return location
+}
+
+// cilindrada no cadastro aceita tanto litros ("1.5") quanto cc direto
+// ("1598"), sem padrão fixo. O ML só aceita um número em cc como texto
+// (ex.: "1500cc"), então valores pequenos (<10) são tratados como litros.
+function formatCilindradaCC(cilindrada: string | null | undefined): string | undefined {
+  if (!cilindrada) return undefined
+  const raw = parseFloat(String(cilindrada).replace(',', '.'))
+  if (!raw || Number.isNaN(raw)) return undefined
+  const cc = raw < 10 ? Math.round(raw * 1000) : Math.round(raw)
+  return `${cc}cc`
 }
 
 function buildAttributes(v: any, isZeroKm: boolean): any[] {
   const bodyType = getVehicleBodyType(v.categoria)
   if (!bodyType) {
-    throw new Error(`VEHICLE_BODY_TYPE inválido: categoria='${v.categoria || ''}'`)
+    const categoriasAceitas = Object.keys(ML_BODY_TYPE_MAP)
+      .map((k) => ML_BODY_TYPE_MAP[k].name)
+      .join(', ')
+    throw new Error(
+      `Categoria do veículo ('${v.categoria || 'em branco'}') não é reconhecida pelo Mercado Livre. Categorias aceitas: ${categoriasAceitas}.`,
+    )
   }
   return [
     { id: 'VEHICLE_TYPE', value_id: '398351', value_name: 'Carros e caminhonetes' },
@@ -311,8 +392,7 @@ function buildAttributes(v: any, isZeroKm: boolean): any[] {
     { id: 'VEHICLE_YEAR', value_name: v.ano_modelo ? String(v.ano_modelo) : undefined },
     {
       id: 'KILOMETERS',
-      value_struct:
-        v.quilometragem != null ? { number: Number(v.quilometragem), unit: 'km' } : undefined,
+      value_name: v.quilometragem != null ? `${Number(v.quilometragem)}km` : undefined,
     },
     {
       id: 'COLOR',
@@ -341,14 +421,8 @@ function buildAttributes(v: any, isZeroKm: boolean): any[] {
         ? (lookupNormalized(v.direcao, ML_STEERING_MAP) ?? normalizeValue(v.direcao) ?? undefined)
         : undefined,
     },
-    {
-      id: 'ENGINE_DISPLACEMENT',
-      value_struct: v.cilindrada
-        ? { number: parseInt(String(v.cilindrada).replace(/\D/g, '')) || undefined, unit: 'cc' }
-        : undefined,
-    },
+    { id: 'ENGINE_DISPLACEMENT', value_name: formatCilindradaCC(v.cilindrada) },
     { id: 'TRIM', value_name: v.versao || undefined },
-    { id: 'PLATE_FINAL_DIGIT', value_name: v.final_placa || undefined },
     { id: 'ITEM_CONDITION', value_name: isZeroKm ? 'Nuevo' : 'Usado' },
   ].filter((a: any) => a.value_name !== undefined || a.value_struct !== undefined)
 }

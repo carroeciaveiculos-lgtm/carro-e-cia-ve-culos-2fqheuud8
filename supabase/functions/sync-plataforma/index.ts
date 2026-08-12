@@ -7,6 +7,7 @@ import {
   buildMLUpdatePayload,
   fetchWithBackoff,
   getVehicleBodyType,
+  traduzirErroSyncML,
 } from '../_shared/ml-client.ts'
 import { validateImagesForML } from '../_shared/image-validation.ts'
 import { validatePayload } from '../_shared/validate-payload.ts'
@@ -237,7 +238,8 @@ async function handlePublish(
       actionVerb = 'created'
     }
   } catch (err: any) {
-    const errMsg = err.message || 'Erro desconhecido na API do Mercado Livre'
+    const errMsgBruto = err.message || 'Erro desconhecido na API do Mercado Livre'
+    const errMsg = traduzirErroSyncML(errMsgBruto)
     await supabase
       .from('ml_listings')
       .update({ status: 'error', last_synced_at: new Date().toISOString() })
@@ -249,6 +251,7 @@ async function handlePublish(
         acao: 'sync',
         status: 'error',
         mensagem: errMsg,
+        metadata: errMsg !== errMsgBruto ? { erro_original: errMsgBruto } : {},
       })
     }
     return json({ success: false, message: errMsg })
