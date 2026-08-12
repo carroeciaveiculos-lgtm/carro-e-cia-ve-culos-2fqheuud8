@@ -26,7 +26,8 @@ import { ErrorHistoryPanel } from '@/components/admin/portais/ErrorHistoryPanel'
 import { SyncFailureModal } from '@/components/admin/portais/SyncFailureModal'
 import type { SyncFailure } from '@/components/admin/portais/SyncFailureModal'
 import { ConversionMonitor } from '@/components/admin/portais/ConversionMonitor'
-import { WMDashboard } from '@/components/admin/portais/WMDashboard'
+import { PlatformSyncPanel } from '@/components/admin/portais/PlatformSyncPanel'
+import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@/components/ui/accordion'
 import {
   Select,
   SelectContent,
@@ -43,6 +44,11 @@ const SLUG_MAP: Record<string, keyof VeiculoSync> = {
   icarros: 'publicado_icarros',
   napista: 'publicado_napista',
 }
+
+// OLX, iCarros e Napista não têm edge function nem fila de sincronização real
+// ainda (12/08/2026, ver relatório) — só marcam uma flag interna. Não incluir
+// aqui até existir integração de verdade.
+const PLATAFORMAS_COM_SYNC_REAL = ['webmotors', 'mercadolivre']
 
 export default function Portais() {
   const { toast } = useToast()
@@ -439,8 +445,50 @@ export default function Portais() {
         </div>
       </div>
 
-      <div className="bg-white rounded-lg border p-4 mt-8">
-        <WMDashboard />
+      <div className="bg-white rounded-lg border mt-8">
+        <h2 className="text-sm font-bold text-gray-800 p-4 border-b">Log de sincronização por plataforma</h2>
+        <Accordion type="multiple" className="px-4">
+          {plataformas
+            .filter((p) => PLATAFORMAS_COM_SYNC_REAL.includes(p.slug))
+            .map((p) => (
+              <AccordionItem key={p.slug} value={p.slug}>
+                <AccordionTrigger>
+                  <span className="flex items-center gap-2">
+                    <span
+                      className="w-2.5 h-2.5 rounded-full"
+                      style={{ backgroundColor: p.cor || '#999' }}
+                    />
+                    {p.nome}
+                  </span>
+                </AccordionTrigger>
+                <AccordionContent>
+                  <PlatformSyncPanel platformSlug={p.slug} platformColor={p.cor || '#2563eb'} />
+                </AccordionContent>
+              </AccordionItem>
+            ))}
+          {plataformas
+            .filter((p) => !PLATAFORMAS_COM_SYNC_REAL.includes(p.slug))
+            .map((p) => (
+              <AccordionItem key={p.slug} value={p.slug}>
+                <AccordionTrigger>
+                  <span className="flex items-center gap-2 text-gray-400">
+                    <span
+                      className="w-2.5 h-2.5 rounded-full"
+                      style={{ backgroundColor: p.cor || '#999' }}
+                    />
+                    {p.nome}
+                  </span>
+                </AccordionTrigger>
+                <AccordionContent>
+                  <p className="text-xs text-gray-500 px-1">
+                    Sem integração real com {p.nome} ainda — o botão de publicar aqui só marca uma
+                    flag interna, não avisa a plataforma. Nenhum anúncio é criado, atualizado ou
+                    removido lá de verdade.
+                  </p>
+                </AccordionContent>
+              </AccordionItem>
+            ))}
+        </Accordion>
       </div>
 
       {showDiagnosis && (

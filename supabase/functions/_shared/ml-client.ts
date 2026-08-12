@@ -277,17 +277,24 @@ export async function fetchCategoryAttributes(
   }
 }
 
-function buildLocation(v: any, cityId?: string | null): any {
-  const addressParts = [
-    v.proprietario_logradouro,
-    v.proprietario_numero,
-    v.proprietario_bairro,
-  ].filter(Boolean)
-  const addressLine = addressParts.length > 0 ? addressParts.join(', ') : 'Endereço não informado'
-  const zipCode = v.proprietario_cep?.replace(/\D/g, '') || undefined
-  const location: any = { address_line: addressLine }
+// CRÍTICO — CORRIGIDO em 12/08/2026 (auditoria de vazamento de dado, pedido
+// da Adriana): usava proprietario_logradouro/numero/bairro/cep — o endereço
+// RESIDENCIAL de quem consignou o carro — como local do anúncio PÚBLICO no
+// Mercado Livre. Isso publicava o endereço pessoal do dono na internet, em
+// todo anúncio já sincronizado. Agora usa o endereço fixo da loja (mesmo
+// texto usado em public-inventory-feed e no prompt da Clara).
+const ENDERECO_LOJA = {
+  logradouro: 'Av. Guilherme Ferreira, 1131',
+  bairro: 'São Benedito',
+  cep: '38022200',
+}
+
+function buildLocation(_v: any, cityId?: string | null): any {
+  const location: any = {
+    address_line: `${ENDERECO_LOJA.logradouro}, ${ENDERECO_LOJA.bairro}`,
+  }
   if (cityId) location.city_id = cityId
-  if (zipCode) location.zip_code = zipCode
+  if (ENDERECO_LOJA.cep) location.zip_code = ENDERECO_LOJA.cep
   return location
 }
 

@@ -8,6 +8,10 @@ export interface GeminiOptions {
   jsonSchema?: Record<string, unknown>
   systemPrompt?: string
   functions?: Record<string, unknown>[]
+  // Turnos anteriores da conversa (12/08/2026, pra Clara conseguir responder
+  // a mensagens seguintes, não só a primeira) — `prompt` continua sendo o
+  // turno mais recente do usuário, `history` é o que veio antes dele.
+  history?: Array<{ role: 'user' | 'model'; text: string }>
 }
 
 export interface GeminiResult {
@@ -17,8 +21,12 @@ export interface GeminiResult {
   tokenUsage: { input: number; output: number }
 }
 
-const MODEL = 'gemini-1.5-flash'
+// Corrigido em 12/08/2026: 'gemini-1.5-flash' está descontinuado (404 em
+// toda chamada, sempre caindo pro fallback Groq sem ninguém perceber — nunca
+// tinha um log de sucesso do Gemini em logs_ia). Atual: gemini-3.6-flash.
+const MODEL = 'gemini-3.6-flash'
 const API_BASE = 'https://generativelanguage.googleapis.com/v1beta/models'
+const GROQ_MODEL = 'llama-3.3-70b-versatile'
 
 const THINKING_BUDGET: Record<ThinkingLevel, number> = {
   minimal: 0,
@@ -26,9 +34,14 @@ const THINKING_BUDGET: Record<ThinkingLevel, number> = {
   high: 24576,
 }
 
+// Corrigido em 12/08/2026: as funções abaixo eram declaradas pro Gemini mas
+// NUNCA executadas em lugar nenhum (ai-sdr descartava functionCalls). Também
+// tinha nome divergente do prompt (buscar_veiculos_estoque vs
+// consultar_estoque, que o prompt já pedia) e enum de status que não batia
+// com o Kanban real. Ver docs/leads-e-sdr.md.
 export const CRM_FUNCTIONS = [
   {
-    name: 'buscar_veiculos_estoque',
+    name: 'consultar_estoque',
     description: 'Buscar veiculos disponiveis no estoque da concessionaria',
     parameters: {
       type: 'OBJECT',
@@ -54,16 +67,18 @@ export const CRM_FUNCTIONS = [
     },
   },
   {
-    name: 'agendar_test_drive',
-    description: 'Agendar test drive para um lead',
+    name: 'agendar_visita',
+    description:
+      'Agendar visita/avaliacao presencial na loja para um lead, na data e horario escolhidos pelo cliente',
     parameters: {
       type: 'OBJECT',
       properties: {
         lead_id: { type: 'STRING' },
-        data: { type: 'STRING' },
-        veiculo_id: { type: 'STRING' },
+        data_hora: { type: 'STRING', description: 'Data e hora em ISO 8601' },
+        veiculo_id: { type: 'STRING', description: 'Veiculo de interesse, se houver' },
+        tipo: { type: 'STRING', enum: ['visita', 'avaliacao'] },
       },
-      required: ['lead_id', 'data'],
+      required: ['lead_id', 'data_hora'],
     },
   },
   {
@@ -75,22 +90,83 @@ export const CRM_FUNCTIONS = [
         lead_id: { type: 'STRING' },
         status: {
           type: 'STRING',
-          enum: ['novo', 'contatado', 'qualificado', 'negociacao', 'fechado', 'perdido'],
+          enum: ['novo', 'em_contato', 'agendamento', 'visita', 'fechado', 'perdido'],
         },
       },
       required: ['lead_id', 'status'],
     },
   },
+  {
+    name: 'solicitar_atendimento_humano',
+    description:
+      'Transferir a conversa para um vendedor humano quando o lead estiver qualificado ou pedir explicitamente para falar com uma pessoa',
+    parameters: {
+      type: 'OBJECT',
+      properties: {
+        lead_id: { type: 'STRING' },
+        motivo: { type: 'STRING' },
+      },
+      required: ['lead_id'],
+    },
+  },
+  {
+    name: 'enviar_midia_veiculo',
+    description:
+      'Enviar fotos e/ou video de um veiculo do estoque pelo WhatsApp para o lead. IMPORTANTE: só chame esta funcao DEPOIS de ja ter o veiculo_id real, devolvido por uma chamada anterior de consultar_estoque nesta mesma conversa — nunca invente ou suponha um veiculo_id. Se ainda nao consultou o estoque, chame consultar_estoque primeiro e espere o resultado antes de enviar midia.',
+    parameters: {
+      type: 'OBJECT',
+      properties: {
+        lead_id: { type: 'STRING' },
+        veiculo_id: { type: 'STRING', description: 'UUID real, obtido de consultar_estoque' },
+        incluir_video: { type: 'BOOLEAN' },
+      },
+      required: ['lead_id', 'veiculo_id'],
+    },
+  },
 ]
 
+// Converte declaração de função no formato Gemini (types em MAIÚSCULO, ex.
+// 'OBJECT'/'STRING') pro formato OpenAI/Groq (types em minúsculo), usado no
+// fallback. Groq só entende JSON Schema padrão.
+function toGroqTools(functions: Record<string, any>[]): any[] {
+  const lowerTypes = (schema: any): any => {
+    if (!schema || typeof schema !== 'object') return schema
+    const out: any = { ...schema }
+    if (typeof out.type === 'string') out.type = out.type.toLowerCase()
+    if (out.properties) {
+      out.properties = Object.fromEntries(
+        Object.entries(out.properties).map(([k, v]) => [k, lowerTypes(v)]),
+      )
+    }
+    return out
+  }
+  return functions.map((fn) => ({
+    type: 'function',
+    function: {
+      name: fn.name,
+      description: fn.description,
+      parameters: lowerTypes(fn.parameters) || { type: 'object', properties: {} },
+    },
+  }))
+}
+
 export class GeminiClient {
-  private apiKey: string
+  private apiKey: string | null
+  private groqKey: string | null
   private supabase: ReturnType<typeof createClient>
 
   constructor() {
-    const key = Deno.env.get('GEMINI_API_KEY')
-    if (!key) throw new Error('GEMINI_API_KEY not configured')
-    this.apiKey = key
+    // GEMINI_APY_KEY: nome do secret configurado de verdade no projeto (erro
+    // de digitação histórico — "APY" em vez de "API"). Aceita os dois nomes
+    // pra não depender de renomear o secret. Descoberto em 12/08/2026: o
+    // GeminiClient nunca funcionou nenhuma vez desde que existe (zero
+    // registros de sucesso em logs_ia pra acao='gemini_generate') porque só
+    // procurava GEMINI_API_KEY.
+    this.apiKey = Deno.env.get('GEMINI_API_KEY') || Deno.env.get('GEMINI_APY_KEY') || null
+    this.groqKey = Deno.env.get('GROQ_API_KEY') || null
+    if (!this.apiKey && !this.groqKey) {
+      throw new Error('Nem GEMINI_API_KEY/GEMINI_APY_KEY nem GROQ_API_KEY estão configurados')
+    }
     this.supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
@@ -98,8 +174,24 @@ export class GeminiClient {
   }
 
   async generate(prompt: string, options: GeminiOptions = {}): Promise<GeminiResult> {
+    if (this.apiKey) {
+      try {
+        return await this.generateViaGemini(prompt, options)
+      } catch (err) {
+        if (!this.groqKey) throw err
+        console.error('Gemini falhou, caindo pro Groq:', err)
+      }
+    }
+    if (!this.groqKey) throw new Error('Nenhum provedor de IA disponível')
+    return await this.generateViaGroq(prompt, options)
+  }
+
+  private async generateViaGemini(prompt: string, options: GeminiOptions): Promise<GeminiResult> {
     const thinkingLevel = options.thinkingLevel ?? 'medium'
-    const contents = [{ role: 'user', parts: [{ text: prompt }] }]
+    const contents = [
+      ...(options.history || []).map((h) => ({ role: h.role, parts: [{ text: h.text }] })),
+      { role: 'user', parts: [{ text: prompt }] },
+    ]
     const generationConfig: Record<string, unknown> = {
       temperature: options.temperature ?? 0.7,
       thinkingConfig: { thinkingBudget: THINKING_BUDGET[thinkingLevel] },
@@ -145,12 +237,84 @@ export class GeminiClient {
       output: data.usageMetadata?.candidatesTokenCount ?? 0,
     }
 
+    await this.logUso('google', MODEL, thinkingLevel, tokenUsage)
+    return { text, json, functionCalls, tokenUsage }
+  }
+
+  // Plano B (12/08/2026, pedido da Adriana): se o Gemini falhar (chave,
+  // quota, indisponibilidade), tenta de novo via Groq antes de desistir.
+  // Function-calling é traduzido pro formato OpenAI/Groq (ver toGroqTools).
+  private async generateViaGroq(prompt: string, options: GeminiOptions): Promise<GeminiResult> {
+    const messages = [
+      ...(options.systemPrompt ? [{ role: 'system', content: options.systemPrompt }] : []),
+      ...(options.history || []).map((h) => ({
+        role: h.role === 'model' ? 'assistant' : 'user',
+        content: h.text,
+      })),
+      { role: 'user', content: prompt },
+    ]
+    const body: Record<string, unknown> = {
+      model: GROQ_MODEL,
+      messages,
+      temperature: options.temperature ?? 0.7,
+    }
+    if (options.functions) body.tools = toGroqTools(options.functions)
+    if (options.jsonSchema) body.response_format = { type: 'json_object' }
+
+    const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${this.groqKey}`,
+      },
+      body: JSON.stringify(body),
+    })
+    if (!res.ok) {
+      const errText = await res.text()
+      throw new Error(`Groq API ${res.status}: ${errText}`)
+    }
+    const data = await res.json()
+    const message = data.choices?.[0]?.message
+    const text = message?.content ?? ''
+    let json: Record<string, unknown> | null = null
+    if (options.jsonSchema && text) {
+      try {
+        json = JSON.parse(text)
+      } catch {
+        json = null
+      }
+    }
+    const functionCalls = (message?.tool_calls || []).map((tc: any) => ({
+      name: tc.function?.name,
+      args: (() => {
+        try {
+          return JSON.parse(tc.function?.arguments || '{}')
+        } catch {
+          return {}
+        }
+      })(),
+    }))
+    const tokenUsage = {
+      input: data.usage?.prompt_tokens ?? 0,
+      output: data.usage?.completion_tokens ?? 0,
+    }
+
+    await this.logUso('groq', GROQ_MODEL, options.thinkingLevel ?? 'medium', tokenUsage)
+    return { text, json, functionCalls, tokenUsage }
+  }
+
+  private async logUso(
+    provider: string,
+    modelo: string,
+    thinkingLevel: ThinkingLevel,
+    tokenUsage: { input: number; output: number },
+  ) {
     await this.supabase
       .from('logs_ia')
       .insert({
         acao: 'gemini_generate',
-        provider: 'google',
-        modelo: MODEL,
+        provider,
+        modelo,
         status: 'sucesso',
         tokens_input: tokenUsage.input,
         tokens_output: tokenUsage.output,
@@ -160,8 +324,6 @@ export class GeminiClient {
         () => {},
         () => {},
       )
-
-    return { text, json, functionCalls, tokenUsage }
   }
 
   async generateStructured(

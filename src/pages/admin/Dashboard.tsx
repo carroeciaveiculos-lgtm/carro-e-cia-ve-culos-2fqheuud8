@@ -31,6 +31,9 @@ import {
   CameraOff,
   Settings,
   Activity,
+  RefreshCw,
+  CheckCircle2,
+  XCircle,
 } from 'lucide-react'
 
 const ALL_MODULES = [
@@ -93,6 +96,61 @@ export default function Dashboard() {
 
   const [funnelData, setFunnelData] = useState<any[]>([])
 
+  interface SyncSummaryRow {
+    platform: string
+    nome: string
+    cor: string | null
+    ultimaSincronizacao: string | null
+    sucessos24h: number
+    erros24h: number
+  }
+  const [syncSummary, setSyncSummary] = useState<SyncSummaryRow[]>([])
+
+  const loadSyncSummary = async () => {
+    // Últimas sincronizações por plataforma (12/08/2026) — mesma fonte
+    // (sync_log) usada no log em acordeão da tela Portais.
+    const { data: plataformas } = await supabase
+      .from('plataformas')
+      .select('id, slug, nome, cor')
+      .eq('ativo', true)
+    if (!plataformas || plataformas.length === 0) return
+
+    const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
+    const rows: SyncSummaryRow[] = []
+    for (const p of plataformas) {
+      const [{ data: ultimo }, { count: sucessos }, { count: erros }] = await Promise.all([
+        supabase
+          .from('sync_log')
+          .select('created_at')
+          .eq('plataforma_id', p.id)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle(),
+        supabase
+          .from('sync_log')
+          .select('id', { count: 'exact', head: true })
+          .eq('plataforma_id', p.id)
+          .eq('status', 'success')
+          .gte('created_at', since),
+        supabase
+          .from('sync_log')
+          .select('id', { count: 'exact', head: true })
+          .eq('plataforma_id', p.id)
+          .eq('status', 'erro')
+          .gte('created_at', since),
+      ])
+      rows.push({
+        platform: p.slug,
+        nome: p.nome,
+        cor: p.cor,
+        ultimaSincronizacao: ultimo?.created_at || null,
+        sucessos24h: sucessos || 0,
+        erros24h: erros || 0,
+      })
+    }
+    setSyncSummary(rows)
+  }
+
   useEffect(() => {
     if (user) {
       supabase
@@ -108,6 +166,7 @@ export default function Dashboard() {
         })
 
       loadMetrics()
+      loadSyncSummary()
     }
   }, [user])
 
@@ -344,6 +403,54 @@ export default function Dashboard() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Últimas sincronizações por plataforma */}
+        {syncSummary.length > 0 && (
+          <Card className="shadow-sm border-none bg-white">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                <RefreshCw className="w-5 h-5 text-slate-500" /> Sincronizações com Portais
+              </CardTitle>
+              <button
+                onClick={() => navigate('/admin/portais')}
+                className="text-xs text-blue-600 hover:underline font-medium"
+              >
+                Ver log completo →
+              </button>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {syncSummary.map((s) => (
+                  <div
+                    key={s.platform}
+                    className="flex items-center gap-3 p-3 rounded-lg border border-slate-100 bg-slate-50"
+                  >
+                    <span
+                      className="w-2.5 h-2.5 rounded-full shrink-0"
+                      style={{ backgroundColor: s.cor || '#999' }}
+                    />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-slate-700 truncate">{s.nome}</p>
+                      <p className="text-[11px] text-slate-400">
+                        {s.ultimaSincronizacao
+                          ? `Última: ${new Date(s.ultimaSincronizacao).toLocaleString('pt-BR')}`
+                          : 'Sem sincronizações registradas'}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2 text-xs shrink-0">
+                      <span className="flex items-center gap-1 text-green-600 font-medium">
+                        <CheckCircle2 className="w-3.5 h-3.5" /> {s.sucessos24h}
+                      </span>
+                      <span className="flex items-center gap-1 text-red-500 font-medium">
+                        <XCircle className="w-3.5 h-3.5" /> {s.erros24h}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Funnel Health Dashboard */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">

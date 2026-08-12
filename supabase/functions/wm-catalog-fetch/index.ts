@@ -17,6 +17,10 @@ const CATALOGOS_SEM_PARAMETRO: Record<string, string> = {
   modalidade: 'ObterModalidade',
   cambios: 'ObterCambio',
   combustiveis: 'ObterCombustivel',
+  // Adicionado 12/08/2026 pra validar ObterEstoqueAtual isolado, contra a
+  // homologação, antes de confiar nele na checagem de duplicidade do wm-sync
+  // (ver docs/webmotors-integracao.md — "NÃO VERIFICADO AO VIVO").
+  estoque_atual: 'ObterEstoqueAtual',
 }
 
 // ObterVersao precisa de pCodigoModelo + intervalo de datas — não se encaixa

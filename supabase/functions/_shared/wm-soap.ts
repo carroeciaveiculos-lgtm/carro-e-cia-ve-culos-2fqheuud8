@@ -191,6 +191,44 @@ export function buildExcluirCarroXML(hash: string, codigoAnuncio: string): strin
   return wrapSOAP(WM_ESTOQUE_NAMESPACE, 'ExcluirCarro', innerXml)
 }
 
+// VERIFICADO AO VIVO em 12/08/2026 via wm-catalog-fetch (catalogo=estoque_atual)
+// contra a homologação: chamada com só pHashAutenticacao funciona e devolve o
+// estoque publicado de verdade (49 anúncios no teste). Implementado pra
+// checagem de duplicidade antes de publicar (ver docs/webmotors-integracao.md).
+export function buildObterEstoqueAtualXML(hash: string): string {
+  const innerXml = `
+      <pHashAutenticacao>${hash}</pHashAutenticacao>`
+  return wrapSOAP(WM_ESTOQUE_NAMESPACE, 'ObterEstoqueAtual', innerXml)
+}
+
+export interface AnuncioWMResumo {
+  codigoAnuncio: string
+  placa: string
+}
+
+// Corrigido em 12/08/2026: o item real vem como <Anuncio>, não <AnuncioWM> —
+// o mesmo risco de <Versao> vs <VersaoWM> já visto no ObterVersao, confirmado
+// ao vivo com wm-catalog-fetch (49 × <Anuncio>, 0 × <AnuncioWM> na resposta
+// real). Com o nome errado, a lista sempre voltava vazia e a checagem de
+// duplicidade nunca disparava, silenciosamente. Parser continua tolerante: se
+// o item vier com nome de tag diferente do esperado, devolve lista vazia em
+// vez de quebrar — quem chama trata lista vazia como "não deu pra confirmar",
+// nunca como "confirmado sem duplicata".
+export function parseEstoqueAtual(xml: string): AnuncioWMResumo[] {
+  const itens: AnuncioWMResumo[] = []
+  const regex = /<(?:\w+:)?Anuncio>([\s\S]*?)<\/(?:\w+:)?Anuncio>/g
+  let match
+  while ((match = regex.exec(xml)) !== null) {
+    const inner = match[1]
+    const codigoAnuncio = extractTag(inner, 'CodigoAnuncio')
+    const placa = extractTag(inner, 'Placa')
+    if (codigoAnuncio && placa) {
+      itens.push({ codigoAnuncio, placa: placa.toUpperCase().replace(/[^A-Z0-9]/g, '') })
+    }
+  }
+  return itens
+}
+
 const AUTH_ACTIONS = new Set(['autenticar', 'Autenticar', 'LoginSistemaRevendedor'])
 
 // ATENÇÃO — procedência não confirmada.

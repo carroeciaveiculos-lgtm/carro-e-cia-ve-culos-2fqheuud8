@@ -52,6 +52,14 @@ Deno.serve(async (req) => {
         link: documentUrl,
         caption: text || '',
       }
+    } else if (action === 'video') {
+      // Adicionado em 12/08/2026 pra Clara mandar vídeo do veículo — espelha
+      // o branch 'image' acima.
+      body.type = 'video'
+      body.video = {
+        link: documentUrl,
+        caption: text || '',
+      }
     } else {
       body.type = 'text'
       body.text = { body: text }

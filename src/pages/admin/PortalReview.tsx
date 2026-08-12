@@ -10,6 +10,8 @@ export default function PortalReview() {
   const { toast } = useToast()
   const [vehicles, setVehicles] = useState<ReviewVehicle[]>([])
   const [loading, setLoading] = useState(true)
+  // Chave "veiculoId-platform" — um veículo pode estar reprocessando mais de
+  // uma plataforma ao mesmo tempo.
   const [resyncing, setResyncing] = useState<Record<string, boolean>>({})
 
   const loadVehicles = useCallback(async () => {
@@ -28,12 +30,13 @@ export default function PortalReview() {
     loadVehicles()
   }, [loadVehicles])
 
-  const handleResync = async (veiculoId: string) => {
-    setResyncing((p) => ({ ...p, [veiculoId]: true }))
+  const handleResync = async (veiculoId: string, platform: string) => {
+    const key = `${veiculoId}-${platform}`
+    setResyncing((p) => ({ ...p, [key]: true }))
     try {
-      const result = await manualResync(veiculoId)
+      const result = await manualResync(veiculoId, platform)
       if (result.success) {
-        toast({ title: 'Sincronização iniciada para o veículo!' })
+        toast({ title: `Sincronização com ${platform} iniciada para o veículo!` })
         setTimeout(loadVehicles, 3000)
       } else {
         toast({
@@ -43,7 +46,7 @@ export default function PortalReview() {
         })
       }
     } finally {
-      setResyncing((p) => ({ ...p, [veiculoId]: false }))
+      setResyncing((p) => ({ ...p, [key]: false }))
     }
   }
 
@@ -89,14 +92,20 @@ export default function PortalReview() {
           <div className="text-sm text-gray-600">
             {vehicles.length} veículo(s) com pendências encontrados
           </div>
-          {vehicles.map((v) => (
-            <ReviewVehicleCard
-              key={v.id}
-              veiculo={v}
-              onResync={handleResync}
-              resyncing={resyncing[v.id] || false}
-            />
-          ))}
+          {vehicles.map((v) => {
+            const resyncingPlatforms: Record<string, boolean> = {}
+            for (const platform of ['webmotors', 'mercadolivre', 'olx', 'icarros', 'napista']) {
+              resyncingPlatforms[platform] = resyncing[`${v.id}-${platform}`] || false
+            }
+            return (
+              <ReviewVehicleCard
+                key={v.id}
+                veiculo={v}
+                onResync={handleResync}
+                resyncingPlatforms={resyncingPlatforms}
+              />
+            )
+          })}
         </div>
       )}
     </div>

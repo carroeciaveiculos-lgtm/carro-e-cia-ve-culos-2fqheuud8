@@ -115,8 +115,10 @@ verify_jwt = false
 [functions.sync-plataforma]
 verify_jwt = false
 
+# Corrigido em 12/08/2026: estava false aqui enquanto produção rodava true.
+# Um deploy geral teria aberto a autenticação Webmotors sem sessão.
 [functions.wm-auth]
-verify_jwt = false
+verify_jwt = true
 
 # Chamada só pelo admin autenticado, via src/services/wm-sync.ts (functions.invoke).
 # Estava declarada como false aqui enquanto produção rodava true — um deploy pelo
@@ -144,8 +146,10 @@ verify_jwt = true
 [functions.wm-confirmar-mapeamento]
 verify_jwt = true
 
+# Corrigido em 12/08/2026: estava true aqui enquanto produção rodava false.
+# Usada para diagnóstico com a anon key (ver docs/webmotors-integracao.md), sem sessão.
 [functions.wm-catalog-fetch]
-verify_jwt = true
+verify_jwt = false
 
 # Carga em lote do catálogo, disparada fora do browser.
 [functions.wm-sync-catalogo]

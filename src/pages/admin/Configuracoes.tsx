@@ -26,7 +26,20 @@ import {
   Bot,
 } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { ContactsConfigPanel } from '@/components/admin/ContactsConfigPanel'
+
+const CATEGORIAS_BRAIN_IA = [
+  { value: 'sdr', label: 'Atendimento (Clara / SDR)' },
+  { value: 'seo_blog', label: 'Conteúdo / Blog (SEO)' },
+  { value: 'geral', label: 'Geral' },
+]
 
 export default function Configuracoes() {
   const [loading, setLoading] = useState(false)
@@ -61,6 +74,7 @@ export default function Configuracoes() {
   const [knowledge, setKnowledge] = useState<any[]>([])
   const [newTextTitle, setNewTextTitle] = useState('')
   const [newTextContent, setNewTextContent] = useState('')
+  const [newTextCategoria, setNewTextCategoria] = useState('sdr')
   const [testPrompt, setTestPrompt] = useState('')
   const [testResponse, setTestResponse] = useState('')
   const [isTesting, setIsTesting] = useState(false)
@@ -118,9 +132,12 @@ export default function Configuracoes() {
   const handleSaveText = async () => {
     if (!newTextTitle || !newTextContent)
       return toast({ title: 'Preencha os campos', variant: 'destructive' })
-    const { error } = await supabase
-      .from('brain_ia_knowledge')
-      .insert({ tipo: 'texto', titulo: newTextTitle, conteudo: newTextContent })
+    const { error } = await supabase.from('brain_ia_knowledge').insert({
+      tipo: 'texto',
+      titulo: newTextTitle,
+      conteudo: newTextContent,
+      categoria: newTextCategoria,
+    })
     if (error)
       return toast({ title: 'Erro ao salvar', description: error.message, variant: 'destructive' })
     toast({ title: 'Texto padrão ouro salvo!' })
@@ -148,6 +165,7 @@ export default function Configuracoes() {
         titulo: file.name,
         file_name: file.name,
         file_url: publicUrl.publicUrl,
+        categoria: newTextCategoria,
       })
       if (insertError) throw insertError
       toast({ title: 'Documento enviado e indexado!' })
@@ -451,6 +469,27 @@ export default function Configuracoes() {
             </Card>
           </div>
 
+          <div className="space-y-2 max-w-sm">
+            <Label>Categoria (pra que serve esse conteúdo)</Label>
+            <Select value={newTextCategoria} onValueChange={setNewTextCategoria}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {CATEGORIAS_BRAIN_IA.map((c) => (
+                  <SelectItem key={c.value} value={c.value}>
+                    {c.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-slate-500">
+              Só o que estiver em "Atendimento (Clara / SDR)" ou "Geral" entra na conversa da
+              Clara com o cliente — conteúdo de blog/SEO fica de fora. Vale pro texto e pro
+              upload de documento abaixo.
+            </p>
+          </div>
+
           <div className="grid md:grid-cols-2 gap-6">
             <Card>
               <CardHeader>
@@ -522,6 +561,11 @@ export default function Configuracoes() {
                           <MessageSquare className="w-4 h-4 text-amber-500 shrink-0" />
                         )}
                         <span className="font-medium truncate">{k.titulo}</span>
+                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-200 text-slate-600 shrink-0">
+                          {CATEGORIAS_BRAIN_IA.find((c) => c.value === k.categoria)?.label ||
+                            k.categoria ||
+                            'geral'}
+                        </span>
                       </div>
                       <div className="flex gap-2 shrink-0 ml-2">
                         {k.tipo === 'documento' && k.file_url && (

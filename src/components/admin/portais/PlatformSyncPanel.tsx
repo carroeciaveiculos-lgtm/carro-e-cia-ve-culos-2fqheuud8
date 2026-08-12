@@ -6,20 +6,27 @@ import { Loader2, RefreshCw, Car, AlertCircle, Clock, TrendingUp } from 'lucide-
 import { WMStatusBadge } from './WMStatusBadge'
 import { useToast } from '@/hooks/use-toast'
 import {
-  getWMDashboard,
-  triggerWMSync,
-  getWMVehicles,
-  getWMSyncLogs,
-  type WMDashboardData,
-  type WMVehicleRow,
-  type WMSyncLog,
-} from '@/services/wm-sync'
+  getPlatformSyncDashboard,
+  triggerPlatformSync,
+  getPlatformVehicles,
+  getPlatformSyncLogs,
+  type PlatformSyncDashboardData,
+  type PlatformVehicleRow,
+  type PlatformSyncLog,
+} from '@/services/platform-sync'
 import { getImageUrl } from '@/lib/image-utils'
 
-export function WMDashboard() {
-  const [data, setData] = useState<WMDashboardData | null>(null)
-  const [vehicles, setVehicles] = useState<WMVehicleRow[]>([])
-  const [logs, setLogs] = useState<WMSyncLog[]>([])
+// Generaliza WMDashboard.tsx (12/08/2026) — usado dentro de um Accordion em
+// Portais.tsx, uma seção por plataforma real (Webmotors, Mercado Livre).
+interface Props {
+  platformSlug: string
+  platformColor: string
+}
+
+export function PlatformSyncPanel({ platformSlug, platformColor }: Props) {
+  const [data, setData] = useState<PlatformSyncDashboardData | null>(null)
+  const [vehicles, setVehicles] = useState<PlatformVehicleRow[]>([])
+  const [logs, setLogs] = useState<PlatformSyncLog[]>([])
   const [loading, setLoading] = useState(true)
   const [syncing, setSyncing] = useState(false)
   const [syncError, setSyncError] = useState<string | null>(null)
@@ -29,9 +36,9 @@ export function WMDashboard() {
     setLoading(true)
     try {
       const [d, v, l] = await Promise.all([
-        getWMDashboard().catch(() => null),
-        getWMVehicles().catch(() => []),
-        getWMSyncLogs().catch(() => []),
+        getPlatformSyncDashboard(platformSlug).catch(() => null),
+        getPlatformVehicles(platformSlug).catch(() => []),
+        getPlatformSyncLogs(platformSlug).catch(() => []),
       ])
       setData(d)
       setVehicles(v)
@@ -39,7 +46,7 @@ export function WMDashboard() {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [platformSlug])
 
   useEffect(() => {
     loadAll()
@@ -49,16 +56,12 @@ export function WMDashboard() {
     setSyncing(true)
     setSyncError(null)
     try {
-      await triggerWMSync()
+      const result = await triggerPlatformSync(platformSlug)
+      if (!result.success) throw new Error(result.error || 'Falha na sincronização')
       await loadAll()
-      toast({
-        title: 'Sincronização concluída',
-        description: 'Webmotors sincronizado com sucesso.',
-      })
+      toast({ title: 'Sincronização concluída', description: `${platformSlug} sincronizado.` })
     } catch (err: any) {
-      const msg =
-        err?.message ||
-        'Não foi possível conectar ao serviço da Webmotors. Tente novamente mais tarde.'
+      const msg = err?.message || 'Não foi possível sincronizar agora. Tente novamente mais tarde.'
       setSyncError(msg)
       toast({ variant: 'destructive', title: 'Erro na sincronização', description: msg })
     } finally {
@@ -74,12 +77,7 @@ export function WMDashboard() {
     )
 
   const metrics = [
-    {
-      label: 'Anúncios Ativos',
-      value: data?.total_published ?? 0,
-      icon: Car,
-      color: 'text-blue-600',
-    },
+    { label: 'Anúncios Ativos', value: data?.total_published ?? 0, icon: Car, color: 'text-blue-600' },
     {
       label: 'Erros (7 dias)',
       value: data?.sync_errors_7d ?? 0,
@@ -92,12 +90,7 @@ export function WMDashboard() {
       icon: Clock,
       color: 'text-yellow-600',
     },
-    {
-      label: 'Leads (7 dias)',
-      value: data?.leads_7d ?? 0,
-      icon: TrendingUp,
-      color: 'text-green-600',
-    },
+    { label: 'Leads (7 dias)', value: data?.leads_7d ?? 0, icon: TrendingUp, color: 'text-green-600' },
   ]
 
   return (
@@ -109,14 +102,8 @@ export function WMDashboard() {
         </Alert>
       )}
 
-      <div className="flex items-center justify-between">
-        <h3 className="text-sm font-bold text-gray-800">Dashboard Webmotors</h3>
-        <Button
-          size="sm"
-          onClick={handleSync}
-          disabled={syncing}
-          className="bg-[#E6332A] hover:bg-[#c52d25]"
-        >
+      <div className="flex items-center justify-end">
+        <Button size="sm" onClick={handleSync} disabled={syncing} style={{ backgroundColor: platformColor }}>
           {syncing ? (
             <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
           ) : (
@@ -142,7 +129,7 @@ export function WMDashboard() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div className="bg-white rounded-lg border overflow-hidden">
-          <h4 className="text-xs font-bold text-gray-700 p-3 border-b">Veículos no Webmotors</h4>
+          <h4 className="text-xs font-bold text-gray-700 p-3 border-b">Veículos</h4>
           <div className="max-h-[300px] overflow-y-auto">
             {vehicles.length === 0 ? (
               <p className="text-center py-6 text-xs text-gray-400">Nenhum veículo publicado.</p>
@@ -173,9 +160,7 @@ export function WMDashboard() {
         </div>
 
         <div className="bg-white rounded-lg border overflow-hidden">
-          <h4 className="text-xs font-bold text-gray-700 p-3 border-b">
-            Timeline de Sincronização
-          </h4>
+          <h4 className="text-xs font-bold text-gray-700 p-3 border-b">Timeline de Sincronização</h4>
           <div className="max-h-[300px] overflow-y-auto">
             {logs.length === 0 ? (
               <p className="text-center py-6 text-xs text-gray-400">Nenhum log registrado.</p>

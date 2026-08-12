@@ -23,7 +23,7 @@ Deno.serve(async (req) => {
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
 
     // Busca leads frios inativos de forma controlada (limitado a 30 por execução para evitar timeouts)
-    const { data: leads, error } = await supabase
+    const { data: leadsCandidatos, error } = await supabase
       .from('leads')
       .select('id, telefone, nome, status, temperatura')
       .eq('temperatura', 'frio')
@@ -33,6 +33,43 @@ Deno.serve(async (req) => {
       .limit(30) // Garantia de estabilidade e prevenção contra quedas de execução
 
     if (error) throw error
+
+    // Limite de reengajamentos por lead (12/08/2026, pedido da Adriana): sem
+    // isso, um lead que nunca esquenta recebe o mesmo template a cada 7 dias
+    // pra sempre. Mandar template pra quem não responde repetidamente piora a
+    // "quality rating" do número no WhatsApp Business (métrica da Meta que
+    // pode restringir o número de enviar mais mensagens) — por isso o limite,
+    // não é só spam pro cliente. Contado via conversation_history (sem
+    // migration nova): cada envio anterior já grava o marcador abaixo.
+    const MAX_REENGAJAMENTOS = 3
+    const MARCADOR_REENGAJAMENTO = '[Template Automático de Reengajamento Enviado]'
+
+    const idsCandidatos = (leadsCandidatos || []).map((l) => l.id)
+    let leads = leadsCandidatos || []
+    if (idsCandidatos.length > 0) {
+      const { data: historico } = await supabase
+        .from('conversation_history')
+        .select('lead_id')
+        .in('lead_id', idsCandidatos)
+        .eq('message_text', MARCADOR_REENGAJAMENTO)
+
+      const contagemPorLead = new Map<string, number>()
+      for (const h of historico || []) {
+        contagemPorLead.set(h.lead_id, (contagemPorLead.get(h.lead_id) || 0) + 1)
+      }
+
+      const noLimite = (leadsCandidatos || []).filter(
+        (l) => (contagemPorLead.get(l.id) || 0) >= MAX_REENGAJAMENTOS,
+      )
+      if (noLimite.length > 0) {
+        console.log(
+          `${noLimite.length} lead(s) já atingiram o limite de ${MAX_REENGAJAMENTOS} reengajamentos, pulando: ${noLimite.map((l) => l.id).join(', ')}`,
+        )
+      }
+      leads = (leadsCandidatos || []).filter(
+        (l) => (contagemPorLead.get(l.id) || 0) < MAX_REENGAJAMENTOS,
+      )
+    }
 
     console.log(`Iniciando envio de lote de reengajamento para ${leads?.length || 0} leads...`)
 
@@ -74,7 +111,7 @@ Deno.serve(async (req) => {
           await supabase.from('conversation_history').insert({
             lead_id: lead.id,
             sender: 'bot',
-            message_text: '[Template Automático de Reengajamento Enviado]',
+            message_text: MARCADOR_REENGAJAMENTO,
           })
 
           // Atualiza o updated_at imediatamente para garantir que ele não caia no filtro de reengajamento novamente

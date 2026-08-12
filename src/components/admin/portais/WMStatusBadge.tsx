@@ -22,6 +22,8 @@ export function WMStatusBadge({ status }: Props) {
     pending_close: { icon: Clock, label: 'Removendo', className: 'bg-yellow-100 text-yellow-700' },
     error: { icon: AlertCircle, label: 'Erro', className: 'bg-red-100 text-red-700' },
     erro: { icon: AlertCircle, label: 'Erro', className: 'bg-red-100 text-red-700' },
+    warning: { icon: AlertCircle, label: 'Aviso', className: 'bg-amber-100 text-amber-700' },
+    blocked: { icon: AlertCircle, label: 'Bloqueado', className: 'bg-amber-100 text-amber-700' },
     despublicado: { icon: XCircle, label: 'Despublicado', className: 'bg-gray-100 text-gray-600' },
   }
 

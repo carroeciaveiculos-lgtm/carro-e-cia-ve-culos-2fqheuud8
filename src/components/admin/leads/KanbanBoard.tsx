@@ -18,11 +18,15 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { Button } from '@/components/ui/button'
 import { getWhatsAppLink } from '@/lib/whatsapp'
 
+// Pipeline nova (12/08/2026, pedido da Adriana): "Negociando/Propostas"
+// removida (sem lead nenhum lá no dia da mudança, sem backfill necessário);
+// "Agendamentos" e "Visitas" são novas — ver docs/leads-e-sdr.md.
 const COLUMNS = [
-  { id: 'novo', title: 'Novos', color: 'border-blue-200 bg-blue-50 text-blue-800' },
+  { id: 'novo', title: 'Lead', color: 'border-blue-200 bg-blue-50 text-blue-800' },
   { id: 'em_contato', title: 'Em Contato', color: 'border-amber-200 bg-amber-50 text-amber-800' },
-  { id: 'negociando', title: 'Propostas', color: 'border-purple-200 bg-purple-50 text-purple-800' },
-  { id: 'fechado', title: 'Vendido', color: 'border-green-200 bg-green-50 text-green-800' },
+  { id: 'agendamento', title: 'Agendamentos', color: 'border-purple-200 bg-purple-50 text-purple-800' },
+  { id: 'visita', title: 'Visitas', color: 'border-indigo-200 bg-indigo-50 text-indigo-800' },
+  { id: 'fechado', title: 'Vendas', color: 'border-green-200 bg-green-50 text-green-800' },
   { id: 'perdido', title: 'Perdido', color: 'border-red-200 bg-red-50 text-red-800' },
 ]
 
@@ -128,10 +132,14 @@ export function KanbanBoard({
             <ScrollArea className="flex-1 p-2">
               <div className="space-y-2 pb-4 min-h-[50px]">
                 {colLeads.map((lead: any) => {
+                  // Corrigido em 12/08/2026: usava lead.status === 'novo' como
+                  // proxy (e ainda dizia "LUIZ"). Agora reflete
+                  // leads.ai_enabled de verdade — o mesmo campo que separa as
+                  // duas colunas da tela "Conversador" (Fase 4).
                   const respName = lead.responsavel_id
                     ? usuariosMap[lead.responsavel_id]
-                    : lead.status === 'novo'
-                      ? 'LUIZ (IA)'
+                    : lead.ai_enabled !== false
+                      ? 'Clara (IA)'
                       : 'Sem Atendente'
                   const veic = veiculosMap[lead.veiculo_id]
                   const thumb = veic?.fotos?.[0]

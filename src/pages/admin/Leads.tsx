@@ -387,7 +387,8 @@ export default function AdminLeads() {
   const getStatusColor = (status: string) => {
     if (status === 'novo') return 'bg-blue-100 text-blue-800'
     if (status === 'em_contato') return 'bg-amber-100 text-amber-800'
-    if (status === 'negociando') return 'bg-purple-100 text-purple-800'
+    if (status === 'agendamento') return 'bg-purple-100 text-purple-800'
+    if (status === 'visita') return 'bg-indigo-100 text-indigo-800'
     if (status === 'fechado') return 'bg-green-100 text-green-800'
     if (status === 'perdido') return 'bg-red-100 text-red-800'
     return 'bg-slate-100 text-slate-800'
@@ -721,6 +722,19 @@ export default function AdminLeads() {
             {selectedLead && (
               <div className="w-[30%] min-w-[320px] bg-slate-50 flex flex-col h-full shrink-0">
                 <ScrollArea className="flex-1 p-4">
+                  {/* "Cliente chegou" (12/08/2026) — mover Agendamentos ->
+                      Visitas é sempre ação manual de um vendedor, o sistema
+                      não tem como saber sozinho que o cliente chegou
+                      fisicamente na loja (decisão da Adriana). */}
+                  {selectedLead.status === 'agendamento' && (
+                    <Button
+                      size="sm"
+                      className="w-full mb-2 bg-indigo-600 hover:bg-indigo-700"
+                      onClick={() => updateLeadField('status', 'visita')}
+                    >
+                      <Car className="w-4 h-4 mr-1" /> Cliente chegou
+                    </Button>
+                  )}
                   <div className="flex gap-2 mb-4">
                     <Button
                       variant="outline"

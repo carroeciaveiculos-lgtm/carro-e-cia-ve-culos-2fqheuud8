@@ -314,6 +314,11 @@ async function salvarPendencia(supabase: any, veiculo_id: string, campos: Record
 
   if (campos.status_sincronizacao === 'revisao_necessaria') {
     await supabase.from('veiculos').update({ requires_review: true }).eq('id', veiculo_id)
+  } else if (campos.status_sincronizacao === 'mapeado') {
+    // Corrigido em 12/08/2026: só wm-confirmar-mapeamento limpava requires_review.
+    // Quando o auto-match acerta de primeira (sem precisar de revisão manual),
+    // o veículo ficava com requires_review=true pra sempre, mesmo mapeado.
+    await supabase.from('veiculos').update({ requires_review: false }).eq('id', veiculo_id)
   }
 }
 

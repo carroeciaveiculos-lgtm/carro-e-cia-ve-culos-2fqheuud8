@@ -1,6 +1,7 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from 'jsr:@supabase/supabase-js@2'
 import { corsHeaders } from '../_shared/cors.ts'
+import { encontrarLeadAtivo, anexarNotaContato, normalizarTelefone } from '../_shared/lead-dedup.ts'
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL') || ''
 const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''
@@ -221,13 +222,32 @@ Deno.serve(async (req: Request) => {
                 let leadId = leads?.[0]?.id
 
                 if (!leadId) {
+                  // Origem real da mensagem (12/08/2026, achado da auditoria de
+                  // leads): antes toda mensagem de WhatsApp virava origem
+                  // "whatsapp" genérico, mesmo vindo de anúncio (clique-para-
+                  // WhatsApp do Facebook/Instagram). A Meta manda um objeto
+                  // `referral` na primeira mensagem desses casos — sem ele, é
+                  // contato orgânico de verdade (não veio de anúncio).
+                  const referral = msg.referral
+                  let origemDetectada = 'whatsapp_organico'
+                  let campanhaDetectada: string | null = null
+                  if (referral) {
+                    const sourceUrl = (referral.source_url || '').toLowerCase()
+                    origemDetectada = sourceUrl.includes('instagram')
+                      ? 'instagram_ads'
+                      : 'facebook_ads'
+                    campanhaDetectada = referral.headline || referral.source_id || null
+                  }
+
                   const { data: newLead } = await supabase
                     .from('leads')
                     .insert({
                       nome: senderName,
                       telefone: senderPhone,
-                      origem: 'whatsapp',
+                      origem: origemDetectada,
                       source: 'whatsapp',
+                      campanha: campanhaDetectada,
+                      utm_campaign: referral?.source_id || null,
                       tipo: 'compra',
                       status: 'novo',
                     })
@@ -243,32 +263,25 @@ Deno.serve(async (req: Request) => {
                     message_text: messageText,
                   })
 
-                  // Lógica para o Skip IA integrar no tratamento da resposta do Gemini em 'receive-leads'
-                  /*
-                  try {
-                    const aiRes = await callGeminiAI(messageText);
-                    const rawText = aiRes.candidates?.[0]?.content?.parts?.[0]?.text || ''
-                    const jsonStr = rawText.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/)?.[1] || rawText
-                    const parsed = JSON.parse(jsonStr)
-                    
-                    // NOVA ATUALIZAÇÃO: Se o Gemini capturar dados cadastrais, atualiza o Lead no Supabase
-                    if (parsed.extracted_data) {
-                      const dataUpdate: any = {}
-                      if (parsed.extracted_data.nome_completo) dataUpdate.nome = parsed.extracted_data.nome_completo
-                      if (parsed.extracted_data.cpf) dataUpdate.cpf = parsed.extracted_data.cpf
-                      if (parsed.extracted_data.email) dataUpdate.email = parsed.extracted_data.email
-                      if (parsed.extracted_data.cep) dataUpdate.observacoes = `CEP: ${parsed.extracted_data.cep}`
-                      if (parsed.extracted_data.valor_entrada) dataUpdate.faixa_preco = `Entrada de R$ ${parsed.extracted_data.valor_entrada}`
-                      
-                      if (Object.keys(dataUpdate).length > 0) {
-                        console.log("Atualizando dados cadastrais capturados pela IA:", JSON.stringify(dataUpdate));
-                        await supabase.from('leads').update(dataUpdate).eq('id', leadId)
-                      }
+                  // Reativado em 12/08/2026 — chama a Clara pra responder de
+                  // verdade a mensagens depois da primeira (ver ai-sdr,
+                  // action 'continue_conversation'). Ficava comentado, sem
+                  // nenhuma automação depois do primeiro contato. A própria
+                  // action confere `leads.ai_enabled` e pula se um humano já
+                  // assumiu a conversa — não precisa checar aqui de novo.
+                  // `await` de propósito: função Deno não garante execução
+                  // em segundo plano depois da resposta HTTP sem
+                  // EdgeRuntime.waitUntil (não usado em nenhum outro lugar do
+                  // projeto ainda, não quis introduzir sem testar isolado).
+                  if (messageText) {
+                    try {
+                      await supabase.functions.invoke('ai-sdr', {
+                        body: { action: 'continue_conversation', lead_id: leadId, mensagem: messageText },
+                      })
+                    } catch (e) {
+                      console.error('Erro ao chamar ai-sdr:', e)
                     }
-                  } catch(e) {
-                    console.error('Failed to parse Gemini JSON')
                   }
-                  */
                 }
               }
             } else {
@@ -314,18 +327,35 @@ Deno.serve(async (req: Request) => {
     }
 
     if (payload.nome && payload.telefone && !payload.object) {
-      const { data: newLead, error } = await supabase
-        .from('leads')
-        .insert({
-          nome: payload.nome,
-          telefone: payload.telefone,
-          email: payload.email,
-          origem: payload.origem || 'site',
-          veiculo_interesse: payload.veiculo_interesse,
-          status: 'novo',
-        })
-        .select()
-        .single()
+      const cleanTelefone = normalizarTelefone(payload.telefone)
+      const leadExistente = await encontrarLeadAtivo(supabase, {
+        telefone: cleanTelefone,
+        email: payload.email || null,
+      })
+
+      const { data: newLead, error } = leadExistente
+        ? await supabase
+            .from('leads')
+            .update({
+              veiculo_interesse: payload.veiculo_interesse || undefined,
+              observacoes: anexarNotaContato(leadExistente.observacoes, payload.origem || 'site'),
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', leadExistente.id)
+            .select()
+            .single()
+        : await supabase
+            .from('leads')
+            .insert({
+              nome: payload.nome,
+              telefone: cleanTelefone,
+              email: payload.email,
+              origem: payload.origem || 'site',
+              veiculo_interesse: payload.veiculo_interesse,
+              status: 'novo',
+            })
+            .select()
+            .single()
 
       if (error) throw error
 

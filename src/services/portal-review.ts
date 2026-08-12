@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase/client'
 import { translateError } from '@/lib/platform-errors'
+import { triggerPlatformSync } from '@/services/platform-sync'
 
 export interface SyncErrorDetail {
   id: string
@@ -8,6 +9,7 @@ export interface SyncErrorDetail {
   mensagem: string | null
   metadata: any
   created_at: string | null
+  platform: string | null
   translatedMessage: string
   translatedAction: string
 }
@@ -74,7 +76,7 @@ export async function fetchReviewVehicles(): Promise<ReviewVehicle[]> {
 
   const { data: syncLogs } = await supabase
     .from('sync_log')
-    .select('id, veiculo_id, acao, status, mensagem, metadata, created_at')
+    .select('id, veiculo_id, acao, status, mensagem, metadata, created_at, plataformas(slug)')
     .in('veiculo_id', allIds)
     .in('status', ['erro', 'warning'])
     .order('created_at', { ascending: false })
@@ -102,6 +104,7 @@ export async function fetchReviewVehicles(): Promise<ReviewVehicle[]> {
       mensagem: log.mensagem,
       metadata: log.metadata,
       created_at: log.created_at,
+      platform: (log as any).plataformas?.slug || null,
       translatedMessage: translated.message,
       translatedAction: translated.action,
     })
@@ -134,13 +137,15 @@ export async function fetchReviewVehicles(): Promise<ReviewVehicle[]> {
   }))
 }
 
+// Corrigido em 12/08/2026: antes disparava sempre 'ml-sync', mesmo pra erro
+// de Webmotors — agora roteia pra function certa por plataforma. Sem
+// plataforma informada (chamada antiga), mantém o comportamento anterior
+// (Mercado Livre) pra não quebrar quem ainda não passa o parâmetro.
 export async function manualResync(
   veiculoId: string,
+  platform: string = 'mercadolivre',
 ): Promise<{ success: boolean; error?: string }> {
-  const { error } = await supabase.functions.invoke('ml-sync', {
-    method: 'POST',
-    body: { veiculo_id: veiculoId },
-  })
-  if (error) return { success: false, error: error.message }
+  const result = await triggerPlatformSync(platform, veiculoId)
+  if (!result.success) return { success: false, error: result.error }
   return { success: true }
 }

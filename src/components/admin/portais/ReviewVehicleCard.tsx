@@ -5,16 +5,26 @@ import { AlertCircle, RefreshCw, ImageOff } from 'lucide-react'
 import { getImageUrl } from '@/lib/image-utils'
 import type { ReviewVehicle } from '@/services/portal-review'
 
-interface Props {
-  veiculo: ReviewVehicle
-  onResync: (veiculoId: string) => void
-  resyncing: boolean
+// Rótulo de plataforma pro erro — reprocessar precisa saber qual, já que um
+// veículo pode ter pendência em mais de uma plataforma ao mesmo tempo.
+const PLATFORM_LABELS: Record<string, string> = {
+  webmotors: 'Webmotors',
+  mercadolivre: 'Mercado Livre',
+  olx: 'OLX',
+  icarros: 'iCarros',
+  napista: 'Napista',
 }
 
-export function ReviewVehicleCard({ veiculo, onResync, resyncing }: Props) {
+interface Props {
+  veiculo: ReviewVehicle
+  onResync: (veiculoId: string, platform: string) => void
+  resyncingPlatforms: Record<string, boolean>
+}
+
+export function ReviewVehicleCard({ veiculo, onResync, resyncingPlatforms }: Props) {
   const allErrors = [
-    ...veiculo.syncErrors.map((e) => ({ source: 'Sync', ...e })),
-    ...veiculo.publicacaoErrors.map((e) => ({ source: 'Portal', ...e })),
+    ...veiculo.syncErrors.map((e) => ({ source: 'Sync', platform: e.platform, ...e })),
+    ...veiculo.publicacaoErrors.map((e) => ({ source: 'Portal', platform: e.platform, ...e })),
   ]
 
   const invalidImageUrls = new Set<string>()
@@ -54,10 +64,6 @@ export function ReviewVehicleCard({ veiculo, onResync, resyncing }: Props) {
             )}
           </div>
         </div>
-        <Button size="sm" onClick={() => onResync(veiculo.id)} disabled={resyncing}>
-          <RefreshCw className={`w-3.5 h-3.5 mr-1.5 ${resyncing ? 'animate-spin' : ''}`} />
-          Sincronizar Agora
-        </Button>
       </div>
 
       {allErrors.length > 0 && (
@@ -69,11 +75,30 @@ export function ReviewVehicleCard({ veiculo, onResync, resyncing }: Props) {
             >
               <AlertCircle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
               <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
+                  {err.platform && (
+                    <Badge className="text-[9px] bg-slate-700 text-white border-none">
+                      {PLATFORM_LABELS[err.platform] || err.platform}
+                    </Badge>
+                  )}
                   <Badge variant="destructive" className="text-[9px]">
                     {err.source}
                   </Badge>
                   <span className="text-xs font-medium text-gray-700">{err.translatedMessage}</span>
+                  {err.platform && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-6 text-[10px] px-2 ml-auto"
+                      disabled={resyncingPlatforms[err.platform]}
+                      onClick={() => onResync(veiculo.id, err.platform as string)}
+                    >
+                      <RefreshCw
+                        className={`w-3 h-3 mr-1 ${resyncingPlatforms[err.platform] ? 'animate-spin' : ''}`}
+                      />
+                      Reprocessar
+                    </Button>
+                  )}
                 </div>
                 <p className="text-[10px] text-gray-500 mt-0.5">Ação: {err.translatedAction}</p>
                 {err.metadata?.invalid_images && (

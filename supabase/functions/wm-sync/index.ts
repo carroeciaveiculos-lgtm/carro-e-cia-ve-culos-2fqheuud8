@@ -5,10 +5,17 @@ import {
   buildIncluirCarroXML,
   buildAlterarCarroXML,
   buildExcluirCarroXML,
+  buildObterEstoqueAtualXML,
+  parseEstoqueAtual,
   callSOAP,
   type WMCredentials,
   type MapeamentoWM,
+  type AnuncioWMResumo,
 } from '../_shared/wm-soap.ts'
+
+function normalizarPlaca(placa: string | null | undefined): string {
+  return (placa || '').toUpperCase().replace(/[^A-Z0-9]/g, '')
+}
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -92,6 +99,21 @@ Deno.serve(async (req: Request) => {
       )
     }
     const hash = authResult.hashAutenticacao
+
+    // Checagem de duplicidade (12/08/2026, pedido da Adriana): busca o que já
+    // está anunciado na Webmotors ANTES de criar qualquer anúncio novo, pra não
+    // repetir o que aconteceu com o VW up! (ver docs/webmotors-integracao.md).
+    // Roda uma vez por execução, não por item. Se falhar, segue sem a checagem
+    // (fail-open) — não é motivo pra travar publicações novas legítimas.
+    let estoqueAtualWebmotors: AnuncioWMResumo[] = []
+    try {
+      const estoqueRes = await callSOAP(buildObterEstoqueAtualXML(hash), 'ObterEstoqueAtual', hash)
+      if (estoqueRes.success && estoqueRes.raw) {
+        estoqueAtualWebmotors = parseEstoqueAtual(estoqueRes.raw)
+      }
+    } catch {
+      // fail-open — ver comentário acima
+    }
 
     const { data: integracao } = await supabase
       .from('integracao_plataforma')
@@ -225,6 +247,27 @@ Deno.serve(async (req: Request) => {
 
       try {
         if (pub.status === 'pending_create' || pub.status === 'agendado') {
+          const placaVeiculo = normalizarPlaca(veiculo.placa)
+          const jaAnunciado = placaVeiculo
+            ? estoqueAtualWebmotors.find((a) => a.placa === placaVeiculo)
+            : undefined
+          if (jaAnunciado) {
+            const msg = `Este veículo já está anunciado na Webmotors (CodigoAnuncio ${jaAnunciado.codigoAnuncio}) — envio pulado pra não duplicar. Se precisar atualizar o anúncio existente, use a edição, não uma nova publicação.`
+            await supabase
+              .from('estoque_publicacoes')
+              .update({
+                status: 'publicado',
+                post_id: jaAnunciado.codigoAnuncio,
+                erro_msg: msg,
+              })
+              .eq('id', pub.id)
+            await supabase
+              .from('veiculos')
+              .update({ publicado_webmotors: true })
+              .eq('id', veiculo.id)
+            results.push({ id: pub.id, status: 'already_published', warning: msg })
+            continue
+          }
           const xml = buildIncluirCarroXML(veiculo, hash, mapa)
           const res = await callSOAP(xml, 'IncluirCarro', hash)
           await registrarTrocaXML(supabase, veiculo.id, 'IncluirCarro', xml, res.raw)
@@ -280,10 +323,23 @@ Deno.serve(async (req: Request) => {
               .from('estoque_publicacoes')
               .update({ status: 'despublicado' })
               .eq('id', pub.id)
-            await supabase
-              .from('veiculos')
-              .update({ publicado_webmotors: false })
-              .eq('id', veiculo.id)
+            // Só zera a flag se não sobrar nenhuma outra publicação ativa pra esse
+            // veículo na Webmotors — sem essa checagem, cancelar um anúncio
+            // duplicado (ver docs/webmotors-integracao.md) marcava o veículo como
+            // despublicado mesmo com o outro CodigoAnuncio ainda no ar.
+            const { count: outrasPublicadas } = await supabase
+              .from('estoque_publicacoes')
+              .select('id', { count: 'exact', head: true })
+              .eq('veiculo_id', veiculo.id)
+              .eq('platform', 'webmotors')
+              .eq('status', 'publicado')
+              .neq('id', pub.id)
+            if (!outrasPublicadas) {
+              await supabase
+                .from('veiculos')
+                .update({ publicado_webmotors: false })
+                .eq('id', veiculo.id)
+            }
             results.push({ id: pub.id, status: 'closed' })
           } else {
             results.push({ id: pub.id, status: 'error', error: res.error })
@@ -305,9 +361,12 @@ Deno.serve(async (req: Request) => {
               ? 'update'
               : r.status === 'closed'
                 ? 'close'
-                : 'error',
-        status: r.status === 'error' ? 'erro' : 'success',
-        mensagem: r.error || `WM sync ${r.status}`,
+                : r.status === 'already_published'
+                  ? 'skip_duplicado'
+                  : 'error',
+        status:
+          r.status === 'error' ? 'erro' : r.status === 'already_published' ? 'warning' : 'success',
+        mensagem: r.error || r.warning || `WM sync ${r.status}`,
         metadata: { codigoAnuncio: r.codigoAnuncio },
       }))
       if (logs.length > 0) await supabase.from('sync_log').insert(logs)

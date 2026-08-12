@@ -3,7 +3,25 @@
     "allow": [
       "Read(./**)",
       "Skill(claude-api)",
-      "Skill(claude-api:*)"
+      "Skill(claude-api:*)",
+      "Read(//c/Projeto/**)",
+      "Bash(dir)",
+      "Bash(cd \"/c/Projeto/Revenda Carro e Cia\" && ls -la)",
+      "Read(//c/Projeto/Revenda Carro e Cia/**)",
+      "Bash(gh auth *)",
+      "Bash(gh repo list carroeciaveiculos-lgtm --limit 100 --json name,visibility,updatedAt,isFork,description --template '{{range .}}{{.name}}\t{{.visibility}}\t{{timeago .updatedAt}}\t{{if .isFork}}fork{{end}}\t{{.description}} *)",
+      "Bash(code --version)",
+      "Bash(code --list-extensions)",
+      "Read(//c/Projeto/Enforce Engenharia/**)",
+      "Read(//c/Projeto/Blog GuiaLowCarb/**)",
+      "Read(//c/Projeto/Km Zero Seguros/**)",
+      "Bash(code --install-extension eamodio.gitlens --force)",
+      "Bash(code --install-extension mhutchie.git-graph --force)",
+      "Bash(code --install-extension alefragnani.project-manager --force)",
+      "Bash(gh repo *)",
+      "Bash(ls -la \"/c/Projeto/Enforce Engenharia/enforce-hub\" 2>&1 | head -20)",
+      "Read(//c/Projeto/Enforce Engenharia/enforce-hub/**)",
+      "Bash(ls \"/c/Projeto/Enforce Engenharia\" 2>&1)"
     ],
     "deny": [
       "Read(//c/Users/adria/.ssh/**)",
@@ -24,11 +42,8 @@
       "Bash(rm -r *)",
       "Bash(git reset --hard *)",
       "Bash(git clean *)",
-      "Bash(supabase functions deploy *)",
-      "Bash(npx supabase functions deploy *)",
       "Bash(npx wrangler deploy *)",
       "Bash(bunx wrangler deploy *)",
-      "mcp__claude_ai_Supabase__apply_migration",
       "mcp__claude_ai_Supabase__deploy_edge_function"
     ],
     "ask": [
@@ -41,7 +56,11 @@
       "Bash(git checkout *)",
       "Bash(supabase functions *)",
       "Bash(npx supabase functions *)",
-      "mcp__claude_ai_Supabase__execute_sql"
+      "mcp__claude_ai_Supabase__execute_sql",
+      "mcp__claude_ai_Supabase__apply_migration"
+    ],
+    "additionalDirectories": [
+      "C:\\Projeto"
     ]
   }
 }

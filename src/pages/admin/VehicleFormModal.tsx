@@ -133,7 +133,7 @@ const PHOTO_ROTEIRO = [
   'Detalhe acabamento porta dianteira',
   'Detalhe pneu traseiro',
   'Teto solar / detalhe exclusivo',
-  'Visão geral do interior',
+  'Manual e cópia de chave',
 ]
 
 // Reconhece o prefixo numérico do roteiro (01_capa.jpg, 02_frente_angulo.jpg...)
@@ -160,6 +160,15 @@ const chartConfig = { valor: { label: 'Valor (R$)', color: 'hsl(var(--primary))'
 export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess }: any) {
   const { toast } = useToast()
   const [loading, setLoading] = useState(false)
+  const [activeTab, setActiveTab] = useState('geral')
+  const [wmMapeamentoDialog, setWmMapeamentoDialog] = useState<{
+    veiculoId: string
+    motivo: string
+    erroMsg: string | null
+    candidatosModelo: { codigo_wm: string; nome_wm: string; score: number }[]
+    candidatosVersao: { codigo_wm: string; nome_wm: string; score: number }[]
+  } | null>(null)
+  const [loadingWmMapeamento, setLoadingWmMapeamento] = useState(false)
   const [loadingPlaca, setLoadingPlaca] = useState(false)
   const [leadsCount, setLeadsCount] = useState(0)
   const [despesas, setDespesas] = useState<any[]>([])
@@ -613,30 +622,86 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
     })
   }
 
-  const validatePortalFields = () => {
-    const missing: string[] = []
-    if (!formData.marca) missing.push('Marca')
-    if (!formData.modelo) missing.push('Modelo')
-    if (!formData.ano_fabricacao) missing.push('Ano')
-    if (!formData.cor) missing.push('Cor')
-    if (!formData.combustivel) missing.push('Combustível')
-    if (!formData.quilometragem) missing.push('KM')
-    if (!formData.preco_venda) missing.push('Preço')
-    if (!formData.fotos || formData.fotos.length === 0) missing.push('Fotos (mínimo 1)')
-    if (missing.length > 0) {
-      toast({
-        title: '⚠️ Campos importantes ausentes',
-        description: `Para melhor performance nos portais: ${missing.join(', ')}`,
-        variant: 'destructive',
+  // Faixa de 65%-135% da FIPE, confirmada pelo suporte Webmotors ("aceitamos
+  // percentual mínimo (35%) e máximo (35%) baseado na FIPE") — corrigida em
+  // 12/08/2026 pra validar o "Por" (preco_venda), não o "De". O "De"
+  // (preco_revenda) deixou de ser digitado: é sempre igual ao Valor FIPE
+  // (campo travado, ver JSX). Decisão da Adriana em 12/08/2026: aceitar que o
+  // "Por" fique até 135% da FIPE mesmo sabendo que isso deixa o "De" (=FIPE)
+  // menor que o "Por" — o que um teste ao vivo já mostrou que bloqueia com
+  // CodigoRetorno 22|78 na Honda WR-V (ver docs/webmotors-integracao.md). Não
+  // reduzir essa faixa sem confirmar com ela de novo.
+  const validatePrecoVendaFipe = (value: string, fipeOverride?: number) => {
+    const fipe = fipeOverride ?? (Number(formData.valor_fipe) || 0)
+    if (value === '' || value === undefined || value === null || fipe <= 0) {
+      setValidationErrors((p) => {
+        const n = { ...p }
+        delete n.preco_venda_fipe
+        return n
       })
+      return
     }
-    return missing.length === 0
+    const num = Number(value)
+    if (isNaN(num)) return
+    const min = fipe * 0.65
+    const max = fipe * 1.35
+    if (num < min || num > max) {
+      setValidationErrors((p) => ({
+        ...p,
+        preco_venda_fipe: `Fora da faixa aceita pela Webmotors (65%-135% da FIPE): R$ ${min.toLocaleString('pt-BR', { maximumFractionDigits: 0 })} a R$ ${max.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}`,
+      }))
+      return
+    }
+    setValidationErrors((p) => {
+      const n = { ...p }
+      delete n.preco_venda_fipe
+      return n
+    })
   }
 
-  const save = async (status = 'disponivel', shouldClose = true) => {
+  // Aba onde cada campo obrigatório vive — usado pra trocar de aba automaticamente
+  // e mostrar o erro onde o operador precisa corrigir, em vez de só um toast.
+  const PORTAL_FIELD_TABS: Record<string, string> = {
+    marca: 'geral',
+    modelo: 'geral',
+    ano_fabricacao: 'geral',
+    cor: 'geral',
+    combustivel: 'geral',
+    quilometragem: 'geral',
+    preco_venda: 'geral',
+    fotos: 'midia',
+  }
+
+  const validatePortalFields = (): { ok: boolean; firstErrorTab: string | null } => {
+    const missing: { field: string; label: string }[] = []
+    if (!formData.marca) missing.push({ field: 'marca', label: 'Marca' })
+    if (!formData.modelo) missing.push({ field: 'modelo', label: 'Modelo' })
+    if (!formData.ano_fabricacao) missing.push({ field: 'ano_fabricacao', label: 'Ano' })
+    if (!formData.cor) missing.push({ field: 'cor', label: 'Cor' })
+    if (!formData.combustivel) missing.push({ field: 'combustivel', label: 'Combustível' })
+    if (!formData.quilometragem) missing.push({ field: 'quilometragem', label: 'KM' })
+    if (!formData.preco_venda) missing.push({ field: 'preco_venda', label: 'Preço' })
+    if (!formData.fotos || formData.fotos.length === 0)
+      missing.push({ field: 'fotos', label: 'Fotos (mínimo 1)' })
+    if (missing.length > 0) {
+      toast({
+        title: '⚠️ Campos obrigatórios ausentes',
+        description: `Corrija antes de salvar, na aba indicada: ${missing.map((m) => `${m.label} (${m.field === 'fotos' ? 'Fotos & Mídia' : 'Geral & Valores'})`).join(', ')}`,
+        variant: 'destructive',
+      })
+      return { ok: false, firstErrorTab: PORTAL_FIELD_TABS[missing[0].field] || 'geral' }
+    }
+    return { ok: true, firstErrorTab: null }
+  }
+
+  const save = async (
+    status = 'disponivel',
+    shouldClose = true,
+    overrides: Record<string, any> = {},
+  ): Promise<string | null> => {
     if (Object.keys(validationErrors).length > 0) {
       toast({ title: 'Corrija os erros de validação antes de salvar', variant: 'destructive' })
-      return
+      return null
     }
     setLoading(true)
     if (formData.ml_listing_type === 'gold_pro') {
@@ -648,10 +713,16 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
           variant: 'destructive',
         })
         setLoading(false)
-        return
+        return null
       }
     }
     try {
+      // `overrides` é aplicado explicitamente aqui, não via setFormData antes de
+      // chamar save() — setFormData é assíncrono (batching do React) e o payload
+      // acabava sendo montado com o formData antigo (bug do antigo botão "Aprovar
+      // e Publicar", que fazia setFormData({requires_review:false}) e chamava
+      // save() na sequência, sem garantia de que o novo valor já estivesse lá).
+      const merged = { ...formData, ...overrides }
       const sanitizeNumber = (val: any) => {
         if (!val) return null
         const num = Number(val.toString().replace(/\./g, '').replace(',', '.'))
@@ -671,18 +742,21 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
       ]
       const sanitizedNumeric: Record<string, number | null> = {}
       for (const field of numericFields) {
-        sanitizedNumeric[field] = sanitizeNumber(formData[field])
+        sanitizedNumeric[field] = sanitizeNumber(merged[field])
       }
+      // "De" (preco_revenda) não é mais digitado — é sempre igual ao Valor FIPE
+      // (12/08/2026, pedido da Adriana). Único ponto que grava esse campo.
+      sanitizedNumeric.preco_revenda = sanitizedNumeric.valor_fipe
       const payload = {
-        ...formData,
+        ...merged,
         ...sanitizedNumeric,
-        proprietario_telefone: sanitizePhone(formData.proprietario_telefone),
+        proprietario_telefone: sanitizePhone(merged.proprietario_telefone),
         proprietario_telefone_residencial: sanitizePhone(
-          formData.proprietario_telefone_residencial,
+          merged.proprietario_telefone_residencial,
         ),
-        proprietario_telefone_trabalho: sanitizePhone(formData.proprietario_telefone_trabalho),
-        final_placa: extractFinalPlaca(formData.placa),
-        is_consignado: formData.tipo_entrada === 'consignacao',
+        proprietario_telefone_trabalho: sanitizePhone(merged.proprietario_telefone_trabalho),
+        final_placa: extractFinalPlaca(merged.placa),
+        is_consignado: merged.tipo_entrada === 'consignacao',
         status,
         updated_at: new Date().toISOString(),
       }
@@ -695,25 +769,165 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
         ? await supabase.from('veiculos').update(payload).eq('id', payload.id).select()
         : await supabase.from('veiculos').insert([payload]).select()
       if (error) throw error
-      if (data && data[0]) {
-        setFormData((p: any) => ({ ...p, id: data[0].id }))
+      const savedId = data && data[0] ? data[0].id : null
+      if (savedId) {
+        setFormData((p: any) => ({ ...p, ...overrides, id: savedId }))
         await saveListingPreference(
-          data[0].id,
+          savedId,
           'mercadolivre',
-          mlListingTypeToPreference(formData.ml_listing_type || 'silver'),
+          mlListingTypeToPreference(merged.ml_listing_type || 'silver'),
         )
       }
       toast({ title: 'Veículo salvo com sucesso!' })
       onSuccess()
       if (shouldClose) onClose()
+      return savedId
     } catch (err: any) {
       toast({
         title: 'Erro ao salvar',
         description: err.message || 'Falha ao salvar o veículo',
         variant: 'destructive',
       })
+      return null
     } finally {
       setLoading(false)
+    }
+  }
+
+  // Botão único "Validar e Salvar": substitui "Aprovar e Publicar" + "Salvar
+  // Veículo" (12/08/2026). Valida os campos obrigatórios, salva e roda o
+  // mapeamento de catálogo Webmotors (wm-mapear-veiculo) na hora, mostrando os
+  // candidatos aqui mesmo quando a confiança automática não é suficiente — não
+  // manda pra uma tela separada depois. Não publica em plataforma nenhuma: só
+  // libera o veículo pra fila de sincronização (isso é feito pelo toggle da
+  // tela Portais ou pelo "Sincronizar Agora").
+  const handleValidarESalvar = async () => {
+    const { ok, firstErrorTab } = validatePortalFields()
+    if (!ok) {
+      if (firstErrorTab) setActiveTab(firstErrorTab)
+      return
+    }
+
+    let valorFipeAtual = Number(formData.valor_fipe) || 0
+    const overrides: Record<string, any> = { requires_review: false }
+
+    // Busca a FIPE automaticamente pela placa se faltar — sem FIPE não dá pra
+    // validar a faixa de 65%-135% do "Por", nem preencher o "De" (que agora é
+    // sempre igual ao Valor FIPE, 12/08/2026).
+    if (!valorFipeAtual && formData.placa) {
+      setLoadingWmMapeamento(true)
+      try {
+        const { data: placaData, error: placaError } = await supabase.functions.invoke(
+          'consultar-placa',
+          { body: { placa: formData.placa } },
+        )
+        if (!placaError && placaData?.success && placaData.data?.preco_fipe) {
+          valorFipeAtual = Number(placaData.data.preco_fipe) || 0
+          overrides.valor_fipe = placaData.data.preco_fipe
+          overrides.info_personalizadas = {
+            ...(formData.info_personalizadas || {}),
+            codigo_fipe: placaData.data.codigo_fipe,
+            url_fipe: placaData.data.url_fipe,
+            historico_fipe: placaData.data.historico_fipe,
+          }
+        }
+      } finally {
+        setLoadingWmMapeamento(false)
+      }
+    }
+
+    // Faixa aceita pela Webmotors: "Por" entre 65% e 135% da FIPE (12/08/2026,
+    // corrigido — antes essa faixa validava o "De" por engano). Decisão da
+    // Adriana: manter os 135% cheios mesmo sabendo que, acima de 100% da FIPE,
+    // o "De" (=FIPE) fica menor que o "Por" — o que um teste ao vivo na Honda
+    // WR-V mostrou que a Webmotors bloqueia com CodigoRetorno 22|78. Risco
+    // aceito conscientemente; não é bug se isso acontecer.
+    const vendaAtual = Number(formData.preco_venda) || 0
+    if (vendaAtual > 0 && valorFipeAtual > 0) {
+      const min = valorFipeAtual * 0.65
+      const max = valorFipeAtual * 1.35
+      if (vendaAtual < min || vendaAtual > max) {
+        toast({
+          title: 'Preço de Venda fora da faixa FIPE',
+          description: `Precisa ficar entre R$ ${min.toLocaleString('pt-BR', { maximumFractionDigits: 0 })} e R$ ${max.toLocaleString('pt-BR', { maximumFractionDigits: 0 })} (65%-135% da FIPE) para publicar na Webmotors.`,
+          variant: 'destructive',
+        })
+        setActiveTab('geral')
+        return
+      }
+    }
+
+    const savedId = await save('disponivel', false, overrides)
+    if (!savedId) return
+
+    if (!valorFipeAtual) {
+      toast({
+        title: 'Sem Valor FIPE',
+        description:
+          'Preencha a placa (Consultar Placa Inteligente) ou o Valor FIPE manualmente antes de anunciar na Webmotors.',
+      })
+    }
+
+    setLoadingWmMapeamento(true)
+    try {
+      const { data: mapData, error: mapError } = await supabase.functions.invoke(
+        'wm-mapear-veiculo',
+        { body: { veiculo_id: savedId } },
+      )
+      if (mapError) throw mapError
+      if (mapData?.status === 'mapeado') {
+        toast({ title: 'Veículo validado e liberado para sincronização com as plataformas!' })
+        onClose()
+      } else if (mapData?.status === 'revisao_necessaria') {
+        const { data: mapeamento } = await supabase
+          .from('wm_mapeamento_veiculos')
+          .select('erro_msg, candidatos_modelo, candidatos_versao')
+          .eq('veiculo_id', savedId)
+          .maybeSingle()
+        setWmMapeamentoDialog({
+          veiculoId: savedId,
+          motivo: mapData.motivo || 'desconhecido',
+          erroMsg: mapeamento?.erro_msg || null,
+          candidatosModelo: mapeamento?.candidatos_modelo || [],
+          candidatosVersao: mapeamento?.candidatos_versao || [],
+        })
+      } else {
+        onClose()
+      }
+    } catch (err: any) {
+      toast({
+        title: 'Veículo salvo, mas não foi possível checar o mapeamento Webmotors agora',
+        description: err.message,
+      })
+      onClose()
+    } finally {
+      setLoadingWmMapeamento(false)
+    }
+  }
+
+  const handleConfirmarMapeamento = async (codigoModeloWm?: string, codigoVersaoWm?: string) => {
+    if (!wmMapeamentoDialog) return
+    setLoadingWmMapeamento(true)
+    try {
+      const { error } = await supabase.functions.invoke('wm-confirmar-mapeamento', {
+        body: {
+          veiculo_id: wmMapeamentoDialog.veiculoId,
+          codigo_modelo_wm: codigoModeloWm,
+          codigo_versao_wm: codigoVersaoWm,
+        },
+      })
+      if (error) throw error
+      toast({ title: 'Mapeamento confirmado! Veículo liberado para sincronização.' })
+      setWmMapeamentoDialog(null)
+      onClose()
+    } catch (err: any) {
+      toast({
+        title: 'Erro ao confirmar mapeamento',
+        description: err.message,
+        variant: 'destructive',
+      })
+    } finally {
+      setLoadingWmMapeamento(false)
     }
   }
 
@@ -1000,7 +1214,11 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
           </DialogTitle>
         </DialogHeader>
 
-        <Tabs defaultValue="geral" className="flex-1 flex flex-col overflow-hidden">
+        <Tabs
+          value={activeTab}
+          onValueChange={setActiveTab}
+          className="flex-1 flex flex-col overflow-hidden"
+        >
           <TabsList className="bg-white border-b rounded-none w-full justify-start px-6 py-2 gap-4 shrink-0 overflow-x-auto">
             <TabsTrigger value="geral">
               <Settings className="w-4 h-4 mr-2" /> Geral & Valores
@@ -1297,6 +1515,7 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
                       onChange={(v) => {
                         setFormData({ ...formData, valor_fipe: v })
                         validateNumericField('valor_fipe', v, { min: 0 })
+                        validatePrecoVendaFipe(String(formData.preco_venda || ''), Number(v) || 0)
                       }}
                     />
                     {validationErrors.valor_fipe && (
@@ -1310,12 +1529,31 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
                       onChange={(v) => {
                         setFormData({ ...formData, preco_venda: v })
                         validateNumericField('preco_venda', v, { min: 0 })
+                        validatePrecoVendaFipe(v)
                       }}
                       className="text-green-700 font-bold"
                     />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Precisa ficar entre 65% e 135% do Valor FIPE — é a faixa que a Webmotors
+                      aceita.
+                    </p>
                     {validationErrors.preco_venda && (
                       <p className="text-xs text-red-500 mt-1">{validationErrors.preco_venda}</p>
                     )}
+                    {validationErrors.preco_venda_fipe && (
+                      <p className="text-xs text-red-500 mt-1">
+                        {validationErrors.preco_venda_fipe}
+                      </p>
+                    )}
+                  </div>
+                  <div>
+                    <Label>Preço "De" (Webmotors)</Label>
+                    <CurrencyInput value={formData.valor_fipe || ''} disabled className="bg-gray-100 text-gray-600" />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Preço riscado de vitrine, exigido pela Webmotors — preenchido
+                      automaticamente com o Valor FIPE, não é editável aqui. Pra mudar, ajuste o
+                      Valor FIPE acima.
+                    </p>
                   </div>
                   <div>
                     <Label>Preço Mínimo</Label>
@@ -2405,37 +2643,92 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
               Salvar como Rascunho
             </Button>
             <Button
-              variant="outline"
-              onClick={() => {
-                setFormData((p: any) => ({ ...p, requires_review: false }))
-                save('disponivel', true)
-                toast({ title: 'Veículo aprovado e publicado!' })
-              }}
-              disabled={loading}
-              className="bg-green-600 hover:bg-green-700 text-white font-bold"
-            >
-              <CheckCircle className="w-4 h-4 mr-2" /> Aprovar e Publicar
-            </Button>
-            <Button
-              onClick={() => {
-                const photoCount = formData.fotos?.length || 0
-                if (photoCount < 20) {
-                  toast({
-                    title: '⚠️ Roteiro de fotos incompleto',
-                    description: `${photoCount}/20 fotos. Complete o roteiro de 20 fotos para publicar.`,
-                    variant: 'destructive',
-                  })
-                }
-                if (!validatePortalFields()) return
-                save('disponivel', true)
-              }}
-              disabled={loading}
+              onClick={handleValidarESalvar}
+              disabled={loading || loadingWmMapeamento}
               className="bg-blue-600 hover:bg-blue-700 text-white font-bold"
             >
-              <Send className="w-4 h-4 mr-2" /> Salvar Veículo
+              {loadingWmMapeamento ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <CheckCircle className="w-4 h-4 mr-2" />
+              )}
+              Validar e Salvar
             </Button>
           </div>
         </Tabs>
+
+        {/* Mapeamento Webmotors: candidatos quando o auto-match não teve confiança suficiente */}
+        <Dialog
+          open={!!wmMapeamentoDialog}
+          onOpenChange={(open) => !open && setWmMapeamentoDialog(null)}
+        >
+          <DialogContent className="max-w-lg">
+            <DialogHeader>
+              <DialogTitle>Confirmar mapeamento Webmotors</DialogTitle>
+            </DialogHeader>
+            {wmMapeamentoDialog && (
+              <div className="space-y-4">
+                <p className="text-sm text-gray-600">
+                  {wmMapeamentoDialog.erroMsg ||
+                    'Não foi possível casar automaticamente com o catálogo da Webmotors.'}
+                </p>
+                {wmMapeamentoDialog.motivo === 'modelo' &&
+                  wmMapeamentoDialog.candidatosModelo.length > 0 && (
+                    <div className="space-y-2">
+                      <Label>Escolha o modelo correto:</Label>
+                      {wmMapeamentoDialog.candidatosModelo.map((c) => (
+                        <Button
+                          key={c.codigo_wm}
+                          variant="outline"
+                          className="w-full justify-between"
+                          disabled={loadingWmMapeamento}
+                          onClick={() => handleConfirmarMapeamento(c.codigo_wm, undefined)}
+                        >
+                          <span>{c.nome_wm}</span>
+                          <span className="text-xs text-gray-400">
+                            {Math.round((c.score || 0) * 100)}%
+                          </span>
+                        </Button>
+                      ))}
+                    </div>
+                  )}
+                {wmMapeamentoDialog.motivo === 'versao' &&
+                  wmMapeamentoDialog.candidatosVersao.length > 0 && (
+                    <div className="space-y-2">
+                      <Label>Escolha a versão correta:</Label>
+                      {wmMapeamentoDialog.candidatosVersao.map((c) => (
+                        <Button
+                          key={c.codigo_wm}
+                          variant="outline"
+                          className="w-full justify-between"
+                          disabled={loadingWmMapeamento}
+                          onClick={() => handleConfirmarMapeamento(undefined, c.codigo_wm)}
+                        >
+                          <span>{c.nome_wm}</span>
+                          <span className="text-xs text-gray-400">
+                            {Math.round((c.score || 0) * 100)}%
+                          </span>
+                        </Button>
+                      ))}
+                    </div>
+                  )}
+                {(wmMapeamentoDialog.motivo === 'marca' ||
+                  wmMapeamentoDialog.motivo === 'catalogo_wm') && (
+                  <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded p-2">
+                    Esse caso não tem escolha automática — ajuste o cadastro (marca, cor, câmbio ou
+                    combustível) pra bater com o catálogo da Webmotors, ou peça pra cadastrar o
+                    termo equivalente.
+                  </p>
+                )}
+                <div className="flex justify-end">
+                  <Button variant="outline" onClick={() => setWmMapeamentoDialog(null)}>
+                    Fechar (o veículo já foi salvo, só o mapeamento Webmotors ficou pendente)
+                  </Button>
+                </div>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
 
         {/* MEDIA CENTER DIALOG */}
         <Dialog open={isMediaCenterOpen} onOpenChange={setIsMediaCenterOpen}>

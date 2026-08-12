@@ -1,0 +1,17 @@
+-- Desliga o cron de sincronização automática da Webmotors (rodava a cada 30
+-- min via pg_cron, sem entrada de migration correspondente — foi criado
+-- direto via SQL). Foi a causa raiz de um anúncio duplicado real (ver
+-- docs/webmotors-integracao.md, 10/08/2026): o robô se auto-reenfileirava e
+-- publicava de novo antes do bug do trigger ser corrigido.
+--
+-- Decisão da Adriana em 12/08/2026: toda validação/checagem prévia passa a
+-- rodar no cadastro do veículo (botão "Validar e Salvar"), e a sincronização
+-- de fato passa a ser só manual, pelo botão "Sincronizar Agora" (painel por
+-- plataforma em Portais). ml-sync-cron-job (Mercado Livre) NÃO foi pedido
+-- pra desligar — continua ativo.
+--
+-- SÓ APLICAR depois de testar de ponta a ponta o fluxo novo (cadastro →
+-- validar e salvar → mapeamento Webmotors → sincronizar agora), pra não
+-- ficar sem nenhuma sincronização acontecendo enquanto o botão manual não
+-- está validado em produção.
+select cron.unschedule('wm-sync-cron-job');

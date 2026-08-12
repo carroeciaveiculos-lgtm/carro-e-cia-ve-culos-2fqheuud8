@@ -1,6 +1,7 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from 'jsr:@supabase/supabase-js@2'
 import { GeminiClient } from '../_shared/gemini-client.ts'
+import { COLUNAS_VEICULO_SEGURAS } from '../_shared/veiculo-safe-fields.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -53,7 +54,7 @@ const VEHICLE_FUNCTIONS = [
 
 async function executeFunction(name: string, args: any, supabase: any): Promise<any> {
   if (name === 'buscar_veiculos_estoque') {
-    let q = supabase.from('veiculos').select('*').eq('status', 'disponivel')
+    let q = supabase.from('veiculos').select(COLUNAS_VEICULO_SEGURAS).eq('status', 'disponivel')
     if (args.marca) q = q.ilike('marca', `%${args.marca}%`)
     if (args.modelo) q = q.ilike('modelo', `%${args.modelo}%`)
     if (args.preco_max) q = q.lte('preco_venda', args.preco_max)
@@ -66,7 +67,7 @@ async function executeFunction(name: string, args: any, supabase: any): Promise<
   if (name === 'buscar_veiculo_especifico') {
     const { data, error } = await supabase
       .from('veiculos')
-      .select('*')
+      .select(COLUNAS_VEICULO_SEGURAS)
       .eq('id', args.veiculo_id)
       .single()
     if (error) return { error: error.message }

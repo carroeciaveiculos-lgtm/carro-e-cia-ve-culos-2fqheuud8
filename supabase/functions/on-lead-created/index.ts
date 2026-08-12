@@ -1,5 +1,6 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from 'jsr:@supabase/supabase-js@2'
+import { enviarContatoBrevo } from '../_shared/brevo.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -21,7 +22,7 @@ Deno.serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     const supabase = createClient(supabaseUrl, supabaseKey)
 
-    const { nome, email, telefone } = record
+    const { id: leadId, nome, email, telefone } = record
 
     // 1. E-mail de Boas-Vindas Automático (Resend)
     if (email) {
@@ -55,45 +56,18 @@ Deno.serve(async (req) => {
       }
     }
 
-    // 2. Injeção Direta no Brevo (Assíncrono e Resiliente)
+    // 2. Injeção Direta no Brevo — via helper compartilhado (12/08/2026, ver
+    // _shared/brevo.ts) pra usar a mesma chave/log que lead-automation.
     if (email) {
       const { data: config } = await supabase
         .from('configuracoes_api')
-        .select('*')
+        .select('auth_token')
         .eq('portal', 'Brevo')
-        .single()
+        .maybeSingle()
 
-      if (config && config.ativo && config.api_key && config.auth_token) {
-        const listId = parseInt(config.auth_token, 10)
-        if (!isNaN(listId)) {
-          const brevoRes = await fetch('https://api.brevo.com/v3/contacts', {
-            method: 'POST',
-            headers: {
-              accept: 'application/json',
-              'content-type': 'application/json',
-              'api-key': config.api_key,
-            },
-            body: JSON.stringify({
-              email: email,
-              attributes: {
-                NOME: nome,
-                WHATSAPP: telefone,
-              },
-              listIds: [listId],
-              updateEnabled: true,
-            }),
-          })
-
-          if (!brevoRes.ok) {
-            const err = await brevoRes.text()
-            // Logar falha de integração silenciosamente sem travar o lead
-            await supabase.from('logs_integracao').insert({
-              portal: 'Brevo',
-              status: 'falha',
-              payload_erro: { error: err, email },
-            })
-          }
-        }
+      const listId = config?.auth_token ? parseInt(config.auth_token, 10) : NaN
+      if (!isNaN(listId)) {
+        await enviarContatoBrevo(supabase, leadId || null, { email, nome, telefone, listId })
       }
     }
 
