@@ -68,14 +68,24 @@ export async function triggerPlatformSync(
   if (!fn) {
     return { success: false, error: `Sem sincronização real configurada para "${platform}" ainda.` }
   }
+  // sync-plataforma (Mercado Livre) só sincroniza 1 veículo por vez e exige
+  // veiculo_id + platform no corpo — sem veiculoId aqui não tem o que fazer
+  // (não existe endpoint de "sincronizar tudo" pra essa plataforma; o botão
+  // que precisava disso foi ajustado em PlatformSyncPanel.tsx pra sincronizar
+  // veículo a veículo em vez de chamar isso sem id).
+  if (platform === 'mercadolivre' && !veiculoId) {
+    return {
+      success: false,
+      error: 'Sincronização em massa não existe pro Mercado Livre — sincronize veículo a veículo.',
+    }
+  }
+
   let lastError = ''
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
     try {
       const body =
         platform === 'mercadolivre'
-          ? veiculoId
-            ? { veiculo_id: veiculoId, action: 'sync_now' }
-            : { action: 'sync_now' }
+          ? { veiculo_id: veiculoId, platform: 'mercadolivre', action: 'publish' }
           : veiculoId
             ? { veiculo_id: veiculoId }
             : {}
@@ -95,6 +105,12 @@ export async function triggerPlatformSync(
           error: errMsg,
           isNetworkError: errMsg.includes('Failed to fetch') || errMsg.includes('Network error'),
         }
+      }
+      // sync-plataforma (ML) responde {success, message} pra 1 veículo, sem
+      // "results" — trata separado de wm-sync (que processa em lote).
+      if (platform === 'mercadolivre') {
+        if (!data?.success) return { success: false, error: data?.message || `Falha ao sincronizar com ${platform}` }
+        return { success: true, processed: 1 }
       }
       if (data && data.error) return { success: false, error: data.error }
       const results: Array<{ status?: string; error?: string }> = Array.isArray(data?.results)

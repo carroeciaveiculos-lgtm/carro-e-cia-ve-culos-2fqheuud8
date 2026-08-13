@@ -14,6 +14,7 @@ import {
   type PlatformVehicleRow,
   type PlatformSyncLog,
 } from '@/services/platform-sync'
+import { batchSyncVehicles } from '@/services/sync-plataforma'
 import { getImageUrl } from '@/lib/image-utils'
 
 // Generaliza WMDashboard.tsx (12/08/2026) — usado dentro de um Accordion em
@@ -56,6 +57,37 @@ export function PlatformSyncPanel({ platformSlug, platformColor }: Props) {
     setSyncing(true)
     setSyncError(null)
     try {
+      if (platformSlug === 'mercadolivre') {
+        // sync-plataforma (a função real por trás do ML) só sincroniza um
+        // veículo por vez — não existe modo "tudo de uma vez" pra essa
+        // plataforma. triggerPlatformSync manda um corpo sem veiculo_id
+        // nesse caso, que sempre falhava com um erro genérico. Sincroniza
+        // um a um os veículos já rastreados nessa plataforma.
+        if (vehicles.length === 0) {
+          toast({ title: 'Nada para sincronizar', description: 'Nenhum veículo publicado nessa plataforma ainda.' })
+          return
+        }
+        const { successCount, failCount, results } = await batchSyncVehicles(
+          vehicles.map((v) => v.veiculo_id),
+          'mercadolivre',
+        )
+        await loadAll()
+        if (failCount > 0) {
+          const msg = results
+            .filter((r) => !r.success)
+            .map((r) => r.message)
+            .join('; ')
+          setSyncError(msg)
+          toast({
+            variant: 'destructive',
+            title: `${successCount} ok, ${failCount} com erro`,
+            description: msg,
+          })
+        } else {
+          toast({ title: 'Sincronização concluída', description: `${successCount} veículo(s) sincronizado(s).` })
+        }
+        return
+      }
       const result = await triggerPlatformSync(platformSlug)
       if (!result.success) throw new Error(result.error || 'Falha na sincronização')
       await loadAll()

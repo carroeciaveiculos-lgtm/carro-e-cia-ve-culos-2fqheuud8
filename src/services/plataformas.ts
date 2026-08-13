@@ -56,6 +56,7 @@ export interface VeiculoSync {
   direcao: string | null
   descricao: string | null
   portas: number | null
+  categoria: string | null
   created_at: string | null
   publicacoes?: PublicacaoStatus[]
 }

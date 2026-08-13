@@ -210,6 +210,19 @@ export default function Portais() {
     publicar: boolean,
   ): Promise<{ success: boolean; message: string }> => {
     if (slug === 'mercadolivre') {
+      // Achado real (12/08/2026, veículo City): sincronizar um veículo por
+      // vez aqui não passava pelo preflight (só o "sincronizar selecionados"
+      // em lote passava). Confere antes de gastar uma chamada à API do ML.
+      if (publicar) {
+        const veiculo = vehicles.find((v) => v.id === veiculoId)
+        const issues = veiculo ? validateMLPreflight(veiculo) : []
+        if (issues.length > 0) {
+          return {
+            success: false,
+            message: `Corrija antes de sincronizar: ${issues.join('; ')}.`,
+          }
+        }
+      }
       const result = await syncVehicleToPlatform(
         veiculoId,
         'mercadolivre',
