@@ -93,10 +93,12 @@ WhatsApp", confirme por qual caminho ele entrou antes de assumir bug.
   `WhatsAppScheduler.tsx`, filtra `status='APPROVED'`) — não há função que
   sincroniza da Meta nem UI de criar/editar. Aguardando Adriana mandar um
   modelo de referência antes de desenhar.
-- **"Pipeline do conversador" — pedido por Adriana em 12/08/2026, escopo
-  ainda não claro.** Aguardando ela esclarecer se é um inbox das conversas da
-  Clara (WhatsApp) ou é o mesmo painel de templates acima, mais o modelo de
-  referência visual.
+- **"Fase 4 — tela Conversador" (inbox das conversas da Clara, separado do
+  Kanban) — escopo já definido e aprovado, plano completo em
+  `C:\Users\adria\.claude\plans\sequential-sleeping-alpaca.md`. Fases 1-3
+  (function-calling, pipeline nova no Kanban, envio de foto/vídeo) já
+  implementadas — só falta a Fase 4 (a tela em si). Bloqueada esperando
+  Adriana mandar o modelo visual de referência que ela mencionou.
 - **`operacional.leads` (tabela vazia, órfã, sem referência no código) —
   limpeza pedida por Adriana em 12/08/2026, deixada pendente a pedido dela.**
   Não fazer `DROP` sem autorização explícita separada quando ela pedir.
