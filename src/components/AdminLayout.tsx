@@ -17,6 +17,7 @@ import {
   BarChart,
   HelpCircle,
   MessageSquareWarning,
+  MessageSquare,
   Megaphone,
   Cpu,
   Bot,
@@ -39,6 +40,7 @@ const SIDEBAR_MENUS = [
     items: [
       { label: 'Estoque', path: '/admin/estoque', icon: Car },
       { label: 'Leads (CRM)', path: '/admin/crm', icon: Users },
+      { label: 'Conversador', path: '/admin/conversas', icon: MessageSquare },
       { label: 'Visão Geral (ROI)', path: '/admin/relatorios', icon: BarChart },
       { label: 'Avaliações', path: '/admin/avaliacao', icon: ShieldCheck },
       { label: 'Financiamentos', path: '/admin/financiamento', icon: DollarSign },

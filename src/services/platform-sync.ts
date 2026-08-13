@@ -189,6 +189,28 @@ export async function getPlatformVehicles(
   return (data || []) as unknown as PlatformVehicleRow[]
 }
 
+export interface WMModalidadeQuota {
+  codigo_wm: string
+  descricao: string | null
+  quantidade_total: number | null
+  quantidade_usados: number | null
+  atualizado_em: string | null
+}
+
+// Cota de anúncios SIMULTÂNEOS por modalidade contratada na Webmotors — não é
+// limite de estoque, é quanto pode ficar ativo ao mesmo tempo (pedido da
+// Adriana, 13/08/2026). Atualizado automaticamente a cada rodada do wm-sync,
+// ou manualmente via wm-catalog-fetch (catalogo=modalidade).
+export async function getWMModalidadesQuota(): Promise<WMModalidadeQuota[]> {
+  const { data, error } = await supabase
+    .from('wm_modalidades')
+    .select('codigo_wm, descricao, quantidade_total, quantidade_usados, atualizado_em')
+    .not('quantidade_total', 'is', null)
+    .order('descricao')
+  if (error) throw error
+  return data || []
+}
+
 export async function getPlatformSyncLogs(platform: string, limit = 20): Promise<PlatformSyncLog[]> {
   const { data: plat } = await supabase
     .from('plataformas')

@@ -7,6 +7,11 @@ import {
   buildExcluirCarroXML,
   buildObterEstoqueAtualXML,
   parseEstoqueAtual,
+  buildObterModalidadeXML,
+  parseModalidades,
+  buildIncluirFotoXML,
+  buildObterFotosCarroXML,
+  parseQuantidadeFotos,
   callSOAP,
   type WMCredentials,
   type MapeamentoWM,
@@ -15,6 +20,68 @@ import {
 
 function normalizarPlaca(placa: string | null | undefined): string {
   return (placa || '').toUpperCase().replace(/[^A-Z0-9]/g, '')
+}
+
+// Tabela oficial da Webmotors (confirmada pela Adriana, 13/08/2026):
+// 21|9 = foto acima de 500 Kbytes; 21|10 = formato inválido. Nossas fotos
+// originais vêm de câmera de celular, 3-4MB — sempre estouravam o limite. O
+// CDN (Cloudflare Image Resizing) já sabe redimensionar via URL, sem precisar
+// de nenhum processamento aqui: testado ao vivo, 1280px/qualidade 80 fica em
+// ~150KB, bem dentro do limite, mantendo qualidade boa o suficiente pro
+// anúncio.
+function urlFotoRedimensionada(urlOriginal: string): string {
+  if (!urlOriginal.includes('carroeciamotors.com.br')) return urlOriginal
+  const base = urlOriginal.replace(/^https?:\/\//, '')
+  return `https://imagens.carroeciamotors.com.br/cdn-cgi/image/width=1280,quality=80,format=jpeg/https://${base}`
+}
+
+function arrayBufferParaBase64(buffer: ArrayBuffer): string {
+  const bytes = new Uint8Array(buffer)
+  let binary = ''
+  for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i])
+  return btoa(binary)
+}
+
+// Achado via WSDL (13/08/2026): fotos não vão no IncluirCarro, é uma chamada
+// separada por foto, depois de ter o CodigoAnuncio. IncluirFotoUrl (manda a
+// URL, Webmotors busca sozinha) sempre voltou 21|10 mesmo com imagem trivial
+// de outro domínio — descartado. O exemplo OFICIAL do manual da Webmotors usa
+// IncluirFoto com os bytes da imagem (confirmado pela Adriana, 13/08/2026):
+// baixamos a versão redimensionada do nosso CDN e mandamos em base64. Melhor
+// esforço: uma foto falhando não derruba a publicação (que já aconteceu).
+async function enviarFotos(
+  hash: string,
+  codigoAnuncio: string,
+  fotos: string[],
+): Promise<{ enviadas: number; falhas: number; primeiroErro?: string }> {
+  let enviadas = 0
+  let falhas = 0
+  let primeiroErro: string | undefined
+  for (const urlOriginal of fotos) {
+    if (typeof urlOriginal !== 'string' || !urlOriginal) continue
+    try {
+      const urlRedimensionada = urlFotoRedimensionada(urlOriginal)
+      const imgRes = await fetch(urlRedimensionada)
+      if (!imgRes.ok) {
+        falhas++
+        if (!primeiroErro) primeiroErro = `Falha ao baixar foto do CDN: HTTP ${imgRes.status}`
+        continue
+      }
+      const base64Image = arrayBufferParaBase64(await imgRes.arrayBuffer())
+      const xml = buildIncluirFotoXML(hash, codigoAnuncio, base64Image)
+      const res = await callSOAP(xml, 'IncluirFoto', hash)
+      if (res.success) {
+        enviadas++
+      } else {
+        falhas++
+        if (!primeiroErro) primeiroErro = res.raw?.slice(0, 800) || res.error
+      }
+    } catch (err: any) {
+      falhas++
+      if (!primeiroErro) primeiroErro = err.message
+    }
+  }
+  return { enviadas, falhas, primeiroErro }
 }
 
 const corsHeaders = {
@@ -110,6 +177,39 @@ Deno.serve(async (req: Request) => {
       const estoqueRes = await callSOAP(buildObterEstoqueAtualXML(hash), 'ObterEstoqueAtual', hash)
       if (estoqueRes.success && estoqueRes.raw) {
         estoqueAtualWebmotors = parseEstoqueAtual(estoqueRes.raw)
+      }
+    } catch {
+      // fail-open — ver comentário acima
+    }
+
+    // Cota de anúncios simultâneos por modalidade (pedido da Adriana,
+    // 13/08/2026). Não é limite de estoque — é quanto pode ficar ATIVO ao
+    // mesmo tempo em cada modalidade contratada. Atualiza wm_modalidades a
+    // cada rodada (mesmo padrão de persistência do wm-catalog-fetch manual) e
+    // usa o resultado pra travar IncluirCarro sem vaga, abaixo. Fail-open: se
+    // a consulta falhar, não trava nada por falta de dado (evita travar
+    // publicação legítima por um erro de rede nessa checagem extra).
+    const quotaPorModalidade: Record<string, { total: number; usados: number }> = {}
+    try {
+      const modalidadeRes = await callSOAP(buildObterModalidadeXML(hash), 'ObterModalidade', hash)
+      if (modalidadeRes.success && modalidadeRes.raw) {
+        const modalidades = parseModalidades(modalidadeRes.raw)
+        for (const m of modalidades) {
+          quotaPorModalidade[m.codigoModalidade] = {
+            total: m.quantidadeTotal,
+            usados: m.quantidadeUsados,
+          }
+          await supabase.from('wm_modalidades').upsert(
+            {
+              codigo_wm: m.codigoModalidade,
+              descricao: m.descricao,
+              quantidade_total: m.quantidadeTotal,
+              quantidade_usados: m.quantidadeUsados,
+              atualizado_em: new Date().toISOString(),
+            },
+            { onConflict: 'codigo_wm' },
+          )
+        }
       }
     } catch {
       // fail-open — ver comentário acima
@@ -245,6 +345,20 @@ Deno.serve(async (req: Request) => {
         continue
       }
 
+      // De/para opcionais (13/08/2026): termos de veiculos.diferenciais sem
+      // equivalente em wm_opcionais.nome_crm simplesmente não viram opcional
+      // lá — não bloqueia a publicação, só não aparece esse badge específico.
+      const diferenciais: string[] = Array.isArray(veiculo.diferenciais) ? veiculo.diferenciais : []
+      let codigosOpcionais: string[] = []
+      if (diferenciais.length > 0) {
+        const { data: opcionaisRows } = await supabase
+          .from('wm_opcionais')
+          .select('codigo_wm')
+          .in('nome_crm', diferenciais)
+        codigosOpcionais = (opcionaisRows || []).map((o: any) => o.codigo_wm)
+      }
+      const fotosVeiculo: string[] = Array.isArray(veiculo.fotos) ? veiculo.fotos : []
+
       try {
         if (pub.status === 'pending_create' || pub.status === 'agendado') {
           const placaVeiculo = normalizarPlaca(veiculo.placa)
@@ -268,7 +382,19 @@ Deno.serve(async (req: Request) => {
             results.push({ id: pub.id, status: 'already_published', warning: msg })
             continue
           }
-          const xml = buildIncluirCarroXML(veiculo, hash, mapa)
+
+          const quota = quotaPorModalidade[mapa.codigo_modalidade_wm]
+          if (quota && quota.usados >= quota.total) {
+            const msg = `Sem vaga de anúncio simultâneo na modalidade ${mapa.codigo_modalidade_wm} (${quota.usados}/${quota.total} em uso). Publicação bloqueada — libere uma vaga (encerre outro anúncio) ou contrate mais cota antes de tentar de novo.`
+            await supabase
+              .from('estoque_publicacoes')
+              .update({ status: 'error', erro_msg: msg })
+              .eq('id', pub.id)
+            results.push({ id: pub.id, status: 'error', error: msg })
+            continue
+          }
+
+          const xml = buildIncluirCarroXML(veiculo, hash, mapa, codigosOpcionais)
           const res = await callSOAP(xml, 'IncluirCarro', hash)
           await registrarTrocaXML(supabase, veiculo.id, 'IncluirCarro', xml, res.raw)
           if (res.success && res.codigoAnuncio) {
@@ -289,7 +415,13 @@ Deno.serve(async (req: Request) => {
               .from('wm_mapeamento_veiculos')
               .update({ codigo_anuncio_wm: res.codigoAnuncio })
               .eq('veiculo_id', veiculo.id)
-            results.push({ id: pub.id, status: 'created', codigoAnuncio: res.codigoAnuncio })
+            const fotosResultado = await enviarFotos(hash, res.codigoAnuncio, fotosVeiculo)
+            results.push({
+              id: pub.id,
+              status: 'created',
+              codigoAnuncio: res.codigoAnuncio,
+              fotos: fotosResultado,
+            })
           } else {
             await supabase
               .from('estoque_publicacoes')
@@ -298,7 +430,7 @@ Deno.serve(async (req: Request) => {
             results.push({ id: pub.id, status: 'error', error: res.error })
           }
         } else if (pub.status === 'pending_update' && pub.post_id) {
-          const xml = buildAlterarCarroXML(veiculo, hash, mapa, pub.post_id)
+          const xml = buildAlterarCarroXML(veiculo, hash, mapa, pub.post_id, codigosOpcionais)
           const res = await callSOAP(xml, 'AlterarCarro', hash)
           await registrarTrocaXML(supabase, veiculo.id, 'AlterarCarro', xml, res.raw)
           if (res.success) {
@@ -306,7 +438,23 @@ Deno.serve(async (req: Request) => {
               .from('estoque_publicacoes')
               .update({ status: 'publicado', erro_msg: null })
               .eq('id', pub.id)
-            results.push({ id: pub.id, status: 'updated' })
+            // Só manda foto se o anúncio ainda não tem nenhuma — evita
+            // duplicar a cada AlterarCarro (ex: preço mudou de novo).
+            let fotosResultado: { enviadas: number; falhas: number } | null = null
+            try {
+              const fotosRes = await callSOAP(
+                buildObterFotosCarroXML(hash, pub.post_id),
+                'ObterFotosCarro',
+                hash,
+              )
+              const quantidadeAtual = fotosRes.success && fotosRes.raw ? parseQuantidadeFotos(fotosRes.raw) : -1
+              if (quantidadeAtual === 0 && fotosVeiculo.length > 0) {
+                fotosResultado = await enviarFotos(hash, pub.post_id, fotosVeiculo)
+              }
+            } catch {
+              // não bloqueia o update por falha nessa checagem extra
+            }
+            results.push({ id: pub.id, status: 'updated', fotos: fotosResultado })
           } else {
             await supabase
               .from('estoque_publicacoes')

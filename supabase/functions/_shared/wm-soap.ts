@@ -27,12 +27,29 @@ export interface MapeamentoWM {
   descricao_combustivel: string
 }
 
-// --- Endpoints Webmotors (homologação) ---
-// Fonte: documento "Credenciais, IDs e Configurações — Projeto Revenda" (03/08/2026)
+// --- Endpoints Webmotors ---
+// Fonte homologação: documento "Credenciais, IDs e Configurações — Projeto
+// Revenda" (03/08/2026). Fonte produção: collection Postman oficial (ver
+// docs/webmotors-integracao.md) — só o endpoint de estoque foi confirmado
+// por lá; o de autenticação segue o mesmo padrão (troca hportal.../
+// IntegracaoRevendedor/ por integracao...), não confirmado por documento
+// oficial ainda.
+//
+// Achado em auditoria (13/08/2026): o secret WM_AMBIENTE já existe desde
+// 29/07/2026, mas nenhum código nunca leu ele — os endpoints ficavam sempre
+// fixos em homologação. É provável que isso explique o erro 401/CodigoRetorno
+// 400 de 12/08/2026 (credenciais de produção trocadas, mas batendo no
+// servidor de homologação). Definir WM_AMBIENTE=producao pra usar os
+// endpoints reais.
+const WM_AMBIENTE = Deno.env.get('WM_AMBIENTE') || 'homologacao'
 const WM_AUTH_URL =
-  'https://hportal.webmotors.com.br/IntegracaoRevendedor/wsLoginSistemaRevendedor.asmx'
+  WM_AMBIENTE === 'producao'
+    ? 'https://integracao.webmotors.com.br/wsLoginSistemaRevendedor.asmx'
+    : 'https://hportal.webmotors.com.br/IntegracaoRevendedor/wsLoginSistemaRevendedor.asmx'
 const WM_ESTOQUE_URL =
-  'https://hportal.webmotors.com.br/IntegracaoRevendedor/wsEstoqueRevendedorWebMotors.asmx'
+  WM_AMBIENTE === 'producao'
+    ? 'https://integracao.webmotors.com.br/wsEstoqueRevendedorWebMotors.asmx'
+    : 'https://hportal.webmotors.com.br/IntegracaoRevendedor/wsEstoqueRevendedorWebMotors.asmx'
 
 // Namespaces SOAP
 const WM_AUTH_NAMESPACE = 'www.webmotors.com.br/wsLoginSistemaRevendedor'
@@ -120,9 +137,21 @@ export function buildAnuncioXML(
   veiculo: any,
   mapa: MapeamentoWM,
   codigoAnuncio: string | number = 0,
+  codigosOpcionais: string[] = [],
 ): string {
   const precoVenda = Number(veiculo.preco_venda) || 0
-  const precoRevenda = Number(veiculo.preco_revenda) || precoVenda
+  const precoRevendaBruto = Number(veiculo.preco_revenda) || 0
+  // Webmotors exige PrecoReal ("De") ESTRITAMENTE maior que PrecoVenda
+  // ("Por") — CodigoRetorno 22|78 quando não é (confirmado com o suporte
+  // Webmotors, 10/08/2026). Achado em auditoria (13/08/2026): 21 dos 27
+  // veículos disponíveis têm preco_revenda (hoje espelhando a FIPE) menor ou
+  // igual ao preço de venda — não existe um "De" honesto pra eles. Decisão da
+  // Adriana: nesses casos, não inventar um valor — omite a tag em vez de
+  // mandar De == Por ou De < Por. Testando se a Webmotors aceita sem ela.
+  const temPrecoRealValido = precoRevendaBruto > precoVenda
+  const precoRealTag = temPrecoRealValido
+    ? `\n      <PrecoReal>${precoRevendaBruto.toFixed(2)}</PrecoReal>`
+    : ''
   return `
       <CodigoAnuncio>${codigoAnuncio}</CodigoAnuncio>
       <CodigoMarca>${mapa.codigo_marca_wm}</CodigoMarca>
@@ -146,8 +175,7 @@ export function buildAnuncioXML(
       <Km>${veiculo.quilometragem || 0}</Km>
       <Licenciado>${snField(veiculo.licenciado, 'S')}</Licenciado>
       <Observacao>${escapeXml((veiculo.descricao || '').slice(0, 500))}</Observacao>
-      <Placa>${escapeXml(veiculo.placa || '')}</Placa>
-      <PrecoReal>${precoRevenda.toFixed(2)}</PrecoReal>
+      <Placa>${escapeXml(veiculo.placa || '')}</Placa>${precoRealTag}
       <PrecoVenda>${precoVenda.toFixed(2)}</PrecoVenda>
       <RevisadoOficinaAgendaDoCarro>${snField(veiculo.revisado_oficina)}</RevisadoOficinaAgendaDoCarro>
       <RevisoesEmConcessionaria>${snField(veiculo.revisoes_concessionaria)}</RevisoesEmConcessionaria>
@@ -155,13 +183,17 @@ export function buildAnuncioXML(
       <UnicoDono>${snField(veiculo.unico_dono)}</UnicoDono>
       <Leilao>N</Leilao>
       <DataInclusao></DataInclusao>
-      <DataUltimaAlteracao></DataUltimaAlteracao>
-      <Opcional></Opcional>
+      <DataUltimaAlteracao></DataUltimaAlteracao>${buildOpcionalTag(codigosOpcionais)}
       <CodigoRetorno></CodigoRetorno>`
 }
 
-export function buildIncluirCarroXML(veiculo: any, hash: string, mapa: MapeamentoWM): string {
-  const anuncioXml = buildAnuncioXML(veiculo, mapa, 0)
+export function buildIncluirCarroXML(
+  veiculo: any,
+  hash: string,
+  mapa: MapeamentoWM,
+  codigosOpcionais: string[] = [],
+): string {
+  const anuncioXml = buildAnuncioXML(veiculo, mapa, 0, codigosOpcionais)
   const innerXml = `
       <pHashAutenticacao>${hash}</pHashAutenticacao>
       <pAnuncio>${anuncioXml}
@@ -174,8 +206,9 @@ export function buildAlterarCarroXML(
   hash: string,
   mapa: MapeamentoWM,
   codigoAnuncio: string,
+  codigosOpcionais: string[] = [],
 ): string {
-  const anuncioXml = buildAnuncioXML(veiculo, mapa, codigoAnuncio)
+  const anuncioXml = buildAnuncioXML(veiculo, mapa, codigoAnuncio, codigosOpcionais)
   const innerXml = `
       <pHashAutenticacao>${hash}</pHashAutenticacao>
       <pAnuncio>${anuncioXml}
@@ -227,6 +260,128 @@ export function parseEstoqueAtual(xml: string): AnuncioWMResumo[] {
     }
   }
   return itens
+}
+
+// Achado em auditoria (13/08/2026): CodigoModalidade difere entre
+// homologação (2943) e produção (6351 pro CNPJ real) — e cada modalidade tem
+// cota própria (QuantidadeAnunciosTotal/QuantidadeAnuncios). Usado tanto pra
+// atualizar o catálogo (wm-catalog-fetch) quanto como trava antes de publicar
+// (wm-sync), pra não gastar chamada tentando IncluirCarro sem vaga.
+export function buildObterModalidadeXML(hash: string): string {
+  const innerXml = `
+      <pHashAutenticacao>${hash}</pHashAutenticacao>`
+  return wrapSOAP(WM_ESTOQUE_NAMESPACE, 'ObterModalidade', innerXml)
+}
+
+export interface ModalidadeWM {
+  codigoModalidade: string
+  descricao: string
+  quantidadeTotal: number
+  quantidadeUsados: number
+}
+
+export function parseModalidades(xml: string): ModalidadeWM[] {
+  const itens: ModalidadeWM[] = []
+  const regex = /<(?:\w+:)?ModalidadeWM>([\s\S]*?)<\/(?:\w+:)?ModalidadeWM>/g
+  let match
+  while ((match = regex.exec(xml)) !== null) {
+    const inner = match[1]
+    const codigoModalidade = extractTag(inner, 'CodigoModalidade')
+    const descricao = extractTag(inner, 'Descricao')
+    const total = extractTag(inner, 'QuantidadeAnunciosTotal')
+    const usados = extractTag(inner, 'QuantidadeAnuncios')
+    if (codigoModalidade) {
+      itens.push({
+        codigoModalidade,
+        descricao: descricao || '',
+        quantidadeTotal: total ? parseInt(total, 10) : 0,
+        quantidadeUsados: usados ? parseInt(usados, 10) : 0,
+      })
+    }
+  }
+  return adjustModalidadeQuotas(itens)
+}
+
+// Confirmado pela Adriana (13/08/2026): o total de 20 que a Webmotors reporta
+// no registro do "Anúncio Básico" é o teto da CONTA INTEIRA, não uma cota
+// exclusiva — dentro desses 20, 2 são reservados pra modalidade Vip. Total
+// realmente disponível pro Básico = total bruto (20) - total das outras
+// modalidades (Vip, 2) = 18. Sem esse ajuste, a trava de vaga em wm-sync
+// deixaria passar 2 anúncios Básico a mais do que a conta realmente comporta.
+function adjustModalidadeQuotas(modalidades: ModalidadeWM[]): ModalidadeWM[] {
+  if (modalidades.length <= 1) return modalidades
+  const totalOutras = modalidades
+    .filter((m) => m.descricao !== 'Anúncio Básico')
+    .reduce((acc, m) => acc + m.quantidadeTotal, 0)
+  return modalidades.map((m) =>
+    m.descricao === 'Anúncio Básico'
+      ? { ...m, quantidadeTotal: Math.max(0, m.quantidadeTotal - totalOutras) }
+      : m,
+  )
+}
+
+// Achado via WSDL público do serviço (?WSDL, 13/08/2026): Opcional no
+// IncluirCarro é um ArrayOfOpcionalWM (CodigoOpcional decimal + Descricao),
+// não texto livre — por isso a tag sempre ia vazia até aqui, e nenhum
+// opcional aparecia nos anúncios. Catálogo real via ObterOpcionais.
+export interface OpcionalWM {
+  codigoOpcional: string
+  descricao: string
+}
+
+export function parseOpcionais(xml: string): OpcionalWM[] {
+  const itens: OpcionalWM[] = []
+  const regex = /<(?:\w+:)?OpcionalWM>([\s\S]*?)<\/(?:\w+:)?OpcionalWM>/g
+  let match
+  while ((match = regex.exec(xml)) !== null) {
+    const inner = match[1]
+    const codigoOpcional = extractTag(inner, 'CodigoOpcional')
+    const descricao = extractTag(inner, 'Descricao')
+    if (codigoOpcional) {
+      itens.push({ codigoOpcional, descricao: descricao || '' })
+    }
+  }
+  return itens
+}
+
+function buildOpcionalTag(codigosOpcionais: string[]): string {
+  if (codigosOpcionais.length === 0) return '\n      <Opcional></Opcional>'
+  const itens = codigosOpcionais
+    .map((c) => `\n        <OpcionalWM><CodigoOpcional>${c}</CodigoOpcional></OpcionalWM>`)
+    .join('')
+  return `\n      <Opcional>${itens}\n      </Opcional>`
+}
+
+// Checa quantas fotos o anúncio já tem antes de mandar mais — sem isso, toda
+// vez que AlterarCarro roda de novo (ex: outro campo mudou) reenviaria as
+// mesmas fotos e duplicaria.
+export function buildObterFotosCarroXML(hash: string, codigoAnuncio: string | number): string {
+  const innerXml = `
+      <pHashAutenticacao>${hash}</pHashAutenticacao>
+      <pCodigoAnuncio>${codigoAnuncio}</pCodigoAnuncio>`
+  return wrapSOAP(WM_ESTOQUE_NAMESPACE, 'ObterFotosCarro', innerXml)
+}
+
+export function parseQuantidadeFotos(xml: string): number {
+  const q = extractTag(xml, 'QuantidadeFotos')
+  return q ? parseInt(q, 10) : 0
+}
+
+// Também via WSDL: fotos NÃO vão no IncluirCarro — é uma chamada separada por
+// foto, depois de ter o CodigoAnuncio. IncluirFotoUrl (URL direta) sempre
+// voltou 21|10 mesmo com imagem trivial de outro domínio — o exemplo OFICIAL
+// do manual da Webmotors (13/08/2026, confirmado pela Adriana) usa IncluirFoto
+// com os bytes da imagem, não URL. Usando esse em vez do Url.
+export function buildIncluirFotoXML(
+  hash: string,
+  codigoAnuncio: string | number,
+  base64Image: string,
+): string {
+  const innerXml = `
+      <pHashAutenticacao>${hash}</pHashAutenticacao>
+      <pByteImage>${base64Image}</pByteImage>
+      <pCodigoAnuncio>${codigoAnuncio}</pCodigoAnuncio>`
+  return wrapSOAP(WM_ESTOQUE_NAMESPACE, 'IncluirFoto', innerXml)
 }
 
 const AUTH_ACTIONS = new Set(['autenticar', 'Autenticar', 'LoginSistemaRevendedor'])

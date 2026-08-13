@@ -17,33 +17,26 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar'
 import {
   Search,
-  MessageCircle,
   Phone,
   Clock,
-  Send,
   CheckCircle2,
   XCircle,
   Target,
-  Instagram,
-  Facebook,
-  Globe,
   FileText,
   Kanban,
   List,
   Trash,
   Bot,
-  Calendar as CalendarIcon,
-  FilePlus,
   Car,
-  Store,
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { cn } from '@/lib/utils'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
-import { getWhatsAppLink } from '@/lib/whatsapp'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/hooks/use-auth'
 import { KanbanBoard } from '@/components/admin/leads/KanbanBoard'
+import { ConversationPanel } from '@/components/admin/leads/ConversationPanel'
+import { getOriginIcon } from '@/lib/lead-origin'
 import { BellRing, Activity, AlertTriangle, Zap } from 'lucide-react'
 
 export default function AdminLeads() {
@@ -57,10 +50,6 @@ export default function AdminLeads() {
   const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(true)
 
-  const [message, setMessage] = useState('')
-  const [isInternalNote, setIsInternalNote] = useState(false)
-  const [conversation, setConversation] = useState<any[]>([])
-
   const [usuariosMap, setUsuariosMap] = useState<Record<string, string>>({})
   const [veiculosMap, setVeiculosMap] = useState<Record<string, any>>({})
   const [linkedVeiculo, setLinkedVeiculo] = useState<any>(null)
@@ -69,11 +58,8 @@ export default function AdminLeads() {
   const [searchVeiculo, setSearchVeiculo] = useState('')
   const [veiculosBusca, setVeiculosBusca] = useState<any[]>([])
 
-  const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false)
-  const [templates, setTemplates] = useState<any[]>([])
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false)
 
-  const [followupDate, setFollowupDate] = useState<Date | undefined>(new Date())
   const [hasSimulation, setHasSimulation] = useState(false)
 
   useEffect(() => {
@@ -136,44 +122,7 @@ export default function AdminLeads() {
   }, [])
 
   useEffect(() => {
-    if (!selectedLead) return
-
-    const messagesChannel = supabase
-      .channel('messages_changes')
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'conversation_history',
-          filter: `lead_id=eq.${selectedLead.id}`,
-        },
-        (payload) => {
-          if (payload.new.sender === 'internal_note') {
-            playNotificationSound()
-            if (
-              typeof window !== 'undefined' &&
-              'Notification' in window &&
-              Notification.permission === 'granted'
-            ) {
-              new Notification('Nova Nota Interna', { body: 'Uma nota interna foi adicionada.' })
-            }
-          }
-          setConversation((prev) =>
-            prev.some((m) => m.id === payload.new.id) ? prev : [...prev, payload.new],
-          )
-        },
-      )
-      .subscribe()
-
-    return () => {
-      supabase.removeChannel(messagesChannel)
-    }
-  }, [selectedLead?.id])
-
-  useEffect(() => {
     if (selectedLead) {
-      loadConversation(selectedLead.id)
       checkSimulation(selectedLead)
     }
     if (selectedLead?.veiculo_id) {
@@ -209,17 +158,6 @@ export default function AdminLeads() {
       fetchVeiculos()
     }
   }, [isVeiculoModalOpen, searchVeiculo])
-
-  useEffect(() => {
-    if (isTemplateModalOpen) {
-      supabase
-        .from('whatsapp_templates')
-        .select('*')
-        .then(({ data }) => {
-          if (data) setTemplates(data)
-        })
-    }
-  }, [isTemplateModalOpen])
 
   const loadInitialData = async () => {
     try {
@@ -266,15 +204,6 @@ export default function AdminLeads() {
     return () => clearTimeout(timer)
   }, [search])
 
-  const loadConversation = async (leadId: string) => {
-    const { data } = await supabase
-      .from('conversation_history')
-      .select('*')
-      .eq('lead_id', leadId)
-      .order('created_at', { ascending: true })
-    if (data) setConversation(data)
-  }
-
   const updateLeadField = async (field: string, value: any) => {
     setSelectedLead((prev: any) => ({ ...prev, [field]: value }))
     await supabase
@@ -291,38 +220,6 @@ export default function AdminLeads() {
       if (selectedLead?.id === id) setSelectedLead(null)
     } catch (err: any) {
       toast({ title: 'Erro ao excluir', description: err.message, variant: 'destructive' })
-    }
-  }
-
-  const sendMessage = async () => {
-    if (!message.trim() || !selectedLead) return
-    try {
-      if (isInternalNote) {
-        await supabase
-          .from('conversation_history')
-          .insert([{ lead_id: selectedLead.id, sender: 'internal_note', message_text: message }])
-        setMessage('')
-        setIsInternalNote(false)
-        return
-      }
-
-      if (selectedLead.telefone) {
-        const cleanPhone = selectedLead.telefone.replace(/\D/g, '')
-        if (cleanPhone.length < 10) {
-          toast({ title: 'Número inválido', variant: 'destructive' })
-          return
-        }
-        await supabase.functions.invoke('send-whatsapp', {
-          body: { action: 'text', to: cleanPhone, text: message, leadId: selectedLead.id },
-        })
-      } else {
-        await supabase
-          .from('conversation_history')
-          .insert([{ lead_id: selectedLead.id, sender: 'human', message_text: message }])
-      }
-      setMessage('')
-    } catch (err: any) {
-      toast({ title: 'Erro ao enviar', description: err.message, variant: 'destructive' })
     }
   }
 
@@ -356,32 +253,6 @@ export default function AdminLeads() {
     } finally {
       setIsGeneratingPdf(false)
     }
-  }
-
-  const scheduleFollowup = async () => {
-    if (!selectedLead || !followupDate) return
-    await supabase.from('followups').insert({
-      lead_id: selectedLead.id,
-      data_agendada: followupDate.toISOString(),
-      responsavel_id: user?.id,
-      lembrete: 'Retorno de contato programado',
-    })
-    toast({ title: 'Follow-up agendado com sucesso!' })
-  }
-
-  const getOriginIcon = (origem?: string) => {
-    const o = origem?.toLowerCase() || ''
-    if (o.includes('whatsapp') || o.includes('wpp'))
-      return <MessageCircle className="w-3.5 h-3.5 text-green-500 shrink-0" />
-    if (o.includes('instagram') || o.includes('ig'))
-      return <Instagram className="w-3.5 h-3.5 text-pink-500 shrink-0" />
-    if (o.includes('facebook') || o.includes('fb'))
-      return <Facebook className="w-3.5 h-3.5 text-blue-600 shrink-0" />
-    if (o.includes('icarros')) return <Car className="w-3.5 h-3.5 text-orange-500 shrink-0" />
-    if (o.includes('mercado livre') || o.includes('mercadolivre') || o.includes('ml'))
-      return <Store className="w-3.5 h-3.5 text-yellow-500 shrink-0" />
-    if (o.includes('webmotors')) return <Target className="w-3.5 h-3.5 text-red-600 shrink-0" />
-    return <Globe className="w-3.5 h-3.5 text-slate-400 shrink-0" />
   }
 
   const getStatusColor = (status: string) => {
@@ -498,225 +369,17 @@ export default function AdminLeads() {
               </ScrollArea>
             </div>
 
-            {/* COLUMN 2: Chat Timeline (50%) */}
-            {selectedLead ? (
-              <div className="flex-1 min-w-[400px] flex flex-col border-r bg-white h-full relative">
-                {/* Banner de Origem Contextual */}
-                <div
-                  className={cn(
-                    'px-4 py-1.5 text-xs font-semibold text-white flex items-center justify-center gap-2 shadow-sm shrink-0',
-                    selectedLead.origem?.toLowerCase() === 'whatsapp' ||
-                      selectedLead.source?.toLowerCase() === 'whatsapp'
-                      ? 'bg-[#25D366]'
-                      : selectedLead.origem?.toLowerCase() === 'instagram' ||
-                          selectedLead.source?.toLowerCase() === 'instagram'
-                        ? 'bg-gradient-to-r from-[#833AB4] via-[#FD1D1D] to-[#F56040]'
-                        : 'bg-blue-600',
-                  )}
-                >
-                  {getOriginIcon(selectedLead.origem || selectedLead.source)}
-                  Origem: {(selectedLead.origem || selectedLead.source || 'Site').toUpperCase()}
-                </div>
-                <div className="p-4 border-b bg-white flex justify-between items-center shadow-sm shrink-0">
-                  <div className="flex items-center gap-3">
-                    <Avatar className="h-10 w-10 border">
-                      <AvatarFallback className="bg-blue-100 text-blue-700 font-bold">
-                        {selectedLead.nome?.substring(0, 2).toUpperCase() || 'U'}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <h3 className="font-bold text-slate-800 flex items-center gap-2">
-                        {selectedLead.nome}
-                      </h3>
-                      <span className="flex items-center gap-1 text-xs text-slate-500">
-                        <Phone className="w-3 h-3" /> {selectedLead.telefone || 'Sem telefone'}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="text-slate-600"
-                      onClick={() => {
-                        setViewMode('kanban')
-                        setSelectedLead(null)
-                      }}
-                    >
-                      <Kanban className="w-4 h-4 mr-2" /> Voltar ao Board
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="text-green-600 border-green-200 bg-green-50"
-                      onClick={() =>
-                        selectedLead.telefone &&
-                        window.open(getWhatsAppLink('Olá!', selectedLead.telefone), '_blank')
-                      }
-                    >
-                      <MessageCircle className="w-4 h-4 mr-2" /> WhatsApp
-                    </Button>
-                  </div>
-                </div>
-
-                <ScrollArea className="flex-1 p-4 bg-[#E5DDD5]/20">
-                  <div className="max-w-3xl mx-auto space-y-4">
-                    {conversation.map((msg, idx) => {
-                      const isInternal = msg.sender === 'internal_note'
-                      const isBot = msg.sender === 'bot'
-                      const isHuman = msg.sender === 'human'
-                      const isAudio = msg.message_text.includes('[AUDIO]')
-                      const textClean = msg.message_text.replace('[AUDIO]', '').trim()
-
-                      return (
-                        <div
-                          key={idx}
-                          className={cn(
-                            'max-w-[85%] p-3 shadow-sm border border-slate-200 flex flex-col',
-                            isInternal
-                              ? 'self-center bg-yellow-50 rounded-2xl w-[90%] border-yellow-200'
-                              : isBot
-                                ? 'self-start bg-blue-50 rounded-2xl rounded-tl-none border-blue-200'
-                                : msg.sender === 'client'
-                                  ? 'self-start bg-white rounded-2xl rounded-tl-none'
-                                  : 'self-end bg-green-50 rounded-2xl rounded-tr-none border-green-200',
-                          )}
-                        >
-                          {isInternal && (
-                            <p className="text-[10px] text-yellow-700 font-bold mb-1">
-                              📝 Nota Interna da Equipe
-                            </p>
-                          )}
-                          {isAudio ? (
-                            <div className="flex flex-col gap-2">
-                              <div className="flex items-center gap-2 bg-slate-100 p-2 rounded-lg border w-48">
-                                <MessageCircle className="w-4 h-4 text-slate-400" />
-                                <span className="text-xs text-slate-600 font-medium">Áudio</span>
-                              </div>
-                              <p className="text-xs text-slate-500 italic border-l-2 border-slate-300 pl-2">
-                                Transcrição (IA): {textClean || 'Áudio processado.'}
-                              </p>
-                            </div>
-                          ) : (
-                            <p className="text-sm text-slate-800 whitespace-pre-wrap">
-                              {msg.message_text}
-                            </p>
-                          )}
-                          <div className="flex justify-between items-center mt-1 gap-4">
-                            <span className="text-[9px] text-slate-400 font-medium">
-                              {isBot
-                                ? 'Respondido por LUIZ (IA)'
-                                : isHuman
-                                  ? `Feito por ${usuariosMap[user?.id] || 'Atendente'}`
-                                  : ''}
-                            </span>
-                            <span className="text-[10px] text-slate-400 text-right shrink-0">
-                              {new Date(msg.created_at).toLocaleString('pt-BR', {
-                                hour: '2-digit',
-                                minute: '2-digit',
-                              })}
-                            </span>
-                          </div>
-                        </div>
-                      )
-                    })}
-                  </div>
-                </ScrollArea>
-
-                <div
-                  className={cn(
-                    'p-3 border-t flex flex-col gap-2 shrink-0 transition-colors',
-                    isInternalNote ? 'bg-yellow-50' : 'bg-white',
-                  )}
-                >
-                  <div className="flex items-center gap-2 mb-1 px-1">
-                    <div className="flex items-center gap-1.5 bg-slate-100 rounded-full px-2 py-1">
-                      <Switch
-                        checked={isInternalNote}
-                        onCheckedChange={setIsInternalNote}
-                        className="data-[state=checked]:bg-yellow-500 scale-75"
-                        id="nota-interna-switch"
-                      />
-                      <Label
-                        htmlFor="nota-interna-switch"
-                        className="text-xs text-slate-600 font-semibold cursor-pointer select-none"
-                      >
-                        Nota Interna
-                      </Label>
-                    </div>
-                    <div className="flex-1" />
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 text-slate-500 hover:text-blue-600 hover:bg-blue-50"
-                          title="Agendar Follow-up"
-                        >
-                          <CalendarIcon className="w-4 h-4" />
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="end">
-                        <Calendar
-                          mode="single"
-                          selected={followupDate}
-                          onSelect={setFollowupDate}
-                          initialFocus
-                        />
-                        <div className="p-2 border-t">
-                          <Button
-                            size="sm"
-                            className="w-full bg-blue-600 hover:bg-blue-700"
-                            onClick={scheduleFollowup}
-                          >
-                            Agendar Retorno
-                          </Button>
-                        </div>
-                      </PopoverContent>
-                    </Popover>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 text-slate-500 hover:text-blue-600 hover:bg-blue-50"
-                      title="Templates"
-                      onClick={() => setIsTemplateModalOpen(true)}
-                    >
-                      <FilePlus className="w-4 h-4" />
-                    </Button>
-                  </div>
-                  <div className="flex gap-2 items-center">
-                    <Input
-                      value={message}
-                      onChange={(e) => setMessage(e.target.value)}
-                      placeholder={
-                        isInternalNote
-                          ? 'Digite uma nota invisível para o cliente...'
-                          : 'Digite uma mensagem...'
-                      }
-                      className={cn(
-                        'flex-1',
-                        isInternalNote ? 'bg-yellow-100/50 border-yellow-300' : 'bg-slate-50',
-                      )}
-                      onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
-                    />
-                    <Button
-                      onClick={sendMessage}
-                      className={
-                        isInternalNote
-                          ? 'bg-yellow-600 hover:bg-yellow-700'
-                          : 'bg-blue-600 hover:bg-blue-700'
-                      }
-                    >
-                      <Send className="w-4 h-4" />
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className="flex-1 min-w-[400px] flex items-center justify-center text-slate-400 bg-slate-50/50 border-r h-full">
-                <Target className="w-12 h-12 opacity-20 mr-2" /> Selecione um lead para interagir
-              </div>
-            )}
+            {/* COLUMN 2: Chat Timeline (50%) — extraído pra ConversationPanel (Fase 4) */}
+            <div className="flex-1 min-w-[400px] border-r h-full">
+              <ConversationPanel
+                lead={selectedLead}
+                usuariosMap={usuariosMap}
+                onBack={() => {
+                  setViewMode('kanban')
+                  setSelectedLead(null)
+                }}
+              />
+            </div>
 
             {/* COLUMN 3: Lead Management (30%) */}
             {selectedLead && (
@@ -766,7 +429,7 @@ export default function AdminLeads() {
                     <div className="flex items-center gap-2">
                       <Bot className="w-4 h-4 text-blue-600" />
                       <span className="text-sm font-semibold text-slate-700">
-                        Assistente LUIZ (IA)
+                        Assistente Clara (IA)
                       </span>
                     </div>
                     <Switch
@@ -1017,28 +680,6 @@ export default function AdminLeads() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={isTemplateModalOpen} onOpenChange={setIsTemplateModalOpen}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Selecionar Template</DialogTitle>
-          </DialogHeader>
-          <div className="grid gap-4 py-4 max-h-[60vh] overflow-y-auto">
-            {templates.map((t) => (
-              <div
-                key={t.id}
-                className="border p-3 rounded-lg hover:bg-slate-50 cursor-pointer"
-                onClick={() => {
-                  setMessage(t.corpo)
-                  setIsTemplateModalOpen(false)
-                }}
-              >
-                <p className="font-bold text-sm">{t.nome}</p>
-                <p className="text-xs text-slate-500 mt-1">{t.corpo}</p>
-              </div>
-            ))}
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   )
 }

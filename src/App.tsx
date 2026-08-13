@@ -197,6 +197,7 @@ const Login = lazyWithRetry(() => import('./pages/admin/Login'))
 const Dashboard = lazyWithRetry(() => import('./pages/admin/Dashboard'))
 const AdminEstoque = lazyWithRetry(() => import('./pages/admin/Estoque'))
 const AdminLeads = lazyWithRetry(() => import('./pages/admin/Leads'))
+const Conversas = lazyWithRetry(() => import('./pages/admin/Conversas'))
 const Avaliacao = lazyWithRetry(() => import('./pages/admin/Avaliacao'))
 const Design = lazyWithRetry(() => import('./pages/admin/Design'))
 const Financiamento = lazyWithRetry(() => import('./pages/admin/Financiamento'))
@@ -357,6 +358,7 @@ const MainApp = () => (
         {/* Module: CRM / Leads */}
         <Route path="crm" element={<AdminLeads />} />
         <Route path="crm/:submenu" element={<EmConstrucao />} />
+        <Route path="conversas" element={<Conversas />} />
 
         {/* Module: Avaliação */}
         <Route path="avaliacao" element={<Avaliacao />} />

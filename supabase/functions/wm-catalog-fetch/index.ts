@@ -1,5 +1,12 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
-import { buildAuthXML, callSOAP, type WMCredentials } from '../_shared/wm-soap.ts'
+import { createClient } from 'jsr:@supabase/supabase-js@2'
+import {
+  buildAuthXML,
+  callSOAP,
+  parseModalidades,
+  parseOpcionais,
+  type WMCredentials,
+} from '../_shared/wm-soap.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -21,6 +28,9 @@ const CATALOGOS_SEM_PARAMETRO: Record<string, string> = {
   // homologação, antes de confiar nele na checagem de duplicidade do wm-sync
   // (ver docs/webmotors-integracao.md — "NÃO VERIFICADO AO VIVO").
   estoque_atual: 'ObterEstoqueAtual',
+  // Adicionado 13/08/2026 — achado pelo WSDL público do serviço (?WSDL) que
+  // Opcional é um array de {CodigoOpcional, Descricao}, não texto livre.
+  opcionais: 'ObterOpcionais',
 }
 
 // ObterVersao precisa de pCodigoModelo + intervalo de datas — não se encaixa
@@ -108,6 +118,52 @@ Deno.serve(async (req: Request) => {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         },
       )
+    }
+
+    // Grava a cota real de anúncios simultâneos por modalidade (pedido da
+    // Adriana, 13/08/2026: "isso precisa estar alinhado com o nosso portal").
+    // Não é limite de estoque — é quantos anúncios podem ficar ATIVOS ao
+    // mesmo tempo em cada modalidade contratada.
+    if (catalogo === 'modalidade' && catalogResult.raw) {
+      const modalidades = parseModalidades(catalogResult.raw)
+      if (modalidades.length > 0) {
+        const supabase = createClient(
+          Deno.env.get('SUPABASE_URL')!,
+          Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+        )
+        for (const m of modalidades) {
+          await supabase.from('wm_modalidades').upsert(
+            {
+              codigo_wm: m.codigoModalidade,
+              descricao: m.descricao,
+              quantidade_total: m.quantidadeTotal,
+              quantidade_usados: m.quantidadeUsados,
+              atualizado_em: new Date().toISOString(),
+            },
+            { onConflict: 'codigo_wm' },
+          )
+        }
+      }
+    }
+
+    // Grava o catálogo real de opcionais (CodigoOpcional + Descricao) — achado
+    // via WSDL (13/08/2026) que Opcional no IncluirCarro precisa desses
+    // códigos, não texto livre. nome_crm fica null aqui; o de/para com os
+    // termos usados em veiculos.diferenciais é preenchido à parte.
+    if (catalogo === 'opcionais' && catalogResult.raw) {
+      const opcionais = parseOpcionais(catalogResult.raw)
+      if (opcionais.length > 0) {
+        const supabase = createClient(
+          Deno.env.get('SUPABASE_URL')!,
+          Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+        )
+        for (const o of opcionais) {
+          await supabase.from('wm_opcionais').upsert(
+            { codigo_wm: o.codigoOpcional, nome_wm: o.descricao },
+            { onConflict: 'codigo_wm', ignoreDuplicates: false },
+          )
+        }
+      }
     }
 
     return new Response(JSON.stringify({ success: true, raw: catalogResult.raw }), {

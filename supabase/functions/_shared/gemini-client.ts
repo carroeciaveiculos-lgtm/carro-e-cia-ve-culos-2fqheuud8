@@ -125,6 +125,23 @@ export const CRM_FUNCTIONS = [
   },
 ]
 
+// Achado em auditoria (13/08/2026, captura real de conversa com cliente):
+// às vezes o modelo escreve a chamada de função como texto solto dentro da
+// própria resposta (ex: <function=consultar_estoque>{"marca":"Toyota"}
+// </function>) em vez de usar o mecanismo de function-calling de verdade —
+// e isso ia direto pro cliente, sem filtro nenhum. Rede de segurança: limpa
+// qualquer coisa nesse formato do texto antes de devolver, não importa qual
+// provedor (Gemini ou Groq) gerou. Não resolve a causa (o modelo não devia
+// fazer isso), só impede que vaze pro cliente de novo enquanto isso não é
+// investigado a fundo.
+function limparTextoDeChamadasDeFuncao(texto: string): string {
+  return texto
+    .replace(/<function[=:][^>]*>[\s\S]*?<\/function>/gi, '')
+    .replace(/<function[=:][^>]*\/>/gi, '')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim()
+}
+
 // Converte declaração de função no formato Gemini (types em MAIÚSCULO, ex.
 // 'OBJECT'/'STRING') pro formato OpenAI/Groq (types em minúsculo), usado no
 // fallback. Groq só entende JSON Schema padrão.
@@ -220,7 +237,7 @@ export class GeminiClient {
     }
     const data = await res.json()
     const candidate = data.candidates?.[0]
-    const text = candidate?.content?.parts?.[0]?.text ?? ''
+    const text = limparTextoDeChamadasDeFuncao(candidate?.content?.parts?.[0]?.text ?? '')
     let json: Record<string, unknown> | null = null
     if (options.jsonSchema && text) {
       try {
@@ -275,7 +292,7 @@ export class GeminiClient {
     }
     const data = await res.json()
     const message = data.choices?.[0]?.message
-    const text = message?.content ?? ''
+    const text = limparTextoDeChamadasDeFuncao(message?.content ?? '')
     let json: Record<string, unknown> | null = null
     if (options.jsonSchema && text) {
       try {
