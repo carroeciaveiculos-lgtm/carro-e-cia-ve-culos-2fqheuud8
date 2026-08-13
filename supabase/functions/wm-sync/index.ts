@@ -398,6 +398,11 @@ Deno.serve(async (req: Request) => {
           const res = await callSOAP(xml, 'IncluirCarro', hash)
           await registrarTrocaXML(supabase, veiculo.id, 'IncluirCarro', xml, res.raw)
           if (res.success && res.codigoAnuncio) {
+            // Desconta a vaga em memória assim que usada — sem isso, dois
+            // veículos pendentes na MESMA rodada podiam passar os dois pela
+            // checagem de cota (lida uma vez só no início da rodada),
+            // mesmo com só 1 vaga real disponível.
+            if (quota) quota.usados += 1
             await supabase
               .from('estoque_publicacoes')
               .update({
