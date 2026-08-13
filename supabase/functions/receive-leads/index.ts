@@ -257,11 +257,27 @@ Deno.serve(async (req: Request) => {
                 }
 
                 if (leadId) {
-                  await supabase.from('conversation_history').insert({
+                  // Achado em auditoria (13/08/2026): conversation_history.sender
+                  // tem uma trava que só aceita 'bot'/'client'/'human' — mandar o
+                  // nome da pessoa aqui (ex: "Adriana Araújo") violava a trava e
+                  // falhava em silêncio, então a mensagem do cliente nunca era
+                  // salva (só a resposta da Clara). senderName continua guardado
+                  // em leads.nome, que é onde o nome de verdade deve ficar.
+                  const { error: chError } = await supabase.from('conversation_history').insert({
                     lead_id: leadId,
-                    sender: senderName,
+                    sender: 'client',
                     message_text: messageText,
                   })
+                  if (chError) {
+                    console.error('Erro ao salvar mensagem do cliente:', chError)
+                    await supabase
+                      .from('lead_errors')
+                      .insert({
+                        lead_data: { source: 'receive-leads', lead_id: leadId, timestamp: new Date().toISOString() },
+                        error_message: `Falha ao salvar conversation_history: ${chError.message}`,
+                      })
+                      .catch(() => {})
+                  }
 
                   // Reativado em 12/08/2026 — chama a Clara pra responder de
                   // verdade a mensagens depois da primeira (ver ai-sdr,
@@ -313,11 +329,23 @@ Deno.serve(async (req: Request) => {
                 }
 
                 if (leadId) {
-                  await supabase.from('conversation_history').insert({
+                  // Mesmo problema do ramo WhatsApp acima: 'Lead' viola a trava
+                  // de conversation_history.sender — nunca gravava nada.
+                  const { error: chError } = await supabase.from('conversation_history').insert({
                     lead_id: leadId,
-                    sender: 'Lead',
+                    sender: 'client',
                     message_text: messageText,
                   })
+                  if (chError) {
+                    console.error('Erro ao salvar mensagem do cliente (Instagram):', chError)
+                    await supabase
+                      .from('lead_errors')
+                      .insert({
+                        lead_data: { source: 'receive-leads', lead_id: leadId, timestamp: new Date().toISOString() },
+                        error_message: `Falha ao salvar conversation_history (instagram): ${chError.message}`,
+                      })
+                      .catch(() => {})
+                  }
                 }
               }
             }
