@@ -254,7 +254,7 @@ export const trackConversion = (type: 'whatsapp' | 'ligar' | 'formulario') => {
 
 // Novos Eventos Estruturados GA4 + Meta Pixel
 
-export const trackWhatsAppClick = (contactPerson: string, trigger: string) => {
+export const trackWhatsAppClick = (contactPerson: string, trigger: string, vehicleId?: string) => {
   trackGTMEvent('whatsapp_click', {
     contact_person: contactPerson,
     whatsapp_number: '5534999484285',
@@ -265,6 +265,8 @@ export const trackWhatsAppClick = (contactPerson: string, trigger: string) => {
   trackMetaEvent('Lead', {
     content_name: 'WhatsApp Click',
     content_category: 'Contato',
+    content_ids: vehicleId ? [vehicleId] : undefined,
+    content_type: vehicleId ? 'vehicle' : undefined,
   })
 
   if (typeof window !== 'undefined' && (window as any).gtag) {

@@ -182,7 +182,7 @@ export const handleCommercialCTA = async ({
     return { success: false }
   }
 
-  trackWhatsAppClick('Luiz', ctaType)
+  trackWhatsAppClick('Luiz', ctaType, vehicle?.id)
   trackCTAClick(ctaType, source)
 
   const message = getCommercialText(vehicle, isSimulacao, simDetails)
