@@ -161,6 +161,19 @@ Ao criar tabela, crie a policy na mesma migration.
 Existe uma worktree em `../carro-e-cia-ve-culos-2fqheuud8.worktrees/` usada por
 agentes — não é branch de trabalho manual.
 
+## Memória de trabalho — manter em dia
+
+`MEMORY_WORK.MD` (raiz do projeto) responde "onde paramos?" sem reler o
+histórico de conversas — status do que está no ar e pendências abertas.
+`AUDIT_REPORT.md` é histórico antigo, não é mais atualizado; **não confundir
+os dois**.
+
+**Atualize `MEMORY_WORK.MD`** ao concluir um pedaço de trabalho relevante
+(nova função, integração, bug corrigido em produção) e, principalmente,
+**antes de a conversa terminar** — pra próxima sessão já começar sabendo o
+estado real. Detalhe técnico continua indo pra `docs/<assunto>.md`, não pra
+esse arquivo; ele é só o resumo + pendências.
+
 ## A PREENCHER pela Adriana
 
 Estas são regras de negócio que não dá para deduzir do código. Quanto mais
