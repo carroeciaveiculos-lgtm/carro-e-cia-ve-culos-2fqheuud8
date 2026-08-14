@@ -81,7 +81,7 @@ const NETWORK_ICONS: Record<string, React.ReactNode> = {
   whatsapp: <MessageCircle className="w-3 h-3 text-white" />,
 }
 
-export default function RedesSociais() {
+export default function RedesSociais({ embedded = false }: { embedded?: boolean } = {}) {
   const [currentDate, setCurrentDate] = useState(new Date())
   const [posts, setPosts] = useState<SocialPost[]>([])
   const [selectedPost, setSelectedPost] = useState<SocialPost | null>(null)
@@ -290,12 +290,14 @@ export default function RedesSociais() {
   return (
     <div className="flex h-full w-full bg-white relative overflow-hidden">
       <div className="flex-1 flex flex-col h-full">
-        {/* Header */}
+        {/* Header (oculto quando embutido na Central de Redes Sociais, que já tem o seu) */}
         <div className="p-4 border-b flex flex-col md:flex-row items-start md:items-center justify-between gap-4 bg-white z-10">
-          <h1 className="text-xl font-bold flex items-center gap-2">
-            <Instagram className="w-5 h-5 text-blue-600" />
-            Social Media & Automação
-          </h1>
+          {!embedded && (
+            <h1 className="text-xl font-bold flex items-center gap-2">
+              <Instagram className="w-5 h-5 text-blue-600" />
+              Social Media & Automação
+            </h1>
+          )}
 
           <div className="flex items-center gap-2 w-full md:w-auto">
             <div className="bg-slate-100 p-1 rounded-md flex items-center mr-2">
@@ -458,7 +460,9 @@ export default function RedesSociais() {
                           onClick={() => handlePostClick(post)}
                         >
                           <TableCell className="whitespace-nowrap font-medium text-slate-600">
-                            {format(new Date(post.data_agendamento), 'dd/MM/yyyy HH:mm')}
+                            {post.data_agendamento
+                              ? format(new Date(post.data_agendamento), 'dd/MM/yyyy HH:mm')
+                              : 'Sem data definida'}
                           </TableCell>
                           <TableCell>
                             <div className="flex gap-1">
@@ -545,7 +549,9 @@ export default function RedesSociais() {
             <div className="mb-4 bg-slate-50 p-3 rounded-lg border">
               <Label className="text-slate-500 text-xs uppercase block mb-1">Data e Hora</Label>
               <p className="font-semibold text-slate-800">
-                {format(new Date(selectedPost.data_agendamento), 'dd/MM/yyyy • HH:mm')}
+                {selectedPost.data_agendamento
+                  ? format(new Date(selectedPost.data_agendamento), 'dd/MM/yyyy • HH:mm')
+                  : 'Sem data definida — edite pra agendar'}
               </p>
             </div>
 

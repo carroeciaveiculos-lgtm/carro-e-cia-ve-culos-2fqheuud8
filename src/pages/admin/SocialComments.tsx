@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input'
 import { useToast } from '@/hooks/use-toast'
 import { MessageCircle, ThumbsUp, UserPlus, Facebook, Instagram } from 'lucide-react'
 
-export default function SocialComments() {
+export default function SocialComments({ embedded = false }: { embedded?: boolean } = {}) {
   const [comments, setComments] = useState<any[]>([])
   const [replyText, setReplyText] = useState<Record<string, string>>({})
   const { toast } = useToast()
@@ -59,10 +59,12 @@ export default function SocialComments() {
   }
 
   return (
-    <div className="p-6 bg-slate-50 min-h-[calc(100vh-64px)]">
-      <h1 className="text-2xl font-bold mb-6 flex items-center gap-2">
-        <MessageCircle className="w-6 h-6 text-blue-600" /> Interações Sociais (Comentários)
-      </h1>
+    <div className={embedded ? '' : 'p-6 bg-slate-50 min-h-[calc(100vh-64px)]'}>
+      {!embedded && (
+        <h1 className="text-2xl font-bold mb-6 flex items-center gap-2">
+          <MessageCircle className="w-6 h-6 text-blue-600" /> Interações Sociais (Comentários)
+        </h1>
+      )}
       <div className="grid gap-4 max-w-4xl">
         {comments.map((c) => (
           <div key={c.id} className="bg-white p-4 rounded-xl shadow-sm border">

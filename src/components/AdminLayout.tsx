@@ -16,7 +16,6 @@ import {
   Activity,
   BarChart,
   HelpCircle,
-  MessageSquareWarning,
   MessageSquare,
   CalendarClock,
   Megaphone,
@@ -56,8 +55,7 @@ const SIDEBAR_MENUS = [
     items: [
       { label: 'Marketing', path: '/admin/marketing', icon: Activity },
       { label: 'Gestão de Anúncios', path: '/admin/anuncios', icon: Megaphone },
-      { label: 'Redes Sociais', path: '/admin/redes-sociais', icon: Share2 },
-      { label: 'Moderador de Posts', path: '/admin/moderador-posts', icon: MessageSquareWarning },
+      { label: 'Central de Redes Sociais', path: '/admin/central-social', icon: Share2 },
     ],
   },
   {

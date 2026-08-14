@@ -108,8 +108,10 @@ O formato deve estar pronto para copiar e colar no ${targetPlatform}.`
       throw new Error('Gemini API key not configured')
     }
 
+    // 'gemini-1.5-flash' descontinuado (404 sempre) - mesmo achado e correção
+    // de _shared/gemini-client.ts (12/08/2026), nunca aplicado aqui.
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`,
       {
         method: 'POST',
         headers: {

@@ -212,8 +212,7 @@ const Logs = lazyWithRetry(() => import('./pages/admin/Logs'))
 const Usuarios = lazyWithRetry(() => import('./pages/admin/Usuarios'))
 const EditUsuario = lazyWithRetry(() => import('./pages/admin/EditUsuario'))
 const EmConstrucao = lazyWithRetry(() => import('./pages/admin/EmConstrucao'))
-const RedesSociais = lazyWithRetry(() => import('./pages/admin/RedesSociais'))
-const SocialComments = lazyWithRetry(() => import('./pages/admin/SocialComments'))
+const CentralSocial = lazyWithRetry(() => import('./pages/admin/CentralSocial'))
 const Conteudo = lazyWithRetry(() => import('./pages/admin/Conteudo'))
 const Auditoria = lazyWithRetry(() => import('./pages/admin/Auditoria'))
 const Marketing = lazyWithRetry(() => import('./pages/admin/Marketing'))
@@ -385,12 +384,13 @@ const MainApp = () => (
         <Route path="configuracoes" element={<Configuracoes />} />
         <Route path="logs" element={<Logs />} />
 
-        <Route path="redes-sociais" element={<RedesSociais />} />
+        <Route path="central-social" element={<CentralSocial />} />
+        <Route path="redes-sociais" element={<Navigate to="/admin/central-social" replace />} />
         <Route
           path="social-comentarios"
-          element={<Navigate to="/admin/moderador-posts" replace />}
+          element={<Navigate to="/admin/central-social" replace />}
         />
-        <Route path="moderador-posts" element={<SocialComments />} />
+        <Route path="moderador-posts" element={<Navigate to="/admin/central-social" replace />} />
         <Route path="conteudo" element={<Conteudo />} />
 
         <Route path="auditoria" element={<Auditoria />} />

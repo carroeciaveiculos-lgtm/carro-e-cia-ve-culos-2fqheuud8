@@ -30,8 +30,11 @@ export function SocialApprovalDashboard() {
   }, [])
 
   const handleApprove = async (id: string) => {
-    await supabase.from('social_posts').update({ status: 'Aprovado' }).eq('id', id)
-    toast({ title: 'Post aprovado!' })
+    // Aprovar já entra direto no status que o publicar-social/cron observa
+    // (14/08/2026, pedido da Adriana) — antes ficava em 'Aprovado', um status
+    // que nada nunca publicava, e o post morria ali mesmo já com data definida.
+    await supabase.from('social_posts').update({ status: 'Agendado' }).eq('id', id)
+    toast({ title: 'Post aprovado e agendado!' })
     fetchPosts()
   }
 
