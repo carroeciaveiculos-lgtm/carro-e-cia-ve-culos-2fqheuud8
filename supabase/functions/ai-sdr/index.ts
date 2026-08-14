@@ -3,6 +3,7 @@ import { createClient } from 'jsr:@supabase/supabase-js@2'
 import { corsHeaders } from '../_shared/cors.ts'
 import { GeminiClient, CRM_FUNCTIONS } from '../_shared/gemini-client.ts'
 import { COLUNAS_VEICULO_SEGURAS } from '../_shared/veiculo-safe-fields.ts'
+import { enviarContatoBrevo } from '../_shared/brevo.ts'
 
 const supabase = createClient(
   Deno.env.get('SUPABASE_URL')!,
@@ -70,7 +71,7 @@ async function getSystemPrompt() {
   return `${basePrompt}${memoryContext}
 Data e hora atuais (horário de Brasília): ${agoraBR}. Use isso pra calcular datas relativas como "amanhã", "sexta-feira" etc — nunca invente uma data sem se basear nisso. Ao chamar agendar_visita, sempre mande data_hora em ISO 8601 com o fuso de Brasília (-03:00).
 ${waNumber ? `O número oficial de WhatsApp da loja é: ${waNumber}. Se for necessário enviar um link direto, use https://wa.me/${waNumber}` : ''}
-Ferramentas disponíveis: use consultar_estoque pra verificar veículos disponíveis antes de falar sobre eles; use agendar_visita quando o cliente confirmar dia e horário de visita/avaliação; use enviar_midia_veiculo quando fizer sentido mandar foto ou vídeo de um veículo específico já consultado; use solicitar_atendimento_humano quando o lead estiver qualificado e pronto pra avançar, ou pedir explicitamente para falar com uma pessoa; use atualizar_estagio_lead pra refletir o andamento da conversa no funil.`
+Ferramentas disponíveis: use consultar_estoque pra verificar veículos disponíveis antes de falar sobre eles; use agendar_visita quando o cliente confirmar dia e horário de visita/avaliação; use salvar_email_lead assim que o cliente informar um e-mail em qualquer momento da conversa, mesmo que já tenha lead criado; use enviar_midia_veiculo quando fizer sentido mandar foto ou vídeo de um veículo específico já consultado; use solicitar_atendimento_humano quando o lead estiver qualificado e pronto pra avançar, ou pedir explicitamente para falar com uma pessoa; use atualizar_estagio_lead pra refletir o andamento da conversa no funil.`
 }
 
 // Execução de verdade das funções que o Gemini decide chamar — corrigido em
@@ -116,6 +117,10 @@ async function executeFunction(name: string, args: any, leadId: string): Promise
       .single()
     if (error) return { error: error.message }
     await supabase.from('leads').update({ status: 'agendamento' }).eq('id', leadId)
+    // Bloco 3 (13/08/2026, pedido da Adriana): avisar a loja no WhatsApp assim
+    // que a Clara fecha um agendamento — antes só dava pra saber entrando na
+    // conversa. Envolto em try/catch pra nunca quebrar a resposta ao cliente.
+    await notificarNovoAgendamento(data, leadId)
     return { agendamento: data }
   }
 
@@ -169,11 +174,13 @@ async function executeFunction(name: string, args: any, leadId: string): Promise
   }
 
   if (name === 'criar_lead_crm') {
+    const email = (args.email || '').trim() || null
     const { data, error } = await supabase
       .from('leads')
       .insert({
         nome: args.nome,
         telefone: args.telefone,
+        email,
         veiculo_interesse: args.veiculo_interesse || null,
         origem: 'clara',
         status: 'novo',
@@ -181,10 +188,96 @@ async function executeFunction(name: string, args: any, leadId: string): Promise
       .select()
       .single()
     if (error) return { error: error.message }
+    if (email) await registrarEmailNoBrevo(data.id, email, args.nome, args.telefone)
     return { lead: data }
   }
 
+  // Bloco 1 (13/08/2026, pedido da Adriana): antes a Clara era instruída no
+  // prompt a pedir o e-mail do cliente, mas não tinha nenhuma ferramenta pra
+  // salvar a resposta em lugar nenhum — só 3 de 97 leads tinham e-mail.
+  if (name === 'salvar_email_lead') {
+    const email = (args.email || '').trim()
+    if (!email || !email.includes('@')) return { error: 'email inválido' }
+    const { data: lead, error } = await supabase
+      .from('leads')
+      .update({ email })
+      .eq('id', leadId)
+      .select('nome, telefone')
+      .single()
+    if (error) return { error: error.message }
+    await registrarEmailNoBrevo(leadId, email, lead?.nome, lead?.telefone)
+    return { ok: true, email }
+  }
+
   return { error: `Função desconhecida: ${name}` }
+}
+
+// Reaproveita o helper compartilhado de Brevo (mesma chave/lista usada em
+// lead-automation e on-lead-created). Sem listId específico de campanha pra
+// leads da Clara — usa a lista padrão (5), igual ao fallback já usado nos
+// outros pontos de entrada. Nunca lança erro: e-mail salvo no CRM é o que
+// importa, Brevo é bônus — se falhar (chave desativada, etc.), só loga.
+async function registrarEmailNoBrevo(
+  leadId: string,
+  email: string,
+  nome?: string | null,
+  telefone?: string | null,
+) {
+  try {
+    await enviarContatoBrevo(supabase, leadId, {
+      email,
+      nome: nome || undefined,
+      telefone: telefone || undefined,
+      listId: 5,
+      attributes: { ORIGEM: 'clara' },
+    })
+  } catch (err) {
+    console.error('Erro ao registrar e-mail no Brevo:', err)
+  }
+}
+
+// Bloco 3 (13/08/2026): avisa o WhatsApp da loja assim que um agendamento é
+// fechado pela Clara. Nunca lança erro — se a notificação falhar, o
+// agendamento em si (já salvo antes de chamar isso) não pode ser afetado.
+async function notificarNovoAgendamento(agendamento: any, leadId: string) {
+  try {
+    const { data: lead } = await supabase
+      .from('leads')
+      .select('nome, telefone')
+      .eq('id', leadId)
+      .maybeSingle()
+
+    let veiculoTexto = ''
+    if (agendamento.veiculo_id) {
+      const { data: veiculo } = await supabase
+        .from('veiculos')
+        .select('marca, modelo')
+        .eq('id', agendamento.veiculo_id)
+        .maybeSingle()
+      if (veiculo) veiculoTexto = ` pra ver o ${veiculo.marca} ${veiculo.modelo}`
+    }
+
+    const dataFormatada = new Date(agendamento.data_hora).toLocaleString('pt-BR', {
+      timeZone: 'America/Sao_Paulo',
+      weekday: 'long',
+      day: '2-digit',
+      month: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+    })
+    const tipoTexto = agendamento.tipo === 'avaliacao' ? 'avaliação' : 'visita'
+    const texto = `📅 Novo agendamento pela Clara!\n\n${lead?.nome || 'Cliente'}${lead?.telefone ? ` (${lead.telefone})` : ''} marcou ${tipoTexto}${veiculoTexto} para ${dataFormatada}.`
+
+    const { data: config } = await supabase
+      .from('social_configuracoes')
+      .select('whatsapp_number')
+      .maybeSingle()
+    const ownerPhone = config?.whatsapp_number || '5534999484285'
+
+    await sendWhatsApp(ownerPhone, texto)
+  } catch (err) {
+    console.error('Erro ao notificar novo agendamento:', err)
+  }
 }
 
 // Roda o Gemini com histórico + funções; se ele decidir chamar alguma

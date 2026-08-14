@@ -61,9 +61,22 @@ export const CRM_FUNCTIONS = [
       properties: {
         nome: { type: 'STRING' },
         telefone: { type: 'STRING' },
+        email: { type: 'STRING', description: 'E-mail do cliente, se ja informado' },
         veiculo_interesse: { type: 'STRING' },
       },
       required: ['nome', 'telefone'],
+    },
+  },
+  {
+    name: 'salvar_email_lead',
+    description:
+      'Salvar ou atualizar o e-mail do cliente atual no cadastro do CRM, assim que ele informar durante a conversa',
+    parameters: {
+      type: 'OBJECT',
+      properties: {
+        email: { type: 'STRING', description: 'E-mail informado pelo cliente' },
+      },
+      required: ['email'],
     },
   },
   {
