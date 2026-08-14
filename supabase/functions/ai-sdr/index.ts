@@ -71,7 +71,8 @@ async function getSystemPrompt() {
   return `${basePrompt}${memoryContext}
 Data e hora atuais (horário de Brasília): ${agoraBR}. Use isso pra calcular datas relativas como "amanhã", "sexta-feira" etc — nunca invente uma data sem se basear nisso. Ao chamar agendar_visita, sempre mande data_hora em ISO 8601 com o fuso de Brasília (-03:00).
 ${waNumber ? `O número oficial de WhatsApp da loja é: ${waNumber}. Se for necessário enviar um link direto, use https://wa.me/${waNumber}` : ''}
-Ferramentas disponíveis: use consultar_estoque pra verificar veículos disponíveis antes de falar sobre eles; use agendar_visita quando o cliente confirmar dia e horário de visita/avaliação; use salvar_email_lead assim que o cliente informar um e-mail em qualquer momento da conversa, mesmo que já tenha lead criado; use enviar_midia_veiculo quando fizer sentido mandar foto ou vídeo de um veículo específico já consultado; use solicitar_atendimento_humano quando o lead estiver qualificado e pronto pra avançar, ou pedir explicitamente para falar com uma pessoa; use atualizar_estagio_lead pra refletir o andamento da conversa no funil.`
+Ferramentas disponíveis: use consultar_estoque pra verificar veículos disponíveis antes de falar sobre eles; use agendar_visita quando o cliente confirmar dia e horário de visita/avaliação; use salvar_email_lead assim que o cliente informar um e-mail em qualquer momento da conversa, mesmo que já tenha lead criado; use enviar_midia_veiculo quando fizer sentido mandar foto ou vídeo de um veículo específico já consultado; use solicitar_atendimento_humano quando o lead estiver qualificado e pronto pra avançar, ou pedir explicitamente para falar com uma pessoa; use atualizar_estagio_lead pra refletir o andamento da conversa no funil.
+REGRA CRÍTICA: nunca diga "agendado", "confirmado" ou "marcado" sem ANTES ter chamado a função correspondente (ex: agendar_visita) na mesma resposta — se a data/horário ainda não estiver 100% definida, pergunte de novo em vez de dar a confirmação por feita.`
 }
 
 // Execução de verdade das funções que o Gemini decide chamar — corrigido em
@@ -175,6 +176,10 @@ async function executeFunction(name: string, args: any, leadId: string): Promise
 
   if (name === 'criar_lead_crm') {
     const email = (args.email || '').trim() || null
+    // Achado em diagnostico (14/08/2026): leads.tipo e NOT NULL sem default,
+    // e esse insert nunca preenchia — toda chamada de criar_lead_crm falhava
+    // (violava a constraint), silenciosamente pro cliente (Clara so via o
+    // erro no functionResult e seguia a conversa sem mencionar).
     const { data, error } = await supabase
       .from('leads')
       .insert({
@@ -184,6 +189,7 @@ async function executeFunction(name: string, args: any, leadId: string): Promise
         veiculo_interesse: args.veiculo_interesse || null,
         origem: 'clara',
         status: 'novo',
+        tipo: args.tipo || 'comprador',
       })
       .select()
       .single()
@@ -291,6 +297,43 @@ async function notificarNovoAgendamento(agendamento: any, leadId: string) {
 // infinito se o modelo insistir em chamar função à toa.
 const MAX_RODADAS_FUNCOES = 3
 
+// Achado em diagnóstico ao vivo (14/08/2026, ver conversa com a Adriana):
+// agendamentos_visita ficou vazia por dias inteiros porque a Clara às vezes
+// escreve uma confirmação de agendamento em texto ("Agendado então para
+// amanhã...") sem de fato ter chamado agendar_visita naquela rodada — o
+// modelo "decide" que já resolveu e só narra, em vez de executar. Não dá
+// pra garantir 100% que isso nunca aconteça de novo (é comportamento do
+// modelo, não um bug de código), então isso não tenta bloquear a mensagem
+// (arriscado demais — falso positivo deixaria o cliente sem resposta),
+// só registra um alerta pra parar de ser invisível como foi dessa vez.
+const PADRAO_CONFIRMACAO_AGENDAMENTO =
+  /agendad[ao]|confirmad[ao] (?:para|pra)|marcad[ao] (?:para|pra)|te esperamos/i
+
+async function alertarSePossivelConfirmacaoSemAcao(
+  texto: string,
+  functionResults: Array<{ name: string; result: any }>,
+  leadId: string,
+) {
+  if (!texto || !PADRAO_CONFIRMACAO_AGENDAMENTO.test(texto)) return
+  const chamouAgendar = functionResults.some(
+    (r) => r.name === 'agendar_visita' && r.result && !r.result.error,
+  )
+  if (chamouAgendar) return
+
+  console.error(`Possível confirmação de agendamento sem chamada real (lead ${leadId}):`, texto)
+  await supabase
+    .from('logs_integracao')
+    .insert({
+      portal: 'clara_confirmacao_sem_acao',
+      status: 'alerta',
+      payload_erro: { lead_id: leadId, texto, function_results: functionResults },
+    })
+    .then(
+      () => {},
+      () => {},
+    )
+}
+
 async function runGemini(
   history: Array<{ role: 'user' | 'model'; text: string }>,
   novaMensagem: string,
@@ -310,6 +353,7 @@ async function runGemini(
     })
 
     if (result.functionCalls.length === 0) {
+      await alertarSePossivelConfirmacaoSemAcao(result.text, todosResultados, leadId)
       return { text: result.text, functionResults: todosResultados }
     }
 
@@ -331,6 +375,7 @@ async function runGemini(
     thinkingLevel: 'medium',
     history: historicoAtual,
   })
+  await alertarSePossivelConfirmacaoSemAcao(followUp.text, todosResultados, leadId)
   return { text: followUp.text, functionResults: todosResultados }
 }
 

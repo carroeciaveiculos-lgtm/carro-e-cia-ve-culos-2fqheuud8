@@ -317,7 +317,7 @@ export const trackVehicleView = (
   })
   trackMetaEvent('ViewContent', {
     content_ids: vehicleId ? [vehicleId] : undefined,
-    content_type: 'product',
+    content_type: 'vehicle',
     content_name: vehicleName,
     content_category: vehicleCategory,
     value: vehiclePrice,

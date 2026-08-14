@@ -63,6 +63,11 @@ export const CRM_FUNCTIONS = [
         telefone: { type: 'STRING' },
         email: { type: 'STRING', description: 'E-mail do cliente, se ja informado' },
         veiculo_interesse: { type: 'STRING' },
+        tipo: {
+          type: 'STRING',
+          description: 'comprador (quer comprar) ou vendedor (quer vender/consignar)',
+          enum: ['comprador', 'vendedor'],
+        },
       },
       required: ['nome', 'telefone'],
     },
