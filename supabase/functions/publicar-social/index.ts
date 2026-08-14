@@ -1,5 +1,6 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from 'jsr:@supabase/supabase-js@2'
+import { isInternalRequestAuthorized, unauthorizedResponse } from '../_shared/internal-auth.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -53,6 +54,12 @@ async function waitForInstagramMediaReady(
   return false
 }
 
+// Achado em auditoria (14/08/2026, pedido da Adriana): faltava o import de
+// isInternalRequestAuthorized/unauthorizedResponse — toda chamada (manual ou
+// agendada) quebrava na hora com ReferenceError, antes mesmo de tentar
+// publicar. Também nunca existiu cron chamando esta function — mesmo com o
+// bug corrigido, nada disparava a publicação no horário agendado sozinho
+// (ver migração deste mesmo commit).
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
   if (!isInternalRequestAuthorized(req)) return unauthorizedResponse(corsHeaders)
