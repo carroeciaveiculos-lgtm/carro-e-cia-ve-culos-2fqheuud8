@@ -11,12 +11,21 @@ const corsHeaders = {
 
 const WM_ESTOQUE_NAMESPACE = 'www.webmotors.com.br/wsEstoqueRevendedorWebMotors'
 
-// Único CodigoModalidade contratado nessa conta ("Anúncio Básico") — confirmado
-// em 07/08/2026 via ObterModalidade (wm-catalog-fetch, catalogo=modalidade):
-// resposta real da Webmotors, CodigoRetorno 500. Se a conta contratar uma
-// segunda modalidade no futuro, isso precisa virar um mapeamento por tier
-// (veiculos.ad_types.webmotors), não mais uma constante única.
-const CODIGO_MODALIDADE_ANUNCIO_BASICO = '2943'
+// Corrigido em 13/08/2026: o código de "Anúncio Básico" mudou de 2943
+// (conta genérica de homologação) para 6351 (conta de produção real) — essa
+// constante ficou parada no valor antigo depois da troca de ambiente, e todo
+// veículo mapeado por aqui teria caído no mesmo erro "modalidade inválida
+// para o Revendedor" já corrigido em outros lugares. Busca ao vivo em
+// wm_modalidades em vez de fixar de novo, com o valor de produção como
+// fallback caso a tabela ainda não tenha sido populada.
+async function obterCodigoModalidadeBasico(supabase: any): Promise<string> {
+  const { data } = await supabase
+    .from('wm_modalidades')
+    .select('codigo_wm')
+    .eq('descricao', 'Anúncio Básico')
+    .maybeSingle()
+  return data?.codigo_wm || '6351'
+}
 
 // Limiar de confianca (0 a 1). Abaixo disso, vai para revisao humana.
 // Ponto de partida razoavel para trigram similarity em nomes curtos de veiculo;
@@ -267,7 +276,7 @@ Deno.serve(async (req: Request) => {
       codigo_cor_wm: corMatch!.codigo_wm,
       codigo_cambio_wm: cambioMatch!.codigo_wm,
       codigo_combustivel_wm: combustivelMatch!.codigo_wm,
-      codigo_modalidade_wm: CODIGO_MODALIDADE_ANUNCIO_BASICO,
+      codigo_modalidade_wm: await obterCodigoModalidadeBasico(supabase),
       confianca_marca: confiancaMarca,
       confianca_modelo: confiancaModelo,
       confianca_versao: confiancaVersao,
