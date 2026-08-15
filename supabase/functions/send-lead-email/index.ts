@@ -7,7 +7,7 @@ const corsHeaders = {
     'authorization, x-client-info, x-supabase-client-platform, apikey, content-type',
 }
 
-const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY') || 're_gNKcmAnQ_NyzW7K8kj1Mgbf7AnJzXGoQj'
+const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY') || ''
 const TO_EMAIL = 'contato@carroeciamotors.com.br'
 
 Deno.serve(async (req) => {
@@ -62,7 +62,7 @@ Deno.serve(async (req) => {
       Authorization: 'Bearer ' + RESEND_API_KEY,
     },
     body: JSON.stringify({
-      from: 'onboarding@resend.dev',
+      from: 'Carro e Cia Veículos <contato@carroeciamotors.com.br>',
       to: TO_EMAIL,
       subject: 'Novo Lead - ' + origem + ' | Carro e Cia',
       html: htmlBody,
