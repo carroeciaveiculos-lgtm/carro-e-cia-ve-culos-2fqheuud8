@@ -15,6 +15,11 @@ const waToken = Deno.env.get('WHATSAPP_TOKEN') || Deno.env.get('META_WHATSAPP_AC
 const waPhoneId =
   Deno.env.get('WHATSAPP_PHONE_NUMBER_ID') || Deno.env.get('META_PHONE_NUMBER_ID') || 'default_id'
 
+// Celular pessoal da Adriana — alertas administrativos internos (pedido de
+// 15/08/2026: avisar quando a Clara agenda visita/avaliação e quando passa
+// atendimento pra humano).
+const ADRIANA_PHONE = '5534984080220'
+
 async function getSystemPrompt() {
   const { data } = await supabase
     .from('social_configuracoes')
@@ -30,7 +35,11 @@ async function getSystemPrompt() {
     promptConfig?.prompt_text ||
     data?.ai_system_prompt ||
     'Você é a Clara, SDR digital da Carro e Cia Motors.'
-  const waNumber = data?.whatsapp_number || ''
+  // Fixo (14/08/2026, regra da Adriana): antes lia whatsapp_number do
+  // social_configuracoes, que guarda o celular pessoal dela (usado pros
+  // alertas internos de agendamento/relatório) — a Clara estava se
+  // apresentando com o número pessoal da Adriana em vez do dela mesma.
+  const waNumber = '5534997384177'
 
   // Filtrado por categoria (12/08/2026) — antes pegava as 10 entradas mais
   // recentes de qualquer assunto, incluindo regras de SEO de blog sem nada a
@@ -71,7 +80,7 @@ async function getSystemPrompt() {
   return `${basePrompt}${memoryContext}
 Data e hora atuais (horário de Brasília): ${agoraBR}. Use isso pra calcular datas relativas como "amanhã", "sexta-feira" etc — nunca invente uma data sem se basear nisso. Ao chamar agendar_visita, sempre mande data_hora em ISO 8601 com o fuso de Brasília (-03:00).
 ${waNumber ? `O número oficial de WhatsApp da loja é: ${waNumber}. Se for necessário enviar um link direto, use https://wa.me/${waNumber}` : ''}
-Ferramentas disponíveis: use consultar_estoque pra verificar veículos disponíveis antes de falar sobre eles; use agendar_visita quando o cliente confirmar dia e horário de visita/avaliação; use salvar_email_lead assim que o cliente informar um e-mail em qualquer momento da conversa, mesmo que já tenha lead criado; use enviar_midia_veiculo quando fizer sentido mandar foto ou vídeo de um veículo específico já consultado; use solicitar_atendimento_humano quando o lead estiver qualificado e pronto pra avançar, ou pedir explicitamente para falar com uma pessoa; use atualizar_estagio_lead pra refletir o andamento da conversa no funil.
+Ferramentas disponíveis: use consultar_estoque pra verificar veículos disponíveis antes de falar sobre eles; use agendar_visita quando o cliente confirmar dia e horário de visita/avaliação; use salvar_email_lead assim que o cliente informar um e-mail em qualquer momento da conversa, mesmo que já tenha lead criado; use enviar_midia_veiculo quando fizer sentido mandar foto ou vídeo de um veículo específico já consultado; use solicitar_atendimento_humano quando o lead estiver qualificado e pronto pra avançar, ou pedir explicitamente para falar com uma pessoa; use atualizar_estagio_lead pra refletir o andamento da conversa no funil e pra reavaliar a temperatura (frio/morno/quente) sempre que o interesse do lead mudar. Ao chamar criar_lead_crm, escolha o tipo com cuidado — se o cliente disser que quer seguro do carro ou consórcio, use tipo seguro_auto/consorcio: isso encaminha automaticamente o lead pro responsável (Gabriel pra seguro, a própria loja pra consórcio), então avise o cliente que alguém vai entrar em contato em breve.
 REGRA CRÍTICA: nunca diga "agendado", "confirmado" ou "marcado" sem ANTES ter chamado a função correspondente (ex: agendar_visita) na mesma resposta — se a data/horário ainda não estiver 100% definida, pergunte de novo em vez de dar a confirmação por feita.`
 }
 
@@ -126,17 +135,38 @@ async function executeFunction(name: string, args: any, leadId: string): Promise
   }
 
   if (name === 'atualizar_estagio_lead') {
-    const status = args.status
-    const permitidos = ['novo', 'em_contato', 'agendamento', 'visita', 'fechado', 'perdido']
-    if (!permitidos.includes(status)) return { error: `status inválido: ${status}` }
-    const { error } = await supabase.from('leads').update({ status }).eq('id', leadId)
+    const statusPermitidos = ['novo', 'em_contato', 'agendamento', 'visita', 'fechado', 'perdido']
+    const temperaturaPermitida = ['frio', 'morno', 'quente']
+    const update: Record<string, string> = {}
+
+    if (args.status !== undefined) {
+      if (!statusPermitidos.includes(args.status)) return { error: `status inválido: ${args.status}` }
+      update.status = args.status
+    }
+    if (args.temperatura !== undefined) {
+      if (!temperaturaPermitida.includes(args.temperatura))
+        return { error: `temperatura inválida: ${args.temperatura}` }
+      update.temperatura = args.temperatura
+    }
+    if (Object.keys(update).length === 0) return { error: 'informe status e/ou temperatura' }
+
+    const { error } = await supabase.from('leads').update(update).eq('id', leadId)
     if (error) return { error: error.message }
-    return { ok: true, status }
+    return { ok: true, ...update }
   }
 
   if (name === 'solicitar_atendimento_humano') {
-    const { error } = await supabase.from('leads').update({ ai_enabled: false }).eq('id', leadId)
+    const { data: leadAtualizado, error } = await supabase
+      .from('leads')
+      .update({ ai_enabled: false })
+      .eq('id', leadId)
+      .select('nome, telefone')
+      .single()
     if (error) return { error: error.message }
+    const texto = `🙋 Atendimento passado para humano\n\nNome: ${leadAtualizado?.nome || 'não informado'}\nTelefone: ${leadAtualizado?.telefone || 'não informado'}\nMotivo: ${args.motivo || 'não informado'}\n\nAcesse o CRM para continuar o atendimento.`
+    await sendWhatsApp(ADRIANA_PHONE, texto).catch((err) =>
+      console.error('Erro ao notificar atendimento humano:', err),
+    )
     return { ok: true, motivo: args.motivo || null }
   }
 
@@ -195,6 +225,9 @@ async function executeFunction(name: string, args: any, leadId: string): Promise
       .single()
     if (error) return { error: error.message }
     if (email) await registrarEmailNoBrevo(data.id, email, args.nome, args.telefone)
+    if (args.tipo === 'seguro_auto' || args.tipo === 'consorcio') {
+      await encaminharParaParceiro(data, args.tipo)
+    }
     return { lead: data }
   }
 
@@ -242,6 +275,40 @@ async function registrarEmailNoBrevo(
   }
 }
 
+// Regra da Adriana (14/08/2026): lead de seguro auto vai pro Gabriel, lead de
+// consórcio vai pra própria Adriana — cada um continua o atendimento fora do
+// sistema da revenda. Isso só encaminha (WhatsApp com resumo + dados do
+// cliente); não integra com nenhum sistema da corretora/consórcio.
+const PARCEIROS_ENCAMINHAMENTO: Record<string, { nome: string; telefone: string; assunto: string }> = {
+  seguro_auto: { nome: 'Gabriel', telefone: '5534992000300', assunto: 'Seguro Auto' },
+  consorcio: { nome: 'Adriana', telefone: '5534984080220', assunto: 'Consórcio' },
+}
+
+async function encaminharParaParceiro(lead: any, tipo: string) {
+  try {
+    const parceiro = PARCEIROS_ENCAMINHAMENTO[tipo]
+    if (!parceiro) return
+
+    const { data: historico } = await supabase
+      .from('conversation_history')
+      .select('sender, message_text')
+      .eq('lead_id', lead.id)
+      .order('created_at', { ascending: true })
+      .limit(30)
+
+    const resumoConversa = (historico || [])
+      .map((m: any) => `${m.sender === 'bot' ? 'Clara' : 'Cliente'}: ${m.message_text}`)
+      .join('\n')
+      .slice(0, 2000)
+
+    const texto = `🔀 Lead encaminhado pela Clara — ${parceiro.assunto}\n\nNome: ${lead.nome || 'não informado'}\nTelefone: ${lead.telefone || 'não informado'}\nE-mail: ${lead.email || 'não informado'}\n\nResumo da conversa:\n${resumoConversa || '(sem histórico de conversa registrado)'}`
+
+    await sendWhatsApp(parceiro.telefone, texto)
+  } catch (err) {
+    console.error('Erro ao encaminhar lead pra parceiro:', err)
+  }
+}
+
 // Bloco 3 (13/08/2026): avisa o WhatsApp da loja assim que um agendamento é
 // fechado pela Clara. Nunca lança erro — se a notificação falhar, o
 // agendamento em si (já salvo antes de chamar isso) não pode ser afetado.
@@ -281,6 +348,7 @@ async function notificarNovoAgendamento(agendamento: any, leadId: string) {
     const ownerPhone = config?.whatsapp_number || '5534999484285'
 
     await sendWhatsApp(ownerPhone, texto)
+    await sendWhatsApp(ADRIANA_PHONE, texto)
   } catch (err) {
     console.error('Erro ao notificar novo agendamento:', err)
   }
