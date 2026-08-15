@@ -56,10 +56,10 @@ export default function Configuracoes() {
   // Fake state for site config (since we don't have all keys in DB, we mock the UI for the user story)
   const [siteConfig, setSiteConfig] = useState<any>({
     nome_loja: 'Carro e Cia Veículos',
-    cnpj: '17.125.199/0001-87',
-    telefone: '(34) 99994-8428',
+    cnpj: '10.196.974/0001-46',
+    telefone: '(34) 3315-9400',
     email: 'lgacomerciodeveiculos@gmail.com',
-    endereco: 'Av. Guilherme Ferreira, 1131 - São Benedito, Uberaba - MG',
+    endereco: 'Av. Guilherme Ferreira, 1119 - São Benedito, Uberaba - MG',
     meta_title: 'Carro e Cia Veículos | Os Melhores Seminovos de Uberaba',
     meta_description:
       'Venda seu carro com segurança. Consignação e financiamento de veículos em Uberaba.',

@@ -67,7 +67,7 @@ export function SEO({
       url: 'https://www.carroeciamotors.com.br',
       logo: 'https://imagens.carroeciamotors.com.br/logos-e-imagens/logos/logo-carro-e-cia.webp',
       image: 'https://imagens.carroeciamotors.com.br/logos-e-imagens/logos/logo-carro-e-cia.webp',
-      telephone: '+5534999484285',
+      telephone: '+553433159400',
       address: {
         '@type': 'PostalAddress',
         streetAddress: 'Av. Guilherme Ferreira, 1119',
@@ -90,7 +90,7 @@ export function SEO({
           closes: '13:00',
         },
       ],
-      sameAs: ['https://www.instagram.com/carroeciaveiculos', 'https://wa.me/5534999484285'],
+      sameAs: ['https://www.instagram.com/carroeciaveiculos', 'https://wa.me/5534997384177'],
     }
 
     const scripts: HTMLScriptElement[] = []

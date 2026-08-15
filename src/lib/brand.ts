@@ -64,13 +64,6 @@ export const DEFAULT_BRAND: BrandConfig = {
       email: 'gabrielaraujo@kmzero.com.br',
     },
     {
-      name: 'Jessica Germano',
-      role: 'Documentação e Financeiro',
-      whatsapp: '5534984029617',
-      whatsappDisplay: '(34) 98402-9617',
-      email: 'jessica@carroeciamotors.com.br',
-    },
-    {
       name: 'Roberto Junior',
       role: 'Vendas',
       whatsapp: '5534992893615',

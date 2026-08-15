@@ -68,7 +68,7 @@ Deno.serve(async (req) => {
 
     // Endereço formatado no padrão com chaves aceito pela API da Meta
     const addressStr =
-      "{addr1: 'Av. Guilherme Ferreira, 1131', city: 'Uberaba', region: 'MG', country: 'BR', postal_code: '38022-200'}"
+      "{addr1: 'Av. Guilherme Ferreira, 1119', city: 'Uberaba', region: 'MG', country: 'BR', postal_code: '38022-200'}"
 
     const bodyStyleMap: Record<string, string> = {
       Hatch: 'hatchback',

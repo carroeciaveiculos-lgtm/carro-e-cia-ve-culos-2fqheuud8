@@ -25,12 +25,6 @@ const team = [
     bio: 'Especialista em vendas com foco em relacionamento e satisfação do cliente.',
     img: 'https://imagens.carroeciamotors.com.br/logos-e-imagens/fotos/Roberto-Junior-foto-profissional.webp',
   },
-  {
-    name: 'Jessica Germano',
-    role: 'Assistente Financeira',
-    bio: 'Responsável pela gestão financeira com transparência e segurança em cada transação.',
-    img: 'https://imagens.carroeciamotors.com.br/logos-e-imagens/fotos/Ljessica-foto-profissional.webp',
-  },
 ]
 
 export default function VenderMeuCarro() {
@@ -39,7 +33,7 @@ export default function VenderMeuCarro() {
     '@type': 'AutoDealer',
     name: 'Carro e Cia Veículos',
     url: 'https://carroeciamotors.com.br',
-    telephone: '+5534999484285',
+    telephone: '+553433159400',
     address: {
       '@type': 'PostalAddress',
       streetAddress: 'Av. Guilherme Ferreira, 1119',

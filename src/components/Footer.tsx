@@ -171,7 +171,11 @@ export function Footer() {
               </li>
               <li className="flex gap-3">
                 <Phone className="w-5 h-5 text-primary shrink-0" />
-                <span className="text-muted-foreground">(34) 3316-7701</span>
+                <span className="text-muted-foreground">Fixo: (34) 3315-9400</span>
+              </li>
+              <li className="flex gap-3">
+                <Phone className="w-5 h-5 text-primary shrink-0" />
+                <span className="text-muted-foreground">Celular: (34) 99289-3615</span>
               </li>
               <li className="flex gap-3">
                 <Clock className="w-5 h-5 text-primary shrink-0" />

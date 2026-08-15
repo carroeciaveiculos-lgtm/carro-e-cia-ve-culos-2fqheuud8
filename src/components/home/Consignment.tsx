@@ -99,7 +99,7 @@ export function Consignment() {
       const text = encodeURIComponent(
         `Olá! Tenho um ${formData.marca} ${formData.modelo} ${formData.ano} com ${formData.km} km para consignar. Podemos conversar?`,
       )
-      window.open(`https://wa.me/5534999484285?text=${text}`, '_blank')
+      window.open(`https://wa.me/5534997384177?text=${text}`, '_blank')
     } catch (err) {
       toast({
         title: 'Erro ao enviar',

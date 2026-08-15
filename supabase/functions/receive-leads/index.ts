@@ -177,7 +177,7 @@ Deno.serve(async (req: Request) => {
                           },
                           body: JSON.stringify({
                             messaging_product: 'whatsapp',
-                            to: '5534999484285',
+                            to: '5534984080220',
                             type: 'text',
                             text: {
                               body: `\u{1F514} *Novo Lead via Meta Lead Ads!*\n\n\u{1F464} Nome: ${leadNome}\n\ud83d\udcde Telefone: ${cleanTelefone || 'N/A'}\n\ud83d\udce7 Email: ${leadEmail || 'N/A'}\n\ud83d\ude97 Interesse: ${leadInteresse || 'N/A'}\n\nAcesse o CRM para atendimento.`,

@@ -32,9 +32,9 @@ export default function PoliticaPrivacidade() {
 
         <div className="prose prose-slate dark:prose-invert max-w-none text-justify text-foreground space-y-6">
           <div className="text-left space-y-1 mb-8">
-            <p className="m-0">LGA COMÉRCIO DE VEÍCULOS LTDA</p>
+            <p className="m-0">TRANSLUGA ADMINISTRADORA DE VEÍCULOS LTDA</p>
             <p className="m-0">CARRO E CIA MOTORS</p>
-            <p className="m-0">CNPJ: 17.125.199/0001-87</p>
+            <p className="m-0">CNPJ: 10.196.974/0001-46</p>
             <p className="m-0 mt-4">REGULAMENTO INTERNO DE PRIVACIDADE, TERMOS DE USO E COOKIES</p>
             <p className="m-0 mt-4">
               Documentação de Conformidade com a LGPD e Diretrizes de Plataforma do Meta
@@ -60,9 +60,10 @@ export default function PoliticaPrivacidade() {
           </h3>
           <p>
             A presente Política de Privacidade regula o tratamento de dados pessoais realizado pela
-            LGA COMÉRCIO DE VEÍCULOS LTDA, pessoa jurídica de direito privado, inscrita sob o CNPJ
-            nº 17.125.199/0001-87, operando comercialmente sob o nome fantasia CARRO E CIA MOTORS,
-            com sede administrativa na Av. Guilherme Ferreira, nº 1131, Bairro São Benedito, Uberaba
+            TRANSLUGA ADMINISTRADORA DE VEÍCULOS LTDA, pessoa jurídica de direito privado, inscrita
+            sob o CNPJ nº 10.196.974/0001-46, operando comercialmente sob o nome fantasia CARRO E
+            CIA MOTORS,
+            com sede administrativa na Av. Guilherme Ferreira, nº 1119, Bairro São Benedito, Uberaba
             - MG, CEP 38022-200.
           </p>
           <p>
@@ -122,7 +123,7 @@ export default function PoliticaPrivacidade() {
             <li>
               Propostas e Agendamentos: Viabilizar o envio de fotos, simulações prévias de
               financiamento bancário e agendar visitas presenciais ao nosso showroom na Av.
-              Guilherme Ferreira, nº 1131.
+              Guilherme Ferreira, nº 1119.
             </li>
           </ul>
 

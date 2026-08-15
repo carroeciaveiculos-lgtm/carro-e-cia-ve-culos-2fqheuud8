@@ -647,7 +647,7 @@ export default function Veiculo() {
           variant="outline"
           className="h-12 border-primary text-primary hover:bg-primary/5"
         >
-          <a href="tel:+5534999484285">
+          <a href="tel:+553433159400">
             <Phone className="w-4 h-4 mr-2" /> Ligar
           </a>
         </Button>

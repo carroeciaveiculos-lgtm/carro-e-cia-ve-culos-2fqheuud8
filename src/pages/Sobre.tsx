@@ -18,7 +18,6 @@ export default function Sobre() {
       'Adriana Araújo',
       'Gabriel Araújo',
       'Roberto Junior',
-      'Jessica Germano',
     ]
     supabase
       .from('usuarios')
@@ -385,7 +384,7 @@ export default function Sobre() {
               <p className="text-sm text-muted-foreground">
                 contato@carroeciamotors.com.br
                 <br />
-                (34) 97384-177
+                (34) 3315-9400
               </p>
             </div>
             <div>

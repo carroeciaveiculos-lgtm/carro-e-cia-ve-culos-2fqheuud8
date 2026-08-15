@@ -66,7 +66,7 @@ export default function Termos() {
           <h2 className="text-xl font-bold text-left pt-4">6. Contato</h2>
           <p>
             Em caso de dúvidas sobre estes Termos de Uso, entre em contato através do telefone (34)
-            3316-7701 ou pelo e-mail contato@carroeciamotors.com.br.
+            3315-9400 ou pelo e-mail contato@carroeciamotors.com.br.
           </p>
         </div>
       </div>

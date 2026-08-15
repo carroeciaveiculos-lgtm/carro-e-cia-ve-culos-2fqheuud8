@@ -127,13 +127,14 @@ export function TestimonialsAndLocation() {
                   <Phone className="w-6 h-6" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-lg mb-1">WhatsApp de Atendimento</h3>
+                  <h3 className="font-bold text-lg mb-1">Telefones para Ligação</h3>
                   <p className="text-muted-foreground">
-                    <a
-                      href="https://wa.me/5534999484285"
-                      className="text-[#25D366] hover:underline font-medium text-lg"
-                    >
-                      (34) 99948-4285
+                    <a href="tel:+553433159400" className="hover:underline font-medium">
+                      Fixo: (34) 3315-9400
+                    </a>
+                    <br />
+                    <a href="tel:+5534992893615" className="hover:underline font-medium">
+                      Celular: (34) 99289-3615
                     </a>
                   </p>
                 </div>

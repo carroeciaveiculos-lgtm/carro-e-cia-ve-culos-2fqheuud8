@@ -100,7 +100,7 @@ const SCHEMA = {
 
 export default function ConsorcioAuto() {
   const adrianaWpp =
-    'https://wa.me/5534998037651?text=Olá Adriana! Quero simular um consórcio de veículo e entender como usar meu carro atual como lance.'
+    'https://wa.me/5534984080220?text=Olá Adriana! Quero simular um consórcio de veículo e entender como usar meu carro atual como lance.'
 
   return (
     <div className="min-h-screen bg-background flex flex-col">

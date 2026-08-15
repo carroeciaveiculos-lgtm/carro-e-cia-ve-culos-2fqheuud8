@@ -8,8 +8,8 @@ tools: Read, Grep, Glob, Edit, Bash
 Nome: Carro e Cia Veículos
 Site: carroeciamotors.com.br
 Endereço: Av. Guilherme Ferreira, 1119 — São Benedito, Uberaba - MG
-WhatsApp: (34) 99948-4285
-Número formatado para links: 5534999484285
+WhatsApp: (34) 99738-4177
+Número formatado para links: 5534997384177
 Instagram: @carroecia_uberaba
 Página Facebook: https://www.facebook.com/carroeciaosmelhoresveiculos
 Horário de funcionamento:

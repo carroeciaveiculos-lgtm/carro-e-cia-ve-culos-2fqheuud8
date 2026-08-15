@@ -146,7 +146,7 @@ export default function SeguroAuto() {
   const gabrielWpp =
     'https://wa.me/5534992000300?text=Olá Gabriel! Comprei um veículo na Carro e Cia e quero cotar o seguro agora.'
   const adrianaWpp =
-    'https://wa.me/5534998037651?text=Olá Adriana! Quero cotar o seguro do meu veículo.'
+    'https://wa.me/5534984080220?text=Olá Adriana! Quero cotar o seguro do meu veículo.'
 
   return (
     <div className="min-h-screen bg-background flex flex-col">

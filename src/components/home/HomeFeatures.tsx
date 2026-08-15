@@ -75,7 +75,7 @@ export function HomeFeatures() {
                   key={v.id}
                   className="overflow-hidden hover:shadow-lg transition-shadow border-border/50 group flex flex-col w-full bg-card"
                 >
-                  <div className="relative w-full h-[240px] bg-muted group-hover:scale-105 transition-transform duration-500">
+                  <div className="relative w-full h-[240px] bg-muted overflow-hidden">
                     {v.is_zero_km && (
                       <div className="absolute top-3 left-3 z-10 bg-primary text-primary-foreground px-2 py-1 text-xs font-bold rounded">
                         0 KM
@@ -85,7 +85,7 @@ export function HomeFeatures() {
                       <img
                         src={foto}
                         alt={`${v.marca} ${v.modelo}`}
-                        className="w-full h-full object-cover bg-muted"
+                        className="w-full h-full object-cover bg-muted group-hover:scale-105 transition-transform duration-500"
                         loading="lazy"
                         decoding="async"
                         onError={(e) => handleImageError(e.currentTarget, `${v.marca} ${v.modelo}`)}
@@ -116,7 +116,7 @@ export function HomeFeatures() {
                       className="w-full h-10 bg-[#25D366] hover:bg-[#20bd5a] text-white font-bold text-sm rounded-lg"
                     >
                       <a
-                        href={`https://wa.me/5534999484285?text=${encodeURIComponent(`Olá! Vi o ${v.marca} ${v.modelo} no site por R$ ${v.preco_venda}. Ainda está disponível?`)}`}
+                        href={`https://wa.me/5534997384177?text=${encodeURIComponent(`Olá! Vi o ${v.marca} ${v.modelo} no site por R$ ${v.preco_venda}. Ainda está disponível?`)}`}
                         target="_blank"
                         rel="noopener noreferrer"
                       >

@@ -102,7 +102,11 @@ Deno.serve(async (req) => {
     )
 
     const customPrompt = socialConfig?.ai_system_prompt || sysPromptGeneral
-    const whatsappNumber = socialConfig?.whatsapp_number || '5534999999999'
+    // Fixo (14/08/2026, regra da Adriana): antes lia whatsapp_number do
+    // social_configuracoes, que guarda o celular pessoal dela (usado pros
+    // alertas internos) — conteúdo público gerado por IA não pode levar o
+    // número pessoal dela, só o da Clara.
+    const whatsappNumber = '5534997384177'
 
     const basePrompt = `${customPrompt}
 Contexto real da empresa: ${configString}.

@@ -36,7 +36,7 @@ export default function Index() {
     description:
       'Venda seu carro rápido e seguro. Compra, venda e consignação de veículos com transparência total. Carro e Cia Veículos: referência 20+ anos em Uberaba.',
     url: 'https://carroeciamotors.com.br',
-    telephone: '+55 34 99948-4285',
+    telephone: '+55 34 3315-9400',
     address: {
       '@type': 'PostalAddress',
       streetAddress: 'Av. Guilherme Ferreira, 1119',

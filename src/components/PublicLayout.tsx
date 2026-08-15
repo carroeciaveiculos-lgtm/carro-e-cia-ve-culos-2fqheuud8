@@ -11,6 +11,7 @@ import {
   ArrowUp,
   Shield,
   CreditCard,
+  Briefcase,
 } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { cn } from '@/lib/utils'
@@ -40,6 +41,7 @@ export default function PublicLayout() {
   const rightLinks = [
     { label: 'Blog', href: '/blog' },
     { label: 'Sobre', href: '/sobre' },
+    { label: 'Trabalhe Conosco', href: '/trabalhe-conosco' },
     { label: 'Contato', href: '/contato' },
   ]
 
@@ -50,6 +52,7 @@ export default function PublicLayout() {
     { label: 'Financiamento', href: '/financiamento-auto', icon: CreditCard },
     { label: 'Seguro Auto', href: '/seguro-auto', icon: Shield },
     { label: 'Consórcio Auto', href: '/consorcio-auto', icon: Car },
+    { label: 'Trabalhe Conosco', href: '/trabalhe-conosco', icon: Briefcase },
     { label: 'Contato', href: '/contato', icon: MessageCircle },
     { label: 'Blog', href: '/blog', icon: Home },
   ]
@@ -195,7 +198,11 @@ export default function PublicLayout() {
         </main>
 
         <footer className="py-8 border-t bg-muted/30 text-center text-sm text-muted-foreground mt-auto pb-safe md:pb-24">
-          <div className="container flex flex-col items-center justify-center gap-2">
+          <div className="container flex flex-col items-center justify-center gap-1.5">
+            <p className="text-xs">
+              TRANSLUGA ADMINISTRACAO DE VEICULOS LTDA. — CNPJ: 10.196.974/0001-46
+            </p>
+            <p className="text-xs">Avenida Guilherme Ferreira, 1119, Uberaba - MG</p>
             <p>© {new Date().getFullYear()} Carro e Cia Veículos. Todos os direitos reservados.</p>
             <Link
               to="/politica-de-privacidade"

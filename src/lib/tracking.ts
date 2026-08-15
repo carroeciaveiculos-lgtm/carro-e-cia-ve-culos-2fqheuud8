@@ -257,7 +257,7 @@ export const trackConversion = (type: 'whatsapp' | 'ligar' | 'formulario') => {
 export const trackWhatsAppClick = (contactPerson: string, trigger: string, vehicleId?: string) => {
   trackGTMEvent('whatsapp_click', {
     contact_person: contactPerson,
-    whatsapp_number: '5534999484285',
+    whatsapp_number: '5534997384177',
     page_location: typeof window !== 'undefined' ? window.location.href : '',
     source_page: typeof document !== 'undefined' ? document.title : '',
     trigger: trigger,
