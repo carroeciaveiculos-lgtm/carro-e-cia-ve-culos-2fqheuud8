@@ -1,5 +1,8 @@
 # Carro e Cia Veículos — site + CRM
 
+**Caminho local deste projeto:** `C:\Projeto\Revenda Carro e Cia\carro-e-cia-ve-culos-2fqheuud8`.
+Sempre iniciar sessões de trabalho neste projeto a partir dessa pasta.
+
 Revenda de veículos. Um único app React serve três coisas: o **site público**
 (estoque, blog, landing pages), o **CRM/admin** (`/admin/*`) e o **hub interno**
 (`src/hub/`). O backend é inteiramente Supabase — Postgres + Edge Functions.
@@ -197,6 +200,29 @@ específico aqui, menos eu erro:
   dão `22|78` e **bloqueiam** a publicação (`CodigoAnuncio` volta 0). Ela também
   valida o "De" contra a FIPE (código `105`), então não dá para simplesmente
   inflar o valor. Ver `docs/webmotors-integracao.md`.
+- **Números de WhatsApp/telefone — RESPONDIDO em 15/08/2026.** Quatro números,
+  papéis fixos, não intercambiáveis:
+
+  - `5534997384177` (Clara) — atendimento geral do site: chat, CTAs, botões de
+    veículo, campanhas, landing pages, conteúdo gerado por IA. É o padrão em
+    `src/lib/whatsapp.ts` (`getWhatsAppLink`) — não hardcode outro número num
+    fluxo genérico, deixe cair no padrão.
+  - `5534984080220` (celular pessoal da Adriana) — só em botões/fluxos de
+    **consórcio** (`ConsorcioAuto.tsx`), e como destino dos alertas
+    administrativos internos (novo agendamento, relatório diário, no-show,
+    lead do Meta Ads, artigo pronto pra revisão). Vem de
+    `social_configuracoes.whatsapp_number` — esse campo é só pra alerta
+    interno, nunca pra link público de WhatsApp.
+  - `5534992000300` (Gabriel) — só em botões/fluxos de **seguro auto**
+    (`SeguroAuto.tsx`).
+  - `553433159400` (fixo da loja) e `5534992893615` (celular da loja) — **só
+    ligação direta** (`tel:`), nunca `wa.me`. Aparecem no `telephone` dos
+    dados estruturados (schema.org, `SEO.tsx`/`Index.tsx`/`VenderMeuCarro.tsx`)
+    e no rodapé/"Onde estamos" do site.
+
+  Números individuais da equipe no rodapé (Luiz, Roberto etc.) são à parte,
+  não seguem essa hierarquia. Briefing do agente `web-designer-senior.md`
+  mantido em sincronia com o número da Clara.
 - **Leads**: o que nunca pode faltar num lead? Qual o SLA/fluxo depois que entra?
 - **Publicação em portais**: existe aprovação manual antes de subir anúncio?
 - **O que eu nunca devo mexer sem te perguntar?** (ex.: migrations em produção,
