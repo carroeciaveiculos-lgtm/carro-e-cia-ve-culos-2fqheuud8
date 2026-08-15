@@ -78,6 +78,31 @@ export async function syncVehicleToML(
     .select('id, ml_item_id, status')
     .eq('veiculo_id', veiculoId)
     .maybeSingle()
+
+  // Achado ao vivo (14/08/2026, SW4 Hilux): o item local apontava pra um
+  // anúncio que já estava "closed"/"deleted" no Mercado Livre (fechado
+  // manualmente, ou por outro motivo do lado deles) — o PUT então falhava
+  // com TODOS os campos como "not modifiable", porque a API não deixa
+  // editar nada de um anúncio fechado/deletado, só recriar um novo. Sem
+  // essa checagem, ficaria tentando o PUT pra sempre e nunca republicaria.
+  let listingIsStale = false
+  if (existingListing?.ml_item_id) {
+    try {
+      const statusRes = await fetchWithBackoff(
+        `https://api.mercadolibre.com/items/${existingListing.ml_item_id}?attributes=status,sub_status`,
+        { headers: { Authorization: `Bearer ${token}` } },
+      )
+      if (statusRes.ok) {
+        const statusData = await statusRes.json()
+        if (statusData.status === 'closed' || (statusData.sub_status || []).includes('deleted')) {
+          listingIsStale = true
+        }
+      }
+    } catch {
+      // fail-open — se a checagem falhar, tenta o PUT normal como antes
+    }
+  }
+
   const cityId = await getCityId(supabase, 'Uberaba')
 
   const imageValidation = await validateImagesForML(fotos)
@@ -101,7 +126,7 @@ export async function syncVehicleToML(
 
   try {
     let mlData: any
-    if (existingListing?.ml_item_id) {
+    if (existingListing?.ml_item_id && !listingIsStale) {
       const updatePayload = buildMLUpdatePayload(validVehicle, undefined, cityId)
       if (validation.corrections.title) updatePayload.title = validation.corrections.title
       const updateRes = await fetchWithBackoff(
@@ -153,7 +178,7 @@ export async function syncVehicleToML(
         veiculo_id: veiculoId,
         acao: 'sync',
         status: 'success',
-        mensagem: `ML item ${mlData.id} ${existingListing?.ml_item_id ? 'updated' : 'created'}`,
+        mensagem: `ML item ${mlData.id} ${existingListing?.ml_item_id && !listingIsStale ? 'updated' : listingIsStale ? 'recreated (anúncio anterior estava closed/deleted no ML)' : 'created'}`,
         metadata: logMetadata,
       })
     }

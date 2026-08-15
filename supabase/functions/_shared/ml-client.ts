@@ -345,8 +345,10 @@ export async function fetchCategoryAttributes(
 // Mercado Livre. Isso publicava o endereço pessoal do dono na internet, em
 // todo anúncio já sincronizado. Agora usa o endereço fixo da loja (mesmo
 // texto usado em public-inventory-feed e no prompt da Clara).
+// Corrigido em 14/08/2026: número estava errado (1131) — endereço real da
+// loja é 1119, conferido com a Adriana (mesmo valor usado no rodapé do site).
 const ENDERECO_LOJA = {
-  logradouro: 'Av. Guilherme Ferreira, 1131',
+  logradouro: 'Av. Guilherme Ferreira, 1119',
   bairro: 'São Benedito',
   cep: '38022200',
 }

@@ -200,13 +200,36 @@ async function handlePublish(
     .eq('veiculo_id', veiculoId)
     .maybeSingle()
 
+  // Achado ao vivo (14/08/2026, SW4 Hilux): o item local apontava pra um
+  // anúncio que já estava "closed"/"deleted" no Mercado Livre — o PUT então
+  // falhava com TODOS os campos como "not modifiable" (a API não deixa
+  // editar nada de um anúncio fechado/deletado, só recriar um novo). Sem
+  // essa checagem, ficaria tentando o PUT pra sempre e nunca republicaria.
+  let listingIsStale = false
+  if (existingListing?.ml_item_id) {
+    try {
+      const statusRes = await fetchWithBackoff(
+        `https://api.mercadolibre.com/items/${existingListing.ml_item_id}?attributes=status,sub_status`,
+        { headers: { Authorization: `Bearer ${token}` } },
+      )
+      if (statusRes.ok) {
+        const statusData = await statusRes.json()
+        if (statusData.status === 'closed' || (statusData.sub_status || []).includes('deleted')) {
+          listingIsStale = true
+        }
+      }
+    } catch {
+      // fail-open — se a checagem falhar, tenta o PUT normal como antes
+    }
+  }
+
   const validVehicle = { ...veiculo, fotos: imageValidation.validUrls }
 
   let mlData: any
   let actionVerb: string
 
   try {
-    if (existingListing?.ml_item_id) {
+    if (existingListing?.ml_item_id && !listingIsStale) {
       const updatePayload = buildMLUpdatePayload(validVehicle, undefined, cityId)
       if (validation.corrections.title) updatePayload.title = validation.corrections.title
       const updateRes = await fetchWithBackoff(
@@ -235,7 +258,7 @@ async function handlePublish(
       })
       mlData = await createRes.json()
       if (!createRes.ok) throw new Error(JSON.stringify(mlData))
-      actionVerb = 'created'
+      actionVerb = listingIsStale ? 'recriado (anúncio anterior estava closed/deleted no ML)' : 'created'
     }
   } catch (err: any) {
     const errMsgBruto = err.message || 'Erro desconhecido na API do Mercado Livre'
