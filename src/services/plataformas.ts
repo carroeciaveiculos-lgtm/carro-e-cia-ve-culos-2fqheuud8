@@ -256,3 +256,97 @@ export async function getMLAuthUrl(): Promise<string> {
   if (error) throw error
   return data?.auth_url || ''
 }
+
+export interface NapistaCatalogSyncResult {
+  success: boolean
+  error?: string
+  combos_processadas?: number
+  resultados?: Array<{ marca: string; modelo: string; versoes_encontradas?: number; erro?: string }>
+}
+
+// Aciona napista-sync-catalogo por trás de napista-catalogo-trigger (function
+// autenticada, restrita ao e-mail da Adriana) — o secret interno nunca chega
+// no navegador.
+export async function syncNapistaCatalogo(): Promise<NapistaCatalogSyncResult> {
+  const { data, error } = await supabase.functions.invoke('napista-catalogo-trigger', {
+    body: {},
+  })
+  if (error) return { success: false, error: error.message }
+  return data
+}
+
+export interface NapistaCandidato {
+  id: string
+  nome: string
+  score: number
+}
+
+export interface NapistaPendencia {
+  veiculo_id: string
+  marca: string
+  modelo: string
+  versao: string | null
+  fotos: string[] | null
+  napista_marca_id: string | null
+  napista_modelo_id: string | null
+  napista_version_id: string | null
+  erro_msg: string | null
+  candidatos_modelo: NapistaCandidato[]
+  candidatos_versao: NapistaCandidato[]
+}
+
+// Infere em qual etapa o auto-match parou (marca/modelo/versão/catálogo de
+// atributos) a partir de quais ids já foram preenchidos — não guarda um
+// campo "motivo" à parte, os próprios ids já contam a história.
+export function motivoPendenciaNapista(p: NapistaPendencia): 'marca' | 'modelo' | 'versao' | 'catalogo_napista' {
+  if (!p.napista_marca_id) return 'marca'
+  if (!p.napista_modelo_id) return 'modelo'
+  if (!p.napista_version_id) return 'versao'
+  return 'catalogo_napista'
+}
+
+export async function fetchNapistaPendencias(): Promise<NapistaPendencia[]> {
+  const { data, error } = await supabase
+    .from('napista_mapeamento_veiculos')
+    .select(
+      'veiculo_id, napista_marca_id, napista_modelo_id, napista_version_id, erro_msg, candidatos_modelo, candidatos_versao, veiculos(marca, modelo, versao, fotos)',
+    )
+    .eq('status_sincronizacao', 'revisao_necessaria')
+    .order('updated_at', { ascending: false })
+  if (error) throw error
+  return (data || []).map((r: any) => ({
+    veiculo_id: r.veiculo_id,
+    marca: r.veiculos?.marca || '',
+    modelo: r.veiculos?.modelo || '',
+    versao: r.veiculos?.versao || null,
+    fotos: r.veiculos?.fotos || null,
+    napista_marca_id: r.napista_marca_id,
+    napista_modelo_id: r.napista_modelo_id,
+    napista_version_id: r.napista_version_id,
+    erro_msg: r.erro_msg,
+    candidatos_modelo: r.candidatos_modelo || [],
+    candidatos_versao: r.candidatos_versao || [],
+  }))
+}
+
+export async function confirmarMapeamentoNapista(
+  veiculoId: string,
+  napistaModeloId?: string,
+  napistaVersionId?: string,
+): Promise<{ success: boolean; error?: string }> {
+  const { data, error } = await supabase.functions.invoke('napista-confirmar-mapeamento', {
+    body: { veiculo_id: veiculoId, napista_modelo_id: napistaModeloId, napista_version_id: napistaVersionId },
+  })
+  if (error) return { success: false, error: error.message }
+  return data
+}
+
+export async function remapearVeiculoNapista(
+  veiculoId: string,
+): Promise<{ success: boolean; status?: string; motivo?: string; error?: string }> {
+  const { data, error } = await supabase.functions.invoke('napista-mapear-veiculo', {
+    body: { veiculo_id: veiculoId },
+  })
+  if (error) return { success: false, error: error.message }
+  return data
+}

@@ -27,6 +27,7 @@ import { SyncFailureModal } from '@/components/admin/portais/SyncFailureModal'
 import type { SyncFailure } from '@/components/admin/portais/SyncFailureModal'
 import { ConversionMonitor } from '@/components/admin/portais/ConversionMonitor'
 import { PlatformSyncPanel } from '@/components/admin/portais/PlatformSyncPanel'
+import { NapistaCatalogPanel } from '@/components/admin/portais/NapistaCatalogPanel'
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@/components/ui/accordion'
 import {
   Select,
@@ -493,11 +494,15 @@ export default function Portais() {
                   </span>
                 </AccordionTrigger>
                 <AccordionContent>
-                  <p className="text-xs text-gray-500 px-1">
-                    Sem integração real com {p.nome} ainda — o botão de publicar aqui só marca uma
-                    flag interna, não avisa a plataforma. Nenhum anúncio é criado, atualizado ou
-                    removido lá de verdade.
-                  </p>
+                  {p.slug === 'napista' ? (
+                    <NapistaCatalogPanel />
+                  ) : (
+                    <p className="text-xs text-gray-500 px-1">
+                      Sem integração real com {p.nome} ainda — o botão de publicar aqui só marca
+                      uma flag interna, não avisa a plataforma. Nenhum anúncio é criado, atualizado
+                      ou removido lá de verdade.
+                    </p>
+                  )}
                 </AccordionContent>
               </AccordionItem>
             ))}

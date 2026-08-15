@@ -1,6 +1,15 @@
 [functions.receive-leads]
 verify_jwt = false
 
+[functions.enviar-candidatura]
+verify_jwt = false
+
+[functions.gerar-vaga-ia]
+verify_jwt = true
+
+[functions.gerar-imagem-vaga]
+verify_jwt = true
+
 [functions.sitemap]
 verify_jwt = false
 
@@ -84,6 +93,15 @@ verify_jwt = false
 
 [functions.ml-auth]
 verify_jwt = false
+
+[functions.napista-auth]
+verify_jwt = false
+
+[functions.napista-sync-catalogo]
+verify_jwt = false
+
+[functions.napista-catalogo-trigger]
+verify_jwt = true
 
 [functions.ml-sync]
 verify_jwt = false
