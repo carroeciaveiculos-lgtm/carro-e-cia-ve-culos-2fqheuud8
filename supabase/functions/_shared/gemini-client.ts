@@ -65,8 +65,17 @@ export const CRM_FUNCTIONS = [
         veiculo_interesse: { type: 'STRING' },
         tipo: {
           type: 'STRING',
-          description: 'comprador (quer comprar) ou vendedor (quer vender/consignar)',
-          enum: ['comprador', 'vendedor'],
+          description:
+            'O que o cliente quer, de acordo com a conversa: comprador (quer comprar um veiculo do estoque), vendedor (quer vender o carro dele pra loja), troca (quer trocar o carro dele por outro), consignacao (quer deixar o carro na loja pra loja vender por ele), financiamento (quer financiar a compra de um veiculo), seguro_auto (quer contratar seguro de carro), consorcio (quer entrar em consorcio pra comprar veiculo)',
+          enum: [
+            'comprador',
+            'vendedor',
+            'troca',
+            'consignacao',
+            'financiamento',
+            'seguro_auto',
+            'consorcio',
+          ],
         },
       },
       required: ['nome', 'telefone'],
@@ -101,7 +110,8 @@ export const CRM_FUNCTIONS = [
   },
   {
     name: 'atualizar_estagio_lead',
-    description: 'Atualizar estagio do lead no funil de vendas',
+    description:
+      'Atualizar estagio do lead no funil de vendas e/ou a temperatura (qualificacao) dele. Pode chamar so com status, so com temperatura, ou os dois juntos.',
     parameters: {
       type: 'OBJECT',
       properties: {
@@ -110,8 +120,14 @@ export const CRM_FUNCTIONS = [
           type: 'STRING',
           enum: ['novo', 'em_contato', 'agendamento', 'visita', 'fechado', 'perdido'],
         },
+        temperatura: {
+          type: 'STRING',
+          description:
+            'frio: cliente so curioso, sem decisao tomada ainda. morno: demonstrou interesse real mas ainda esta decidindo (comparando opcoes, sem pressa). quente: pronto pra avancar (quer agendar, fechar negocio, ou pediu pra falar com um humano). Reavalie sempre que o tom da conversa mudar.',
+          enum: ['frio', 'morno', 'quente'],
+        },
       },
-      required: ['lead_id', 'status'],
+      required: ['lead_id'],
     },
   },
   {

@@ -13,6 +13,13 @@ import {
 } from '@/components/ui/dialog'
 import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Calendar } from '@/components/ui/calendar'
 import {
@@ -39,6 +46,19 @@ import { ConversationPanel } from '@/components/admin/leads/ConversationPanel'
 import { getOriginIcon } from '@/lib/lead-origin'
 import { BellRing, Activity, AlertTriangle, Zap } from 'lucide-react'
 
+// Agrupa valores de `tipo` por significado — 'compra' (ML/site) e 'comprador'
+// (Clara) representam a mesma coisa com nomes diferentes por origem (ver
+// docs/leads-e-sdr.md). 'interesse' é valor legado, mesmo sentido.
+const TIPO_FILTROS: Record<string, string[]> = {
+  comprar: ['compra', 'comprador', 'interesse'],
+  vendedor: ['vendedor'],
+  troca: ['troca'],
+  consignacao: ['consignacao'],
+  financiamento: ['financiamento'],
+  seguro_auto: ['seguro_auto'],
+  consorcio: ['consorcio'],
+}
+
 export default function AdminLeads() {
   const navigate = useNavigate()
   const { toast } = useToast()
@@ -48,6 +68,7 @@ export default function AdminLeads() {
   const [leads, setLeads] = useState<any[]>([])
   const [selectedLead, setSelectedLead] = useState<any>(null)
   const [search, setSearch] = useState('')
+  const [tipoFilter, setTipoFilter] = useState('todos')
   const [loading, setLoading] = useState(true)
 
   const [usuariosMap, setUsuariosMap] = useState<Record<string, string>>({})
@@ -193,6 +214,7 @@ export default function AdminLeads() {
       query = query.or(
         `nome.ilike.%${search}%,carro_modelo.ilike.%${search}%,telefone.ilike.%${search}%`,
       )
+    if (tipoFilter !== 'todos') query = query.in('tipo', TIPO_FILTROS[tipoFilter] || [tipoFilter])
     const { data } = await query
     if (data) setLeads(data)
   }
@@ -202,7 +224,7 @@ export default function AdminLeads() {
       loadLeads()
     }, 500)
     return () => clearTimeout(timer)
-  }, [search])
+  }, [search, tipoFilter])
 
   const updateLeadField = async (field: string, value: any) => {
     setSelectedLead((prev: any) => ({ ...prev, [field]: value }))
@@ -286,6 +308,21 @@ export default function AdminLeads() {
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
+          <Select value={tipoFilter} onValueChange={setTipoFilter}>
+            <SelectTrigger className="w-44 h-8 text-sm">
+              <SelectValue placeholder="Tipo" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="todos">Todos os tipos</SelectItem>
+              <SelectItem value="comprar">Quer comprar</SelectItem>
+              <SelectItem value="vendedor">Quer vender</SelectItem>
+              <SelectItem value="troca">Quer trocar</SelectItem>
+              <SelectItem value="consignacao">Quer consignar</SelectItem>
+              <SelectItem value="financiamento">Quer financiar</SelectItem>
+              <SelectItem value="seguro_auto">Seguro auto (Gabriel)</SelectItem>
+              <SelectItem value="consorcio">Consórcio (Adriana)</SelectItem>
+            </SelectContent>
+          </Select>
           <div className="flex items-center border rounded-md p-1 bg-slate-50">
             <Button
               variant={viewMode === 'kanban' ? 'secondary' : 'ghost'}
