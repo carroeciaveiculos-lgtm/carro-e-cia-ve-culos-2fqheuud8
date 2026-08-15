@@ -1,11 +1,16 @@
-// AVOID UPDATING THIS FILE DIRECTLY. It is automatically generated.
-export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[]
+export type Json =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: Json | undefined }
+  | Json[]
 
 export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: '14.5'
+    PostgrestVersion: "14.5"
   }
   public: {
     Tables: {
@@ -33,11 +38,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: 'access_log_usuario_id_fkey'
-            columns: ['usuario_id']
+            foreignKeyName: "access_log_usuario_id_fkey"
+            columns: ["usuario_id"]
             isOneToOne: false
-            referencedRelation: 'usuarios'
-            referencedColumns: ['id']
+            referencedRelation: "usuarios"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -107,11 +112,75 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: 'agenda_conteudo_artigo_id_fkey'
-            columns: ['artigo_id']
+            foreignKeyName: "agenda_conteudo_artigo_id_fkey"
+            columns: ["artigo_id"]
             isOneToOne: false
-            referencedRelation: 'blog_posts'
-            referencedColumns: ['id']
+            referencedRelation: "blog_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      agendamentos_visita: {
+        Row: {
+          created_at: string
+          data_hora: string
+          follow_up_enviado_em: string | null
+          id: string
+          lead_id: string
+          lembrete_enviado_em: string | null
+          observacoes: string | null
+          status: string
+          tipo: string
+          updated_at: string
+          veiculo_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          data_hora: string
+          follow_up_enviado_em?: string | null
+          id?: string
+          lead_id: string
+          lembrete_enviado_em?: string | null
+          observacoes?: string | null
+          status?: string
+          tipo?: string
+          updated_at?: string
+          veiculo_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          data_hora?: string
+          follow_up_enviado_em?: string | null
+          id?: string
+          lead_id?: string
+          lembrete_enviado_em?: string | null
+          observacoes?: string | null
+          status?: string
+          tipo?: string
+          updated_at?: string
+          veiculo_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agendamentos_visita_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agendamentos_visita_veiculo_id_fkey"
+            columns: ["veiculo_id"]
+            isOneToOne: false
+            referencedRelation: "pendencias_publicacao"
+            referencedColumns: ["veiculo_id"]
+          },
+          {
+            foreignKeyName: "agendamentos_visita_veiculo_id_fkey"
+            columns: ["veiculo_id"]
+            isOneToOne: false
+            referencedRelation: "veiculos"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -145,11 +214,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: 'agente_interacoes_contexto_artigo_id_fkey'
-            columns: ['contexto_artigo_id']
+            foreignKeyName: "agente_interacoes_contexto_artigo_id_fkey"
+            columns: ["contexto_artigo_id"]
             isOneToOne: false
-            referencedRelation: 'blog_posts'
-            referencedColumns: ['id']
+            referencedRelation: "blog_posts"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -348,11 +417,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: 'article_versions_article_id_fkey'
-            columns: ['article_id']
+            foreignKeyName: "article_versions_article_id_fkey"
+            columns: ["article_id"]
             isOneToOne: false
-            referencedRelation: 'articles'
-            referencedColumns: ['id']
+            referencedRelation: "articles"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -521,11 +590,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: 'assinatura_historico_contrato_id_fkey'
-            columns: ['contrato_id']
+            foreignKeyName: "assinatura_historico_contrato_id_fkey"
+            columns: ["contrato_id"]
             isOneToOne: false
-            referencedRelation: 'contratos_consignacao'
-            referencedColumns: ['id']
+            referencedRelation: "contratos_consignacao"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -646,11 +715,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: 'avaliacoes_lead_id_fkey'
-            columns: ['lead_id']
+            foreignKeyName: "avaliacoes_lead_id_fkey"
+            columns: ["lead_id"]
             isOneToOne: false
-            referencedRelation: 'leads'
-            referencedColumns: ['id']
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -711,11 +780,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: 'blog_comments_post_id_fkey'
-            columns: ['post_id']
+            foreignKeyName: "blog_comments_post_id_fkey"
+            columns: ["post_id"]
             isOneToOne: false
-            referencedRelation: 'blog_posts'
-            referencedColumns: ['id']
+            referencedRelation: "blog_posts"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -787,6 +856,7 @@ export type Database = {
       }
       brain_ia_knowledge: {
         Row: {
+          categoria: string
           conteudo: string | null
           created_at: string
           created_by: string | null
@@ -797,6 +867,7 @@ export type Database = {
           titulo: string
         }
         Insert: {
+          categoria?: string
           conteudo?: string | null
           created_at?: string
           created_by?: string | null
@@ -807,6 +878,7 @@ export type Database = {
           titulo: string
         }
         Update: {
+          categoria?: string
           conteudo?: string | null
           created_at?: string
           created_by?: string | null
@@ -817,6 +889,53 @@ export type Database = {
           titulo?: string
         }
         Relationships: []
+      }
+      candidaturas: {
+        Row: {
+          created_at: string
+          curriculo_nome_arquivo: string | null
+          curriculo_url: string
+          email: string
+          id: string
+          informacoes_adicionais: string | null
+          nome: string
+          status: string
+          telefone: string
+          vaga_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          curriculo_nome_arquivo?: string | null
+          curriculo_url: string
+          email: string
+          id?: string
+          informacoes_adicionais?: string | null
+          nome: string
+          status?: string
+          telefone: string
+          vaga_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          curriculo_nome_arquivo?: string | null
+          curriculo_url?: string
+          email?: string
+          id?: string
+          informacoes_adicionais?: string | null
+          nome?: string
+          status?: string
+          telefone?: string
+          vaga_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "candidaturas_vaga_id_fkey"
+            columns: ["vaga_id"]
+            isOneToOne: false
+            referencedRelation: "vagas"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       chatbot_history: {
         Row: {
@@ -1001,18 +1120,25 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: 'consignacoes_lead_id_fkey'
-            columns: ['lead_id']
+            foreignKeyName: "consignacoes_lead_id_fkey"
+            columns: ["lead_id"]
             isOneToOne: false
-            referencedRelation: 'leads'
-            referencedColumns: ['id']
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'consignacoes_veiculo_id_fkey'
-            columns: ['veiculo_id']
+            foreignKeyName: "consignacoes_veiculo_id_fkey"
+            columns: ["veiculo_id"]
             isOneToOne: false
-            referencedRelation: 'veiculos'
-            referencedColumns: ['id']
+            referencedRelation: "pendencias_publicacao"
+            referencedColumns: ["veiculo_id"]
+          },
+          {
+            foreignKeyName: "consignacoes_veiculo_id_fkey"
+            columns: ["veiculo_id"]
+            isOneToOne: false
+            referencedRelation: "veiculos"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -1070,11 +1196,18 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: 'contratos_consignacao_veiculo_id_fkey'
-            columns: ['veiculo_id']
+            foreignKeyName: "contratos_consignacao_veiculo_id_fkey"
+            columns: ["veiculo_id"]
             isOneToOne: false
-            referencedRelation: 'veiculos'
-            referencedColumns: ['id']
+            referencedRelation: "pendencias_publicacao"
+            referencedColumns: ["veiculo_id"]
+          },
+          {
+            foreignKeyName: "contratos_consignacao_veiculo_id_fkey"
+            columns: ["veiculo_id"]
+            isOneToOne: false
+            referencedRelation: "veiculos"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -1102,11 +1235,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: 'conversation_history_lead_id_fkey'
-            columns: ['lead_id']
+            foreignKeyName: "conversation_history_lead_id_fkey"
+            columns: ["lead_id"]
             isOneToOne: false
-            referencedRelation: 'leads'
-            referencedColumns: ['id']
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -1161,18 +1294,18 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: 'crm_conversas_meta_account_id_fkey'
-            columns: ['meta_account_id']
+            foreignKeyName: "crm_conversas_meta_account_id_fkey"
+            columns: ["meta_account_id"]
             isOneToOne: false
-            referencedRelation: 'meta_accounts'
-            referencedColumns: ['id']
+            referencedRelation: "meta_accounts"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'crm_conversas_meta_account_id_fkey'
-            columns: ['meta_account_id']
+            foreignKeyName: "crm_conversas_meta_account_id_fkey"
+            columns: ["meta_account_id"]
             isOneToOne: false
-            referencedRelation: 'meta_accounts_a_vencer'
-            referencedColumns: ['id']
+            referencedRelation: "meta_accounts_a_vencer"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -1215,11 +1348,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: 'crm_mensagens_conversa_id_fkey'
-            columns: ['conversa_id']
+            foreignKeyName: "crm_mensagens_conversa_id_fkey"
+            columns: ["conversa_id"]
             isOneToOne: false
-            referencedRelation: 'crm_conversas'
-            referencedColumns: ['id']
+            referencedRelation: "crm_conversas"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -1271,11 +1404,18 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: 'despesas_veiculo_id_fkey'
-            columns: ['veiculo_id']
+            foreignKeyName: "despesas_veiculo_id_fkey"
+            columns: ["veiculo_id"]
             isOneToOne: false
-            referencedRelation: 'veiculos'
-            referencedColumns: ['id']
+            referencedRelation: "pendencias_publicacao"
+            referencedColumns: ["veiculo_id"]
+          },
+          {
+            foreignKeyName: "despesas_veiculo_id_fkey"
+            columns: ["veiculo_id"]
+            isOneToOne: false
+            referencedRelation: "veiculos"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -1339,13 +1479,65 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: 'documentos_veiculo_id_fkey'
-            columns: ['veiculo_id']
+            foreignKeyName: "documentos_veiculo_id_fkey"
+            columns: ["veiculo_id"]
             isOneToOne: false
-            referencedRelation: 'veiculos'
-            referencedColumns: ['id']
+            referencedRelation: "pendencias_publicacao"
+            referencedColumns: ["veiculo_id"]
+          },
+          {
+            foreignKeyName: "documentos_veiculo_id_fkey"
+            columns: ["veiculo_id"]
+            isOneToOne: false
+            referencedRelation: "veiculos"
+            referencedColumns: ["id"]
           },
         ]
+      }
+      empresas_cache: {
+        Row: {
+          bairro: string | null
+          cep: string | null
+          cnpj: string
+          complemento: string | null
+          created_at: string | null
+          logradouro: string | null
+          municipio: string | null
+          nome_fantasia: string | null
+          numero: string | null
+          razao_social: string | null
+          uf: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          bairro?: string | null
+          cep?: string | null
+          cnpj: string
+          complemento?: string | null
+          created_at?: string | null
+          logradouro?: string | null
+          municipio?: string | null
+          nome_fantasia?: string | null
+          numero?: string | null
+          razao_social?: string | null
+          uf?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          bairro?: string | null
+          cep?: string | null
+          cnpj?: string
+          complemento?: string | null
+          created_at?: string | null
+          logradouro?: string | null
+          municipio?: string | null
+          nome_fantasia?: string | null
+          numero?: string | null
+          razao_social?: string | null
+          uf?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
       }
       estoque_publicacoes: {
         Row: {
@@ -1392,25 +1584,32 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: 'estoque_publicacoes_meta_account_id_fkey'
-            columns: ['meta_account_id']
+            foreignKeyName: "estoque_publicacoes_meta_account_id_fkey"
+            columns: ["meta_account_id"]
             isOneToOne: false
-            referencedRelation: 'meta_accounts'
-            referencedColumns: ['id']
+            referencedRelation: "meta_accounts"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'estoque_publicacoes_meta_account_id_fkey'
-            columns: ['meta_account_id']
+            foreignKeyName: "estoque_publicacoes_meta_account_id_fkey"
+            columns: ["meta_account_id"]
             isOneToOne: false
-            referencedRelation: 'meta_accounts_a_vencer'
-            referencedColumns: ['id']
+            referencedRelation: "meta_accounts_a_vencer"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'estoque_publicacoes_veiculo_id_fkey'
-            columns: ['veiculo_id']
+            foreignKeyName: "estoque_publicacoes_veiculo_id_fkey"
+            columns: ["veiculo_id"]
             isOneToOne: false
-            referencedRelation: 'veiculos'
-            referencedColumns: ['id']
+            referencedRelation: "pendencias_publicacao"
+            referencedColumns: ["veiculo_id"]
+          },
+          {
+            foreignKeyName: "estoque_publicacoes_veiculo_id_fkey"
+            columns: ["veiculo_id"]
+            isOneToOne: false
+            referencedRelation: "veiculos"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -1537,11 +1736,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: 'fipe_modelos_marca_codigo_fkey'
-            columns: ['marca_codigo']
+            foreignKeyName: "fipe_modelos_marca_codigo_fkey"
+            columns: ["marca_codigo"]
             isOneToOne: false
-            referencedRelation: 'fipe_marcas'
-            referencedColumns: ['codigo']
+            referencedRelation: "fipe_marcas"
+            referencedColumns: ["codigo"]
           },
         ]
       }
@@ -1575,18 +1774,18 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: 'followups_lead_id_fkey'
-            columns: ['lead_id']
+            foreignKeyName: "followups_lead_id_fkey"
+            columns: ["lead_id"]
             isOneToOne: false
-            referencedRelation: 'leads'
-            referencedColumns: ['id']
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'followups_responsavel_id_fkey'
-            columns: ['responsavel_id']
+            foreignKeyName: "followups_responsavel_id_fkey"
+            columns: ["responsavel_id"]
             isOneToOne: false
-            referencedRelation: 'usuarios'
-            referencedColumns: ['id']
+            referencedRelation: "usuarios"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -1653,11 +1852,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: 'integracao_plataforma_plataforma_id_fkey'
-            columns: ['plataforma_id']
+            foreignKeyName: "integracao_plataforma_plataforma_id_fkey"
+            columns: ["plataforma_id"]
             isOneToOne: false
-            referencedRelation: 'plataformas'
-            referencedColumns: ['id']
+            referencedRelation: "plataformas"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -1691,18 +1890,18 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: 'interacoes_lead_id_fkey'
-            columns: ['lead_id']
+            foreignKeyName: "interacoes_lead_id_fkey"
+            columns: ["lead_id"]
             isOneToOne: false
-            referencedRelation: 'leads'
-            referencedColumns: ['id']
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'interacoes_usuario_id_fkey'
-            columns: ['usuario_id']
+            foreignKeyName: "interacoes_usuario_id_fkey"
+            columns: ["usuario_id"]
             isOneToOne: false
-            referencedRelation: 'usuarios'
-            referencedColumns: ['id']
+            referencedRelation: "usuarios"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -1730,11 +1929,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: 'internal_notes_lead_id_fkey'
-            columns: ['lead_id']
+            foreignKeyName: "internal_notes_lead_id_fkey"
+            columns: ["lead_id"]
             isOneToOne: false
-            referencedRelation: 'leads'
-            referencedColumns: ['id']
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -1840,11 +2039,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: 'lead_automations_lead_id_fkey'
-            columns: ['lead_id']
+            foreignKeyName: "lead_automations_lead_id_fkey"
+            columns: ["lead_id"]
             isOneToOne: false
-            referencedRelation: 'leads'
-            referencedColumns: ['id']
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -1899,11 +2098,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: 'lead_eventos_gtm_lead_id_fkey'
-            columns: ['lead_id']
+            foreignKeyName: "lead_eventos_gtm_lead_id_fkey"
+            columns: ["lead_id"]
             isOneToOne: false
-            referencedRelation: 'leads'
-            referencedColumns: ['id']
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -1940,11 +2139,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: 'lead_integracao_log_lead_id_fkey'
-            columns: ['lead_id']
+            foreignKeyName: "lead_integracao_log_lead_id_fkey"
+            columns: ["lead_id"]
             isOneToOne: false
-            referencedRelation: 'leads'
-            referencedColumns: ['id']
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -1984,6 +2183,7 @@ export type Database = {
           temperatura: string | null
           tipo: string
           trade_in_car: string | null
+          ultima_leitura_humana: string | null
           unico_dono: boolean | null
           updated_at: string | null
           utm_campaign: string | null
@@ -2028,6 +2228,7 @@ export type Database = {
           temperatura?: string | null
           tipo: string
           trade_in_car?: string | null
+          ultima_leitura_humana?: string | null
           unico_dono?: boolean | null
           updated_at?: string | null
           utm_campaign?: string | null
@@ -2072,6 +2273,7 @@ export type Database = {
           temperatura?: string | null
           tipo?: string
           trade_in_car?: string | null
+          ultima_leitura_humana?: string | null
           unico_dono?: boolean | null
           updated_at?: string | null
           utm_campaign?: string | null
@@ -2083,18 +2285,25 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: 'leads_responsavel_id_fkey'
-            columns: ['responsavel_id']
+            foreignKeyName: "leads_responsavel_id_fkey"
+            columns: ["responsavel_id"]
             isOneToOne: false
-            referencedRelation: 'usuarios'
-            referencedColumns: ['id']
+            referencedRelation: "usuarios"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'leads_veiculo_id_fkey'
-            columns: ['veiculo_id']
+            foreignKeyName: "leads_veiculo_id_fkey"
+            columns: ["veiculo_id"]
             isOneToOne: false
-            referencedRelation: 'veiculos'
-            referencedColumns: ['id']
+            referencedRelation: "pendencias_publicacao"
+            referencedColumns: ["veiculo_id"]
+          },
+          {
+            foreignKeyName: "leads_veiculo_id_fkey"
+            columns: ["veiculo_id"]
+            isOneToOne: false
+            referencedRelation: "veiculos"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -2125,11 +2334,18 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: 'listing_preferences_veiculo_id_fkey'
-            columns: ['veiculo_id']
+            foreignKeyName: "listing_preferences_veiculo_id_fkey"
+            columns: ["veiculo_id"]
             isOneToOne: false
-            referencedRelation: 'veiculos'
-            referencedColumns: ['id']
+            referencedRelation: "pendencias_publicacao"
+            referencedColumns: ["veiculo_id"]
+          },
+          {
+            foreignKeyName: "listing_preferences_veiculo_id_fkey"
+            columns: ["veiculo_id"]
+            isOneToOne: false
+            referencedRelation: "veiculos"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -2517,11 +2733,18 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: 'ml_listings_veiculo_id_fkey'
-            columns: ['veiculo_id']
-            isOneToOne: false
-            referencedRelation: 'veiculos'
-            referencedColumns: ['id']
+            foreignKeyName: "ml_listings_veiculo_id_fkey"
+            columns: ["veiculo_id"]
+            isOneToOne: true
+            referencedRelation: "pendencias_publicacao"
+            referencedColumns: ["veiculo_id"]
+          },
+          {
+            foreignKeyName: "ml_listings_veiculo_id_fkey"
+            columns: ["veiculo_id"]
+            isOneToOne: true
+            referencedRelation: "veiculos"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -2552,13 +2775,220 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: 'ml_quality_scores_veiculo_id_fkey'
-            columns: ['veiculo_id']
+            foreignKeyName: "ml_quality_scores_veiculo_id_fkey"
+            columns: ["veiculo_id"]
             isOneToOne: false
-            referencedRelation: 'veiculos'
-            referencedColumns: ['id']
+            referencedRelation: "pendencias_publicacao"
+            referencedColumns: ["veiculo_id"]
+          },
+          {
+            foreignKeyName: "ml_quality_scores_veiculo_id_fkey"
+            columns: ["veiculo_id"]
+            isOneToOne: false
+            referencedRelation: "veiculos"
+            referencedColumns: ["id"]
           },
         ]
+      }
+      napista_atributos: {
+        Row: {
+          atualizado_em: string | null
+          dados: Json
+          id: string
+        }
+        Insert: {
+          atualizado_em?: string | null
+          dados: Json
+          id?: string
+        }
+        Update: {
+          atualizado_em?: string | null
+          dados?: Json
+          id?: string
+        }
+        Relationships: []
+      }
+      napista_credentials: {
+        Row: {
+          access_token: string | null
+          expires_at: string | null
+          id: string
+          refresh_token: string | null
+          seller_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          access_token?: string | null
+          expires_at?: string | null
+          id?: string
+          refresh_token?: string | null
+          seller_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          access_token?: string | null
+          expires_at?: string | null
+          id?: string
+          refresh_token?: string | null
+          seller_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      napista_mapeamento_veiculos: {
+        Row: {
+          candidatos_modelo: Json | null
+          candidatos_versao: Json | null
+          codigo_cambio: string | null
+          codigo_combustivel: string | null
+          codigo_cor: string | null
+          confianca_marca: number | null
+          confianca_modelo: number | null
+          confianca_versao: number | null
+          confirmado_manualmente: boolean | null
+          created_at: string | null
+          erro_msg: string | null
+          id: string
+          napista_marca_id: string | null
+          napista_modelo_id: string | null
+          napista_offer_id: string | null
+          napista_version_id: string | null
+          status_sincronizacao: string | null
+          updated_at: string | null
+          veiculo_id: string
+        }
+        Insert: {
+          candidatos_modelo?: Json | null
+          candidatos_versao?: Json | null
+          codigo_cambio?: string | null
+          codigo_combustivel?: string | null
+          codigo_cor?: string | null
+          confianca_marca?: number | null
+          confianca_modelo?: number | null
+          confianca_versao?: number | null
+          confirmado_manualmente?: boolean | null
+          created_at?: string | null
+          erro_msg?: string | null
+          id?: string
+          napista_marca_id?: string | null
+          napista_modelo_id?: string | null
+          napista_offer_id?: string | null
+          napista_version_id?: string | null
+          status_sincronizacao?: string | null
+          updated_at?: string | null
+          veiculo_id: string
+        }
+        Update: {
+          candidatos_modelo?: Json | null
+          candidatos_versao?: Json | null
+          codigo_cambio?: string | null
+          codigo_combustivel?: string | null
+          codigo_cor?: string | null
+          confianca_marca?: number | null
+          confianca_modelo?: number | null
+          confianca_versao?: number | null
+          confirmado_manualmente?: boolean | null
+          created_at?: string | null
+          erro_msg?: string | null
+          id?: string
+          napista_marca_id?: string | null
+          napista_modelo_id?: string | null
+          napista_offer_id?: string | null
+          napista_version_id?: string | null
+          status_sincronizacao?: string | null
+          updated_at?: string | null
+          veiculo_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "napista_mapeamento_veiculos_veiculo_id_fkey"
+            columns: ["veiculo_id"]
+            isOneToOne: true
+            referencedRelation: "pendencias_publicacao"
+            referencedColumns: ["veiculo_id"]
+          },
+          {
+            foreignKeyName: "napista_mapeamento_veiculos_veiculo_id_fkey"
+            columns: ["veiculo_id"]
+            isOneToOne: true
+            referencedRelation: "veiculos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      napista_marcas: {
+        Row: {
+          atualizado_em: string | null
+          id: string
+          nome: string
+        }
+        Insert: {
+          atualizado_em?: string | null
+          id: string
+          nome: string
+        }
+        Update: {
+          atualizado_em?: string | null
+          id?: string
+          nome?: string
+        }
+        Relationships: []
+      }
+      napista_modelos: {
+        Row: {
+          atualizado_em: string | null
+          id: string
+          marca_id: string
+          nome: string
+        }
+        Insert: {
+          atualizado_em?: string | null
+          id: string
+          marca_id: string
+          nome: string
+        }
+        Update: {
+          atualizado_em?: string | null
+          id?: string
+          marca_id?: string
+          nome?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "napista_modelos_marca_id_fkey"
+            columns: ["marca_id"]
+            isOneToOne: false
+            referencedRelation: "napista_marcas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      napista_versoes: {
+        Row: {
+          atualizado_em: string | null
+          id: string
+          marca_id: string
+          model_year: number | null
+          modelo_id: string
+          nome: string
+        }
+        Insert: {
+          atualizado_em?: string | null
+          id: string
+          marca_id: string
+          model_year?: number | null
+          modelo_id: string
+          nome: string
+        }
+        Update: {
+          atualizado_em?: string | null
+          id?: string
+          marca_id?: string
+          model_year?: number | null
+          modelo_id?: string
+          nome?: string
+        }
+        Relationships: []
       }
       notas_fiscais: {
         Row: {
@@ -2611,11 +3041,18 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: 'notas_fiscais_veiculo_id_fkey'
-            columns: ['veiculo_id']
+            foreignKeyName: "notas_fiscais_veiculo_id_fkey"
+            columns: ["veiculo_id"]
             isOneToOne: false
-            referencedRelation: 'veiculos'
-            referencedColumns: ['id']
+            referencedRelation: "pendencias_publicacao"
+            referencedColumns: ["veiculo_id"]
+          },
+          {
+            foreignKeyName: "notas_fiscais_veiculo_id_fkey"
+            columns: ["veiculo_id"]
+            isOneToOne: false
+            referencedRelation: "veiculos"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -2649,11 +3086,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: 'notificacoes_usuario_id_fkey'
-            columns: ['usuario_id']
+            foreignKeyName: "notificacoes_usuario_id_fkey"
+            columns: ["usuario_id"]
             isOneToOne: false
-            referencedRelation: 'usuarios'
-            referencedColumns: ['id']
+            referencedRelation: "usuarios"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -2855,11 +3292,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: 'pages_versions_page_id_fkey'
-            columns: ['page_id']
+            foreignKeyName: "pages_versions_page_id_fkey"
+            columns: ["page_id"]
             isOneToOne: false
-            referencedRelation: 'pages'
-            referencedColumns: ['id']
+            referencedRelation: "pages"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -3022,11 +3459,18 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: 'simulacoes_veiculo_id_fkey'
-            columns: ['veiculo_id']
+            foreignKeyName: "simulacoes_veiculo_id_fkey"
+            columns: ["veiculo_id"]
             isOneToOne: false
-            referencedRelation: 'veiculos'
-            referencedColumns: ['id']
+            referencedRelation: "pendencias_publicacao"
+            referencedColumns: ["veiculo_id"]
+          },
+          {
+            foreignKeyName: "simulacoes_veiculo_id_fkey"
+            columns: ["veiculo_id"]
+            isOneToOne: false
+            referencedRelation: "veiculos"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -3228,11 +3672,18 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: 'social_posts_veiculo_id_fkey'
-            columns: ['veiculo_id']
+            foreignKeyName: "social_posts_veiculo_id_fkey"
+            columns: ["veiculo_id"]
             isOneToOne: false
-            referencedRelation: 'veiculos'
-            referencedColumns: ['id']
+            referencedRelation: "pendencias_publicacao"
+            referencedColumns: ["veiculo_id"]
+          },
+          {
+            foreignKeyName: "social_posts_veiculo_id_fkey"
+            columns: ["veiculo_id"]
+            isOneToOne: false
+            referencedRelation: "veiculos"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -3290,18 +3741,25 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: 'sync_log_plataforma_id_fkey'
-            columns: ['plataforma_id']
+            foreignKeyName: "sync_log_plataforma_id_fkey"
+            columns: ["plataforma_id"]
             isOneToOne: false
-            referencedRelation: 'plataformas'
-            referencedColumns: ['id']
+            referencedRelation: "plataformas"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'sync_log_veiculo_id_fkey'
-            columns: ['veiculo_id']
+            foreignKeyName: "sync_log_veiculo_id_fkey"
+            columns: ["veiculo_id"]
             isOneToOne: false
-            referencedRelation: 'veiculos'
-            referencedColumns: ['id']
+            referencedRelation: "pendencias_publicacao"
+            referencedColumns: ["veiculo_id"]
+          },
+          {
+            foreignKeyName: "sync_log_veiculo_id_fkey"
+            columns: ["veiculo_id"]
+            isOneToOne: false
+            referencedRelation: "veiculos"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -3377,11 +3835,44 @@ export type Database = {
         }
         Relationships: []
       }
+      vagas: {
+        Row: {
+          ativa: boolean
+          created_at: string
+          descricao: string | null
+          id: string
+          imagem_url: string | null
+          titulo: string
+          updated_at: string
+        }
+        Insert: {
+          ativa?: boolean
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          imagem_url?: string | null
+          titulo: string
+          updated_at?: string
+        }
+        Update: {
+          ativa?: boolean
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          imagem_url?: string | null
+          titulo?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       veiculos: {
         Row: {
           ad_types: Json | null
+          adaptado_deficientes: string | null
+          alienado: string | null
           ano_fabricacao: number | null
           ano_modelo: number | null
+          blindado: string | null
           cambio: string | null
           caracteristicas: Json | null
           categoria: string | null
@@ -3406,12 +3897,14 @@ export type Database = {
           fipe_ref: string | null
           fotos: Json | null
           garantia: boolean | null
+          garantia_fabrica: string | null
           id: string
           info_personalizadas: Json | null
           ipva_pago: boolean | null
           is_consignado: boolean | null
           is_zero_km: boolean | null
           laudo_cautelar: boolean | null
+          licenciado: string | null
           marca: string
           mes_referencia: string | null
           mesma_obs_classificados: boolean | null
@@ -3423,6 +3916,7 @@ export type Database = {
           portas: number | null
           preco_classificados: number | null
           preco_minimo: number | null
+          preco_revenda: number | null
           preco_venda: number | null
           proprietario_bairro: string | null
           proprietario_cep: string | null
@@ -3455,9 +3949,12 @@ export type Database = {
           renavam: string | null
           requires_review: boolean | null
           responsavel_id: string | null
+          revisado_oficina: string | null
+          revisoes_concessionaria: string | null
           slug: string | null
           status: string | null
           tag_promocional: string | null
+          unico_dono: string | null
           updated_at: string | null
           url_fipe: string | null
           valor_fipe: number | null
@@ -3466,18 +3963,24 @@ export type Database = {
           videos: Json | null
           visualizacoes_site: number | null
           wm_adaptado_deficiente: boolean | null
+          wm_alienado: boolean | null
           wm_blindado: boolean | null
           wm_garantia_fabrica: boolean | null
           wm_ipva_pago: boolean | null
           wm_kit_gas: boolean | null
           wm_licenciado: boolean | null
+          wm_revisado_oficina: boolean | null
+          wm_revisoes_concessionaria: boolean | null
           wm_unico_dono: boolean | null
           wm_veiculo_troca: boolean | null
         }
         Insert: {
           ad_types?: Json | null
+          adaptado_deficientes?: string | null
+          alienado?: string | null
           ano_fabricacao?: number | null
           ano_modelo?: number | null
+          blindado?: string | null
           cambio?: string | null
           caracteristicas?: Json | null
           categoria?: string | null
@@ -3502,12 +4005,14 @@ export type Database = {
           fipe_ref?: string | null
           fotos?: Json | null
           garantia?: boolean | null
+          garantia_fabrica?: string | null
           id?: string
           info_personalizadas?: Json | null
           ipva_pago?: boolean | null
           is_consignado?: boolean | null
           is_zero_km?: boolean | null
           laudo_cautelar?: boolean | null
+          licenciado?: string | null
           marca: string
           mes_referencia?: string | null
           mesma_obs_classificados?: boolean | null
@@ -3519,6 +4024,7 @@ export type Database = {
           portas?: number | null
           preco_classificados?: number | null
           preco_minimo?: number | null
+          preco_revenda?: number | null
           preco_venda?: number | null
           proprietario_bairro?: string | null
           proprietario_cep?: string | null
@@ -3551,8 +4057,12 @@ export type Database = {
           renavam?: string | null
           requires_review?: boolean | null
           responsavel_id?: string | null
+          revisado_oficina?: string | null
+          revisoes_concessionaria?: string | null
           slug?: string | null
           status?: string | null
+          tag_promocional?: string | null
+          unico_dono?: string | null
           updated_at?: string | null
           url_fipe?: string | null
           valor_fipe?: number | null
@@ -3561,19 +4071,24 @@ export type Database = {
           videos?: Json | null
           visualizacoes_site?: number | null
           wm_adaptado_deficiente?: boolean | null
+          wm_alienado?: boolean | null
           wm_blindado?: boolean | null
           wm_garantia_fabrica?: boolean | null
           wm_ipva_pago?: boolean | null
           wm_kit_gas?: boolean | null
           wm_licenciado?: boolean | null
+          wm_revisado_oficina?: boolean | null
+          wm_revisoes_concessionaria?: boolean | null
           wm_unico_dono?: boolean | null
           wm_veiculo_troca?: boolean | null
-          tag_promocional?: string | null
         }
         Update: {
           ad_types?: Json | null
+          adaptado_deficientes?: string | null
+          alienado?: string | null
           ano_fabricacao?: number | null
           ano_modelo?: number | null
+          blindado?: string | null
           cambio?: string | null
           caracteristicas?: Json | null
           categoria?: string | null
@@ -3598,12 +4113,14 @@ export type Database = {
           fipe_ref?: string | null
           fotos?: Json | null
           garantia?: boolean | null
+          garantia_fabrica?: string | null
           id?: string
           info_personalizadas?: Json | null
           ipva_pago?: boolean | null
           is_consignado?: boolean | null
           is_zero_km?: boolean | null
           laudo_cautelar?: boolean | null
+          licenciado?: string | null
           marca?: string
           mes_referencia?: string | null
           mesma_obs_classificados?: boolean | null
@@ -3615,6 +4132,7 @@ export type Database = {
           portas?: number | null
           preco_classificados?: number | null
           preco_minimo?: number | null
+          preco_revenda?: number | null
           preco_venda?: number | null
           proprietario_bairro?: string | null
           proprietario_cep?: string | null
@@ -3647,8 +4165,12 @@ export type Database = {
           renavam?: string | null
           requires_review?: boolean | null
           responsavel_id?: string | null
+          revisado_oficina?: string | null
+          revisoes_concessionaria?: string | null
           slug?: string | null
           status?: string | null
+          tag_promocional?: string | null
+          unico_dono?: string | null
           updated_at?: string | null
           url_fipe?: string | null
           valor_fipe?: number | null
@@ -3657,22 +4179,24 @@ export type Database = {
           videos?: Json | null
           visualizacoes_site?: number | null
           wm_adaptado_deficiente?: boolean | null
+          wm_alienado?: boolean | null
           wm_blindado?: boolean | null
           wm_garantia_fabrica?: boolean | null
           wm_ipva_pago?: boolean | null
           wm_kit_gas?: boolean | null
           wm_licenciado?: boolean | null
+          wm_revisado_oficina?: boolean | null
+          wm_revisoes_concessionaria?: boolean | null
           wm_unico_dono?: boolean | null
           wm_veiculo_troca?: boolean | null
-          tag_promocional?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: 'veiculos_responsavel_id_fkey'
-            columns: ['responsavel_id']
+            foreignKeyName: "veiculos_responsavel_id_fkey"
+            columns: ["responsavel_id"]
             isOneToOne: false
-            referencedRelation: 'usuarios'
-            referencedColumns: ['id']
+            referencedRelation: "usuarios"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -3784,20 +4308,68 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: 'whatsapp_templates_meta_account_id_fkey'
-            columns: ['meta_account_id']
+            foreignKeyName: "whatsapp_templates_meta_account_id_fkey"
+            columns: ["meta_account_id"]
             isOneToOne: false
-            referencedRelation: 'meta_accounts'
-            referencedColumns: ['id']
+            referencedRelation: "meta_accounts"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'whatsapp_templates_meta_account_id_fkey'
-            columns: ['meta_account_id']
+            foreignKeyName: "whatsapp_templates_meta_account_id_fkey"
+            columns: ["meta_account_id"]
             isOneToOne: false
-            referencedRelation: 'meta_accounts_a_vencer'
-            referencedColumns: ['id']
+            referencedRelation: "meta_accounts_a_vencer"
+            referencedColumns: ["id"]
           },
         ]
+      }
+      wm_cambios: {
+        Row: {
+          codigo_wm: string | null
+          created_at: string | null
+          id: string
+          nome_crm: string | null
+          nome_wm: string | null
+        }
+        Insert: {
+          codigo_wm?: string | null
+          created_at?: string | null
+          id?: string
+          nome_crm?: string | null
+          nome_wm?: string | null
+        }
+        Update: {
+          codigo_wm?: string | null
+          created_at?: string | null
+          id?: string
+          nome_crm?: string | null
+          nome_wm?: string | null
+        }
+        Relationships: []
+      }
+      wm_combustiveis: {
+        Row: {
+          codigo_wm: string | null
+          created_at: string | null
+          id: string
+          nome_crm: string | null
+          nome_wm: string | null
+        }
+        Insert: {
+          codigo_wm?: string | null
+          created_at?: string | null
+          id?: string
+          nome_crm?: string | null
+          nome_wm?: string | null
+        }
+        Update: {
+          codigo_wm?: string | null
+          created_at?: string | null
+          id?: string
+          nome_crm?: string | null
+          nome_wm?: string | null
+        }
+        Relationships: []
       }
       wm_cores: {
         Row: {
@@ -3823,6 +4395,93 @@ export type Database = {
         }
         Relationships: []
       }
+      wm_mapeamento_veiculos: {
+        Row: {
+          candidatos_modelo: Json | null
+          candidatos_versao: Json | null
+          codigo_anuncio_wm: string | null
+          codigo_cambio_wm: string | null
+          codigo_combustivel_wm: string | null
+          codigo_cor_wm: string | null
+          codigo_marca_wm: string | null
+          codigo_modalidade_wm: string | null
+          codigo_modelo_wm: string | null
+          codigo_versao_wm: string | null
+          confianca_marca: number | null
+          confianca_modelo: number | null
+          confianca_versao: number | null
+          confirmado_manualmente: boolean | null
+          created_at: string | null
+          erro_msg: string | null
+          id: string
+          status_sincronizacao: string | null
+          ultima_resposta_xml: string | null
+          updated_at: string | null
+          veiculo_id: string | null
+        }
+        Insert: {
+          candidatos_modelo?: Json | null
+          candidatos_versao?: Json | null
+          codigo_anuncio_wm?: string | null
+          codigo_cambio_wm?: string | null
+          codigo_combustivel_wm?: string | null
+          codigo_cor_wm?: string | null
+          codigo_marca_wm?: string | null
+          codigo_modalidade_wm?: string | null
+          codigo_modelo_wm?: string | null
+          codigo_versao_wm?: string | null
+          confianca_marca?: number | null
+          confianca_modelo?: number | null
+          confianca_versao?: number | null
+          confirmado_manualmente?: boolean | null
+          created_at?: string | null
+          erro_msg?: string | null
+          id?: string
+          status_sincronizacao?: string | null
+          ultima_resposta_xml?: string | null
+          updated_at?: string | null
+          veiculo_id?: string | null
+        }
+        Update: {
+          candidatos_modelo?: Json | null
+          candidatos_versao?: Json | null
+          codigo_anuncio_wm?: string | null
+          codigo_cambio_wm?: string | null
+          codigo_combustivel_wm?: string | null
+          codigo_cor_wm?: string | null
+          codigo_marca_wm?: string | null
+          codigo_modalidade_wm?: string | null
+          codigo_modelo_wm?: string | null
+          codigo_versao_wm?: string | null
+          confianca_marca?: number | null
+          confianca_modelo?: number | null
+          confianca_versao?: number | null
+          confirmado_manualmente?: boolean | null
+          created_at?: string | null
+          erro_msg?: string | null
+          id?: string
+          status_sincronizacao?: string | null
+          ultima_resposta_xml?: string | null
+          updated_at?: string | null
+          veiculo_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wm_mapeamento_veiculos_veiculo_id_fkey"
+            columns: ["veiculo_id"]
+            isOneToOne: false
+            referencedRelation: "pendencias_publicacao"
+            referencedColumns: ["veiculo_id"]
+          },
+          {
+            foreignKeyName: "wm_mapeamento_veiculos_veiculo_id_fkey"
+            columns: ["veiculo_id"]
+            isOneToOne: false
+            referencedRelation: "veiculos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       wm_marcas: {
         Row: {
           codigo_wm: string | null
@@ -3844,6 +4503,45 @@ export type Database = {
           id?: string
           nome_crm?: string
           nome_wm?: string | null
+        }
+        Relationships: []
+      }
+      wm_modalidades: {
+        Row: {
+          atualizado_em: string | null
+          codigo_wm: string | null
+          created_at: string | null
+          descricao: string | null
+          id: string
+          quantidade_total: number | null
+          quantidade_usados: number | null
+          tipo_veiculo: string | null
+          updated_at: string | null
+          valor: number | null
+        }
+        Insert: {
+          atualizado_em?: string | null
+          codigo_wm?: string | null
+          created_at?: string | null
+          descricao?: string | null
+          id?: string
+          quantidade_total?: number | null
+          quantidade_usados?: number | null
+          tipo_veiculo?: string | null
+          updated_at?: string | null
+          valor?: number | null
+        }
+        Update: {
+          atualizado_em?: string | null
+          codigo_wm?: string | null
+          created_at?: string | null
+          descricao?: string | null
+          id?: string
+          quantidade_total?: number | null
+          quantidade_usados?: number | null
+          tipo_veiculo?: string | null
+          updated_at?: string | null
+          valor?: number | null
         }
         Relationships: []
       }
@@ -3874,6 +4572,102 @@ export type Database = {
         }
         Relationships: []
       }
+      wm_opcionais: {
+        Row: {
+          codigo_wm: string | null
+          created_at: string | null
+          id: string
+          nome_crm: string | null
+          nome_wm: string | null
+        }
+        Insert: {
+          codigo_wm?: string | null
+          created_at?: string | null
+          id?: string
+          nome_crm?: string | null
+          nome_wm?: string | null
+        }
+        Update: {
+          codigo_wm?: string | null
+          created_at?: string | null
+          id?: string
+          nome_crm?: string | null
+          nome_wm?: string | null
+        }
+        Relationships: []
+      }
+      wm_sync_test_results: {
+        Row: {
+          created_at: string | null
+          details: Json | null
+          id: string
+          test_name: string
+          test_passed: boolean | null
+          validation_errors: string[] | null
+          vehicle_profile: string
+          webmotors_hash_carro: string | null
+          webmotors_status_code: number | null
+          webmotors_status_importacao: number | null
+          xml_structure: Json | null
+          xml_valid: boolean
+        }
+        Insert: {
+          created_at?: string | null
+          details?: Json | null
+          id?: string
+          test_name: string
+          test_passed?: boolean | null
+          validation_errors?: string[] | null
+          vehicle_profile: string
+          webmotors_hash_carro?: string | null
+          webmotors_status_code?: number | null
+          webmotors_status_importacao?: number | null
+          xml_structure?: Json | null
+          xml_valid?: boolean
+        }
+        Update: {
+          created_at?: string | null
+          details?: Json | null
+          id?: string
+          test_name?: string
+          test_passed?: boolean | null
+          validation_errors?: string[] | null
+          vehicle_profile?: string
+          webmotors_hash_carro?: string | null
+          webmotors_status_code?: number | null
+          webmotors_status_importacao?: number | null
+          xml_structure?: Json | null
+          xml_valid?: boolean
+        }
+        Relationships: []
+      }
+      wm_versoes: {
+        Row: {
+          codigo_modelo_wm: string | null
+          codigo_wm: string | null
+          created_at: string | null
+          id: string
+          nome_crm: string | null
+          nome_wm: string | null
+        }
+        Insert: {
+          codigo_modelo_wm?: string | null
+          codigo_wm?: string | null
+          created_at?: string | null
+          id?: string
+          nome_crm?: string | null
+          nome_wm?: string | null
+        }
+        Update: {
+          codigo_modelo_wm?: string | null
+          codigo_wm?: string | null
+          created_at?: string | null
+          id?: string
+          nome_crm?: string | null
+          nome_wm?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       meta_accounts_a_vencer: {
@@ -3897,6 +4691,26 @@ export type Database = {
           platform?: string | null
           tempo_restante?: never
           token_expires_at?: string | null
+        }
+        Relationships: []
+      }
+      pendencias_publicacao: {
+        Row: {
+          candidatos_modelo: Json | null
+          candidatos_versao: Json | null
+          confianca_marca: number | null
+          confianca_modelo: number | null
+          confianca_versao: number | null
+          erro_msg: string | null
+          fotos: Json | null
+          marca: string | null
+          modelo: string | null
+          placa: string | null
+          plataforma: string | null
+          status: string | null
+          updated_at: string | null
+          veiculo_id: string | null
+          versao: string | null
         }
         Relationships: []
       }
@@ -3935,11 +4749,18 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: 'estoque_publicacoes_veiculo_id_fkey'
-            columns: ['veiculo_id']
+            foreignKeyName: "estoque_publicacoes_veiculo_id_fkey"
+            columns: ["veiculo_id"]
             isOneToOne: false
-            referencedRelation: 'veiculos'
-            referencedColumns: ['id']
+            referencedRelation: "pendencias_publicacao"
+            referencedColumns: ["veiculo_id"]
+          },
+          {
+            foreignKeyName: "estoque_publicacoes_veiculo_id_fkey"
+            columns: ["veiculo_id"]
+            isOneToOne: false
+            referencedRelation: "veiculos"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -3965,14 +4786,52 @@ export type Database = {
         }
         Returns: string
       }
+      get_platform_sync_dashboard: {
+        Args: { p_platform: string }
+        Returns: Json
+      }
       get_wm_dashboard: { Args: { p_loja_id?: string }; Returns: Json }
       increment_page_view: { Args: { p_slug: string }; Returns: undefined }
+      match_napista_marca: {
+        Args: { texto_busca: string }
+        Returns: {
+          id: string
+          nome: string
+          score: number
+        }[]
+      }
+      match_napista_modelo: {
+        Args: { p_marca_id: string; texto_busca: string }
+        Returns: {
+          id: string
+          nome: string
+          score: number
+        }[]
+      }
+      match_wm_marca: {
+        Args: { texto_busca: string }
+        Returns: {
+          codigo_wm: string
+          nome_wm: string
+          score: number
+        }[]
+      }
+      match_wm_modelo: {
+        Args: { p_codigo_marca_wm: string; texto_busca: string }
+        Returns: {
+          codigo_wm: string
+          nome_wm: string
+          score: number
+        }[]
+      }
       replace_storage_url: {
         Args: { p_bucket: string; p_file_path: string }
         Returns: undefined
       }
+      show_limit: { Args: never; Returns: number }
+      show_trgm: { Args: { "": string }; Returns: string[] }
       slugify: { Args: { input_text: string }; Returns: string }
-      unaccent: { Args: { '': string }; Returns: string }
+      unaccent: { Args: { "": string }; Returns: string }
     }
     Enums: {
       [_ in never]: never
@@ -3983,31 +4842,33 @@ export type Database = {
   }
 }
 
-type DatabaseWithoutInternals = Omit<Database, '__InternalSupabase'>
+type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
 
-type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, 'public'>]
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
 
 export type Tables<
   DefaultSchemaTableNameOrOptions extends
-    | keyof (DefaultSchema['Tables'] & DefaultSchema['Views'])
+    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'] &
-        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Views'])
+    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
     : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
-  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'] &
-      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Views'])[TableName] extends {
+  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
       Row: infer R
     }
     ? R
     : never
-  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema['Tables'] & DefaultSchema['Views'])
-    ? (DefaultSchema['Tables'] & DefaultSchema['Views'])[DefaultSchemaTableNameOrOptions] extends {
+  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])
+    ? (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
         Row: infer R
       }
       ? R
@@ -4016,23 +4877,23 @@ export type Tables<
 
 export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema['Tables']
+    | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables']
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
     : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
-  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'][TableName] extends {
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
       Insert: infer I
     }
     ? I
     : never
-  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema['Tables']
-    ? DefaultSchema['Tables'][DefaultSchemaTableNameOrOptions] extends {
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
         Insert: infer I
       }
       ? I
@@ -4041,23 +4902,23 @@ export type TablesInsert<
 
 export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema['Tables']
+    | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables']
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
     : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
-  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'][TableName] extends {
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
       Update: infer U
     }
     ? U
     : never
-  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema['Tables']
-    ? DefaultSchema['Tables'][DefaultSchemaTableNameOrOptions] extends {
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
         Update: infer U
       }
       ? U
@@ -4066,36 +4927,36 @@ export type TablesUpdate<
 
 export type Enums<
   DefaultSchemaEnumNameOrOptions extends
-    | keyof DefaultSchema['Enums']
+    | keyof DefaultSchema["Enums"]
     | { schema: keyof DatabaseWithoutInternals },
   EnumName extends DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions['schema']]['Enums']
+    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
     : never = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
-  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions['schema']]['Enums'][EnumName]
-  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema['Enums']
-    ? DefaultSchema['Enums'][DefaultSchemaEnumNameOrOptions]
+  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
+  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
+    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
     : never
 
 export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
-    | keyof DefaultSchema['CompositeTypes']
+    | keyof DefaultSchema["CompositeTypes"]
     | { schema: keyof DatabaseWithoutInternals },
   CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions['schema']]['CompositeTypes']
+    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
     : never = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
-  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions['schema']]['CompositeTypes'][CompositeTypeName]
-  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema['CompositeTypes']
-    ? DefaultSchema['CompositeTypes'][PublicCompositeTypeNameOrOptions]
+  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
+  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
+    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
     : never
 
 export const Constants = {
