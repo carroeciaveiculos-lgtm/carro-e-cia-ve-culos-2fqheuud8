@@ -42,6 +42,7 @@ Isso quebra sincronizações de estoque, automações de leads, disparos de What
 | Função                          | Tipo                    | Motivo                                                                  |
 | ------------------------------- | ----------------------- | ----------------------------------------------------------------------- |
 | `receive-leads`                 | Webhook                 | Recebe leads de portais externos (Webmotors, OLx, etc.)                 |
+| `enviar-candidatura`            | Public                  | Recebe candidaturas do formulário "Trabalhe Conosco" (sem login)        |
 | `sitemap`                       | Public                  | Gera sitemap.xml para crawlers                                          |
 | `og-vehicle`                    | Public                  | Gera imagens Open Graph para bots de redes sociais                      |
 | `ads-agent`                     | Server-to-Server        | Agente de anúncios chamado internamente                                 |
@@ -103,6 +104,8 @@ Isso quebra sincronizações de estoque, automações de leads, disparos de What
 | `wm-mapear-veiculo`       | Tela de mapeamento do admin                                  |
 | `wm-confirmar-mapeamento` | Tela de pendências do admin                                  |
 | `wm-catalog-fetch`        | Consulta de catálogo a partir do admin                       |
+| `gerar-vaga-ia`           | Gera título/descrição de vaga via IA, tela `/admin/vagas`    |
+| `gerar-imagem-vaga`       | Gera imagem padrão de vaga via IA, tela `/admin/vagas`       |
 
 > `wm-sync` estava classificada aqui como Server-to-Server / Cron e declarada
 > `false` no `config.toml`, enquanto produção rodava `true`. O único chamador é

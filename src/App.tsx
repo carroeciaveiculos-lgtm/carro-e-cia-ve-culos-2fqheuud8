@@ -173,6 +173,7 @@ const Consignacao = lazyWithRetry(() => import('./pages/Consignacao'))
 const Sobre = lazyWithRetry(() => import('./pages/Sobre'))
 const Servicos = lazyWithRetry(() => import('./pages/Servicos'))
 const Contato = lazyWithRetry(() => import('./pages/Contato'))
+const TrabalheConosco = lazyWithRetry(() => import('./pages/TrabalheConosco'))
 const PoliticaPrivacidade = lazyWithRetry(() => import('./pages/PoliticaPrivacidade'))
 const Termos = lazyWithRetry(() => import('./pages/Termos'))
 const Seguranca = lazyWithRetry(() => import('./pages/consignacao/Seguranca'))
@@ -204,6 +205,7 @@ const Design = lazyWithRetry(() => import('./pages/admin/Design'))
 const Financiamento = lazyWithRetry(() => import('./pages/admin/Financiamento'))
 const Administrativo = lazyWithRetry(() => import('./pages/admin/Administrativo'))
 const Portais = lazyWithRetry(() => import('./pages/admin/Portais'))
+const VagasAdmin = lazyWithRetry(() => import('./pages/admin/Vagas'))
 const PortalReview = lazyWithRetry(() => import('./pages/admin/PortalReview'))
 const MLDiagnosis = lazyWithRetry(() => import('./pages/admin/MLDiagnosis'))
 const Relatorios = lazyWithRetry(() => import('./pages/admin/Relatorios'))
@@ -296,6 +298,7 @@ const MainApp = () => (
       <Route path="/sobre" element={<Sobre />} />
       <Route path="/servicos" element={<Servicos />} />
       <Route path="/contato" element={<Contato />} />
+      <Route path="/trabalhe-conosco" element={<TrabalheConosco />} />
       <Route path="/politica-de-privacidade" element={<PoliticaPrivacidade />} />
       <Route path="/termos" element={<Termos />} />
 
@@ -378,6 +381,7 @@ const MainApp = () => (
         <Route path="administrativo/:submenu" element={<Administrativo />} />
 
         <Route path="portais" element={<Portais />} />
+        <Route path="vagas" element={<VagasAdmin />} />
         <Route path="portais/revisao" element={<PortalReview />} />
         <Route path="ml-diagnosis" element={<MLDiagnosis />} />
         <Route path="relatorios" element={<Relatorios />} />

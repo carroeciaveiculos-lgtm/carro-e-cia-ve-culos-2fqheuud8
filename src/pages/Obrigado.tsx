@@ -6,6 +6,8 @@ import { SEO } from '@/components/SEO'
 export default function Obrigado() {
   const location = useLocation()
   const nome = location.state?.nome || ''
+  const tipo = location.state?.tipo || 'venda'
+  const isCandidatura = tipo === 'candidatura'
 
   const wppText = encodeURIComponent(
     'Olá Luiz! Acabei de preencher o formulário e quero saber mais.',
@@ -14,52 +16,67 @@ export default function Obrigado() {
   return (
     <div className="min-h-screen bg-muted/30 flex items-center justify-center py-10 md:py-20 px-4">
       <SEO
-        title="Obrigado pelo Contato | Carro e Cia Veículos"
-        description="Recebemos suas informações. Nossa equipe especializada entrará em contato em breve para apresentar a melhor proposta para o seu veículo."
+        title={
+          isCandidatura
+            ? 'Candidatura Recebida | Carro e Cia Veículos'
+            : 'Obrigado pelo Contato | Carro e Cia Veículos'
+        }
+        description={
+          isCandidatura
+            ? 'Recebemos sua candidatura. Nossa equipe de RH vai analisar seu perfil.'
+            : 'Recebemos suas informações. Nossa equipe especializada entrará em contato em breve para apresentar a melhor proposta para o seu veículo.'
+        }
         noindex={true}
       />
       <div className="max-w-2xl w-full bg-card rounded-2xl shadow-xl p-8 md:p-12 text-center border border-border">
         <h1 className="text-4xl md:text-5xl font-display font-extrabold mb-4 text-foreground">
-          Recebemos seu contato{nome ? `, ${nome.split(' ')[0]}` : ''}!
+          {isCandidatura
+            ? `Candidatura recebida${nome ? `, ${nome.split(' ')[0]}` : ''}!`
+            : `Recebemos seu contato${nome ? `, ${nome.split(' ')[0]}` : ''}!`}
         </h1>
 
         <p className="text-xl text-muted-foreground mb-10 leading-relaxed">
-          O Luiz já está sabendo que você quer vender seu carro. Em breve ele vai entrar em contato
-          com você.
+          {isCandidatura
+            ? 'Agradecemos o interesse em fazer parte do time Carro e Cia. Nossa equipe de RH vai analisar seu currículo e entrar em contato caso seu perfil seja compatível com uma vaga disponível.'
+            : 'O Luiz já está sabendo que você quer vender seu carro. Em breve ele vai entrar em contato com você.'}
         </p>
 
-        <div className="bg-muted p-6 rounded-xl mb-8 flex flex-col items-center">
-          <div className="w-24 h-24 rounded-full overflow-hidden mb-4 border-4 border-background shadow-md">
-            <img
-              src="https://imagens.carroeciamotors.com.br/logos-e-imagens/fotos/Luiz-Fernando-foto-profissional.webp"
-              alt="Luiz Fernando"
-              className="w-full h-full object-cover object-top"
-            />
-          </div>
-          <h3 className="font-bold text-lg">Luiz Fernando</h3>
-          <p className="text-sm text-muted-foreground">Especialista em Negócios Automotivos</p>
-        </div>
+        {!isCandidatura && (
+          <>
+            <div className="bg-muted p-6 rounded-xl mb-8 flex flex-col items-center">
+              <div className="w-24 h-24 rounded-full overflow-hidden mb-4 border-4 border-background shadow-md">
+                <img
+                  src="https://imagens.carroeciamotors.com.br/logos-e-imagens/fotos/Luiz-Fernando-foto-profissional.webp"
+                  alt="Luiz Fernando"
+                  className="w-full h-full object-cover object-top"
+                />
+              </div>
+              <h3 className="font-bold text-lg">Luiz Fernando</h3>
+              <p className="text-sm text-muted-foreground">Especialista em Negócios Automotivos</p>
+            </div>
 
-        <Button
-          asChild
-          className="w-full h-auto min-h-[64px] text-sm md:text-xl font-bold bg-[#25D366] hover:bg-[#20bd5a] text-white shadow-lg animate-pulse whitespace-normal break-words leading-snug py-4 px-4 mb-8"
-        >
-          <a
-            href={`https://wa.me/5534999484285?text=${wppText}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            aria-label="Falar com o Luiz pelo WhatsApp agora"
-            className="flex items-center justify-center gap-2"
-          >
-            <MessageCircle className="w-6 h-6 shrink-0" />
-            FALAR COM O LUIZ AGORA
-          </a>
-        </Button>
+            <Button
+              asChild
+              className="w-full h-auto min-h-[64px] text-sm md:text-xl font-bold bg-[#25D366] hover:bg-[#20bd5a] text-white shadow-lg animate-pulse whitespace-normal break-words leading-snug py-4 px-4 mb-8"
+            >
+              <a
+                href={`https://wa.me/5534997384177?text=${wppText}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Falar com o Luiz pelo WhatsApp agora"
+                className="flex items-center justify-center gap-2"
+              >
+                <MessageCircle className="w-6 h-6 shrink-0" />
+                FALAR COM O LUIZ AGORA
+              </a>
+            </Button>
+          </>
+        )}
 
         <div className="flex flex-col items-center justify-center gap-3 text-sm text-muted-foreground">
           <div className="flex items-center gap-2">
             <Phone className="w-4 h-4" />
-            <span>(34) 99948-4285</span>
+            <span>(34) 99289-3615</span>
           </div>
           <div className="flex items-center gap-2">
             <MapPin className="w-4 h-4" />

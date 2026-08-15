@@ -24,6 +24,7 @@ import {
   FileCode,
   ScrollText,
   Share2,
+  Briefcase,
 } from 'lucide-react'
 import { useAuth } from '@/hooks/use-auth'
 import { useState, useEffect } from 'react'
@@ -48,6 +49,7 @@ const SIDEBAR_MENUS = [
       { label: 'Administrativo', path: '/admin/administrativo', icon: FileText },
       { label: 'Modelos de Documentos', path: '/admin/modelos-documentos', icon: FileCode },
       { label: 'Portais', path: '/admin/portais', icon: Globe },
+      { label: 'Vagas', path: '/admin/vagas', icon: Briefcase },
     ],
   },
   {
