@@ -192,7 +192,13 @@ antes de mexer em histórico de migration ou cron. Resumo:
 
 - Remote: `carroeciaveiculos-lgtm/carro-e-cia-ve-culos-2fqheuud8`, branch `main`
 - Mensagens de commit em português, prefixo `fix:` / `chore:` / `feat:`
-- Deploy do front: build + Cloudflare Workers (`wrangler.jsonc`, SPA fallback)
+- Deploy do front: **automático** via Cloudflare Workers Builds — dispara
+  sozinho a cada push pro `main` (build `bun run build`, deploy
+  `npx wrangler deploy`, confirmado em 16/08/2026 direto na API do
+  Cloudflare, `wrangler.jsonc` define o resto). **Não rodar `wrangler
+  deploy` manual como rotina** — só em emergência (hotfix antes do build
+  automático terminar). Rodar manual por hábito já causou o site ficar no
+  ar antes do commit correspondente (sessão 5, ver `MEMORY_WORK.MD`).
 - Deploy de function: `supabase functions deploy <nome>`
 - **Commitar ao final de cada sessão de trabalho relevante** — não deixar
   acumular por dias. Já aconteceu duas vezes (sessão 5: 39 arquivos parados
