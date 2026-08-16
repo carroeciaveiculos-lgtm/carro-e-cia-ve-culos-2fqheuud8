@@ -257,13 +257,21 @@ ainda, mas relevante pro futuro (Clara/CRM podem precisar receber isso).
    been reached!", não só as excedentes. `napista-sync` já corta em 10.
    `PUT .../offer/{offerId}/{offerStatus}` usa `UNPUBLISHED` pra "fechar"
    (reversível, ao contrário de `DELETED`).
-7. Enfileiramento automático — adaptar/generalizar o trigger que já existe
-   pra Mercado Livre (`trigger_ml_sync_on_veiculo_change`) pra também
-   inserir `platform='napista'` na fila quando um veículo muda. **Ainda não
-   feito** — hoje o enfileiramento é manual (inserir direto em
-   `estoque_publicacoes`).
-8. Cron de sincronização periódica (como o do Mercado Livre, 30min) chamando
-   `napista-sync`. **Ainda não feito.**
+7. ~~Enfileiramento automático~~ — **concluído em 15/08/2026**, pedido da
+   Adriana. Decisão de desenho: NaPista usa a mesma tabela da Webmotors
+   (`estoque_publicacoes`, log append-only), não uma tabela própria como o
+   `ml_listings` do Mercado Livre — então o gatilho segue o padrão da
+   Webmotors (`trigger_napista_sync_on_veiculo_change`, coluna
+   `publicado_napista`), não o do ML. Diferente da primeira versão da
+   Webmotors, este já nasce com a trava que faltou lá (só enfileira
+   `pending_create` se ainda não existe `post_id` pra esse veículo+
+   plataforma) — ver `20260815180000_napista_automacao.sql` e o incidente
+   original em `20260810214500_corrige_laco_republicacao_webmotors.sql`.
+8. ~~Cron de sincronização periódica~~ — **concluído em 15/08/2026**,
+   `napista-sync-cron-job` a cada 30min (mesmo intervalo do
+   `ml-sync-cron-job`). `napista-sync` ganhou `verify_jwt = false` no
+   `config.toml` (mesmo padrão do `ml-sync`) pra aceitar a chamada do cron,
+   que não manda token — o código da function em si não foi alterado.
 9. Pedir client_id de produção quando for hora de sair do ambiente de
    desenvolvimento (hoje só temos client_id de dev).
 

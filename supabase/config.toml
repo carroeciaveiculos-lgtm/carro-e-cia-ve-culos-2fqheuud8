@@ -106,6 +106,9 @@ verify_jwt = true
 [functions.ml-sync]
 verify_jwt = false
 
+[functions.napista-sync]
+verify_jwt = false
+
 [functions.on-lead-created]
 verify_jwt = false
 
