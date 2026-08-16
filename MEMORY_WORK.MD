@@ -6,7 +6,7 @@ precisar reler o histórico inteiro de conversas. Diferente do
 pra ser mantido em dia de verdade. Detalhe técnico por integração continua
 nos arquivos `docs/*.md` — aqui é só o resumo de estado + pendências.
 
-Última atualização: 2026-08-15 (sessão 5).
+Última atualização: 2026-08-16 (sessão 6).
 
 **Pasta de trabalho deste projeto:** `C:\Projeto\Revenda Carro e Cia\carro-e-cia-ve-culos-2fqheuud8`
 (sempre abrir sessão nova aqui pra continuar — ver também `CLAUDE.md`).
@@ -139,31 +139,42 @@ nos arquivos `docs/*.md` — aqui é só o resumo de estado + pendências.
 - **Rotação de chave do Resend (15/08/2026)**: ver bullet anterior sobre
   e-mail — chave antiga exposta revogada, chave "Onboarding" (não usada)
   também revogada, nova gerada e testada.
+- **NaPista — automação aplicada (16/08/2026, sessão 6)**: migration e
+  deploy da etapa 7-8 (enfileiramento automático + cron a cada 30min)
+  aplicados de verdade. Falta só o teste de ponta a ponta — ver pendência
+  aberta 1.
+- **Integridade de migrations corrigida (16/08/2026, sessão 6)**: achado
+  investigando o `wm-sync` — 47 migrations com timestamp local diferente
+  do banco (aplicadas via MCP, que carimba a hora real), uma correção real
+  em produção (`corrige_laco_republicacao_webmotors`) sem nenhum registro
+  no histórico (aplicada via `execute_sql` direto), e dois pares de cron
+  duplicados rodando a mesma função (criados ao tentar renomear um job
+  existente em vez de alterá-lo). Corrigido: 26 migrations renomeadas pro
+  timestamp real, 4 migrations órfãs registradas no histórico, crons
+  duplicados removidos. Regra nova documentada em `CLAUDE.md`, seção
+  "Integridade de migrations e deploys". Detalhe em pendências 8 e 9
+  abaixo.
+- **Correção de segurança (16/08/2026, sessão 6)**: achada senha fixa em
+  texto plano numa migration antiga (`add_access_control`,
+  `Skip@Pass123!`), válida pra conta de login da Adriana
+  (`lgacomerciodeveiculos@gmail.com`, nível admin_master). Senha trocada
+  no banco. Contas de Roberto e da conta `@kmzero.com.br` **não foram
+  mexidas** — decisão da Adriana, ver pendência 10.
+- **Crons duplicados removidos (16/08/2026)**: `re-engagement-cron-daily`
+  e `ml_weekly_quality_check` desligados — cada um duplicava a função de
+  outro cron já ativo (`re-engagement-cron-job` e
+  `avaliar-qualidade-anuncios-cron`, respectivamente) rodando sem que
+  ninguém percebesse havia semanas.
 
 ## Pendências abertas
 
-1. **[MAIS RECENTE] NaPista — automação (etapas 7-8) escrita, aguardando
-   aprovação pra aplicar** (15/08/2026, sessão 5): pedido da Adriana foi automação
-   completa "como o Mercado Livre". Decisão técnica tomada com ela: reusar
-   `estoque_publicacoes` (mesma tabela da Webmotors), não criar tabela nova
-   tipo `ml_listings`, mas já nascendo com a trava que faltou no incidente
-   de duplicidade da Webmotors (só enfileira `pending_create` se não existe
-   `post_id` ainda). Arquivos prontos **só localmente, nada aplicado**:
-   - `supabase/migrations/20260815180000_napista_automacao.sql` — gatilho
-     `trigger_napista_sync_on_veiculo_change` (dispara em
-     `publicado_napista`/`preco_venda`/`quilometragem`/`descricao`) + cron
-     `napista-sync-cron-job` a cada 30min.
-   - `supabase/config.toml` — `napista-sync` ganhou `verify_jwt = false`
-     (mesmo padrão do `ml-sync`), necessário pro cron conseguir chamar sem
-     token. `napista-sync` em si **não foi alterada**.
-   - `docs/integracao-napista.md` — etapas 7-8 já marcadas como concluídas
-     (adiantado, mas reflete o que está escrito).
-   **Próximo passo:** Adriana revisar o SQL, depois autorizar `supabase db
-   push` (aplica a migration) + `supabase functions deploy napista-sync`
-   (pega o `verify_jwt` novo). Nada disso foi commitado no Git ainda —
-   fazer isso só depois de aplicado e testado (mudar o toggle "Publicar no
-   NaPista" de um veículo de teste em `/admin/portais` e conferir se
-   enfileira certo).
+1. **[FECHADA 16/08, falta só o teste] NaPista — automação aplicada,
+   falta testar de ponta a ponta.** Migration e deploy aplicados
+   (16/08/2026, sessão 6) — trigger `trigger_napista_sync_on_veiculo_change`
+   e cron `napista-sync-cron-job` (30min) ativos. **Próximo passo:** ligar
+   o toggle "Publicar no NaPista" de um veículo de teste em `/admin/portais`
+   e conferir se enfileira certo (igual foi feito com Webmotors e Mercado
+   Livre). Já commitado no Git (`df609a5`), não enviado pro GitHub ainda.
 
 1. **NaPista** — Fase 1 (autenticação) concluída e testada. Fase 2: etapas
    1-4 de 9 **concluídas, testadas e publicadas em 14/08/2026** com dado
@@ -252,6 +263,30 @@ nos arquivos `docs/*.md` — aqui é só o resumo de estado + pendências.
    Falta a Adriana completar o login/OAuth na conta Resend dela (não é algo
    que eu faço sozinha) e provavelmente reiniciar a sessão do Claude Code
    pra essas ferramentas aparecerem.
+
+8. **22 migrations sem arquivo local nenhum** (achado 16/08/2026): schema
+   real está correto e aplicado, mas o texto SQL original de 22 migrations
+   antigas (02/08 a 12/08) foi perdido do histórico do banco — sem arquivo
+   local pra reconstruir. Resolve rodando `supabase db pull`, que precisa
+   de **Docker Desktop instalado** nesta máquina (não está). Sem urgência
+   — nada quebrado, só documentação incompleta.
+9. **Duas migrations paradas em `supabase/migrations-rascunho/`**, fora do
+   fluxo automático de propósito:
+   - `desliga_cron_wm_sync.sql` — desligaria a sincronização automática da
+     Webmotors. Decisão da Adriana em 16/08: manter automático por ora.
+     Aplicar só depois do fluxo manual "Sincronizar Agora" (painel Portais)
+     ser testado de ponta a ponta.
+   - `crm_improvements.sql` (23/06, órfã) — código morto (cron quebrado,
+     conteúdo redundante com outra migration já aplicada). Candidata a
+     apagar quando sobrar tempo, sem pressa.
+10. **Senha exposta pro Roberto (`roberto@carroecia.com`) e pra conta
+    `adriana.araujo@kmzero.com.br` continua sem trocar** (16/08/2026):
+    achada em `add_access_control.sql` (senha fixa em texto plano, ver o
+    arquivo — não repetida aqui de propósito, continua válida pras duas
+    contas). A senha da própria Adriana (conta de login principal) já foi
+    trocada. Decisão dela foi deixar as outras duas como estão por ora —
+    registrado aqui porque a exposição em si continua no histórico do
+    Git, não some sozinha.
 
 ## Referências técnicas por assunto
 
