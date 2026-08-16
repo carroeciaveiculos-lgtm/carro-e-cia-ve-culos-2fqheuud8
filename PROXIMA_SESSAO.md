@@ -13,7 +13,7 @@ Continuando de uma sessão anterior (16/08/2026). Leia primeiro:
    ainda "Needs authentication", pedir pra ela rodar /mcp e autenticar.
 2. Testar o NaPista de ponta a ponta: toggle "Publicar no NaPista" num
    veículo de teste em /admin/portais, conferir se enfileira certo.
-3. Perguntar se autorizo `git push` — 10 commits do projeto da revenda
+3. Perguntar se autorizo `git push` — 11 commits do projeto da revenda
    já prontos localmente, nada enviado ainda pro GitHub.
 4. Se ela quiser o Brevo configurado, preciso da chave de API — nada
    foi feito ainda, só confirmado que não existe conector oficial.
