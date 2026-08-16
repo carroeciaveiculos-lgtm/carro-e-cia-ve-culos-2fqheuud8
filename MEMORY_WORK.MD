@@ -6,7 +6,10 @@ precisar reler o histórico inteiro de conversas. Diferente do
 pra ser mantido em dia de verdade. Detalhe técnico por integração continua
 nos arquivos `docs/*.md` — aqui é só o resumo de estado + pendências.
 
-Última atualização: 2026-08-15 (sessão 4).
+Última atualização: 2026-08-15 (sessão 5).
+
+**Pasta de trabalho deste projeto:** `C:\Projeto\Revenda Carro e Cia\carro-e-cia-ve-culos-2fqheuud8`
+(sempre abrir sessão nova aqui pra continuar — ver também `CLAUDE.md`).
 
 ## O que está no ar hoje
 
@@ -123,7 +126,44 @@ nos arquivos `docs/*.md` — aqui é só o resumo de estado + pendências.
   avisar ninguém, agora manda nome/telefone/motivo pro WhatsApp dela. Function
   redeployada e no ar.
 
+- **Catch-up de Git (15/08/2026, sessão 5)**: todo o trabalho das sessões 3 e
+  4 (14-15/08) estava só na máquina local, sem commit desde 14/08 10:46 — 39
+  arquivos modificados + 24 novos. Revisado (sem segredo exposto), dividido
+  em 9 commits lógicos por assunto (NaPista, fix Mercado Livre, roteamento
+  WhatsApp/limpeza institucional, Clara, Trabalhe Conosco, tipos gerados,
+  fix e-mail Resend, docs, filtro de leads) e **enviado pro GitHub**
+  (`git push origin main`, branch `main`, até o commit `3b8d548`). Site
+  publicado (Cloudflare Worker) já conferido no ar com as mudanças de
+  frontend antes mesmo do commit (alguém já tinha rodado `wrangler deploy`
+  antes) — git só estava desatualizado, não o site.
+- **Rotação de chave do Resend (15/08/2026)**: ver bullet anterior sobre
+  e-mail — chave antiga exposta revogada, chave "Onboarding" (não usada)
+  também revogada, nova gerada e testada.
+
 ## Pendências abertas
+
+1. **[MAIS RECENTE] NaPista — automação (etapas 7-8) escrita, aguardando
+   aprovação pra aplicar** (15/08/2026, sessão 5): pedido da Adriana foi automação
+   completa "como o Mercado Livre". Decisão técnica tomada com ela: reusar
+   `estoque_publicacoes` (mesma tabela da Webmotors), não criar tabela nova
+   tipo `ml_listings`, mas já nascendo com a trava que faltou no incidente
+   de duplicidade da Webmotors (só enfileira `pending_create` se não existe
+   `post_id` ainda). Arquivos prontos **só localmente, nada aplicado**:
+   - `supabase/migrations/20260815180000_napista_automacao.sql` — gatilho
+     `trigger_napista_sync_on_veiculo_change` (dispara em
+     `publicado_napista`/`preco_venda`/`quilometragem`/`descricao`) + cron
+     `napista-sync-cron-job` a cada 30min.
+   - `supabase/config.toml` — `napista-sync` ganhou `verify_jwt = false`
+     (mesmo padrão do `ml-sync`), necessário pro cron conseguir chamar sem
+     token. `napista-sync` em si **não foi alterada**.
+   - `docs/integracao-napista.md` — etapas 7-8 já marcadas como concluídas
+     (adiantado, mas reflete o que está escrito).
+   **Próximo passo:** Adriana revisar o SQL, depois autorizar `supabase db
+   push` (aplica a migration) + `supabase functions deploy napista-sync`
+   (pega o `verify_jwt` novo). Nada disso foi commitado no Git ainda —
+   fazer isso só depois de aplicado e testado (mudar o toggle "Publicar no
+   NaPista" de um veículo de teste em `/admin/portais` e conferir se
+   enfileira certo).
 
 1. **NaPista** — Fase 1 (autenticação) concluída e testada. Fase 2: etapas
    1-4 de 9 **concluídas, testadas e publicadas em 14/08/2026** com dado
