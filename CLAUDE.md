@@ -154,6 +154,39 @@ Nomeie `YYYYMMDDHHMMSS_descricao.sql`. Já houve colisão de timestamp no passad
 RLS é levada a sério aqui: várias migrations existem só para corrigir policy.
 Ao criar tabela, crie a policy na mesma migration.
 
+## Integridade de migrations e deploys
+
+Achado em 16/08/2026: 47 migrations com timestamp local diferente do
+registrado no banco (aplicadas via MCP, que carimba a hora real em vez da
+hora do nome do arquivo), e ao menos uma correção real em produção
+(`corrige_laco_republicacao_webmotors`) sem **nenhum** registro no
+histórico — aplicada direto via `execute_sql`, sem deixar rastro algum.
+Também achados: dois pares de cron duplicados (criados ao tentar renomear
+um job existente em vez de alterá-lo) rodando a mesma função sem que
+ninguém notasse por semanas.
+
+- **Nunca usar `execute_sql` para mudança de schema ou cron.** Sempre via
+  migration (`apply_migration` ou `db push`) — é o que deixa rastro no
+  histórico. Mudança de schema fora de migration é invisível e
+  irrecuperável numa reconstrução do banco.
+- **Depois de aplicar uma migration via MCP, sempre conferir**
+  (`migration list`) e **renomear o arquivo local** pro timestamp real
+  que o banco registrou. Nunca assumir que "aplicou" = "sincronizado".
+- **Antes de criar um cron novo, checar se já existe um** (`select * from
+  cron.job`) — renomear/reagendar é `cron.alter_job` ou
+  unschedule-e-recriar-com-mesmo-nome, nunca criar um job novo com nome
+  diferente e deixar o antigo pra trás.
+- **Antes de propor qualquer mudança em produção (migration, deploy,
+  config), rodar mentalmente "o que um especialista crítico atacaria
+  nisso?" antes de apresentar** — sem esperar ser perguntado:
+  - Informação reaproveitada de uma leitura/investigação anterior ainda
+    vale pro objetivo atual, ou só valia pro objetivo original (releia
+    antes de propor executar de novo)?
+  - Uma busca que não achou nada — que escopo exatamente foi buscado?
+    "Não achei evidência" não é o mesmo que "não existe".
+  - A proposta nova é consistente com o que já foi afirmado antes na
+    mesma conversa, ou contradiz um princípio já declarado?
+
 ## Git e deploy
 
 - Remote: `carroeciaveiculos-lgtm/carro-e-cia-ve-culos-2fqheuud8`, branch `main`
