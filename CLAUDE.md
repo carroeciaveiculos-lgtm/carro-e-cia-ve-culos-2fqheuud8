@@ -210,6 +210,11 @@ os dois**.
 estado real. Detalhe técnico continua indo pra `docs/<assunto>.md`, não pra
 esse arquivo; ele é só o resumo + pendências.
 
+**Sempre que for fechar uma sessão, atualize também `PROXIMA_SESSAO.md`**
+(raiz do projeto) — um prompt pronto pra copiar e colar como primeira
+mensagem da sessão seguinte, com o que precisa de ação da Adriana e o que
+é só andamento meu, pra não ter que reconstruir esse contexto do zero.
+
 ## A PREENCHER pela Adriana
 
 Estas são regras de negócio que não dá para deduzir do código. Quanto mais
