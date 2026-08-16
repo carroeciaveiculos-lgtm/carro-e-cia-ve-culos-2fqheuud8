@@ -1,7 +1,12 @@
 # Carro e Cia Veículos — site + CRM
 
 **Caminho local deste projeto:** `C:\Projeto\Revenda Carro e Cia\carro-e-cia-ve-culos-2fqheuud8`.
-Sempre iniciar sessões de trabalho neste projeto a partir dessa pasta.
+**Sempre iniciar sessões de trabalho neste projeto a partir dessa pasta** —
+não de `~/.local/bin` ou qualquer outra. Achado em 16/08/2026: sessões
+abertas do lugar errado acumulam regra de permissão
+(`.claude/settings.local.json`) e registram conector MCP (Supabase, Resend,
+Meta Ads) na pasta errada — um projeto inteiro de configuração ficou preso
+em `~/.local/bin` sem ninguém notar.
 
 Revenda de veículos. Um único app React serve três coisas: o **site público**
 (estoque, blog, landing pages), o **CRM/admin** (`/admin/*`) e o **hub interno**
@@ -145,47 +150,43 @@ falhou; ao descobrir algo novo, acrescente lá com data e fonte.
   de/para de vocabulário, pendências e consultas de diagnóstico
 - `docs/edge-functions-rules.md` — classificação de `verify_jwt` por função
 - `docs/R2_CORS_CONFIGURATION.md` — CORS do bucket de imagens
+- `docs/supabase-migrations.md` — integridade de migrations e crons,
+  regras e becos sem saída de reparo de histórico
 
 ## Migrations
 
 Nomeie `YYYYMMDDHHMMSS_descricao.sql`. Já houve colisão de timestamp no passado
-(dois arquivos `20260624000000_*`) — confira que o seu é único.
+(dois arquivos `20260624000000_*`) — confira que o seu é único. Cuidado
+extra: mesmo com nome único, rodar um comando de reparo/registro usando só
+o timestamp (sem o nome) pode pegar o arquivo errado se houver ambiguidade —
+achado real em 16/08/2026, corrompeu um registro por engano (corrigido, ver
+`docs/supabase-migrations.md`).
 
 RLS é levada a sério aqui: várias migrations existem só para corrigir policy.
 Ao criar tabela, crie a policy na mesma migration.
 
+**Nunca escrever senha ou segredo em texto plano dentro de uma migration** —
+nem como "temporário", nem hash local com senha previsível. Achado real em
+16/08/2026: senha hardcoded (`add_access_control.sql`) válida pro login
+principal da Adriana, sentada no histórico desde abril. Pra criar usuário de
+teste, use a API de administração do Supabase Auth fora do código
+versionado, ou peça pra Adriana criar manualmente.
+
 ## Integridade de migrations e deploys
 
-Achado em 16/08/2026: 47 migrations com timestamp local diferente do
-registrado no banco (aplicadas via MCP, que carimba a hora real em vez da
-hora do nome do arquivo), e ao menos uma correção real em produção
-(`corrige_laco_republicacao_webmotors`) sem **nenhum** registro no
-histórico — aplicada direto via `execute_sql`, sem deixar rastro algum.
-Também achados: dois pares de cron duplicados (criados ao tentar renomear
-um job existente em vez de alterá-lo) rodando a mesma função sem que
-ninguém notasse por semanas.
+Regras completas e "becos sem saída" em `docs/supabase-migrations.md` — leia
+antes de mexer em histórico de migration ou cron. Resumo:
 
-- **Nunca usar `execute_sql` para mudança de schema ou cron.** Sempre via
-  migration (`apply_migration` ou `db push`) — é o que deixa rastro no
-  histórico. Mudança de schema fora de migration é invisível e
-  irrecuperável numa reconstrução do banco.
-- **Depois de aplicar uma migration via MCP, sempre conferir**
-  (`migration list`) e **renomear o arquivo local** pro timestamp real
-  que o banco registrou. Nunca assumir que "aplicou" = "sincronizado".
-- **Antes de criar um cron novo, checar se já existe um** (`select * from
-  cron.job`) — renomear/reagendar é `cron.alter_job` ou
-  unschedule-e-recriar-com-mesmo-nome, nunca criar um job novo com nome
-  diferente e deixar o antigo pra trás.
-- **Antes de propor qualquer mudança em produção (migration, deploy,
-  config), rodar mentalmente "o que um especialista crítico atacaria
-  nisso?" antes de apresentar** — sem esperar ser perguntado:
-  - Informação reaproveitada de uma leitura/investigação anterior ainda
-    vale pro objetivo atual, ou só valia pro objetivo original (releia
-    antes de propor executar de novo)?
-  - Uma busca que não achou nada — que escopo exatamente foi buscado?
-    "Não achei evidência" não é o mesmo que "não existe".
-  - A proposta nova é consistente com o que já foi afirmado antes na
-    mesma conversa, ou contradiz um princípio já declarado?
+- Nunca `execute_sql` direto pra schema/cron — sempre migration.
+- Depois de aplicar via MCP, sempre conferir (`migration list`) e renomear
+  o arquivo local pro timestamp real.
+- Antes de criar cron novo, checar se já existe um.
+- Antes de reparo/operação em lote no histórico do banco, testar num item
+  só primeiro ou tirar backup — nunca aplicar em lote sem entender o efeito
+  completo (achado real: `repair --status reverted` apaga o texto original
+  do SQL sem chance de desfazer).
+- Antes de propor mudança em produção, autocrítica proativa ("o que um
+  especialista atacaria nisso?") sem esperar ser perguntado.
 
 ## Git e deploy
 
@@ -193,6 +194,10 @@ ninguém notasse por semanas.
 - Mensagens de commit em português, prefixo `fix:` / `chore:` / `feat:`
 - Deploy do front: build + Cloudflare Workers (`wrangler.jsonc`, SPA fallback)
 - Deploy de function: `supabase functions deploy <nome>`
+- **Commitar ao final de cada sessão de trabalho relevante** — não deixar
+  acumular por dias. Já aconteceu duas vezes (sessão 5: 39 arquivos parados
+  desde 14/08; sessão 6: 61 arquivos parados no mesmo dia). `MEMORY_WORK.MD`
+  e `PROXIMA_SESSAO.md` servem de checklist de fechamento de sessão.
 
 Existe uma worktree em `../carro-e-cia-ve-culos-2fqheuud8.worktrees/` usada por
 agentes — não é branch de trabalho manual.
