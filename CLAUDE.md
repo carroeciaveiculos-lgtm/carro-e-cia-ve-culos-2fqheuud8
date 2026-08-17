@@ -248,6 +248,15 @@ ajustada no painel precisa de um artigo correspondente na Central de Ajuda**
 - Mapa de rota → setor fica em `src/lib/setor-acesso.ts` — se um artigo
   cita uma página que ainda não tem setor mapeado, considerar se o mapa
   também precisa de ajuste, não só o artigo.
+- **Checklist do que falta**: `docs/manual-operacional-contexto.md` lista
+  toda página do sistema por setor e marca ✅ o que já tem artigo. Regra
+  ampliada em 17/08/2026: não é só documentar o que acabei de construir —
+  ao fechar qualquer tarefa que tocou o painel, checar esse documento e,
+  se sobrou lacuna relacionada ao que foi mexido, já escrever o artigo
+  como parte do trabalho, sem esperar a Adriana pedir explicitamente.
+  Fechar lacunas antigas não relacionadas à tarefa do momento continua
+  sendo por iniciativa da skill `manual-operacional` (`.claude/skills/`),
+  não automático a cada sessão.
 
 ## A PREENCHER pela Adriana
 

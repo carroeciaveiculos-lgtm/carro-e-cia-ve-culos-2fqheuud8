@@ -20,8 +20,6 @@ import {
   Trash,
   MessageSquare,
   Download,
-  Code,
-  Globe,
   Phone,
   Bot,
 } from 'lucide-react'
@@ -43,7 +41,7 @@ const CATEGORIAS_BRAIN_IA = [
 
 export default function Configuracoes() {
   const [loading, setLoading] = useState(false)
-  const [activeTab, setActiveTab] = useState('geral')
+  const [activeTab, setActiveTab] = useState('contatos')
   const [socialConfig, setSocialConfig] = useState<any>({
     id: null,
     instagram_token: '',
@@ -51,22 +49,6 @@ export default function Configuracoes() {
     facebook_token: '',
     whatsapp_number: '',
     ai_system_prompt: '',
-  })
-
-  // Fake state for site config (since we don't have all keys in DB, we mock the UI for the user story)
-  const [siteConfig, setSiteConfig] = useState<any>({
-    nome_loja: 'Carro e Cia Veículos',
-    cnpj: '10.196.974/0001-46',
-    telefone: '(34) 3315-9400',
-    email: 'lgacomerciodeveiculos@gmail.com',
-    endereco: 'Av. Guilherme Ferreira, 1119 - São Benedito, Uberaba - MG',
-    meta_title: 'Carro e Cia Veículos | Os Melhores Seminovos de Uberaba',
-    meta_description:
-      'Venda seu carro com segurança. Consignação e financiamento de veículos em Uberaba.',
-    meta_keywords: 'carros seminovos, uberaba, consignação, financiamento auto',
-    ga4_id: 'G-7NCHPJ2SLT',
-    gtm_id: 'GTM-N7LFK82W',
-    clarity_id: 'wb6vgqmca2',
   })
 
   // Brain IA state
@@ -229,15 +211,6 @@ export default function Configuracoes() {
     }
   }
 
-  const handleSaveSiteConfig = async () => {
-    setLoading(true)
-    // Here we would save to site_configuracoes
-    setTimeout(() => {
-      toast({ title: 'Configurações do site salvas com sucesso!' })
-      setLoading(false)
-    }, 800)
-  }
-
   const handleUpdatePromptText = (index: number, val: string) => {
     const newPrompts = [...prompts]
     newPrompts[index].prompt_text = val
@@ -275,14 +248,8 @@ export default function Configuracoes() {
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="mb-4 flex-wrap h-auto gap-1">
-          <TabsTrigger value="geral" className="flex items-center gap-2">
-            <Globe className="w-4 h-4" /> Loja & SEO
-          </TabsTrigger>
           <TabsTrigger value="contatos" className="flex items-center gap-2">
             <Phone className="w-4 h-4" /> Contatos
-          </TabsTrigger>
-          <TabsTrigger value="scripts" className="flex items-center gap-2">
-            <Code className="w-4 h-4" /> Scripts & Tracking
           </TabsTrigger>
           <TabsTrigger value="brain" className="flex items-center gap-2">
             <BrainCircuit className="w-4 h-4" /> Brain IA
@@ -295,141 +262,8 @@ export default function Configuracoes() {
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="geral" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Informações da Loja & SEO Global</CardTitle>
-              <CardDescription>
-                Dados de contato e metatags padrão para páginas sem SEO específico.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <Label>Nome da Loja</Label>
-                  <Input
-                    value={siteConfig.nome_loja}
-                    onChange={(e) => setSiteConfig({ ...siteConfig, nome_loja: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <Label>CNPJ</Label>
-                  <Input
-                    value={siteConfig.cnpj}
-                    onChange={(e) => setSiteConfig({ ...siteConfig, cnpj: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <Label>Telefone Principal (WhatsApp)</Label>
-                  <Input
-                    value={siteConfig.telefone}
-                    onChange={(e) => setSiteConfig({ ...siteConfig, telefone: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <Label>E-mail de Contato</Label>
-                  <Input
-                    value={siteConfig.email}
-                    onChange={(e) => setSiteConfig({ ...siteConfig, email: e.target.value })}
-                  />
-                </div>
-                <div className="sm:col-span-2">
-                  <Label>Endereço Completo</Label>
-                  <Input
-                    value={siteConfig.endereco}
-                    onChange={(e) => setSiteConfig({ ...siteConfig, endereco: e.target.value })}
-                  />
-                </div>
-              </div>
-
-              <div className="pt-4 border-t border-slate-200">
-                <h4 className="font-semibold mb-4">SEO Padrão</h4>
-                <div className="grid gap-4">
-                  <div>
-                    <Label>Title Tag (Meta Título Global)</Label>
-                    <Input
-                      value={siteConfig.meta_title}
-                      onChange={(e) => setSiteConfig({ ...siteConfig, meta_title: e.target.value })}
-                    />
-                  </div>
-                  <div>
-                    <Label>Meta Description Global</Label>
-                    <Textarea
-                      value={siteConfig.meta_description}
-                      onChange={(e) =>
-                        setSiteConfig({ ...siteConfig, meta_description: e.target.value })
-                      }
-                    />
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Recomendado: 150-160 caracteres.
-                    </p>
-                  </div>
-                  <div>
-                    <Label>Palavras-chave (Meta Keywords)</Label>
-                    <Input
-                      value={siteConfig.meta_keywords}
-                      onChange={(e) =>
-                        setSiteConfig({ ...siteConfig, meta_keywords: e.target.value })
-                      }
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <Button
-                onClick={handleSaveSiteConfig}
-                disabled={loading}
-                className="w-full sm:w-auto"
-              >
-                <Save className="w-4 h-4 mr-2" /> Salvar Configurações
-              </Button>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
         <TabsContent value="contatos" className="space-y-6">
           <ContactsConfigPanel />
-        </TabsContent>
-
-        <TabsContent value="scripts" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Tags de Rastreamento & Analytics</CardTitle>
-              <CardDescription>
-                Configure os identificadores para rastreamento de visitantes e conversões.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <Label>Google Analytics (GA4) Measurement ID</Label>
-                <Input
-                  value={siteConfig.ga4_id}
-                  onChange={(e) => setSiteConfig({ ...siteConfig, ga4_id: e.target.value })}
-                />
-                <p className="text-xs text-slate-500 mt-1">Ex: G-XXXXXXXXXX</p>
-              </div>
-              <div>
-                <Label>Google Tag Manager (GTM) Container ID</Label>
-                <Input
-                  value={siteConfig.gtm_id}
-                  onChange={(e) => setSiteConfig({ ...siteConfig, gtm_id: e.target.value })}
-                />
-                <p className="text-xs text-slate-500 mt-1">Ex: GTM-XXXXXXX</p>
-              </div>
-              <div>
-                <Label>Microsoft Clarity Project ID</Label>
-                <Input
-                  value={siteConfig.clarity_id}
-                  onChange={(e) => setSiteConfig({ ...siteConfig, clarity_id: e.target.value })}
-                />
-              </div>
-              <div className="pt-4">
-                <Button onClick={handleSaveSiteConfig} disabled={loading}>
-                  <Save className="w-4 h-4 mr-2" /> Salvar Scripts
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
         </TabsContent>
 
         <TabsContent value="brain" className="space-y-6">

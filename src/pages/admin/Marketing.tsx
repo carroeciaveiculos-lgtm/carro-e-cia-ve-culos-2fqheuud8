@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { Switch } from '@/components/ui/switch'
 import {
   Select,
   SelectContent,
@@ -15,7 +14,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { useToast } from '@/hooks/use-toast'
-import { Activity, Mail, Share2, BarChart3, Plus, MessageCircle, Wand2 } from 'lucide-react'
+import { Activity, Share2, BarChart3, Plus, MessageCircle, Wand2 } from 'lucide-react'
 import { SocialApprovalDashboard } from '@/components/admin/marketing/SocialApprovalDashboard'
 import { WhatsAppScheduler } from '@/components/admin/marketing/WhatsAppScheduler'
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Line, LineChart } from 'recharts'
@@ -31,7 +30,6 @@ export default function Marketing() {
   const { toast } = useToast()
   const [activeTab, setActiveTab] = useState('social')
   const [logs, setLogs] = useState<any[]>([])
-  const [automations, setAutomations] = useState<any[]>([])
   const [posts, setPosts] = useState<any[]>([])
 
   const [postText, setPostText] = useState('')
@@ -51,28 +49,11 @@ export default function Marketing() {
       .order('created_at', { ascending: true })
     if (logsData) setLogs(logsData)
 
-    setAutomations([
-      { id: 1, nome: 'Boas-vindas (Novo Lead)', tipo: 'email', ativo: true, envios: 145 },
-      {
-        id: 2,
-        nome: 'Recuperação de Carrinho (Avaliação)',
-        tipo: 'email',
-        ativo: false,
-        envios: 32,
-      },
-      { id: 3, nome: 'Feliz Aniversário', tipo: 'email', ativo: true, envios: 89 },
-    ])
-
     const { data: postsData } = await supabase
       .from('social_posts')
       .select('*, veiculos(marca, modelo)')
       .order('criado_em', { ascending: false })
     if (postsData) setPosts(postsData)
-  }
-
-  const toggleAutomation = (id: number) => {
-    setAutomations((prev) => prev.map((a) => (a.id === id ? { ...a, ativo: !a.ativo } : a)))
-    toast({ title: 'Status atualizado', description: 'Automação alterada com sucesso.' })
   }
 
   const [generatingAI, setGeneratingAI] = useState(false)
@@ -194,12 +175,6 @@ export default function Marketing() {
             className="py-2.5 px-4 data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700"
           >
             <MessageCircle className="w-4 h-4 mr-2" /> WhatsApp
-          </TabsTrigger>
-          <TabsTrigger
-            value="emails"
-            className="py-2.5 px-4 data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700"
-          >
-            <Mail className="w-4 h-4 mr-2" /> Automações de E-mail
           </TabsTrigger>
           <TabsTrigger
             value="analytics"
@@ -372,45 +347,6 @@ export default function Marketing() {
 
         <TabsContent value="whatsapp">
           <WhatsAppScheduler />
-        </TabsContent>
-
-        <TabsContent value="emails">
-          <Card>
-            <CardHeader>
-              <CardTitle>Sequências de Lead Nurturing</CardTitle>
-              <CardDescription>
-                Ative ou desative réguas de e-mails automatizados para sua base de contatos.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {automations.map((auto) => (
-                  <div
-                    key={auto.id}
-                    className="flex items-center justify-between p-4 border rounded-lg bg-slate-50"
-                  >
-                    <div>
-                      <h4 className="font-semibold text-slate-800">{auto.nome}</h4>
-                      <p className="text-sm text-slate-500">
-                        {auto.envios} leads na sequência atual
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <span
-                        className={`text-xs font-medium px-2 py-1 rounded-full ${auto.ativo ? 'bg-green-100 text-green-700' : 'bg-slate-200 text-slate-700'}`}
-                      >
-                        {auto.ativo ? 'Ativa' : 'Pausada'}
-                      </span>
-                      <Switch
-                        checked={auto.ativo}
-                        onCheckedChange={() => toggleAutomation(auto.id)}
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
         </TabsContent>
 
         <TabsContent value="analytics">

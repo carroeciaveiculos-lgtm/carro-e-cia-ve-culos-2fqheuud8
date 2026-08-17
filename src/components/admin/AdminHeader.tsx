@@ -8,7 +8,6 @@ import {
   HelpCircle,
   Users,
   Car,
-  Calendar,
   Globe,
   Banknote,
   FileText,
@@ -102,12 +101,6 @@ export function AdminHeader() {
           className="flex items-center gap-1.5 hover:bg-[#1976D2] px-3 py-1.5 rounded-md transition-colors"
         >
           <Users className="w-4 h-4" /> Leads
-        </Link>
-        <Link
-          to="/admin/avaliacao"
-          className="flex items-center gap-1.5 hover:bg-[#1976D2] px-3 py-1.5 rounded-md transition-colors"
-        >
-          <Calendar className="w-4 h-4" /> Avaliação
         </Link>
         <Link
           to="/admin/site"

@@ -21,7 +21,6 @@ import {
   Car,
   Target,
   Monitor,
-  ClipboardCheck,
   Banknote,
   FileText,
   Users,
@@ -39,13 +38,6 @@ import {
 const ALL_MODULES = [
   { id: 'estoque', icon: Car, line1: 'Estoque e', line2: 'Integrador', route: '/admin/estoque' },
   { id: 'crm', icon: Target, line1: 'Gerenciador', line2: 'de Leads', route: '/admin/crm' },
-  {
-    id: 'avaliacao',
-    icon: ClipboardCheck,
-    line1: 'Avaliação',
-    line2: 'de Veículos',
-    route: '/admin/avaliacao',
-  },
   { id: 'site', icon: Monitor, line1: 'Gerenciador', line2: 'do Site', route: '/admin/conteudo' },
   {
     id: 'financiamento',

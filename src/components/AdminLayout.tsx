@@ -10,7 +10,6 @@ import {
   LogOut,
   PanelLeftClose,
   PanelLeftOpen,
-  ShieldCheck,
   DollarSign,
   Image as ImageIcon,
   Activity,
@@ -33,58 +32,44 @@ import { useToast } from '@/hooks/use-toast'
 import { usePermissoes } from '@/hooks/use-permissoes'
 import { rotaLiberada } from '@/lib/setor-acesso'
 
+// Reorganizado em 17/08/2026 (pedido da Adriana) em 3 áreas fixas — antes
+// eram 6 grupos por assunto, misturando operacional com administração.
 const SIDEBAR_MENUS = [
   {
-    title: 'Geral',
-    items: [{ label: 'Dashboard', path: '/admin', icon: LayoutDashboard }],
-  },
-  {
-    title: 'Negócios',
+    title: 'Menu Principal',
     items: [
+      { label: 'Dashboard', path: '/admin', icon: LayoutDashboard },
       { label: 'Estoque', path: '/admin/estoque', icon: Car },
       { label: 'Leads (CRM)', path: '/admin/crm', icon: Users },
       { label: 'Conversador', path: '/admin/conversas', icon: MessageSquare },
       { label: 'Agendamentos', path: '/admin/agendamentos', icon: CalendarClock },
       { label: 'Visão Geral (ROI)', path: '/admin/relatorios', icon: BarChart },
-      { label: 'Avaliações', path: '/admin/avaliacao', icon: ShieldCheck },
       { label: 'Financiamentos', path: '/admin/financiamento', icon: DollarSign },
       { label: 'Administrativo', path: '/admin/administrativo', icon: FileText },
       { label: 'Modelos de Documentos', path: '/admin/modelos-documentos', icon: FileCode },
       { label: 'Portais', path: '/admin/portais', icon: Globe },
       { label: 'Vagas', path: '/admin/vagas', icon: Briefcase },
-    ],
-  },
-  {
-    title: 'Marketing & Crescimento',
-    items: [
       { label: 'Marketing', path: '/admin/marketing', icon: Activity },
       { label: 'Gestão de Anúncios', path: '/admin/anuncios', icon: Megaphone },
       { label: 'Central de Redes Sociais', path: '/admin/central-social', icon: Share2 },
-    ],
-  },
-  {
-    title: 'Gerenciamento do Site',
-    items: [
       { label: 'Conteúdo', path: '/admin/conteudo', icon: FileText },
       { label: 'Design & Mídias', path: '/admin/design', icon: ImageIcon },
-      { label: 'Configurações', path: '/admin/configuracoes', icon: Settings },
     ],
   },
   {
-    title: 'Automações & IA',
+    title: 'Administração',
     items: [
+      { label: 'Configurações', path: '/admin/configuracoes', icon: Settings },
       { label: 'Autonomia', path: '/admin/autonomia', icon: Cpu },
       { label: 'Prompts IA', path: '/admin/prompts-ia', icon: Bot },
-    ],
-  },
-  {
-    title: 'Sistema & Suporte',
-    items: [
       { label: 'Usuários', path: '/admin/usuarios', icon: Users },
       { label: 'Auditoria', path: '/admin/auditoria', icon: ScrollText },
       { label: 'Logs do Sistema', path: '/admin/logs', icon: Activity },
-      { label: 'Central de Ajuda', path: '/admin/ajuda', icon: HelpCircle },
     ],
+  },
+  {
+    title: 'Área de Ajuda',
+    items: [{ label: 'Central de Ajuda', path: '/admin/ajuda', icon: HelpCircle }],
   },
 ]
 
