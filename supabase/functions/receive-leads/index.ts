@@ -231,12 +231,24 @@ Deno.serve(async (req: Request) => {
                   const referral = msg.referral
                   let origemDetectada = 'whatsapp_organico'
                   let campanhaDetectada: string | null = null
+                  let veiculoDoAnuncio: string | null = null
                   if (referral) {
                     const sourceUrl = (referral.source_url || '').toLowerCase()
                     origemDetectada = sourceUrl.includes('instagram')
                       ? 'instagram_ads'
                       : 'facebook_ads'
                     campanhaDetectada = referral.headline || referral.source_id || null
+                    // Achado em auditoria (17/08/2026): a Meta manda o corpo do
+                    // criativo do anúncio em referral.body — nos nossos anúncios
+                    // isso sempre começa com "Marca Modelo Versao Ano: descrição"
+                    // (gerado pelo mesmo texto comercial que usamos pra postar).
+                    // Esse dado sempre chegou e sempre foi descartado — nunca
+                    // virava veiculo_interesse, só o nome genérico da campanha.
+                    if (referral.body) {
+                      const primeiraLinha = referral.body.split('\n')[0]
+                      const antesDoisPontos = primeiraLinha.split(':')[0].trim()
+                      veiculoDoAnuncio = antesDoisPontos.slice(0, 200) || null
+                    }
                   }
 
                   const { data: newLead } = await supabase
@@ -248,6 +260,7 @@ Deno.serve(async (req: Request) => {
                       source: 'whatsapp',
                       campanha: campanhaDetectada,
                       utm_campaign: referral?.source_id || null,
+                      veiculo_interesse: veiculoDoAnuncio,
                       tipo: 'compra',
                       status: 'novo',
                     })
