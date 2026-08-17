@@ -6,6 +6,7 @@ import { handleImageError, CAR_PLACEHOLDER_IMAGE, getImageUrl } from '@/lib/imag
 import { buildVehicleTitle } from '@/lib/vehicle-title'
 import { getWhatsAppLink } from '@/lib/whatsapp'
 import { trackCTAClick } from '@/lib/tracking'
+import { coverPositionRef, onCoverPositionLoad } from '@/lib/image-cover-position'
 import {
   CalendarDays,
   Settings2,
@@ -75,20 +76,15 @@ export function VehicleCard({ vehicle, priority = false }: { vehicle: any; prior
           </div>
         )}
         <Link to={`/estoque/${vehicle.slug || vehicle.id}`} className="w-full h-full block">
-          {/* object-contain (17/08/2026, pedido da Adriana) — antes era
-              object-cover, que cortava o carro quando a foto não era no
-              formato paisagem 4:3 (fotos em retrato ou quadradas, comuns
-              quando alguém tira do celular na vertical, ficavam com o teto
-              ou a lateral cortados). Mostra a foto inteira sempre, com
-              faixas do bg-muted quando a proporção não bate — nunca corta
-              o carro. */}
           <img
+            ref={coverPositionRef}
             src={foto}
             alt={`${vehicle.marca} ${vehicle.modelo}`}
-            className="w-full h-full object-contain bg-muted group-hover:scale-105 transition-transform duration-500"
+            className="w-full h-full object-cover object-[center_65%] group-hover:scale-105 transition-transform duration-500"
             loading={priority ? 'eager' : 'lazy'}
             decoding="async"
             fetchPriority={priority ? 'high' : 'auto'}
+            onLoad={onCoverPositionLoad}
             onError={(e) => handleImageError(e.currentTarget, `${vehicle.marca} ${vehicle.modelo}`)}
           />
         </Link>

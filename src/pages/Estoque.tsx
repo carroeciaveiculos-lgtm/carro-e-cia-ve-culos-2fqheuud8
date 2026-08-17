@@ -37,6 +37,7 @@ import { handleImageError, CAR_PLACEHOLDER_IMAGE, getImageUrl } from '@/lib/imag
 import { handleShareCTA } from '@/lib/cta-router'
 import { buildVehicleTitle } from '@/lib/vehicle-title'
 import { getWhatsAppLink } from '@/lib/whatsapp'
+import { coverPositionRef, onCoverPositionLoad } from '@/lib/image-cover-position'
 import { TestimonialBanner } from '@/components/estoque/TestimonialBanner'
 
 // Aumentado de 12 pra 48 (12/08/2026, pedido da Adriana) — o estoque atual
@@ -456,19 +457,18 @@ export default function Estoque() {
                             />
                           ) : (
                             <img
+                              ref={coverPositionRef}
                               src={
                                 fotos[0].startsWith('http')
                                   ? getImageUrl(fotos[0], 'media', { width: 400 })
                                   : fotos[0]
                               }
                               alt={`${v.marca} ${v.modelo}`}
-                              // object-contain (17/08/2026) — object-cover cortava
-                              // o carro em fotos que não eram no formato paisagem
-                              // 4:3 (retrato ou quadrada). Mesmo ajuste em VehicleCard.tsx.
-                              className="w-full h-full object-contain bg-muted group-hover:scale-105 transition-transform duration-500"
+                              className="w-full h-full object-cover object-[center_65%] group-hover:scale-105 transition-transform duration-500"
                               loading={vehicleIndex === 0 ? 'eager' : 'lazy'}
                               decoding="async"
                               fetchPriority={vehicleIndex === 0 ? 'high' : 'auto'}
+                              onLoad={onCoverPositionLoad}
                               onError={(e) =>
                                 handleImageError(e.currentTarget, `${v.marca} ${v.modelo}`)
                               }

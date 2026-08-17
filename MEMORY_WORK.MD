@@ -299,6 +299,18 @@ nos arquivos `docs/*.md` — aqui é só o resumo de estado + pendências.
   foto" ficou como estava, não é foto real). Build limpo, os 4 warnings
   de lint no arquivo já existiam antes (confirmado via `git stash`),
   não são deste ajuste.
+  **Atualização 2 mesmo dia — revertido**: Adriana testou e não gostou
+  do `object-contain` (cards com foto vertical/quadrada ficavam
+  visivelmente menores, com faixa cinza nas laterais). Revertido pra
+  `object-cover` nos 3 arquivos. Criado `src/lib/image-cover-position.ts`
+  — mede a foto ao carregar e só ajusta o ponto de corte pra cima
+  quando ela for vertical/quadrada (fora do padrão paisagem), mostrando
+  mais do teto do carro. Fotos paisagem normais não mudam nada.
+  Testado localmente (`bun run dev`) direto no navegador nos 3 carros
+  citados antes de subir — confirmado visualmente. Achado à parte, sem
+  ação: existe um terceiro card duplicado em
+  `src/components/home/HomeFeatures.tsx` ("Veículos em Destaque" da
+  home) — nunca teve o bug, não mexido.
 
 ## Pendências abertas
 

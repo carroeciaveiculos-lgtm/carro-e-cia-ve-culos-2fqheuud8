@@ -262,6 +262,31 @@ imagem-placeholder genérica exibida quando o veículo não tem foto
 nenhuma — foi deixado como estava, porque não é foto real de carro
 sendo cortada.
 
+**Atualização 2 (mesmo dia) — `object-contain` revertido**: a Adriana
+testou e não gostou — com `object-contain` os cards com foto vertical/
+quadrada (Volvo, HR-V, Toro) ficavam visivelmente menores que os
+demais (sobrava faixa cinza nas laterais), quebrando a uniformidade
+dos cards. Revertido pra `object-cover` nos 3 arquivos (volta ao
+tamanho uniforme de sempre). Pro problema do zoom em si, criado
+`src/lib/image-cover-position.ts`: mede a foto ao carregar e, só
+quando ela for vertical/quadrada (proporção fora do padrão paisagem),
+move o ponto de corte pra cima (mostra o teto/capô do carro em vez de
+cortar mais embaixo). Fotos paisagem normais continuam idênticas a
+sempre — sem nenhuma mudança visual pra elas. Testado localmente
+(`bun run dev`) nos 3 exemplos citados (Volvo XC 60, HR-V, Toro) antes
+de subir: cards uniformes de novo, carro mostrado por inteiro de cima
+pra baixo o quanto dá.
+
+**Achado à parte, sem ação**: existe um terceiro componente de card de
+veículo, `src/components/home/HomeFeatures.tsx` (seção "Veículos em
+Destaque" da home), com sua própria duplicação de markup — nunca teve
+o corte agressivo (`object-[center_65%]`) e já tinha botão de
+WhatsApp funcional (rotulado "CHAMAR VENDEDOR"), então não precisou de
+ajuste. Fica registrado que hoje existem 3 implementações de card de
+veículo no código (`VehicleCard.tsx`, `Estoque.tsx`, `HomeFeatures.tsx`)
+— oportunidade de unificação futura, não feita agora pra não expandir
+o escopo deste pedido.
+
 ## Achado à parte
 
 Não existe documentação de API (Swagger/OpenAPI/webhooks documentados) em

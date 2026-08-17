@@ -66,6 +66,7 @@ import {
   getVehicleVideos,
   getImageUrl,
 } from '@/lib/image-utils'
+import { coverPositionRef, onCoverPositionLoad } from '@/lib/image-cover-position'
 import { buildVehicleTitle, getVersaoComplementar } from '@/lib/vehicle-title'
 
 function extractFirstPhoto(fotos: any): string | null {
@@ -277,16 +278,15 @@ export default function Veiculo() {
                     <CarouselItem key={i}>
                       <div className="aspect-[4/3] rounded-xl overflow-hidden bg-muted relative w-full">
                         <img
+                          ref={coverPositionRef}
                           src={getImageUrl(p, 'media', { width: 800 })}
                           alt={`Foto ${i + 1} do veículo ${vehicle.marca} ${vehicle.modelo}`}
                           width="800"
                           height="600"
                           loading={i === 0 ? 'eager' : 'lazy'}
                           decoding="async"
-                          // object-contain (17/08/2026) — object-cover cortava
-                          // o carro em fotos que não eram no formato paisagem
-                          // 4:3. Mesmo ajuste em VehicleCard.tsx e Estoque.tsx.
-                          className="w-full h-full object-contain bg-muted"
+                          className="w-full h-full object-cover object-[center_65%]"
+                          onLoad={onCoverPositionLoad}
                           onError={(e) =>
                             handleImageError(e.currentTarget, `${vehicle.marca} ${vehicle.modelo}`)
                           }
@@ -342,13 +342,15 @@ export default function Veiculo() {
                     }`}
                   >
                     <img
+                      ref={coverPositionRef}
                       src={getImageUrl(p, 'media', { width: 200 })}
                       alt={`Miniatura ${i + 1} do ${vehicle.modelo}`}
                       width="160"
                       height="90"
                       loading="lazy"
                       decoding="async"
-                      className="w-full h-full object-contain bg-muted"
+                      className="w-full h-full object-cover object-[center_65%]"
+                      onLoad={onCoverPositionLoad}
                       onError={(e) =>
                         handleImageError(e.currentTarget, `${vehicle.marca} ${vehicle.modelo}`)
                       }
