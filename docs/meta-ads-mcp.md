@@ -5,7 +5,7 @@ _Becos sem saída_ lista o que já foi testado e falhou — **não repita**. Ao
 descobrir algo novo, acrescente aqui com data e fonte, em vez de deixar só no
 histórico de conversa.
 
-Última atualização: 2026-08-14.
+Última atualização: 2026-08-16 (achado grande sobre como gerar token válido — ver seção "Conexão por token").
 
 ## Contexto
 
@@ -76,6 +76,12 @@ antes do primeiro uso.
   (harness) que não oferece terminal de verdade pra nenhum dos dois. **Não
   tentar de novo por esse caminho** — usar token de acesso estático em vez de
   OAuth (ver seção "Conexão por token", abaixo).
+- **Token de Usuário de Sistema (Configurações do Negócio) nunca vai ter
+  `ads_mcp_management`** — testado 16/08/2026, permissão não aparece na
+  lista pra marcar, mesmo já tendo sido concedida uma vez pro usuário
+  pessoal. Não tentar de novo por esse caminho, mesmo sendo o único que
+  oferece "Nunca expira" na tela — ver seção "Conexão por token" acima pro
+  caminho que funciona (token pessoal + troca por longa duração).
 - A doc técnica (`developers.facebook.com/.../ads-mcp-server-get-started`)
   mostra um comando com `--client-id <META_APP_ID>`, que exige criar um app
   de desenvolvedor Meta. **Isso não deveria ser necessário** — a Central de
@@ -95,17 +101,70 @@ claude mcp add --transport http meta-ads https://mcp.facebook.com/ads \
   --header "Authorization: Bearer <TOKEN>"
 ```
 
-Passos pra Adriana gerar o token:
+### Achado importante (16/08/2026): `ads_mcp_management` só existe num tipo de token
+
+Testamos os dois caminhos possíveis de gerar token com essa permissão:
+
+- **Usuário de Sistema** (Configurações do Negócio → Usuários do Sistema →
+  "Gerar token"): a permissão `ads_mcp_management` **não aparece na lista**
+  pra marcar, nem antes nem depois de ela já ter sido concedida uma vez pro
+  usuário pessoal da Adriana. Testado duas vezes, confirmado nas duas.
+  **Não adianta insistir por esse caminho** — token de Usuário de Sistema
+  não serve pro conector MCP de anúncios, mesmo sendo o único tipo que
+  oferece "Nunca expira" na tela.
+- **Explorador da Graph API, token de usuário pessoal** (não Usuário de
+  Sistema): a permissão **existe** na lista de permissões — é preciso
+  clicar em **"Generate Access Token"** (não o assistente de Usuário de
+  Sistema) pra abrir a tela de consentimento de verdade, que pede
+  aprovação da Adriana pra cada permissão marcada, `ads_mcp_management`
+  incluída. Só assim ela é concedida. Confirmar com `GET me/permissions`
+  no Explorer — deve aparecer `"status": "granted"`.
+
+Passos pra gerar o token que funciona:
 1. `developers.facebook.com/tools/explorer/`
-2. Selecionar o app (ou o padrão da própria Meta, se não tiver um).
+2. App: `APP CARRO E CIA`. Usuário: **Token do usuário** (não Usuário do
+   Sistema).
 3. Marcar as permissões: `ads_mcp_management`, `ads_read`, `ads_management`,
    `catalog_management`, `business_management`, `pages_show_list`,
    `instagram_basic`.
-4. Gerar o token e copiar.
+4. Clicar em **"Generate Access Token"** e aprovar a tela de consentimento
+   que abre.
+5. Copiar o token do campo "Token de acesso".
 
-Atenção: token do Explorador costuma expirar em 1-2h. Bom pra confirmar que
-a conexão funciona; se funcionar, trocar depois por um token de longa
-duração (mesmo padrão já usado pro `WHATSAPP_TOKEN`).
+Esse token dura só 1-2h (mesmo prazo curto de sempre) — **usar na hora**,
+sem deixar passar tempo entre gerar e testar/trocar, senão expira antes.
+
+### Como virar um token que não expira
+
+Trocar o token curto por um de longa duração, via `oauth/access_token` no
+próprio Explorer (barra de consulta), **na sequência**, sem deixar passar
+tempo:
+
+```
+oauth/access_token?grant_type=fb_exchange_token&client_id=1369928368361968&client_secret=<CHAVE_SECRETA_DO_APP>&fb_exchange_token=<TOKEN_CURTO_RECEM_GERADO>
+```
+
+A chave secreta do app fica em
+`developers.facebook.com/apps/1369928368361968/settings/basic/` → "Mostrar"
+em "Chave secreta do aplicativo". **Nunca colar essa chave no chat** — ela
+vale bem mais que um token comum (dá acesso de admin ao app inteiro). Se
+ela vazar (ex.: colada sem querer numa conversa), gerar uma nova ali mesmo
+("Gerar novo") assim que possível.
+
+Resultado: um `access_token` novo. Confirmado com `debug_token` que ele tem
+**`expires_at: 0`** (não expira) — comportamento da Meta pra usuários com
+papel de Admin/Developer/Tester no app (a Adriana é Admin do
+`APP CARRO E CIA`). Tem um campo separado, `data_access_expires_at`
+(~90 dias à frente), que é uma exigência de reconfirmação de acesso a
+dados da própria Meta — não derruba o token, só é bom lembrar dele daqui a
+uns 3 meses caso algo pare de responder sem motivo aparente.
+
+Esse token efetivamente permanente fica só na config local do conector MCP
+(`claude mcp add`, arquivo `~/.claude.json`) — **não precisa ir pro
+Supabase**. Nenhuma *edge function* fala com o servidor MCP
+(`mcp.facebook.com/ads`); elas chamam a Graph API direto e usam o secret
+`META_ADS_TOKEN` (token de Usuário de Sistema, permanente, sem
+`ads_mcp_management` — e sem precisar dela).
 
 ## Garantia da própria Meta (não depende de mim lembrar)
 
