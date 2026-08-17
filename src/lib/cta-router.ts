@@ -1,7 +1,5 @@
-import { createLead } from '@/services/leads'
 import { getWhatsAppLink } from '@/lib/whatsapp'
 import { trackCTAClick, trackWhatsAppClick } from '@/lib/tracking'
-import { toast } from 'sonner'
 
 export const formatCurrency = (val: number) =>
   new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val)
@@ -153,34 +151,15 @@ export const handleCommercialCTA = async ({
   isSimulacao?: boolean
   simDetails?: { entrada: string; parcelas: string }
 }): Promise<{ success: boolean }> => {
-  try {
-    const leadData: any = {
-      nome: 'Lead Interessado',
-      tipo: 'interesse',
-      origem: source,
-      status: 'novo',
-      cta_type: ctaType,
-    }
-    if (vehicle) {
-      leadData.veiculo_id = vehicle.id
-      leadData.veiculo_interesse = `${vehicle.marca} ${vehicle.modelo} ${vehicle.ano_fabricacao}/${vehicle.ano_modelo}`
-      if (isSimulacao) leadData.veiculo_interesse += ' - Simulação Financiamento'
-    }
-
-    const { error: leadError } = await createLead(leadData)
-
-    if (leadError) {
-      console.error('Erro ao criar lead no CRM:', leadError)
-      toast.error(
-        'Não foi possível iniciar o atendimento. Por favor, tente novamente em instantes.',
-      )
-      return { success: false }
-    }
-  } catch (e) {
-    console.error('Erro ao criar lead:', e)
-    toast.error('Não foi possível iniciar o atendimento. Por favor, tente novamente em instantes.')
-    return { success: false }
-  }
+  // Achado 17/08/2026: criar o lead aqui, antes de a pessoa realmente
+  // mandar a mensagem no WhatsApp, gerava um lead fantasma ("Lead
+  // Interessado", sem telefone) — a Clara já mandava uma saudação nele
+  // sem ter pra quem entregar. Quando a mensagem de verdade chegava, o
+  // sistema não tinha telefone pra cruzar e criava outro lead, separado,
+  // pra conversa real — o fantasma ficava órfão no CRM, parecendo uma
+  // conversa "quebrada". O fluxo de entrada real do WhatsApp
+  // (`receive-leads`) já cria o lead certo, com telefone, no momento em
+  // que a mensagem chega — não precisa duplicar aqui.
 
   trackWhatsAppClick('Luiz', ctaType, vehicle?.id)
   trackCTAClick(ctaType, source)
