@@ -22,6 +22,7 @@ import {
   Download,
   Phone,
   Bot,
+  MapPin,
 } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
@@ -32,6 +33,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { ContactsConfigPanel } from '@/components/admin/ContactsConfigPanel'
+import { StoreSeoConfigPanel } from '@/components/admin/StoreSeoConfigPanel'
 
 const CATEGORIAS_BRAIN_IA = [
   { value: 'sdr', label: 'Atendimento (Clara / SDR)' },
@@ -251,6 +253,9 @@ export default function Configuracoes() {
           <TabsTrigger value="contatos" className="flex items-center gap-2">
             <Phone className="w-4 h-4" /> Contatos
           </TabsTrigger>
+          <TabsTrigger value="loja-seo" className="flex items-center gap-2">
+            <MapPin className="w-4 h-4" /> Loja & SEO
+          </TabsTrigger>
           <TabsTrigger value="brain" className="flex items-center gap-2">
             <BrainCircuit className="w-4 h-4" /> Brain IA
           </TabsTrigger>
@@ -264,6 +269,10 @@ export default function Configuracoes() {
 
         <TabsContent value="contatos" className="space-y-6">
           <ContactsConfigPanel />
+        </TabsContent>
+
+        <TabsContent value="loja-seo" className="space-y-6">
+          <StoreSeoConfigPanel />
         </TabsContent>
 
         <TabsContent value="brain" className="space-y-6">

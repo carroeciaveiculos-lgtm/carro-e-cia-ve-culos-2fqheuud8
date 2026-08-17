@@ -270,6 +270,19 @@ nos arquivos `docs/*.md` — aqui é só o resumo de estado + pendências.
   Também corrigido um bug pequeno pré-existente nessa tela (`t.doc_type`
   deveria ser `t.document_type` — o "Não salvo" nunca sumia depois de
   salvar). Build e lint limpos. **Não testado no navegador** (sem login).
+- **Configurações Loja & SEO implementada (17/08/2026)** — detalhe
+  completo na seção "Backlog" (item 2) de `docs/manual-operacional-contexto.md`.
+  Resumo: achado que não existia NENHUMA tela pra editar endereço/logo da
+  loja (Contatos só cobre WhatsApp/telefone/redes) — não era duplicação,
+  era lacuna real. Endereço/telefone/logo saíram do hardcode em
+  `SEO.tsx` (schema.org de toda página do site) e passam a vir de
+  `brand_config` via `useBrandConfig()`, mesmo hook que o rodapé já usa.
+  Fallback seguro confirmado (`DEFAULT_BRAND` bate com o que estava
+  hardcoded — testei que `address`/`logoUrl` nunca tinham sido salvos no
+  banco até hoje, e o site continua mostrando certo mesmo assim).
+  Decisão consciente de não incluir fallback de título/descrição padrão
+  (toda página relevante já define o próprio SEO). Build e lint limpos,
+  **não testado no navegador**.
 
 ## Pendências abertas
 

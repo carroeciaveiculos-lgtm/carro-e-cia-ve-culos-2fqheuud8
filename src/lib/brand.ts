@@ -22,6 +22,7 @@ export interface BrandConfig {
   instagram: string
   instagramUrl: string
   facebookUrl: string
+  logoUrl: string
   team: TeamMember[]
 }
 
@@ -41,6 +42,7 @@ export const DEFAULT_BRAND: BrandConfig = {
   instagram: '@carroecia_uberaba',
   instagramUrl: 'https://instagram.com/carroecia_uberaba',
   facebookUrl: 'https://www.facebook.com/carroeciaosmelhoresveiculos',
+  logoUrl: 'https://imagens.carroeciamotors.com.br/logos-e-imagens/logos/logo-carro-e-cia.webp',
   team: [
     {
       name: 'Luiz Fernando',

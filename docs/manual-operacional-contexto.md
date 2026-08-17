@@ -128,23 +128,29 @@ do zero no mesmo dia, seguindo o plano fechado com a Adriana:
   sessão. Testei via chamada direta às functions e inserts/deletes de
   teste no banco (confirmados reais: PDF gerado é `%PDF-1.3` de verdade,
   não mock). Vale a Adriana conferir o fluxo completo no navegador.
-- Setor dono: Vendas (já mapeado em `setor-acesso.ts`).
 
-### 2. Configurações gerais do site + SEO global (`/admin/configuracoes`) — PLANEJADA, não implementada
+### 2. Configurações gerais do site + SEO global (`/admin/configuracoes`) — IMPLEMENTADA em 17/08/2026
 
 Abas "Loja & SEO" e "Scripts & Tracking" não persistiam em
 `site_configuracoes`, só ficavam na memória do navegador. Removidas em
-17/08. Plano definido em 17/08/2026 — as duas abas tiveram destinos
-diferentes:
+17/08. As duas tiveram destinos diferentes:
 
-- **"Loja & SEO" volta, com escopo real**: dados da empresa (endereço,
-  telefone, logo) hoje estão **hardcoded em `src/components/SEO.tsx`**
-  (schema de SEO) — mesmo tipo de duplicação que já causou o bug do
-  endereço errado em 6 arquivos (corrigido em 15/08). Plano: reaproveitar
-  `site_configuracoes.brand_config` (já existe, já alimenta o rodapé) como
-  fonte única também pro `SEO.tsx`, eliminando o hardcode. Também ganha
-  campo de título/descrição padrão do site e imagem OG padrão (fallback
-  só pras páginas que não definem SEO próprio — a maioria já define).
+- **"Loja & SEO" reconstruída, com escopo real** (`StoreSeoConfigPanel.tsx`):
+  antes de mexer, achei que **não existia nenhuma tela de edição pra
+  endereço/logo** (a aba Contatos só cobre WhatsApp/telefone/redes) — não
+  era duplicação, era lacuna de verdade. Endereço, telefone e logo saíram
+  do hardcode em `src/components/SEO.tsx` (schema.org, mesmo tipo de
+  duplicação que já causou o bug do endereço errado em 6 arquivos,
+  corrigido em 15/08) e passam a vir de `site_configuracoes.brand_config`
+  via `useBrandConfig()` — mesma fonte que o rodapé já usa. Fallback
+  seguro: `DEFAULT_BRAND` bate exatamente com os valores que estavam
+  hardcoded, então se o banco falhar ou o campo não existir ainda (era o
+  caso até hoje — confirmado que `address`/`logoUrl` nunca tinham sido
+  salvos), o site mostra os dados certos do mesmo jeito.
+- **Fallback de título/descrição padrão do site — decisão consciente de
+  não incluir**: toda página relevante já define o próprio SEO, esse
+  fallback quase nunca seria usado. Escopo reduzido de propósito, combinado
+  com a Adriana.
 - **"Scripts & Tracking" NÃO volta como tela**: GTM, Google Analytics e
   Meta Pixel estão hardcoded em `index.html` hoje. Um painel pra isso
   exigiria o site carregar esses IDs dinamicamente do banco a cada

@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { getImageUrl } from '@/lib/image-utils'
+import { useBrandConfig } from '@/hooks/use-brand-config'
 
 interface SEOProps {
   title: string
@@ -24,6 +25,13 @@ export function SEO({
   image,
   isVehicle = false,
 }: SEOProps) {
+  // Endereço/telefone/logo saíram do hardcode em 17/08/2026 — passam a vir
+  // de brand_config (mesma fonte que o rodapé já usa via useBrandConfig),
+  // editável em /admin/configuracoes, aba "Loja & SEO". `config` já nasce
+  // com DEFAULT_BRAND (mesmos valores que estavam hardcoded aqui antes),
+  // então não tem risco de schema vazio antes do fetch terminar.
+  const { config: brand } = useBrandConfig()
+
   useEffect(() => {
     document.title = title
 
@@ -58,22 +66,24 @@ export function SEO({
       ogTags.forEach((tag) => tag.remove())
     }
 
+    const [addressLocality, addressRegion] = brand.city.split(' - ').map((s) => s.trim())
+
     const organizationSchema = {
       '@context': 'https://schema.org',
       '@type': 'AutoDealer',
-      name: 'Carro e Cia Veículos',
+      name: brand.name,
       legalName: 'Transluga Administração de Veículos LTDA',
       taxID: '10.196.974/0001-46',
       url: 'https://www.carroeciamotors.com.br',
-      logo: 'https://imagens.carroeciamotors.com.br/logos-e-imagens/logos/logo-carro-e-cia.webp',
-      image: 'https://imagens.carroeciamotors.com.br/logos-e-imagens/logos/logo-carro-e-cia.webp',
-      telephone: '+553433159400',
+      logo: brand.logoUrl,
+      image: brand.logoUrl,
+      telephone: `+${brand.phone}`,
       address: {
         '@type': 'PostalAddress',
-        streetAddress: 'Av. Guilherme Ferreira, 1119',
-        addressLocality: 'Uberaba',
-        addressRegion: 'MG',
-        postalCode: '38022-200',
+        streetAddress: brand.address,
+        addressLocality: addressLocality || 'Uberaba',
+        addressRegion: addressRegion || 'MG',
+        postalCode: brand.addressCep,
         addressCountry: 'BR',
       },
       openingHoursSpecification: [
@@ -149,7 +159,7 @@ export function SEO({
         document.head.removeChild(script)
       }
     }
-  }, [title, description, schema, noindex, keywords, image, isVehicle])
+  }, [title, description, schema, noindex, keywords, image, isVehicle, brand])
 
   return null
 }
