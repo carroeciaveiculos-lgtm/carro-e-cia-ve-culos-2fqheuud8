@@ -244,7 +244,21 @@ nos arquivos `docs/*.md` — aqui é só o resumo de estado + pendências.
     presente. **Limitação que continua**: clique direto no botão de
     WhatsApp (sem passar por formulário) ainda não carrega o `gclid` até
     a conversa — o WhatsApp não devolve esse dado como a Meta devolve nos
-    anúncios dela. Pesquisa sobre como resolver isso em andamento.
+    anúncios dela. **Pesquisado em 17/08/2026**: mercado resolve isso com
+    "código de referência" na mensagem pré-preenchida (visível pro
+    cliente, ele pode apagar antes de mandar — atribuição se perde nesse
+    caso, sem quebrar nada). Não implementado ainda, esperando decisão da
+    Adriana (muda o texto que o cliente vê).
+  - **[FECHADA 17/08] Veículo do anúncio (Meta Ads) — resolvido de
+    verdade**: achado que `referral.body` (corpo do criativo do anúncio,
+    manda pela Meta em toda mensagem de WhatsApp vinda de anúncio) sempre
+    trouxe o veículo exato — nunca foi lido, só `headline`/`source_id`
+    (nome genérico da campanha) eram usados. `receive-leads/index.ts`
+    agora extrai o texto antes dos dois-pontos da primeira linha do
+    `referral.body` (nossos anúncios sempre começam "Marca Modelo Versão
+    Ano: descrição") e grava em `veiculo_interesse` na hora que o lead é
+    criado — não depende mais da Clara identificar depois na conversa.
+    Provavelmente é o mesmo mecanismo que o Venda.iA usa.
 
 ## Pendências abertas
 
@@ -260,6 +274,13 @@ nos arquivos `docs/*.md` — aqui é só o resumo de estado + pendências.
    aparece pro público de verdade até trocar pra API de produção — isso
    é decisão da Adriana (precisa confirmar credenciais/URL de produção
    com a NaPista antes), não fiz essa troca sozinha.
+   **Confirmado em `docs/integracao-napista.md` (item 9, já documentado
+   antes): hoje só existe `client_id` de desenvolvimento — produção exige
+   pedir um `client_id` novo direto pra `parceiros@napista.com.br`.** Ou
+   seja, o sistema NUNCA publicou nada na NaPista de produção — os 19
+   veículos que a Adriana vê ao vivo no site da NaPista (17/08/2026) não
+   vieram do nosso sistema. Bloqueado até ela pedir o client_id de
+   produção — não dá pra "publicar os 6 que faltam" até isso existir.
 
 1. **NaPista** — Fase 1 (autenticação) concluída e testada. Fase 2: etapas
    1-4 de 9 **concluídas, testadas e publicadas em 14/08/2026** com dado
