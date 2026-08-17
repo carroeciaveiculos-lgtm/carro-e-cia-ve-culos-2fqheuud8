@@ -34,7 +34,13 @@ Deno.serve(async (req) => {
       utm_source,
       utm_medium,
       utm_campaign,
+      gclid,
     } = await req.json()
+
+    // Google Ads (auto-tagging ativado na conta, 17/08/2026) manda gclid em
+    // vez de UTM — se veio um gclid, a origem é Google Ads de verdade,
+    // independente do que o formulário mandou de origem padrão.
+    const origemFinal = gclid ? 'google_ads' : origem
 
     if (!nome || !whatsapp) {
       return new Response(
@@ -58,7 +64,7 @@ Deno.serve(async (req) => {
     if (leadExistente) {
       const notaContato = anexarNotaContato(
         [leadExistente.observacoes, condicaoNota].filter(Boolean).join('\n') || null,
-        origem || `Site - ${campanha}`,
+        origemFinal || `Site - ${campanha}`,
       )
       ;({ data: lead, error: leadError } = await supabase
         .from('leads')
@@ -85,13 +91,14 @@ Deno.serve(async (req) => {
           carro_km: km || null,
           observacoes: condicaoNota,
           campanha: campanha || 'geral',
-          origem: origem || `Site - ${campanha}`,
+          origem: origemFinal || `Site - ${campanha}`,
           tipo: 'vendedor',
           status: 'novo',
           temperatura: 'quente',
           utm_source,
           utm_medium,
           utm_campaign,
+          gclid: gclid || null,
         })
         .select()
         .single())

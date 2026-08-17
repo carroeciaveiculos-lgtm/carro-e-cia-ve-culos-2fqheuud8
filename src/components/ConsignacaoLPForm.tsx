@@ -7,6 +7,7 @@ import { supabase } from '@/lib/supabase/client'
 import { useToast } from '@/hooks/use-toast'
 import { Loader2 } from 'lucide-react'
 import { trackFormSubmission } from '@/lib/tracking'
+import { obterAtribuicaoAnuncio } from '@/lib/ad-tracking'
 
 export function ConsignacaoLPForm({
   title = 'Solicite uma avaliação',
@@ -38,15 +39,17 @@ export function ConsignacaoLPForm({
 
     try {
       const urlParams = new URLSearchParams(window.location.search)
+      const atribuicao = obterAtribuicaoAnuncio()
 
       const { error } = await supabase.functions.invoke('lead-automation', {
         body: {
           ...formData,
           campanha,
           origem,
-          utm_source: urlParams.get('utm_source'),
-          utm_medium: urlParams.get('utm_medium'),
-          utm_campaign: urlParams.get('utm_campaign'),
+          utm_source: urlParams.get('utm_source') || atribuicao.utm_source,
+          utm_medium: urlParams.get('utm_medium') || atribuicao.utm_medium,
+          utm_campaign: urlParams.get('utm_campaign') || atribuicao.utm_campaign,
+          gclid: urlParams.get('gclid') || atribuicao.gclid,
         },
       })
 

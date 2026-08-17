@@ -264,6 +264,7 @@ export type Database = {
           o_que_e: string | null
           para_que_serve: string | null
           quando_utilizar: string | null
+          setor_id: string | null
           titulo: string
           updated_at: string | null
         }
@@ -278,6 +279,7 @@ export type Database = {
           o_que_e?: string | null
           para_que_serve?: string | null
           quando_utilizar?: string | null
+          setor_id?: string | null
           titulo: string
           updated_at?: string | null
         }
@@ -292,10 +294,19 @@ export type Database = {
           o_que_e?: string | null
           para_que_serve?: string | null
           quando_utilizar?: string | null
+          setor_id?: string | null
           titulo?: string
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "ajuda_conteudos_setor_id_fkey"
+            columns: ["setor_id"]
+            isOneToOne: false
+            referencedRelation: "setores"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       article_versions: {
         Row: {
@@ -1541,6 +1552,8 @@ export type Database = {
       }
       estoque_publicacoes: {
         Row: {
+          alterado_manualmente_em: string | null
+          alterado_manualmente_por: string | null
           created_at: string | null
           erro_msg: string | null
           id: string
@@ -1555,6 +1568,8 @@ export type Database = {
           veiculo_id: string
         }
         Insert: {
+          alterado_manualmente_em?: string | null
+          alterado_manualmente_por?: string | null
           created_at?: string | null
           erro_msg?: string | null
           id?: string
@@ -1569,6 +1584,8 @@ export type Database = {
           veiculo_id: string
         }
         Update: {
+          alterado_manualmente_em?: string | null
+          alterado_manualmente_por?: string | null
           created_at?: string | null
           erro_msg?: string | null
           id?: string
@@ -1583,6 +1600,13 @@ export type Database = {
           veiculo_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "estoque_publicacoes_alterado_manualmente_por_fkey"
+            columns: ["alterado_manualmente_por"]
+            isOneToOne: false
+            referencedRelation: "usuarios"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "estoque_publicacoes_meta_account_id_fkey"
             columns: ["meta_account_id"]
@@ -2166,6 +2190,7 @@ export type Database = {
           external_lead_id: string | null
           faixa_preco: string | null
           forma_pagamento: string | null
+          gclid: string | null
           google_ads_customer_id: string | null
           id: string
           nome: string
@@ -2211,6 +2236,7 @@ export type Database = {
           external_lead_id?: string | null
           faixa_preco?: string | null
           forma_pagamento?: string | null
+          gclid?: string | null
           google_ads_customer_id?: string | null
           id?: string
           nome: string
@@ -2256,6 +2282,7 @@ export type Database = {
           external_lead_id?: string | null
           faixa_preco?: string | null
           forma_pagamento?: string | null
+          gclid?: string | null
           google_ads_customer_id?: string | null
           id?: string
           nome?: string
@@ -3414,6 +3441,27 @@ export type Database = {
         }
         Relationships: []
       }
+      setores: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          id: string
+          nome: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          id?: string
+          nome: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          id?: string
+          nome?: string
+        }
+        Relationships: []
+      }
       simulacoes: {
         Row: {
           cliente_cpf: string | null
@@ -3789,6 +3837,36 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      usuario_setores: {
+        Row: {
+          setor_id: string
+          usuario_id: string
+        }
+        Insert: {
+          setor_id: string
+          usuario_id: string
+        }
+        Update: {
+          setor_id?: string
+          usuario_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "usuario_setores_setor_id_fkey"
+            columns: ["setor_id"]
+            isOneToOne: false
+            referencedRelation: "setores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "usuario_setores_usuario_id_fkey"
+            columns: ["usuario_id"]
+            isOneToOne: false
+            referencedRelation: "usuarios"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       usuarios: {
         Row: {
@@ -4832,6 +4910,7 @@ export type Database = {
       show_trgm: { Args: { "": string }; Returns: string[] }
       slugify: { Args: { input_text: string }; Returns: string }
       unaccent: { Args: { "": string }; Returns: string }
+      usuario_tem_nivel: { Args: { niveis: string[] }; Returns: boolean }
     }
     Enums: {
       [_ in never]: never

@@ -16,6 +16,7 @@ import {
 import { useToast } from '@/hooks/use-toast'
 import { createLead } from '@/services/leads'
 import { trackFormSubmission } from '@/lib/tracking'
+import { obterAtribuicaoAnuncio } from '@/lib/ad-tracking'
 
 const formSchema = z.object({
   nome: z.string().min(3, 'Nome é obrigatório'),
@@ -48,13 +49,19 @@ export function Hero() {
 
     setIsSubmitting(true)
     try {
+      // Google Ads (auto-tagging ativado na conta, 17/08/2026) manda gclid —
+      // se veio de lá, a origem real é google_ads, não o texto genérico.
+      const atribuicao = obterAtribuicaoAnuncio()
       const { error } = await createLead({
         nome: data.nome,
         email: data.email,
         telefone: data.telefone,
         tipo: 'contato',
-        origem: 'homepage_formulario',
+        origem: atribuicao.gclid ? 'google_ads' : 'homepage_formulario',
         observacoes: `Interesse: ${data.busca}`,
+        gclid: atribuicao.gclid || null,
+        utm_source: atribuicao.utm_source || null,
+        utm_campaign: atribuicao.utm_campaign || null,
       })
 
       if (error) throw error

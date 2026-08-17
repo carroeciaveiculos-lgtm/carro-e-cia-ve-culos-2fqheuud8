@@ -209,6 +209,38 @@ nos arquivos `docs/*.md` — aqui é só o resumo de estado + pendências.
   **fixos e separados** (18 + 2), não fungíveis um com o outro — a
   Adriana levantou a hipótese de serem fungíveis, dado real não confirma
   isso, vale confirmar com o suporte da Webmotors se ela quiser insistir.
+- **Auditoria de qualidade dos leads (17/08/2026, sessão 7)**: achados e
+  apagados 15 leads-fantasma no total (9 do clique "Tenho Interesse" do
+  site + 6 de outros padrões: "Lead Portal", "Cliente Instagram", um
+  "teste" de formulário, e 3 contatos WhatsApp reais com nome de perfil
+  inútil tipo "." ou emoji, sem conversa registrada). Corrigido na raiz:
+  `handleCommercialCTA` não cria mais lead nem aciona a Clara antes da
+  pessoa mandar mensagem de verdade (só o fluxo real de entrada do
+  WhatsApp faz isso agora).
+  **Achado maior**: nenhum lead vindo de anúncio (Meta Ads) ou do site
+  tinha o veículo de interesse gravado em campo estruturado — só o nome
+  genérico da campanha. A ferramenta `atualizar_estagio_lead` da Clara
+  ganhou o parâmetro `veiculo_interesse`; deploy do `ai-sdr` já feito
+  (17/08/2026) — **efeito colateral bom**: esse deploy também colocou no
+  ar a expansão de classificação de leads que estava parada desde
+  14/08/2026 (ver item 4 nas pendências fechadas).
+  **Google Ads investigado a fundo** (conector `carroecia-api-google-ads`
+  ganhou 2 ferramentas novas, só leitura: `detalhar_campanha` e
+  `verificar_auto_tagging`, testadas e funcionando):
+  - Conta tem **auto-tagging ATIVADO** — Google usa `gclid` na URL, não
+    UTM manual. Nosso site **não captura `gclid` em lugar nenhum hoje** —
+    todo tráfego de Google Ads que vira lead fica invisível como "Google"
+    (cai como orgânico ou sem origem).
+  - As 2 campanhas (`Website_traffic` ativa, `Leads_pesquisa` pausada) só
+    têm 1 anúncio cada, tipo Busca (Responsive Search Ad), URL final = a
+    home do site (`carroeciamotors.com.br`), sem página específica de
+    veículo nem extensão de formulário/ligação visível no tipo do
+    anúncio.
+  - Zero leads no banco hoje com qualquer rastro de Google Ads.
+  - **Não implementado ainda**: capturar `gclid` no site (mesmo padrão de
+    utm_source/utm_campaign que já existe em alguns formulários) pra
+    identificar de verdade um lead vindo do Google. Fica como próximo
+    passo, não pedido explicitamente ainda.
 
 ## Pendências abertas
 
@@ -268,7 +300,11 @@ nos arquivos `docs/*.md` — aqui é só o resumo de estado + pendências.
      `encaminharParaParceiro()` em `ai-sdr/index.ts`.
    - Painel (`/admin/leads`): filtro por tipo adicionado (agrupa
      `compra`+`comprador`+`interesse` como "Quer comprar").
-   - **Nada disso foi deployado ainda** — só criado/editado localmente.
+   - **[FECHADA 17/08]** Foi ao ar sem querer como efeito colateral do
+     redeploy do `ai-sdr` em 17/08/2026 (feito por outro motivo — ver
+     item do veículo de interesse abaixo). Confirmado no código
+     deployado: enum de 7 tipos, temperatura e encaminhamento automático
+     estão todos ativos agora.
 5. **Gemini API — verificação de atualidade** (pedido da Adriana,
    14/08/2026): modelo em uso (`gemini-3.6-flash`) **está atualizado** —
    confere com os exemplos oficiais atuais da Google. O endpoint usado

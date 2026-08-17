@@ -7,6 +7,7 @@ import { supabase } from '@/lib/supabase/client'
 import { useToast } from '@/hooks/use-toast'
 import { Loader2 } from 'lucide-react'
 import { trackFormSubmission } from '@/lib/tracking'
+import { obterAtribuicaoAnuncio } from '@/lib/ad-tracking'
 
 export function LeadForm({
   tipo = 'consignacao',
@@ -41,15 +42,17 @@ export function LeadForm({
 
     try {
       const urlParams = new URLSearchParams(window.location.search)
+      const atribuicao = obterAtribuicaoAnuncio()
 
       const { error } = await supabase.functions.invoke('lead-automation', {
         body: {
           ...formData,
           campanha: campanha || tipo,
           origem: origem || `Página - ${window.location.pathname}`,
-          utm_source: urlParams.get('utm_source'),
-          utm_medium: urlParams.get('utm_medium'),
-          utm_campaign: urlParams.get('utm_campaign'),
+          utm_source: urlParams.get('utm_source') || atribuicao.utm_source,
+          utm_medium: urlParams.get('utm_medium') || atribuicao.utm_medium,
+          utm_campaign: urlParams.get('utm_campaign') || atribuicao.utm_campaign,
+          gclid: urlParams.get('gclid') || atribuicao.gclid,
         },
       })
 

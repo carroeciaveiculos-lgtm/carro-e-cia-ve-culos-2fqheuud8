@@ -5,6 +5,7 @@ import { Toaster as Sonner } from '@/components/ui/sonner'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { AuthProvider } from '@/hooks/use-auth'
 import { handleImageError } from '@/lib/image-utils'
+import { capturarAtribuicaoAnuncio } from '@/lib/ad-tracking'
 
 import PublicLayout from '@/components/PublicLayout'
 import { ProtectedRoute } from '@/components/ProtectedRoute'
@@ -256,6 +257,7 @@ const GlobalHooks = () => {
       if ((window as any).fbq) {
         ;(window as any).fbq('track', 'PageView')
       }
+      capturarAtribuicaoAnuncio()
     }
   }, [location])
 
