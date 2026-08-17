@@ -195,6 +195,7 @@ const BlogPost = lazyWithRetry(() => import('./pages/blog/BlogPost'))
 
 // Admin Pages (Lazy loaded)
 const Login = lazyWithRetry(() => import('./pages/admin/Login'))
+const RedefinirSenha = lazyWithRetry(() => import('./pages/admin/RedefinirSenha'))
 const Dashboard = lazyWithRetry(() => import('./pages/admin/Dashboard'))
 const AdminEstoque = lazyWithRetry(() => import('./pages/admin/Estoque'))
 const AdminLeads = lazyWithRetry(() => import('./pages/admin/Leads'))
@@ -349,6 +350,7 @@ const MainApp = () => (
 
     {/* Admin Routes */}
     <Route path="/admin/login" element={<Login />} />
+    <Route path="/admin/redefinir-senha" element={<RedefinirSenha />} />
     <Route path="/admin" element={<ProtectedRoute />}>
       <Route element={<AdminLayout />}>
         <Route index element={<Dashboard />} />
