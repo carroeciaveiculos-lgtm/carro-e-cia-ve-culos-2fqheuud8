@@ -3,7 +3,6 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '@/lib/supabase/client'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
 import {
   Select,
@@ -16,23 +15,11 @@ import { useToast } from '@/hooks/use-toast'
 import { SetoresSelect } from '@/components/admin/SetoresSelect'
 import { listSetorIdsDoUsuario, salvarSetoresDoUsuario } from '@/services/setores'
 
-const ALL_MODULES = [
-  { id: 'estoque', label: 'Estoque e Integrador' },
-  { id: 'crm', label: 'Gerenciador de Leads (CRM)' },
-  { id: 'portais', label: 'Portais e Redes Sociais' },
-  { id: 'site', label: 'Gerenciador do Site' },
-  { id: 'avaliacao', label: 'Avaliação de Veículos' },
-  { id: 'relatorios', label: 'Relatórios e Métricas' },
-  { id: 'marketing', label: 'Central de Marketing' },
-  { id: 'configuracoes', label: 'Configurações do Sistema' },
-]
-
 export default function EditUsuario() {
   const { id } = useParams()
   const navigate = useNavigate()
   const { toast } = useToast()
   const [usuario, setUsuario] = useState<any>(null)
-  const [modulos, setModulos] = useState<string[]>([])
   const [nivel, setNivel] = useState('operador')
   const [setorIds, setSetorIds] = useState<string[]>([])
   const [salvando, setSalvando] = useState(false)
@@ -47,7 +34,6 @@ export default function EditUsuario() {
         .then(({ data }) => {
           if (data) {
             setUsuario(data)
-            setModulos(data.modulos || [])
             setNivel(data.nivel || 'operador')
           }
         })
@@ -58,13 +44,7 @@ export default function EditUsuario() {
   const handleSave = async () => {
     if (!id) return
     setSalvando(true)
-    const { error } = await supabase
-      .from('usuarios')
-      .update({
-        modulos,
-        nivel,
-      })
-      .eq('id', id)
+    const { error } = await supabase.from('usuarios').update({ nivel }).eq('id', id)
 
     if (error) {
       toast({ title: 'Erro ao salvar', variant: 'destructive' })
@@ -77,7 +57,7 @@ export default function EditUsuario() {
 
     if (setorError) {
       toast({
-        title: 'Permissões salvas, mas falha ao atualizar setores',
+        title: 'Nível salvo, mas falha ao atualizar setores',
         description: setorError.message,
         variant: 'destructive',
       })
@@ -86,12 +66,6 @@ export default function EditUsuario() {
 
     toast({ title: 'Permissões atualizadas com sucesso!' })
     navigate('/admin/usuarios')
-  }
-
-  const toggleModulo = (modId: string) => {
-    setModulos((prev) =>
-      prev.includes(modId) ? prev.filter((m) => m !== modId) : [...prev, modId],
-    )
   }
 
   if (!usuario)
@@ -130,35 +104,17 @@ export default function EditUsuario() {
                   <SelectItem value="bloqueado">Bloqueado</SelectItem>
                 </SelectContent>
               </Select>
-            </div>
-
-            <div className="space-y-4">
-              <Label className="text-base text-[#0D47A1]">Módulos Permitidos</Label>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-muted/20 p-4 rounded-lg border">
-                {ALL_MODULES.map((m) => (
-                  <div
-                    key={m.id}
-                    className="flex items-center space-x-3 bg-white p-3 rounded-md border shadow-sm"
-                  >
-                    <Checkbox
-                      id={m.id}
-                      checked={modulos.includes(m.id)}
-                      onCheckedChange={() => toggleModulo(m.id)}
-                      className="data-[state=checked]:bg-[#1565C0] data-[state=checked]:border-[#1565C0]"
-                    />
-                    <label
-                      htmlFor={m.id}
-                      className="text-sm font-medium leading-none cursor-pointer text-slate-700 flex-1"
-                    >
-                      {m.label}
-                    </label>
-                  </div>
-                ))}
-              </div>
+              {nivel === 'bloqueado' && (
+                <p className="text-sm text-red-600">
+                  Usuário bloqueado não consegue mais entrar no painel.
+                </p>
+              )}
             </div>
 
             <div className="space-y-3">
-              <Label className="text-base text-[#0D47A1]">Setores</Label>
+              <Label className="text-base text-[#0D47A1]">
+                Setores (define o que a pessoa vê e acessa no painel)
+              </Label>
               <SetoresSelect selecionados={setorIds} onChange={setSetorIds} />
             </div>
 

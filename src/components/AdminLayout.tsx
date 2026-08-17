@@ -30,6 +30,8 @@ import { useAuth } from '@/hooks/use-auth'
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase/client'
 import { useToast } from '@/hooks/use-toast'
+import { usePermissoes } from '@/hooks/use-permissoes'
+import { rotaLiberada } from '@/lib/setor-acesso'
 
 const SIDEBAR_MENUS = [
   {
@@ -93,6 +95,25 @@ export default function AdminLayout() {
   const { toast } = useToast()
   const [collapsed, setCollapsed] = useState(false)
   const [newLeadsCount, setNewLeadsCount] = useState(0)
+  const { nivel, setorNomes, loading: carregandoPermissoes } = usePermissoes()
+
+  useEffect(() => {
+    if (nivel === 'bloqueado') {
+      signOut().then(() => navigate('/admin/login'))
+    }
+  }, [nivel, signOut, navigate])
+
+  useEffect(() => {
+    if (carregandoPermissoes || !nivel) return
+    if (!rotaLiberada(location.pathname, nivel, setorNomes)) {
+      toast({
+        title: 'Sem acesso a essa área',
+        description: 'Fale com um admin se achar que deveria ter acesso.',
+        variant: 'destructive',
+      })
+      navigate('/admin', { replace: true })
+    }
+  }, [location.pathname, nivel, setorNomes, carregandoPermissoes, navigate, toast])
 
   useEffect(() => {
     if (!user) return
@@ -171,7 +192,14 @@ export default function AdminLayout() {
         </div>
 
         <div className="flex-1 overflow-y-auto py-4 no-scrollbar">
-          {SIDEBAR_MENUS.map((group, i) => (
+          {SIDEBAR_MENUS.map((group, i) => {
+            const itemsLiberados = carregandoPermissoes
+              ? []
+              : group.items.filter((item) => rotaLiberada(item.path, nivel, setorNomes))
+
+            if (itemsLiberados.length === 0) return null
+
+            return (
             <div key={i} className="mb-6 px-3">
               {!collapsed && (
                 <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-2 px-3">
@@ -179,7 +207,7 @@ export default function AdminLayout() {
                 </div>
               )}
               <div className="space-y-1">
-                {group.items.map((item) => {
+                {itemsLiberados.map((item) => {
                   const isActive =
                     item.path === '/admin'
                       ? location.pathname === '/admin'
@@ -219,7 +247,8 @@ export default function AdminLayout() {
                 })}
               </div>
             </div>
-          ))}
+            )
+          })}
         </div>
 
         <div className="p-4 border-t border-slate-800 shrink-0">

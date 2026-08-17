@@ -39,7 +39,7 @@ Deno.serve(async (req: Request) => {
       return jsonResponse({ error: 'Apenas administradores master podem criar usuários' }, 403)
     }
 
-    const { nome, email, senha, nivel, modulos, setorIds } = await req.json()
+    const { nome, email, senha, nivel, setorIds } = await req.json()
 
     if (!nome || !email || !senha) {
       return jsonResponse({ error: 'Nome, e-mail e senha são obrigatórios' }, 400)
@@ -64,7 +64,6 @@ Deno.serve(async (req: Request) => {
       nome,
       email,
       nivel: nivel || 'operador',
-      modulos: modulos ?? [],
     })
 
     if (insertErr) {

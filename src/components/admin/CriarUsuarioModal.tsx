@@ -9,7 +9,6 @@ import {
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Checkbox } from '@/components/ui/checkbox'
 import {
   Select,
   SelectContent,
@@ -20,17 +19,6 @@ import {
 import { supabase } from '@/lib/supabase/client'
 import { useToast } from '@/hooks/use-toast'
 import { SetoresSelect } from './SetoresSelect'
-
-const ALL_MODULES = [
-  { id: 'estoque', label: 'Estoque e Integrador' },
-  { id: 'crm', label: 'Gerenciador de Leads (CRM)' },
-  { id: 'portais', label: 'Portais e Redes Sociais' },
-  { id: 'site', label: 'Gerenciador do Site' },
-  { id: 'avaliacao', label: 'Avaliação de Veículos' },
-  { id: 'relatorios', label: 'Relatórios e Métricas' },
-  { id: 'marketing', label: 'Central de Marketing' },
-  { id: 'configuracoes', label: 'Configurações do Sistema' },
-]
 
 interface CriarUsuarioModalProps {
   open: boolean
@@ -44,7 +32,6 @@ export function CriarUsuarioModal({ open, onOpenChange, onSuccess }: CriarUsuari
   const [email, setEmail] = useState('')
   const [senha, setSenha] = useState('')
   const [nivel, setNivel] = useState('operador')
-  const [modulos, setModulos] = useState<string[]>([])
   const [setorIds, setSetorIds] = useState<string[]>([])
   const [loading, setLoading] = useState(false)
 
@@ -53,14 +40,7 @@ export function CriarUsuarioModal({ open, onOpenChange, onSuccess }: CriarUsuari
     setEmail('')
     setSenha('')
     setNivel('operador')
-    setModulos([])
     setSetorIds([])
-  }
-
-  const toggleModulo = (modId: string) => {
-    setModulos((prev) =>
-      prev.includes(modId) ? prev.filter((m) => m !== modId) : [...prev, modId],
-    )
   }
 
   const handleCreate = async () => {
@@ -76,7 +56,7 @@ export function CriarUsuarioModal({ open, onOpenChange, onSuccess }: CriarUsuari
     setLoading(true)
     try {
       const { data, error } = await supabase.functions.invoke('criar-usuario-admin', {
-        body: { nome, email, senha, nivel, modulos, setorIds },
+        body: { nome, email, senha, nivel, setorIds },
       })
 
       if (error || data?.error) {
@@ -144,32 +124,7 @@ export function CriarUsuarioModal({ open, onOpenChange, onSuccess }: CriarUsuari
           </div>
 
           <div className="space-y-3">
-            <Label>Módulos Permitidos</Label>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 bg-muted/20 p-3 rounded-lg border">
-              {ALL_MODULES.map((m) => (
-                <div
-                  key={m.id}
-                  className="flex items-center space-x-3 bg-white p-2 rounded-md border shadow-sm"
-                >
-                  <Checkbox
-                    id={`novo-${m.id}`}
-                    checked={modulos.includes(m.id)}
-                    onCheckedChange={() => toggleModulo(m.id)}
-                    className="data-[state=checked]:bg-[#1565C0] data-[state=checked]:border-[#1565C0]"
-                  />
-                  <label
-                    htmlFor={`novo-${m.id}`}
-                    className="text-sm font-medium leading-none cursor-pointer text-slate-700 flex-1"
-                  >
-                    {m.label}
-                  </label>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="space-y-3">
-            <Label>Setores</Label>
+            <Label>Setores (define o que a pessoa vê e acessa no painel)</Label>
             <SetoresSelect selecionados={setorIds} onChange={setSetorIds} />
           </div>
         </div>
