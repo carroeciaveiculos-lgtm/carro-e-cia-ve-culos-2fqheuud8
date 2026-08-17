@@ -292,9 +292,13 @@ nos arquivos `docs/*.md` — aqui é só o resumo de estado + pendências.
   exigência de cadastro Webmotors, continua sendo enviado pra lá igual).
   "Cilindrada" conferida — nunca apareceu em card nenhum, nada a
   remover. Adicionado botão WhatsApp nos cards da capa (só o `/estoque`
-  tinha). Achado à parte, não mexido: `Veiculo.tsx` (página de detalhe)
-  tem o mesmo corte de foto em 3 lugares na galeria. Build e lint
-  limpos, **não testado no navegador**.
+  tinha). Build e lint limpos, **não testado no navegador**.
+  **Atualização mesmo dia**: corrigido também `Veiculo.tsx` (galeria da
+  página de detalhe) — mesmo `object-contain` na foto grande e nas
+  miniaturas (2 dos 3 pontos com `object-cover`; o placeholder de "sem
+  foto" ficou como estava, não é foto real). Build limpo, os 4 warnings
+  de lint no arquivo já existiam antes (confirmado via `git stash`),
+  não são deste ajuste.
 
 ## Pendências abertas
 

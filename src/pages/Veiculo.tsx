@@ -283,7 +283,10 @@ export default function Veiculo() {
                           height="600"
                           loading={i === 0 ? 'eager' : 'lazy'}
                           decoding="async"
-                          className="w-full h-full object-cover object-[center_65%]"
+                          // object-contain (17/08/2026) — object-cover cortava
+                          // o carro em fotos que não eram no formato paisagem
+                          // 4:3. Mesmo ajuste em VehicleCard.tsx e Estoque.tsx.
+                          className="w-full h-full object-contain bg-muted"
                           onError={(e) =>
                             handleImageError(e.currentTarget, `${vehicle.marca} ${vehicle.modelo}`)
                           }
@@ -345,7 +348,7 @@ export default function Veiculo() {
                       height="90"
                       loading="lazy"
                       decoding="async"
-                      className="w-full h-full object-cover object-[center_65%]"
+                      className="w-full h-full object-contain bg-muted"
                       onError={(e) =>
                         handleImageError(e.currentTarget, `${vehicle.marca} ${vehicle.modelo}`)
                       }

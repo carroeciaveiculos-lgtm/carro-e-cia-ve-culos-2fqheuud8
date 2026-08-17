@@ -254,9 +254,13 @@ duplicado, com WhatsApp que o da capa não tinha):
   em `VehicleCard.tsx`, com a mesma mensagem pré-preenchida (veículo +
   ano + preço).
 
-Fora do pedido, mas no mesmo problema: `src/pages/Veiculo.tsx` (galeria
-da página de detalhe do veículo) tem o mesmo corte de foto em 3 lugares
-— não mexido, fica pendente se a Adriana quiser incluir depois.
+**Atualização (mesmo dia)**: a Adriana pediu para corrigir também
+`src/pages/Veiculo.tsx` (galeria da página de detalhe). Aplicado o
+mesmo `object-contain` na foto grande do carrossel e nas miniaturas
+(2 dos 3 pontos que tinham `object-cover`). O terceiro ponto — a
+imagem-placeholder genérica exibida quando o veículo não tem foto
+nenhuma — foi deixado como estava, porque não é foto real de carro
+sendo cortada.
 
 ## Achado à parte
 
