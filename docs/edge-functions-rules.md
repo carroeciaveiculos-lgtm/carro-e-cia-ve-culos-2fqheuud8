@@ -80,7 +80,6 @@ Isso quebra sincronizações de estoque, automações de leads, disparos de What
 | `ai-assistant`                  | Server-to-Server        | Assistente de IA                                                        |
 | `ai-agents`                     | Server-to-Server        | Agentes de IA                                                           |
 | `og-vehicle`                    | Public                  | Geração de imagem OG                                                    |
-| `ml-diagnose-cambio`            | Server-to-Server        | Diagnóstico de câmbio ML                                                |
 | `wm-auth`                       | Server-to-Server        | Autenticação Webmotors                                                  |
 | `wm-webhook-leads`              | Webhook                 | Webhook de leads Webmotors                                              |
 | `wm-webhook-estoque`            | Webhook                 | Webhook de estoque Webmotors                                            |

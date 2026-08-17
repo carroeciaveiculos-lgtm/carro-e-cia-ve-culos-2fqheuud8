@@ -189,6 +189,3 @@ verify_jwt = false
 
 [functions.publicar-social]
 verify_jwt = false
-
-[functions.ml-diagnose-cambio]
-verify_jwt = false
