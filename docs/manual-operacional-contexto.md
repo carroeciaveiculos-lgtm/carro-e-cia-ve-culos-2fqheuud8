@@ -54,7 +54,7 @@ Sem página dedicada hoje — mesma situação do Consórcio.
 | Página | O que faz | Sub-fluxos a documentar | Complex. | Manual |
 |---|---|---|---|---|
 | `/admin/estoque` | CRUD completo de veículo | Cadastrar, editar, marcar vendido, devolver, gerar QR, revisar com IA, compartilhar | 🔴 | — |
-| `/admin/portais` | Sync Webmotors/Mercado Livre (reais). ⚠️ Confirmar se OLX/iCarros/Napista continuam só com flag sem integração real, ou se isso já mudou desde a última checagem | Publicar/despublicar em massa, preflight, dry-run, ver erros, monitor de conversão | 🔴 | — |
+| `/admin/portais` | Sync Webmotors/Mercado Livre/NaPista (reais — NaPista testado de ponta a ponta em 17/08/2026, mas ainda aponta pra API de **desenvolvimento** da NaPista, não produção). **Confirmado em 17/08/2026: OLX e iCarros continuam só com a flag `publicado_olx`/`publicado_icarros`, sem nenhuma chamada de API real por trás — zero linhas em `estoque_publicacoes` pra essas duas em toda a história do sistema.** | Publicar/despublicar em massa, preflight, dry-run, ver erros, monitor de conversão | 🔴 | — |
 
 ## Marketing
 | Página | O que faz | Sub-fluxos a documentar | Complex. | Manual |

@@ -237,20 +237,29 @@ nos arquivos `docs/*.md` — aqui é só o resumo de estado + pendências.
     veículo nem extensão de formulário/ligação visível no tipo do
     anúncio.
   - Zero leads no banco hoje com qualquer rastro de Google Ads.
-  - **Não implementado ainda**: capturar `gclid` no site (mesmo padrão de
-    utm_source/utm_campaign que já existe em alguns formulários) pra
-    identificar de verdade um lead vindo do Google. Fica como próximo
-    passo, não pedido explicitamente ainda.
+  - **[FECHADA 17/08]** Captura de `gclid` implementada — `src/lib/ad-tracking.ts`
+    guarda no localStorage assim que aparece na URL, os 3 pontos que criam
+    lead direto do navegador (Hero, LeadForm, ConsignacaoLPForm) mandam
+    pro backend, `leads.gclid` gravado, `origem` vira `google_ads` quando
+    presente. **Limitação que continua**: clique direto no botão de
+    WhatsApp (sem passar por formulário) ainda não carrega o `gclid` até
+    a conversa — o WhatsApp não devolve esse dado como a Meta devolve nos
+    anúncios dela. Pesquisa sobre como resolver isso em andamento.
 
 ## Pendências abertas
 
-1. **[FECHADA 16/08, falta só o teste] NaPista — automação aplicada,
-   falta testar de ponta a ponta.** Migration e deploy aplicados
-   (16/08/2026, sessão 6) — trigger `trigger_napista_sync_on_veiculo_change`
-   e cron `napista-sync-cron-job` (30min) ativos. **Próximo passo:** ligar
-   o toggle "Publicar no NaPista" de um veículo de teste em `/admin/portais`
-   e conferir se enfileira certo (igual foi feito com Webmotors e Mercado
-   Livre). Já commitado no Git (`df609a5`), não enviado pro GitHub ainda.
+1. **[FECHADA 17/08] NaPista — automação testada de ponta a ponta.**
+   Migration e deploy aplicados (16/08/2026, sessão 6) — trigger
+   `trigger_napista_sync_on_veiculo_change` e cron `napista-sync-cron-job`
+   (30min) ativos. Testado ao vivo em 17/08/2026 com o Jeep Compass Sport
+   (RMP8G90, já mapeado): marcado como pendente, `napista-sync` chamado,
+   voltou `status: updated`, 10 fotos enviadas, sem erro. **Achado
+   importante**: `napista-sync/index.ts` aponta pra
+   `api.development.napista.com.br` — **ainda é a API de desenvolvimento
+   da NaPista, não produção**. Tecnicamente tudo funciona, mas nada disso
+   aparece pro público de verdade até trocar pra API de produção — isso
+   é decisão da Adriana (precisa confirmar credenciais/URL de produção
+   com a NaPista antes), não fiz essa troca sozinha.
 
 1. **NaPista** — Fase 1 (autenticação) concluída e testada. Fase 2: etapas
    1-4 de 9 **concluídas, testadas e publicadas em 14/08/2026** com dado
@@ -350,15 +359,16 @@ nos arquivos `docs/*.md` — aqui é só o resumo de estado + pendências.
    local pra reconstruir. Resolve rodando `supabase db pull`, que precisa
    de **Docker Desktop instalado** nesta máquina (não está). Sem urgência
    — nada quebrado, só documentação incompleta.
-9. **Duas migrations paradas em `supabase/migrations-rascunho/`**, fora do
+9. **Uma migration parada em `supabase/migrations-rascunho/`**, fora do
    fluxo automático de propósito:
    - `desliga_cron_wm_sync.sql` — desligaria a sincronização automática da
      Webmotors. Decisão da Adriana em 16/08: manter automático por ora.
      Aplicar só depois do fluxo manual "Sincronizar Agora" (painel Portais)
      ser testado de ponta a ponta.
-   - `crm_improvements.sql` (23/06, órfã) — código morto (cron quebrado,
-     conteúdo redundante com outra migration já aplicada). Candidata a
-     apagar quando sobrar tempo, sem pressa.
+   - **[FECHADA 17/08]** `crm_improvements.sql` (23/06, órfã) — confirmado
+     que `internal_notes` e `leads.ai_enabled` (o que esse arquivo criava)
+     já existem no banco via outra migration já aplicada
+     (`20260623192000_crm_improvements`). Arquivo apagado.
 10. **Senha exposta pro Roberto (`roberto@carroecia.com`) e pra conta
     `adriana.araujo@kmzero.com.br` continua sem trocar** (16/08/2026):
     achada em `add_access_control.sql` (senha fixa em texto plano, ver o
