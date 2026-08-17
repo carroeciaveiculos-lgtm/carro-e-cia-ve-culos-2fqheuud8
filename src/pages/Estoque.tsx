@@ -35,7 +35,7 @@ import { trackCTAClick } from '@/lib/tracking'
 import { toast } from 'sonner'
 import { handleImageError, CAR_PLACEHOLDER_IMAGE, getImageUrl } from '@/lib/image-utils'
 import { handleShareCTA } from '@/lib/cta-router'
-import { buildVehicleTitle, getVersaoComplementar } from '@/lib/vehicle-title'
+import { buildVehicleTitle } from '@/lib/vehicle-title'
 import { getWhatsAppLink } from '@/lib/whatsapp'
 import { TestimonialBanner } from '@/components/estoque/TestimonialBanner'
 
@@ -462,7 +462,10 @@ export default function Estoque() {
                                   : fotos[0]
                               }
                               alt={`${v.marca} ${v.modelo}`}
-                              className="w-full h-full object-cover object-[center_65%] bg-muted group-hover:scale-105 transition-transform duration-500"
+                              // object-contain (17/08/2026) — object-cover cortava
+                              // o carro em fotos que não eram no formato paisagem
+                              // 4:3 (retrato ou quadrada). Mesmo ajuste em VehicleCard.tsx.
+                              className="w-full h-full object-contain bg-muted group-hover:scale-105 transition-transform duration-500"
                               loading={vehicleIndex === 0 ? 'eager' : 'lazy'}
                               decoding="async"
                               fetchPriority={vehicleIndex === 0 ? 'high' : 'auto'}
@@ -476,11 +479,7 @@ export default function Estoque() {
                       <CardContent className="p-3 flex-1 flex flex-col">
                         <div className="mb-3">
                           <h2 className="font-bold text-base md:text-lg leading-tight group-hover:text-primary transition-colors mb-3 min-h-10 md:min-h-[45px]">
-                            {buildVehicleTitle([
-                              v.marca,
-                              v.modelo,
-                              getVersaoComplementar(v.modelo, v.versao),
-                            ])}
+                            {buildVehicleTitle([v.marca, v.modelo])}
                           </h2>
                           <div className="flex flex-wrap gap-1.5 mb-2 min-h-[58px] content-start">
                             <Badge
@@ -547,7 +546,7 @@ export default function Estoque() {
                           >
                             <a
                               href={getWhatsAppLink(
-                                `Olá, tenho interesse no ${buildVehicleTitle([v.marca, v.modelo, getVersaoComplementar(v.modelo, v.versao)])} - ${v.ano_modelo || v.ano_fabricacao} no valor de ${v.preco_venda ? `R$ ${v.preco_venda.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : 'consulte'}`,
+                                `Olá, tenho interesse no ${buildVehicleTitle([v.marca, v.modelo])} - ${v.ano_modelo || v.ano_fabricacao} no valor de ${v.preco_venda ? `R$ ${v.preco_venda.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : 'consulte'}`,
                               )}
                               target="_blank"
                               rel="noopener noreferrer"

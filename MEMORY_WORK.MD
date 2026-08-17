@@ -283,6 +283,18 @@ nos arquivos `docs/*.md` — aqui é só o resumo de estado + pendências.
   Decisão consciente de não incluir fallback de título/descrição padrão
   (toda página relevante já define o próprio SEO). Build e lint limpos,
   **não testado no navegador**.
+- **Correção nos cards de veículo — capa e `/estoque` (17/08/2026)** —
+  detalhe completo em "Implementado nesta sessão" de
+  `docs/manual-operacional-contexto.md`. Resumo: fotos em retrato/quadradas
+  cortadas por `object-cover` num quadro fixo 4:3 (Volvo XC 60, HR-V,
+  Toro citados como exemplo) → trocado pra `object-contain` (mostra a
+  foto inteira). Removido "versão" do texto do card (existia só pra
+  exigência de cadastro Webmotors, continua sendo enviado pra lá igual).
+  "Cilindrada" conferida — nunca apareceu em card nenhum, nada a
+  remover. Adicionado botão WhatsApp nos cards da capa (só o `/estoque`
+  tinha). Achado à parte, não mexido: `Veiculo.tsx` (página de detalhe)
+  tem o mesmo corte de foto em 3 lugares na galeria. Build e lint
+  limpos, **não testado no navegador**.
 
 ## Pendências abertas
 

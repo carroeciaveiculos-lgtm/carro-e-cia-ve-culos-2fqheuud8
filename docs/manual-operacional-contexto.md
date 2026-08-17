@@ -225,6 +225,39 @@ direto (o plano inicial previa uma edge function nova, mas descobri que o
   (`wm_mapeamento_veiculos` só tinha SELECT pra usuário autenticado, sem
   UPDATE).
 
+### Correção de exibição nos cards de veículo (capa + `/estoque`) — CONCLUÍDO
+
+Pedido depois da Adriana notar carros aparecendo cortados nos cards
+(exemplos citados: Volvo XC 60, Honda HR-V, Fiat Toro). Três ajustes,
+nos dois lugares que desenham card de veículo — `VehicleCard.tsx`
+(usado na capa/home) e `src/pages/Estoque.tsx` (tem seu próprio card
+duplicado, com WhatsApp que o da capa não tinha):
+
+- **Corte de foto**: a foto ficava dentro de um quadro fixo 4:3 com
+  `object-cover`, que corta o que não couber. Fotos em pé ou quadradas
+  (comuns quando alguém fotografa com o celular na vertical) ficavam
+  com o teto ou a lateral cortados — confirmado baixando as fotos dos 3
+  carros citados (Toro e HR-V: 1200x1540, retrato; Volvo: 2992x2992,
+  quadrada). Trocado para `object-contain`: mostra a foto inteira,
+  com uma faixa cinza nas laterais quando a proporção não bate — nunca
+  mais corta o carro.
+- **Campo "versão" removido do texto do card**: tirado de
+  `buildVehicleTitle(...)` nos dois lugares. Confirmado que "versão"
+  existe só pra atender exigência de cadastro da Webmotors — continua
+  sendo enviado pra lá normalmente, só não aparece mais repetido junto
+  do modelo no card.
+- **Campo "cilindrada"**: verificado que esse campo nunca apareceu em
+  nenhum card — é usado só internamente (pontuação de qualidade de
+  anúncio, sincronização com portais). Nada para remover aí.
+- **Botão WhatsApp na capa**: os cards da home não tinham o botão
+  verde de WhatsApp que o `/estoque` já tinha. Adicionado o mesmo botão
+  em `VehicleCard.tsx`, com a mesma mensagem pré-preenchida (veículo +
+  ano + preço).
+
+Fora do pedido, mas no mesmo problema: `src/pages/Veiculo.tsx` (galeria
+da página de detalhe do veículo) tem o mesmo corte de foto em 3 lugares
+— não mexido, fica pendente se a Adriana quiser incluir depois.
+
 ## Achado à parte
 
 Não existe documentação de API (Swagger/OpenAPI/webhooks documentados) em

@@ -3,8 +3,18 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { handleImageError, CAR_PLACEHOLDER_IMAGE, getImageUrl } from '@/lib/image-utils'
-import { buildVehicleTitle, getVersaoComplementar } from '@/lib/vehicle-title'
-import { CalendarDays, Settings2, Fuel, Gauge, ShieldCheck, FileCheck } from 'lucide-react'
+import { buildVehicleTitle } from '@/lib/vehicle-title'
+import { getWhatsAppLink } from '@/lib/whatsapp'
+import { trackCTAClick } from '@/lib/tracking'
+import {
+  CalendarDays,
+  Settings2,
+  Fuel,
+  Gauge,
+  ShieldCheck,
+  FileCheck,
+  MessageCircle,
+} from 'lucide-react'
 
 const TAG_STYLES: Record<string, string> = {
   oferta: 'bg-red-600',
@@ -65,10 +75,17 @@ export function VehicleCard({ vehicle, priority = false }: { vehicle: any; prior
           </div>
         )}
         <Link to={`/estoque/${vehicle.slug || vehicle.id}`} className="w-full h-full block">
+          {/* object-contain (17/08/2026, pedido da Adriana) — antes era
+              object-cover, que cortava o carro quando a foto não era no
+              formato paisagem 4:3 (fotos em retrato ou quadradas, comuns
+              quando alguém tira do celular na vertical, ficavam com o teto
+              ou a lateral cortados). Mostra a foto inteira sempre, com
+              faixas do bg-muted quando a proporção não bate — nunca corta
+              o carro. */}
           <img
             src={foto}
             alt={`${vehicle.marca} ${vehicle.modelo}`}
-            className="w-full h-full object-cover object-[center_65%] bg-muted group-hover:scale-105 transition-transform duration-500"
+            className="w-full h-full object-contain bg-muted group-hover:scale-105 transition-transform duration-500"
             loading={priority ? 'eager' : 'lazy'}
             decoding="async"
             fetchPriority={priority ? 'high' : 'auto'}
@@ -79,11 +96,7 @@ export function VehicleCard({ vehicle, priority = false }: { vehicle: any; prior
       <CardContent className="p-3 flex-1 flex flex-col">
         <div className="mb-2">
           <h2 className="font-bold text-base leading-tight group-hover:text-primary transition-colors mb-2">
-            {buildVehicleTitle([
-              vehicle.marca,
-              vehicle.modelo,
-              getVersaoComplementar(vehicle.modelo, vehicle.versao),
-            ])}
+            {buildVehicleTitle([vehicle.marca, vehicle.modelo])}
           </h2>
           <div className="flex flex-wrap gap-1.5 mb-2">
             <Badge
@@ -127,9 +140,27 @@ export function VehicleCard({ vehicle, priority = false }: { vehicle: any; prior
               : 'Consulte'}
           </p>
         </div>
-        <Button asChild variant="outline" className="w-full h-10 font-bold text-sm rounded-lg">
-          <Link to={`/estoque/${vehicle.slug || vehicle.id}`}>Ver Detalhes</Link>
-        </Button>
+        <div className="flex gap-2">
+          <Button asChild variant="outline" className="flex-1 h-10 font-bold text-sm rounded-lg">
+            <Link to={`/estoque/${vehicle.slug || vehicle.id}`}>Ver Detalhes</Link>
+          </Button>
+          <Button
+            asChild
+            className="flex-1 h-10 font-bold text-sm rounded-lg bg-[#25D366] hover:bg-[#1ebe5a] text-white"
+          >
+            <a
+              href={getWhatsAppLink(
+                `Olá, tenho interesse no ${buildVehicleTitle([vehicle.marca, vehicle.modelo])} - ${vehicle.ano_modelo || vehicle.ano_fabricacao} no valor de ${vehicle.preco_venda ? `R$ ${vehicle.preco_venda.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : 'consulte'}`,
+              )}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => trackCTAClick(`WhatsApp Card: ${vehicle.marca} ${vehicle.modelo}`, 'capa')}
+            >
+              <MessageCircle className="w-4 h-4 mr-1.5" />
+              WhatsApp
+            </a>
+          </Button>
+        </div>
       </CardContent>
     </Card>
   )
