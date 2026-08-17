@@ -1,15 +1,27 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '@/lib/supabase/client'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Edit, ShieldAlert } from 'lucide-react'
+import { Edit, Plus, ShieldAlert } from 'lucide-react'
 import { useAuth } from '@/hooks/use-auth'
+import { CriarUsuarioModal } from '@/components/admin/CriarUsuarioModal'
 
 export default function Usuarios() {
   const [usuarios, setUsuarios] = useState<any[]>([])
   const { user } = useAuth()
   const [isAdmin, setIsAdmin] = useState(false)
+  const [modalAberto, setModalAberto] = useState(false)
+
+  const carregarUsuarios = useCallback(() => {
+    supabase
+      .from('usuarios')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .then(({ data }) => {
+        if (data) setUsuarios(data)
+      })
+  }, [])
 
   useEffect(() => {
     if (user) {
@@ -21,15 +33,9 @@ export default function Usuarios() {
         .then(({ data }) => {
           if (data?.nivel === 'admin_master') setIsAdmin(true)
         })
-      supabase
-        .from('usuarios')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .then(({ data }) => {
-          if (data) setUsuarios(data)
-        })
+      carregarUsuarios()
     }
-  }, [user])
+  }, [user, carregarUsuarios])
 
   if (!isAdmin) {
     return (
@@ -51,7 +57,18 @@ export default function Usuarios() {
       <div className="max-w-5xl mx-auto">
         <div className="flex items-center justify-between mb-8 mt-4">
           <h1 className="text-3xl font-bold text-[#0D47A1]">Gerenciar Usuários</h1>
+          <Button
+            className="bg-[#1565C0] hover:bg-[#0D47A1]"
+            onClick={() => setModalAberto(true)}
+          >
+            <Plus className="w-4 h-4 mr-2" /> Criar Usuário
+          </Button>
         </div>
+        <CriarUsuarioModal
+          open={modalAberto}
+          onOpenChange={setModalAberto}
+          onSuccess={carregarUsuarios}
+        />
         <Card className="border-0 shadow-lg">
           <CardContent className="p-0">
             <div className="overflow-x-auto">
