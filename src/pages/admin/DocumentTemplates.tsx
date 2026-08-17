@@ -52,7 +52,7 @@ export default function DocumentTemplatesPage() {
     try {
       await saveDocumentTemplate(docType, editing[docType])
       setTemplates((prev) =>
-        prev.map((t) => (t.doc_type === docType ? { ...t, content: editing[docType] } : t)),
+        prev.map((t) => (t.document_type === docType ? { ...t, content: editing[docType] } : t)),
       )
       toast.success('Template salvo com sucesso!')
     } catch (err: any) {

@@ -11,6 +11,7 @@ export const ROTA_SETORES: Record<string, string[]> = {
   '/admin/crm': ['Vendas'],
   '/admin/conversas': ['Vendas'],
   '/admin/agendamentos': ['Vendas'],
+  '/admin/avaliacao': ['Vendas'],
   '/admin/relatorios': ['Institucional'],
   '/admin/financiamento': ['Financiamentos'],
   '/admin/administrativo': ['Financeiro/Administrativo'],

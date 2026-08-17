@@ -259,6 +259,17 @@ nos arquivos `docs/*.md` — aqui é só o resumo de estado + pendências.
     Ano: descrição") e grava em `veiculo_interesse` na hora que o lead é
     criado — não depende mais da Clara identificar depois na conversa.
     Provavelmente é o mesmo mecanismo que o Venda.iA usa.
+- **Avaliação de Veículo implementada (17/08/2026)** — reconstruída do
+  zero em `/admin/avaliacao`. Detalhe completo na seção "Backlog" (item
+  1) de `docs/manual-operacional-contexto.md`. **Achado importante no
+  caminho**: a função "Gerar Proposta PDF Automática" que já existia em
+  `/admin/crm` era 100% fake (PDF fixo "Mocked PDF") — nunca tinha sido
+  usada de verdade (zero arquivos gerados antes da correção). Corrigida
+  junto: geração de PDF real agora via jsPDF (testado isolado antes de
+  integrar), com 2 templates novos editáveis em `/admin/modelos-documentos`.
+  Também corrigido um bug pequeno pré-existente nessa tela (`t.doc_type`
+  deveria ser `t.document_type` — o "Não salvo" nunca sumia depois de
+  salvar). Build e lint limpos. **Não testado no navegador** (sem login).
 
 ## Pendências abertas
 

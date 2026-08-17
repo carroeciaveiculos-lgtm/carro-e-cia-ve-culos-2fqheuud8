@@ -98,29 +98,36 @@ Três telas eram só fachada (não salvavam nada de verdade) e foram
 remoção — status de cada uma abaixo. Nenhuma implementada ainda, só
 planejada; implementar é passo separado, autorizado individualmente.
 
-### 1. Avaliação de veículo formal (`/admin/avaliacao`) — PLANEJADA, não implementada
+### 1. Avaliação de veículo formal (`/admin/avaliacao`) — IMPLEMENTADA em 17/08/2026
 
-Formulário inteiro fake, sem tabela no banco, removido em 17/08. Plano
-definido em 17/08/2026:
+Formulário inteiro fake, sem tabela no banco, removido em 17/08. Reconstruída
+do zero no mesmo dia, seguindo o plano fechado com a Adriana:
 
 - **Como nasce**: a partir de um agendamento tipo "avaliação" (a Clara já
   cria isso hoje em `agendamentos_visita`, `tipo='avaliacao'`) OU avulsa
-  (vendedor abre direto, escolhendo/criando o lead na hora).
-- **Tabela nova**: `avaliacoes_veiculo` — dados do carro do cliente
-  (marca, modelo, ano, placa, km, cor, câmbio, combustível), estado de
-  conservação, itens/opcionais, débito/multa/sinistro (sim/não +
-  observação), fotos (**opcionais**, mesmo padrão R2 do estoque), valor
-  proposto pelo vendedor (**sem tabela FIPE — 100% critério de quem
-  avalia**, decisão consciente), avaliador, e campo `destino`: proposta
-  enviada / virou consignação / virou compra (estoque) / recusado /
-  pendente.
-- **Tela** (`/admin/avaliacao`, reconstruída do zero): lista filtrável +
-  formulário de nova avaliação. Depois de salva, 3 ações: (a) gerar
-  proposta em PDF pro cliente (reaproveitar a lib de PDF já usada na
-  proposta de financiamento do CRM), (b) marcar como consignação (abre o
-  fluxo de contrato de consignação já existente em Administrativo,
-  pré-preenchido), (c) marcar como compra/estoque (abre o cadastro de
-  `/admin/estoque` pré-preenchido com os dados já digitados).
+  (vendedor busca/cria o lead na hora, direto no formulário).
+- **Tabela `avaliacoes_veiculo`**: dados do carro do cliente, estado de
+  conservação, itens/opcionais, débito/multa/sinistro, fotos (opcionais,
+  R2 via `uploadToR2`/`resizeImages` — mesmo helper do estoque), valor
+  proposto (sem FIPE, 100% critério do avaliador), campo `destino`.
+- **3 ações depois de salva**: (a) gerar proposta em PDF — **achado no
+  caminho**: a função que isso reaproveitaria (`gerar-pdf-proposta`,
+  usada pelo botão "Gerar Proposta PDF Automática" em `/admin/crm`) era
+  **100% fake** (PDF fixo com texto "Mocked PDF", nunca lido de verdade —
+  confirmado que nunca tinha sido usada, zero arquivos gerados). Corrigida
+  junto: agora usa `jsPDF` de verdade (`_shared/pdf-generator.ts`, testado
+  isolado antes de integrar), com template editável em
+  `/admin/modelos-documentos` (2 tipos novos: "Proposta Comercial" e
+  "Proposta de Avaliação"); (b) marcar como consignação e (c) marcar como
+  compra/estoque — as duas criam um cadastro real em `veiculos` (status
+  `rascunho`) com os dados já digitados, e abrem `/admin/estoque` (edição)
+  ou `/admin/administrativo` (emissor de contrato) já com o veículo
+  selecionado via query param (`?editar=`/`?veiculo=`).
+- Setor dono: Vendas (mapeado em `setor-acesso.ts`).
+- **Não testado clicando no navegador** — sem login disponível nesta
+  sessão. Testei via chamada direta às functions e inserts/deletes de
+  teste no banco (confirmados reais: PDF gerado é `%PDF-1.3` de verdade,
+  não mock). Vale a Adriana conferir o fluxo completo no navegador.
 - Setor dono: Vendas (já mapeado em `setor-acesso.ts`).
 
 ### 2. Configurações gerais do site + SEO global (`/admin/configuracoes`) — PLANEJADA, não implementada

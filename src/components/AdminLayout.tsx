@@ -24,6 +24,7 @@ import {
   ScrollText,
   Share2,
   Briefcase,
+  ClipboardCheck,
 } from 'lucide-react'
 import { useAuth } from '@/hooks/use-auth'
 import { useState, useEffect } from 'react'
@@ -43,6 +44,7 @@ const SIDEBAR_MENUS = [
       { label: 'Leads (CRM)', path: '/admin/crm', icon: Users },
       { label: 'Conversador', path: '/admin/conversas', icon: MessageSquare },
       { label: 'Agendamentos', path: '/admin/agendamentos', icon: CalendarClock },
+      { label: 'Avaliação de Veículo', path: '/admin/avaliacao', icon: ClipboardCheck },
       { label: 'Visão Geral (ROI)', path: '/admin/relatorios', icon: BarChart },
       { label: 'Financiamentos', path: '/admin/financiamento', icon: DollarSign },
       { label: 'Administrativo', path: '/admin/administrativo', icon: FileText },

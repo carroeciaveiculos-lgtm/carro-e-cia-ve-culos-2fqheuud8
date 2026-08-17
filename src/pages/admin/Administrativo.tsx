@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -55,10 +56,23 @@ export default function Administrativo() {
   const [uploading, setUploading] = useState(false)
   const [veiculos, setVeiculos] = useState<any[]>([])
   const [quickDocVeiculoId, setQuickDocVeiculoId] = useState('')
+  const [searchParams, setSearchParams] = useSearchParams()
 
   useEffect(() => {
     fetchDocuments()
     fetchVeiculos()
+  }, [])
+
+  // Pré-seleciona o veículo no emissor de contrato quando vem da tela de
+  // Avaliação de Veículo (17/08/2026) já com o cadastro criado.
+  useEffect(() => {
+    const veiculoId = searchParams.get('veiculo')
+    if (veiculoId) {
+      setQuickDocVeiculoId(veiculoId)
+      const next = new URLSearchParams(searchParams)
+      next.delete('veiculo')
+      setSearchParams(next, { replace: true })
+    }
   }, [])
 
   const fetchVeiculos = async () => {

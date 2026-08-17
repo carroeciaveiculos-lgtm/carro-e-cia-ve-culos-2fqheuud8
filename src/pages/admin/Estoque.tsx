@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { supabase } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -51,6 +52,7 @@ const STATUS_MAP: Record<string, string> = {
 }
 
 export default function AdminEstoque() {
+  const [searchParams, setSearchParams] = useSearchParams()
   const [vehicles, setVehicles] = useState<any[]>([])
   const [search, setSearch] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
@@ -123,6 +125,20 @@ export default function AdminEstoque() {
   useEffect(() => {
     setPage(0)
   }, [debouncedSearch, sortBy, diasFilter, combustivelFilter, elegibilidadeFilter])
+
+  // Abre o cadastro já editando um veículo específico quando vem de outra
+  // tela com o veículo já criado (ex.: Avaliação de Veículo, 17/08/2026,
+  // que cria o rascunho em `veiculos` e manda pra cá terminar o cadastro).
+  useEffect(() => {
+    const editar = searchParams.get('editar')
+    if (editar) {
+      setEditingId(editar)
+      setIsModalOpen(true)
+      const next = new URLSearchParams(searchParams)
+      next.delete('editar')
+      setSearchParams(next, { replace: true })
+    }
+  }, [])
 
   useEffect(() => {
     loadVehicles()

@@ -49,6 +49,9 @@ verify_jwt = true
 [functions.gerar-pdf-proposta]
 verify_jwt = true
 
+[functions.gerar-pdf-avaliacao]
+verify_jwt = true
+
 [functions.meta-capi-postback]
 verify_jwt = false
 

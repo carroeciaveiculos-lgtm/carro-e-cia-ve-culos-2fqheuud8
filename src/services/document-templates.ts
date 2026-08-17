@@ -15,6 +15,8 @@ export const DOCUMENT_TYPES = [
   { type: 'compra', label: 'Contrato de Compra' },
   { type: 'venda', label: 'Contrato de Venda' },
   { type: 'termo_entrega', label: 'Termo de Entrega' },
+  { type: 'proposta_comercial', label: 'Proposta Comercial (PDF)' },
+  { type: 'proposta_avaliacao', label: 'Proposta de Avaliação (PDF)' },
 ] as const
 
 export const TEMPLATE_MARKERS = [
@@ -37,6 +39,9 @@ export const TEMPLATE_MARKERS = [
   'cambio',
   'quilometragem',
   'data_entrega',
+  'estado_conservacao',
+  'itens_opcionais',
+  'valor_proposto',
 ] as const
 
 export async function fetchDocumentTemplates(): Promise<DocumentTemplate[]> {
@@ -83,5 +88,8 @@ export function getSampleData(): Record<string, string> {
     cambio: 'Automático',
     quilometragem: '25.000',
     data_entrega: new Date().toLocaleDateString('pt-BR'),
+    estado_conservacao: 'Bom, com pequenos riscos na lateral direita',
+    itens_opcionais: 'Bancos de couro, Teto solar, Central multimídia',
+    valor_proposto: 'R$ 78.000,00',
   }
 }
