@@ -226,6 +226,29 @@ esse arquivo; ele é só o resumo + pendências.
 mensagem da sessão seguinte, com o que precisa de ação da Adriana e o que
 é só andamento meu, pra não ter que reconstruir esse contexto do zero.
 
+## Manual Operacional do Sistema — manter atualizado sempre
+
+Regra definida pela Adriana em 17/08/2026: **toda funcionalidade nova ou
+ajustada no painel precisa de um artigo correspondente na Central de Ajuda**
+(`/admin/ajuda`, tabela `ajuda_conteudos`) — isso não é tarefa separada,
+é parte de considerar o trabalho terminado, no mesmo espírito de manter
+`MEMORY_WORK.MD` em dia.
+
+- Cada artigo = um fluxo real que alguém executa ("Criar Usuário", "Postar
+  Vaga nas Redes"), não documentação de código.
+- Campos: `titulo`, `setor_id` (setor dono do fluxo — tabela `setores`),
+  `categoria` (módulo do sistema), `caminho` (rota no painel), `o_que_e`,
+  `para_que_serve`, `quando_utilizar`, `como_utilizar` (passo a passo real,
+  testável), `dependencias` (o que precisa existir antes).
+- Escrita exige nível `admin_master` ou `gerente` (RLS aplicado, não é só
+  visual) — ver `20260817124432_setores_e_seguranca_usuarios.sql`.
+- Antes de escrever um artigo sobre algo que já existia (não foi eu quem
+  construiu agora), confirmar como o fluxo funciona de verdade primeiro —
+  não assumir, mesma regra de `autocritica-antes-de-propor`.
+- Mapa de rota → setor fica em `src/lib/setor-acesso.ts` — se um artigo
+  cita uma página que ainda não tem setor mapeado, considerar se o mapa
+  também precisa de ajuste, não só o artigo.
+
 ## A PREENCHER pela Adriana
 
 Estas são regras de negócio que não dá para deduzir do código. Quanto mais

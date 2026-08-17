@@ -9,6 +9,29 @@ function jsonResponse(body: Record<string, unknown>, status = 200) {
   })
 }
 
+// A Auth e o Postgres devolvem mensagem em inglês — traduz os casos comuns
+// pra quem está usando o painel não ver um erro em código (achado 17/08/2026).
+function traduzErro(msg: string | undefined): string {
+  if (!msg) return 'Falha ao criar usuário. Tente novamente.'
+  const m = msg.toLowerCase()
+  if (m.includes('already been registered') || m.includes('already registered')) {
+    return 'Já existe um usuário cadastrado com esse e-mail.'
+  }
+  if (m.includes('usuarios_email_key') || m.includes('duplicate key')) {
+    return 'Já existe um usuário cadastrado com esse e-mail.'
+  }
+  if (m.includes('password should be at least') || m.includes('password is too short')) {
+    return 'Senha muito curta — use pelo menos 8 caracteres.'
+  }
+  if (m.includes('unable to validate email') || m.includes('invalid email') || m.includes('invalid format')) {
+    return 'E-mail em formato inválido.'
+  }
+  if (m.includes('rate limit')) {
+    return 'Muitas tentativas em pouco tempo — aguarde um minuto e tente de novo.'
+  }
+  return msg
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
 
@@ -56,7 +79,7 @@ Deno.serve(async (req: Request) => {
     })
 
     if (createErr || !created.user) {
-      return jsonResponse({ error: createErr?.message ?? 'Falha ao criar usuário' }, 400)
+      return jsonResponse({ error: traduzErro(createErr?.message) }, 400)
     }
 
     const { error: insertErr } = await adminClient.from('usuarios').insert({
@@ -68,7 +91,7 @@ Deno.serve(async (req: Request) => {
 
     if (insertErr) {
       await adminClient.auth.admin.deleteUser(created.user.id)
-      return jsonResponse({ error: 'Falha ao salvar permissões: ' + insertErr.message }, 400)
+      return jsonResponse({ error: traduzErro(insertErr.message) }, 400)
     }
 
     if (Array.isArray(setorIds) && setorIds.length > 0) {
@@ -88,6 +111,6 @@ Deno.serve(async (req: Request) => {
 
     return jsonResponse({ success: true, id: created.user.id })
   } catch (e) {
-    return jsonResponse({ error: e instanceof Error ? e.message : String(e) }, 500)
+    return jsonResponse({ error: traduzErro(e instanceof Error ? e.message : String(e)) }, 500)
   }
 })
