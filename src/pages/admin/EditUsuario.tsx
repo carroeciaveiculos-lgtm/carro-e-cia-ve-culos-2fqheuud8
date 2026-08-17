@@ -13,6 +13,8 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { useToast } from '@/hooks/use-toast'
+import { SetoresSelect } from '@/components/admin/SetoresSelect'
+import { listSetorIdsDoUsuario, salvarSetoresDoUsuario } from '@/services/setores'
 
 const ALL_MODULES = [
   { id: 'estoque', label: 'Estoque e Integrador' },
@@ -32,6 +34,8 @@ export default function EditUsuario() {
   const [usuario, setUsuario] = useState<any>(null)
   const [modulos, setModulos] = useState<string[]>([])
   const [nivel, setNivel] = useState('operador')
+  const [setorIds, setSetorIds] = useState<string[]>([])
+  const [salvando, setSalvando] = useState(false)
 
   useEffect(() => {
     if (id) {
@@ -47,10 +51,13 @@ export default function EditUsuario() {
             setNivel(data.nivel || 'operador')
           }
         })
+      listSetorIdsDoUsuario(id).then(({ data }) => setSetorIds(data))
     }
   }, [id])
 
   const handleSave = async () => {
+    if (!id) return
+    setSalvando(true)
     const { error } = await supabase
       .from('usuarios')
       .update({
@@ -61,10 +68,24 @@ export default function EditUsuario() {
 
     if (error) {
       toast({ title: 'Erro ao salvar', variant: 'destructive' })
-    } else {
-      toast({ title: 'Permissões atualizadas com sucesso!' })
-      navigate('/admin/usuarios')
+      setSalvando(false)
+      return
     }
+
+    const { error: setorError } = await salvarSetoresDoUsuario(id, setorIds)
+    setSalvando(false)
+
+    if (setorError) {
+      toast({
+        title: 'Permissões salvas, mas falha ao atualizar setores',
+        description: setorError.message,
+        variant: 'destructive',
+      })
+      return
+    }
+
+    toast({ title: 'Permissões atualizadas com sucesso!' })
+    navigate('/admin/usuarios')
   }
 
   const toggleModulo = (modId: string) => {
@@ -136,12 +157,21 @@ export default function EditUsuario() {
               </div>
             </div>
 
+            <div className="space-y-3">
+              <Label className="text-base text-[#0D47A1]">Setores</Label>
+              <SetoresSelect selecionados={setorIds} onChange={setSetorIds} />
+            </div>
+
             <div className="flex justify-end gap-4 pt-6 border-t mt-8">
               <Button variant="outline" onClick={() => navigate('/admin/usuarios')}>
                 Cancelar
               </Button>
-              <Button className="bg-[#1565C0] hover:bg-[#0D47A1]" onClick={handleSave}>
-                Salvar Alterações
+              <Button
+                className="bg-[#1565C0] hover:bg-[#0D47A1]"
+                onClick={handleSave}
+                disabled={salvando}
+              >
+                {salvando ? 'Salvando...' : 'Salvar Alterações'}
               </Button>
             </div>
           </CardContent>

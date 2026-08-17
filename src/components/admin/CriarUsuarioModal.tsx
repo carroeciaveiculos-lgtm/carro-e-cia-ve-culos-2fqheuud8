@@ -19,6 +19,7 @@ import {
 } from '@/components/ui/select'
 import { supabase } from '@/lib/supabase/client'
 import { useToast } from '@/hooks/use-toast'
+import { SetoresSelect } from './SetoresSelect'
 
 const ALL_MODULES = [
   { id: 'estoque', label: 'Estoque e Integrador' },
@@ -44,6 +45,7 @@ export function CriarUsuarioModal({ open, onOpenChange, onSuccess }: CriarUsuari
   const [senha, setSenha] = useState('')
   const [nivel, setNivel] = useState('operador')
   const [modulos, setModulos] = useState<string[]>([])
+  const [setorIds, setSetorIds] = useState<string[]>([])
   const [loading, setLoading] = useState(false)
 
   const reset = () => {
@@ -52,6 +54,7 @@ export function CriarUsuarioModal({ open, onOpenChange, onSuccess }: CriarUsuari
     setSenha('')
     setNivel('operador')
     setModulos([])
+    setSetorIds([])
   }
 
   const toggleModulo = (modId: string) => {
@@ -73,7 +76,7 @@ export function CriarUsuarioModal({ open, onOpenChange, onSuccess }: CriarUsuari
     setLoading(true)
     try {
       const { data, error } = await supabase.functions.invoke('criar-usuario-admin', {
-        body: { nome, email, senha, nivel, modulos },
+        body: { nome, email, senha, nivel, modulos, setorIds },
       })
 
       if (error || data?.error) {
@@ -163,6 +166,11 @@ export function CriarUsuarioModal({ open, onOpenChange, onSuccess }: CriarUsuari
                 </div>
               ))}
             </div>
+          </div>
+
+          <div className="space-y-3">
+            <Label>Setores</Label>
+            <SetoresSelect selecionados={setorIds} onChange={setSetorIds} />
           </div>
         </div>
 

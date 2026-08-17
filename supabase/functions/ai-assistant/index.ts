@@ -9,6 +9,22 @@ const corsHeaders = {
     'authorization, x-client-info, x-supabase-client-platform, apikey, content-type',
 }
 
+function rankByRelevance(items: any[], query: string | undefined, max: number): any[] {
+  if (!query) return items.slice(0, max)
+  const words = query
+    .toLowerCase()
+    .split(/\s+/)
+    .filter((w) => w.length > 2)
+  if (words.length === 0) return items.slice(0, max)
+  const scored = items.map((item) => {
+    const text = `${item.titulo} ${item.o_que_e || ''} ${item.para_que_serve || ''} ${item.quando_utilizar || ''} ${item.como_utilizar || ''}`.toLowerCase()
+    const score = words.reduce((s, w) => s + (text.includes(w) ? 1 : 0), 0)
+    return { item, score }
+  })
+  scored.sort((a, b) => b.score - a.score)
+  return scored.slice(0, max).map((s) => s.item)
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
@@ -41,7 +57,12 @@ Deno.serve(async (req) => {
       .from('brain_ia_knowledge')
       .select('titulo, conteudo, tipo')
       .limit(15)
-    const { data: helpContents } = await supabase.from('ajuda_conteudos').select('*').limit(20)
+    // Manuais/POPs: busca um recorte amplo (300) e ranqueia por relevância
+    // com a pergunta antes de cortar pro prompt — um .limit(20) fixo, sem
+    // filtro, ignorava a maior parte do manual assim que ele crescesse além
+    // de 20 registros (achado 17/08/2026, ao criar o manual por setor).
+    const { data: allHelpContents } = await supabase.from('ajuda_conteudos').select('*').limit(300)
+    const helpContents = rankByRelevance(allHelpContents || [], prompt, 30)
     const { data: vehicles } = await supabase
       .from('veiculos')
       .select('marca, modelo, preco_venda')

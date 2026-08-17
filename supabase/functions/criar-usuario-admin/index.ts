@@ -39,7 +39,7 @@ Deno.serve(async (req: Request) => {
       return jsonResponse({ error: 'Apenas administradores master podem criar usuários' }, 403)
     }
 
-    const { nome, email, senha, nivel, modulos } = await req.json()
+    const { nome, email, senha, nivel, modulos, setorIds } = await req.json()
 
     if (!nome || !email || !senha) {
       return jsonResponse({ error: 'Nome, e-mail e senha são obrigatórios' }, 400)
@@ -70,6 +70,21 @@ Deno.serve(async (req: Request) => {
     if (insertErr) {
       await adminClient.auth.admin.deleteUser(created.user.id)
       return jsonResponse({ error: 'Falha ao salvar permissões: ' + insertErr.message }, 400)
+    }
+
+    if (Array.isArray(setorIds) && setorIds.length > 0) {
+      const { error: setorErr } = await adminClient
+        .from('usuario_setores')
+        .insert(setorIds.map((setor_id: string) => ({ usuario_id: created.user.id, setor_id })))
+      if (setorErr) {
+        // Usuário e permissões básicas já foram criados — não desfaz tudo por
+        // causa só do vínculo de setor, só avisa pra corrigir manualmente.
+        return jsonResponse({
+          success: true,
+          id: created.user.id,
+          warning: 'Usuário criado, mas falha ao vincular setores: ' + setorErr.message,
+        })
+      }
     }
 
     return jsonResponse({ success: true, id: created.user.id })
