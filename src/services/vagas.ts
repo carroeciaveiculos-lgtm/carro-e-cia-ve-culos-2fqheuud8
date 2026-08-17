@@ -50,9 +50,12 @@ export const gerarVagaComIA = async (cargo: string, palavrasChave?: string) => {
   return { data: data?.data as { titulo: string; descricao: string }, error: null }
 }
 
-export const gerarImagemVaga = async (titulo: string) => {
+export const gerarImagemVaga = async (
+  titulo: string,
+  opts?: { ajuste?: string; imagemAtualUrl?: string },
+) => {
   const { data, error } = await supabase.functions.invoke('gerar-imagem-vaga', {
-    body: { titulo },
+    body: { titulo, ajuste: opts?.ajuste, imagemAtualUrl: opts?.imagemAtualUrl },
   })
   if (error) return { data: null, error }
   return { data: data?.url as string, error: null }

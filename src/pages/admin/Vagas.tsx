@@ -72,6 +72,7 @@ export default function VagasAdmin() {
   const [titulo, setTitulo] = useState('')
   const [descricao, setDescricao] = useState('')
   const [imagemUrl, setImagemUrl] = useState('')
+  const [ajusteImagem, setAjusteImagem] = useState('')
   const [ativa, setAtiva] = useState(true)
 
   const [gerandoTexto, setGerandoTexto] = useState(false)
@@ -100,6 +101,7 @@ export default function VagasAdmin() {
     setTitulo('')
     setDescricao('')
     setImagemUrl('')
+    setAjusteImagem('')
     setAtiva(true)
     setDialogAberto(true)
   }
@@ -111,6 +113,7 @@ export default function VagasAdmin() {
     setTitulo(vaga.titulo)
     setDescricao(vaga.descricao || '')
     setImagemUrl(vaga.imagem_url || '')
+    setAjusteImagem('')
     setAtiva(vaga.ativa)
     setDialogAberto(true)
   }
@@ -149,9 +152,35 @@ export default function VagasAdmin() {
       const { data, error } = await gerarImagemVaga(titulo)
       if (error) throw error
       if (data) setImagemUrl(data)
+      setAjusteImagem('')
     } catch (err: any) {
       toast({
         title: 'Erro ao gerar imagem',
+        description: err?.message || 'Tente novamente.',
+        variant: 'destructive',
+      })
+    } finally {
+      setGerandoImagem(false)
+    }
+  }
+
+  const handleRegenerarComAjuste = async () => {
+    if (!ajusteImagem) {
+      toast({ title: 'Descreva o ajuste', description: 'Diga o que quer mudar na imagem.' })
+      return
+    }
+    setGerandoImagem(true)
+    try {
+      const { data, error } = await gerarImagemVaga(titulo, {
+        ajuste: ajusteImagem,
+        imagemAtualUrl: imagemUrl || undefined,
+      })
+      if (error) throw error
+      if (data) setImagemUrl(data)
+      setAjusteImagem('')
+    } catch (err: any) {
+      toast({
+        title: 'Erro ao ajustar imagem',
         description: err?.message || 'Tente novamente.',
         variant: 'destructive',
       })
@@ -423,26 +452,57 @@ export default function VagasAdmin() {
               <Textarea rows={8} value={descricao} onChange={(e) => setDescricao(e.target.value)} />
             </div>
 
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               <Label>Imagem padrão para redes sociais</Label>
-              <div className="flex items-center gap-3">
-                {imagemUrl && (
-                  <img src={imagemUrl} alt="Imagem da vaga" className="w-16 h-16 rounded-lg object-cover" />
+
+              {imagemUrl ? (
+                <img
+                  src={imagemUrl}
+                  alt="Imagem da vaga"
+                  className="w-full max-w-sm rounded-lg border object-cover mx-auto"
+                />
+              ) : (
+                <div className="w-full max-w-sm h-56 rounded-lg border border-dashed flex items-center justify-center text-sm text-muted-foreground mx-auto">
+                  Nenhuma imagem gerada ainda
+                </div>
+              )}
+
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full"
+                onClick={handleGerarImagem}
+                disabled={gerandoImagem}
+              >
+                {gerandoImagem ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <ImageIcon className="w-4 h-4 mr-2" />
                 )}
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={handleGerarImagem}
-                  disabled={gerandoImagem}
-                >
-                  {gerandoImagem ? (
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  ) : (
-                    <ImageIcon className="w-4 h-4 mr-2" />
-                  )}
-                  Gerar imagem
-                </Button>
-              </div>
+                {imagemUrl ? 'Gerar do zero de novo' : 'Gerar imagem'}
+              </Button>
+
+              {imagemUrl && (
+                <div className="flex gap-2 pt-1">
+                  <Input
+                    placeholder='Peça um ajuste (ex: "fundo mais claro")'
+                    value={ajusteImagem}
+                    onChange={(e) => setAjusteImagem(e.target.value)}
+                  />
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={handleRegenerarComAjuste}
+                    disabled={gerandoImagem || !ajusteImagem}
+                  >
+                    {gerandoImagem ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Wand2 className="w-4 h-4" />
+                    )}
+                  </Button>
+                </div>
+              )}
             </div>
 
             <div className="flex items-center gap-2">

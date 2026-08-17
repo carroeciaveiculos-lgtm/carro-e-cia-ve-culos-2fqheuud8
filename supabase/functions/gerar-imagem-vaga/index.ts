@@ -10,6 +10,15 @@ const corsHeaders = {
 }
 
 const R2_PUBLIC_BASE = 'https://imagens.carroeciamotors.com.br'
+const LOGO_URL = `${R2_PUBLIC_BASE}/logos-e-imagens/marca/logo-oficial.png`
+const FACHADA_URL = `${R2_PUBLIC_BASE}/logos-e-imagens/marca/fachada-da-loja.png`
+
+async function fetchAsFile(url: string, name: string): Promise<File> {
+  const res = await fetch(url)
+  if (!res.ok) throw new Error(`Falha ao buscar referência de imagem (${name})`)
+  const buf = await res.arrayBuffer()
+  return new File([buf], name, { type: res.headers.get('content-type') || 'image/png' })
+}
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
@@ -30,35 +39,53 @@ Deno.serve(async (req) => {
     } = await supabase.auth.getUser()
     if (authError || !user) throw new Error('Unauthorized')
 
-    const { titulo } = await req.json()
+    const { titulo, ajuste, imagemAtualUrl } = await req.json()
     if (!titulo) throw new Error('Informe o título da vaga')
 
     const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY')
     if (!OPENAI_API_KEY) throw new Error('OPENAI_API_KEY not configured')
 
-    const res = await fetch('https://api.openai.com/v1/images/generations', {
+    const promptBase = `Crie uma imagem para post de rede social anunciando uma vaga de emprego de "${titulo}" na revenda de veículos Carro e Cia. Use a logo fornecida com destaque e mantenha a identidade visual da marca (vermelho, branco, preto), estilo corporativo e moderno. Deixe um espaço vazio reservado para texto ser adicionado depois. Sem texto na imagem.`
+    const prompt = ajuste ? `${promptBase}\n\nAjuste pedido pelo usuário: ${ajuste}` : promptBase
+
+    // Usa a API de edição (não a de geração pura) pra compor com referências
+    // reais da marca — logo oficial + fachada da loja (achado 17/08/2026) —
+    // em vez de a IA "adivinhar" a marca só pela descrição em texto. Se já
+    // existe uma imagem anterior (pedido de ajuste), edita ela em vez de
+    // regenerar do zero, pra manter o que já estava bom.
+    const form = new FormData()
+    form.append('model', 'gpt-image-1')
+    form.append('prompt', prompt)
+    form.append('size', '1024x1024')
+    if (imagemAtualUrl) {
+      form.append('image[]', await fetchAsFile(imagemAtualUrl, 'imagem-atual.png'))
+    } else {
+      form.append('image[]', await fetchAsFile(LOGO_URL, 'logo.png'))
+      form.append('image[]', await fetchAsFile(FACHADA_URL, 'fachada.png'))
+    }
+
+    const res = await fetch('https://api.openai.com/v1/images/edits', {
       method: 'POST',
-      headers: {
-        Authorization: `Bearer ${OPENAI_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'dall-e-3',
-        prompt: `Imagem padrão para post de rede social anunciando uma vaga de emprego de "${titulo}" numa revenda de carros seminovos. Estilo corporativo, moderno, cores vermelho e branco (identidade da marca Carro e Cia Veículos), com espaço vazio central reservado para texto ser adicionado depois. Sem texto na imagem.`,
-        n: 1,
-        size: '1024x1024',
-      }),
+      headers: { Authorization: `Bearer ${OPENAI_API_KEY}` },
+      body: form,
     })
 
     const data = await res.json()
     if (!res.ok) throw new Error(data.error?.message || 'Erro na API da OpenAI')
 
-    const imageUrl = data.data[0].url
-    if (!imageUrl) throw new Error('Nenhuma URL de imagem foi retornada pelo provedor')
-
-    const imageRes = await fetch(imageUrl)
-    if (!imageRes.ok) throw new Error('Falha ao baixar a imagem gerada')
-    const bytes = new Uint8Array(await imageRes.arrayBuffer())
+    // gpt-image-1 retorna base64 (b64_json), não URL como o dall-e-3 antigo —
+    // suporta os dois formatos pra não quebrar se isso mudar de novo.
+    const item = data.data?.[0]
+    let bytes: Uint8Array
+    if (item?.b64_json) {
+      bytes = Uint8Array.from(atob(item.b64_json), (c) => c.charCodeAt(0))
+    } else if (item?.url) {
+      const imageRes = await fetch(item.url)
+      if (!imageRes.ok) throw new Error('Falha ao baixar a imagem gerada')
+      bytes = new Uint8Array(await imageRes.arrayBuffer())
+    } else {
+      throw new Error('Nenhuma imagem foi retornada pelo provedor')
+    }
 
     const R2_ACCESS_KEY_ID = Deno.env.get('R2_ACCESS_KEY_ID')
     const R2_SECRET_ACCESS_KEY = Deno.env.get('R2_SECRET_ACCESS_KEY')
@@ -94,7 +121,7 @@ Deno.serve(async (req) => {
       usuario_id: user.id,
       acao: 'gerar_imagem_vaga',
       provider: 'openai',
-      modelo: 'dall-e-3',
+      modelo: 'gpt-image-1',
       status: 'sucesso',
     })
 

@@ -40,7 +40,9 @@ Deno.serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'dall-e-3',
+        // dall-e-3 foi descontinuado pela OpenAI (achado 17/08/2026) — a
+        // família atual é gpt-image-*. gpt-image-1 é a opção estável.
+        model: 'gpt-image-1',
         prompt: `Uma foto profissional para blog de loja de carros sobre: ${prompt}. Estilo realista, editorial, sem texto na imagem.`,
         n: 1,
         size: '1024x1024',
@@ -50,14 +52,19 @@ Deno.serve(async (req) => {
     const data = await res.json()
     if (!res.ok) throw new Error(data.error?.message || 'OpenAI error')
 
-    const imageUrl = data.data[0].url
-    if (!imageUrl) throw new Error('Nenhuma URL de imagem foi retornada pelo provedor')
-
-    const imageRes = await fetch(imageUrl)
-    if (!imageRes.ok) throw new Error('Falha ao baixar a imagem gerada')
-
-    const arrayBuffer = await imageRes.arrayBuffer()
-    const bytes = new Uint8Array(arrayBuffer)
+    // gpt-image-1 retorna base64 (b64_json), não URL como o dall-e-3 antigo —
+    // suporta os dois formatos pra não quebrar se isso mudar de novo.
+    const item = data.data?.[0]
+    let bytes: Uint8Array
+    if (item?.b64_json) {
+      bytes = Uint8Array.from(atob(item.b64_json), (c) => c.charCodeAt(0))
+    } else if (item?.url) {
+      const imageRes = await fetch(item.url)
+      if (!imageRes.ok) throw new Error('Falha ao baixar a imagem gerada')
+      bytes = new Uint8Array(await imageRes.arrayBuffer())
+    } else {
+      throw new Error('Nenhuma imagem foi retornada pelo provedor')
+    }
 
     const supabaseService = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
@@ -77,7 +84,7 @@ Deno.serve(async (req) => {
       usuario_id: user.id,
       acao: 'gerar_imagem',
       provider: 'openai',
-      modelo: 'dall-e-3',
+      modelo: 'gpt-image-1',
       status: 'sucesso',
     })
 
