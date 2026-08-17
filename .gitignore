@@ -35,6 +35,9 @@ screenshot.png
 # Environment variables
 .env*
 
+# Config de conectores MCP locais (guarda token/chave em texto puro)
+.mcp.json
+
 # Atalhos (junctions) criados pelo instalador de skills.
 # Sao apenas ponteiros para .agents/skills/, que ESTA versionado.
 # Versionar os dois causaria arquivos duplicados no repositorio.

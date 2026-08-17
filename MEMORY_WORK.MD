@@ -314,12 +314,18 @@ nos arquivos `docs/*.md` — aqui é só o resumo de estado + pendências.
     trocada. Decisão dela foi deixar as outras duas como estão por ora —
     registrado aqui porque a exposição em si continua no histórico do
     Git, não some sozinha.
-11. **Plano futuro pras 3 telas removidas** (17/08/2026): Avaliação de
-    veículo formal, Configurações gerais de Loja/SEO/Scripts, Automações
-    de e-mail de nutrição de lead. Adriana pediu remoção + "montar um
-    plano junto pra elas no futuro" — remoção feita, planejamento ainda
-    não começou. Detalhe do que cada uma fazia (fake) está na seção
-    "Backlog" de `docs/manual-operacional-contexto.md`.
+11. **[PLANEJADO 17/08, falta implementar] Plano das 3 telas removidas**:
+    Avaliação de veículo formal, Configurações gerais de Loja/SEO/Scripts,
+    Automações de e-mail de nutrição de lead. Plano completo de cada uma
+    (decidido junto com a Adriana) está na seção "Backlog" de
+    `docs/manual-operacional-contexto.md` — não repetir aqui, só resumo:
+    (1) Avaliação vira tabela `avaliacoes_veiculo` + tela nova, com ação
+    de virar proposta em PDF / consignação / compra-estoque; (2) "Loja &
+    SEO" volta reaproveitando `brand_config` (elimina hardcode duplicado
+    em `SEO.tsx`), "Scripts & Tracking" NÃO volta como tela (edito
+    `index.html` direto quando pedir); (3) Automação de e-mail usa Brevo
+    como motor (não cron próprio) — depende da chave de API do Brevo,
+    ver pendência 5. Nenhuma das 3 tem código escrito ainda, só o plano.
 12. **Confirmar status real de OLX/iCarros/Napista em `/admin/portais`**
     (17/08/2026): comentário no código dizia que só Webmotors e Mercado
     Livre têm integração real, as outras seriam só flag. Sinalizado no

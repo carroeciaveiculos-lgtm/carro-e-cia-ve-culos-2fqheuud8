@@ -94,17 +94,87 @@ exigir setor.
 ## Backlog — decisão futura, não documentar como fluxo real
 
 Três telas eram só fachada (não salvavam nada de verdade) e foram
-**removidas** em 17/08/2026, com plano de decidir juntas o que fazer no
-futuro:
+**removidas** em 17/08/2026. Planejadas juntas (Adriana + eu) depois da
+remoção — status de cada uma abaixo. Nenhuma implementada ainda, só
+planejada; implementar é passo separado, autorizado individualmente.
 
-1. **Avaliação de veículo formal** (`/admin/avaliacao`) — formulário
-   inteiro fake, sem tabela no banco.
-2. **Configurações gerais do site + SEO global** (abas "Loja & SEO" e
-   "Scripts & Tracking" de `/admin/configuracoes`) — não persistiam em
-   `site_configuracoes`, só ficavam na memória do navegador.
-3. **Automações de e-mail de nutrição de lead** (aba de `/admin/marketing`)
-   — lista de "automações" era array fixo no código, sem tabela nem envio
-   real por trás.
+### 1. Avaliação de veículo formal (`/admin/avaliacao`) — PLANEJADA, não implementada
+
+Formulário inteiro fake, sem tabela no banco, removido em 17/08. Plano
+definido em 17/08/2026:
+
+- **Como nasce**: a partir de um agendamento tipo "avaliação" (a Clara já
+  cria isso hoje em `agendamentos_visita`, `tipo='avaliacao'`) OU avulsa
+  (vendedor abre direto, escolhendo/criando o lead na hora).
+- **Tabela nova**: `avaliacoes_veiculo` — dados do carro do cliente
+  (marca, modelo, ano, placa, km, cor, câmbio, combustível), estado de
+  conservação, itens/opcionais, débito/multa/sinistro (sim/não +
+  observação), fotos (**opcionais**, mesmo padrão R2 do estoque), valor
+  proposto pelo vendedor (**sem tabela FIPE — 100% critério de quem
+  avalia**, decisão consciente), avaliador, e campo `destino`: proposta
+  enviada / virou consignação / virou compra (estoque) / recusado /
+  pendente.
+- **Tela** (`/admin/avaliacao`, reconstruída do zero): lista filtrável +
+  formulário de nova avaliação. Depois de salva, 3 ações: (a) gerar
+  proposta em PDF pro cliente (reaproveitar a lib de PDF já usada na
+  proposta de financiamento do CRM), (b) marcar como consignação (abre o
+  fluxo de contrato de consignação já existente em Administrativo,
+  pré-preenchido), (c) marcar como compra/estoque (abre o cadastro de
+  `/admin/estoque` pré-preenchido com os dados já digitados).
+- Setor dono: Vendas (já mapeado em `setor-acesso.ts`).
+
+### 2. Configurações gerais do site + SEO global (`/admin/configuracoes`) — PLANEJADA, não implementada
+
+Abas "Loja & SEO" e "Scripts & Tracking" não persistiam em
+`site_configuracoes`, só ficavam na memória do navegador. Removidas em
+17/08. Plano definido em 17/08/2026 — as duas abas tiveram destinos
+diferentes:
+
+- **"Loja & SEO" volta, com escopo real**: dados da empresa (endereço,
+  telefone, logo) hoje estão **hardcoded em `src/components/SEO.tsx`**
+  (schema de SEO) — mesmo tipo de duplicação que já causou o bug do
+  endereço errado em 6 arquivos (corrigido em 15/08). Plano: reaproveitar
+  `site_configuracoes.brand_config` (já existe, já alimenta o rodapé) como
+  fonte única também pro `SEO.tsx`, eliminando o hardcode. Também ganha
+  campo de título/descrição padrão do site e imagem OG padrão (fallback
+  só pras páginas que não definem SEO próprio — a maioria já define).
+- **"Scripts & Tracking" NÃO volta como tela**: GTM, Google Analytics e
+  Meta Pixel estão hardcoded em `index.html` hoje. Um painel pra isso
+  exigiria o site carregar esses IDs dinamicamente do banco a cada
+  visita — mais lento e mais frágil, pra um ganho pequeno (esses IDs
+  raramente mudam). Decisão da Adriana: continuar editando direto no
+  código quando ela pedir, sem tela dedicada.
+
+### 3. Automações de e-mail de nutrição de lead (`/admin/marketing`) — PLANEJADA, não implementada
+
+Lista de "automações" era array fixo no código, sem tabela nem envio real
+por trás. Removida em 17/08. Plano definido em 17/08/2026 — decisão da
+Adriana foi usar o **Brevo** como motor de automação em vez de construir
+um sistema próprio (cron + templates), aproveitando que o Brevo já tem
+editor de fluxo de e-mail pronto:
+
+- **O que nasce daqui pro Brevo**: todo lead criado por qualquer
+  formulário do site (Comprar, Vender Meu Carro, Consignação,
+  Financiamento, Seguro, Consórcio — tudo que hoje gera registro em
+  `leads`) sincroniza contato + evento `lead_criado` pro Brevo. Também
+  visualização de veículo no site vira evento `visualizou_veiculo` (com
+  marca/modelo/preço/link), mas **só pra quem já se identificou antes**
+  (deu e-mail em algum formulário) — visitante 100% anônimo não tem como
+  receber e-mail, tecnicamente não tem pra quem mandar.
+- **O que fica dentro do Brevo, não no nosso painel**: o desenho da
+  automação em si (quantos e-mails manda, texto de cada um, quanto tempo
+  esperar entre eles) é feito direto na ferramenta do Brevo — não
+  construímos tela nova aqui pra isso. Nossa aba de Marketing, no máximo,
+  ganha um link/status mostrando que a automação está configurada lá.
+- Envio automático, sem revisão manual antes de cada disparo (mesmo
+  padrão do `re-engagement-cron` que já existe hoje pro WhatsApp).
+- **Falta pra sair do papel**: chave de API do Brevo (pendência já
+  registrada em `MEMORY_WORK.MD`), criar as listas/atributos
+  personalizados dentro do Brevo, incluir o script de tracking do Brevo
+  no site (mesmo padrão do GTM/Pixel em `index.html`, usado pra
+  identificar visitante e registrar visualização de veículo), e construir
+  a chamada de sincronização de contato/evento nos pontos onde `leads` é
+  criado hoje.
 
 ## Achado à parte
 
