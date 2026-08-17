@@ -1,7 +1,17 @@
 import { useState } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { AlertCircle, Clock, ExternalLink, RefreshCw } from 'lucide-react'
+import { AlertCircle, Clock, ExternalLink, RefreshCw, XCircle } from 'lucide-react'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { translateError } from '@/lib/platform-errors'
 import { PortalTierSelector } from './PortalTierSelector'
 import { useToast } from '@/hooks/use-toast'
@@ -53,6 +63,7 @@ interface Props {
 
 export function PortalCard({ plataforma, veiculo, publicacao, onSync, onUpdateAdType }: Props) {
   const [syncing, setSyncing] = useState(false)
+  const [confirmUnpublishOpen, setConfirmUnpublishOpen] = useState(false)
   const { toast } = useToast()
   const field = SLUG_MAP[plataforma.slug]
   const published = veiculo[field] as boolean
@@ -61,18 +72,28 @@ export function PortalCard({ plataforma, veiculo, publicacao, onSync, onUpdateAd
     hasError && publicacao?.erro_msg ? translateError(publicacao.erro_msg).message : null
   const autoStatus = getAutoStatus(published, publicacao, veiculo.elegivel_portais)
 
-  const handleSync = async () => {
+  const executarSync = async (publicar: boolean) => {
     setSyncing(true)
     try {
-      const result = await onSync(plataforma.slug, veiculo.id, true)
+      const result = await onSync(plataforma.slug, veiculo.id, publicar)
       toast({
-        title: result.success ? 'Sincronizado com sucesso' : 'Erro na sincronização',
+        title: result.success
+          ? publicar
+            ? 'Publicado com sucesso'
+            : 'Despublicado com sucesso'
+          : 'Erro na sincronização',
         description: result.message,
         variant: result.success ? 'default' : 'destructive',
       })
     } finally {
       setSyncing(false)
     }
+  }
+
+  const handlePublish = () => executarSync(true)
+  const handleUnpublishConfirmed = () => {
+    setConfirmUnpublishOpen(false)
+    executarSync(false)
   }
 
   return (
@@ -119,16 +140,51 @@ export function PortalCard({ plataforma, veiculo, publicacao, onSync, onUpdateAd
         </div>
       )}
 
-      <Button
-        size="sm"
-        variant="outline"
-        className="w-full h-7 text-xs"
-        onClick={handleSync}
-        disabled={syncing}
-      >
-        <RefreshCw className={`w-3 h-3 mr-1.5 ${syncing ? 'animate-spin' : ''}`} />
-        {syncing ? 'Sincronizando...' : 'Sincronizar Agora'}
-      </Button>
+      {published ? (
+        <Button
+          size="sm"
+          variant="outline"
+          className="w-full h-7 text-xs text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700"
+          onClick={() => setConfirmUnpublishOpen(true)}
+          disabled={syncing}
+        >
+          <XCircle className={`w-3 h-3 mr-1.5 ${syncing ? 'animate-spin' : ''}`} />
+          {syncing ? 'Despublicando...' : 'Despublicar'}
+        </Button>
+      ) : (
+        <Button
+          size="sm"
+          variant="outline"
+          className="w-full h-7 text-xs"
+          onClick={handlePublish}
+          disabled={syncing}
+        >
+          <RefreshCw className={`w-3 h-3 mr-1.5 ${syncing ? 'animate-spin' : ''}`} />
+          {syncing ? 'Publicando...' : 'Publicar / Sincronizar Agora'}
+        </Button>
+      )}
+
+      <AlertDialog open={confirmUnpublishOpen} onOpenChange={setConfirmUnpublishOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Despublicar de {plataforma.nome}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              O anúncio de {veiculo.marca} {veiculo.modelo} sai do ar em {plataforma.nome} e libera a
+              vaga usada. O veículo continua disponível no seu estoque normalmente — isso só tira o
+              anúncio dessa plataforma específica.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-red-600 hover:bg-red-700"
+              onClick={handleUnpublishConfirmed}
+            >
+              Despublicar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

@@ -305,6 +305,95 @@ export function motivoPendenciaNapista(p: NapistaPendencia): 'marca' | 'modelo' 
   return 'catalogo_napista'
 }
 
+export interface NapistaSyncResult {
+  success: boolean
+  processed?: number
+  error?: string
+}
+
+// Achado 17/08/2026: o botão "Sincronizar Agora" pro NaPista só trocava a
+// flag `publicado_napista` do veículo (toggleVehiclePublication) — nunca
+// chamava a napista-sync de verdade, então "publicar"/"despublicar" ali não
+// tinha nenhum efeito real na NaPista. Mesmo padrão do triggerWMSync: marca
+// o status em `estoque_publicacoes` e chama a function na hora.
+export async function triggerNapistaSync(veiculoId?: string): Promise<NapistaSyncResult> {
+  const { data, error } = await supabase.functions.invoke('napista-sync', {
+    body: veiculoId ? { veiculo_id: veiculoId } : {},
+  })
+  if (error) return { success: false, error: error.message || 'Falha ao sincronizar com a NaPista' }
+  if (data?.error) return { success: false, error: data.error }
+  const results: Array<{ status?: string; error?: string }> = Array.isArray(data?.results)
+    ? data.results
+    : []
+  const falhas = results.filter((r) => r.status === 'error')
+  if (falhas.length > 0) {
+    return {
+      success: false,
+      processed: data?.processed ?? 0,
+      error: falhas.map((r) => r.error).filter(Boolean).join(' | ') || 'Falha ao sincronizar com a NaPista',
+    }
+  }
+  return { success: true, processed: data?.processed ?? 0 }
+}
+
+export interface ModalidadeReal {
+  codigo: string
+  descricao: string
+}
+
+// A modalidade "real" (o que a Webmotors de fato usa pra publicar) vem de
+// wm_mapeamento_veiculos.codigo_modalidade_wm — não de veiculos.ad_types,
+// que é só a preferência salva pelo seletor e nunca foi lida por wm-sync.
+// Achado 17/08/2026: o seletor mostrava ad_types (com fallback pro primeiro
+// tier da lista, "Super Acelerador VIP") mesmo quando o anúncio real estava
+// publicado como "Anúncio Básico" — informação errada mostrada pra Adriana.
+export async function fetchModalidadeReal(
+  veiculoId: string,
+  platform: string,
+): Promise<ModalidadeReal | null> {
+  if (platform !== 'webmotors') return null
+  const { data: mapeamento } = await supabase
+    .from('wm_mapeamento_veiculos')
+    .select('codigo_modalidade_wm')
+    .eq('veiculo_id', veiculoId)
+    .maybeSingle()
+  if (!mapeamento?.codigo_modalidade_wm) return null
+  const { data: modalidade } = await supabase
+    .from('wm_modalidades')
+    .select('descricao')
+    .eq('codigo_wm', mapeamento.codigo_modalidade_wm)
+    .maybeSingle()
+  return {
+    codigo: mapeamento.codigo_modalidade_wm,
+    descricao: modalidade?.descricao || `Código ${mapeamento.codigo_modalidade_wm}`,
+  }
+}
+
+// Muda a modalidade que a Webmotors realmente usa (não só a preferência em
+// ad_types). Casa pelo texto porque wm_modalidades só tem o que a conta já
+// usou/consultou (hoje: "Anúncio Básico" e "Super Acelerador Vip"), sem
+// tabela fixa de código por tier — se a Adriana contratar uma modalidade
+// nova, ela precisa aparecer em wm_modalidades antes (via ObterModalidade,
+// já roda a cada wm-sync) pra virar uma opção válida aqui.
+export async function updateModalidadeWebmotors(veiculoId: string, tierLabel: string): Promise<void> {
+  const termoBusca = tierLabel.replace(/^Anúncio\s+/i, '').replace(/\s+VIP$/i, '').trim()
+  const { data: modalidade, error: findError } = await supabase
+    .from('wm_modalidades')
+    .select('codigo_wm')
+    .ilike('descricao', `%${termoBusca}%`)
+    .maybeSingle()
+  if (findError || !modalidade) {
+    throw new Error(
+      `Não achei a modalidade "${tierLabel}" na conta Webmotors — confirme o nome exato em wm_modalidades.`,
+    )
+  }
+  const { error } = await supabase
+    .from('wm_mapeamento_veiculos')
+    .update({ codigo_modalidade_wm: modalidade.codigo_wm })
+    .eq('veiculo_id', veiculoId)
+  if (error) throw error
+}
+
 export async function fetchNapistaPendencias(): Promise<NapistaPendencia[]> {
   const { data, error } = await supabase
     .from('napista_mapeamento_veiculos')

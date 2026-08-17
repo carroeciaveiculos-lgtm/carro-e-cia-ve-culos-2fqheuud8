@@ -176,6 +176,42 @@ editor de fluxo de e-mail pronto:
   a chamada de sincronização de contato/evento nos pontos onde `leads` é
   criado hoje.
 
+## Implementado nesta sessão (17/08/2026)
+
+### Publicar/Não publicar manual por veículo e plataforma (`/admin/portais`) — CONCLUÍDO
+
+Pedido depois de uma auditoria de sincronização Webmotors mostrar 6
+veículos bloqueados por falta de vaga de anúncio, sem forma da Adriana
+decidir manualmente qual veículo ocupa uma vaga limitada. Implementado
+direto (o plano inicial previa uma edge function nova, mas descobri que o
+`/admin/portais` já tinha 90% da engrenagem pronta — só reaproveitei):
+
+- **`PortalCard.tsx`**: o botão único "Sincronizar Agora" (sempre mandava
+  `publicar=true`, nunca despublicava) virou dois estados — "Publicar" ou
+  "Despublicar", conforme o status atual — com confirmação (`AlertDialog`)
+  antes de despublicar, deixando claro que isso libera a vaga mas não
+  mexe no status do veículo no estoque.
+- **Achado corrigido no caminho — NaPista era decorativo**: o botão de
+  sincronizar do NaPista só trocava a flag `publicado_napista` no banco
+  (`toggleVehiclePublication`), sem nunca chamar `napista-sync` de
+  verdade — clicar não tinha efeito real nenhum na NaPista. Corrigido pra
+  seguir o mesmo padrão real que a Webmotors já usava (marca status em
+  `estoque_publicacoes` + chama a function na hora), função nova
+  `triggerNapistaSync` em `services/plataformas.ts`.
+- **Rastreio da decisão**: `estoque_publicacoes` ganhou
+  `alterado_manualmente_por` + `alterado_manualmente_em`, gravados só
+  quando a mudança vem do botão (não do cron/venda automática).
+- **Achado corrigido no caminho — seletor de modalidade mentia**: o
+  campo "Modalidade" do card mostrava `veiculos.ad_types` (preferência
+  nunca lida pelo `wm-sync`) com fallback pro primeiro tier da lista,
+  *"Super Acelerador VIP"* — então um veículo publicado como "Anúncio
+  Básico" de verdade aparecia como VIP na tela. Agora mostra a modalidade
+  REAL (`wm_mapeamento_veiculos.codigo_modalidade_wm`, o que o `wm-sync`
+  de fato usa) e, ao trocar no seletor, atualiza esse campo real (não só
+  a preferência) — precisou de uma política de RLS nova
+  (`wm_mapeamento_veiculos` só tinha SELECT pra usuário autenticado, sem
+  UPDATE).
+
 ## Achado à parte
 
 Não existe documentação de API (Swagger/OpenAPI/webhooks documentados) em

@@ -192,6 +192,23 @@ nos arquivos `docs/*.md` — aqui é só o resumo de estado + pendências.
   `CLAUDE.md` ganhou regra ampliada: ao fechar tarefa que tocou o painel,
   checar `docs/manual-operacional-contexto.md` e já fechar lacuna
   relacionada, sem esperar pedido explícito.
+- **Botão manual Publicar/Despublicar implementado (17/08/2026, sessão
+  7)**: `/admin/portais` — Webmotors, Mercado Livre e NaPista. Detalhe
+  completo (inclui 2 bugs achados e corrigidos no caminho: NaPista era
+  decorativo, seletor de modalidade mostrava valor errado) na seção
+  "Implementado nesta sessão" de `docs/manual-operacional-contexto.md`.
+  Build e lint limpos. **Não testado ao vivo no navegador** (sem login
+  disponível nesta sessão) — pedir pra Adriana conferir antes de
+  considerar 100% validado.
+- **Auditoria + correção pontual Webmotors (17/08/2026, sessão 7)**:
+  reconciliação real (API Webmotors) vs sistema confirmou 18=18 sem
+  divergência. RAV4 (QMY0E06) e HB20X (RFV1E55) publicadas nas 2 vagas
+  que abriram com a venda de 2 carros em 15/08. Compass Sport 2021
+  (RMP8G90) despublicado a pedido da Adriana. Confirmado com a própria
+  API da Webmotors: modalidade Básico (6351) e Vip (6914) são pools
+  **fixos e separados** (18 + 2), não fungíveis um com o outro — a
+  Adriana levantou a hipótese de serem fungíveis, dado real não confirma
+  isso, vale confirmar com o suporte da Webmotors se ela quiser insistir.
 
 ## Pendências abertas
 

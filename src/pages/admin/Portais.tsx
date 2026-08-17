@@ -13,6 +13,7 @@ import {
   toggleVehiclePublication,
   updateAdType,
   fetchMLErrors,
+  triggerNapistaSync,
   type Plataforma,
   type VeiculoSync,
 } from '@/services/plataformas'
@@ -20,6 +21,7 @@ import { fetchPublicacoes } from '@/services/portais-sync'
 import { syncVehicleToPlatform, batchSyncVehicles } from '@/services/sync-plataforma'
 import { triggerWMSync } from '@/services/wm-sync'
 import { supabase } from '@/lib/supabase/client'
+import { useAuth } from '@/hooks/use-auth'
 import { VehicleAccordion } from '@/components/admin/portais/VehicleAccordion'
 import { GlobalActionsBar } from '@/components/admin/portais/GlobalActionsBar'
 import { ErrorHistoryPanel } from '@/components/admin/portais/ErrorHistoryPanel'
@@ -53,6 +55,7 @@ const PLATAFORMAS_COM_SYNC_REAL = ['webmotors', 'mercadolivre']
 
 export default function Portais() {
   const { toast } = useToast()
+  const { user } = useAuth()
   const [plataformas, setPlataformas] = useState<Plataforma[]>([])
   const [vehicles, setVehicles] = useState<VeiculoSync[]>([])
   const [search, setSearch] = useState('')
@@ -205,6 +208,18 @@ export default function Portais() {
     setDryRunOpen(true)
   }
 
+  // Grava quem decidiu publicar/despublicar manualmente e quando — pedido
+  // da Adriana em 17/08/2026, pra diferenciar decisão de alguém de ação
+  // automática (venda/devolução/cron), que não passa por aqui.
+  const registrarAcaoManual = async (veiculoId: string, platform: string) => {
+    if (!user) return
+    await supabase
+      .from('estoque_publicacoes')
+      .update({ alterado_manualmente_por: user.id, alterado_manualmente_em: new Date().toISOString() })
+      .eq('veiculo_id', veiculoId)
+      .eq('platform', platform)
+  }
+
   const handleSync = async (
     slug: string,
     veiculoId: string,
@@ -235,6 +250,7 @@ export default function Portais() {
           return { ...v, [`publicado_${slug}`]: result.success ? publicar : !publicar }
         }),
       )
+      await registrarAcaoManual(veiculoId, 'mercadolivre')
       if (!result.success) {
         toast({
           title: 'Erro na sincronização',
@@ -243,44 +259,66 @@ export default function Portais() {
         })
       }
       return result
-    } else if (slug === 'webmotors') {
+    } else if (slug === 'webmotors' || slug === 'napista') {
       try {
         await toggleVehiclePublication(slug, veiculoId, publicar)
         setVehicles((prev) =>
           prev.map((v) => (v.id !== veiculoId ? v : { ...v, [`publicado_${slug}`]: publicar })),
         )
 
-        // Sem isso, o toggle só marcava a flag local e nunca disparava o
-        // wm-sync de verdade — o veículo ficava marcado como "publicado" no
-        // nosso banco sem nenhuma tentativa real de IncluirCarro/ExcluirCarro
-        // na Webmotors. Garante que existe uma linha pendente antes de chamar.
+        // Sem isso, o toggle só marcava a flag local e nunca disparava a
+        // sincronização de verdade — o veículo ficava marcado como
+        // "publicado" no nosso banco sem nenhuma tentativa real na
+        // plataforma. Garante que existe uma linha pendente antes de chamar.
         const { data: existingPub } = await supabase
           .from('estoque_publicacoes')
           .select('id, status, post_id')
           .eq('veiculo_id', veiculoId)
-          .eq('platform', 'webmotors')
+          .eq('platform', slug)
           .maybeSingle()
 
-        const novoStatus = publicar ? 'pending_create' : 'pending_close'
+        if (!publicar && !existingPub?.post_id) {
+          return { success: false, message: 'Este veículo não tem anúncio ativo nessa plataforma pra despublicar' }
+        }
+
+        const novoStatus = publicar
+          ? existingPub?.post_id
+            ? 'pending_update'
+            : 'pending_create'
+          : 'pending_close'
         if (existingPub) {
           await supabase
             .from('estoque_publicacoes')
-            .update({ status: novoStatus, erro_msg: null })
+            .update({
+              status: novoStatus,
+              erro_msg: null,
+              alterado_manualmente_por: user?.id ?? null,
+              alterado_manualmente_em: new Date().toISOString(),
+            })
             .eq('id', existingPub.id)
         } else {
-          await supabase
-            .from('estoque_publicacoes')
-            .insert({ veiculo_id: veiculoId, platform: 'webmotors', status: novoStatus })
+          await supabase.from('estoque_publicacoes').insert({
+            veiculo_id: veiculoId,
+            platform: slug,
+            status: novoStatus,
+            alterado_manualmente_por: user?.id ?? null,
+            alterado_manualmente_em: new Date().toISOString(),
+          })
         }
 
-        const wmResult = await triggerWMSync(veiculoId)
-        if (!wmResult.success) {
+        const syncResult =
+          slug === 'webmotors' ? await triggerWMSync(veiculoId) : await triggerNapistaSync(veiculoId)
+        const nomePlataforma = slug === 'webmotors' ? 'Webmotors' : 'NaPista'
+        if (!syncResult.success) {
           setVehicles((prev) =>
             prev.map((v) => (v.id !== veiculoId ? v : { ...v, [`publicado_${slug}`]: !publicar })),
           )
-          return { success: false, message: wmResult.error || 'Falha ao sincronizar com a Webmotors' }
+          return {
+            success: false,
+            message: syncResult.error || `Falha ao sincronizar com a ${nomePlataforma}`,
+          }
         }
-        return { success: true, message: `${wmResult.processed ?? 0} processado(s) na Webmotors` }
+        return { success: true, message: `${syncResult.processed ?? 0} processado(s) na ${nomePlataforma}` }
       } catch (err: any) {
         return { success: false, message: err.message }
       }
