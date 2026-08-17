@@ -6,7 +6,7 @@ precisar reler o histórico inteiro de conversas. Diferente do
 pra ser mantido em dia de verdade. Detalhe técnico por integração continua
 nos arquivos `docs/*.md` — aqui é só o resumo de estado + pendências.
 
-Última atualização: 2026-08-16 (sessão 6).
+Última atualização: 2026-08-17 (sessão 7).
 
 **Pasta de trabalho deste projeto:** `C:\Projeto\Revenda Carro e Cia\carro-e-cia-ve-culos-2fqheuud8`
 (sempre abrir sessão nova aqui pra continuar — ver também `CLAUDE.md`).
@@ -165,6 +165,33 @@ nos arquivos `docs/*.md` — aqui é só o resumo de estado + pendências.
   outro cron já ativo (`re-engagement-cron-job` e
   `avaliar-qualidade-anuncios-cron`, respectivamente) rodando sem que
   ninguém percebesse havia semanas.
+- **Sistema de setores substituiu módulos (17/08/2026, sessão 7)**:
+  tabelas `setores` (11 setores seedados) + `usuario_setores`, controle de
+  acesso real por rota em `src/lib/setor-acesso.ts` +
+  `AdminLayout.tsx` (antes o sistema de "módulos" existia mas não
+  restringia nada de verdade). RLS crítica corrigida na tabela `usuarios`
+  no mesmo pacote. Feature "Criar Usuário" com permissão por setor no ar,
+  botão de criar setor novo removido do modal (pedido da Adriana). Feature
+  "Esqueci minha senha" via Resend também entregue nesta sessão.
+- **Auditoria completa do painel + reorganização de menu (17/08/2026,
+  sessão 7)**: levantamento das 21 páginas admin via subagente, gerou
+  `docs/manual-operacional-contexto.md` (checklist de documentação por
+  setor). Achadas e **removidas** 3 telas 100% fachada, sem persistência
+  real (decisão da Adriana — remover com segurança, planejar futuro
+  depois): Avaliação de veículo (`/admin/avaliacao`), abas "Loja & SEO" e
+  "Scripts & Tracking" de Configurações, aba "Automações de E-mail" de
+  Marketing. Menu lateral reorganizado nos 3 grupos fixos pedidos por ela:
+  Menu Principal (operacional) / Administração / Área de Ajuda — antes
+  eram 6 grupos por assunto misturando os dois. Build (`bun run build`)
+  confirmado limpo depois da remoção. Tudo commitado e enviado pro GitHub
+  (`ba3b5f5`).
+- **Skill `manual-operacional` criada (17/08/2026, sessão 7)**: em
+  `.claude/skills/manual-operacional/`, escopo só deste projeto. Conduz a
+  escrita guiada dos artigos da Central de Ajuda (`ajuda_conteudos`),
+  setor por setor, sempre investigando a página real antes de documentar.
+  `CLAUDE.md` ganhou regra ampliada: ao fechar tarefa que tocou o painel,
+  checar `docs/manual-operacional-contexto.md` e já fechar lacuna
+  relacionada, sem esperar pedido explícito.
 
 ## Pendências abertas
 
@@ -287,6 +314,26 @@ nos arquivos `docs/*.md` — aqui é só o resumo de estado + pendências.
     trocada. Decisão dela foi deixar as outras duas como estão por ora —
     registrado aqui porque a exposição em si continua no histórico do
     Git, não some sozinha.
+11. **Plano futuro pras 3 telas removidas** (17/08/2026): Avaliação de
+    veículo formal, Configurações gerais de Loja/SEO/Scripts, Automações
+    de e-mail de nutrição de lead. Adriana pediu remoção + "montar um
+    plano junto pra elas no futuro" — remoção feita, planejamento ainda
+    não começou. Detalhe do que cada uma fazia (fake) está na seção
+    "Backlog" de `docs/manual-operacional-contexto.md`.
+12. **Confirmar status real de OLX/iCarros/Napista em `/admin/portais`**
+    (17/08/2026): comentário no código dizia que só Webmotors e Mercado
+    Livre têm integração real, as outras seriam só flag. Sinalizado no
+    doc de contexto do manual pra reconferir — pode estar desatualizado,
+    não foi checado nesta sessão.
+13. **Documentação de API inexistente** (17/08/2026): achado durante a
+    auditoria — não existe Swagger/OpenAPI/webhook documentado em lugar
+    nenhum do painel. A nova seção "Área de Ajuda" do menu vai precisar
+    disso, mas ainda não tem escopo definido nem foi pedido pra começar.
+14. **Manual Operacional — maioria das páginas ainda sem artigo**
+    (17/08/2026): infraestrutura pronta (`docs/manual-operacional-contexto.md`
+    + skill `manual-operacional`), só 1 artigo real existe ("Criar Usuário
+    no Painel"). Escrever o resto é trabalho de várias sessões futuras,
+    conduzido pela skill quando a Adriana pedir.
 
 ## Referências técnicas por assunto
 
