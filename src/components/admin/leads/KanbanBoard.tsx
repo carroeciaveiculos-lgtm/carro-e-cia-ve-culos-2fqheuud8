@@ -12,11 +12,13 @@ import {
   Clock,
   Store,
   Target,
+  Phone,
+  Bot,
+  CalendarClock,
+  DollarSign,
 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { Button } from '@/components/ui/button'
-import { getWhatsAppLink } from '@/lib/whatsapp'
 
 // Pipeline nova (12/08/2026, pedido da Adriana): "Negociando/Propostas"
 // removida (sem lead nenhum lá no dia da mudança, sem backfill necessário);
@@ -37,6 +39,7 @@ export function KanbanBoard({
   usuariosMap,
   selectedLeadId,
   veiculosMap = {},
+  agendamentosMap = {},
 }: any) {
   const getOriginIcon = (origem?: string) => {
     const o = origem?.toLowerCase() || ''
@@ -51,6 +54,35 @@ export function KanbanBoard({
       return <Store className="w-3.5 h-3.5 text-yellow-500 shrink-0" />
     if (o.includes('webmotors')) return <Target className="w-3.5 h-3.5 text-red-600 shrink-0" />
     return <Globe className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+  }
+
+  // Badge de canal explícito (pedido da Adriana, 17/08/2026 — comparando
+  // com o Venda.iA, que mostra "WhatsApp"/"META ADS"/"Mercado Livre" em
+  // texto, não só um ícone pequeno).
+  const getChannelBadge = (origem?: string, source?: string) => {
+    const o = (origem || source || '').toLowerCase()
+    if (o.includes('whatsapp') || o.includes('wpp'))
+      return { label: 'WhatsApp', className: 'bg-green-100 text-green-700' }
+    if (o.includes('facebook_ads') || o.includes('instagram_ads'))
+      return { label: 'Meta Ads', className: 'bg-indigo-100 text-indigo-700' }
+    if (o.includes('instagram')) return { label: 'Instagram', className: 'bg-pink-100 text-pink-700' }
+    if (o.includes('facebook')) return { label: 'Facebook', className: 'bg-blue-100 text-blue-700' }
+    if (o.includes('mercado livre') || o.includes('mercadolivre'))
+      return { label: 'Mercado Livre', className: 'bg-yellow-100 text-yellow-700' }
+    if (o.includes('webmotors')) return { label: 'Webmotors', className: 'bg-red-100 text-red-700' }
+    if (o.includes('icarros')) return { label: 'iCarros', className: 'bg-orange-100 text-orange-700' }
+    if (!o || o === '/' || o.startsWith('/')) return { label: 'Site', className: 'bg-slate-100 text-slate-600' }
+    return { label: origem || source || 'Outro', className: 'bg-slate-100 text-slate-600' }
+  }
+
+  const formatDateCurta = (dateString?: string) => {
+    if (!dateString) return ''
+    const d = new Date(dateString)
+    return (
+      d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit' }) +
+      ' às ' +
+      d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+    )
   }
 
   const formatCurrency = (val: any) =>
@@ -143,6 +175,11 @@ export function KanbanBoard({
                       : 'Sem Atendente'
                   const veic = veiculosMap[lead.veiculo_id]
                   const thumb = veic?.fotos?.[0]
+                  const valorLead = Number(veic?.preco_venda) || Number(lead.valor_veiculo) || 0
+                  const canal = getChannelBadge(lead.origem, lead.source)
+                  const agendamento = agendamentosMap[lead.id]
+                  const agendamentoAtrasado =
+                    agendamento?.status === 'agendado' && new Date(agendamento.data_hora) < new Date()
 
                   return (
                     <div
@@ -168,7 +205,7 @@ export function KanbanBoard({
                           : 'hover:border-slate-300',
                       )}
                     >
-                      <div className="flex justify-between items-start mb-2 gap-2">
+                      <div className="flex justify-between items-start mb-1.5 gap-2">
                         <div className="flex items-center gap-1 min-w-0">
                           {getOriginIcon(lead.origem || lead.source)}
                           <span
@@ -181,9 +218,53 @@ export function KanbanBoard({
                         {getTemperatureBadge(lead.temperatura)}
                       </div>
 
+                      <div className="flex items-center gap-1 flex-wrap mb-2">
+                        <Badge className={cn('text-[9px] px-1.5 h-4 font-medium', canal.className)}>
+                          {canal.label}
+                        </Badge>
+                        {lead.ai_enabled !== false && (
+                          <Badge className="text-[9px] px-1.5 h-4 font-medium bg-teal-100 text-teal-700 flex gap-1">
+                            <Bot className="w-2.5 h-2.5" /> IA Ativa
+                          </Badge>
+                        )}
+                      </div>
+
                       {thumb && (
                         <div className="w-full h-24 mb-2 bg-slate-100 rounded overflow-hidden">
                           <img src={thumb} alt="Veículo" className="w-full h-full object-cover" />
+                        </div>
+                      )}
+
+                      {lead.telefone && (
+                        <div className="text-[10px] text-slate-500 flex items-center gap-1 mb-1">
+                          <Phone className="w-3 h-3 shrink-0" />
+                          <span className="truncate">{lead.telefone}</span>
+                        </div>
+                      )}
+
+                      {valorLead > 0 && (
+                        <div className="text-[10px] text-green-700 font-semibold flex items-center gap-1 mb-1">
+                          <DollarSign className="w-3 h-3 shrink-0" />
+                          {formatCurrency(valorLead)}
+                        </div>
+                      )}
+
+                      {agendamento && (
+                        <div
+                          className={cn(
+                            'text-[10px] flex items-center gap-1 mb-1',
+                            agendamentoAtrasado ? 'text-red-600 font-semibold' : 'text-purple-600',
+                          )}
+                        >
+                          <CalendarClock className="w-3 h-3 shrink-0" />
+                          <span className="truncate">
+                            Agendamento: {formatDateCurta(agendamento.data_hora)}
+                          </span>
+                          {agendamentoAtrasado && (
+                            <Badge className="text-[8px] px-1 h-3.5 bg-red-100 text-red-700 shrink-0">
+                              Atrasado
+                            </Badge>
+                          )}
                         </div>
                       )}
 

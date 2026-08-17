@@ -73,6 +73,7 @@ export default function AdminLeads() {
 
   const [usuariosMap, setUsuariosMap] = useState<Record<string, string>>({})
   const [veiculosMap, setVeiculosMap] = useState<Record<string, any>>({})
+  const [agendamentosMap, setAgendamentosMap] = useState<Record<string, any>>({})
   const [linkedVeiculo, setLinkedVeiculo] = useState<any>(null)
 
   const [isVeiculoModalOpen, setIsVeiculoModalOpen] = useState(false)
@@ -183,9 +184,16 @@ export default function AdminLeads() {
   const loadInitialData = async () => {
     try {
       setLoading(true)
-      const [{ data: usersData }, { data: veicsData }] = await Promise.all([
+      const [{ data: usersData }, { data: veicsData }, { data: agsData }] = await Promise.all([
         supabase.from('usuarios').select('id, nome'),
         supabase.from('veiculos').select('*'),
+        // Pra badge de "Agendamento" + "Atrasado" no card do Kanban — pega
+        // todos e mantém só o mais recente por lead no map abaixo (a lista
+        // já vem ordenada, então o último visto por lead_id vence).
+        supabase
+          .from('agendamentos_visita')
+          .select('lead_id, data_hora, status')
+          .order('data_hora', { ascending: true }),
       ])
 
       if (usersData) {
@@ -198,6 +206,14 @@ export default function AdminLeads() {
         const vMap: Record<string, any> = {}
         veicsData.forEach((v) => (vMap[v.id] = v))
         setVeiculosMap(vMap)
+      }
+
+      if (agsData) {
+        const aMap: Record<string, any> = {}
+        agsData.forEach((a) => {
+          aMap[a.lead_id] = a
+        })
+        setAgendamentosMap(aMap)
       }
 
       await loadLeads()
@@ -353,6 +369,7 @@ export default function AdminLeads() {
             leads={leads}
             veiculosMap={veiculosMap}
             usuariosMap={usuariosMap}
+            agendamentosMap={agendamentosMap}
             onStatusChange={async (leadId: string, status: string) => {
               setLeads((prev) => prev.map((l) => (l.id === leadId ? { ...l, status } : l)))
               await supabase.from('leads').update({ status }).eq('id', leadId)

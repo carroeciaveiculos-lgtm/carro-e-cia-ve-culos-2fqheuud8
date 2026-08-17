@@ -80,7 +80,7 @@ async function getSystemPrompt() {
   return `${basePrompt}${memoryContext}
 Data e hora atuais (horário de Brasília): ${agoraBR}. Use isso pra calcular datas relativas como "amanhã", "sexta-feira" etc — nunca invente uma data sem se basear nisso. Ao chamar agendar_visita, sempre mande data_hora em ISO 8601 com o fuso de Brasília (-03:00).
 ${waNumber ? `O número oficial de WhatsApp da loja é: ${waNumber}. Se for necessário enviar um link direto, use https://wa.me/${waNumber}` : ''}
-Ferramentas disponíveis: use consultar_estoque pra verificar veículos disponíveis antes de falar sobre eles; use agendar_visita quando o cliente confirmar dia e horário de visita/avaliação; use salvar_email_lead assim que o cliente informar um e-mail em qualquer momento da conversa, mesmo que já tenha lead criado; use enviar_midia_veiculo quando fizer sentido mandar foto ou vídeo de um veículo específico já consultado; use solicitar_atendimento_humano quando o lead estiver qualificado e pronto pra avançar, ou pedir explicitamente para falar com uma pessoa; use atualizar_estagio_lead pra refletir o andamento da conversa no funil e pra reavaliar a temperatura (frio/morno/quente) sempre que o interesse do lead mudar. Ao chamar criar_lead_crm, escolha o tipo com cuidado — se o cliente disser que quer seguro do carro ou consórcio, use tipo seguro_auto/consorcio: isso encaminha automaticamente o lead pro responsável (Gabriel pra seguro, a própria loja pra consórcio), então avise o cliente que alguém vai entrar em contato em breve.
+Ferramentas disponíveis: use consultar_estoque pra verificar veículos disponíveis antes de falar sobre eles; use agendar_visita quando o cliente confirmar dia e horário de visita/avaliação; use salvar_email_lead assim que o cliente informar um e-mail em qualquer momento da conversa, mesmo que já tenha lead criado; use enviar_midia_veiculo quando fizer sentido mandar foto ou vídeo de um veículo específico já consultado; use solicitar_atendimento_humano quando o lead estiver qualificado e pronto pra avançar, ou pedir explicitamente para falar com uma pessoa; use atualizar_estagio_lead pra refletir o andamento da conversa no funil, reavaliar a temperatura (frio/morno/quente) sempre que o interesse do lead mudar, e SEMPRE que identificar qual veículo (marca/modelo/ano) o cliente quer — mesmo que ele já tenha mencionado isso logo na primeira mensagem (ex: veio de um anúncio de um carro específico) — chame com veiculo_interesse assim que confirmar qual é, e de novo se o cliente trocar de interesse no meio da conversa. Ao chamar criar_lead_crm, escolha o tipo com cuidado — se o cliente disser que quer seguro do carro ou consórcio, use tipo seguro_auto/consorcio: isso encaminha automaticamente o lead pro responsável (Gabriel pra seguro, a própria loja pra consórcio), então avise o cliente que alguém vai entrar em contato em breve.
 REGRA CRÍTICA: nunca diga "agendado", "confirmado" ou "marcado" sem ANTES ter chamado a função correspondente (ex: agendar_visita) na mesma resposta — se a data/horário ainda não estiver 100% definida, pergunte de novo em vez de dar a confirmação por feita.`
 }
 
@@ -148,7 +148,16 @@ async function executeFunction(name: string, args: any, leadId: string): Promise
         return { error: `temperatura inválida: ${args.temperatura}` }
       update.temperatura = args.temperatura
     }
-    if (Object.keys(update).length === 0) return { error: 'informe status e/ou temperatura' }
+    // Achado em auditoria (17/08/2026): leads de anúncio (Meta Ads) e do
+    // site nunca tinham veiculo_interesse preenchido — só o nome genérico
+    // da campanha ("Converse conosco"), sem dizer qual carro. O veículo
+    // sempre aparecia no texto da conversa, mas a Clara não tinha como
+    // gravar isso no campo estruturado do lead — só existia pra
+    // criar_lead_crm (lead novo), nunca pra atualizar um já existente.
+    if (args.veiculo_interesse !== undefined && args.veiculo_interesse !== '') {
+      update.veiculo_interesse = args.veiculo_interesse
+    }
+    if (Object.keys(update).length === 0) return { error: 'informe status, temperatura e/ou veiculo_interesse' }
 
     const { error } = await supabase.from('leads').update(update).eq('id', leadId)
     if (error) return { error: error.message }

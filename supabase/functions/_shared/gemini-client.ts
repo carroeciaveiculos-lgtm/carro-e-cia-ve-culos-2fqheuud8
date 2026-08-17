@@ -111,7 +111,7 @@ export const CRM_FUNCTIONS = [
   {
     name: 'atualizar_estagio_lead',
     description:
-      'Atualizar estagio do lead no funil de vendas e/ou a temperatura (qualificacao) dele. Pode chamar so com status, so com temperatura, ou os dois juntos.',
+      'Atualizar estagio do lead no funil de vendas, a temperatura (qualificacao) e/ou o veiculo de interesse dele. Pode chamar so com um campo, ou varios juntos.',
     parameters: {
       type: 'OBJECT',
       properties: {
@@ -125,6 +125,11 @@ export const CRM_FUNCTIONS = [
           description:
             'frio: cliente so curioso, sem decisao tomada ainda. morno: demonstrou interesse real mas ainda esta decidindo (comparando opcoes, sem pressa). quente: pronto pra avancar (quer agendar, fechar negocio, ou pediu pra falar com um humano). Reavalie sempre que o tom da conversa mudar.',
           enum: ['frio', 'morno', 'quente'],
+        },
+        veiculo_interesse: {
+          type: 'STRING',
+          description:
+            'Marca, modelo e ano do veiculo que o cliente demonstrou interesse (ex: "Honda HR-V 2017", "Toyota RAV4 2.5 SX Hibrido 2023"). Chame assim que identificar ou o cliente trocar de veiculo de interesse na conversa — mesmo que ja tenha sido mencionado no anuncio que trouxe o lead, o campo so fica preenchido se voce chamar isso.',
         },
       },
       required: ['lead_id'],
