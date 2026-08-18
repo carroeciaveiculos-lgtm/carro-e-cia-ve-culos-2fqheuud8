@@ -17,6 +17,8 @@ import {
   Plus,
   Pencil,
   Trash2,
+  Workflow,
+  Lock,
 } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Badge } from '@/components/ui/badge'
@@ -46,6 +48,7 @@ export default function Ajuda() {
   const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(true)
   const [podeEditar, setPodeEditar] = useState(false)
+  const [podeVerDevTi, setPodeVerDevTi] = useState(false)
   const [modalAberto, setModalAberto] = useState(false)
   const [conteudoEmEdicao, setConteudoEmEdicao] = useState<AjudaConteudo | null>(null)
   const { generate, isLoading: isGenerating } = useAiAssistant()
@@ -72,7 +75,11 @@ export default function Ajuda() {
       .eq('id', user.id)
       .single()
       .then(({ data }) => {
-        setPodeEditar(data?.nivel === 'admin_master' || data?.nivel === 'gerente')
+        // Editar/apagar conteúdo é exclusivo de admin_master (pedido da
+        // Adriana, 18/08/2026). Ver Dev e TI (podeVerDevTi) é mais aberto —
+        // admin_master e gerente — e continua controlado também pelo RLS.
+        setPodeEditar(data?.nivel === 'admin_master')
+        setPodeVerDevTi(data?.nivel === 'admin_master' || data?.nivel === 'gerente')
       })
   }, [user])
 
@@ -88,8 +95,11 @@ export default function Ajuda() {
   })
 
   const faqs = filtered.filter((c) => c.is_faq)
-  const manuais = filtered.filter((c) => !c.is_faq)
-  const categorias = Array.from(new Set(manuais.map((c) => c.categoria)))
+  const operacionais = filtered.filter((c) => !c.is_faq && c.grupo === 'operacional')
+  const processos = filtered.filter((c) => !c.is_faq && c.grupo === 'processos')
+  const devTi = filtered.filter((c) => !c.is_faq && c.grupo === 'dev_ti')
+  const categoriasOperacional = Array.from(new Set(operacionais.map((c) => c.categoria)))
+  const categoriasDevTi = Array.from(new Set(devTi.map((c) => c.categoria)))
 
   const handleAskAi = async () => {
     if (!aiQuestion.trim()) return
@@ -119,6 +129,107 @@ export default function Ajuda() {
     }
     toast({ title: 'Manual apagado' })
     carregarConteudos()
+  }
+
+  const renderManualItem = (item: AjudaConteudo) => (
+    <AccordionItem key={item.id} value={item.id} className="bg-white border rounded-lg px-4 shadow-sm">
+      <AccordionTrigger className="hover:no-underline py-4 text-base font-semibold text-slate-700">
+        <div className="flex items-center gap-3 flex-1">
+          <span>{item.titulo}</span>
+          <Badge variant="outline" className="font-normal text-xs">
+            {nomeSetor(item.setor_id)}
+          </Badge>
+        </div>
+      </AccordionTrigger>
+      <AccordionContent className="pt-2 pb-6 text-slate-600 space-y-4 border-t mt-2">
+        {podeEditar && (
+          <div className="flex gap-2 justify-end">
+            <Button variant="outline" size="sm" onClick={() => handleEditar(item)}>
+              <Pencil className="w-3.5 h-3.5 mr-1" /> Editar
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => handleApagar(item)}>
+              <Trash2 className="w-3.5 h-3.5 mr-1" /> Apagar
+            </Button>
+          </div>
+        )}
+        {item.o_que_e && (
+          <div>
+            <strong className="block text-slate-800 mb-1">O que é:</strong>
+            <p className="text-sm leading-relaxed">{item.o_que_e}</p>
+          </div>
+        )}
+        {item.dependencias && (
+          <div>
+            <strong className="block text-slate-800 mb-1">Dependências e Vínculos:</strong>
+            <p className="text-sm leading-relaxed">{item.dependencias}</p>
+          </div>
+        )}
+        {item.para_que_serve && (
+          <div>
+            <strong className="block text-slate-800 mb-1">Para que serve:</strong>
+            <p className="text-sm leading-relaxed">{item.para_que_serve}</p>
+          </div>
+        )}
+        {item.caminho && (
+          <div>
+            <strong className="block text-slate-800 mb-1">Onde está (caminho):</strong>
+            <Badge variant="secondary" className="font-mono text-xs">
+              {item.caminho}
+            </Badge>
+          </div>
+        )}
+        {item.quando_utilizar && (
+          <div>
+            <strong className="block text-slate-800 mb-1">Quando utilizar:</strong>
+            <p className="text-sm leading-relaxed">{item.quando_utilizar}</p>
+          </div>
+        )}
+        {item.como_utilizar && (
+          <div className="bg-slate-50 p-4 rounded-md border mt-2">
+            <strong className="block text-slate-800 mb-2">Como utilizar (Passo a passo):</strong>
+            <div className="text-sm leading-relaxed whitespace-pre-wrap">{item.como_utilizar}</div>
+          </div>
+        )}
+      </AccordionContent>
+    </AccordionItem>
+  )
+
+  const renderGrupoPorCategoria = (items: AjudaConteudo[], categorias: string[], vazio: string) =>
+    loading ? (
+      <div className="text-center py-12 text-slate-400 animate-pulse">Carregando...</div>
+    ) : categorias.length === 0 ? (
+      <div className="text-center py-12 text-slate-400">{vazio}</div>
+    ) : (
+      categorias.map((cat) => (
+        <div key={cat} className="space-y-4">
+          <h3 className="text-lg font-bold text-slate-800 border-b pb-2">{cat}</h3>
+          <Accordion type="single" collapsible className="w-full space-y-3">
+            {items.filter((m) => m.categoria === cat).map(renderManualItem)}
+          </Accordion>
+        </div>
+      ))
+    )
+
+  const renderProcessos = () => {
+    const setorIds = Array.from(new Set(processos.map((p) => p.setor_id)))
+    return loading ? (
+      <div className="text-center py-12 text-slate-400 animate-pulse">Carregando...</div>
+    ) : setorIds.length === 0 ? (
+      <div className="text-center py-12 text-slate-400">
+        Nenhum processo cadastrado ainda. Processos descrevem o fluxo de trabalho de um setor
+        (vendas, financiamento, consórcio, seguro, documentos, parceiros, consignação) — peça pra
+        criar o primeiro quando quiser documentar um desses fluxos.
+      </div>
+    ) : (
+      setorIds.map((setorId) => (
+        <div key={setorId || 'sem-setor'} className="space-y-4">
+          <h3 className="text-lg font-bold text-slate-800 border-b pb-2">{nomeSetor(setorId)}</h3>
+          <Accordion type="single" collapsible className="w-full space-y-3">
+            {processos.filter((p) => p.setor_id === setorId).map(renderManualItem)}
+          </Accordion>
+        </div>
+      ))
+    )
   }
 
   return (
@@ -166,14 +277,28 @@ export default function Ajuda() {
             </Select>
           </div>
 
-          <Tabs defaultValue="manuais" className="space-y-6">
-            <TabsList className="bg-white border shadow-sm rounded-lg p-1">
+          <Tabs defaultValue="operacional" className="space-y-6">
+            <TabsList className="bg-white border shadow-sm rounded-lg p-1 flex-wrap h-auto">
               <TabsTrigger
-                value="manuais"
+                value="operacional"
                 className="data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700"
               >
-                <BookOpen className="w-4 h-4 mr-2" /> Manuais e POPs
+                <BookOpen className="w-4 h-4 mr-2" /> Operacional
               </TabsTrigger>
+              <TabsTrigger
+                value="processos"
+                className="data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700"
+              >
+                <Workflow className="w-4 h-4 mr-2" /> Processos
+              </TabsTrigger>
+              {podeVerDevTi && (
+                <TabsTrigger
+                  value="dev_ti"
+                  className="data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700"
+                >
+                  <Lock className="w-4 h-4 mr-2" /> Dev e TI
+                </TabsTrigger>
+              )}
               <TabsTrigger
                 value="faq"
                 className="data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700"
@@ -182,111 +307,26 @@ export default function Ajuda() {
               </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="manuais" className="space-y-8">
-              {loading ? (
-                <div className="text-center py-12 text-slate-400 animate-pulse">
-                  Carregando manuais...
-                </div>
-              ) : categorias.length === 0 ? (
-                <div className="text-center py-12 text-slate-400">Nenhum manual encontrado.</div>
-              ) : (
-                categorias.map((cat) => (
-                  <div key={cat} className="space-y-4">
-                    <h3 className="text-lg font-bold text-slate-800 border-b pb-2">{cat}</h3>
-                    <Accordion type="single" collapsible className="w-full space-y-3">
-                      {manuais
-                        .filter((m) => m.categoria === cat)
-                        .map((item) => (
-                          <AccordionItem
-                            key={item.id}
-                            value={item.id}
-                            className="bg-white border rounded-lg px-4 shadow-sm"
-                          >
-                            <AccordionTrigger className="hover:no-underline py-4 text-base font-semibold text-slate-700">
-                              <div className="flex items-center gap-3 flex-1">
-                                <span>{item.titulo}</span>
-                                <Badge variant="outline" className="font-normal text-xs">
-                                  {nomeSetor(item.setor_id)}
-                                </Badge>
-                              </div>
-                            </AccordionTrigger>
-                            <AccordionContent className="pt-2 pb-6 text-slate-600 space-y-4 border-t mt-2">
-                              {podeEditar && (
-                                <div className="flex gap-2 justify-end">
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => handleEditar(item)}
-                                  >
-                                    <Pencil className="w-3.5 h-3.5 mr-1" /> Editar
-                                  </Button>
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => handleApagar(item)}
-                                  >
-                                    <Trash2 className="w-3.5 h-3.5 mr-1" /> Apagar
-                                  </Button>
-                                </div>
-                              )}
-                              {item.o_que_e && (
-                                <div>
-                                  <strong className="block text-slate-800 mb-1">O que é:</strong>
-                                  <p className="text-sm leading-relaxed">{item.o_que_e}</p>
-                                </div>
-                              )}
-                              {item.dependencias && (
-                                <div>
-                                  <strong className="block text-slate-800 mb-1">
-                                    Dependências e Vínculos:
-                                  </strong>
-                                  <p className="text-sm leading-relaxed">{item.dependencias}</p>
-                                </div>
-                              )}
-                              {item.para_que_serve && (
-                                <div>
-                                  <strong className="block text-slate-800 mb-1">
-                                    Para que serve:
-                                  </strong>
-                                  <p className="text-sm leading-relaxed">{item.para_que_serve}</p>
-                                </div>
-                              )}
-                              {item.caminho && (
-                                <div>
-                                  <strong className="block text-slate-800 mb-1">
-                                    Onde está (caminho):
-                                  </strong>
-                                  <Badge variant="secondary" className="font-mono text-xs">
-                                    {item.caminho}
-                                  </Badge>
-                                </div>
-                              )}
-                              {item.quando_utilizar && (
-                                <div>
-                                  <strong className="block text-slate-800 mb-1">
-                                    Quando utilizar:
-                                  </strong>
-                                  <p className="text-sm leading-relaxed">{item.quando_utilizar}</p>
-                                </div>
-                              )}
-                              {item.como_utilizar && (
-                                <div className="bg-slate-50 p-4 rounded-md border mt-2">
-                                  <strong className="block text-slate-800 mb-2">
-                                    Como utilizar (Passo a passo):
-                                  </strong>
-                                  <div className="text-sm leading-relaxed whitespace-pre-wrap">
-                                    {item.como_utilizar}
-                                  </div>
-                                </div>
-                              )}
-                            </AccordionContent>
-                          </AccordionItem>
-                        ))}
-                    </Accordion>
-                  </div>
-                ))
-              )}
+            <TabsContent value="operacional" className="space-y-8">
+              {renderGrupoPorCategoria(operacionais, categoriasOperacional, 'Nenhum manual encontrado.')}
             </TabsContent>
+
+            <TabsContent value="processos" className="space-y-8">
+              {renderProcessos()}
+            </TabsContent>
+
+            {podeVerDevTi && (
+              <TabsContent value="dev_ti" className="space-y-8">
+                <p className="text-xs text-slate-400 -mt-2">
+                  Conteúdo técnico visível só pra admin_master e gerente.
+                </p>
+                {renderGrupoPorCategoria(
+                  devTi,
+                  categoriasDevTi,
+                  'Nenhuma documentação técnica encontrada.',
+                )}
+              </TabsContent>
+            )}
 
             <TabsContent value="faq">
               <Card className="border-none shadow-sm">

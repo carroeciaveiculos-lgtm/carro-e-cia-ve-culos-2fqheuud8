@@ -1,5 +1,7 @@
 import { supabase } from '@/lib/supabase/client'
 
+export type AjudaGrupo = 'operacional' | 'processos' | 'dev_ti'
+
 export interface AjudaConteudo {
   id: string
   categoria: string
@@ -12,6 +14,7 @@ export interface AjudaConteudo {
   como_utilizar: string | null
   is_faq: boolean
   setor_id: string | null
+  grupo: AjudaGrupo | null
 }
 
 export type AjudaConteudoInput = Omit<AjudaConteudo, 'id'>

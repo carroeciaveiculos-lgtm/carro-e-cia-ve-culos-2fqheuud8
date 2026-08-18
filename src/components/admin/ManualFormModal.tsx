@@ -22,6 +22,7 @@ import { useToast } from '@/hooks/use-toast'
 import { Setor, listSetores } from '@/services/setores'
 import {
   AjudaConteudo,
+  AjudaGrupo,
   criarAjudaConteudo,
   atualizarAjudaConteudo,
 } from '@/services/ajuda'
@@ -32,6 +33,12 @@ interface ManualFormModalProps {
   conteudo: AjudaConteudo | null
   onSuccess: () => void
 }
+
+const GRUPOS: { value: AjudaGrupo; label: string; descricao: string }[] = [
+  { value: 'operacional', label: 'Operacional', descricao: 'Como usar uma ferramenta do painel' },
+  { value: 'processos', label: 'Processos', descricao: 'Fluxo de trabalho de um setor (vendas, financiamento, consórcio, seguro, documentos, parceiros, consignação)' },
+  { value: 'dev_ti', label: 'Dev e TI (restrito)', descricao: 'Documentação técnica — só admin_master e gerente conseguem ler' },
+]
 
 const CAMPO_VAZIO = {
   categoria: 'Geral',
@@ -44,6 +51,7 @@ const CAMPO_VAZIO = {
   como_utilizar: '',
   is_faq: false,
   setor_id: null as string | null,
+  grupo: 'operacional' as AjudaGrupo,
 }
 
 export function ManualFormModal({ open, onOpenChange, conteudo, onSuccess }: ManualFormModalProps) {
@@ -69,6 +77,7 @@ export function ManualFormModal({ open, onOpenChange, conteudo, onSuccess }: Man
         como_utilizar: conteudo.como_utilizar || '',
         is_faq: conteudo.is_faq,
         setor_id: conteudo.setor_id,
+        grupo: conteudo.grupo || 'operacional',
       })
     } else {
       setForm(CAMPO_VAZIO)
@@ -81,9 +90,10 @@ export function ManualFormModal({ open, onOpenChange, conteudo, onSuccess }: Man
       return
     }
     setSalvando(true)
+    const payload = { ...form, grupo: form.is_faq ? null : form.grupo }
     const { error } = conteudo
-      ? await atualizarAjudaConteudo(conteudo.id, form)
-      : await criarAjudaConteudo(form)
+      ? await atualizarAjudaConteudo(conteudo.id, payload)
+      : await criarAjudaConteudo(payload)
     setSalvando(false)
 
     if (error) {
@@ -163,6 +173,27 @@ export function ManualFormModal({ open, onOpenChange, conteudo, onSuccess }: Man
             />
             <Label htmlFor="is_faq">É uma dúvida frequente (FAQ), não um manual/POP completo</Label>
           </div>
+
+          {!form.is_faq && (
+            <div className="space-y-2">
+              <Label>Menu da Central de Ajuda *</Label>
+              <Select
+                value={form.grupo}
+                onValueChange={(v) => setForm((f) => ({ ...f, grupo: v as AjudaGrupo }))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione o menu" />
+                </SelectTrigger>
+                <SelectContent>
+                  {GRUPOS.map((g) => (
+                    <SelectItem key={g.value} value={g.value}>
+                      {g.label} — {g.descricao}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
           <div className="space-y-2">
             <Label>O que é</Label>

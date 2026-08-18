@@ -13,6 +13,50 @@ nos arquivos `docs/*.md` — aqui é só o resumo de estado + pendências.
 
 ## O que está no ar hoje
 
+- **Central de Ajuda reorganizada em 4 menus (18/08/2026, sessão 8)**:
+  Operacional / Processos (por setor) / Dev e TI (restrito) / FAQs,
+  pedido da Adriana. Migration `ajuda_conteudos_grupo_e_restricao_dev_ti`
+  — coluna `grupo` nova + RLS que restringe `grupo='dev_ti'` a
+  admin_master/gerente (antes QUALQUER logado lia tudo, sem exceção
+  nenhuma — achado na auditoria). `Ajuda.tsx`, `ManualFormModal.tsx` e
+  `services/ajuda.ts` atualizados; aba "Dev e TI" só aparece pra quem
+  tem permissão. Limpeza de dado no mesmo pacote: apagadas 2 duplicatas
+  ("Estoque" vs "Estoque e Integrador", "Agendador de Postagens" vs
+  "Agendador de Redes Sociais"), categoria dos 3 FAQs padronizada, e
+  corrigido endereço errado hardcoded no FAQ "Onde fica a loja?"
+  (mostrava "Avenida Principal, 1000" fictício, não o endereço real da
+  loja). 11 artigos classificados: 7 Operacional, 1 Dev e TI, 3 FAQ,
+  0 Processos ainda (nenhum existe — setores como Consórcio/Seguro nem
+  têm tela própria). Build e lint limpos, **não testado no navegador**
+  (sem login) — pedir pra Adriana conferir a tela antes de considerar
+  100% validado, principalmente a aba Dev e TI sumindo pra usuário
+  `operador`.
+  **Ajustes pedidos após teste (18/08/2026, mesma sessão)**: editar/apagar
+  conteúdo agora é exclusivo de `admin_master` (antes incluía `gerente`
+  também) — migration `ajuda_conteudos_editar_apenas_admin_master`, RLS e
+  `Ajuda.tsx` atualizados (`podeEditar` separado de `podeVerDevTi`, que
+  continua admin_master+gerente). Setor novo **"Todos"** criado na tabela
+  `setores`, usado pra reclassificar os 4 artigos Operacionais que
+  estavam sem setor definido (Dashboard, Gerenciador de Leads, Estoque e
+  Integrador, Agendador de Redes Sociais).
+- **Documentação de API — índice + grupo 1 (Integrações) escrito
+  (18/08/2026, sessão 8)**: `docs/documentacao-api.md` (índice mestre,
+  67 functions em 4 grupos) + 4 docs novos no padrão "referência
+  técnica" (`meta-integracao.md`, `autentique-integracao.md`,
+  `consultas-externas.md`, `google-drive-integracao.md`) — os outros
+  3 clusters do grupo 1 (Webmotors, Mercado Livre, NaPista) já tinham
+  doc, só linkados. **3 achados sérios no caminho, todos só
+  documentados (decisão da Adriana foi não investigar/corrigir agora)**:
+  (1) `enviar-para-assinatura` (Autentique) tem modo mock silencioso —
+  único contrato que passou por ela (`CTR-41`, 16/04/2026) está com
+  link falso, parado em "pendente" há 4 meses; (2) `consultar-cpf` e
+  `consultar-placa` têm o mesmo padrão de mock silencioso, mas sem
+  contaminação encontrada nas tabelas reais hoje; (3) `whatsapp-webhook`
+  e `webhook-portais` são código morto — nunca receberam tráfego real
+  do Meta (confirmado via contagem de linhas nas tabelas que cada uma
+  escreveria); `receive-leads` é o único webhook do Meta realmente
+  ativo. Grupos 2 (Internas), 3 (IA/PDFs) e 4 (Infra) ainda não
+  escritos — só o índice com descrição de 1 linha por function.
 - **2 artigos da Central de Ajuda criados (18/08/2026, sessão 8)**, via
   skill `manual-operacional`: "Avaliar Veículo de Cliente" (setor
   Vendas, `/admin/avaliacao`) e "Editar Dados da Loja (Endereço,
@@ -476,10 +520,13 @@ nos arquivos `docs/*.md` — aqui é só o resumo de estado + pendências.
     Livre têm integração real, as outras seriam só flag. Sinalizado no
     doc de contexto do manual pra reconferir — pode estar desatualizado,
     não foi checado nesta sessão.
-13. **Documentação de API inexistente** (17/08/2026): achado durante a
-    auditoria — não existe Swagger/OpenAPI/webhook documentado em lugar
-    nenhum do painel. A nova seção "Área de Ajuda" do menu vai precisar
-    disso, mas ainda não tem escopo definido nem foi pedido pra começar.
+13. **Documentação de API — em andamento** (atualizado 18/08/2026):
+    escopo definido com a Adriana (markdown técnico + resumo na Central
+    de Ajuda, todos os 67 functions incluindo infra). Índice
+    (`docs/documentacao-api.md`) e grupo 1 (Integrações, 30 functions)
+    escritos. Faltam: resumo na Central de Ajuda do grupo 1, e os
+    grupos 2 (Internas do admin), 3 (IA/PDFs) e 4 (Infra) — ordem já
+    combinada, seguir quando a Adriana pedir.
 14. **Manual Operacional — maioria das páginas ainda sem artigo**
     (atualizado 18/08/2026): infraestrutura pronta
     (`docs/manual-operacional-contexto.md` + skill `manual-operacional`),
