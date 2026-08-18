@@ -25,8 +25,9 @@ muda rápido nesse sistema.
 | `/admin/crm` (Leads) | Kanban/lista de leads em tempo real, conversa, vínculo com veículo, proposta em PDF, simulação de financiamento | Mudar estágio (kanban), abrir conversa, vincular veículo, gerar proposta | 🔴 | — |
 | `/admin/conversas` | Chat dedicado — abas IA x Atendimento Humano | Buscar conversa, alternar IA/humano, responder | 🟡 | — |
 | `/admin/agendamentos` | Visitas/avaliações marcadas pela Clara (IA) ou pela equipe | Marcar Compareceu/Cancelado/Não compareceu | 🟢 | — |
+| `/admin/avaliacao` | Avaliação de veículo de cliente (compra/troca/consignação), gera proposta em PDF, marca consignação ou compra | Nova avaliação (agendamento/avulsa), gerar PDF, marcar destino | 🟡 | ✅ "Avaliar Veículo de Cliente" |
 
-*(Avaliação de veículo formal não existe mais — tela era só fachada, removida em 17/08/2026. Ver seção "Backlog" no fim deste doc.)*
+*(Reconstruída do zero em 17/08/2026, substituindo a tela anterior que era só fachada — ver seção "Backlog" no fim deste doc.)*
 
 ## Consignação
 | Página | O que faz | Sub-fluxos a documentar | Complex. | Manual |
@@ -68,7 +69,7 @@ Sem página dedicada hoje — mesma situação do Consórcio.
 ## Desenvolvedor e TI
 | Página | O que faz | Sub-fluxos a documentar | Complex. | Manual |
 |---|---|---|---|---|
-| `/admin/configuracoes` | Contatos (dados reais da marca), Brain IA (base de conhecimento + teste), Prompts IA legado, Integrações sociais. *(Abas "Loja & SEO" e "Scripts & Tracking" eram mock, removidas em 17/08/2026 — ver Backlog)* | Editar contatos da marca, adicionar conhecimento à Brain IA, testar prompt | 🔴 | — |
+| `/admin/configuracoes` | Contatos (dados reais da marca), Loja & SEO (endereço/horário/logo), Brain IA (base de conhecimento + teste), Prompts IA legado, Integrações sociais. *("Scripts & Tracking" era mock, removida em 17/08/2026 e não volta como tela — ver Backlog)* | Editar contatos da marca, editar dados da loja, adicionar conhecimento à Brain IA, testar prompt | 🔴 | ✅ "Editar Dados da Loja (Endereço, Horário e Logo)" (só aba Loja & SEO — restante segue sem artigo) |
 | `/admin/autonomia` | Liga/desliga automações do sistema + diretrizes + logs | Ativar/desativar automação, editar diretriz ativa | 🟡 | — |
 | `/admin/prompts-ia` | Editor dos prompts de sistema (Clara, Brain IA, etc.) | Editar prompt, restaurar padrão | 🟢 | — |
 | `/admin/usuarios` (+ Criar/Editar) | Gestão de conta, nível e setor | Criar usuário, editar permissões | — | ✅ "Criar Usuário no Painel" |

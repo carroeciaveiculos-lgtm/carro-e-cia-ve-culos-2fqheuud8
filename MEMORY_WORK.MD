@@ -6,12 +6,21 @@ precisar reler o histórico inteiro de conversas. Diferente do
 pra ser mantido em dia de verdade. Detalhe técnico por integração continua
 nos arquivos `docs/*.md` — aqui é só o resumo de estado + pendências.
 
-Última atualização: 2026-08-17 (sessão 7).
+Última atualização: 2026-08-18 (sessão 8).
 
 **Pasta de trabalho deste projeto:** `C:\Projeto\Revenda Carro e Cia\carro-e-cia-ve-culos-2fqheuud8`
 (sempre abrir sessão nova aqui pra continuar — ver também `CLAUDE.md`).
 
 ## O que está no ar hoje
+
+- **2 artigos da Central de Ajuda criados (18/08/2026, sessão 8)**, via
+  skill `manual-operacional`: "Avaliar Veículo de Cliente" (setor
+  Vendas, `/admin/avaliacao`) e "Editar Dados da Loja (Endereço,
+  Horário e Logo)" (setor Desenvolvedor e TI, `/admin/configuracoes`,
+  aba Loja & SEO). Fecha a pendência que tinha ficado devendo de
+  17/08. Checklist (`docs/manual-operacional-contexto.md`) atualizado
+  com ✅ nas duas linhas. Aba "Contatos"/"Brain IA"/demais de
+  Configurações continuam sem artigo.
 
 - **Clara (SDR via WhatsApp/Instagram)**: atende, consulta estoque, agenda
   visita/avaliação, pede e-mail, escala pra humano quando qualificado.
@@ -472,10 +481,12 @@ nos arquivos `docs/*.md` — aqui é só o resumo de estado + pendências.
     nenhum do painel. A nova seção "Área de Ajuda" do menu vai precisar
     disso, mas ainda não tem escopo definido nem foi pedido pra começar.
 14. **Manual Operacional — maioria das páginas ainda sem artigo**
-    (17/08/2026): infraestrutura pronta (`docs/manual-operacional-contexto.md`
-    + skill `manual-operacional`), só 1 artigo real existe ("Criar Usuário
-    no Painel"). Escrever o resto é trabalho de várias sessões futuras,
-    conduzido pela skill quando a Adriana pedir.
+    (atualizado 18/08/2026): infraestrutura pronta
+    (`docs/manual-operacional-contexto.md` + skill `manual-operacional`),
+    3 artigos reais existem hoje ("Criar Usuário no Painel", "Avaliar
+    Veículo de Cliente", "Editar Dados da Loja"). Escrever o resto é
+    trabalho de várias sessões futuras, conduzido pela skill quando a
+    Adriana pedir.
 
 ## Referências técnicas por assunto
 
