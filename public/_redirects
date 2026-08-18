@@ -1,8 +1,11 @@
 # Proxy sharing route to edge function for social media previews
 /s/:slug  https://htpcqdbhktmvppfemnad.supabase.co/functions/v1/og-vehicle?slug=:slug  301
 
-# Proxy sitemap.xml to the edge function so it's always generated live from
-# the database, instead of a static file that goes stale (achado 18/08/2026:
-# ficou parado desde 20/04/2026 com só 9 veículos). Status 200 = rewrite,
-# mantém a URL /sitemap.xml visível pro Google, igual o robots.txt promete.
-/sitemap.xml  https://htpcqdbhktmvppfemnad.supabase.co/functions/v1/sitemap  200
+# Redirect sitemap.xml to the edge function so it's always generated live
+# from the database, instead of a static file that goes stale (achado
+# 18/08/2026: ficou parado desde 20/04/2026 com só 9 veículos). Status 200
+# (proxy/rewrite) não é permitido pra URL externa — só path relativo do
+# mesmo domínio (achado 18/08/2026, build falhou com esse erro exato:
+# "Proxy (200) redirects can only point to relative paths"). Por isso 301,
+# igual a regra do og-vehicle acima.
+/sitemap.xml  https://htpcqdbhktmvppfemnad.supabase.co/functions/v1/sitemap  301

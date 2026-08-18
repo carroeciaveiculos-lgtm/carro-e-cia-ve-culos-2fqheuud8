@@ -80,12 +80,21 @@ antes de cair na SPA, esse arquivo velho sempre ganhava — a function
 ser executada, porque nada apontava pra ela.
 
 **Correção aplicada**: `public/sitemap.xml` removido + regra nova em
-`public/_redirects` (`/sitemap.xml → functions/v1/sitemap`, status 200 —
-mesmo padrão do `/s/:slug` do `og-vehicle` acima) fazendo a URL pública
-`/sitemap.xml` responder direto da function, sempre com os veículos e
-posts reais do banco na hora. Testado com `bun run build` — confirmado
-que `dist/sitemap.xml` não existe mais e `dist/_redirects` tem a regra
-nova. Falta só confirmar em produção depois do próximo deploy
+`public/_redirects` (`/sitemap.xml → functions/v1/sitemap`, **status 301**
+— mesmo padrão do `/s/:slug` do `og-vehicle` acima). `/sitemap.xml` passa a
+redirecionar pra URL da function, sempre com os veículos e posts reais do
+banco na hora.
+
+**Achado no caminho — primeira tentativa (status 200) falhou o deploy**:
+tentei primeiro um proxy/rewrite (status 200, pra manter a URL
+`/sitemap.xml` sem redirecionamento visível) — o build quebrou com
+`"Proxy (200) redirects can only point to relative paths"`. Cloudflare
+Workers Static Assets só permite proxy (200) pra caminho relativo do
+mesmo domínio; pra URL externa (como a do Supabase) só funciona
+redirecionamento de verdade (301/302). Corrigido pra 301. Testado com
+`bun run build` — confirmado que `dist/sitemap.xml` não existe mais e
+`dist/_redirects` tem a regra nova. Falta só confirmar em produção depois
+do próximo deploy
 (`curl https://www.carroeciamotors.com.br/sitemap.xml` e conferir se
 lista os 25 veículos atuais).
 
