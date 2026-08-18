@@ -13,8 +13,8 @@ configuração de CORS, não as functions em si).
 | Function | Status | O que faz |
 |---|---|---|
 | `get-r2-presigned-url` | ✅ Ativa, é o coração do upload de foto | Gera URL assinada pra upload direto no R2 — usada por praticamente toda tela que sobe imagem |
-| `auto-migrate-r2` | 🟡 Rodou uma vez, parou | Migração em lote de arquivos do Supabase Storage pro R2 — sem cron, ficou 1 arquivo travado |
-| `migrar-storage-r2` | 🟡 Nunca chamada pela tela | Mesmo tipo de migração, versão manual (login), sem nenhum botão que a acione |
+| `auto-migrate-r2` | ⚪ **Desnecessária hoje** | Migração em lote — Storage já está praticamente vazio (migrado por outro caminho, ver achado abaixo). Tem bug real (`unexpected end of file`, AWS SDK x Deno), não vale corrigir sem necessidade |
+| `migrar-storage-r2` | ⚪ **Desnecessária hoje** | Mesmo propósito, versão manual (login) — mesma conclusão |
 | `og-vehicle` | ✅ Ativa e conectada | Gera prévia rica (foto+preço) pra compartilhamento de veículo — botão "Compartilhar" já usa essa rota de ponta a ponta |
 | `sitemap` | ✅ **Corrigida 18/08/2026** | Gera sitemap.xml dinâmico — era código morto (arquivo estático tomava o lugar dela), agora é a resposta real de `/sitemap.xml` |
 
@@ -28,7 +28,7 @@ por `VehicleFormModal.tsx`, `Avaliacao.tsx`, `BatchPhotoUploader.tsx`,
 `ImageEditorModal.tsx` e `MediaCenter.tsx` — é o caminho real de praticamente
 toda foto que entra no sistema hoje.
 
-## `auto-migrate-r2` e `migrar-storage-r2` — migração que não terminou
+## `auto-migrate-r2` e `migrar-storage-r2` — migração já concluída por outro caminho
 
 As duas existem pra mover arquivo do Supabase Storage pro R2 (a infra oficial
 hoje, por isso a regra "Cloudflare escreve, Supabase só lê"). Diferença
@@ -38,14 +38,23 @@ com controle de progresso (`r2_migration_progress`); `migrar-storage-r2`
 autentica por login de usuário e tem ações (`test`/`migrate`/
 `update_urls`/`cleanup`).
 
-**Achado 18/08/2026**: nenhuma das duas está realmente em uso hoje.
+**Achado 18/08/2026, revisado no mesmo dia**: a análise inicial (baseada só
+no código e no `r2_migration_progress` travado) concluiu que a migração
+tinha ficado pela metade e precisava ser retomada. **A Adriana lembrou que
+já tinha rodado essa sincronização por fora, via PowerShell, dias atrás** —
+conferido direto no Storage e confirmado:
 
 | Fato | Como se sabe |
 |---|---|
-| `auto-migrate-r2` não tem cron nenhum apontando pra ela | `select * from cron.job where command ilike '%auto-migrate-r2%'` → 0 linhas |
-| `r2_migration_progress` tem **1 única linha**, parada em `status = 'processing'` desde **05/08/2026**, nunca completou nem deu erro — a migração rodou (manualmente, uma vez) e parou no meio | `select * from r2_migration_progress` |
-| `migrar-storage-r2` não tem nenhum caller no `src/` — nenhum botão de tela aciona nenhuma das 4 ações dela | grep em `src/`, 18/08/2026 |
-| Isso conecta com o achado de `gerar-imagem` (`docs/admin-ia-conteudo.md`): imagens que caem no Supabase Storage hoje (bucket `imagens`, que está na lista de buckets que `auto-migrate-r2` migraria) **não têm nenhum processo automático levando elas pro R2** — ficam lá pra sempre até alguém rodar a migração manualmente de novo | leitura cruzada dos dois achados |
+| Hoje só existem 3 buckets com dado no Supabase Storage, todos pequenos: `contratos-consignacao` (6 arquivos, testes desta sessão), `documentos-veiculos` (4 arquivos, 299 KB), `propostas-geradas` (2 arquivos) | `select bucket_id, count(*), sum(size) from storage.objects group by bucket_id`, 18/08/2026 |
+| **Nenhum** dos buckets que `auto-migrate-r2` migraria (`veiculos`, `media`, `site-assets`, `imagens`, `logos-e-imagens`, `veiculos-videos`, `veiculos-fotos`, etc.) tem arquivo nenhum hoje | mesma consulta |
+| `r2_migration_progress` tem 1 linha travada desde 05/08/2026 (tentativa antiga, via essa function) — mas a migração de verdade aconteceu depois, por outro método (PowerShell, fora deste código) | `select * from r2_migration_progress` + confirmação da Adriana |
+| Tentei implantar e rodar `auto-migrate-r2` mesmo assim (achando que precisava) — achei um bug real: `event loop error: TypeError: unexpected end of file`, incompatibilidade entre a AWS SDK (`@aws-sdk/client-s3`) e o ambiente Deno do Supabase ao falar com o R2. **Não vale a pena corrigir** — não tem mais nada pra migrar | testado ao vivo, logs da function, 18/08/2026 |
+
+**Conclusão**: as duas functions ficam como código morto/desnecessário — não
+há mais trabalho de migração pendente. Se no futuro sobrar arquivo novo no
+Supabase Storage (por engano ou função nova mal configurada), esse bug
+precisa ser corrigido antes de tentar usar `auto-migrate-r2` de novo.
 
 ## `og-vehicle` — ativa e conectada (correção de achado, 18/08/2026)
 
@@ -120,20 +129,12 @@ Resolvido de ponta a ponta.
 
 ## Em aberto
 
-- **[DECIDIDO 18/08/2026, bloqueado] Retomar a migração R2.** A Adriana
-  decidiu rodar `auto-migrate-r2` de novo — mas essa function exige um
-  segredo (`AUTO_MIGRATE_SECRET`) que só existe nos Secrets do Supabase, e
-  eu não tenho como ler nem adivinhar. Preparei o comando pronto (ver
-  abaixo), só falta a Adriana rodar com o valor real (não deve ser colado
-  no chat — mesmo cuidado de sempre com segredo). Roda em lotes de 25
-  arquivos por chamada (limite de 2 minutos por execução) — repetir até a
-  resposta não trazer mais arquivo processado:
-  ```bash
-  curl -s -X POST "https://htpcqdbhktmvppfemnad.supabase.co/functions/v1/auto-migrate-r2?secret=SEU_SECRET_AQUI" \
-    -H "Content-Type: application/json" \
-    -d '{"dryRun": false}'
-  ```
-  Trocar `SEU_SECRET_AQUI` pelo valor real (Supabase Dashboard → Edge
-  Functions → `auto-migrate-r2` → Secrets, ou `AUTO_MIGRATE_SECRET` na
-  lista geral de Secrets do projeto). Repetir o comando até `processed`
-  vir `0` na resposta.
+- Nenhuma ação pendente aqui — migração já concluída (via PowerShell, fora
+  deste código, ver achado acima). `AUTO_MIGRATE_SECRET` foi rotacionado
+  em 18/08/2026 (valor antigo era ilegível, só dava pra trocar por um
+  novo) mesmo sem a function ter uso previsto — só por ela ter sido
+  implantada nesta sessão pela primeira vez (antes não existia no
+  Supabase, só no código-fonte).
+- Se um dia sobrar arquivo novo no Supabase Storage fora dos 3 buckets
+  esperados, o bug do `auto-migrate-r2` (AWS SDK x Deno) precisa ser
+  corrigido antes de reaproveitá-la.

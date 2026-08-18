@@ -85,11 +85,17 @@ nos arquivos `docs/*.md` — aqui é só o resumo de estado + pendências.
     usuário — baixa prioridade.
   - **Mantido sem mexer (decisão da Adriana)**: `sync-estoque` e
     `admin-plataformas-api` continuam arquivadas, sem remoção.
-  - **Bloqueado, precisa da Adriana**: retomar `auto-migrate-r2` (comando
-    pronto em `docs/admin-infraestrutura.md`, precisa do
-    `AUTO_MIGRATE_SECRET` real, que só existe no Supabase Dashboard) e
-    configurar o `AUTENTIQUE_TOKEN` real (só assim a assinatura
-    eletrônica funciona de ponta a ponta).
+  - **[RESOLVIDO 18/08/2026] Migração R2 — já tinha sido feita por fora.**
+    A Adriana lembrou que já tinha rodado essa sincronização via
+    PowerShell dias antes; conferido no Storage e confirmado: os 10
+    buckets que `auto-migrate-r2` migraria estão todos vazios hoje, só
+    sobrou dado nos 3 buckets pequenos esperados. Rotacionei
+    `AUTO_MIGRATE_SECRET` (valor antigo ilegível) e implantei
+    `auto-migrate-r2` pela primeira vez (nunca tinha sido implantada,
+    só existia no código) achando que precisaria rodar — achei um bug
+    real (`unexpected end of file`, incompatibilidade AWS SDK x Deno) mas
+    não vale a pena corrigir agora, não tem mais nada pra migrar. Detalhe
+    em `docs/admin-infraestrutura.md`.
   - **Correção de achado anterior**: o botão "Compartilhar veículo" (que
     eu tinha documentado como "não existe") **já existia** —
     `Veiculo.tsx`, ícone `Share2`, já usa `getShareUrl()` que já gera o
