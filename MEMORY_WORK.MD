@@ -13,6 +13,41 @@ nos arquivos `docs/*.md` — aqui é só o resumo de estado + pendências.
 
 ## O que está no ar hoje
 
+- **Documentação de API — grupo 4 (Infraestrutura) escrito, os 4 grupos
+  completos (18/08/2026, sessão 8)**: `admin-infraestrutura.md` (5
+  functions — R2 e SEO). **Achado mais concreto da sessão inteira**:
+  `/sitemap.xml` (prometido no `robots.txt` pro Google) responde 200 com
+  XML válido, mas **não vem da function `sitemap`** — vem de
+  `public/sitemap.xml`, arquivo estático parado desde **20/04/2026**, com
+  só 19 URLs (9 veículos) contra os 25 veículos disponíveis hoje. A
+  function que geraria o sitemap certo, ao vivo, nunca é chamada — o
+  arquivo estático sempre ganha. Achados menores: `og-vehicle` (prévia
+  rica de veículo pro WhatsApp/Facebook) está pronta mas nada no site
+  gera o link `/s/{slug}` que a aciona; `auto-migrate-r2` e
+  `migrar-storage-r2` (migração Supabase Storage → R2) rodaram uma vez,
+  travaram/pararam, sem cron — conecta com o achado do `gerar-imagem`
+  (grupo 3): imagem que cai no Supabase Storage hoje não tem mais
+  nenhum processo automático levando pro R2. Índice
+  (`docs/documentacao-api.md`) atualizado — **os 4 grupos (67 functions)
+  estão documentados**. Falta só o resumo simplificado dos grupos 2, 3 e
+  4 na Central de Ajuda (só o grupo 1 tem resumo lá).
+- **Documentação de API — grupo 3 (IA e PDFs) escrito (18/08/2026, sessão
+  8)**: `admin-ia-conteudo.md` (9 functions) + `admin-pdfs.md` (3
+  functions), `ai-sdr` continua só linkada em `leads-e-sdr.md`. **Achados
+  novos**: (1) `ai-agents` nunca foi chamada por nada (mesmo padrão de
+  código pronto e esquecido); (2) `gerar-conteudo` lê só o nome de
+  variável do Gemini com erro de digitação (`GEMINI_APY_KEY`), sem
+  fallback pro nome certo que as functions irmãs já corrigiram — risco de
+  cair silenciosamente pra outro provedor; (3) `gerar-imagem` grava no
+  Supabase Storage em vez do R2, diferente do resto do sistema; (4) **achado
+  importante — fechou o mistério do Autentique**: `gerar-pdf-contrato` não
+  gera PDF nenhum, só devolve HTML pro navegador imprimir — e o `pdf_url`
+  mock do `CTR-41` (achado antes, ver `docs/autentique-integracao.md`) era
+  literalmente um PDF de teste do W3C (`dummy.pdf`), confirmando que o
+  fluxo de assinatura nunca teve um contrato real de verdade pra assinar.
+  Índice atualizado — grupos 1, 2 e 3 escritos, falta o grupo 4
+  (Infraestrutura, R2+SEO) e o resumo dos grupos 2 e 3 na Central de
+  Ajuda (só o grupo 1 tem resumo lá até agora).
 - **Trigger órfão removido (18/08/2026, sessão 8)**: `sync_to_crm` em
   `operacional.veiculos` (schema paralelo vazio, mesmo caso de
   `operacional.leads` já achado antes) chamava um projeto Supabase de
@@ -553,14 +588,13 @@ nos arquivos `docs/*.md` — aqui é só o resumo de estado + pendências.
     Livre têm integração real, as outras seriam só flag. Sinalizado no
     doc de contexto do manual pra reconferir — pode estar desatualizado,
     não foi checado nesta sessão.
-13. **Documentação de API — em andamento** (atualizado 18/08/2026):
-    escopo definido com a Adriana (markdown técnico + resumo na Central
-    de Ajuda em `grupo='dev_ti'`, todos os 67 functions incluindo infra).
-    Índice (`docs/documentacao-api.md`), grupo 1 (Integrações, 30
-    functions) e grupo 2 (Internas do admin, 14 functions) escritos.
-    Faltam: resumo na Central de Ajuda do grupo 2 (só o do grupo 1 foi
-    criado até agora), e os grupos 3 (IA/PDFs) e 4 (Infra) — ordem já
-    combinada, seguir quando a Adriana pedir.
+13. **Documentação de API — os 4 grupos escritos, falta só o resumo na
+    Central de Ajuda** (atualizado 18/08/2026): índice
+    (`docs/documentacao-api.md`) + os 4 grupos (67 functions) completos —
+    Integrações (30), Internas do admin (14), IA e PDFs (13),
+    Infraestrutura (5). Só o resumo do grupo 1 foi criado na Central de
+    Ajuda (`grupo='dev_ti'`) — faltam os resumos dos grupos 2, 3 e 4,
+    quando a Adriana pedir pra continuar.
 14. **Manual Operacional — maioria das páginas ainda sem artigo**
     (atualizado 18/08/2026): infraestrutura pronta
     (`docs/manual-operacional-contexto.md` + skill `manual-operacional`),

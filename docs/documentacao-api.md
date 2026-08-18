@@ -7,12 +7,11 @@ técnica" já usado no projeto) + resumo simplificado por grupo na Central de
 Ajuda (`/admin/ajuda`).
 
 **Como usar**: ache a function na tabela do grupo, clique no link da coluna
-"Doc". Grupos sem link ainda não têm documentação dedicada — só a descrição
-de uma linha aqui, baseada no nome/config, não investigada a fundo function
-por function ainda (fica pra próxima etapa do plano).
+"Doc".
 
-Última atualização: 2026-08-18. Ordem de escrita combinada com a Adriana:
-Integrações → Internas do admin → IA e PDFs → Infraestrutura.
+Última atualização: 2026-08-18 — os 4 grupos (67 functions) estão
+documentados. Falta só o resumo simplificado dos grupos 2, 3 e 4 na Central
+de Ajuda (`grupo='dev_ti'`) — hoje só o do grupo 1 existe lá.
 
 ## Status do plano
 
@@ -20,8 +19,8 @@ Integrações → Internas do admin → IA e PDFs → Infraestrutura.
 |---|---|---|
 | 1. Integrações com portais/terceiros | 30 | ✅ Escrito (18/08/2026) |
 | 2. Internas do admin | 14 | ✅ Escrito (18/08/2026) |
-| 3. IA e PDFs | 13 | ⏳ Planejado, não escrito ainda |
-| 4. Infraestrutura (R2 + SEO) | 5 | ⏳ Planejado, não escrito ainda |
+| 3. IA e PDFs | 13 | ✅ Escrito (18/08/2026) |
+| 4. Infraestrutura (R2 + SEO) | 5 | ✅ Escrito (18/08/2026) |
 
 ---
 
@@ -114,32 +113,30 @@ Integrações → Internas do admin → IA e PDFs → Infraestrutura.
 
 ## 3. Geração de conteúdo/IA e PDFs
 
-*(Descrição de uma linha, não investigada a fundo ainda — doc dedicado é a próxima etapa)*
-
-| Function | O que faz (provável) | Doc |
+| Function | O que faz | Doc |
 |---|---|---|
 | `ai-sdr` | Clara — atendimento via WhatsApp/Instagram | [leads-e-sdr.md](leads-e-sdr.md) |
-| `ai-agents` | Agente(s) de IA com acesso a dados de veículo — chamador não identificado ainda | — |
-| `ai-assistant` | Brain IA — assistente de conhecimento usado em `/admin/configuracoes` | — |
-| `ads-agent` | Agente de anúncios — audita/pausa anúncio (chamado por `meta-capi-postback` na venda) | — |
-| `gerar-conteudo` | Geração de conteúdo via IA (Gemini) | — |
-| `gerar-conteudo-social` | Geração de legenda pra post social | — |
-| `gerar-ideias-social` | Aba "Ideias com IA" da Central de Redes Sociais | — |
-| `gerar-imagem` | Geração de imagem via IA | — |
-| `gerar-imagem-vaga` | Gera imagem padrão de post de vaga | — |
-| `gerar-vaga-ia` | Gera título/descrição de vaga via IA | — |
-| `gerar-pdf-avaliacao` | Gera PDF de proposta de avaliação (jsPDF) | — |
-| `gerar-pdf-contrato` | Gera PDF de contrato | — |
-| `gerar-pdf-proposta` | Gera PDF de proposta comercial — era 100% mock, corrigido 17/08/2026 | — |
+| `ai-agents` | **Nunca usada** — agentes de negociação/troca prontos, sem tela que chame | [admin-ia-conteudo.md](admin-ia-conteudo.md) |
+| `ai-assistant` | Brain IA — assistente de conhecimento (Ajuda, Configurações, onboarding) | [admin-ia-conteudo.md](admin-ia-conteudo.md) |
+| `ads-agent` | Agente de anúncios — chat + audita/pausa anúncio (chamado por `meta-capi-postback` na venda) | [admin-ia-conteudo.md](admin-ia-conteudo.md) |
+| `gerar-conteudo` | Geração de conteúdo via IA — achado: só lê o nome de variável com erro de digitação da chave do Gemini, sem fallback | [admin-ia-conteudo.md](admin-ia-conteudo.md) |
+| `gerar-conteudo-social` | Geração de legenda pra post social de 1 veículo | [admin-ia-conteudo.md](admin-ia-conteudo.md) |
+| `gerar-ideias-social` | Aba "Ideias com IA" da Central de Redes Sociais | [admin-ia-conteudo.md](admin-ia-conteudo.md) |
+| `gerar-imagem` | Geração de imagem via IA — achado: grava no Supabase Storage, não no R2 como o resto do sistema | [admin-ia-conteudo.md](admin-ia-conteudo.md) |
+| `gerar-imagem-vaga` | Gera imagem padrão de post de vaga (edição com logo+fachada reais) | [admin-ia-conteudo.md](admin-ia-conteudo.md) |
+| `gerar-vaga-ia` | Gera título/descrição de vaga via IA | [admin-ia-conteudo.md](admin-ia-conteudo.md) |
+| `gerar-pdf-avaliacao` | Gera PDF real de proposta de avaliação (jsPDF) | [admin-pdfs.md](admin-pdfs.md) |
+| `gerar-pdf-contrato` | **Não gera PDF** — devolve HTML pro navegador imprimir; achado: é a causa raiz do mock do Autentique | [admin-pdfs.md](admin-pdfs.md) |
+| `gerar-pdf-proposta` | Gera PDF real de proposta comercial — era 100% mock, corrigido 17/08/2026 | [admin-pdfs.md](admin-pdfs.md) |
 
 ## 4. Infraestrutura (armazenamento e SEO)
 
 *(Incluída a pedido da Adriana em 18/08/2026, mesmo sem uso direto de ninguém no painel)*
 
-| Function | O que faz (provável) | Doc |
+| Function | O que faz | Doc |
 |---|---|---|
-| `get-r2-presigned-url` | Gera URL assinada pra upload direto no R2 | — |
-| `auto-migrate-r2` | Migração automática de imagem pro R2 | — |
-| `migrar-storage-r2` | Migração de storage legado pro R2 (operação privilegiada) | [R2_CORS_CONFIGURATION.md](R2_CORS_CONFIGURATION.md) (CORS, não a function em si) |
-| `og-vehicle` | Gera imagem Open Graph de veículo pra compartilhamento | — |
-| `sitemap` | Gera `sitemap.xml` do site | — |
+| `get-r2-presigned-url` | Gera URL assinada pra upload direto no R2 — coração do upload de foto do sistema | [admin-infraestrutura.md](admin-infraestrutura.md) |
+| `auto-migrate-r2` | Migração de arquivo pro R2 — rodou uma vez (05/08/2026), parou travada, sem cron | [admin-infraestrutura.md](admin-infraestrutura.md) |
+| `migrar-storage-r2` | Mesma migração, versão manual — nenhum botão de tela aciona | [admin-infraestrutura.md](admin-infraestrutura.md), [R2_CORS_CONFIGURATION.md](R2_CORS_CONFIGURATION.md) (CORS) |
+| `og-vehicle` | Prévia rica de veículo pra compartilhamento — pronta, mas nada gera o link que a aciona | [admin-infraestrutura.md](admin-infraestrutura.md) |
+| `sitemap` | **Código morto** — `/sitemap.xml` real é servido por um arquivo estático parado desde abril/2026, não por esta function | [admin-infraestrutura.md](admin-infraestrutura.md) |

@@ -56,14 +56,19 @@ próprio Autentique.
 
 ## Em aberto
 
-- **Achado em 18/08/2026, não investigado a fundo ainda** (decisão da
-  Adriana foi documentar e seguir, ver conversa da sessão): não está
-  confirmado se a variável `AUTENTIQUE_TOKEN` está configurada hoje nos
-  Secrets do Supabase, nem se o problema em `CTR-41` foi token ausente,
-  token inválido, ou erro pontual da API na hora. Também não está
-  confirmado se esse fluxo (emitir contrato → mandar pra assinatura) é
-  usado no dia a dia ou se ficou parado desde abril. Precisa decisão da
-  Adriana sobre prioridade antes de investigar/corrigir.
+- **Achado em 18/08/2026, causa raiz encontrada** (ver
+  `docs/admin-pdfs.md`): o `pdf_url` gravado em `CTR-41` **não é um
+  contrato real** — é
+  `https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf`,
+  um PDF de teste público do W3C. Ou seja, o teste desse fluxo foi feito
+  com um arquivo qualquer, não com um contrato gerado pelo sistema — e não
+  poderia ter sido diferente, porque `gerar-pdf-contrato` **não gera
+  arquivo PDF nenhum** (devolve HTML pro navegador imprimir, ver
+  `docs/admin-pdfs.md`). Os dois problemas são a mesma história: pra esse
+  fluxo funcionar de ponta a ponta, `gerar-pdf-contrato` precisaria virar
+  um PDF de verdade com URL própria antes de mandar pro Autentique. Ainda
+  não confirmado se `AUTENTIQUE_TOKEN` está configurado — decisão da
+  Adriana foi documentar e seguir, corrigir fica pra quando ela priorizar.
 - Enquanto isso não for resolvido, qualquer contrato novo mandado por aqui
   corre o mesmo risco de cair no mock sem ninguém perceber — a resposta da
   function parece sucesso (`success: true`) mesmo quando é fake.
