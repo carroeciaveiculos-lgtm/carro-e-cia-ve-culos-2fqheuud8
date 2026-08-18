@@ -21,6 +21,10 @@ const corsHeaders = {
 // sucesso quando a chamada falhava) — foi o que escondeu esse bug por 4
 // meses (contrato CTR-41, achado 18/08/2026). Agora erro de verdade
 // devolve `success: false` de verdade.
+//
+// enviar_email (18/08/2026): quando true, dispara e-mail real pro cliente
+// via Resend com o link de assinatura — antes o botão "Enviar E-mail" da
+// tela só gerava o link e mentia dizendo que tinha enviado.
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
@@ -35,6 +39,7 @@ Deno.serve(async (req) => {
       pdf_url,
       numero_contrato,
       tipo_documento,
+      enviar_email,
     } = body
 
     if (!contrato_id || !email_cliente || !nome_cliente || !pdf_url) {
@@ -163,6 +168,64 @@ Deno.serve(async (req) => {
       throw new Error('Falha ao obter ID do documento gerado no Autentique.')
     }
 
+    // Envio real de e-mail via Resend, só quando o botão "Enviar E-mail"
+    // pede (enviar_email: true) — antes o botão só gerava o link e fingia
+    // ter enviado. Mesmo padrão de remetente/checagem de erro já usado em
+    // enviar-candidatura/esqueci-senha.
+    let emailStatus: { enviado: boolean; motivo?: string } = { enviado: false }
+    if (enviar_email && link_assinatura_cliente) {
+      const resendApiKey = Deno.env.get('RESEND_API_KEY')
+      if (!resendApiKey) {
+        emailStatus = { enviado: false, motivo: 'RESEND_API_KEY não configurada' }
+        console.error('RESEND_API_KEY não configurada — link gerado mas e-mail não enviado')
+      } else {
+        const htmlBody = `
+          <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto">
+            <div style="background:#C0392B;padding:20px;text-align:center">
+              <h1 style="color:white;margin:0">Carro e Cia Veículos</h1>
+              <p style="color:#fff;margin:5px 0">Documento para assinatura</p>
+            </div>
+            <div style="padding:30px;background:#f9f9f9">
+              <p>Olá, ${nome_cliente}!</p>
+              <p>Segue o link para assinar o <b>${docName}</b>${numero_contrato ? ` (${numero_contrato})` : ''} eletronicamente:</p>
+              <p style="text-align:center;margin:25px 0">
+                <a href="${link_assinatura_cliente}" style="background:#C0392B;color:#fff;padding:12px 24px;text-decoration:none;border-radius:6px;display:inline-block">Assinar documento</a>
+              </p>
+              <p style="font-size:12px;color:#888">Se o botão não funcionar, copie e cole este link no navegador:<br>${link_assinatura_cliente}</p>
+            </div>
+            <div style="background:#1A1A1A;padding:15px;text-align:center">
+              <p style="color:#888;font-size:12px;margin:0">Carro e Cia Veículos - Uberaba, MG</p>
+            </div>
+          </div>
+        `
+        try {
+          const emailRes = await fetch('https://api.resend.com/emails', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${resendApiKey}`,
+            },
+            body: JSON.stringify({
+              from: 'Carro e Cia Veículos <vendas@carroeciamotors.com.br>',
+              to: email_cliente,
+              subject: `Documento para assinatura — ${docName}`,
+              html: htmlBody,
+            }),
+          })
+          const emailData = await emailRes.json().catch(() => ({}))
+          if (emailRes.ok) {
+            emailStatus = { enviado: true }
+          } else {
+            emailStatus = { enviado: false, motivo: JSON.stringify(emailData) }
+            console.error('Resend recusou o e-mail:', emailRes.status, emailData)
+          }
+        } catch (err: any) {
+          emailStatus = { enviado: false, motivo: err.message }
+          console.error('Falha de rede ao enviar e-mail pro cliente:', err)
+        }
+      }
+    }
+
     const { error: updateError } = await supabase
       .from('contratos_consignacao')
       .update({
@@ -176,11 +239,12 @@ Deno.serve(async (req) => {
 
     await supabase.from('assinatura_historico').insert({
       contrato_id,
-      evento: 'link_enviado_autentique',
+      evento: emailStatus.enviado ? 'link_enviado_email' : 'link_enviado_autentique',
       detalhes: {
         email: email_cliente,
         link: link_assinatura_cliente,
         autentique_id: autentique_document_id,
+        email_status: emailStatus,
       },
     })
 
@@ -190,6 +254,7 @@ Deno.serve(async (req) => {
         message: 'Contrato enviado para Autentique com sucesso.',
         autentique_document_id,
         signing_link: link_assinatura_cliente,
+        email_status: emailStatus,
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
     )

@@ -91,6 +91,7 @@ export function AssinaturaDialog({
           proprietario_cpf: proprietarioCpf,
           numero_contrato: numeroContrato,
           pdf_url: finalPdfUrl,
+          enviar_email: mode === 'email',
         },
       })
 
@@ -102,11 +103,20 @@ export function AssinaturaDialog({
       }
 
       if (mode === 'email') {
-        toast({
-          title: 'Enviado com sucesso',
-          description:
-            'O documento foi enviado para o e-mail do cliente e o link de assinatura também está disponível abaixo.',
-        })
+        if (data.email_status?.enviado) {
+          toast({
+            title: 'E-mail enviado',
+            description: `O link de assinatura foi enviado para ${emailInput}.`,
+          })
+        } else {
+          toast({
+            title: 'Link gerado, e-mail não enviado',
+            description:
+              data.email_status?.motivo ||
+              'O link de assinatura foi gerado, mas o e-mail não pôde ser enviado. Use "Copiar" para enviar manualmente.',
+            variant: 'destructive',
+          })
+        }
       } else {
         toast({
           title: 'Link Gerado',
