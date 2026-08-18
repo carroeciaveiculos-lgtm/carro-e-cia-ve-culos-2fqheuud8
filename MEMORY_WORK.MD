@@ -38,11 +38,17 @@ nos arquivos `docs/*.md` — aqui é só o resumo de estado + pendências.
   criados no Autentique** (2 dos 20/mês usados, autorizada pela Adriana);
   segundo teste confirmou o link de assinatura do cliente vindo certo
   (`https://assina.ae/...`). Registros de teste apagados do banco.
-  **Em aberto pra depois**: "Enviar E-mail" no `AssinaturaDialog.tsx`
-  hoje só mostra/copia o link — não dispara e-mail de verdade via Resend
-  ainda (passo pequeno se a Adriana quiser); webhook de conclusão
-  (`webhook-autentique`) não testado ao vivo, precisa confirmar se está
-  registrado no painel da conta Autentique.
+  **[RESOLVIDO 18/08/2026]** "Enviar E-mail" no `AssinaturaDialog.tsx`
+  agora dispara e-mail de verdade via Resend com o link de assinatura
+  (antes só mostrava/copiava o link e mentia dizendo que tinha enviado).
+  `enviar-para-assinatura` reimplantada com o parâmetro `enviar_email`.
+  Testado ao vivo: template isolado (confirmado recebido) + fluxo
+  completo pela function real (3º dos 20 documentos/mês do Autentique
+  usado, sobram 17) — `email_status.enviado: true`, e-mail recebido com
+  link funcionando. Registro de teste apagado.
+  **Em aberto pra depois**: webhook de conclusão (`webhook-autentique`)
+  não testado ao vivo, precisa confirmar se está registrado no painel da
+  conta Autentique.
 - **Decisões sobre os achados da Documentação de API implementadas
   (18/08/2026, sessão 8)**: a Adriana decidiu, item por item, o que fazer
   com os achados de código morto/incompleto encontrados. Implementado:

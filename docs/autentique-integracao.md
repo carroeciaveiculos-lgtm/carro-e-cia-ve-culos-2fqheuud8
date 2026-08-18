@@ -5,8 +5,8 @@ _Becos sem saída_ lista o que já foi testado e falhou — **não repita**. Ao
 descobrir algo novo, acrescente aqui com data e fonte, em vez de deixar só no
 histórico de conversa.
 
-Última atualização: 2026-08-18 — **funcionando de ponta a ponta, testado com
-documento real**.
+Última atualização: 2026-08-18 — **funcionando de ponta a ponta, incluindo
+e-mail real via Resend, testado com documento real**.
 
 ## O que é
 
@@ -67,16 +67,32 @@ contratos_consignacao
   `link` da resposta (o Autentique passa a mandar convite direto, sem
   devolver link pra gente controlar o envio).
 
+## `enviar_email` — e-mail real via Resend (18/08/2026)
+
+O botão "Enviar E-mail" do `AssinaturaDialog.tsx` até 18/08/2026 só gerava
+o link de assinatura e **mentia** dizendo que tinha enviado — quem
+enviava de verdade era a Adriana, copiando o link manualmente. Corrigido:
+`enviar-para-assinatura` agora aceita `enviar_email: true` no corpo da
+chamada e, depois de obter `link_assinatura_cliente` do Autentique, manda
+um e-mail de verdade pro cliente via Resend (mesmo padrão de
+`enviar-candidatura`/`esqueci-senha`: `RESEND_API_KEY`, checa `res.ok`,
+não finge sucesso em caso de erro). Remetente
+`vendas@carroeciamotors.com.br` (mesmo domínio já verificado no Resend
+usado como signatário da loja no Autentique). A resposta da function
+ganhou o campo `email_status: { enviado, motivo? }`, e o toast no front
+reflete o status real (não mais uma mensagem fixa).
+
+**Testado ao vivo (18/08/2026)**: e-mail de template testado isoladamente
+via Resend (confirmado recebido, formatação e remetente OK) + teste
+completo pela function de verdade (3º dos 20 documentos/mês do Autentique
+usado, autorizado pela Adriana — sobram 17) — `email_status.enviado: true`
+confirmado, e-mail recebido com o link `https://assina.ae/...` funcionando.
+Registro de teste apagado do banco depois.
+
 ## Em aberto
 
-- Nenhum bloqueio técnico conhecido — o fluxo funciona de ponta a ponta,
-  testado com documento real.
-- **Decisão futura**: hoje "Enviar E-mail" no `AssinaturaDialog.tsx` só
-  copia/mostra o link gerado — não dispara um e-mail de verdade via
-  Resend ainda. Se a Adriana quiser um botão que realmente manda o e-mail
-  (não só copia o link), é um passo pequeno a mais (chamar uma function
-  de envio de e-mail com o link, mesmo padrão já usado em
-  `on-lead-created`/`enviar-candidatura`).
+- Nenhum bloqueio técnico conhecido — o fluxo (gerar documento → link →
+  e-mail real) funciona de ponta a ponta, testado com documento real.
 - Webhook de conclusão (`webhook-autentique`) não foi testado ao vivo
   nesta sessão — precisa confirmar se está registrado no painel da conta
   Autentique (não é configurado por API, ver achado acima).
