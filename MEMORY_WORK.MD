@@ -13,6 +13,25 @@ nos arquivos `docs/*.md` — aqui é só o resumo de estado + pendências.
 
 ## O que está no ar hoje
 
+- **Documentação de API — CONCLUÍDA (18/08/2026, sessão 8)**: os 4 grupos
+  (67 functions, `docs/documentacao-api.md`) + os 4 artigos resumo na
+  Central de Ajuda (`grupo='dev_ti'`) — um por grupo, apontando pro doc
+  técnico completo. Junto, corrigido um achado real: `gerar-conteudo` foi
+  a única function do projeto que não tinha a rede de segurança das duas
+  grafias da chave do Gemini (`GEMINI_APY_KEY`, nome real confirmado pela
+  Adriana, vs. `GEMINI_API_KEY`) — corrigida e reimplantada
+  (`supabase functions deploy gerar-conteudo`).
+- **Correção de achado anterior (18/08/2026)**: o trigger órfão removido
+  ontem (`sync_to_crm`) não apontava pra "sobra de template" como eu tinha
+  concluído — apontava pra um projeto Supabase real da Adriana ("CRM
+  CARRO E CIA"), só que numa organização diferente
+  (`carroeciamotors_crm`) que eu não enxergava antes. **Escopo confirmado
+  pela Adriana**: trabalhar só neste projeto (`htpcqdbhktmvppfemnad`,
+  "Projeto Site Carro e Cia") — nunca investigar os outros projetos dela.
+  Varredura completa feita a pedido dela (código + todas as colunas de
+  texto/JSON do banco + cron + funções) confirmando que não sobrou
+  nenhuma outra referência a projetos externos além do trigger já
+  removido.
 - **Documentação de API — grupo 4 (Infraestrutura) escrito, os 4 grupos
   completos (18/08/2026, sessão 8)**: `admin-infraestrutura.md` (5
   functions — R2 e SEO). **Achado mais concreto da sessão inteira**:
@@ -588,13 +607,12 @@ nos arquivos `docs/*.md` — aqui é só o resumo de estado + pendências.
     Livre têm integração real, as outras seriam só flag. Sinalizado no
     doc de contexto do manual pra reconferir — pode estar desatualizado,
     não foi checado nesta sessão.
-13. **Documentação de API — os 4 grupos escritos, falta só o resumo na
-    Central de Ajuda** (atualizado 18/08/2026): índice
-    (`docs/documentacao-api.md`) + os 4 grupos (67 functions) completos —
-    Integrações (30), Internas do admin (14), IA e PDFs (13),
-    Infraestrutura (5). Só o resumo do grupo 1 foi criado na Central de
-    Ajuda (`grupo='dev_ti'`) — faltam os resumos dos grupos 2, 3 e 4,
-    quando a Adriana pedir pra continuar.
+13. **[FECHADA 18/08/2026] Documentação de API.** Índice
+    (`docs/documentacao-api.md`) + os 4 grupos (67 functions) + os 4
+    artigos resumo na Central de Ajuda (`grupo='dev_ti'`) — tudo
+    completo. Pendência que sobrou dela: sitemap desatualizado desde
+    abril/2026 (ver `docs/admin-infraestrutura.md`) — Adriana pediu pra
+    tratar isso a seguir.
 14. **Manual Operacional — maioria das páginas ainda sem artigo**
     (atualizado 18/08/2026): infraestrutura pronta
     (`docs/manual-operacional-contexto.md` + skill `manual-operacional`),

@@ -45,7 +45,12 @@ Deno.serve(async (req) => {
 
     const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY')
     const GROQ_API_KEY = Deno.env.get('GROQ_API_KEY')
-    const GEMINI_API_KEY = Deno.env.get('GEMINI_APY_KEY')
+    // GEMINI_APY_KEY: nome do secret configurado de verdade no projeto (erro
+    // de digitação histórico — "APY" em vez de "API", ver _shared/gemini-client.ts).
+    // Aceita os dois nomes pra não depender de renomear o secret, igual as
+    // outras functions que usam Gemini já faziam — esta era a única exceção
+    // (achado e corrigido em 18/08/2026).
+    const GEMINI_API_KEY = Deno.env.get('GEMINI_APY_KEY') || Deno.env.get('GEMINI_API_KEY')
 
     const supabaseService = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
