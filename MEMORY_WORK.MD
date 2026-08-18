@@ -13,6 +13,14 @@ nos arquivos `docs/*.md` — aqui é só o resumo de estado + pendências.
 
 ## O que está no ar hoje
 
+- **Sitemap corrigido (18/08/2026, sessão 8)**: `public/sitemap.xml`
+  (estático, parado desde 20/04/2026, só 9 veículos) removido; regra nova
+  em `public/_redirects` faz `/sitemap.xml` responder direto da function
+  `sitemap` (status 200, mesmo padrão do `/s/:slug` já usado pro
+  `og-vehicle`). Testado com `bun run build` — `dist/sitemap.xml` sumiu,
+  `dist/_redirects` com a regra nova. **Falta confirmar em produção**
+  depois do deploy: `curl https://www.carroeciamotors.com.br/sitemap.xml`
+  e ver se lista os veículos reais de hoje, não mais os 9 antigos.
 - **Documentação de API — CONCLUÍDA (18/08/2026, sessão 8)**: os 4 grupos
   (67 functions, `docs/documentacao-api.md`) + os 4 artigos resumo na
   Central de Ajuda (`grupo='dev_ti'`) — um por grupo, apontando pro doc

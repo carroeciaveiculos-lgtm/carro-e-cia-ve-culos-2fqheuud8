@@ -139,4 +139,4 @@ de Ajuda (`grupo='dev_ti'`) — hoje só o do grupo 1 existe lá.
 | `auto-migrate-r2` | Migração de arquivo pro R2 — rodou uma vez (05/08/2026), parou travada, sem cron | [admin-infraestrutura.md](admin-infraestrutura.md) |
 | `migrar-storage-r2` | Mesma migração, versão manual — nenhum botão de tela aciona | [admin-infraestrutura.md](admin-infraestrutura.md), [R2_CORS_CONFIGURATION.md](R2_CORS_CONFIGURATION.md) (CORS) |
 | `og-vehicle` | Prévia rica de veículo pra compartilhamento — pronta, mas nada gera o link que a aciona | [admin-infraestrutura.md](admin-infraestrutura.md) |
-| `sitemap` | **Código morto** — `/sitemap.xml` real é servido por um arquivo estático parado desde abril/2026, não por esta function | [admin-infraestrutura.md](admin-infraestrutura.md) |
+| `sitemap` | **Corrigida 18/08/2026** — era código morto (arquivo estático parado desde abril/2026 tomava o lugar dela), agora `/sitemap.xml` responde ao vivo | [admin-infraestrutura.md](admin-infraestrutura.md) |

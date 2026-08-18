@@ -16,7 +16,7 @@ configuração de CORS, não as functions em si).
 | `auto-migrate-r2` | 🟡 Rodou uma vez, parou | Migração em lote de arquivos do Supabase Storage pro R2 — sem cron, ficou 1 arquivo travado |
 | `migrar-storage-r2` | 🟡 Nunca chamada pela tela | Mesmo tipo de migração, versão manual (login), sem nenhum botão que a acione |
 | `og-vehicle` | 🟡 Pronta, mas nunca disparada | Gera prévia rica (foto+preço) pra compartilhamento de veículo — rota existe, ninguém gera o link que a aciona |
-| `sitemap` | ❌ **Código morto — acha que está no ar, mas não está** | Gera sitemap.xml dinâmico — nunca é servida, um arquivo estático desatualizado toma o lugar dela |
+| `sitemap` | ✅ **Corrigida 18/08/2026** | Gera sitemap.xml dinâmico — era código morto (arquivo estático tomava o lugar dela), agora é a resposta real de `/sitemap.xml` |
 
 ## `get-r2-presigned-url` — o upload real de foto
 
@@ -67,16 +67,27 @@ genérica do site inteiro (logo, "Carro e Cia Veículos") — não a foto/preço
 daquele carro específico, porque `src/components/SEO.tsx` só troca as meta
 tags via JavaScript, que bots de rede social não executam.
 
-## `sitemap` — código morto que ninguém percebeu
+## `sitemap` — corrigido em 18/08/2026, era código morto
 
-**Achado 18/08/2026, o mais concreto deste grupo**: `robots.txt` promete um
-sitemap em `/sitemap.xml`, e testando ao vivo (`curl`) esse endereço
-realmente responde XML válido, HTTP 200 — só que **não é gerado por essa
-function**. É um arquivo **estático**, `public/sitemap.xml`, commitado no
-repositório e nunca mais atualizado desde **20/04/2026**. Como o Cloudflare
-Workers serve arquivo estático antes de cair na SPA, esse arquivo velho
-sempre ganha — a function `sitemap` (que buscaria os dados certos, ao vivo,
-do banco) nunca chega a ser executada, porque nada aponta pra ela.
+**Achado 18/08/2026, o mais concreto deste grupo, já corrigido**:
+`robots.txt` promete um sitemap em `/sitemap.xml`, e testando ao vivo
+(`curl`) esse endereço realmente respondia XML válido, HTTP 200 — só que
+**não era gerado por essa function**. Era um arquivo **estático**,
+`public/sitemap.xml`, commitado no repositório e nunca mais atualizado
+desde **20/04/2026**. Como o Cloudflare Workers serve arquivo estático
+antes de cair na SPA, esse arquivo velho sempre ganhava — a function
+`sitemap` (que busca os dados certos, ao vivo, do banco) nunca chegava a
+ser executada, porque nada apontava pra ela.
+
+**Correção aplicada**: `public/sitemap.xml` removido + regra nova em
+`public/_redirects` (`/sitemap.xml → functions/v1/sitemap`, status 200 —
+mesmo padrão do `/s/:slug` do `og-vehicle` acima) fazendo a URL pública
+`/sitemap.xml` responder direto da function, sempre com os veículos e
+posts reais do banco na hora. Testado com `bun run build` — confirmado
+que `dist/sitemap.xml` não existe mais e `dist/_redirects` tem a regra
+nova. Falta só confirmar em produção depois do próximo deploy
+(`curl https://www.carroeciamotors.com.br/sitemap.xml` e conferir se
+lista os 25 veículos atuais).
 
 | Fato | Como se sabe |
 |---|---|
@@ -87,20 +98,14 @@ do banco) nunca chega a ser executada, porque nada aponta pra ela.
 
 ## Becos sem saída — não repetir
 
-- Não adianta editar a function `sitemap` achando que isso vai corrigir o
-  que o Google vê — **nada aponta pra ela**. Enquanto
-  `public/sitemap.xml` existir como arquivo estático, ele sempre vence.
 - Não adianta procurar um botão "Compartilhar veículo" pra testar o
   `og-vehicle` — ele não existe na interface hoje.
 
 ## Em aberto
 
-- **Decisão pendente da Adriana** — 3 caminhos possíveis pro sitemap: (a)
-  apagar `public/sitemap.xml` e criar uma rota em `_redirects` pra
-  `/sitemap.xml` apontar pra function `sitemap` (sitemap sempre atualizado,
-  gerado na hora); (b) automatizar a regeneração do arquivo estático via
-  cron/build; (c) deixar como está, sabendo que o Google vê um sitemap
-  desatualizado. Não decidido nem alterado nesta sessão — só documentado.
+- **Confirmar em produção** depois do próximo deploy: `curl
+  https://www.carroeciamotors.com.br/sitemap.xml` e conferir se lista os
+  veículos reais (não mais os 9 antigos).
 - **Decisão pendente da Adriana** — se vale a pena criar um botão
   "Compartilhar" que gere link `/s/{slug}` pra aproveitar o `og-vehicle`
   já pronto, ou remover a rota/function se não for prioridade.
