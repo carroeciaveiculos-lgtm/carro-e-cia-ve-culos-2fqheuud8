@@ -13,6 +13,39 @@ nos arquivos `docs/*.md` — aqui é só o resumo de estado + pendências.
 
 ## O que está no ar hoje
 
+- **Trigger órfão removido (18/08/2026, sessão 8)**: `sync_to_crm` em
+  `operacional.veiculos` (schema paralelo vazio, mesmo caso de
+  `operacional.leads` já achado antes) chamava um projeto Supabase de
+  fora da organização (`zsqmlbcxiqggzsehzqdv`, não é
+  Motores Hub/IntegradorWeb/Carro e Cia), função `sync-inventory` que
+  nem existe neste repositório — sobra de template da ferramenta que
+  gerou o projeto originalmente (commits antigos assinados "Skip
+  <skip@usecurling.com>"). Confirmado seguro (schema inteiro sem outro
+  trigger, sem referência no código, sem FK) e removido via migration
+  `remove_trigger_sync_to_crm_orfao`. Enquanto investigava isso,
+  também confirmado que só existem 3 triggers no banco desse tipo
+  (tabela → chama Edge Function): `trigger_notify_new_vehicle`
+  (→ `notify-new-vehicle`), `trigger_notify_vehicle_sold`
+  (→ `meta-capi-postback`, já documentado) e o que foi removido agora.
+  As 3 tabelas do schema `operacional` (`leads`, `veiculos`,
+  `configuracoes`) continuam existindo, vazias — decisão de apagar o
+  schema inteiro não foi pedida, fica pra depois se a Adriana quiser.
+- **Documentação de API — grupo 2 (Internas do admin) escrito (18/08/2026,
+  sessão 8)**: 3 docs novos — `admin-usuarios-acesso.md`,
+  `admin-orquestracao-portais.md`, `admin-automacoes-internas.md` — as 14
+  functions do grupo, índice atualizado. **2 achados sérios, só
+  documentados**: (1) `sync-estoque` e `admin-plataformas-api` são código
+  morto (nenhum caller vivo — nem tela, nem cron, nem outra function);
+  `admin-plataformas-api` tem uma armadilha se algum dia for reativada
+  (só libera acesso pro e-mail hardcoded `adriana.araujo@kmzero.com.br`
+  via sessão normal, ignora `usuarios.nivel` — bloquearia até a própria
+  Adriana no login principal); (2) `notify-new-vehicle` (aviso de veículo
+  novo no estoque) tem fallback pro número da **Clara** (atendimento ao
+  cliente) em vez da equipe de vendas, porque a variável
+  `WHATSAPP_SALES_TEAM_PHONE` não aparece configurada em lugar nenhum do
+  projeto — risco real de aviso interno caindo no WhatsApp de cliente.
+  Índice (`docs/documentacao-api.md`) atualizado, grupo 3 (IA/PDFs) e
+  grupo 4 (Infra) ainda faltam.
 - **Central de Ajuda reorganizada em 4 menus (18/08/2026, sessão 8)**:
   Operacional / Processos (por setor) / Dev e TI (restrito) / FAQs,
   pedido da Adriana. Migration `ajuda_conteudos_grupo_e_restricao_dev_ti`
@@ -522,10 +555,11 @@ nos arquivos `docs/*.md` — aqui é só o resumo de estado + pendências.
     não foi checado nesta sessão.
 13. **Documentação de API — em andamento** (atualizado 18/08/2026):
     escopo definido com a Adriana (markdown técnico + resumo na Central
-    de Ajuda, todos os 67 functions incluindo infra). Índice
-    (`docs/documentacao-api.md`) e grupo 1 (Integrações, 30 functions)
-    escritos. Faltam: resumo na Central de Ajuda do grupo 1, e os
-    grupos 2 (Internas do admin), 3 (IA/PDFs) e 4 (Infra) — ordem já
+    de Ajuda em `grupo='dev_ti'`, todos os 67 functions incluindo infra).
+    Índice (`docs/documentacao-api.md`), grupo 1 (Integrações, 30
+    functions) e grupo 2 (Internas do admin, 14 functions) escritos.
+    Faltam: resumo na Central de Ajuda do grupo 2 (só o do grupo 1 foi
+    criado até agora), e os grupos 3 (IA/PDFs) e 4 (Infra) — ordem já
     combinada, seguir quando a Adriana pedir.
 14. **Manual Operacional — maioria das páginas ainda sem artigo**
     (atualizado 18/08/2026): infraestrutura pronta

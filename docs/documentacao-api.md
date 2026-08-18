@@ -19,7 +19,7 @@ Integrações → Internas do admin → IA e PDFs → Infraestrutura.
 | Grupo | Functions | Status |
 |---|---|---|
 | 1. Integrações com portais/terceiros | 30 | ✅ Escrito (18/08/2026) |
-| 2. Internas do admin | 14 | ⏳ Planejado, não escrito ainda |
+| 2. Internas do admin | 14 | ✅ Escrito (18/08/2026) |
 | 3. IA e PDFs | 13 | ⏳ Planejado, não escrito ainda |
 | 4. Infraestrutura (R2 + SEO) | 5 | ⏳ Planejado, não escrito ainda |
 
@@ -95,24 +95,22 @@ Integrações → Internas do admin → IA e PDFs → Infraestrutura.
 
 ## 2. Edge Functions internas do admin
 
-*(Descrição de uma linha, não investigada a fundo ainda — doc dedicado é a próxima etapa)*
-
-| Function | O que faz (provável) |
-|---|---|
-| `criar-usuario-admin` | Cria usuário do painel com setor/permissão — ver artigo "Criar Usuário no Painel" na Central de Ajuda |
-| `esqueci-senha` | Recuperação de senha via e-mail (Resend) |
-| `sync-estoque` | Orquestra sincronização de estoque com os portais (agendada e manual) |
-| `sync-plataforma` | Sincroniza 1 veículo com 1 plataforma — usada pelo botão Publicar/Despublicar em `/admin/portais` |
-| `admin-plataformas-api` | API interna consultada pelo frontend autenticado pra status de publicação |
-| `agendamento-no-show-cron` | Marca agendamento como não comparecimento após atraso |
-| `lembrete-agendamento-cron` | Envia lembrete de agendamento por WhatsApp |
-| `daily-report-cron` | Relatório diário automatizado por WhatsApp |
-| `re-engagement-cron` | Reengajamento automático de leads frios |
-| `on-lead-created` | E-mail de boas-vindas + sincronização com Brevo ao criar lead |
-| `lead-automation` | Automação de leads (Brevo, follow-up) — sobreposição com `on-lead-created` não esclarecida ainda |
-| `notify-new-vehicle` | Notifica equipe quando veículo novo é cadastrado |
-| `content-workflow-notification` | Notificação do fluxo de aprovação de conteúdo (Central de Redes Sociais) |
-| `enviar-candidatura` | Recebe candidatura de vaga (Trabalhe Conosco), sobe currículo pro R2 |
+| Function | O que faz | Doc |
+|---|---|---|
+| `criar-usuario-admin` | Cria usuário do painel com setor/permissão | [admin-usuarios-acesso.md](admin-usuarios-acesso.md) |
+| `esqueci-senha` | Recuperação de senha via e-mail (Resend) | [admin-usuarios-acesso.md](admin-usuarios-acesso.md) |
+| `sync-estoque` | **Código morto** — nunca é chamada por nada hoje | [admin-orquestracao-portais.md](admin-orquestracao-portais.md) |
+| `sync-plataforma` | Publica/despublica no Mercado Livre — única das 3 orquestradoras que está viva | [admin-orquestracao-portais.md](admin-orquestracao-portais.md) |
+| `admin-plataformas-api` | **Código morto**, com armadilha (e-mail hardcoded) se for reativada | [admin-orquestracao-portais.md](admin-orquestracao-portais.md) |
+| `agendamento-no-show-cron` | Marca agendamento como não comparecimento após atraso | [admin-automacoes-internas.md](admin-automacoes-internas.md) |
+| `lembrete-agendamento-cron` | Envia lembrete de agendamento por WhatsApp | [admin-automacoes-internas.md](admin-automacoes-internas.md) |
+| `daily-report-cron` | Relatório diário automatizado por WhatsApp | [admin-automacoes-internas.md](admin-automacoes-internas.md) |
+| `re-engagement-cron` | Reengajamento automático de leads frios (máx. 3x por lead) | [admin-automacoes-internas.md](admin-automacoes-internas.md) |
+| `on-lead-created` | E-mail de boas-vindas + sincronização com Brevo ao criar lead | [admin-automacoes-internas.md](admin-automacoes-internas.md) |
+| `lead-automation` | Automação de leads (Brevo, follow-up) — não sobrepõe `on-lead-created`, caminhos diferentes (ver `docs/leads-e-sdr.md`) | [admin-automacoes-internas.md](admin-automacoes-internas.md) |
+| `notify-new-vehicle` | Notifica equipe quando veículo novo é cadastrado — **possível bug**: fallback manda pro número da Clara, não da equipe | [admin-automacoes-internas.md](admin-automacoes-internas.md) |
+| `content-workflow-notification` | Notificação do fluxo de aprovação de conteúdo | [admin-automacoes-internas.md](admin-automacoes-internas.md) |
+| `enviar-candidatura` | Recebe candidatura de vaga (Trabalhe Conosco), sobe currículo pro R2 | [admin-automacoes-internas.md](admin-automacoes-internas.md) |
 
 ## 3. Geração de conteúdo/IA e PDFs
 
