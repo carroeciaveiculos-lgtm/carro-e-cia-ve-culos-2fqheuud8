@@ -93,10 +93,14 @@ Workers Static Assets só permite proxy (200) pra caminho relativo do
 mesmo domínio; pra URL externa (como a do Supabase) só funciona
 redirecionamento de verdade (301/302). Corrigido pra 301. Testado com
 `bun run build` — confirmado que `dist/sitemap.xml` não existe mais e
-`dist/_redirects` tem a regra nova. Falta só confirmar em produção depois
-do próximo deploy
-(`curl https://www.carroeciamotors.com.br/sitemap.xml` e conferir se
-lista os 25 veículos atuais).
+`dist/_redirects` tem a regra nova.
+
+**Confirmado em produção (18/08/2026, commit `86b6c48`)**: build passou,
+`curl -I https://www.carroeciamotors.com.br/sitemap.xml` devolve
+`301 → https://.../functions/v1/sitemap`, seguindo o redirecionamento
+devolve `200` com **40 URLs** (10 páginas fixas + 25 veículos + 5 posts de
+blog), todas com `<lastmod>` real — antes eram 19 URLs sem nenhuma data.
+Resolvido de ponta a ponta.
 
 | Fato | Como se sabe |
 |---|---|
@@ -112,9 +116,6 @@ lista os 25 veículos atuais).
 
 ## Em aberto
 
-- **Confirmar em produção** depois do próximo deploy: `curl
-  https://www.carroeciamotors.com.br/sitemap.xml` e conferir se lista os
-  veículos reais (não mais os 9 antigos).
 - **Decisão pendente da Adriana** — se vale a pena criar um botão
   "Compartilhar" que gere link `/s/{slug}` pra aproveitar o `og-vehicle`
   já pronto, ou remover a rota/function se não for prioridade.

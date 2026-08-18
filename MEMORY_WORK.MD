@@ -24,10 +24,11 @@ nos arquivos `docs/*.md` — aqui é só o resumo de estado + pendências.
   que o primeiro push não refletiu no site — o deploy tinha falhado
   silenciosamente, site continuou no ar normal com a versão anterior, só
   a correção que não subiu. Corrigido pra 301 (mesmo padrão do `/s/:slug`
-  do `og-vehicle`, já comprovado funcionando) e reenviado. **Falta
-  confirmar em produção** depois do deploy: `curl
-  https://www.carroeciamotors.com.br/sitemap.xml` e ver se redireciona
-  certo e lista os veículos reais de hoje.
+  do `og-vehicle`, já comprovado funcionando) e reenviado. **[FECHADA]
+  Confirmado em produção** (commit `86b6c48`, build com sucesso):
+  `/sitemap.xml` redireciona (301) e devolve 40 URLs reais (10 fixas + 25
+  veículos + 5 posts), todas com `<lastmod>` — antes eram 19 sem data
+  nenhuma.
 - **Documentação de API — CONCLUÍDA (18/08/2026, sessão 8)**: os 4 grupos
   (67 functions, `docs/documentacao-api.md`) + os 4 artigos resumo na
   Central de Ajuda (`grupo='dev_ti'`) — um por grupo, apontando pro doc
