@@ -1,21 +1,17 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 import { corsHeaders } from '../_shared/cors.ts'
 import { createClient } from 'npm:@supabase/supabase-js@2'
+import { gerarPdfDocumento } from '../_shared/pdf-generator.ts'
 
 interface RequestBody {
   veiculo_id?: string
   document_type?: string
   proprietario_nome?: string
-}
-
-function escapeHtml(text: string | undefined | null): string {
-  if (!text) return ''
-  return String(text)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;')
+  proprietario_email?: string
+  proprietario_cpf?: string
+  proprietario_telefone?: string
+  contrato_id?: string
+  numero_contrato?: string
 }
 
 function formatCurrency(value: number | null | undefined): string {
@@ -34,45 +30,8 @@ function formatDate(dateStr: string | null | undefined): string {
 
 function replaceMarkers(content: string, data: Record<string, string>): string {
   return content.replace(/\{\{(\w+)\}\}/g, (_, key: string) => {
-    return data[key] !== undefined ? escapeHtml(data[key]) : ''
+    return data[key] !== undefined ? data[key] : ''
   })
-}
-
-function buildHtml(title: string, bodyContent: string): string {
-  return `<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>${escapeHtml(title)}</title>
-<style>
-*{margin:0;padding:0;box-sizing:border-box}
-body{font-family:'Times New Roman',serif;font-size:12px;line-height:1.6;color:#1a1a1a;padding:40px}
-.header{text-align:center;margin-bottom:30px;border-bottom:2px solid #333;padding-bottom:15px}
-.header h1{font-size:18px;font-weight:bold}
-.header p{font-size:11px;color:#555;margin-top:3px}
-.content{white-space:pre-wrap;text-align:justify}
-.signatures{margin-top:60px;display:grid;grid-template-columns:1fr 1fr;gap:60px}
-.sig-block{text-align:center}
-.sig-line{border-top:1px solid #333;margin-top:60px;padding-top:5px;font-size:10px}
-.footer{margin-top:40px;text-align:center;font-size:10px;color:#777;border-top:1px solid #eee;padding-top:10px}
-@media print{@page{margin:20mm}}
-</style>
-</head>
-<body>
-<div class="header">
-<h1>CARRO E CIA VEÍCULOS</h1>
-<p>CNPJ: 10.196.974/0001-46 · AV GUILHERME FERREIRA, 1119 - São Benedito, Uberaba - MG</p>
-<p>Telefone: (34) 3316-7701</p>
-</div>
-<div class="content">${bodyContent}</div>
-<div class="signatures">
-<div class="sig-block"><div class="sig-line">${escapeHtml('Proprietário / Cliente')}</div></div>
-<div class="sig-block"><div class="sig-line">Carro e Cia Veículos</div></div>
-</div>
-<div class="footer"><p>Documento gerado em ${new Date().toLocaleDateString('pt-BR')} · TRANSLUGA ADMINISTRACAO DE VEICULOS LTDA</p></div>
-</body>
-</html>`
 }
 
 const DOC_NAMES: Record<string, string> = {
@@ -82,6 +41,14 @@ const DOC_NAMES: Record<string, string> = {
   termo_entrega: 'Termo de Entrega',
 }
 
+// Reescrito em 18/08/2026 — achado durante a Documentação de API: a versão
+// anterior não gerava PDF nenhum, só devolvia HTML pro navegador imprimir
+// (sem upload, sem URL permanente). Isso é por que a assinatura eletrônica
+// via Autentique nunca funcionou de ponta a ponta — precisa de uma URL de
+// PDF real pra mandar pra lá. Agora segue o mesmo padrão real de
+// gerar-pdf-proposta/gerar-pdf-avaliacao (jsPDF + upload) e cria/atualiza
+// um registro em contratos_consignacao (ampliada com tipo_documento pra
+// cobrir venda/compra/termo_entrega, não só consignação).
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
@@ -106,25 +73,25 @@ Deno.serve(async (req: Request) => {
     } catch {
       return new Response(
         JSON.stringify({ error: 'Corpo da requisição inválido. JSON esperado.' }),
-        {
-          status: 400,
-          headers: { 'Content-Type': 'application/json', ...corsHeaders },
-        },
+        { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } },
       )
     }
 
     if (!body.veiculo_id && !body.proprietario_nome) {
       return new Response(
         JSON.stringify({ error: 'veiculo_id ou proprietario_nome é obrigatório' }),
-        {
-          status: 400,
-          headers: { 'Content-Type': 'application/json', ...corsHeaders },
-        },
+        { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } },
       )
     }
 
     const docType = body.document_type || 'consignacao'
-    const docName = DOC_NAMES[docType] || DOC_NAMES.consignacao
+    if (!DOC_NAMES[docType]) {
+      return new Response(JSON.stringify({ error: `document_type inválido: ${docType}` }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders },
+      })
+    }
+    const docName = DOC_NAMES[docType]
 
     let vehicleData: Record<string, any> = {}
 
@@ -143,10 +110,10 @@ Deno.serve(async (req: Request) => {
       }
 
       vehicleData = {
-        proprietario_nome: veiculo.proprietario_nome || body.proprietario_nome || '',
-        proprietario_cpf: veiculo.proprietario_cpf || '',
-        proprietario_email: veiculo.proprietario_email || '',
-        proprietario_telefone: veiculo.proprietario_telefone || '',
+        proprietario_nome: body.proprietario_nome || veiculo.proprietario_nome || '',
+        proprietario_cpf: body.proprietario_cpf || veiculo.proprietario_cpf || '',
+        proprietario_email: body.proprietario_email || veiculo.proprietario_email || '',
+        proprietario_telefone: body.proprietario_telefone || veiculo.proprietario_telefone || '',
         veiculo_modelo: veiculo.modelo || '',
         veiculo_id: veiculo.id || '',
         marca: veiculo.marca || '',
@@ -166,6 +133,9 @@ Deno.serve(async (req: Request) => {
     } else {
       vehicleData = {
         proprietario_nome: body.proprietario_nome || '',
+        proprietario_cpf: body.proprietario_cpf || '',
+        proprietario_email: body.proprietario_email || '',
+        proprietario_telefone: body.proprietario_telefone || '',
         data_entrega: formatDate(new Date().toISOString()),
       }
     }
@@ -187,19 +157,86 @@ Deno.serve(async (req: Request) => {
     }
 
     const renderedContent = replaceMarkers(templateContent, vehicleData)
-    const html = buildHtml(docName, escapeHtml(renderedContent).replace(/\n/g, '<br>'))
+    const pdfBytes = gerarPdfDocumento(docName, renderedContent)
+
+    // Número do contrato: usa o informado, ou o de um contrato existente
+    // (regeneração), ou gera um novo sequencial simples.
+    let numeroContrato = body.numero_contrato
+    if (!numeroContrato && body.contrato_id) {
+      const { data: existente } = await supabase
+        .from('contratos_consignacao')
+        .select('numero_contrato')
+        .eq('id', body.contrato_id)
+        .maybeSingle()
+      numeroContrato = existente?.numero_contrato || undefined
+    }
+    if (!numeroContrato) {
+      const { count } = await supabase
+        .from('contratos_consignacao')
+        .select('*', { count: 'exact', head: true })
+      numeroContrato = `CTR-${(count || 0) + 1}`
+    }
+
+    const filePath = `contratos/pdf/${docType}_${numeroContrato}_${Date.now()}.pdf`
+    const { error: uploadError } = await supabase.storage
+      .from('contratos-consignacao')
+      .upload(filePath, pdfBytes, { contentType: 'application/pdf', upsert: true })
+
+    if (uploadError) {
+      return new Response(JSON.stringify({ error: uploadError.message }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders },
+      })
+    }
+
+    // O bucket contratos-consignacao é privado (tem CPF/telefone de cliente,
+    // diferente do propostas-geradas que é público) — grava o CAMINHO no
+    // banco, não uma URL pública. AssinaturaDialog.tsx já sabe gerar uma URL
+    // assinada temporária a partir do caminho na hora de enviar pra
+    // assinatura, então isso não quebra nada — só evita expor o PDF
+    // permanentemente sem controle.
+    const { data: signedUrlData } = await supabase.storage
+      .from('contratos-consignacao')
+      .createSignedUrl(filePath, 3600)
+
+    const contratoRow = {
+      veiculo_id: body.veiculo_id || null,
+      tipo_documento: docType,
+      proprietario_nome: vehicleData.proprietario_nome || null,
+      proprietario_email: vehicleData.proprietario_email || null,
+      proprietario_cpf: vehicleData.proprietario_cpf || null,
+      proprietario_telefone: vehicleData.proprietario_telefone || null,
+      numero_contrato: numeroContrato,
+      pdf_url: filePath,
+    }
+
+    let contratoId = body.contrato_id
+    if (contratoId) {
+      const { error: updateError } = await supabase
+        .from('contratos_consignacao')
+        .update(contratoRow)
+        .eq('id', contratoId)
+      if (updateError) throw updateError
+    } else {
+      const { data: novoContrato, error: insertError } = await supabase
+        .from('contratos_consignacao')
+        .insert(contratoRow)
+        .select('id')
+        .single()
+      if (insertError) throw insertError
+      contratoId = novoContrato.id
+    }
 
     return new Response(
       JSON.stringify({
         success: true,
-        html,
+        contrato_id: contratoId,
+        url: signedUrlData?.signedUrl || null,
         document_type: docType,
         document_name: docName,
+        numero_contrato: numeroContrato,
       }),
-      {
-        status: 200,
-        headers: { 'Content-Type': 'application/json', ...corsHeaders },
-      },
+      { status: 200, headers: { 'Content-Type': 'application/json', ...corsHeaders } },
     )
   } catch (error) {
     console.error('Erro ao gerar documento:', error)
@@ -208,10 +245,7 @@ Deno.serve(async (req: Request) => {
         error: 'Erro interno ao gerar documento',
         details: error instanceof Error ? error.message : String(error),
       }),
-      {
-        status: 500,
-        headers: { 'Content-Type': 'application/json', ...corsHeaders },
-      },
+      { status: 500, headers: { 'Content-Type': 'application/json', ...corsHeaders } },
     )
   }
 })

@@ -13,6 +13,89 @@ nos arquivos `docs/*.md` — aqui é só o resumo de estado + pendências.
 
 ## O que está no ar hoje
 
+- **Assinatura eletrônica via Autentique — FUNCIONANDO DE PONTA A PONTA
+  (18/08/2026, sessão 8)**: a Adriana confirmou que `AUTENTIQUE_TOKEN` já
+  estava configurado — o problema real eram **3 bugs de integração** na
+  `enviar-para-assinatura`, nunca detectados porque a function tinha um
+  modo mock silencioso (removido). Achados e corrigidos, testando ao
+  vivo com a API real do Autentique:
+  1. `document.file` mandava a URL como texto — o schema exige upload de
+     arquivo de verdade (`Upload!`, multipart/form-data). Corrigido:
+     baixa os bytes do PDF e sobe via `FormData` nativo do Deno.
+  2. `webhook_url`/`auto_remind`/`expires_in` não existem em
+     `DocumentInput` — código antigo inventava esses campos. Removidos.
+  3. O cliente não é sempre `signatures[0]` — o Autentique adiciona a
+     conta dona do token como signatário extra automaticamente. Corrigido
+     pra buscar o assinante certo pelo nome, não pela posição. Também
+     corrigido `signatures[].url` (não existe) pra
+     `signatures[].link.short_link` (correto).
+  Decisão da Adriana no caminho: cliente é assinante só por **nome**, sem
+  e-mail (com e-mail, o Autentique manda convite direto e não devolve
+  link pra gente controlar via WhatsApp/e-mail); e-mail da loja usa
+  domínio do **Resend** (`vendas@carroeciamotors.com.br`), não do Brevo
+  (que é só pra marketing) — `BREVO_SENDER_EMAIL` também estava causando
+  erro de validação por conta própria. **Testado com 2 documentos reais
+  criados no Autentique** (2 dos 20/mês usados, autorizada pela Adriana);
+  segundo teste confirmou o link de assinatura do cliente vindo certo
+  (`https://assina.ae/...`). Registros de teste apagados do banco.
+  **Em aberto pra depois**: "Enviar E-mail" no `AssinaturaDialog.tsx`
+  hoje só mostra/copia o link — não dispara e-mail de verdade via Resend
+  ainda (passo pequeno se a Adriana quiser); webhook de conclusão
+  (`webhook-autentique`) não testado ao vivo, precisa confirmar se está
+  registrado no painel da conta Autentique.
+- **Decisões sobre os achados da Documentação de API implementadas
+  (18/08/2026, sessão 8)**: a Adriana decidiu, item por item, o que fazer
+  com os achados de código morto/incompleto encontrados. Implementado:
+  - **`ai-agents` removida** — `src/lib/ai-agents.ts`,
+    `supabase/functions/ai-agents/` apagados, function desimplantada do
+    Supabase.
+  - **`gerar-imagem` corrigida** — agora grava no R2 (mesmo padrão de
+    `gerar-imagem-vaga`), não mais no Supabase Storage. Reimplantada.
+  - **`gerar-pdf-contrato` reescrita por completo** — antes só devolvia
+    HTML pro navegador imprimir, sem persistir nada; agora gera PDF real
+    (jsPDF) pra qualquer um dos 4 tipos de contrato (venda, compra,
+    consignação, termo de entrega — não só consignação, a pedido da
+    Adriana, já que qualquer documento que precise de assinatura remota
+    deve ter essa opção) e sobe pro bucket `contratos-consignacao`.
+    **Achado no caminho**: o bucket tinha `allowed_mime_types =
+    ['document/pdf', ...]` — "document/pdf" não existe como MIME type
+    (o certo é `application/pdf`), bloquearia qualquer upload de PDF
+    real que já tivesse sido tentado. Corrigido.
+  - **Migration `contratos_consignacao_tipo_documento`** — tabela ampliada
+    com coluna `tipo_documento`, cobre qualquer tipo de contrato agora,
+    não só consignação.
+  - **Nova seção "Gerar Documento de Contrato" em
+    `/admin/modelos-documentos`** — achado no caminho: o painel de ações
+    do contrato (`PainelContratoAcoes.tsx`, com os 3 botões
+    DOCX/PDF/Assinatura Autentique) **nunca tinha sido colocado em
+    nenhuma tela do sistema** — existia no código, órfão. Construída
+    seção nova (mais simples, não reaproveitou os componentes órfãos
+    porque o formato de dado deles é específico de consignação) com
+    seletor de tipo de documento + veículo (opcional, preenche
+    proprietário automático) + geração de PDF + botão de assinatura via
+    Autentique.
+  - **Testado ao vivo, ponta a ponta**: gerei um "Contrato de Venda" de
+    teste via `curl` direto — PDF real confirmado (magic bytes `%PDF-1.3`
+    corretos). Testei o envio pro Autentique com esse PDF real (usando 1
+    dos 20 do limite mensal, autorizado pela Adriana) — **ainda caiu em
+    modo mock**, confirmando que o problema real agora é só o
+    `AUTENTIQUE_TOKEN` (ausente/inválido), não mais o PDF. Registro de
+    teste apagado do banco; sobrou 1 arquivo PDF de teste no Storage
+    (privado, sem dado sensível) que não consegui apagar sem sessão de
+    usuário — baixa prioridade.
+  - **Mantido sem mexer (decisão da Adriana)**: `sync-estoque` e
+    `admin-plataformas-api` continuam arquivadas, sem remoção.
+  - **Bloqueado, precisa da Adriana**: retomar `auto-migrate-r2` (comando
+    pronto em `docs/admin-infraestrutura.md`, precisa do
+    `AUTO_MIGRATE_SECRET` real, que só existe no Supabase Dashboard) e
+    configurar o `AUTENTIQUE_TOKEN` real (só assim a assinatura
+    eletrônica funciona de ponta a ponta).
+  - **Correção de achado anterior**: o botão "Compartilhar veículo" (que
+    eu tinha documentado como "não existe") **já existia** —
+    `Veiculo.tsx`, ícone `Share2`, já usa `getShareUrl()` que já gera o
+    link `/s/{slug}` corretamente. Minha busca anterior não pegou porque
+    o link é montado num template string. Corrigido em
+    `docs/admin-infraestrutura.md`.
 - **Sitemap corrigido (18/08/2026, sessão 8)**: `public/sitemap.xml`
   (estático, parado desde 20/04/2026, só 9 veículos) removido; regra nova
   em `public/_redirects` faz `/sitemap.xml` redirecionar (301) pra function

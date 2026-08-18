@@ -15,7 +15,7 @@ configuração de CORS, não as functions em si).
 | `get-r2-presigned-url` | ✅ Ativa, é o coração do upload de foto | Gera URL assinada pra upload direto no R2 — usada por praticamente toda tela que sobe imagem |
 | `auto-migrate-r2` | 🟡 Rodou uma vez, parou | Migração em lote de arquivos do Supabase Storage pro R2 — sem cron, ficou 1 arquivo travado |
 | `migrar-storage-r2` | 🟡 Nunca chamada pela tela | Mesmo tipo de migração, versão manual (login), sem nenhum botão que a acione |
-| `og-vehicle` | 🟡 Pronta, mas nunca disparada | Gera prévia rica (foto+preço) pra compartilhamento de veículo — rota existe, ninguém gera o link que a aciona |
+| `og-vehicle` | ✅ Ativa e conectada | Gera prévia rica (foto+preço) pra compartilhamento de veículo — botão "Compartilhar" já usa essa rota de ponta a ponta |
 | `sitemap` | ✅ **Corrigida 18/08/2026** | Gera sitemap.xml dinâmico — era código morto (arquivo estático tomava o lugar dela), agora é a resposta real de `/sitemap.xml` |
 
 ## `get-r2-presigned-url` — o upload real de foto
@@ -47,25 +47,26 @@ autentica por login de usuário e tem ações (`test`/`migrate`/
 | `migrar-storage-r2` não tem nenhum caller no `src/` — nenhum botão de tela aciona nenhuma das 4 ações dela | grep em `src/`, 18/08/2026 |
 | Isso conecta com o achado de `gerar-imagem` (`docs/admin-ia-conteudo.md`): imagens que caem no Supabase Storage hoje (bucket `imagens`, que está na lista de buckets que `auto-migrate-r2` migraria) **não têm nenhum processo automático levando elas pro R2** — ficam lá pra sempre até alguém rodar a migração manualmente de novo | leitura cruzada dos dois achados |
 
-## `og-vehicle` — pronta, mas nunca é chamada
+## `og-vehicle` — ativa e conectada (correção de achado, 18/08/2026)
 
 Gera uma página HTML com meta tags Open Graph específicas do veículo (foto,
 preço, título) — filtra por `User-Agent` de bot de rede social (WhatsApp,
-Facebook, Telegram etc.) antes de gerar. Existe até uma regra de roteamento
-pronta em `public/_redirects`:
+Facebook, Telegram etc.) antes de gerar. Roteada via `public/_redirects`:
 
 ```
 /s/:slug → https://.../functions/v1/og-vehicle?slug=:slug
 ```
 
-**Achado 18/08/2026**: nada no site gera link nesse formato (`/s/{slug}`) —
-busquei em todo o `src/` e não achei nenhum botão "Compartilhar" ou geração
-de link curto que use essa rota. Ou seja, a peça existe e o "encanamento"
-existe, mas nunca é acionada. Quando um cliente compartilha o link normal de
-um veículo (`/estoque/{slug}`) no WhatsApp, a prévia que aparece é a
-genérica do site inteiro (logo, "Carro e Cia Veículos") — não a foto/preço
-daquele carro específico, porque `src/components/SEO.tsx` só troca as meta
-tags via JavaScript, que bots de rede social não executam.
+**Correção de achado — 18/08/2026**: na primeira passada eu tinha
+concluído que nada gerava link nesse formato (busca por `'/s/'` literal não
+encontrou nada). **Estava errado** — o botão "Compartilhar" já existe na
+página do veículo (`Veiculo.tsx`, ícone `Share2` → `handleShareCTA`) e já
+usa `getShareUrl()` (`src/lib/cta-router.ts`), que monta exatamente
+`https://www.carroeciamotors.com.br/s/{slug}` (minha busca anterior não
+pegou porque o link é montado dentro de um template string, sem a
+substring `'/s/'` isolada). O fluxo completo — botão → link `/s/{slug}` →
+redirecionamento → `og-vehicle` → prévia rica — já está implementado e
+conectado de ponta a ponta. **Nada precisa ser construído aqui.**
 
 ## `sitemap` — corrigido em 18/08/2026, era código morto
 
@@ -111,15 +112,28 @@ Resolvido de ponta a ponta.
 
 ## Becos sem saída — não repetir
 
-- Não adianta procurar um botão "Compartilhar veículo" pra testar o
-  `og-vehicle` — ele não existe na interface hoje.
+- Não gastar tempo de novo achando que o botão "Compartilhar veículo" não
+  existe — já existe (`Veiculo.tsx`, ícone `Share2`) e já usa o `og-vehicle`
+  de ponta a ponta. Se um cliente reportar prévia genérica no WhatsApp,
+  investigar se o `slug`/`id` do veículo está batendo certo em `og-vehicle`,
+  não assumir que falta construir o botão.
 
 ## Em aberto
 
-- **Decisão pendente da Adriana** — se vale a pena criar um botão
-  "Compartilhar" que gere link `/s/{slug}` pra aproveitar o `og-vehicle`
-  já pronto, ou remover a rota/function se não for prioridade.
-- **Decisão pendente da Adriana** — retomar a migração R2 (rodar
-  `auto-migrate-r2` de novo, ou fazer manualmente) pros arquivos que ainda
-  estão no Supabase Storage, incluindo os que `gerar-imagem` continua
-  criando lá hoje.
+- **[DECIDIDO 18/08/2026, bloqueado] Retomar a migração R2.** A Adriana
+  decidiu rodar `auto-migrate-r2` de novo — mas essa function exige um
+  segredo (`AUTO_MIGRATE_SECRET`) que só existe nos Secrets do Supabase, e
+  eu não tenho como ler nem adivinhar. Preparei o comando pronto (ver
+  abaixo), só falta a Adriana rodar com o valor real (não deve ser colado
+  no chat — mesmo cuidado de sempre com segredo). Roda em lotes de 25
+  arquivos por chamada (limite de 2 minutos por execução) — repetir até a
+  resposta não trazer mais arquivo processado:
+  ```bash
+  curl -s -X POST "https://htpcqdbhktmvppfemnad.supabase.co/functions/v1/auto-migrate-r2?secret=SEU_SECRET_AQUI" \
+    -H "Content-Type: application/json" \
+    -d '{"dryRun": false}'
+  ```
+  Trocar `SEU_SECRET_AQUI` pelo valor real (Supabase Dashboard → Edge
+  Functions → `auto-migrate-r2` → Secrets, ou `AUTO_MIGRATE_SECRET` na
+  lista geral de Secrets do projeto). Repetir o comando até `processed`
+  vir `0` na resposta.

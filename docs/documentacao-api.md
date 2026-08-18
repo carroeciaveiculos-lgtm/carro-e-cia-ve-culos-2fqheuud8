@@ -9,9 +9,13 @@ Ajuda (`/admin/ajuda`).
 **Como usar**: ache a function na tabela do grupo, clique no link da coluna
 "Doc".
 
-Última atualização: 2026-08-18 — os 4 grupos (67 functions) estão
-documentados. Falta só o resumo simplificado dos grupos 2, 3 e 4 na Central
-de Ajuda (`grupo='dev_ti'`) — hoje só o do grupo 1 existe lá.
+Última atualização: 2026-08-18 — os 4 grupos (66 functions — `ai-agents`
+removida) estão documentados, com os 4 resumos correspondentes na Central
+de Ajuda (`grupo='dev_ti'`). Depois da documentação, várias das decisões em
+aberto encontradas já foram implementadas — ver `MEMORY_WORK.MD` pro
+resumo mais recente (correção do sitemap, `ai-agents` removida,
+`gerar-imagem` migrada pro R2, `gerar-pdf-contrato` reescrita com PDF real
+e assinatura eletrônica funcional, nova seção em `/admin/modelos-documentos`).
 
 ## Status do plano
 
@@ -19,7 +23,7 @@ de Ajuda (`grupo='dev_ti'`) — hoje só o do grupo 1 existe lá.
 |---|---|---|
 | 1. Integrações com portais/terceiros | 30 | ✅ Escrito (18/08/2026) |
 | 2. Internas do admin | 14 | ✅ Escrito (18/08/2026) |
-| 3. IA e PDFs | 13 | ✅ Escrito (18/08/2026) |
+| 3. IA e PDFs | 12 | ✅ Escrito (18/08/2026) |
 | 4. Infraestrutura (R2 + SEO) | 5 | ✅ Escrito (18/08/2026) |
 
 ---
@@ -116,18 +120,19 @@ de Ajuda (`grupo='dev_ti'`) — hoje só o do grupo 1 existe lá.
 | Function | O que faz | Doc |
 |---|---|---|
 | `ai-sdr` | Clara — atendimento via WhatsApp/Instagram | [leads-e-sdr.md](leads-e-sdr.md) |
-| `ai-agents` | **Nunca usada** — agentes de negociação/troca prontos, sem tela que chame | [admin-ia-conteudo.md](admin-ia-conteudo.md) |
 | `ai-assistant` | Brain IA — assistente de conhecimento (Ajuda, Configurações, onboarding) | [admin-ia-conteudo.md](admin-ia-conteudo.md) |
 | `ads-agent` | Agente de anúncios — chat + audita/pausa anúncio (chamado por `meta-capi-postback` na venda) | [admin-ia-conteudo.md](admin-ia-conteudo.md) |
-| `gerar-conteudo` | Geração de conteúdo via IA — achado: só lê o nome de variável com erro de digitação da chave do Gemini, sem fallback | [admin-ia-conteudo.md](admin-ia-conteudo.md) |
+| `gerar-conteudo` | Geração de conteúdo via IA — fallback da chave do Gemini corrigido 18/08/2026 | [admin-ia-conteudo.md](admin-ia-conteudo.md) |
 | `gerar-conteudo-social` | Geração de legenda pra post social de 1 veículo | [admin-ia-conteudo.md](admin-ia-conteudo.md) |
 | `gerar-ideias-social` | Aba "Ideias com IA" da Central de Redes Sociais | [admin-ia-conteudo.md](admin-ia-conteudo.md) |
-| `gerar-imagem` | Geração de imagem via IA — achado: grava no Supabase Storage, não no R2 como o resto do sistema | [admin-ia-conteudo.md](admin-ia-conteudo.md) |
+| `gerar-imagem` | Geração de imagem via IA — corrigida 18/08/2026 pra gravar no R2 | [admin-ia-conteudo.md](admin-ia-conteudo.md) |
 | `gerar-imagem-vaga` | Gera imagem padrão de post de vaga (edição com logo+fachada reais) | [admin-ia-conteudo.md](admin-ia-conteudo.md) |
 | `gerar-vaga-ia` | Gera título/descrição de vaga via IA | [admin-ia-conteudo.md](admin-ia-conteudo.md) |
 | `gerar-pdf-avaliacao` | Gera PDF real de proposta de avaliação (jsPDF) | [admin-pdfs.md](admin-pdfs.md) |
-| `gerar-pdf-contrato` | **Não gera PDF** — devolve HTML pro navegador imprimir; achado: é a causa raiz do mock do Autentique | [admin-pdfs.md](admin-pdfs.md) |
+| `gerar-pdf-contrato` | Gera PDF real de qualquer contrato (venda/compra/consignação/termo) — reescrita 18/08/2026, era 100% HTML sem persistência | [admin-pdfs.md](admin-pdfs.md) |
 | `gerar-pdf-proposta` | Gera PDF real de proposta comercial — era 100% mock, corrigido 17/08/2026 | [admin-pdfs.md](admin-pdfs.md) |
+
+*(`ai-agents` removida em 18/08/2026 — nunca foi usada, ver `docs/admin-ia-conteudo.md`)*
 
 ## 4. Infraestrutura (armazenamento e SEO)
 
@@ -138,5 +143,5 @@ de Ajuda (`grupo='dev_ti'`) — hoje só o do grupo 1 existe lá.
 | `get-r2-presigned-url` | Gera URL assinada pra upload direto no R2 — coração do upload de foto do sistema | [admin-infraestrutura.md](admin-infraestrutura.md) |
 | `auto-migrate-r2` | Migração de arquivo pro R2 — rodou uma vez (05/08/2026), parou travada, sem cron | [admin-infraestrutura.md](admin-infraestrutura.md) |
 | `migrar-storage-r2` | Mesma migração, versão manual — nenhum botão de tela aciona | [admin-infraestrutura.md](admin-infraestrutura.md), [R2_CORS_CONFIGURATION.md](R2_CORS_CONFIGURATION.md) (CORS) |
-| `og-vehicle` | Prévia rica de veículo pra compartilhamento — pronta, mas nada gera o link que a aciona | [admin-infraestrutura.md](admin-infraestrutura.md) |
+| `og-vehicle` | Prévia rica de veículo pra compartilhamento — ativa, botão "Compartilhar" já usa de ponta a ponta | [admin-infraestrutura.md](admin-infraestrutura.md) |
 | `sitemap` | **Corrigida 18/08/2026** — era código morto (arquivo estático parado desde abril/2026 tomava o lugar dela), agora `/sitemap.xml` responde ao vivo | [admin-infraestrutura.md](admin-infraestrutura.md) |

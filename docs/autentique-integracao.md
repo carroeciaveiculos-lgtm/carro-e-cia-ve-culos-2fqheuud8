@@ -5,26 +5,36 @@ _Becos sem saída_ lista o que já foi testado e falhou — **não repita**. Ao
 descobrir algo novo, acrescente aqui com data e fonte, em vez de deixar só no
 histórico de conversa.
 
-Última atualização: 2026-08-18.
+Última atualização: 2026-08-18 — **funcionando de ponta a ponta, testado com
+documento real**.
 
 ## O que é
 
-Integração com a [Autentique](https://www.autentique.com.br/) (API GraphQL)
-pra coletar assinatura eletrônica em contratos de consignação. Usada só em
-`contratos_consignacao` hoje — nenhum outro tipo de documento do sistema
-passa por aqui.
+Integração com a [Autentique](https://www.autentique.com.br/) (API GraphQL,
+limite de 20 documentos/mês no plano atual) pra coletar assinatura
+eletrônica remota — cliente assina pelo celular, de onde estiver, em vez de
+precisar ir à loja. Usada em `contratos_consignacao`, que desde 18/08/2026
+cobre **qualquer** tipo de documento que precise de assinatura (venda,
+compra, consignação, termo de entrega — ver `tipo_documento` em
+`docs/admin-pdfs.md`), não só consignação.
 
 ## O caminho de um contrato até a assinatura
 
 ```
-contratos_consignacao (status: aguardando_assinatura)
-  └─ enviar-para-assinatura     monta o documento e os 2 signatários
-     │                          (cliente + loja), chama a API do Autentique
+contratos_consignacao
+  └─ enviar-para-assinatura
+     ├─ baixa os bytes do PDF (pdf_url, URL assinada temporária do
+     │  bucket privado contratos-consignacao)
+     ├─ monta multipart/form-data (operations + map + file) — o Autentique
+     │  exige upload de arquivo de verdade, não aceita URL como texto
      ├─ POST api.autentique.com.br/v2/graphql   mutation createDocument
-     └─ grava assinatura_link, assinatura_id_externo, assinatura_status='pendente'
+     │  signatários: cliente (só nome, sem e-mail — ver achado abaixo) +
+     │  loja (vendas@carroeciamotors.com.br)
+     └─ grava assinatura_link (link do CLIENTE, não da loja — ver achado),
+        assinatura_id_externo, assinatura_status='pendente'
         + assinatura_historico (evento 'link_enviado_autentique')
 
-  ... cliente assina no link recebido por e-mail (fora do nosso sistema) ...
+  ... loja manda o link por WhatsApp ou e-mail (Resend), cliente assina ...
 
   └─ webhook-autentique          recebido quando o Autentique dispara o
      │                           evento 'document_signed'
@@ -32,43 +42,41 @@ contratos_consignacao (status: aguardando_assinatura)
         + assinatura_historico (evento 'assinado_autentique')
 ```
 
-`enviar-para-assinatura` é chamada pelo frontend autenticado (`verify_jwt =
-true`); `webhook-autentique` é pública (`verify_jwt = false`), chamada pelo
-próprio Autentique.
-
 ## Fatos confirmados
 
 | Fato | Como se sabe |
 |---|---|
-| A função tem um **modo mock silencioso**: se a chamada à API do Autentique falhar (token inválido/ausente, erro de rede) ou a resposta vier com `errors`, ela **não propaga o erro** — grava no banco um `assinatura_id_externo` fabricado (`autentique_` + string aleatória) e um `assinatura_link` que aponta pra uma URL que nunca existiu, e devolve `success: true, mock: true` | Leitura direta de `enviar-para-assinatura/index.ts`, linhas 87-112 |
-| **O único contrato que já passou por essa function está com o link mock.** `CTR-41` (criado 16/04/2026): `assinatura_id_externo = "autentique_q69c16b79"`, status parado em `pendente` desde então | `select * from contratos_consignacao where assinatura_id_externo is not null` — 1 única linha, 18/08/2026 |
-| O link salvo desse contrato retorna **404** — não existe no Autentique de verdade | `curl -I https://autentique.com.br/sign/autentique_q69c16b79`, 18/08/2026 |
-| Cada envio cria **2 signatários**: o cliente (nome/e-mail do formulário) e a própria loja (`BREVO_SENDER_NAME`/`BREVO_SENDER_EMAIL`, com fallback pra "Carro e Cia Veículos"/`vendas@carroeciamotors.com.br`) | leitura do payload `variables.signers` em `enviar-para-assinatura/index.ts` |
-| O prazo do documento no Autentique é fixo em **7 dias** (`expires_in: 7`), com lembrete automático (`auto_remind: true`) | mesmo arquivo |
-| O webhook busca o contrato pelo `assinatura_id_externo` — **se esse campo não bater com o `document.id` que o Autentique manda, o webhook falha** com erro 400 e não atualiza nada (sem alerta pra ninguém) | leitura de `webhook-autentique/index.ts`, linhas 26-36 |
+| **[RESOLVIDO 18/08/2026] Não era o `AUTENTIQUE_TOKEN`.** A Adriana confirmou que a chave já estava configurada — o problema real eram **3 bugs de integração** no código, nunca detectados porque a function tinha um modo mock silencioso (removido, ver abaixo) que escondia qualquer falha | testado ao vivo, ver os 3 achados abaixo |
+| **Achado 1 — campo `file` precisa ser upload de verdade.** O código antigo mandava `document.file = pdf_url` (uma URL como texto) — o schema real do Autentique exige `file: Upload!`, um upload multipart de verdade (`graphql-multipart-request-spec`). Confirmado na documentação oficial (`docs.autentique.com.br/api/mutations/criando-um-documento`) | erro real do Autentique: `"Field \"createDocument\" argument \"file\" of type \"Upload!\" is required but not provided"` |
+| **Achado 2 — campos inventados em `DocumentInput`.** `webhook_url`, `auto_remind`, `expires_in` **não existem** no schema real — o código antigo assumia que existiam. Removidos. Webhook de conclusão é configurado uma vez direto no painel da conta Autentique, não por chamada de API | erro real: `"Field \"webhook_url\" is not defined by type \"DocumentInput\""` (e o mesmo pros outros dois) |
+| **Achado 3 — o cliente não é sempre `signatures[0]`.** O Autentique adiciona a conta dona do token (`lgacomerciodeveiculos@gmail.com`) automaticamente como 1º signatário/aprovador — o array de signatures na resposta tem 3 itens, não 2, e a ordem não é garantida. Código antigo lia `signatures[0].url` (campo que também não existe — o certo é `signatures[].link.short_link`) achando que era o cliente. Corrigido pra buscar pelo nome (`signatures.find(s => s.name === nome_cliente)`) | consulta real ao documento criado nos testes, 18/08/2026 — resposta teve 3 signatures, cliente no índice 1 |
+| **Cliente é adicionado só por NOME, sem e-mail — decisão deliberada.** O campo `link.short_link` (o link de assinatura) só vem preenchido quando o signatário **não tem e-mail** — com e-mail, é o próprio Autentique quem manda o convite direto, sem devolver link nenhum pra gente. Como a Adriana quer controlar o envio (WhatsApp ou e-mail via Resend, não Autentique mandando direto), o e-mail do cliente não vai pro Autentique — só é usado do nosso lado | documentação oficial + confirmado ao vivo: com e-mail, `link` veio `null`; sem e-mail, veio a URL real (`https://assina.ae/...`) |
+| **E-mail da loja não pode vir de `BREVO_SENDER_EMAIL`.** A Adriana confirmou (18/08/2026): esse tipo de documento transacional deve usar o domínio do Resend (e-mails internos), não o do Brevo (marketing) — além disso, o valor de `BREVO_SENDER_EMAIL` estava causando erro de validação (`must_be_a_valid_email_address`) mesmo depois de tentar extrair um possível formato "Nome \<email\>". Fixado em `vendas@carroeciamotors.com.br` (domínio já verificado no Resend) | erro real do Autentique + decisão da Adriana |
+| **Modo mock silencioso removido.** A versão antiga, quando a chamada falhava por qualquer motivo, gravava um `assinatura_id_externo` fabricado e devolvia `success: true, mock: true` — foi isso que escondeu os 3 bugs acima por 4 meses (`CTR-41`, criado 16/04/2026, nunca chegou a `assinado`). Agora erro de verdade devolve `success: false` de verdade, sem fingir sucesso | leitura do código antigo vs. novo |
+| **Testado ao vivo com documento real (18/08/2026)**: 2 documentos de teste criados de verdade no Autentique (consumindo 2 dos 20/mês, autorizado pela Adriana) — o segundo confirmou o link de assinatura do cliente vindo certo (`https://assina.ae/...`). Registros de teste apagados do banco depois (dado fake, "Cliente Teste Diagnostico") — os documentos em si continuam existindo do lado do Autentique (não há como apagar por lá sem acesso ao painel deles) | testes diretos via `curl`, 18/08/2026 |
 
 ## Becos sem saída — não repetir
 
-- Não adianta olhar `assinatura_status = 'assinado'` no banco como prova de
-  que a integração funciona de ponta a ponta — o único registro existente
-  nunca passou de `pendente`, e é mock. Não há nenhum caso real testado
-  ainda.
+- Não confiar na documentação/exemplos genéricos do Autentique sem testar
+  ao vivo — o schema real tem diferenças (`webhook_url`/`auto_remind`/
+  `expires_in` não existem; `signatures[].url` não existe, é
+  `signatures[].link.short_link`) que só apareceram testando de verdade.
+- Não assumir que `signatures[0]` é o cliente — a conta dona do token
+  entra automaticamente como assinante extra.
+- Não adicionar o cliente com e-mail achando que isso ajuda — tira o
+  `link` da resposta (o Autentique passa a mandar convite direto, sem
+  devolver link pra gente controlar o envio).
 
 ## Em aberto
 
-- **Achado em 18/08/2026, causa raiz encontrada** (ver
-  `docs/admin-pdfs.md`): o `pdf_url` gravado em `CTR-41` **não é um
-  contrato real** — é
-  `https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf`,
-  um PDF de teste público do W3C. Ou seja, o teste desse fluxo foi feito
-  com um arquivo qualquer, não com um contrato gerado pelo sistema — e não
-  poderia ter sido diferente, porque `gerar-pdf-contrato` **não gera
-  arquivo PDF nenhum** (devolve HTML pro navegador imprimir, ver
-  `docs/admin-pdfs.md`). Os dois problemas são a mesma história: pra esse
-  fluxo funcionar de ponta a ponta, `gerar-pdf-contrato` precisaria virar
-  um PDF de verdade com URL própria antes de mandar pro Autentique. Ainda
-  não confirmado se `AUTENTIQUE_TOKEN` está configurado — decisão da
-  Adriana foi documentar e seguir, corrigir fica pra quando ela priorizar.
-- Enquanto isso não for resolvido, qualquer contrato novo mandado por aqui
-  corre o mesmo risco de cair no mock sem ninguém perceber — a resposta da
-  function parece sucesso (`success: true`) mesmo quando é fake.
+- Nenhum bloqueio técnico conhecido — o fluxo funciona de ponta a ponta,
+  testado com documento real.
+- **Decisão futura**: hoje "Enviar E-mail" no `AssinaturaDialog.tsx` só
+  copia/mostra o link gerado — não dispara um e-mail de verdade via
+  Resend ainda. Se a Adriana quiser um botão que realmente manda o e-mail
+  (não só copia o link), é um passo pequeno a mais (chamar uma function
+  de envio de e-mail com o link, mesmo padrão já usado em
+  `on-lead-created`/`enviar-candidatura`).
+- Webhook de conclusão (`webhook-autentique`) não foi testado ao vivo
+  nesta sessão — precisa confirmar se está registrado no painel da conta
+  Autentique (não é configurado por API, ver achado acima).

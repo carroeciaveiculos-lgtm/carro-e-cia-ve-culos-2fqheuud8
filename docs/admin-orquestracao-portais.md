@@ -59,11 +59,10 @@ anúncio, qualquer outro valor publica/atualiza.
 
 ## Em aberto
 
-- **Decisão pendente da Adriana**: `sync-estoque` e `admin-plataformas-api`
-  são candidatas a remoção (código morto), no mesmo espírito de
-  `whatsapp-webhook`/`webhook-portais` (ver `docs/meta-integracao.md`) e
-  `wm-sync-test`/`wm-sync-validator-test` (`docs/edge-functions-rules.md`).
-  Não removidas — só reportado, decisão não é automática.
+- **[DECIDIDO 18/08/2026] Manter arquivadas por enquanto.** A Adriana
+  decidiu não remover `sync-estoque` nem `admin-plataformas-api` agora —
+  ficam como código morto documentado, sem uso. Revisitar se algum dia
+  surgir plano de reativar alguma das duas.
 - Se algum dia `admin-plataformas-api` for reaproveitada, o hardcode do
   e-mail kmzero precisa ser trocado por checagem de `nivel` antes de
   liberar pra qualquer admin de verdade usar — do jeito que está, bloquearia

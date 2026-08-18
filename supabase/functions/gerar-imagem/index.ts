@@ -1,5 +1,6 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from 'jsr:@supabase/supabase-js@2'
+import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -7,6 +8,8 @@ const corsHeaders = {
   'Access-Control-Allow-Headers':
     'authorization, x-client-info, x-supabase-client-platform, apikey, content-type',
 }
+
+const R2_PUBLIC_BASE = 'https://imagens.carroeciamotors.com.br'
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
@@ -66,19 +69,39 @@ Deno.serve(async (req) => {
       throw new Error('Nenhuma imagem foi retornada pelo provedor')
     }
 
+    // Sobe pro R2 (Cloudflare) — mesmo padrão de gerar-imagem-vaga. Antes
+    // gravava no Supabase Storage, diferente do resto do sistema; corrigido
+    // 18/08/2026 (achado durante a Documentação de API).
+    const R2_ACCESS_KEY_ID = Deno.env.get('R2_ACCESS_KEY_ID')
+    const R2_SECRET_ACCESS_KEY = Deno.env.get('R2_SECRET_ACCESS_KEY')
+    const R2_ENDPOINT = Deno.env.get('R2_ENDPOINT')
+    const R2_BUCKET = Deno.env.get('R2_BUCKET') || 'carroeciamotors-imagens'
+
+    if (!R2_ACCESS_KEY_ID || !R2_SECRET_ACCESS_KEY || !R2_ENDPOINT) {
+      throw new Error('R2 não configurado')
+    }
+
+    const s3Client = new S3Client({
+      region: 'auto',
+      endpoint: R2_ENDPOINT,
+      credentials: { accessKeyId: R2_ACCESS_KEY_ID, secretAccessKey: R2_SECRET_ACCESS_KEY },
+      forcePathStyle: true,
+    })
+
+    const key = `blog/${Date.now()}_ia_generated.png`
+    await s3Client.send(
+      new PutObjectCommand({
+        Bucket: R2_BUCKET,
+        Key: key,
+        Body: bytes,
+        ContentType: 'image/png',
+      }),
+    )
+
     const supabaseService = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
     )
-
-    const fileName = `ia_generated_${Date.now()}.png`
-    const { error: uploadError } = await supabaseService.storage
-      .from('imagens')
-      .upload(fileName, bytes, { contentType: 'image/png' })
-
-    if (uploadError) throw uploadError
-
-    const { data: publicUrlData } = supabaseService.storage.from('imagens').getPublicUrl(fileName)
 
     await supabaseService.from('logs_ia').insert({
       usuario_id: user.id,
@@ -88,7 +111,7 @@ Deno.serve(async (req) => {
       status: 'sucesso',
     })
 
-    return new Response(JSON.stringify({ success: true, url: publicUrlData.publicUrl }), {
+    return new Response(JSON.stringify({ success: true, url: `${R2_PUBLIC_BASE}/${key}` }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
   } catch (err: any) {
