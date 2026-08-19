@@ -47,6 +47,26 @@ async function enviarFotos(
   return { enviadas: list.length }
 }
 
+// Achado 18/08/2026, testando ao vivo em produção: POST /offer cria o
+// anúncio como DRAFT — fica invisível pro público até um PUT separado em
+// /offer/{offerId}/PUBLISHED. Sem essa chamada, "criar" nunca publicava de
+// verdade (25 anúncios reais ficaram todos em rascunho até serem
+// publicados manualmente). Chamada depois do upload de fotos, pra não
+// publicar um anúncio ainda sem foto nenhuma.
+async function publicarOferta(
+  token: string,
+  sellerId: string,
+  offerId: string,
+): Promise<{ publicado: boolean; error?: string }> {
+  const res = await fetch(`${BASE}/seller/${sellerId}/offer/${offerId}/PUBLISHED`, {
+    method: 'PUT',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: '{}',
+  })
+  if (!res.ok) return { publicado: false, error: `Publicar: HTTP ${res.status} — ${await res.text()}` }
+  return { publicado: true }
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
 
@@ -135,18 +155,27 @@ Deno.serve(async (req: Request) => {
               .from('napista_mapeamento_veiculos')
               .update({ napista_offer_id: data.id })
               .eq('id', mapeamento.id)
+            const fotosResultado = await enviarFotos(token, sellerId, data.id, fotosVeiculo)
+            const publicacaoResultado = await publicarOferta(token, sellerId, data.id)
             await supabase
               .from('estoque_publicacoes')
               .update({
                 status: 'publicado',
                 post_id: data.id,
                 publicado_em: new Date().toISOString(),
-                erro_msg: null,
+                erro_msg: publicacaoResultado.publicado
+                  ? null
+                  : `Anúncio criado mas ficou em rascunho — ${publicacaoResultado.error}`,
               })
               .eq('id', pub.id)
             await supabase.from('veiculos').update({ publicado_napista: true }).eq('id', veiculo.id)
-            const fotosResultado = await enviarFotos(token, sellerId, data.id, fotosVeiculo)
-            results.push({ id: pub.id, status: 'created', offerId: data.id, fotos: fotosResultado })
+            results.push({
+              id: pub.id,
+              status: 'created',
+              offerId: data.id,
+              fotos: fotosResultado,
+              publicado: publicacaoResultado.publicado,
+            })
           } else {
             const msg = `HTTP ${res.status} — ${JSON.stringify(data)}`
             await supabase.from('estoque_publicacoes').update({ status: 'error', erro_msg: msg }).eq('id', pub.id)

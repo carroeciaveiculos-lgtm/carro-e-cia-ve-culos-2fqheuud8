@@ -296,13 +296,20 @@ ainda, mas relevante pro futuro (Clara/CRM podem precisar receber isso).
 
 ## Achados reais da migração pra produção (18/08/2026)
 
-- **`napista-sync` cria o anúncio mas NÃO publica.** O `POST
-  /seller/{sellerId}/offer` cria o anúncio como `DRAFT` — é preciso um
-  `PUT /seller/{sellerId}/offer/{offerId}/PUBLISHED` separado depois pra
-  ele ficar visível de verdade. A function hoje não faz esse segundo
-  passo — os 11 anúncios novos desta sessão ficaram como rascunho até eu
-  publicar manualmente via `curl`. **Corrigir `napista-sync` pra publicar
-  automaticamente depois de criar é trabalho futuro ainda não feito.**
+- **[CORRIGIDO 18/08/2026] `napista-sync` criava o anúncio mas não
+  publicava.** O `POST /seller/{sellerId}/offer` cria o anúncio como
+  `DRAFT` — precisa de um `PUT /seller/{sellerId}/offer/{offerId}/PUBLISHED`
+  separado depois pra ficar visível de verdade. A function não fazia esse
+  segundo passo — os 11 anúncios novos daquela sessão ficaram como
+  rascunho até serem publicados manualmente via `curl`. Corrigido: nova
+  função `publicarOferta()` chamada logo depois do upload de fotos (pra
+  não publicar um anúncio sem foto nenhuma) — se a publicação falhar, o
+  registro continua `publicado` no nosso controle (o anúncio existe de
+  verdade, só ficou em rascunho) com o erro anotado em `erro_msg`, não
+  vira `error` (evita recriar duplicado numa nova tentativa). Testado ao
+  vivo com um veículo fake temporário (oculto do site, apagado depois):
+  criado e confirmado com status `PUBLISHED` na API, sem precisar de
+  nenhum passo manual.
 - **`sync_para_estoque` pode pular marca silenciosamente.** Na
   sincronização de catálogo desta sessão, KIA e VOLKSWAGEN não vieram
   (return vazio de modelos) mesmo com a marca certa identificada — a

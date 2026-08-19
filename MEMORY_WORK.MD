@@ -33,9 +33,13 @@ nos arquivos `docs/*.md` — aqui é só o resumo de estado + pendências.
   fila cheia duplicou 1 anúncio (Kia Sportage — órfão apagado). Resultado
   final confirmado direto na API: 25 publicados, 0 rascunhos, 0
   duplicatas. Detalhe completo em `docs/integracao-napista.md`.
-  **Em aberto pra depois**: corrigir `napista-sync` pra publicar
-  automaticamente após criar (hoje fica em DRAFT); investigar causa raiz
-  do erro silencioso de `sync_para_estoque` pra marcas específicas.
+  **[RESOLVIDO 18/08/2026]** `napista-sync` corrigida — depois de criar
+  o anúncio e subir as fotos, chama `PUT .../PUBLISHED` automaticamente.
+  Testado ao vivo com veículo fake temporário (apagado depois): criado já
+  como `PUBLISHED`, sem passo manual. **Em aberto pra depois**: investigar
+  causa raiz do erro silencioso de `sync_para_estoque` pra marcas
+  específicas (KIA/VOLKSWAGEN ficaram sem modelo cacheado numa
+  sincronização, populados na mão).
 - **Assinatura eletrônica via Autentique — FUNCIONANDO DE PONTA A PONTA
   (18/08/2026, sessão 8)**: a Adriana confirmou que `AUTENTIQUE_TOKEN` já
   estava configurado — o problema real eram **3 bugs de integração** na
