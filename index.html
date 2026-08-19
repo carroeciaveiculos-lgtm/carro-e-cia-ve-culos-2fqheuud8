@@ -94,6 +94,18 @@
           })(window, document, "script", "https://connect.facebook.net/en_US/fbevents.js");
           fbq("init", "917411362618696");
           fbq("track", "PageView");
+          if (window._fbqPending && window._fbqPending.length) {
+            window._fbqPending.forEach(function (item) {
+              try {
+                if (item.data) {
+                  fbq("track", item.eventName, item.data);
+                } else {
+                  fbq("track", item.eventName);
+                }
+              } catch (e) {}
+            });
+            window._fbqPending = [];
+          }
         }, 2000);
       });
     </script>

@@ -200,23 +200,31 @@ export const trackGTMEvent = (eventName: string, data: Record<string, any> = {})
 }
 
 export const trackMetaEvent = (eventName: string, data?: Record<string, any>) => {
-  if (typeof window !== 'undefined' && (window as any).fbq) {
+  if (typeof window === 'undefined') return
+  const w = window as any
+
+  if (w.fbq) {
     const executeTrack = () => {
       try {
         if (data) {
-          ;(window as any).fbq('track', eventName, data)
+          w.fbq('track', eventName, data)
         } else {
-          ;(window as any).fbq('track', eventName)
+          w.fbq('track', eventName)
         }
       } catch (e) {
         console.debug('Meta event tracking silently failed')
       }
     }
     if ('requestIdleCallback' in window) {
-      ;(window as any).requestIdleCallback(executeTrack)
+      w.requestIdleCallback(executeTrack)
     } else {
       setTimeout(executeTrack, 0)
     }
+  } else {
+    // Pixel ainda não carregou (carregamento adiado por performance).
+    // Guarda o evento pra ser reenviado assim que o fbq estiver pronto (ver index.html).
+    w._fbqPending = w._fbqPending || []
+    w._fbqPending.push({ eventName, data })
   }
 }
 
