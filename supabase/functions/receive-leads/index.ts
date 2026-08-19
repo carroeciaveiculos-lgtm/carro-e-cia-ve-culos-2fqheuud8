@@ -2,6 +2,7 @@ import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from 'jsr:@supabase/supabase-js@2'
 import { corsHeaders } from '../_shared/cors.ts'
 import { encontrarLeadAtivo, anexarNotaContato, normalizarTelefone } from '../_shared/lead-dedup.ts'
+import { recalcularAiScore } from '../_shared/lead-score.ts'
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL') || ''
 const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''
@@ -387,6 +388,12 @@ Deno.serve(async (req: Request) => {
                       })
                       .catch(() => {})
                   }
+                  // Achado 19/08/2026: DM de Instagram/Messenger não passa
+                  // pela Clara (ai-sdr), então nunca recalculava ai_score —
+                  // ver _shared/lead-score.ts.
+                  await recalcularAiScore(supabase, leadId).catch((e) =>
+                    console.error('Erro ao recalcular ai_score (instagram):', e),
+                  )
                 }
               }
             }

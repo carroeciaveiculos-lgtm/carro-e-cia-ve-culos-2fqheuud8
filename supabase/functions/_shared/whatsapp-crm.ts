@@ -34,7 +34,10 @@ export async function handleQuentes(ctx: CommandContext): Promise<string> {
   const { data, error } = await ctx.supabase
     .from('leads')
     .select('nome, telefone, veiculo_interesse, temperatura, ai_score')
-    .or('temperatura.eq.Quente,ai_score.gte.70')
+    // Achado 19/08/2026: filtro tinha 'Quente' maiúsculo, mas o valor real
+    // salvo (ver ai-sdr, atualizar_estagio_lead) sempre é minúsculo — nunca
+    // batia com nenhum lead.
+    .or('temperatura.eq.quente,ai_score.gte.70')
     .order('ai_score', { ascending: false, nullsFirst: false })
     .limit(10)
 

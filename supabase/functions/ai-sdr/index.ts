@@ -4,6 +4,7 @@ import { corsHeaders } from '../_shared/cors.ts'
 import { GeminiClient, CRM_FUNCTIONS } from '../_shared/gemini-client.ts'
 import { COLUNAS_VEICULO_SEGURAS } from '../_shared/veiculo-safe-fields.ts'
 import { enviarContatoBrevo } from '../_shared/brevo.ts'
+import { recalcularAiScore } from '../_shared/lead-score.ts'
 
 const supabase = createClient(
   Deno.env.get('SUPABASE_URL')!,
@@ -571,6 +572,12 @@ Deno.serve(async (req) => {
       if (lead.telefone) {
         await sendWhatsApp(lead.telefone, aiRes.text)
       }
+
+      // ai_score recalculado a cada mensagem — não depende da Clara ter
+      // chamado nenhuma ferramenta nessa rodada (ver _shared/lead-score.ts).
+      await recalcularAiScore(supabase, lead.id).catch((e) =>
+        console.error('Erro ao recalcular ai_score:', e),
+      )
 
       return new Response(
         JSON.stringify({ success: true, functionResults: aiRes.functionResults }),

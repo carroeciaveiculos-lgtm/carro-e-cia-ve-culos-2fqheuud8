@@ -27,12 +27,26 @@ nos arquivos `docs/*.md` — aqui é só o resumo de estado + pendências.
   era usado nos formulários de consignação. Testado ao vivo com payload
   simulado — funcionando, registro de teste apagado. Detalhe completo em
   `docs/origem-leads.md`.
-  **Achados da mesma auditoria, ainda não corrigidos**: `ai_score` (nota
-  de lead quente) nunca é calculado em lugar nenhum do código — todo lead
-  tem score 0, sem exceção; Mercado Livre/Webmotors têm código pronto pra
-  receber lead mas zero chegou (não confirmado se webhook está cadastrado
-  nos portais); NaPista não tem webhook de lead, só endpoint de consulta,
-  nunca implementado do nosso lado.
+  **[RESOLVIDO 19/08/2026] `ai_score` e `temperatura` (itens 2 e 3)**:
+  achado mais fundo — não era só `ai_score` nunca escrito, era
+  `atualizar_estagio_lead`/`agendar_visita` praticamente nunca chamados
+  pela Clara na prática (lead com 36 mensagens trocadas ainda em
+  status='novo'; `agendamentos_visita` com 0 registro em todo o banco).
+  Corrigido com 3 mudanças: (1) `ai_score` agora calculado por código
+  (`_shared/lead-score.ts`), sem depender de nenhuma decisão da IA —
+  soma pontos por veículo identificado, 5+ mensagens, e-mail, visita
+  agendada, origem paga; (2) prompt da Clara ganhou seção nova
+  "QUALIFICAÇÃO DO LEAD" com gatilhos concretos de quando marcar
+  morno/quente; (3) bug pequeno corrigido — filtro de leads quentes no
+  comando do WhatsApp buscava `Quente` maiúsculo, nunca batia com nada.
+  Testado ao vivo com conversa simulada completa (4 mensagens): score
+  foi 0 → 15 → 75, temperatura virou quente, status virou agendamento,
+  e o primeiro `agendamentos_visita` da história do banco foi criado.
+  Detalhe completo em `docs/origem-leads.md`.
+  **Ainda em aberto**: Mercado Livre/Webmotors têm código pronto pra
+  receber lead mas zero chegou (não confirmado se webhook está
+  cadastrado nos portais); NaPista não tem webhook de lead, só endpoint
+  de consulta, nunca implementado do nosso lado.
 - **NaPista — PRODUÇÃO LIBERADA, 25/25 VEÍCULOS PUBLICADOS DE VERDADE
   (18/08/2026, sessão 8)**: NaPista aprovou o client_id `carro-e-cia` pra
   produção. Migrei toda a integração (5 functions) de

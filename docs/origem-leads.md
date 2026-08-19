@@ -5,7 +5,7 @@ _Becos sem saída_ lista o que já foi testado e falhou — **não repita**. Ao
 descobrir algo novo, acrescente aqui com data e fonte, em vez de deixar só no
 histórico de conversa.
 
-Última atualização: 2026-08-19.
+Última atualização: 2026-08-19 — inclui `ai_score`/`temperatura` (leads quentes).
 
 ## O problema original (auditoria 18-19/08/2026)
 
@@ -76,6 +76,62 @@ normalmente (não viu nem reagiu à tag). Registro de teste apagado depois.
   (`GET /seller/{id}/leads`), nunca implementado do nosso lado (precisa de
   cron, não de webhook).
 
+## `ai_score` e `temperatura` — leads quentes (19/08/2026)
+
+**Achado antes de corrigir**: não era só o `ai_score` que nunca era escrito
+— `atualizar_estagio_lead` e `agendar_visita` (as únicas ferramentas que a
+Clara tem pra marcar temperatura/status) praticamente nunca eram chamadas
+na prática. Achei um lead com **36 mensagens trocadas** e outro com **34**,
+ambos de conversas depois da correção de 12/08/2026 que fez o function
+calling da Clara funcionar de verdade (antes as chamadas eram descartadas)
+— e mesmo assim `status` continuava "novo", `temperatura` "frio", `ai_score`
+0. `agendamentos_visita` tinha **0 registro em todo o histórico do banco**,
+apesar da function existir e funcionar quando testada isoladamente. Ou
+seja: comportamento do modelo (raramente decide chamar), não bug de código.
+
+### Correção 1 — `ai_score` calculado por código, sem depender da Clara
+
+`_shared/lead-score.ts` (`recalcularAiScore`) — roda sempre, com sinais
+objetivos, teto 100:
+
+| Sinal | Pontos |
+|---|---|
+| `veiculo_interesse` preenchido | +20 |
+| 5 ou mais mensagens trocadas (`conversation_history`) | +15 |
+| E-mail salvo | +10 |
+| Visita agendada (`agendamentos_visita` existe pro lead) | +40 |
+| Origem paga (`facebook_ads`/`instagram_ads`/UTM/gclid) | +10 |
+
+Chamado depois de cada resposta da Clara (`ai-sdr`, `continue_conversation`)
+e depois de cada mensagem de DM do Instagram/Messenger (`receive-leads`,
+ramo que não passa pela Clara e nunca tinha esse cálculo).
+
+### Correção 2 — prompt da Clara reforçado
+
+Adicionada seção "QUALIFICAÇÃO DO LEAD" no prompt (`ai_prompts_config`,
+slug `sdr_whatsapp`, e replicada em `social_configuracoes.ai_system_prompt`
+pra manter os dois em sincronia) — gatilhos concretos amarrados aos mesmos
+passos do fluxo que a Clara já segue bem: marcar `morno` ao identificar o
+veículo ou confirmar interesse, marcar `quente` ao agendar visita.
+
+### Correção 3 — bug pequeno no relatório de WhatsApp
+
+`_shared/whatsapp-crm.ts` (`handleQuentes`) filtrava por
+`temperatura.eq.Quente` (Q maiúsculo) — o valor real salvo é sempre
+minúsculo (`quente`), então o filtro nunca batia com nada. Corrigido.
+
+### Testado ao vivo (19/08/2026)
+
+Simulada uma conversa completa de 4 mensagens (telefone de teste): pergunta
+sobre veículo → confirma modelo e pergunta preço → confirma interesse e
+pede visita → informa o nome. Resultado real, sem nenhuma intervenção
+manual: `ai_score` subiu 0 → 15 (5+ mensagens, mecanismo determinístico,
+antes mesmo de qualquer chamada de ferramenta) → 75 (veículo + mensagens +
+agendamento) — `temperatura` virou `quente`, `status` virou `agendamento`,
+`veiculo_interesse` capturado ("Honda HR-V EXL 2020"), e um registro real
+em `agendamentos_visita` foi criado pela Clara — o primeiro da história do
+banco. Registros de teste apagados depois.
+
 ## Becos sem saída
 
 - Não dá pra rastrear clique de WhatsApp por sessão/cookie — o link
@@ -88,7 +144,6 @@ normalmente (não viu nem reagiu à tag). Registro de teste apagado depois.
 
 ## Em aberto
 
-- `ai_score` nunca é calculado — decidir critério antes de corrigir.
 - Confirmar cadastro dos webhooks de lead no painel do Mercado Livre e da
   Webmotors.
 - NaPista precisa de um cron pra puxar `GET /seller/{id}/leads`
