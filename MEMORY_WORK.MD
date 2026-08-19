@@ -6,13 +6,33 @@ precisar reler o histórico inteiro de conversas. Diferente do
 pra ser mantido em dia de verdade. Detalhe técnico por integração continua
 nos arquivos `docs/*.md` — aqui é só o resumo de estado + pendências.
 
-Última atualização: 2026-08-18 (sessão 8).
+Última atualização: 2026-08-19 (sessão 9).
 
 **Pasta de trabalho deste projeto:** `C:\Projeto\Revenda Carro e Cia\carro-e-cia-ve-culos-2fqheuud8`
 (sempre abrir sessão nova aqui pra continuar — ver também `CLAUDE.md`).
 
 ## O que está no ar hoje
 
+- **Origem de leads — clique do site agora rastreado (19/08/2026, sessão 9)**:
+  auditoria pedida pela Adriana nos 50 leads mais recentes achou que
+  clique em botão de WhatsApp do site (12 pontos diferentes, todos via
+  `handleCommercialCTA`) não carregava nenhum dado de volta pro CRM — um
+  link `wa.me` é só texto. Toda mensagem sem o pacote de anúncio da Meta
+  caía em `whatsapp_organico`, misturando cliente que clicou no site com
+  contato realmente espontâneo. Corrigido: `cta-router.ts` embute uma
+  referência (página/botão/veículo/UTM) no fim da mensagem pré-preenchida
+  — `receive-leads` lê, grava origem `site_whatsapp` com os dados certos,
+  e remove a tag antes de salvar no histórico ou mandar pra Clara.
+  Reaproveitou o `obterAtribuicaoAnuncio()` que já existia (17/08) e só
+  era usado nos formulários de consignação. Testado ao vivo com payload
+  simulado — funcionando, registro de teste apagado. Detalhe completo em
+  `docs/origem-leads.md`.
+  **Achados da mesma auditoria, ainda não corrigidos**: `ai_score` (nota
+  de lead quente) nunca é calculado em lugar nenhum do código — todo lead
+  tem score 0, sem exceção; Mercado Livre/Webmotors têm código pronto pra
+  receber lead mas zero chegou (não confirmado se webhook está cadastrado
+  nos portais); NaPista não tem webhook de lead, só endpoint de consulta,
+  nunca implementado do nosso lado.
 - **NaPista — PRODUÇÃO LIBERADA, 25/25 VEÍCULOS PUBLICADOS DE VERDADE
   (18/08/2026, sessão 8)**: NaPista aprovou o client_id `carro-e-cia` pra
   produção. Migrei toda a integração (5 functions) de

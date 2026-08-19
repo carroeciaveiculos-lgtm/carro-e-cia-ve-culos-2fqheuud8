@@ -1,5 +1,6 @@
 import { getWhatsAppLink } from '@/lib/whatsapp'
 import { trackCTAClick, trackWhatsAppClick } from '@/lib/tracking'
+import { obterAtribuicaoAnuncio } from '@/lib/ad-tracking'
 
 export const formatCurrency = (val: number) =>
   new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val)
@@ -138,6 +139,29 @@ export const handleShareCTA = async (vehicle: any, source: string) => {
   }
 }
 
+// Achado 18/08/2026 (auditoria de origem de leads): clique em botão de
+// WhatsApp do site nunca carregava nenhum dado de volta pro CRM — o link
+// wa.me é só texto, sem sessão nem parâmetro. Toda mensagem que chegava
+// sem o pacote de anúncio da Meta (referral) virava "whatsapp_organico",
+// indistinguível de contato realmente espontâneo. Como não dá pra anexar
+// parâmetro numa mensagem de WhatsApp, a referência vai embutida no fim do
+// próprio texto pré-preenchido — receive-leads lê e remove antes de salvar
+// no histórico ou mandar pra Clara (ver ali pro parser).
+function buildRefTag(source: string, ctaType: string, vehicle?: any): string {
+  const atribuicao = obterAtribuicaoAnuncio()
+  const veiculo = vehicle ? `${vehicle.marca || ''} ${vehicle.modelo || ''}`.trim() : ''
+  const partes = [
+    'site',
+    source || '',
+    ctaType || '',
+    veiculo,
+    atribuicao.utm_source || '',
+    atribuicao.utm_campaign || '',
+    atribuicao.gclid || '',
+  ]
+  return `\n\n_ref: ${partes.join('|')}_`
+}
+
 export const handleCommercialCTA = async ({
   vehicle,
   ctaType,
@@ -164,7 +188,7 @@ export const handleCommercialCTA = async ({
   trackWhatsAppClick('Luiz', ctaType, vehicle?.id)
   trackCTAClick(ctaType, source)
 
-  const message = getCommercialText(vehicle, isSimulacao, simDetails)
+  const message = getCommercialText(vehicle, isSimulacao, simDetails) + buildRefTag(source, ctaType, vehicle)
   const whatsappUrl = getWhatsAppLink(message)
 
   // Navigate using location.href to avoid popup blockers and ensure robust delivery

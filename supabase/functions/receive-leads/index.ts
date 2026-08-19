@@ -211,7 +211,22 @@ Deno.serve(async (req: Request) => {
                 const contact = contacts.find((c: any) => c.wa_id === msg.from)
                 const senderName = contact?.profile?.name || 'Cliente WhatsApp'
                 const senderPhone = msg.from
-                const messageText = msg.text?.body || ''
+                const messageTextBruto = msg.text?.body || ''
+
+                // Achado 18/08/2026 (auditoria de origem): clique em botão de
+                // WhatsApp do site (cta-router.ts) embute uma referência no fim
+                // da mensagem pré-preenchida, já que um link wa.me não carrega
+                // nenhum dado — é o único jeito de saber que o contato veio do
+                // site, e de qual página/botão/veículo, em vez de cair junto
+                // com contato espontâneo de verdade em "whatsapp_organico".
+                // Removida antes de guardar no histórico ou mandar pra Clara —
+                // não deve aparecer pro time nem afetar a IA.
+                const refMatch = messageTextBruto.match(
+                  /\n*_ref: site\|([^|]*)\|([^|]*)\|([^|]*)\|([^|]*)\|([^|]*)\|([^_]*)_\s*$/,
+                )
+                const messageText = refMatch
+                  ? messageTextBruto.slice(0, refMatch.index).trim()
+                  : messageTextBruto
 
                 const { data: leads } = await supabase
                   .from('leads')
@@ -232,6 +247,9 @@ Deno.serve(async (req: Request) => {
                   let origemDetectada = 'whatsapp_organico'
                   let campanhaDetectada: string | null = null
                   let veiculoDoAnuncio: string | null = null
+                  let utmSourceDetectado: string | null = null
+                  let utmCampaignDetectado: string | null = null
+                  let gclidDetectado: string | null = null
                   if (referral) {
                     const sourceUrl = (referral.source_url || '').toLowerCase()
                     origemDetectada = sourceUrl.includes('instagram')
@@ -249,6 +267,14 @@ Deno.serve(async (req: Request) => {
                       const antesDoisPontos = primeiraLinha.split(':')[0].trim()
                       veiculoDoAnuncio = antesDoisPontos.slice(0, 200) || null
                     }
+                  } else if (refMatch) {
+                    const [, pagina, ctaType, veiculo, utmSource, utmCampaign, gclid] = refMatch
+                    origemDetectada = 'site_whatsapp'
+                    campanhaDetectada = ctaType || pagina || null
+                    veiculoDoAnuncio = veiculo || null
+                    utmSourceDetectado = utmSource || null
+                    utmCampaignDetectado = utmCampaign || null
+                    gclidDetectado = gclid || null
                   }
 
                   const { data: newLead } = await supabase
@@ -259,7 +285,9 @@ Deno.serve(async (req: Request) => {
                       origem: origemDetectada,
                       source: 'whatsapp',
                       campanha: campanhaDetectada,
-                      utm_campaign: referral?.source_id || null,
+                      utm_campaign: referral?.source_id || utmCampaignDetectado || null,
+                      utm_source: utmSourceDetectado || null,
+                      gclid: gclidDetectado || null,
                       veiculo_interesse: veiculoDoAnuncio,
                       tipo: 'compra',
                       status: 'novo',
