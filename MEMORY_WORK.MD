@@ -36,10 +36,14 @@ nos arquivos `docs/*.md` — aqui é só o resumo de estado + pendências.
   **[RESOLVIDO 18/08/2026]** `napista-sync` corrigida — depois de criar
   o anúncio e subir as fotos, chama `PUT .../PUBLISHED` automaticamente.
   Testado ao vivo com veículo fake temporário (apagado depois): criado já
-  como `PUBLISHED`, sem passo manual. **Em aberto pra depois**: investigar
-  causa raiz do erro silencioso de `sync_para_estoque` pra marcas
-  específicas (KIA/VOLKSWAGEN ficaram sem modelo cacheado numa
-  sincronização, populados na mão).
+  como `PUBLISHED`, sem passo manual.
+  **[INVESTIGADO 19/08/2026]** causa raiz do erro silencioso de
+  `sync_para_estoque` (KIA/VOLKSWAGEN sem modelo cacheado): refiz a mesma
+  sequência de chamadas, todas as 14 marcas responderam 200 — não achei
+  bug reproduzível, mais provável foi falha pontual de rede daquele dia.
+  Como não dá pra corrigir a causa (não é determinística), adicionei
+  mitigação: `napistaFetch()` tenta 2x antes de desistir, e os `upsert`
+  de marca/modelo agora logam erro real em vez de falhar em silêncio.
 - **Assinatura eletrônica via Autentique — FUNCIONANDO DE PONTA A PONTA
   (18/08/2026, sessão 8)**: a Adriana confirmou que `AUTENTIQUE_TOKEN` já
   estava configurado — o problema real eram **3 bugs de integração** na

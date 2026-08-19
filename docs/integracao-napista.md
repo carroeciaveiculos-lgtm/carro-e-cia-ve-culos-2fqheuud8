@@ -310,15 +310,25 @@ ainda, mas relevante pro futuro (Clara/CRM podem precisar receber isso).
   vivo com um veículo fake temporário (oculto do site, apagado depois):
   criado e confirmado com status `PUBLISHED` na API, sem precisar de
   nenhum passo manual.
-- **`sync_para_estoque` pode pular marca silenciosamente.** Na
-  sincronização de catálogo desta sessão, KIA e VOLKSWAGEN não vieram
-  (return vazio de modelos) mesmo com a marca certa identificada — a
-  causa exata não foi confirmada (rate limit? erro transitório da API do
-  NaPista?), mas o sintoma é: `napista_modelos` fica sem nenhuma linha
-  pra aquela marca, e o mapeamento reporta "modelo sem correspondência"
-  mesmo a marca estando 100% certa. Sinal de alerta: `confianca_modelo =
-  0` com `candidatos_modelo = []` (lista vazia, não só score baixo).
-  Corrigido manualmente nesta sessão buscando os modelos direto na API.
+- **[INVESTIGADO 19/08/2026] `sync_para_estoque` pulou KIA e VOLKSWAGEN
+  silenciosamente.** Na sincronização de catálogo de 18/08/2026, essas
+  duas marcas ficaram sem nenhum modelo cacheado (`napista_modelos`
+  vazio), mesmo a marca tendo sido identificada certa. **Investigação**:
+  refiz a mesma sequência de 14 chamadas (uma por marca do estoque) direto
+  na API — todas responderam 200, incluindo KIA e VOLKSWAGEN. **Não é bug
+  de lógica nem de nomenclatura** — não achei nada que explique por que
+  essas duas marcas especificamente falhariam de forma reproduzível.
+  Conclusão mais provável: falha pontual de rede numa chamada específica
+  daquele dia, sem nada de sistemático. Sinal de alerta pra identificar se
+  acontecer de novo: `confianca_modelo = 0` com `candidatos_modelo = []`
+  (lista vazia, não só score baixo) no `napista_mapear_veiculo`.
+  **Mitigação aplicada** (já que não há causa reproduzível pra corrigir
+  de verdade): `napistaFetch()` agora tenta 2 vezes antes de desistir
+  (pausa de 500ms entre tentativas), e os `upsert` de marca/modelo passam
+  a logar erro real em vez de falhar silenciosamente — se acontecer de
+  novo, vai aparecer no log da function em vez de sumir sem rastro.
+  Corrigido manualmente nesta sessão buscando os modelos direto na API
+  enquanto isso.
 - **Duas chamadas simultâneas pra `napista-sync` (com fila cheia)
   competem e podem duplicar anúncio.** Descoberto ao chamar a function
   várias vezes seguidas (achando que era só refresh de token) enquanto

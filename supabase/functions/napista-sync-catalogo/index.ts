@@ -10,10 +10,28 @@ const BASE = 'https://api.napista.com.br/seller-inventory-api'
 // Endpoints reais conferidos direto na API em 14/08/2026 (a doc erra o path
 // de marcas — diz "/catalog/{category}/make", o real é "/catalog/makes/{category}",
 // plural e ordem trocada). Ver docs/integracao-napista.md, seção "Becos sem saída".
-async function napistaFetch(path: string, token: string): Promise<any> {
-  const res = await fetch(`${BASE}${path}`, { headers: { Authorization: `Bearer ${token}` } })
-  if (!res.ok) throw new Error(`NaPista API ${res.status} em ${path}: ${await res.text()}`)
-  return res.json()
+//
+// Retry (18/08/2026): achado real — numa sincronização de produção, KIA e
+// VOLKSWAGEN ficaram sem nenhum modelo cacheado (`napista_modelos` vazio pra
+// essas marcas), mesmo a marca tendo sido identificada certa. Testando a
+// mesma sequência de chamadas depois, todas as 14 marcas responderam 200 —
+// não é bug de lógica/nomenclatura, foi falha pontual de rede numa chamada
+// específica que a function não tentava de novo. Uma tentativa a mais (com
+// pausa curta) cobre esse tipo de falha sem mascarar erro de verdade (só
+// desiste e lança depois da 2ª falha).
+async function napistaFetch(path: string, token: string, tentativas = 2): Promise<any> {
+  let ultimoErro: Error | null = null
+  for (let i = 0; i < tentativas; i++) {
+    if (i > 0) await new Promise((r) => setTimeout(r, 500))
+    try {
+      const res = await fetch(`${BASE}${path}`, { headers: { Authorization: `Bearer ${token}` } })
+      if (!res.ok) throw new Error(`NaPista API ${res.status} em ${path}: ${await res.text()}`)
+      return await res.json()
+    } catch (e: any) {
+      ultimoErro = e
+    }
+  }
+  throw ultimoErro
 }
 
 Deno.serve(async (req: Request) => {
@@ -140,9 +158,12 @@ Deno.serve(async (req: Request) => {
         (m: any) => m.id,
       )
       for (const m of marcasNapista) {
-        await supabase
+        const { error: marcaUpsertError } = await supabase
           .from('napista_marcas')
           .upsert({ id: m.id, nome: m.name, atualizado_em: new Date().toISOString() }, { onConflict: 'id' })
+        if (marcaUpsertError) {
+          console.error(`Falha ao salvar marca ${m.id}:`, marcaUpsertError.message)
+        }
       }
 
       const { data: veiculos } = await supabase
@@ -183,8 +204,9 @@ Deno.serve(async (req: Request) => {
           const modelosNapista: { id: string; name: string }[] = (modelosData.items || []).filter(
             (m: any) => m.id,
           )
+          let falhasModelo = 0
           for (const mo of modelosNapista) {
-            await supabase.from('napista_modelos').upsert(
+            const { error: modeloUpsertError } = await supabase.from('napista_modelos').upsert(
               {
                 marca_id: marcaNapista.id,
                 id: mo.id,
@@ -192,6 +214,12 @@ Deno.serve(async (req: Request) => {
                 atualizado_em: new Date().toISOString(),
               },
               { onConflict: 'marca_id,id' },
+            )
+            if (modeloUpsertError) falhasModelo++
+          }
+          if (falhasModelo > 0) {
+            console.error(
+              `${falhasModelo}/${modelosNapista.length} modelos de ${marcaNapista.id} falharam ao salvar no banco`,
             )
           }
           const modeloNapista = modelosNapista.find((mo) => normalizar(mo.name) === normalizar(modelo))
