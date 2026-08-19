@@ -3,7 +3,8 @@ import { createClient } from 'jsr:@supabase/supabase-js@2'
 import { corsHeaders } from '../_shared/cors.ts'
 import { getValidNapistaToken, matchAtributoNapista } from '../_shared/napista-client.ts'
 
-const BASE = 'https://api.development.napista.com.br/seller-inventory-api'
+// Produção desde 18/08/2026 — ver docs/integracao-napista.md.
+const BASE = 'https://api.napista.com.br/seller-inventory-api'
 
 // Mesmo limiar do wm-mapear-veiculo — ponto de partida pra trigram
 // similarity em nomes curtos de veículo, calibrar com uso real.

@@ -4,7 +4,8 @@ import { corsHeaders } from '../_shared/cors.ts'
 import { isInternalRequestAuthorized, unauthorizedResponse } from '../_shared/internal-auth.ts'
 import { getValidNapistaToken } from '../_shared/napista-client.ts'
 
-const BASE = 'https://api.development.napista.com.br/seller-inventory-api'
+// Produção desde 18/08/2026 — ver docs/integracao-napista.md.
+const BASE = 'https://api.napista.com.br/seller-inventory-api'
 
 // Endpoints reais conferidos direto na API em 14/08/2026 (a doc erra o path
 // de marcas — diz "/catalog/{category}/make", o real é "/catalog/makes/{category}",

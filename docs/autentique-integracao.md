@@ -89,10 +89,29 @@ usado, autorizado pela Adriana — sobram 17) — `email_status.enviado: true`
 confirmado, e-mail recebido com o link `https://assina.ae/...` funcionando.
 Registro de teste apagado do banco depois.
 
+## Webhook de conclusão (`webhook-autentique`) — confirmado 18/08/2026
+
+**Achado no caminho**: a Adriana disse que o webhook já estava
+registrado no painel do Autentique — na hora de confirmar
+(Configurações → Webhooks), a lista de endpoints estava **vazia** ("Sem
+Webhooks registrados"). Provável causa: salvo em outra organização/conta,
+ou não confirmado corretamente. A Adriana cadastrou de novo direto no
+painel (`https://painel.autentique.com.br/perfil/webhooks` →
+"Adicionar endpoint" → URL abaixo) e testou — confirmado funcionando.
+
+```
+https://htpcqdbhktmvppfemnad.supabase.co/functions/v1/webhook-autentique
+```
+
+Teste de ponta a ponta feito nesta sessão: documento de teste criado (4º
+dos 20/mês), assinado pelos dois signatários (via painel, já que o
+navegador estava logado na conta) — como isso aconteceu **antes** do
+webhook estar cadastrado, esse contrato específico nunca atualizou (o
+Autentique não reenvia evento retroativo); registro apagado do banco.
+Cadastro novo do webhook + teste da Adriana confirmaram que o endpoint
+está certo e responde.
+
 ## Em aberto
 
-- Nenhum bloqueio técnico conhecido — o fluxo (gerar documento → link →
-  e-mail real) funciona de ponta a ponta, testado com documento real.
-- Webhook de conclusão (`webhook-autentique`) não foi testado ao vivo
-  nesta sessão — precisa confirmar se está registrado no painel da conta
-  Autentique (não é configurado por API, ver achado acima).
+- Nenhum bloqueio técnico conhecido — o fluxo completo (gerar documento →
+  link → e-mail real → webhook de conclusão) funciona de ponta a ponta.

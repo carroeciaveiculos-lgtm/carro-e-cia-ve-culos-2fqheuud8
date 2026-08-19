@@ -3,13 +3,17 @@ import { createClient } from 'jsr:@supabase/supabase-js@2'
 import { corsHeaders } from '../_shared/cors.ts'
 import { getValidNapistaToken } from '../_shared/napista-client.ts'
 
+// Trocado pra produção em 18/08/2026 — NaPista liberou o client_id
+// "carro-e-cia" em produção (confirmado por e-mail à Adriana). Credenciais
+// antigas em napista_credentials eram do realm de desenvolvimento e não
+// valem aqui — precisa reautenticar do zero (novo auth_url).
 const AUTH_URL =
   Deno.env.get('NAPISTA_AUTH_URL') ||
-  'https://auth.development.napista.com.br/realms/marketplace-dealer/protocol/openid-connect/auth'
+  'https://auth.napista.com.br/realms/marketplace-dealer/protocol/openid-connect/auth'
 const TOKEN_URL =
   Deno.env.get('NAPISTA_TOKEN_URL') ||
-  'https://auth.development.napista.com.br/realms/marketplace-dealer/protocol/openid-connect/token'
-const SELLERS_URL = 'https://api.development.napista.com.br/seller-inventory-api/seller/access'
+  'https://auth.napista.com.br/realms/marketplace-dealer/protocol/openid-connect/token'
+const SELLERS_URL = 'https://api.napista.com.br/seller-inventory-api/seller/access'
 
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })

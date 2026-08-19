@@ -42,12 +42,11 @@ export function matchAtributoNapista(
   return itens.find((i) => normalizarNapista(i.name) === fallbackAlvo)?.id ?? null
 }
 
-// Ambiente de desenvolvimento por padrão (é o que temos client_id liberado
-// hoje — ver docs/integracao-napista.md). Trocar pra produção exige pedir
-// novo client_id pra parceiros@napista.com.br pro domínio de produção.
+// Produção desde 18/08/2026 — client_id "carro-e-cia" liberado em produção
+// pelo NaPista (ver docs/integracao-napista.md).
 const NAPISTA_TOKEN_URL =
   Deno.env.get('NAPISTA_TOKEN_URL') ||
-  'https://auth.development.napista.com.br/realms/marketplace-dealer/protocol/openid-connect/token'
+  'https://auth.napista.com.br/realms/marketplace-dealer/protocol/openid-connect/token'
 
 export async function getValidNapistaToken(
   supabase: SupabaseClient,

@@ -13,6 +13,29 @@ nos arquivos `docs/*.md` — aqui é só o resumo de estado + pendências.
 
 ## O que está no ar hoje
 
+- **NaPista — PRODUÇÃO LIBERADA, 25/25 VEÍCULOS PUBLICADOS DE VERDADE
+  (18/08/2026, sessão 8)**: NaPista aprovou o client_id `carro-e-cia` pra
+  produção. Migrei toda a integração (5 functions) de
+  `api.development.napista.com.br` pra `api.napista.com.br` de verdade,
+  reautentiquei do zero (novo sellerId real). Achado grande: já existiam
+  **19 anúncios reais publicados antes da nossa integração** (carregados
+  por outro canal, não pela nossa function) — 14 batiam com o estoque
+  atual (adotados no controle interno, sem duplicar), 5 eram de veículos
+  já vendidos/devolvidos (despublicados). Sincronizei catálogo de
+  produção (92 marcas), mapeei os 25 veículos disponíveis (14 usando o
+  `versionId` real já publicado, sem chute; 11 por correspondência de
+  texto, a maioria revisada manualmente) e publiquei os que faltavam.
+  **3 bugs reais achados e corrigidos na hora**: (1) `napista-sync` cria
+  o anúncio mas não publica sozinho (fica em DRAFT, precisa de um PUT
+  separado — ainda não corrigido na function, só contornado manualmente
+  desta vez); (2) `sync_para_estoque` pulou KIA e VOLKSWAGEN
+  silenciosamente (populei na mão); (3) chamar a function duas vezes com
+  fila cheia duplicou 1 anúncio (Kia Sportage — órfão apagado). Resultado
+  final confirmado direto na API: 25 publicados, 0 rascunhos, 0
+  duplicatas. Detalhe completo em `docs/integracao-napista.md`.
+  **Em aberto pra depois**: corrigir `napista-sync` pra publicar
+  automaticamente após criar (hoje fica em DRAFT); investigar causa raiz
+  do erro silencioso de `sync_para_estoque` pra marcas específicas.
 - **Assinatura eletrônica via Autentique — FUNCIONANDO DE PONTA A PONTA
   (18/08/2026, sessão 8)**: a Adriana confirmou que `AUTENTIQUE_TOKEN` já
   estava configurado — o problema real eram **3 bugs de integração** na

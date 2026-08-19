@@ -8,7 +8,7 @@ consultivo permanente pra integração NaPista — mantenha em dia sempre que
 mexer em `napista-auth`, `napista-client.ts` ou qualquer function que fale
 com a API do NaPista.
 
-Última atualização: 2026-08-14 (catálogo).
+Última atualização: 2026-08-18 — **produção liberada, 25/25 veículos publicados de verdade**.
 
 ## O que é
 
@@ -18,19 +18,38 @@ Documentação oficial: https://developers.napista.com.br/reference/boas-vindas
 
 ## Status atual
 
+- **Produção liberada em 18/08/2026** — o NaPista aprovou o client_id
+  `carro-e-cia` pra produção (avisado por e-mail à Adriana). Toda a
+  integração foi trocada do ambiente de desenvolvimento
+  (`api.development.napista.com.br`) pro de produção de verdade
+  (`api.napista.com.br` / `auth.napista.com.br`) — 5 functions alteradas
+  (`napista-auth`, `napista-sync`, `napista-mapear-veiculo`,
+  `napista-sync-catalogo`, `_shared/napista-client.ts`) e reimplantadas.
+  Reautenticação feita do zero (credenciais de dev não valem em produção)
+  — novo `sellerId`: `8d95475b-aaad-4e14-aa61-5db90a4b992f` (diferente do
+  de dev, `7fdae29c-...`, confirmando que é conta real).
+- **Achado importante**: já existiam **19 anúncios publicados de verdade**
+  na produção antes mesmo da nossa integração ganhar acesso — carregados
+  por outro canal (provável carga inicial feita pelo NaPista/loja
+  diretamente, nunca pela nossa function). 14 batiam com veículos do
+  estoque atual (adotados no nosso controle, sem recriar); 5 eram de
+  veículos já vendidos/devolvidos (despublicados).
+- **Sincronização completa em 18/08/2026**: catálogo de produção
+  sincronizado (92 marcas, 253+ modelos — 2 marcas, KIA e VOLKSWAGEN,
+  ficaram de fora da primeira tentativa por erro pontual da function,
+  populadas manualmente depois), os 25 veículos disponíveis mapeados
+  (14 usando o `versionId` real do anúncio já existente, sem chute; 11
+  por correspondência de texto — 2 automático, 9 com revisão manual —
+  ver achados abaixo) e publicados. **Resultado final: 25/25 veículos
+  publicados de verdade, confirmado direto na API do NaPista (0
+  rascunhos, 0 duplicatas).**
 - Secrets já salvos no Supabase: `NAPISTA_ID` (client_id, valor
-  `carro-e-cia`), `NAPISTA_EMAIL`, `NAPISTA_SENHA`.
-- `NAPISTA_EMAIL`/`NAPISTA_SENHA` **não são usados por nenhuma function** —
-  são o login da loja no NaPista, usado manualmente pela Adriana na tela de
-  autorização (passo 1 do fluxo abaixo), igual já faz com o Mercado Livre.
-- `napista-auth` (function) e `napista_credentials` (tabela) deployados e
-  **testados com sucesso em 14/08/2026**: login concluído, `sellerId`
-  identificado (`7fdae29c-0cac-4fbd-b83f-dd5203a0ca87`), refresh automático
-  de token confirmado funcionando (`action: 'refresh_check'`). Detalhe
-  importante: o access_token do ambiente de desenvolvimento dura só **5
-  minutos** — curto, mas o refresh cobre isso sem intervenção manual.
-- Publicação de veículos (criar/atualizar anúncio) **ainda não foi
-  implementada** — só a autenticação. Ver "Próximos passos" (Fase 2).
+  `carro-e-cia`), `NAPISTA_EMAIL`, `NAPISTA_SENHA` (login da loja no
+  NaPista, usado manualmente pela Adriana na tela de autorização).
+- Token de acesso dura só **5 minutos** (mesmo em produção) — refresh
+  automático via `getValidNapistaToken()` cobre isso sem intervenção
+  manual em uso normal pela function; só atrapalhou testes manuais via
+  `curl` nesta sessão (token expirava no meio de investigações).
 
 ## Autenticação (OAuth2 via Keycloak)
 
@@ -274,6 +293,40 @@ ainda, mas relevante pro futuro (Clara/CRM podem precisar receber isso).
    que não manda token — o código da function em si não foi alterado.
 9. Pedir client_id de produção quando for hora de sair do ambiente de
    desenvolvimento (hoje só temos client_id de dev).
+
+## Achados reais da migração pra produção (18/08/2026)
+
+- **`napista-sync` cria o anúncio mas NÃO publica.** O `POST
+  /seller/{sellerId}/offer` cria o anúncio como `DRAFT` — é preciso um
+  `PUT /seller/{sellerId}/offer/{offerId}/PUBLISHED` separado depois pra
+  ele ficar visível de verdade. A function hoje não faz esse segundo
+  passo — os 11 anúncios novos desta sessão ficaram como rascunho até eu
+  publicar manualmente via `curl`. **Corrigir `napista-sync` pra publicar
+  automaticamente depois de criar é trabalho futuro ainda não feito.**
+- **`sync_para_estoque` pode pular marca silenciosamente.** Na
+  sincronização de catálogo desta sessão, KIA e VOLKSWAGEN não vieram
+  (return vazio de modelos) mesmo com a marca certa identificada — a
+  causa exata não foi confirmada (rate limit? erro transitório da API do
+  NaPista?), mas o sintoma é: `napista_modelos` fica sem nenhuma linha
+  pra aquela marca, e o mapeamento reporta "modelo sem correspondência"
+  mesmo a marca estando 100% certa. Sinal de alerta: `confianca_modelo =
+  0` com `candidatos_modelo = []` (lista vazia, não só score baixo).
+  Corrigido manualmente nesta sessão buscando os modelos direto na API.
+- **Duas chamadas simultâneas pra `napista-sync` (com fila cheia)
+  competem e podem duplicar anúncio.** Descoberto ao chamar a function
+  várias vezes seguidas (achando que era só refresh de token) enquanto
+  ainda tinha item pendente na fila — pelo menos 1 veículo (Kia Sportage)
+  ganhou 2 anúncios reais no NaPista (`estoque_publicacoes` só guardou 1,
+  o outro ficou órfão, sem registro nosso). Corrigido apagando o órfão via
+  `DELETE /offer/{id}`. **Não chamar `napista-sync` de novo enquanto uma
+  chamada anterior ainda pode estar processando a mesma fila.**
+- **Lookup por ID individual (`GET /offer/{id}`) pode 404 num anúncio que
+  acabou de ser criado** — atraso de propagação entre a escrita e a busca
+  direta por ID (uns segundos/minutos). A busca por lista
+  (`GET /offers?status=...`) refletiu corretamente depois. Isso quase
+  causou uma segunda duplicata nesta sessão (achei que o anúncio não
+  tinha sido criado de verdade, tentei recriar). **Antes de assumir que
+  uma criação falhou, checar pela lista paginada, não só por ID direto.**
 
 ## Becos sem saída
 
