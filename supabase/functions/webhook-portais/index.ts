@@ -242,7 +242,7 @@ Deno.serve(async (req) => {
       nome,
       telefone,
       email,
-      origem: `Portal - ${portal}`,
+      origem: portal.toLowerCase(),
       tipo: 'comprador',
       status: 'novo',
       temperatura: 'morno',

@@ -356,12 +356,17 @@ Deno.serve(async (req: Request) => {
                 let leadId = leads?.[0]?.id
 
                 if (!leadId) {
+                  // Padronização de vocabulário (19/08/2026): DM direto no
+                  // Instagram/Messenger é distinto de comentário público
+                  // virado lead manualmente (ver SocialComments.tsx) e de
+                  // clique-para-WhatsApp de anúncio — cada um com seu valor
+                  // próprio de origem, não o nome cru da plataforma.
                   const { data: newLead } = await supabase
                     .from('leads')
                     .insert({
                       nome: `Lead ${platform}`,
                       external_lead_id: senderId,
-                      origem: platform,
+                      origem: platform === 'instagram' ? 'instagram_dm' : 'facebook_dm',
                       source: platform,
                       status: 'novo',
                     })
@@ -414,7 +419,7 @@ Deno.serve(async (req: Request) => {
             .from('leads')
             .update({
               veiculo_interesse: payload.veiculo_interesse || undefined,
-              observacoes: anexarNotaContato(leadExistente.observacoes, payload.origem || 'site'),
+              observacoes: anexarNotaContato(leadExistente.observacoes, payload.origem || 'site_formulario'),
               updated_at: new Date().toISOString(),
             })
             .eq('id', leadExistente.id)
@@ -426,7 +431,7 @@ Deno.serve(async (req: Request) => {
               nome: payload.nome,
               telefone: cleanTelefone,
               email: payload.email,
-              origem: payload.origem || 'site',
+              origem: payload.origem || 'site_formulario',
               veiculo_interesse: payload.veiculo_interesse,
               status: 'novo',
             })

@@ -46,7 +46,7 @@ export default function SocialComments({ embedded = false }: { embedded?: boolea
     try {
       await supabase.from('leads').insert({
         nome: comment.from_name,
-        origem: comment.platform,
+        origem: comment.platform === 'instagram' ? 'comentario_instagram' : 'comentario_facebook',
         source: comment.platform,
         status: 'novo',
         tipo: 'compra',

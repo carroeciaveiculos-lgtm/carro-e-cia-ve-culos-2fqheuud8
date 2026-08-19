@@ -29,7 +29,6 @@ export function Consignment() {
     ano: '',
     km: '',
     valor: '',
-    origem: '',
   })
 
   useEffect(() => {
@@ -60,7 +59,7 @@ export function Consignment() {
           email: formData.email,
           telefone: formData.telefone,
           tipo: 'consignacao',
-          origem: formData.origem || 'site',
+          origem: 'site_consignacao',
           veiculo_interesse: veiculoInteresse,
           faixa_preco: formData.valor,
           status: 'novo',
@@ -270,28 +269,12 @@ export function Consignment() {
                   className="h-12"
                 />
               </div>
-              <div className="grid sm:grid-cols-2 gap-5">
-                <Input
-                  placeholder="Valor desejado (R$)"
-                  value={formData.valor}
-                  onChange={(e) => setFormData({ ...formData, valor: e.target.value })}
-                  className="h-12"
-                />
-                <Select
-                  value={formData.origem}
-                  onValueChange={(v) => setFormData({ ...formData, origem: v })}
-                >
-                  <SelectTrigger className="h-12">
-                    <SelectValue placeholder="Como nos conheceu?" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="google">Google</SelectItem>
-                    <SelectItem value="instagram">Instagram</SelectItem>
-                    <SelectItem value="indicacao">Indicação</SelectItem>
-                    <SelectItem value="outro">Outro</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+              <Input
+                placeholder="Valor desejado (R$)"
+                value={formData.valor}
+                onChange={(e) => setFormData({ ...formData, valor: e.target.value })}
+                className="h-12"
+              />
               <Button
                 type="submit"
                 className="w-full h-14 text-lg font-bold"

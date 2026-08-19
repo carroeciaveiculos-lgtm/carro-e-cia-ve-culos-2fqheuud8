@@ -43,10 +43,23 @@ nos arquivos `docs/*.md` — aqui é só o resumo de estado + pendências.
   foi 0 → 15 → 75, temperatura virou quente, status virou agendamento,
   e o primeiro `agendamentos_visita` da história do banco foi criado.
   Detalhe completo em `docs/origem-leads.md`.
-  **Ainda em aberto**: Mercado Livre/Webmotors têm código pronto pra
-  receber lead mas zero chegou (não confirmado se webhook está
-  cadastrado nos portais); NaPista não tem webhook de lead, só endpoint
-  de consulta, nunca implementado do nosso lado.
+  **[RESOLVIDO 19/08/2026] Itens 6 e 7 (vocabulário de `origem` +
+  alerta de canal silencioso)**: padronizado `origem` num conjunto
+  fechado de valores (whatsapp_organico, site_whatsapp, facebook_ads,
+  instagram_ads, meta_lead_ads, facebook_dm/instagram_dm,
+  comentario_facebook/instagram, google_ads, site_formulario,
+  site_consignacao, mercadolivre/webmotors/icarros, avaliacao_avulsa,
+  manual, clara) em ~9 arquivos que gravavam texto livre cada um do seu
+  jeito. Registros antigos também padronizados (78 'whatsapp' →
+  whatsapp_organico, 2 'LP' → site_consignacao). Removida a pergunta
+  "Como nos conheceu?" do formulário de consignação da home (decisão da
+  Adriana) — colidia com o campo técnico de origem.
+  `daily-report-cron` ganhou alerta: se facebook_ads/instagram_ads/
+  whatsapp_organico/site_whatsapp ficar 7+ dias sem lead, avisa no
+  relatório diário do WhatsApp. Detalhe completo em `docs/origem-leads.md`.
+  **Adiado pro futuro (decisão da Adriana)**: confirmar webhook do
+  Mercado Livre/Webmotors nos portais; NaPista não tem webhook de lead
+  nenhum, só endpoint de consulta — precisaria de cron.
 - **NaPista — PRODUÇÃO LIBERADA, 25/25 VEÍCULOS PUBLICADOS DE VERDADE
   (18/08/2026, sessão 8)**: NaPista aprovou o client_id `carro-e-cia` pra
   produção. Migrei toda a integração (5 functions) de

@@ -13,7 +13,7 @@ export function ConsignacaoLPForm({
   title = 'Solicite uma avaliação',
   subtitle = 'Nossa equipe entrará em contato rapidamente.',
   campanha = 'consignacao',
-  origem = 'LP',
+  origem = 'site_consignacao',
   whatsappText,
 }: {
   title?: string

@@ -57,7 +57,7 @@ export function Hero() {
         email: data.email,
         telefone: data.telefone,
         tipo: 'contato',
-        origem: atribuicao.gclid ? 'google_ads' : 'homepage_formulario',
+        origem: atribuicao.gclid ? 'google_ads' : 'site_formulario',
         observacoes: `Interesse: ${data.busca}`,
         gclid: atribuicao.gclid || null,
         utm_source: atribuicao.utm_source || null,

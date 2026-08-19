@@ -28,10 +28,38 @@ Deno.serve(async (req) => {
 
     if (leadsError) throw leadsError
 
+    // Prioriza origem sobre source (19/08/2026, padronização de
+    // vocabulário) — source é genérico demais (ex: "whatsapp" pra tudo que
+    // vem de WhatsApp, sem distinguir anúncio de contato espontâneo).
     const leadsBySource: Record<string, number> = {}
     for (const lead of leads24h || []) {
-      const src = lead.source || lead.origem || 'desconhecido'
+      const src = lead.origem || lead.source || 'desconhecido'
       leadsBySource[src] = (leadsBySource[src] || 0) + 1
+    }
+
+    // Alerta de canal silencioso (19/08/2026, pedido da Adriana) — só os
+    // canais que hoje geram lead de verdade; Mercado Livre/Webmotors/NaPista
+    // ficam de fora por enquanto (nunca geraram lead nenhum, é achado já
+    // conhecido e agendado pra depois — ver docs/origem-leads.md — incluir
+    // aqui só criaria alerta repetido todo dia sobre a mesma coisa).
+    const CANAIS_MONITORADOS = ['facebook_ads', 'instagram_ads', 'whatsapp_organico', 'site_whatsapp']
+    const LIMITE_DIAS_SILENCIO = 7
+    const alertasSilencio: string[] = []
+    for (const canal of CANAIS_MONITORADOS) {
+      const { data: ultimoLead } = await supabase
+        .from('leads')
+        .select('created_at')
+        .eq('origem', canal)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+      if (!ultimoLead) continue
+      const diasSemLead = Math.floor(
+        (Date.now() - new Date(ultimoLead.created_at).getTime()) / (24 * 60 * 60 * 1000),
+      )
+      if (diasSemLead >= LIMITE_DIAS_SILENCIO) {
+        alertasSilencio.push(`   ⚠️ ${canal}: sem lead há ${diasSemLead} dias`)
+      }
     }
 
     const { count: soldVehicles, error: soldError } = await supabase
@@ -73,7 +101,7 @@ ${sourceBreakdown}
 🚗 *Veículos Vendidos:* ${soldVehicles || 0}
 📦 *Estoque Ativo:* ${totalAvailable || 0} veículos disponíveis
 📱 *Anúncios ML Ativos:* ${totalActiveAds || 0}
-
+${alertasSilencio.length > 0 ? `\n🚨 *Canal sem lead há dias:*\n${alertasSilencio.join('\n')}\n` : ''}
 ${totalLeads > 0 ? `🔥 ${totalLeads} novas oportunidades para trabalhar hoje!` : '💡 Que tal investir em novos anúncios hoje?'}
 
 _Tenha um excelente dia de vendas! 🚀_`
@@ -111,6 +139,7 @@ _Tenha um excelente dia de vendas! 🚀_`
         sold_vehicles: soldVehicles || 0,
         active_ads: totalActiveAds || 0,
         available_stock: totalAvailable || 0,
+        canais_silenciosos: alertasSilencio,
         sent_to: ownerPhone,
       },
     })

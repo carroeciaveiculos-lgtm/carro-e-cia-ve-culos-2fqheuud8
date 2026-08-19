@@ -5,7 +5,7 @@ _Becos sem saída_ lista o que já foi testado e falhou — **não repita**. Ao
 descobrir algo novo, acrescente aqui com data e fonte, em vez de deixar só no
 histórico de conversa.
 
-Última atualização: 2026-08-19 — inclui `ai_score`/`temperatura` (leads quentes).
+Última atualização: 2026-08-19 — inclui `ai_score`/`temperatura` e vocabulário padronizado de `origem`.
 
 ## O problema original (auditoria 18-19/08/2026)
 
@@ -132,6 +132,57 @@ agendamento) — `temperatura` virou `quente`, `status` virou `agendamento`,
 em `agendamentos_visita` foi criado pela Clara — o primeiro da história do
 banco. Registros de teste apagados depois.
 
+## Vocabulário padronizado de `origem` (19/08/2026)
+
+Antes desta correção, `origem` tinha um valor diferente por arquivo que
+escrevia nele — maiúscula/minúscula misturada, português e inglês
+misturados (`'LP'`, `'Página Contato'`, `'Manual'`, `'homepage_formulario'`,
+`'Portal - webmotors'`). Padronizado pra um conjunto fechado, sempre
+minúsculo, snake_case:
+
+| Valor | Significado | Onde é gravado |
+|---|---|---|
+| `whatsapp_organico` | Contato espontâneo real (sem anúncio, sem clique do site) | `receive-leads` |
+| `site_whatsapp` | Clicou em botão de WhatsApp do site | `receive-leads` (ver seção do item 1 acima) |
+| `facebook_ads` | Anúncio Facebook, clique-para-WhatsApp | `receive-leads` |
+| `instagram_ads` | Anúncio Instagram, clique-para-WhatsApp | `receive-leads` |
+| `meta_lead_ads` | Formulário nativo Facebook/Instagram (Lead Ads) | `receive-leads` |
+| `facebook_dm` / `instagram_dm` | Mensagem direta no Messenger/Instagram (fora do WhatsApp) | `receive-leads` |
+| `comentario_facebook` / `comentario_instagram` | Comentário público virado lead manualmente | `SocialComments.tsx` |
+| `google_ads` | Anúncio Google (gclid presente) | `Hero.tsx`, `lead-automation` |
+| `site_formulario` | Formulário genérico do site (Contato, Home) | `Contato.tsx`, `Hero.tsx` |
+| `site_consignacao` | Formulário de vender/consignar carro | `LeadForm.tsx`, `ConsignacaoLPForm.tsx`, `Consignment.tsx` |
+| `mercadolivre` / `webmotors` / `icarros` | Portal (via `portal` na URL do webhook) | `ml-webhook`, `webhook-portais` |
+| `avaliacao_avulsa` | Pedido de avaliação avulso | `avaliacoes.ts` |
+| `manual` | Cadastro manual pelo time no painel | `LeadFormModal.tsx` |
+| `clara` | Lead interno criado pela IA durante o atendimento (ex: encaminhamento pra seguro/consórcio) — sempre nasce dentro de uma conversa que já tem seu próprio lead com origem correta | `ai-sdr`, `criar_lead_crm` |
+
+**Removida** a pergunta "Como nos conheceu?" do formulário de consignação
+da home (`Consignment.tsx`) — coletava resposta livre do cliente
+(Google/Instagram/Indicação/Outro) direto em cima do mesmo campo `origem`
+técnico, colidindo com o rastreio automático. Decisão da Adriana: remover
+em vez de mover pra outro campo.
+
+**Registros antigos padronizados** (`UPDATE` direto, sem perda de dado):
+`'whatsapp'` (78 registros, formato anterior à correção de 12/08/2026) →
+`whatsapp_organico`; `'LP'` (2 registros) → `site_consignacao`.
+
+## Alerta de canal silencioso (19/08/2026)
+
+`daily-report-cron` (já existia, roda diariamente e manda relatório pro
+WhatsApp da Adriana) ganhou uma checagem nova: se um dos canais que hoje
+geram lead de verdade (`facebook_ads`, `instagram_ads`,
+`whatsapp_organico`, `site_whatsapp`) ficar **7 dias ou mais** sem nenhum
+lead, entra uma linha de alerta no relatório. Mercado Livre/Webmotors/
+NaPista ficam de fora de propósito — nunca geraram lead nenhum (achado já
+documentado, agendado pro futuro), incluir eles geraria alerta repetido
+todo dia sobre a mesma coisa já conhecida, não uma quebra nova.
+
+O relatório também passou a agrupar por `origem` em vez de `source`
+(19/08/2026) — `source` é genérico demais (tudo que vem de WhatsApp cai
+junto, sem distinguir anúncio de contato espontâneo), `origem` agora que
+está padronizado é mais útil pro resumo diário.
+
 ## Becos sem saída
 
 - Não dá pra rastrear clique de WhatsApp por sessão/cookie — o link
@@ -144,12 +195,9 @@ banco. Registros de teste apagados depois.
 
 ## Em aberto
 
-- Confirmar cadastro dos webhooks de lead no painel do Mercado Livre e da
-  Webmotors.
-- NaPista precisa de um cron pra puxar `GET /seller/{id}/leads`
-  periodicamente — não existe hoje.
-- Padronizar vocabulário de `origem` (hoje mistura `'LP'`,
-  `'Página Contato'`, `'site_whatsapp'`, `'whatsapp_organico'` sem
-  convenção única).
-- Alerta de canal silencioso (ex: portal sem nenhum lead há X dias) —
-  poderia entrar no `daily-report-cron` já existente.
+- **Agendado pro futuro (decisão da Adriana, 19/08/2026)**: confirmar
+  cadastro dos webhooks de lead no painel do Mercado Livre e da
+  Webmotors; NaPista precisa de um cron pra puxar `GET /seller/{id}/leads`
+  periodicamente — não existe hoje. Quando isso for resolvido, adicionar
+  `mercadolivre`/`webmotors`/`napista` na lista de canais monitorados do
+  alerta de silêncio (`daily-report-cron`).

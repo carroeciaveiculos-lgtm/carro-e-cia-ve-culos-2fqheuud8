@@ -12,5 +12,6 @@ export function getOriginIcon(origem?: string) {
   if (o.includes('mercado livre') || o.includes('mercadolivre') || o.includes('ml'))
     return <Store className="w-3.5 h-3.5 text-yellow-500 shrink-0" />
   if (o.includes('webmotors')) return <Target className="w-3.5 h-3.5 text-red-600 shrink-0" />
+  if (o.includes('google')) return <Target className="w-3.5 h-3.5 text-blue-500 shrink-0" />
   return <Globe className="w-3.5 h-3.5 text-slate-400 shrink-0" />
 }

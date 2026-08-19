@@ -42,7 +42,7 @@ export default function Contato() {
         email: formData.email,
         telefone: formData.telefone.replace(/\D/g, ''),
         tipo: 'contato',
-        origem: 'Página Contato',
+        origem: 'site_formulario',
         observacoes: `Assunto: ${formData.assunto}\nPrefere WhatsApp: ${formData.prefere_whatsapp}\nMensagem: ${formData.mensagem}`,
       })
       if (error) throw error

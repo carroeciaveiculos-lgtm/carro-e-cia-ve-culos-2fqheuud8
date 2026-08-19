@@ -32,7 +32,7 @@ export function LeadFormModal({ open, onOpenChange, lead, onSuccess }: any) {
         telefone: '',
         email: '',
         veiculo_interesse: '',
-        origem: 'Manual',
+        origem: 'manual',
         temperatura: 'frio',
         status: 'novo',
       })

@@ -71,7 +71,11 @@ export function KanbanBoard({
       return { label: 'Mercado Livre', className: 'bg-yellow-100 text-yellow-700' }
     if (o.includes('webmotors')) return { label: 'Webmotors', className: 'bg-red-100 text-red-700' }
     if (o.includes('icarros')) return { label: 'iCarros', className: 'bg-orange-100 text-orange-700' }
-    if (!o || o === '/' || o.startsWith('/')) return { label: 'Site', className: 'bg-slate-100 text-slate-600' }
+    if (o.includes('meta_lead_ads')) return { label: 'Meta Lead Ads', className: 'bg-indigo-100 text-indigo-700' }
+    if (o.includes('google_ads')) return { label: 'Google Ads', className: 'bg-blue-100 text-blue-700' }
+    if (o.includes('manual')) return { label: 'Manual', className: 'bg-slate-100 text-slate-600' }
+    if (o.includes('site') || !o || o === '/' || o.startsWith('/'))
+      return { label: 'Site', className: 'bg-slate-100 text-slate-600' }
     return { label: origem || source || 'Outro', className: 'bg-slate-100 text-slate-600' }
   }
 

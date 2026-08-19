@@ -166,7 +166,6 @@ export default function VenderMeuCarro() {
               <LeadForm
                 tipo="venda"
                 campanha="consignacao"
-                origem="Página - Vender Meu Carro"
                 buttonText="AVALIAR MEU CARRO AGORA"
                 whatsappText="Olá Luiz, quero avaliar meu carro para venda!"
               />

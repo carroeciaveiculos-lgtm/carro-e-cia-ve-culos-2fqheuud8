@@ -13,7 +13,7 @@ export function LeadForm({
   tipo = 'consignacao',
   campanha = 'consignacao',
   buttonText = 'Enviar',
-  origem = 'Site',
+  origem = 'site_consignacao',
   whatsappText,
 }: {
   tipo?: string
@@ -48,7 +48,7 @@ export function LeadForm({
         body: {
           ...formData,
           campanha: campanha || tipo,
-          origem: origem || `Página - ${window.location.pathname}`,
+          origem,
           utm_source: urlParams.get('utm_source') || atribuicao.utm_source,
           utm_medium: urlParams.get('utm_medium') || atribuicao.utm_medium,
           utm_campaign: urlParams.get('utm_campaign') || atribuicao.utm_campaign,
