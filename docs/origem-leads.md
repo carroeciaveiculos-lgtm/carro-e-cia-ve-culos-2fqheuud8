@@ -5,7 +5,9 @@ _Becos sem saída_ lista o que já foi testado e falhou — **não repita**. Ao
 descobrir algo novo, acrescente aqui com data e fonte, em vez de deixar só no
 histórico de conversa.
 
-Última atualização: 2026-08-19 — inclui `ai_score`/`temperatura` e vocabulário padronizado de `origem`.
+Última atualização: 2026-08-19 — inclui `ai_score`/`temperatura`, vocabulário
+padronizado de `origem`, catálogo/pixel do Meta e roteiro do anúncio de
+consórcio.
 
 ## O problema original (auditoria 18-19/08/2026)
 
@@ -209,6 +211,77 @@ O relatório também passou a agrupar por `origem` em vez de `source`
 (19/08/2026) — `source` é genérico demais (tudo que vem de WhatsApp cai
 junto, sem distinguir anúncio de contato espontâneo), `origem` agora que
 está padronizado é mais útil pro resumo diário.
+
+## Catálogo do WhatsApp e Pixel com match rate zero (19/08/2026)
+
+**Dois catálogos no app do WhatsApp Business.** Em Configurações →
+Ferramentas comerciais → Catálogo aparecem dois: `776725003388779` (real,
+saudável, 25 veículos, sincroniza sozinho a cada hora via
+`public-inventory-feed`) e `573459484725077` (vazio, sem marca de "Ativo" —
+criado automaticamente pelo próprio app na primeira vez que alguém abriu
+essa tela, nunca usado). Conta do WhatsApp usada: `1530053735172401`
+(WABA — não existe ferramenta no Meta Ads MCP pra consultar isso
+diretamente, só o que a Adriana confirma olhando o app).
+
+**Ação pendente (manual, feita pela Adriana, fora do código):** reconectar
+o WhatsApp ao catálogo `776725003388779` — pelo próprio app (Configurações
+→ Ferramentas comerciais → Catálogo → trocar) ou pelo Gerenciador de
+Negócios (Contas do WhatsApp → aba Catálogo). Depois de reconectado, o
+catálogo vazio (`573459484725077`) pode ser excluído pelo Gerenciador de
+Comércio (não tem API pra isso).
+
+**Pixel com match rate 0% por 30 dias — causa raiz e correção.** O Pixel
+(`917411362618696`, conectado ao catálogo `776725003388779`) mostrava
+`matched_content_ids_count: 0` em todo evento (`ViewContent`, `Lead`,
+etc.) todo dia, por 30 dias seguidos. Causa: `index.html` carrega o script
+do Pixel com 2s de atraso proposital (otimização de performance), e
+`trackMetaEvent` (`src/lib/tracking.ts`) descartava silenciosamente
+qualquer evento disparado antes de `window.fbq` existir — sem fila, sem
+retry. Como a página de veículo dispara `ViewContent` quase imediatamente
+ao montar, a corrida contra os 2s quase sempre era perdida. Corrigido com
+uma fila (`window._fbqPending`): evento é guardado se `fbq` ainda não
+existe, reenviado assim que o script termina de carregar. Commit
+`1b938a6`. **Follow-up pendente**: conferir se o match rate subiu, alguns
+dias depois do fix — lembrete salvo na memória do Claude.
+
+## Anúncio de consórcio — roteiro pronto e fluxo de criação (19/08/2026)
+
+Página de destino já existe no site: `/consorcio-auto` (parceria Carro e
+Cia × Km Zero Corretora / Adriana Araújo), com CTA "Simular consórcio pelo
+WhatsApp" (WhatsApp da Adriana, não passa pelo `cta-router.ts` — link
+direto `wa.me` fixo na página).
+
+**Roteiro decidido:**
+- Destino do anúncio: clique direto pro WhatsApp (Click-to-WhatsApp),
+  não passa pelo site.
+- Conta de anúncio: "Ca - Carro e Cia" (`515820120462587`).
+- Orçamento sugerido: R$30–40/dia, 7 dias de teste.
+- Texto principal: "Troque de carro sem pagar juros. 🚗 Use seu veículo
+  atual como lance e saia do grupo antes de todo mundo. Consórcio sem
+  entrada obrigatória, com +20 anos de experiência da Adriana Araújo (Km
+  Zero Corretora, em parceria com a Carro e Cia)."
+- Título: "Consórcio de carro sem juros — simule agora". Descrição:
+  "Resposta em menos de 10 minutos". CTA: "Enviar mensagem".
+- Mensagem pré-preenchida: "Olá! Quero simular um consórcio de veículo e
+  entender como usar meu carro atual como lance."
+- Imagem: logo oficial já enviada pro Canva (asset `MAHSvw7a9Vs`), 4
+  modelos de template gerados a partir dela — aguardando a Adriana
+  escolher um pra finalizar na conta dela.
+
+**Duas travas encontradas na tentativa de criar direto pela integração:**
+1. Nenhuma conta de anúncio real da Carro e Cia tem "Ads MCP" liberado
+   pela Meta ainda (nem leitura funciona, só a conta de teste tem acesso)
+   — a Meta está liberando aos poucos, sem prazo definido.
+2. Mesmo tentando criar assim mesmo (`ads_create_campaign`), um
+   classificador de segurança do modo automático bloqueia qualquer ação
+   que envolva gasto real, independente da liberação da Meta.
+   **Decisão: não configurar uma permissão permanente pra contornar isso**
+   — abriria uma porta que ficaria valendo pra sempre, contra a prática de
+   sempre pedir autorização antes de gastar. O caminho certo: pedir a
+   criação numa conversa em modo interativo normal (não modo automático) —
+   aí aparece um prompt de aprovação na hora, a Adriana aprova uma vez, a
+   campanha é criada pausada, e ela revisa/publica no Gerenciador de
+   Anúncios quando quiser.
 
 ## Becos sem saída
 
