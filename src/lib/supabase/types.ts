@@ -2176,6 +2176,8 @@ export type Database = {
           ai_enabled: boolean | null
           ai_score: number | null
           ai_summary: string | null
+          anuncio_thumbnail_url: string | null
+          anuncio_video_url: string | null
           brevo_contact_id: string | null
           campanha: string | null
           carro_ano: string | null
@@ -2222,6 +2224,8 @@ export type Database = {
           ai_enabled?: boolean | null
           ai_score?: number | null
           ai_summary?: string | null
+          anuncio_thumbnail_url?: string | null
+          anuncio_video_url?: string | null
           brevo_contact_id?: string | null
           campanha?: string | null
           carro_ano?: string | null
@@ -2268,6 +2272,8 @@ export type Database = {
           ai_enabled?: boolean | null
           ai_score?: number | null
           ai_summary?: string | null
+          anuncio_thumbnail_url?: string | null
+          anuncio_video_url?: string | null
           brevo_contact_id?: string | null
           campanha?: string | null
           carro_ano?: string | null

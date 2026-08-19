@@ -3,6 +3,7 @@ import { createClient } from 'jsr:@supabase/supabase-js@2'
 import { corsHeaders } from '../_shared/cors.ts'
 import { encontrarLeadAtivo, anexarNotaContato, normalizarTelefone } from '../_shared/lead-dedup.ts'
 import { recalcularAiScore } from '../_shared/lead-score.ts'
+import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3'
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL') || ''
 const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''
@@ -12,6 +13,47 @@ const supabase = createClient(supabaseUrl, supabaseKey)
 const VERIFY_TOKEN = Deno.env.get('META_VERIFY_TOKEN') || 'carro_e_cia_verify_123'
 const WHATSAPP_PHONE_NUMBER_ID = Deno.env.get('WHATSAPP_PHONE_NUMBER_ID') || '1231947963330780'
 const WHATSAPP_WABA_ID = Deno.env.get('WHATSAPP_WABA_ID') || '1530053735172401'
+
+const R2_PUBLIC_BASE = 'https://imagens.carroeciamotors.com.br'
+
+// Achado 19/08/2026: o `referral` que a Meta manda na primeira mensagem de
+// clique-para-WhatsApp já vem com `thumbnail_url` (imagem do criativo do
+// anúncio) — sempre chegou, sempre foi descartado (mesmo padrão do achado
+// de referral.body em 17/08/2026). O link da Meta é assinado e expira
+// (CDN do Facebook) — por isso baixa e re-hospeda no R2 (mesmo padrão de
+// gerar-imagem) antes de gravar, senão a imagem para de carregar depois
+// de um tempo. Nunca derruba a criação do lead se falhar — só fica sem
+// thumbnail.
+async function rehospedarThumbnail(thumbnailUrl: string): Promise<string | null> {
+  try {
+    const R2_ACCESS_KEY_ID = Deno.env.get('R2_ACCESS_KEY_ID')
+    const R2_SECRET_ACCESS_KEY = Deno.env.get('R2_SECRET_ACCESS_KEY')
+    const R2_ENDPOINT = Deno.env.get('R2_ENDPOINT')
+    const R2_BUCKET = Deno.env.get('R2_BUCKET') || 'carroeciamotors-imagens'
+    if (!R2_ACCESS_KEY_ID || !R2_SECRET_ACCESS_KEY || !R2_ENDPOINT) return null
+
+    const imgRes = await fetch(thumbnailUrl)
+    if (!imgRes.ok) return null
+    const bytes = new Uint8Array(await imgRes.arrayBuffer())
+    const contentType = imgRes.headers.get('content-type') || 'image/jpeg'
+    const ext = contentType.includes('png') ? 'png' : 'jpg'
+
+    const s3Client = new S3Client({
+      region: 'auto',
+      endpoint: R2_ENDPOINT,
+      credentials: { accessKeyId: R2_ACCESS_KEY_ID, secretAccessKey: R2_SECRET_ACCESS_KEY },
+      forcePathStyle: true,
+    })
+    const key = `leads-anuncios/${Date.now()}_${crypto.randomUUID().slice(0, 8)}.${ext}`
+    await s3Client.send(
+      new PutObjectCommand({ Bucket: R2_BUCKET, Key: key, Body: bytes, ContentType: contentType }),
+    )
+    return `${R2_PUBLIC_BASE}/${key}`
+  } catch (e) {
+    console.error('Falha ao re-hospedar thumbnail do anúncio:', e)
+    return null
+  }
+}
 
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
@@ -251,6 +293,8 @@ Deno.serve(async (req: Request) => {
                   let utmSourceDetectado: string | null = null
                   let utmCampaignDetectado: string | null = null
                   let gclidDetectado: string | null = null
+                  let thumbnailAnuncio: string | null = null
+                  let videoAnuncio: string | null = null
                   if (referral) {
                     const sourceUrl = (referral.source_url || '').toLowerCase()
                     origemDetectada = sourceUrl.includes('instagram')
@@ -268,6 +312,14 @@ Deno.serve(async (req: Request) => {
                       const antesDoisPontos = primeiraLinha.split(':')[0].trim()
                       veiculoDoAnuncio = antesDoisPontos.slice(0, 200) || null
                     }
+                    // Achado 19/08/2026: mesmo padrão de dado sempre chegou,
+                    // sempre foi descartado — thumbnail_url/video_url do
+                    // criativo, pra mostrar no Conversador qual anúncio o
+                    // cliente clicou.
+                    if (referral.thumbnail_url) {
+                      thumbnailAnuncio = await rehospedarThumbnail(referral.thumbnail_url)
+                    }
+                    videoAnuncio = referral.video_url || null
                   } else if (refMatch) {
                     const [, pagina, ctaType, veiculo, utmSource, utmCampaign, gclid] = refMatch
                     origemDetectada = 'site_whatsapp'
@@ -290,6 +342,8 @@ Deno.serve(async (req: Request) => {
                       utm_source: utmSourceDetectado || null,
                       gclid: gclidDetectado || null,
                       veiculo_interesse: veiculoDoAnuncio,
+                      anuncio_thumbnail_url: thumbnailAnuncio,
+                      anuncio_video_url: videoAnuncio,
                       tipo: 'compra',
                       status: 'novo',
                     })

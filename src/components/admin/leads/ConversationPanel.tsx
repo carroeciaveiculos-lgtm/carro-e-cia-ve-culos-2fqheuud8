@@ -176,11 +176,31 @@ export function ConversationPanel({ lead, usuariosMap, onBack }: ConversationPan
       </div>
       <div className="p-4 border-b bg-white flex justify-between items-center shadow-sm shrink-0">
         <div className="flex items-center gap-3">
-          <Avatar className="h-10 w-10 border">
-            <AvatarFallback className="bg-blue-100 text-blue-700 font-bold">
-              {lead.nome?.substring(0, 2).toUpperCase() || 'U'}
-            </AvatarFallback>
-          </Avatar>
+          {lead.anuncio_thumbnail_url ? (
+            // Imagem do criativo do anúncio (Meta CTWA) — pra saber de
+            // relance qual anúncio o cliente clicou, sem precisar sair do
+            // Conversador. Achado 19/08/2026: a Meta sempre mandou isso,
+            // nunca era guardado.
+            <a
+              href={lead.anuncio_video_url || undefined}
+              target={lead.anuncio_video_url ? '_blank' : undefined}
+              rel="noreferrer"
+              title={lead.anuncio_video_url ? 'Ver anúncio no Facebook' : 'Imagem do anúncio'}
+              className="shrink-0"
+            >
+              <img
+                src={lead.anuncio_thumbnail_url}
+                alt="Anúncio que o cliente clicou"
+                className="h-10 w-10 rounded-md object-cover border hover:opacity-80 transition-opacity"
+              />
+            </a>
+          ) : (
+            <Avatar className="h-10 w-10 border">
+              <AvatarFallback className="bg-blue-100 text-blue-700 font-bold">
+                {lead.nome?.substring(0, 2).toUpperCase() || 'U'}
+              </AvatarFallback>
+            </Avatar>
+          )}
           <div>
             <h3 className="font-bold text-slate-800 flex items-center gap-2">{lead.nome}</h3>
             <span className="flex items-center gap-1 text-xs text-slate-500">

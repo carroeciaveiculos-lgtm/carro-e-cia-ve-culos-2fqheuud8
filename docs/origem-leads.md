@@ -167,6 +167,33 @@ em vez de mover pra outro campo.
 `'whatsapp'` (78 registros, formato anterior à correção de 12/08/2026) →
 `whatsapp_organico`; `'LP'` (2 registros) → `site_consignacao`.
 
+## Imagem do anúncio no Conversador (19/08/2026)
+
+**Achado**: o `referral` que a Meta manda na primeira mensagem de
+clique-para-WhatsApp sempre trouxe `thumbnail_url` (imagem do criativo) e
+`video_url` (link pro post, quando o anúncio é vídeo) — mesmo padrão do
+achado de `referral.body` (17/08/2026): sempre chegou, sempre foi
+descartado.
+
+- Duas colunas novas em `leads`: `anuncio_thumbnail_url`,
+  `anuncio_video_url` (migration `20260819140000_leads_anuncio_thumbnail`).
+- **`thumbnail_url` da Meta expira** (CDN assinada do Facebook) — por isso
+  `receive-leads` baixa a imagem e re-hospeda no R2
+  (`leads-anuncios/{timestamp}_{id}.{ext}`, mesmo padrão de
+  `gerar-imagem`) antes de gravar. `video_url` é um link permanente pro
+  post, grava direto sem baixar nada.
+- Se o download/upload falhar por qualquer motivo, não bloqueia a criação
+  do lead — só fica sem thumbnail (`try/catch` isolado).
+- `ConversationPanel.tsx` (o Conversador): mostra a imagem no lugar do
+  avatar quando existe — clicável, abre o vídeo/post do anúncio no
+  Facebook em aba nova se `anuncio_video_url` estiver preenchido.
+
+**Testado ao vivo (19/08/2026)**: payload de webhook simulado com
+`referral.thumbnail_url` real — imagem baixada, re-hospedada no R2,
+confirmada acessível publicamente (`200 OK`, JPEG real). Registro de
+teste apagado depois (o arquivo de teste no R2 ficou, é pequeno e sem
+dado sensível — baixa prioridade).
+
 ## Alerta de canal silencioso (19/08/2026)
 
 `daily-report-cron` (já existia, roda diariamente e manda relatório pro

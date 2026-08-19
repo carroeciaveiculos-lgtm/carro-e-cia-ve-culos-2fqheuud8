@@ -60,6 +60,16 @@ nos arquivos `docs/*.md` — aqui é só o resumo de estado + pendências.
   **Adiado pro futuro (decisão da Adriana)**: confirmar webhook do
   Mercado Livre/Webmotors nos portais; NaPista não tem webhook de lead
   nenhum, só endpoint de consulta — precisaria de cron.
+  **[RESOLVIDO 19/08/2026] Imagem do anúncio no Conversador**: achado —
+  a Meta sempre mandou `thumbnail_url`/`video_url` do criativo do anúncio
+  no `referral`, nunca foi guardado (mesmo padrão do achado de
+  `referral.body`, 17/08). 2 colunas novas em `leads`
+  (`anuncio_thumbnail_url`, `anuncio_video_url`) — `receive-leads` baixa a
+  imagem e re-hospeda no R2 (o link da Meta expira), grava o link do
+  vídeo direto (não expira). `ConversationPanel.tsx` mostra a imagem no
+  lugar do avatar, clicável pro anúncio no Facebook. Testado ao vivo com
+  payload simulado — imagem confirmada acessível publicamente. Detalhe em
+  `docs/origem-leads.md`.
 - **NaPista — PRODUÇÃO LIBERADA, 25/25 VEÍCULOS PUBLICADOS DE VERDADE
   (18/08/2026, sessão 8)**: NaPista aprovou o client_id `carro-e-cia` pra
   produção. Migrei toda a integração (5 functions) de
