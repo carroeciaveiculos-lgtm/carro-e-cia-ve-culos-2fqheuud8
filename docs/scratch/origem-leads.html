@@ -1,0 +1,390 @@
+<title>Origem Real dos Leads</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Public+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  :root {
+    --bg: #FAF6F4;
+    --surface: #FFFFFF;
+    --surface-2: #F3EBE7;
+    --text: #241C1A;
+    --muted: #7A6D69;
+    --border: #E8DEDA;
+    --accent: #C0392B;
+    --accent-ink: #FFFFFF;
+    --accent-soft: #F7E3E0;
+    --ads: #4A5FD1;
+    --ads-soft: #E7E9FA;
+    --organic: #2C8F55;
+    --organic-soft: #DFF1E6;
+    --form: #B9791E;
+    --form-soft: #F5E7D2;
+    --gap-stripe: #C0392B;
+    --shadow: 0 1px 2px rgba(36,28,26,0.06), 0 8px 24px -12px rgba(36,28,26,0.18);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #1B1513;
+      --surface: #241C19;
+      --surface-2: #2C221E;
+      --text: #F3ECE9;
+      --muted: #A6968F;
+      --border: #3A2E2A;
+      --accent: #E1604E;
+      --accent-ink: #1B1513;
+      --accent-soft: #3A211D;
+      --ads: #8C9AEE;
+      --ads-soft: #262A47;
+      --organic: #6FCB94;
+      --organic-soft: #1E3226;
+      --form: #E0AC5C;
+      --form-soft: #3A2C15;
+      --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 8px 24px -12px rgba(0,0,0,0.5);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #1B1513;
+    --surface: #241C19;
+    --surface-2: #2C221E;
+    --text: #F3ECE9;
+    --muted: #A6968F;
+    --border: #3A2E2A;
+    --accent: #E1604E;
+    --accent-ink: #1B1513;
+    --accent-soft: #3A211D;
+    --ads: #8C9AEE;
+    --ads-soft: #262A47;
+    --organic: #6FCB94;
+    --organic-soft: #1E3226;
+    --form: #E0AC5C;
+    --form-soft: #3A2C15;
+    --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 8px 24px -12px rgba(0,0,0,0.5);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Public Sans', system-ui, -apple-system, sans-serif;
+    font-size: 15px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 1040px; margin: 0 auto; padding: 48px 24px 96px; }
+
+  .eyebrow {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 600;
+    font-size: 13px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+  h1 {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 700;
+    font-size: clamp(32px, 5vw, 48px);
+    line-height: 1.05;
+    letter-spacing: -0.01em;
+    margin: 6px 0 8px;
+    text-wrap: balance;
+  }
+  .subtitle {
+    color: var(--muted);
+    font-size: 16px;
+    max-width: 62ch;
+    margin: 0 0 40px;
+  }
+  h2 {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 700;
+    font-size: 26px;
+    letter-spacing: -0.005em;
+    margin: 0 0 4px;
+    text-wrap: balance;
+  }
+  .section-note { color: var(--muted); font-size: 14.5px; max-width: 68ch; margin: 0 0 24px; }
+  section { margin-bottom: 56px; }
+
+  /* stat cards */
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 12px;
+    margin-bottom: 8px;
+  }
+  .stat {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px 18px 16px;
+    box-shadow: var(--shadow);
+  }
+  .stat .n {
+    font-family: 'IBM Plex Mono', monospace;
+    font-weight: 500;
+    font-size: 30px;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+  }
+  .stat .l {
+    margin-top: 8px;
+    font-size: 13px;
+    color: var(--muted);
+  }
+  .stat.accent-ads .n { color: var(--ads); }
+  .stat.accent-organic .n { color: var(--organic); }
+  .stat.accent-form .n { color: var(--form); }
+
+  /* flow diagram */
+  .flow {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 28px 24px;
+    box-shadow: var(--shadow);
+  }
+  .flow-row {
+    display: flex;
+    align-items: stretch;
+    gap: 0;
+    flex-wrap: wrap;
+  }
+  .flow-step {
+    flex: 1 1 150px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 14px 16px;
+    position: relative;
+  }
+  .flow-step .tag {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .flow-step .body { font-size: 14px; }
+  .flow-step .body strong { display: block; margin-bottom: 2px; }
+  .flow-arrow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--muted);
+    font-size: 20px;
+    padding: 0 4px;
+    flex: 0 0 auto;
+  }
+  .flow-step.gap {
+    background: var(--accent-soft);
+    border: 1.5px dashed var(--accent);
+    border-radius: 8px;
+  }
+  .flow-step.gap .tag { color: var(--accent); }
+  .flow-step.ok { background: var(--surface-2); border-radius: 8px; }
+
+  /* pills */
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 9px;
+    border-radius: 100px;
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .pill::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+    flex: 0 0 auto;
+  }
+  .pill.ads { background: var(--ads-soft); color: var(--ads); }
+  .pill.organic { background: var(--organic-soft); color: var(--organic); }
+  .pill.form { background: var(--form-soft); color: var(--form); }
+
+  /* table */
+  .table-scroll { overflow-x: auto; border: 1px solid var(--border); border-radius: 12px; box-shadow: var(--shadow); }
+  table { width: 100%; border-collapse: collapse; background: var(--surface); font-size: 13.5px; min-width: 860px; }
+  thead th {
+    position: sticky; top: 0;
+    background: var(--surface-2);
+    text-align: left;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 600;
+    font-size: 12px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted);
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+  }
+  tbody td {
+    padding: 9px 14px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:hover { background: var(--surface-2); }
+  td.data { font-family: 'IBM Plex Mono', monospace; font-variant-numeric: tabular-nums; color: var(--muted); white-space: nowrap; font-size: 12.5px; }
+  td.nome { font-weight: 600; white-space: nowrap; }
+  td.detalhe { color: var(--muted); font-size: 13px; max-width: 260px; }
+  td.detalhe .campanha { color: var(--text); font-weight: 500; }
+
+  footer { color: var(--muted); font-size: 13px; padding-top: 24px; border-top: 1px solid var(--border); }
+  footer a { color: var(--accent); }
+
+  @media (max-width: 640px) {
+    .flow-arrow { transform: rotate(90deg); padding: 8px 0; }
+    .flow-row { flex-direction: column; }
+  }
+</style>
+
+<div class="wrap">
+
+  <div class="eyebrow">Carro e Cia Motors &middot; Pipeline de Leads</div>
+  <h1>De onde vêm os leads, de verdade</h1>
+  <p class="subtitle">Os 50 leads mais recentes do painel, rastreados até a origem real — e o ponto exato onde essa origem se perde para a maioria deles. Período: 10 a 18 de agosto de 2026.</p>
+
+  <section>
+    <h2>O retrato em números</h2>
+    <p class="section-note">Nos últimos 50 leads, todos chegaram pelo WhatsApp — nenhum veio de formulário do site nem de mensagem direta no Instagram/Facebook.</p>
+    <div class="stats">
+      <div class="stat accent-ads"><div class="n">41</div><div class="l">de anúncio (Facebook + Instagram) — clique rastreado até a campanha</div></div>
+      <div class="stat accent-organic"><div class="n">9</div><div class="l">WhatsApp direto — sem nenhum rastro de onde a pessoa clicou antes</div></div>
+      <div class="stat accent-form"><div class="n">0</div><div class="l">formulário do site (existe, nunca foi usado por comprador)</div></div>
+      <div class="stat"><div class="n">23/41</div><div class="l">dos anúncios são da campanha "Agende sua visita!"</div></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Onde a origem se perde</h2>
+    <p class="section-note">O clique em "Falar no WhatsApp" no site é registrado — só que num sistema separado do CRM, que nunca conversa com ele de volta. Por isso a maioria dos leads chega ao painel sem nenhuma pista de qual botão, página ou anúncio gerou o clique.</p>
+    <div class="flow">
+      <div class="flow-row">
+        <div class="flow-step ok">
+          <span class="tag">Passo 1</span>
+          <div class="body"><strong>Cliente clica</strong>num botão de WhatsApp do site, ou vê um anúncio no Facebook/Instagram e toca em "Enviar mensagem"</div>
+        </div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step ok">
+          <span class="tag">Passo 2</span>
+          <div class="body"><strong>Clique registrado</strong>no Google Analytics e no Meta Pixel (evento <code>whatsapp_click</code>) — serve pra medir campanha, não entra no CRM</div>
+        </div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step gap">
+          <span class="tag">Aqui quebra</span>
+          <div class="body"><strong>Nenhum elo salvo</strong>entre esse clique e a mensagem que a pessoa manda a seguir — clique de anúncio e clique do site ficam indistinguíveis</div>
+        </div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step ok">
+          <span class="tag">Passo 3</span>
+          <div class="body"><strong>Mensagem chega</strong>no WhatsApp da loja — só aí nasce o lead no painel</div>
+        </div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step ok">
+          <span class="tag">Passo 4</span>
+          <div class="body"><strong>Origem é decidida</strong>: só quando é anúncio real (Facebook/Instagram), a Meta manda um pacote extra (<code>referral</code>) com a campanha. Sem isso, vira "WhatsApp direto" — mesmo rótulo pra clique do site e contato espontâneo</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>O que cada rótulo de origem quer dizer</h2>
+    <p class="section-note">Três categorias na prática, uma delas escondendo duas coisas diferentes:</p>
+    <div class="stats" style="grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));">
+      <div class="stat">
+        <span class="pill ads">Facebook / Instagram Ads</span>
+        <div class="l" style="margin-top:10px">Confiável — vem do anúncio de verdade. Sabemos a campanha e, desde 17/08, às vezes até o veículo do criativo.</div>
+      </div>
+      <div class="stat">
+        <span class="pill organic">WhatsApp direto</span>
+        <div class="l" style="margin-top:10px">Ambíguo — pode ser cliente que buscou o número, indicação de terceiros, <strong>ou alguém que clicou num botão do site</strong>. Hoje não dá pra saber qual.</div>
+      </div>
+      <div class="stat">
+        <span class="pill form">Formulário (LP)</span>
+        <div class="l" style="margin-top:10px">Só usado por quem quer <em>vender</em> o carro (páginas de consignação). Existe com UTM completo, mas nunca foi usado por quem quer <em>comprar</em>.</div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Os 50 leads, em ordem</h2>
+    <p class="section-note">Nome como chegou no WhatsApp, campanha do anúncio (quando existe) e o veículo do criativo, quando a Meta mandou essa informação.</p>
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>Data</th>
+            <th>Nome</th>
+            <th>Origem</th>
+            <th>Campanha / detalhe</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td class="data">18/08 22:52</td><td class="nome">Flávio Félix</td><td><span class="pill organic">WhatsApp direto</span></td><td class="detalhe">—</td></tr>
+          <tr><td class="data">18/08 21:24</td><td class="nome">Maria José</td><td><span class="pill ads">Facebook Ads</span></td><td class="detalhe"><span class="campanha">Agende sua visita!</span><br>VW up! move 1.0 TSI Flex Manual 2016/2017</td></tr>
+          <tr><td class="data">18/08 18:45</td><td class="nome">Carlos</td><td><span class="pill ads">Facebook Ads</span></td><td class="detalhe"><span class="campanha">Carro e Cia Veículos</span><br>RAM Rampage Hurricane R/T 4x4 2024</td></tr>
+          <tr><td class="data">18/08 16:51</td><td class="nome">Lucas e Sayonara ❤️❤️</td><td><span class="pill ads">Facebook Ads</span></td><td class="detalhe"><span class="campanha">Agende sua visita!</span><br>Honda HR-V EX 1.8 FlexOne Automático 2017</td></tr>
+          <tr><td class="data">18/08 15:38</td><td class="nome">Zenaide</td><td><span class="pill ads">Facebook Ads</span></td><td class="detalhe"><span class="campanha">Carro e Cia Veículos</span><br>GWM Haval H6 1.5 Híbrido AWD 2023/2024</td></tr>
+          <tr><td class="data">18/08 15:16</td><td class="nome">Viana</td><td><span class="pill ads">Facebook Ads</span></td><td class="detalhe"><span class="campanha">Fala Conosco</span><br>Venda seu carro com a Carro &amp; Cia</td></tr>
+          <tr><td class="data">18/08 15:07</td><td class="nome">Nathy</td><td><span class="pill ads">Facebook Ads</span></td><td class="detalhe"><span class="campanha">Agende sua visita!</span><br>RAM Rampage Hurricane R/T 4x4 2024</td></tr>
+          <tr><td class="data">18/08 14:00</td><td class="nome">Aparecida</td><td><span class="pill ads">Facebook Ads</span></td><td class="detalhe"><span class="campanha">Carro e Cia Veículos</span><br>GWM Haval H6 1.5 Híbrido AWD 2023/2024</td></tr>
+          <tr><td class="data">17/08 23:07</td><td class="nome">Neusa Bolina</td><td><span class="pill ads">Facebook Ads</span></td><td class="detalhe"><span class="campanha">Agende sua visita!</span><br>VW up! move 1.0 TSI Flex Manual 2016/2017</td></tr>
+          <tr><td class="data">17/08 18:15</td><td class="nome">Marlene Moreira Oliveira</td><td><span class="pill ads">Facebook Ads</span></td><td class="detalhe"><span class="campanha">Converse conosco</span></td></tr>
+          <tr><td class="data">17/08 15:06</td><td class="nome">Lindalva</td><td><span class="pill ads">Facebook Ads</span></td><td class="detalhe"><span class="campanha">Converse conosco</span></td></tr>
+          <tr><td class="data">17/08 14:27</td><td class="nome">Deus E Fiel</td><td><span class="pill ads">Facebook Ads</span></td><td class="detalhe"><span class="campanha">Converse conosco</span></td></tr>
+          <tr><td class="data">17/08 14:17</td><td class="nome">Zeca Da Balduino</td><td><span class="pill ads">Facebook Ads</span></td><td class="detalhe"><span class="campanha">Agende sua visita!</span></td></tr>
+          <tr><td class="data">17/08 11:59</td><td class="nome">Jorge Henrique</td><td><span class="pill ads">Facebook Ads</span></td><td class="detalhe"><span class="campanha">Agende sua visita!</span></td></tr>
+          <tr><td class="data">16/08 20:37</td><td class="nome">restaurante da cida</td><td><span class="pill ads">Instagram Ads</span></td><td class="detalhe"><span class="campanha">Fala Conosco</span></td></tr>
+          <tr><td class="data">16/08 19:04</td><td class="nome">Danilo</td><td><span class="pill ads">Facebook Ads</span></td><td class="detalhe"><span class="campanha">Converse conosco</span></td></tr>
+          <tr><td class="data">16/08 18:54</td><td class="nome">Maria Do Socorro</td><td><span class="pill ads">Instagram Ads</span></td><td class="detalhe"><span class="campanha">Agende sua visita!</span></td></tr>
+          <tr><td class="data">16/08 17:57</td><td class="nome">Celson</td><td><span class="pill ads">Facebook Ads</span></td><td class="detalhe"><span class="campanha">Agende sua visita!</span></td></tr>
+          <tr><td class="data">16/08 17:13</td><td class="nome">Carmem</td><td><span class="pill ads">Facebook Ads</span></td><td class="detalhe"><span class="campanha">Agende sua visita!</span></td></tr>
+          <tr><td class="data">16/08 17:10</td><td class="nome">Lucas Costa</td><td><span class="pill ads">Instagram Ads</span></td><td class="detalhe"><span class="campanha">Agende sua visita!</span></td></tr>
+          <tr><td class="data">16/08 16:37</td><td class="nome">Edinho</td><td><span class="pill ads">Facebook Ads</span></td><td class="detalhe"><span class="campanha">Carro e Cia Veículos</span></td></tr>
+          <tr><td class="data">16/08 15:50</td><td class="nome">Alceu</td><td><span class="pill ads">Instagram Ads</span></td><td class="detalhe"><span class="campanha">Agende sua visita!</span></td></tr>
+          <tr><td class="data">16/08 15:45</td><td class="nome">neoqeav 30/05/2021</td><td><span class="pill ads">Instagram Ads</span></td><td class="detalhe"><span class="campanha">Agende sua visita!</span></td></tr>
+          <tr><td class="data">16/08 15:33</td><td class="nome">Valter Junior</td><td><span class="pill ads">Facebook Ads</span></td><td class="detalhe"><span class="campanha">Converse conosco</span></td></tr>
+          <tr><td class="data">16/08 14:33</td><td class="nome">Adriano</td><td><span class="pill ads">Instagram Ads</span></td><td class="detalhe"><span class="campanha">Agende sua visita!</span></td></tr>
+          <tr><td class="data">15/08 16:25</td><td class="nome">Marly Amaral Macedo</td><td><span class="pill ads">Facebook Ads</span></td><td class="detalhe"><span class="campanha">Carro e Cia Veículos</span></td></tr>
+          <tr><td class="data">15/08 15:09</td><td class="nome">Isaías</td><td><span class="pill ads">Facebook Ads</span></td><td class="detalhe"><span class="campanha">Agende sua visita!</span></td></tr>
+          <tr><td class="data">15/08 14:58</td><td class="nome">Amo Minha Família 👪</td><td><span class="pill ads">Instagram Ads</span></td><td class="detalhe"><span class="campanha">Converse conosco</span></td></tr>
+          <tr><td class="data">15/08 14:54</td><td class="nome">Nilda</td><td><span class="pill ads">Facebook Ads</span></td><td class="detalhe"><span class="campanha">Converse conosco</span></td></tr>
+          <tr><td class="data">15/08 14:46</td><td class="nome">Vagner Soares Ferreira</td><td><span class="pill ads">Facebook Ads</span></td><td class="detalhe"><span class="campanha">Agende sua visita!</span></td></tr>
+          <tr><td class="data">15/08 14:27</td><td class="nome">Márcia Godoy</td><td><span class="pill ads">Instagram Ads</span></td><td class="detalhe"><span class="campanha">Agende sua visita!</span></td></tr>
+          <tr><td class="data">15/08 14:00</td><td class="nome">Cicero</td><td><span class="pill ads">Facebook Ads</span></td><td class="detalhe"><span class="campanha">Agende sua visita!</span></td></tr>
+          <tr><td class="data">14/08 20:53</td><td class="nome">Pastor Del</td><td><span class="pill ads">Facebook Ads</span></td><td class="detalhe"><span class="campanha">Agende sua visita!</span></td></tr>
+          <tr><td class="data">14/08 16:10</td><td class="nome">Sergio Jabbur</td><td><span class="pill ads">Instagram Ads</span></td><td class="detalhe"><span class="campanha">Agende sua visita!</span></td></tr>
+          <tr><td class="data">13/08 11:05</td><td class="nome">Marcio Dias</td><td><span class="pill ads">Facebook Ads</span></td><td class="detalhe"><span class="campanha">Agende sua visita!</span></td></tr>
+          <tr><td class="data">12/08 21:03</td><td class="nome">Inez Machado</td><td><span class="pill ads">Instagram Ads</span></td><td class="detalhe"><span class="campanha">Agende sua visita!</span></td></tr>
+          <tr><td class="data">12/08 20:45</td><td class="nome">piresfabianasilva18</td><td><span class="pill ads">Instagram Ads</span></td><td class="detalhe"><span class="campanha">Converse conosco</span></td></tr>
+          <tr><td class="data">12/08 20:35</td><td class="nome">Dayane</td><td><span class="pill ads">Instagram Ads</span></td><td class="detalhe"><span class="campanha">Agende sua visita!</span></td></tr>
+          <tr><td class="data">12/08 20:34</td><td class="nome">Arthur Brandão</td><td><span class="pill ads">Facebook Ads</span></td><td class="detalhe"><span class="campanha">Converse conosco</span></td></tr>
+          <tr><td class="data">12/08 20:20</td><td class="nome">Fernando Oliveira</td><td><span class="pill ads">Instagram Ads</span></td><td class="detalhe"><span class="campanha">Agende sua visita!</span></td></tr>
+          <tr><td class="data">12/08 20:06</td><td class="nome">Pastor Osnei</td><td><span class="pill ads">Facebook Ads</span></td><td class="detalhe"><span class="campanha">Carro e Cia Veículos</span></td></tr>
+          <tr><td class="data">12/08 19:32</td><td class="nome">Edi Faria</td><td><span class="pill ads">Facebook Ads</span></td><td class="detalhe"><span class="campanha">Fala Conosco</span></td></tr>
+          <tr><td class="data">12/08 18:29</td><td class="nome">Heli Aparecido</td><td><span class="pill organic">WhatsApp direto</span></td><td class="detalhe">—</td></tr>
+          <tr><td class="data">12/08 15:51</td><td class="nome">Angelo Silva</td><td><span class="pill organic">WhatsApp direto</span></td><td class="detalhe">—</td></tr>
+          <tr><td class="data">12/08 13:50</td><td class="nome">Lucia 🌼</td><td><span class="pill organic">WhatsApp direto</span></td><td class="detalhe">—</td></tr>
+          <tr><td class="data">12/08 13:28</td><td class="nome">Maria Helena</td><td><span class="pill organic">WhatsApp direto</span></td><td class="detalhe">—</td></tr>
+          <tr><td class="data">12/08 11:03</td><td class="nome">Leeh Liis</td><td><span class="pill organic">WhatsApp direto</span></td><td class="detalhe">—</td></tr>
+          <tr><td class="data">10/08 21:25</td><td class="nome">Fagner Nascimento</td><td><span class="pill organic">WhatsApp direto</span></td><td class="detalhe">—</td></tr>
+          <tr><td class="data">10/08 19:57</td><td class="nome">Vanilde Ramos</td><td><span class="pill organic">WhatsApp direto</span></td><td class="detalhe">—</td></tr>
+          <tr><td class="data">10/08 19:53</td><td class="nome">alzirozarurfelixfraga</td><td><span class="pill organic">WhatsApp direto</span></td><td class="detalhe">—</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <footer>
+    Gerado a partir da tabela <code>leads</code> (Supabase) e do código de <code>receive-leads</code>, <code>cta-router.ts</code> e <code>tracking.ts</code> do site. Não inclui telefone/e-mail — só o necessário pra entender a origem.
+  </footer>
+
+</div>
