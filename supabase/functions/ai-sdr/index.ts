@@ -286,12 +286,16 @@ async function registrarEmailNoBrevo(
 }
 
 // Regra da Adriana (14/08/2026): lead de seguro auto vai pro Gabriel, lead de
-// consórcio vai pra própria Adriana — cada um continua o atendimento fora do
-// sistema da revenda. Isso só encaminha (WhatsApp com resumo + dados do
-// cliente); não integra com nenhum sistema da corretora/consórcio.
+// consórcio vai pra equipe dedicada (Km Zero) — cada um continua o
+// atendimento fora do sistema da revenda.
+// Ajustado em 19/08/2026 (achado em autocrítica): antes isso só avisava o
+// parceiro por dentro e a Clara continuava respondendo o mesmo cliente sobre
+// um assunto que ela não domina — encaminharParaParceiro agora também manda
+// o cliente pro WhatsApp certo por link e desliga a IA pra esse lead, igual
+// já acontecia em solicitar_atendimento_humano.
 const PARCEIROS_ENCAMINHAMENTO: Record<string, { nome: string; telefone: string; assunto: string }> = {
   seguro_auto: { nome: 'Gabriel', telefone: '5534992000300', assunto: 'Seguro Auto' },
-  consorcio: { nome: 'Adriana', telefone: '5534984080220', assunto: 'Consórcio' },
+  consorcio: { nome: 'Equipe Consórcio', telefone: '5534998037651', assunto: 'Consórcio' },
 }
 
 async function encaminharParaParceiro(lead: any, tipo: string) {
@@ -314,6 +318,17 @@ async function encaminharParaParceiro(lead: any, tipo: string) {
     const texto = `🔀 Lead encaminhado pela Clara — ${parceiro.assunto}\n\nNome: ${lead.nome || 'não informado'}\nTelefone: ${lead.telefone || 'não informado'}\nE-mail: ${lead.email || 'não informado'}\n\nResumo da conversa:\n${resumoConversa || '(sem histórico de conversa registrado)'}`
 
     await sendWhatsApp(parceiro.telefone, texto)
+
+    if (lead.telefone) {
+      const assuntoMinusculo = parceiro.assunto.toLowerCase()
+      const linkWa = `https://wa.me/${parceiro.telefone}?text=${encodeURIComponent(`Olá! Vim da conversa com a Clara sobre ${assuntoMinusculo}.`)}`
+      const linkTexto = `Prontinho! Pra continuar sobre ${assuntoMinusculo} com quem entende do assunto, fala direto por aqui: ${linkWa}`
+      await sendWhatsApp(lead.telefone, linkTexto)
+    }
+
+    // Desliga a IA pra esse lead — a Clara não deve mais responder depois de
+    // encaminhar, mesmo mecanismo de solicitar_atendimento_humano.
+    await supabase.from('leads').update({ ai_enabled: false }).eq('id', lead.id)
   } catch (err) {
     console.error('Erro ao encaminhar lead pra parceiro:', err)
   }

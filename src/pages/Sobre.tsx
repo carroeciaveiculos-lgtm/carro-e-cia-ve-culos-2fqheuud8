@@ -289,8 +289,8 @@ export default function Sobre() {
               <Button className="w-full bg-[#25D366] hover:bg-[#128C7E] text-white mt-auto" asChild>
                 <a
                   href={getWhatsAppLink(
-                    'Olá Adriana! Vim pelo site e gostaria de falar sobre consórcios e financiamentos.',
-                    '5534984080220',
+                    'Olá! Vim pelo site e gostaria de falar sobre consórcios e financiamentos.',
+                    '5534998037651',
                   )}
                   target="_blank"
                   rel="noopener noreferrer"

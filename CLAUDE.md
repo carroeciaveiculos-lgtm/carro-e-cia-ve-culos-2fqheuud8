@@ -281,21 +281,31 @@ específico aqui, menos eu erro:
   dão `22|78` e **bloqueiam** a publicação (`CodigoAnuncio` volta 0). Ela também
   valida o "De" contra a FIPE (código `105`), então não dá para simplesmente
   inflar o valor. Ver `docs/webmotors-integracao.md`.
-- **Números de WhatsApp/telefone — RESPONDIDO em 15/08/2026.** Quatro números,
+- **Números de WhatsApp/telefone — atualizado em 19/08/2026.** Cinco números,
   papéis fixos, não intercambiáveis:
 
   - `5534997384177` (Clara) — atendimento geral do site: chat, CTAs, botões de
     veículo, campanhas, landing pages, conteúdo gerado por IA. É o padrão em
     `src/lib/whatsapp.ts` (`getWhatsAppLink`) — não hardcode outro número num
     fluxo genérico, deixe cair no padrão.
-  - `5534984080220` (celular pessoal da Adriana) — só em botões/fluxos de
-    **consórcio** (`ConsorcioAuto.tsx`), e como destino dos alertas
-    administrativos internos (novo agendamento, relatório diário, no-show,
-    lead do Meta Ads, artigo pronto pra revisão). Vem de
+  - `5534998037651` (WhatsApp Business dedicado, atendido manualmente pela
+    Adriana/equipe Km Zero) — em botões/fluxos de **consórcio**
+    (`ConsorcioAuto.tsx`, card "Falar com Adriana" em `Sobre.tsx`), e como
+    destino do encaminhamento que a Clara faz quando `criar_lead_crm` recebe
+    `tipo=consorcio` (`PARCEIROS_ENCAMINHAMENTO` em `ai-sdr/index.ts`) — a
+    Clara manda o cliente pra esse número por link e desliga a IA pra esse
+    lead. Antes desse ajuste, tudo isso usava o celular pessoal da Adriana
+    (`5534984080220`).
+  - `5534984080220` (celular pessoal da Adriana) — agora só como destino dos
+    alertas administrativos internos (novo agendamento, relatório diário,
+    no-show, lead do Meta Ads, artigo pronto pra revisão) e do comando de
+    WhatsApp autorizado (`AUTHORIZED_PHONE`). Vem de
     `social_configuracoes.whatsapp_number` — esse campo é só pra alerta
     interno, nunca pra link público de WhatsApp.
-  - `5534992000300` (Gabriel) — só em botões/fluxos de **seguro auto**
-    (`SeguroAuto.tsx`).
+  - `5534992000300` (Gabriel) — em botões/fluxos de **seguro auto**
+    (`SeguroAuto.tsx`), e como destino do encaminhamento da Clara pra
+    `tipo=seguro_auto` (mesmo mecanismo do consórcio: link pro cliente +
+    IA desligada).
   - `553433159400` (fixo da loja) e `5534992893615` (celular da loja) — **só
     ligação direta** (`tel:`), nunca `wa.me`. Aparecem no `telephone` dos
     dados estruturados (schema.org, `SEO.tsx`/`Index.tsx`/`VenderMeuCarro.tsx`)

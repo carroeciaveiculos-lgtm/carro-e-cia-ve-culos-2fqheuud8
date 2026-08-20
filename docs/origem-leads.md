@@ -283,6 +283,31 @@ direto `wa.me` fixo na página).
    campanha é criada pausada, e ela revisa/publica no Gerenciador de
    Anúncios quando quiser.
 
+## Encaminhamento de consórcio/seguro — corrigido (19/08/2026)
+
+**Achado em autocrítica** (a pedido da Adriana, pra revisar o mapeamento
+completo dos fluxos da Clara): `encaminharParaParceiro()`
+(`supabase/functions/ai-sdr/index.ts`) só mandava um aviso interno pro
+parceiro (Gabriel ou Adriana) — o cliente nunca recebia link nenhum, e a
+Clara continuava ativa no mesmo chat depois de dizer "vou te encaminhar",
+com risco de tentar responder sobre um assunto que ela não domina.
+
+**Correção:** `encaminharParaParceiro()` agora também manda o cliente uma
+mensagem com link `wa.me` pro número certo, e desliga a IA pra esse lead
+(`ai_enabled = false`) — mesmo mecanismo já usado em
+`solicitar_atendimento_humano`. Aplicado aos dois tipos que passam por
+esse encaminhamento: `consorcio` e `seguro_auto`.
+
+**Número novo dedicado a consórcio:** `5534998037651` (WhatsApp Business,
+atendido manualmente pela Adriana/equipe Km Zero — sem IA). Substituiu o
+celular pessoal da Adriana (`5534984080220`) em todo lugar que apontava
+pra consórcio: `PARCEIROS_ENCAMINHAMENTO` (`ai-sdr/index.ts`),
+`ConsorcioAuto.tsx` e o card "Falar com Adriana" em `Sobre.tsx` (esse
+último cobre também "seguros gerais e financiamentos", não só consórcio —
+decisão da Adriana foi padronizar mesmo assim). O celular pessoal dela
+continua sendo o destino dos alertas administrativos internos (novo
+agendamento, relatório diário, etc.) — isso não mudou.
+
 ## Becos sem saída
 
 - Não dá pra rastrear clique de WhatsApp por sessão/cookie — o link
