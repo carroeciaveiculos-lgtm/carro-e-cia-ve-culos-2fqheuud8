@@ -1,6 +1,7 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from 'jsr:@supabase/supabase-js@2'
 import { buildAuthXML, callSOAP, type WMCredentials } from '../_shared/wm-soap.ts'
+import { matchCatalogoExato } from '../_shared/wm-catalogo-match.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -60,41 +61,6 @@ async function autenticar(): Promise<string> {
   return result.hashAutenticacao
 }
 
-// Match exato (case-insensitive) contra o catálogo já usado por wm-sync pra
-// montar CodigoCor/CodigoCambio/CodigoCombustivel — essas 3 tabelas têm
-// vocabulário mais padronizado que marca/modelo, então não precisam do trigram
-// fuzzy-match usado ali embaixo; se não achar, vai pra revisão manual igual
-// marca/modelo, em vez de deixar o código vazio (o guard em wm-sync bloqueia
-// publicação sem esses códigos).
-// Compara contra as DUAS colunas de nome, não só nome_wm:
-//   nome_wm  = termo da Webmotors ("Automática", "Preto", "Gasolina e álcool")
-//   nome_crm = termo equivalente no CRM ("Automático", "Preta", "Flex")
-// Verificado em 10/08/2026: dos 26 disponíveis, ZERO casavam olhando só nome_wm.
-// Precisa das duas porque o CRM tem grafias concorrentes para a mesma cor —
-// "PRETA" (11 veículos) casa por nome_crm e "preto" (1) casa por nome_wm.
-// A comparação é feita em memória: as três tabelas são minúsculas (17 cores,
-// 6 câmbios, 11 combustíveis) e assim se evita montar filtro com valor vindo
-// do banco, que quebraria em texto com vírgula (ex.: "Gasolina, álcool e gás
-// natural").
-async function matchCatalogoExato(
-  supabase: any,
-  tabela: string,
-  valor: string | null | undefined,
-): Promise<{ codigo_wm: string; nome_wm: string } | null> {
-  if (!valor) return null
-  const alvo = valor.trim().toLowerCase()
-  if (!alvo) return null
-  const { data } = await supabase.from(tabela).select('codigo_wm, nome_wm, nome_crm')
-  const achado = (data || []).find(
-    (r: any) =>
-      (r.nome_crm || '').trim().toLowerCase() === alvo ||
-      (r.nome_wm || '').trim().toLowerCase() === alvo,
-  )
-  // Devolve sempre o nome_wm: é ele que vai no XML da Webmotors (CorExterna,
-  // Cambio, DescricaoCombustivel). Mandar o termo do CRM seria erro de dado.
-  return achado ? { codigo_wm: achado.codigo_wm, nome_wm: achado.nome_wm } : null
-}
-
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
 
@@ -113,6 +79,20 @@ Deno.serve(async (req: Request) => {
       .eq('id', veiculo_id)
       .single()
     if (veiculoErr || !veiculo) throw new Error('Veiculo nao encontrado')
+
+    // Respeita exclusão manual permanente (20/08/2026, pedido da Adriana —
+    // ex.: veículo que ela decidiu não anunciar na Webmotors mesmo estando
+    // disponível). Sem esse guard, salvar o veículo de novo no admin
+    // ("Validar e Salvar" chama esta function) reavaliaria o mapeamento do
+    // zero e podia trazer o veículo de volta pra fila de revisão.
+    const { data: mapeamentoExistente } = await supabase
+      .from('wm_mapeamento_veiculos')
+      .select('status_sincronizacao')
+      .eq('veiculo_id', veiculo_id)
+      .maybeSingle()
+    if (mapeamentoExistente?.status_sincronizacao === 'excluido_manualmente') {
+      return responder({ success: true, status: 'excluido_manualmente' })
+    }
 
     const textoModeloCompleto = [veiculo.modelo, veiculo.versao].filter(Boolean).join(' ')
 

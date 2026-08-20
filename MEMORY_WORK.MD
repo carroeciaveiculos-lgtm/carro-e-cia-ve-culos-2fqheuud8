@@ -13,6 +13,31 @@ nos arquivos `docs/*.md` — aqui é só o resumo de estado + pendências.
 
 ## O que está no ar hoje
 
+- **Webmotors — 2 correções de causa raiz + 2 regras novas (20/08/2026)**:
+  investigando os "2 pendentes" e o log de erro que a Adriana viu no painel.
+  (1) **Causa raiz corrigida**: `wm-confirmar-mapeamento` confirmava
+  modelo/versão e marcava `mapeado`, mas nunca gravava
+  `codigo_cor_wm`/`codigo_cambio_wm`/`codigo_combustivel_wm` — o guard do
+  `wm-sync` bloqueava a publicação, mas o painel dizia "liberado pra
+  sincronização" (mesma classe de bug do achado em `publicar-social` hoje).
+  `matchCatalogoExato` foi extraída pra `_shared/wm-catalogo-match.ts` e
+  agora roda também aqui; se cor/câmbio/combustível não baterem no catálogo,
+  volta pra `revisao_necessaria` com aviso claro em vez de mentir "sucesso".
+  Achado real corrigido na hora: Honda City Hatchback Touring (`TCQ0B23`,
+  tinha 5 tentativas falhas hoje) — completei o mapeamento manualmente
+  (cor/câmbio/combustível batiam certinho no catálogo) e testei ao vivo:
+  publicado com sucesso, `CodigoAnuncio 78229773`, 20 fotos enviadas, 0
+  falhas. (2) **Nova regra — exclusão permanente**: a pedido da Adriana,
+  Toyota Hilux SW4 SRX (`PYT5J89`) e RAM Rampage R/T Hurricane (`GTN5D81`)
+  não serão publicados na Webmotors — `status_sincronizacao =
+  'excluido_manualmente'`, e `wm-mapear-veiculo` agora respeita esse status
+  (não reavalia se o veículo for salvo de novo no admin). (3) **Nova regra —
+  fila não fica mais travada por cota estourada**: quando a modalidade
+  Básico está cheia, `wm-sync` agora remove a linha da fila em vez de deixar
+  presa em "erro" pra sempre (achado: 4 veículos parados desde 13/08/2026,
+  7 dias, sem ninguém conseguir agir — limpos manualmente também). Detalhe
+  completo em `docs/webmotors-integracao.md`, seção "Correções e regras
+  novas — 20/08/2026".
 - **Post de "Ideias com IA" corrigido — não era publicado de verdade
   (20/08/2026)**: achado em teste ao vivo — `IdeiasSociais.tsx` salvava
   `social_posts.redes` como lista (`['facebook','instagram']`) em vez do

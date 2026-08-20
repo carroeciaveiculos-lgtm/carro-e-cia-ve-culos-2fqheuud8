@@ -909,7 +909,7 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
     if (!wmMapeamentoDialog) return
     setLoadingWmMapeamento(true)
     try {
-      const { error } = await supabase.functions.invoke('wm-confirmar-mapeamento', {
+      const { data, error } = await supabase.functions.invoke('wm-confirmar-mapeamento', {
         body: {
           veiculo_id: wmMapeamentoDialog.veiculoId,
           codigo_modelo_wm: codigoModeloWm,
@@ -917,8 +917,16 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
         },
       })
       if (error) throw error
-      toast({ title: 'Mapeamento confirmado! Veículo liberado para sincronização.' })
-      setWmMapeamentoDialog(null)
+      if (data?.status === 'revisao_necessaria') {
+        toast({
+          title: 'Modelo/versão confirmados, mas ainda falta cor/câmbio/combustível',
+          description: data.erro_msg || 'Cadastre o valor equivalente no catálogo Webmotors.',
+          variant: 'destructive',
+        })
+      } else {
+        toast({ title: 'Mapeamento confirmado! Veículo liberado para sincronização.' })
+        setWmMapeamentoDialog(null)
+      }
       onClose()
     } catch (err: any) {
       toast({

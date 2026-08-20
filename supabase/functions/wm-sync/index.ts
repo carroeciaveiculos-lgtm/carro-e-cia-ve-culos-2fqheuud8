@@ -385,11 +385,16 @@ Deno.serve(async (req: Request) => {
 
           const quota = quotaPorModalidade[mapa.codigo_modalidade_wm]
           if (quota && quota.usados >= quota.total) {
-            const msg = `Sem vaga de anúncio simultâneo na modalidade ${mapa.codigo_modalidade_wm} (${quota.usados}/${quota.total} em uso). Publicação bloqueada — libere uma vaga (encerre outro anúncio) ou contrate mais cota antes de tentar de novo.`
-            await supabase
-              .from('estoque_publicacoes')
-              .update({ status: 'error', erro_msg: msg })
-              .eq('id', pub.id)
+            // Regra criada em 20/08/2026 (pedido da Adriana): antes essa
+            // falha marcava status='error' e a linha ficava presa na fila
+            // pra sempre — achado real, 4 veículos parados desde 13/08/2026
+            // sem ninguém conseguir agir (não é problema de mapeamento, é
+            // capacidade da conta). Agora remove da fila; publicar de novo
+            // é uma ação manual (toggle/"Sincronizar Agora" no painel) pra
+            // quando houver vaga — mas fica registrado no log de
+            // sincronização (sync_log) abaixo, não desaparece sem rastro.
+            const msg = `Sem vaga de anúncio simultâneo na modalidade ${mapa.codigo_modalidade_wm} (${quota.usados}/${quota.total} em uso). Removido da fila — publique de novo quando houver vaga (encerre outro anúncio ou contrate mais cota).`
+            await supabase.from('estoque_publicacoes').delete().eq('id', pub.id)
             results.push({ id: pub.id, status: 'error', error: msg })
             continue
           }

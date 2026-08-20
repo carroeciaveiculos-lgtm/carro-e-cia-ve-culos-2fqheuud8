@@ -111,6 +111,53 @@ cadastre o `nome_crm` na linha equivalente — senão o veículo trava em
 traduz para gasolina + elétrico, o que vale para os 5 híbridos do estoque em
 10/08/2026; híbrido a diesel ou plug-in exigirá outra linha.
 
+## Correções e regras novas — 20/08/2026
+
+- **Causa raiz corrigida: `wm-confirmar-mapeamento` nunca gravava
+  cor/câmbio/combustível.** Achado ao investigar o log de erro do Honda City
+  CITY Hatchback Touring (`TCQ0B23`, 5 tentativas falhas entre 19:35 e
+  19:44) — o mapeamento estava `confirmado_manualmente: true` e `status_sincronizacao:
+  'mapeado'`, mas `codigo_cor_wm`/`codigo_cambio_wm`/`codigo_combustivel_wm`
+  ficaram `null` porque `wm-confirmar-mapeamento` só gravava
+  `codigo_modelo_wm`/`codigo_versao_wm` — nunca rodava o match de
+  cor/câmbio/combustível que `wm-mapear-veiculo` já fazia. O guard em
+  `wm-sync` bloqueava a publicação, mas o painel dizia "mapeamento
+  confirmado! liberado para sincronização" — mentira silenciosa, mesmo
+  padrão de bug já visto em `publicar-social` (ver `docs/meta-integracao.md`).
+  Corrigido: `matchCatalogoExato` extraída para `_shared/wm-catalogo-match.ts`
+  (antes só existia dentro de `wm-mapear-veiculo`) e `wm-confirmar-mapeamento`
+  agora roda o mesmo match antes de marcar como `mapeado`; se cor/câmbio/
+  combustível não baterem no catálogo, volta pra `revisao_necessaria` com
+  `erro_msg` explicando o que falta, e o front (`VehicleFormModal.tsx`) mostra
+  esse aviso em vez do toast de sucesso genérico.
+- **Nova regra: exclusão manual permanente de um veículo na Webmotors.**
+  Pedido da Adriana (20/08/2026): Toyota Hilux SW4 SRX 4x4 (`PYT5J89`) e RAM
+  Rampage R/T Hurricane (`GTN5D81`) não serão publicados na Webmotors, decisão
+  de negócio, não pendência técnica. `wm_mapeamento_veiculos.status_sincronizacao`
+  ganhou o valor `'excluido_manualmente'` (coluna é `text` livre, sem CHECK —
+  não precisou de migration) e `wm-mapear-veiculo` agora checa esse status
+  logo no início e sai sem reavaliar nada — sem esse guard, salvar o veículo
+  de novo no admin ("Validar e Salvar" chama essa function) recalcularia o
+  mapeamento do zero e podia trazer o veículo de volta pra fila de revisão.
+  Pra reverter uma exclusão dessas no futuro, mude o `status_sincronizacao`
+  direto no banco (não existe tela pra isso ainda) e salve o veículo de novo
+  no admin pra remapear.
+- **Nova regra: fila não fica mais travada com erro de cota estourada.**
+  Achado junto: 4 veículos (Toyota Hilux SW4 SRX `SSF5A83`, Audi A3
+  `PQE7D92`, Ford Mustang Mach 1 `SFZ3G06`, Land Rover Freelander2
+  `OPZ2408`) falharam em 13/08/2026 por falta de vaga na modalidade Básico e
+  ficaram com `status='error'` em `estoque_publicacoes` **sem nunca serem
+  retentados** — 7 dias parados, sem ninguém conseguir agir (não é problema
+  de mapeamento, é capacidade da conta). Corrigido em `wm-sync`: quando a
+  cota está cheia, a linha é **removida** da fila (`estoque_publicacoes`,
+  não fica marcada como erro permanente) — publicar de novo é ação manual
+  (toggle ou "Sincronizar Agora" no painel) pra quando houver vaga. O que
+  aconteceu continua registrado em `sync_log`, só não fica mais um "erro"
+  parado no painel. As 4 linhas antigas foram limpas manualmente também
+  (20/08/2026) — os 4 veículos continuam `disponivel`, só não têm mais
+  tentativa pendente na fila; publicar de novo precisa de ação manual
+  quando houver vaga na modalidade Básico.
+
 ## Em aberto
 
 - ~~`CodigoAnuncio` volta 0~~ **RESOLVIDO em 10/08/2026.** Primeiro anúncio
