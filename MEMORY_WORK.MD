@@ -13,6 +13,31 @@ nos arquivos `docs/*.md` — aqui é só o resumo de estado + pendências.
 
 ## O que está no ar hoje
 
+- **Instagram Stories habilitado + tela duplicada de post social removida
+  (20/08/2026)**: testei ponta a ponta a publicação social a pedido da
+  Adriana (achei a conexão Facebook/Instagram saudável, token com todas as
+  permissões — ela mesma vinha ajustando `FACEBOOK_PAGE_ID`/
+  `META_PAGE_ACCESS_TOKEN` nas horas anteriores) e ela decidiu implementar
+  Stories no Instagram primeiro (Facebook Stories fica pra depois — endpoint
+  diferente, `/photo_stories`, permissão do app não confirmada). Seletor
+  "Formato" (Feed/Stories/Reels) adicionado em `RedesSociais.tsx` (Central de
+  Redes Sociais → Publicações); `publicar-social` lê `content_type` e manda
+  `media_type: 'STORIES'` pro Instagram quando selecionado — sem legenda,
+  Stories não exibe via API. Se vier Stories + Facebook marcado, cai em erro
+  claro em vez de publicar errado no feed. Junto (pedido explícito dela,
+  "inclua a unificação no escopo"): removida a aba "Redes Sociais" de dentro
+  de `Marketing.tsx` — achado real: ela devia ter saído quando a Central de
+  Redes Sociais foi criada em 14/08/2026 (o comentário em `CentralSocial.tsx`
+  já dizia isso), mas ninguém tinha apagado. Tinha formulário próprio
+  divergente (`redes` em array, não objeto; opção "Google Meu Negócio" que
+  nunca teve implementação nenhuma) e duplicava o Painel de Aprovação que já
+  existia na Central. Marketing.tsx agora só tem WhatsApp e Analytics.
+  **Pendência em aberto, decisão da Adriana**: achei que LinkedIn e WhatsApp
+  também aparecem como opção de rede no formulário (`RedesSociais.tsx`), mas
+  não têm nenhuma implementação — se alguém marcar só essas duas, o post vira
+  "Publicado" sem nada acontecer (mesma classe de bug do "Ideias com IA").
+  Perguntei se ela quer remover as opções ou implementar de verdade — ainda
+  sem resposta, não mexi. Detalhe completo em `docs/meta-integracao.md`.
 - **Webmotors — 2 correções de causa raiz + 2 regras novas (20/08/2026)**:
   investigando os "2 pendentes" e o log de erro que a Adriana viu no painel.
   (1) **Causa raiz corrigida**: `wm-confirmar-mapeamento` confirmava

@@ -65,6 +65,7 @@ interface SocialPost {
   status: string
   criado_em: string
   veiculo_id?: string | null
+  content_type?: string | null
 }
 
 const NETWORK_COLORS: Record<string, string> = {
@@ -98,6 +99,12 @@ export default function RedesSociais({ embedded = false }: { embedded?: boolean 
   const [formTexto, setFormTexto] = useState('')
   const [formHora, setFormHora] = useState('12:00')
   const [formStatus, setFormStatus] = useState('Agendado')
+  // Formato do post — adicionado em 20/08/2026 junto com o suporte a Stories
+  // no Instagram (publicar-social lê esse campo). Facebook Stories ainda não
+  // existe (endpoint diferente, /photo_stories) — selecionar Stories com
+  // Facebook marcado faz o post cair em erro em vez de publicar errado no
+  // feed. Ver docs/meta-integracao.md.
+  const [formContentType, setFormContentType] = useState('feed')
   const [formVeiculoId, setFormVeiculoId] = useState<string>('nenhum')
   const [formFile, setFormFile] = useState<File | null>(null)
   const [isGeneratingAi, setIsGeneratingAi] = useState(false)
@@ -146,6 +153,7 @@ export default function RedesSociais({ embedded = false }: { embedded?: boolean 
     setFormStatus('Agendado')
     setFormVeiculoId('nenhum')
     setFormFile(null)
+    setFormContentType('feed')
     setIsModalOpen(true)
   }
 
@@ -245,6 +253,7 @@ export default function RedesSociais({ embedded = false }: { embedded?: boolean 
       data_agendamento: dataAgendamento.toISOString(),
       status: formStatus,
       imagem: imagemUrl,
+      content_type: formContentType,
     }
 
     if (formVeiculoId && formVeiculoId !== 'nenhum') {
@@ -642,6 +651,25 @@ export default function RedesSociais({ embedded = false }: { embedded?: boolean 
                   </Button>
                 ))}
               </div>
+            </div>
+            <div className="grid gap-2">
+              <Label>Formato</Label>
+              <Select value={formContentType} onValueChange={setFormContentType}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="feed">Feed</SelectItem>
+                  <SelectItem value="stories">Stories</SelectItem>
+                  <SelectItem value="reels">Reels</SelectItem>
+                </SelectContent>
+              </Select>
+              {formContentType === 'stories' && formRedes.facebook && (
+                <p className="text-xs text-amber-600">
+                  Facebook ainda não publica Stories — desmarque o Facebook ou o post vai cair em
+                  erro. Funciona só no Instagram por enquanto.
+                </p>
+              )}
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-2">

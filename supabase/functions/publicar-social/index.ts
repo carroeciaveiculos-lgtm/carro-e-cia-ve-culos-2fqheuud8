@@ -106,8 +106,22 @@ Deno.serve(async (req: Request) => {
 
       const imageUrlSanitized = post.imagem ? sanitizeImage(post.imagem) : null
 
+      const isStories = post.content_type === 'stories'
+
       // 1. PUBLICAR NO FACEBOOK
-      if (redes.facebook && pageId && token) {
+      if (redes.facebook && isStories) {
+        // Facebook Stories usa um endpoint totalmente diferente (POST
+        // /{page-id}/photo_stories ou /video_stories, não /feed nem
+        // /photos) e provavelmente exige permissão extra do app que ainda
+        // não foi confirmada — não implementado (20/08/2026, ver
+        // docs/meta-integracao.md). Registra erro claro em vez de publicar
+        // errado no feed, que seria pior que não publicar nada.
+        errorLog.facebook = {
+          error:
+            'Facebook Stories ainda não implementado — escolha Feed/Reels, ou desmarque o Facebook e publique Stories só no Instagram.',
+        }
+        console.error(`Post ${post.id}: Facebook Stories solicitado, mas não implementado.`)
+      } else if (redes.facebook && pageId && token) {
         console.log(`Iniciando publicação do post ${post.id} no Facebook...`)
         let fbUrl = `https://graph.facebook.com/v20.0/${pageId}/feed`
         let payload: any = { access_token: token, message: post.texto }
@@ -149,17 +163,25 @@ Deno.serve(async (req: Request) => {
       if (redes.instagram && igId && token && imageUrlSanitized) {
         console.log(`Iniciando publicação do post ${post.id} no Instagram...`)
         const isVideo = imageUrlSanitized.match(/\.(mp4|mov|webm)/i)
+        // Stories conectado em 20/08/2026 — o seletor "Tipo de Conteúdo"
+        // já existia no formulário desde antes, mas não fazia diferença
+        // nenhuma aqui. Stories aceita foto OU vídeo com media_type=STORIES.
+        const mediaType = isStories ? 'STORIES' : isVideo ? 'REELS' : 'IMAGE'
 
         try {
+          const containerBody: Record<string, any> = {
+            access_token: token,
+            [isVideo ? 'video_url' : 'image_url']: imageUrlSanitized,
+            media_type: mediaType,
+          }
+          // Stories não exibe legenda via API — o Meta ignora `caption`
+          // nesse caso, então nem manda, pra não sugerir que existe.
+          if (!isStories) containerBody.caption = post.texto
+
           const containerRes = await fetch(`https://graph.facebook.com/v20.0/${igId}/media`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              access_token: token,
-              [isVideo ? 'video_url' : 'image_url']: imageUrlSanitized,
-              caption: post.texto,
-              media_type: isVideo ? 'REELS' : 'IMAGE',
-            }),
+            body: JSON.stringify(containerBody),
           })
           const containerData = await containerRes.json()
 

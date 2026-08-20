@@ -2,20 +2,7 @@ import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase/client'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import { useToast } from '@/hooks/use-toast'
-import { Activity, Share2, BarChart3, Plus, MessageCircle, Wand2 } from 'lucide-react'
-import { SocialApprovalDashboard } from '@/components/admin/marketing/SocialApprovalDashboard'
+import { Activity, BarChart3, MessageCircle } from 'lucide-react'
 import { WhatsAppScheduler } from '@/components/admin/marketing/WhatsAppScheduler'
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Line, LineChart } from 'recharts'
 import {
@@ -26,17 +13,19 @@ import {
   ChartLegendContent,
 } from '@/components/ui/chart'
 
+// A aba "Redes Sociais" que existia aqui foi removida em 20/08/2026 — devia
+// ter saído quando a Central de Redes Sociais foi criada em 14/08/2026 (o
+// comentário em CentralSocial.tsx já dizia que ela unificava "a aba 'social'
+// dentro de Marketing", mas essa aba nunca chegou a ser apagada). Formulário
+// duplicado criava posts com `redes` em formato diferente (array, incluindo
+// uma opção "google" que nunca teve implementação nenhuma em
+// publicar-social) e um "Painel de Aprovação" que já era o mesmo componente
+// da aba Aprovações da Central. Criar/agendar post social agora só existe em
+// /admin/central-social — ver RedesSociais.tsx pro seletor de formato
+// Feed/Stories/Reels que foi pra lá.
 export default function Marketing() {
-  const { toast } = useToast()
-  const [activeTab, setActiveTab] = useState('social')
+  const [activeTab, setActiveTab] = useState('whatsapp')
   const [logs, setLogs] = useState<any[]>([])
-  const [posts, setPosts] = useState<any[]>([])
-
-  const [postText, setPostText] = useState('')
-  const [postImage, setPostImage] = useState('')
-  const [postDate, setPostDate] = useState('')
-  const [postPlatforms, setPostPlatforms] = useState<string[]>(['instagram'])
-  const [postContentType, setPostContentType] = useState('feed')
 
   useEffect(() => {
     loadData()
@@ -48,71 +37,6 @@ export default function Marketing() {
       .select('*')
       .order('created_at', { ascending: true })
     if (logsData) setLogs(logsData)
-
-    const { data: postsData } = await supabase
-      .from('social_posts')
-      .select('*, veiculos(marca, modelo)')
-      .order('criado_em', { ascending: false })
-    if (postsData) setPosts(postsData)
-  }
-
-  const [generatingAI, setGeneratingAI] = useState(false)
-
-  const handleGenerateAIPost = async () => {
-    setGeneratingAI(true)
-    try {
-      const { data, error } = await supabase.functions.invoke('gerar-conteudo-social', {
-        body: { content_type: postContentType },
-      })
-      if (error) throw error
-      if (data?.success && data?.data) {
-        setPostText(data.data)
-        toast({ title: 'Conteúdo gerado com IA!' })
-      }
-    } catch (e: any) {
-      toast({ title: 'Erro ao gerar', description: e.message, variant: 'destructive' })
-    } finally {
-      setGeneratingAI(false)
-    }
-  }
-
-  const handleSchedulePost = async () => {
-    if (!postText || !postDate || postPlatforms.length === 0) {
-      toast({
-        title: 'Erro',
-        description: 'Preencha os campos obrigatórios.',
-        variant: 'destructive',
-      })
-      return
-    }
-
-    if (postText.length > 2200 && postPlatforms.includes('instagram')) {
-      toast({
-        title: 'Aviso',
-        description: 'Instagram permite no máximo 2200 caracteres.',
-        variant: 'destructive',
-      })
-      return
-    }
-
-    const { error } = await supabase.from('social_posts').insert({
-      texto: postText,
-      imagem: postImage,
-      data_agendamento: new Date(postDate).toISOString(),
-      redes: postPlatforms,
-      status: 'Rascunho',
-      content_type: postContentType,
-    })
-
-    if (error) {
-      toast({ title: 'Erro', description: error.message, variant: 'destructive' })
-    } else {
-      toast({ title: 'Sucesso', description: 'Post agendado com sucesso!' })
-      setPostText('')
-      setPostImage('')
-      setPostDate('')
-      loadData()
-    }
   }
 
   const emailData = logs
@@ -158,18 +82,13 @@ export default function Marketing() {
           <Activity className="w-6 h-6 text-blue-600" /> Dashboard de Marketing
         </h1>
         <p className="text-sm text-slate-500 mt-1">
-          Gerencie automações de e-mail, agende postagens sociais e acompanhe métricas.
+          Gerencie automações de e-mail via WhatsApp e acompanhe métricas. Pra criar ou agendar
+          post social, use a Central de Redes Sociais.
         </p>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <TabsList className="bg-white border rounded-lg p-1 h-auto flex flex-wrap shadow-sm">
-          <TabsTrigger
-            value="social"
-            className="py-2.5 px-4 data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700"
-          >
-            <Share2 className="w-4 h-4 mr-2" /> Redes Sociais
-          </TabsTrigger>
           <TabsTrigger
             value="whatsapp"
             className="py-2.5 px-4 data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700"
@@ -183,167 +102,6 @@ export default function Marketing() {
             <BarChart3 className="w-4 h-4 mr-2" /> Analytics & Relatórios
           </TabsTrigger>
         </TabsList>
-
-        <TabsContent value="social">
-          <Card>
-            <CardHeader>
-              <CardTitle>Agendador de Postagens</CardTitle>
-              <CardDescription>
-                Crie e agende postagens para Facebook, Instagram e Google Meu Negócio.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4 max-w-2xl">
-              <div className="space-y-2">
-                <Label>Plataformas</Label>
-                <div className="flex gap-4">
-                  {['instagram', 'facebook', 'google'].map((plat) => (
-                    <label key={plat} className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={postPlatforms.includes(plat)}
-                        onChange={(e) => {
-                          if (e.target.checked) setPostPlatforms([...postPlatforms, plat])
-                          else setPostPlatforms(postPlatforms.filter((p) => p !== plat))
-                        }}
-                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                      />
-                      <span className="capitalize text-sm font-medium">{plat}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Tipo de Conteúdo</Label>
-                <Select value={postContentType} onValueChange={setPostContentType}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="feed">Feed</SelectItem>
-                    <SelectItem value="stories">Stories</SelectItem>
-                    <SelectItem value="reels">Reels</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label>Texto da Postagem</Label>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="h-7 text-xs bg-purple-50 text-purple-700 hover:bg-purple-100 border-purple-200"
-                    onClick={handleGenerateAIPost}
-                    disabled={generatingAI}
-                  >
-                    <Wand2 className="w-3 h-3 mr-1" />
-                    {generatingAI ? 'Gerando...' : 'Gerar com IA'}
-                  </Button>
-                </div>
-                <Textarea
-                  rows={5}
-                  placeholder="Escreva a legenda do seu post aqui..."
-                  value={postText}
-                  onChange={(e) => setPostText(e.target.value)}
-                />
-                <p className="text-xs text-slate-500 text-right">{postText.length} caracteres</p>
-              </div>
-
-              <div className="space-y-2">
-                <Label>URL da Imagem</Label>
-                <Input
-                  placeholder="https://exemplo.com/imagem.jpg"
-                  value={postImage}
-                  onChange={(e) => setPostImage(e.target.value)}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label>Data e Hora do Agendamento</Label>
-                <Input
-                  type="datetime-local"
-                  value={postDate}
-                  onChange={(e) => setPostDate(e.target.value)}
-                />
-              </div>
-
-              <Button
-                onClick={handleSchedulePost}
-                className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700"
-              >
-                <Plus className="w-4 h-4 mr-2" /> Agendar Postagem
-              </Button>
-            </CardContent>
-          </Card>
-
-          <Card className="mt-6">
-            <CardHeader>
-              <CardTitle>Postagens Programadas e Rascunhos</CardTitle>
-              <CardDescription>Posts gerados pela IA ou enviados do Estoque.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {posts.map((post) => (
-                  <div
-                    key={post.id}
-                    className="flex gap-4 p-4 border rounded-lg bg-slate-50 items-start"
-                  >
-                    {post.imagem && (
-                      <div className="w-20 h-20 bg-slate-200 rounded-md overflow-hidden shrink-0">
-                        <img src={post.imagem} alt="Post" className="w-full h-full object-cover" />
-                      </div>
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span
-                          className={`text-xs font-semibold px-2 py-0.5 rounded-full ${post.status === 'Agendado' ? 'bg-blue-100 text-blue-700' : 'bg-slate-200 text-slate-700'}`}
-                        >
-                          {post.status}
-                        </span>
-                        <div className="flex gap-1">
-                          {Array.isArray(post.redes) &&
-                            post.redes.map((r: string) => (
-                              <span key={r} className="text-xs text-slate-500 uppercase">
-                                {r}
-                              </span>
-                            ))}
-                        </div>
-                        {post.veiculos && (
-                          <span className="text-xs text-purple-600 font-medium ml-auto">
-                            Veículo: {post.veiculos.marca} {post.veiculos.modelo}
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-sm text-slate-700 line-clamp-2">{post.texto}</p>
-                      {post.data_agendamento && (
-                        <p className="text-xs text-slate-500 mt-2">
-                          Agendado para: {new Date(post.data_agendamento).toLocaleString()}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                ))}
-                {posts.length === 0 && (
-                  <p className="text-center text-slate-500 py-4">Nenhum post encontrado.</p>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="mt-6">
-            <CardHeader>
-              <CardTitle>Painel de Aprovação</CardTitle>
-              <CardDescription>
-                Revise e aprove o conteúdo gerado antes da publicação.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <SocialApprovalDashboard />
-            </CardContent>
-          </Card>
-        </TabsContent>
 
         <TabsContent value="whatsapp">
           <WhatsAppScheduler />
