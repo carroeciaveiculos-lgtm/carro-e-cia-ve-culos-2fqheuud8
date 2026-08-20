@@ -86,10 +86,22 @@ Deno.serve(async (req: Request) => {
     let processed = 0
 
     for (const post of posts || []) {
-      const redes = typeof post.redes === 'string' ? JSON.parse(post.redes) : post.redes
+      let redes = typeof post.redes === 'string' ? JSON.parse(post.redes) : post.redes
+      // Achado em teste ao vivo (20/08/2026): "Ideias com IA" salva `redes`
+      // como lista (['facebook','instagram']) em vez do formato objeto
+      // ({facebook:true,...}) que o resto do código usa. Sem essa
+      // normalização, `redes.facebook`/`redes.instagram` ficam undefined —
+      // nenhuma chamada de API é feita, e o post era marcado como
+      // "Publicado" mesmo assim (nenhuma rede = nenhum erro = sucesso
+      // vazio). Corrigida a causa (o formato); ver também IdeiasSociais.tsx.
+      if (Array.isArray(redes)) {
+        redes = Object.fromEntries(redes.map((r: string) => [r, true]))
+      }
 
       let fbSuccess = false
       let igSuccess = false
+      let fbPostId: string | null = null
+      let igMediaId: string | null = null
       const errorLog: any = {}
 
       const imageUrlSanitized = post.imagem ? sanitizeImage(post.imagem) : null
@@ -119,7 +131,11 @@ Deno.serve(async (req: Request) => {
           const fbData = await fbRes.json()
           if (fbRes.ok) {
             fbSuccess = true
-            console.log('Publicação realizada com sucesso no Facebook!')
+            // Post de texto (/feed) devolve só `id` (já no formato pageId_postId).
+            // Post com imagem (/photos) devolve `id` da foto E `post_id` do post
+            // no feed — `post_id` é o que forma o link público certo.
+            fbPostId = fbData?.post_id || fbData?.id || null
+            console.log('Publicação realizada com sucesso no Facebook! ID:', fbPostId)
           } else {
             errorLog.facebook = fbData
             console.error('Falha ao publicar no Facebook:', fbData)
@@ -171,7 +187,8 @@ Deno.serve(async (req: Request) => {
               const publishData = await publishRes.json()
               if (publishRes.ok) {
                 igSuccess = true
-                console.log('Publicação realizada com sucesso no Instagram!')
+                igMediaId = publishData?.id || null
+                console.log('Publicação realizada com sucesso no Instagram! ID:', igMediaId)
               } else {
                 errorLog.instagram = publishData
                 console.error('Falha ao publicar contêiner no Instagram:', publishData)
@@ -203,10 +220,26 @@ Deno.serve(async (req: Request) => {
 
       await supabase.from('social_posts').update({ status: newStatus }).eq('id', post.id)
 
+      // Achado em teste ao vivo (20/08/2026, pedido da Adriana): antes só
+      // gravava detalhe quando dava erro — quando dava certo, o ID que o
+      // Facebook/Instagram devolvem se perdia, sem jeito de confirmar depois
+      // onde o post foi parar. Agora grava sempre (sucesso ou erro).
+      const resultLog: any = {}
+      if (requestedFb) {
+        resultLog.facebook = fbSuccess
+          ? { success: true, post_id: fbPostId, link: fbPostId ? `https://www.facebook.com/${fbPostId}` : null }
+          : { success: false, error: errorLog.facebook }
+      }
+      if (requestedIg) {
+        resultLog.instagram = igSuccess
+          ? { success: true, media_id: igMediaId }
+          : { success: false, error: errorLog.instagram }
+      }
+
       await supabase.from('logs_integracao').insert({
         portal: 'meta_social',
         status: newStatus,
-        payload_erro: isTotalSuccess ? null : errorLog,
+        payload_erro: resultLog,
         veiculo_id: post.veiculo_id || null,
       })
 

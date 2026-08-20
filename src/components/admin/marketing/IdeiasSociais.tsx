@@ -56,7 +56,7 @@ export function IdeiasSociais() {
     try {
       const { error } = await supabase.from('social_posts').insert({
         texto: ideia.texto_sugerido,
-        redes: ['instagram', 'facebook'],
+        redes: { instagram: true, facebook: true },
         status: 'Rascunho',
         content_type: ideia.tipo,
       })

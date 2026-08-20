@@ -6,13 +6,37 @@ precisar reler o histórico inteiro de conversas. Diferente do
 pra ser mantido em dia de verdade. Detalhe técnico por integração continua
 nos arquivos `docs/*.md` — aqui é só o resumo de estado + pendências.
 
-Última atualização: 2026-08-19 (sessão 9).
+Última atualização: 2026-08-20 (sessão 10).
 
 **Pasta de trabalho deste projeto:** `C:\Projeto\Revenda Carro e Cia\carro-e-cia-ve-culos-2fqheuud8`
 (sempre abrir sessão nova aqui pra continuar — ver também `CLAUDE.md`).
 
 ## O que está no ar hoje
 
+- **Post de "Ideias com IA" corrigido — não era publicado de verdade
+  (20/08/2026)**: achado em teste ao vivo — `IdeiasSociais.tsx` salvava
+  `social_posts.redes` como lista (`['facebook','instagram']`) em vez do
+  formato objeto que `publicar-social` espera; sem bater o formato, nenhuma
+  rede era chamada e o post virava "Publicado" com sucesso vazio (silencioso,
+  sem erro registrado). Corrigido nos dois lados (salva certo + normaliza
+  formato antigo defensivamente) e o log de integração agora grava o
+  `post_id`/link real do Facebook e `media_id` do Instagram em todo sucesso,
+  não só quando dá erro. Detalhe em `docs/meta-integracao.md`.
+- **Encaminhamento de consórcio/seguro corrigido + número novo dedicado
+  (19/08/2026, sessão 9)**: autocrítica sobre o mapeamento da Clara achou
+  que `encaminharParaParceiro()` (`ai-sdr/index.ts`) só avisava o parceiro
+  por dentro — o cliente nunca recebia link nenhum, e a Clara continuava
+  ativa no mesmo chat depois de "encaminhar" (risco de responder sobre
+  assunto que não domina). Corrigido: agora manda o cliente um link
+  `wa.me` pro número certo e desliga a IA pra esse lead (`ai_enabled =
+  false`), igual já acontecia em `solicitar_atendimento_humano`. Aplicado
+  aos dois tipos (consórcio e seguro auto). Junto, criado um WhatsApp
+  Business novo (`5534998037651`) só pra consórcio — antes usava o celular
+  pessoal da Adriana (`5534984080220`), que agora fica só pra alertas
+  administrativos internos. Trocado em `ConsorcioAuto.tsx`, `Sobre.tsx`
+  (card "Falar com Adriana") e `PARCEIROS_ENCAMINHAMENTO`. Detalhe
+  completo em `docs/origem-leads.md` e regra de roteamento atualizada no
+  `CLAUDE.md`.
 - **Origem de leads — clique do site agora rastreado (19/08/2026, sessão 9)**:
   auditoria pedida pela Adriana nos 50 leads mais recentes achou que
   clique em botão de WhatsApp do site (12 pontos diferentes, todos via
