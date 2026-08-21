@@ -188,8 +188,18 @@ Deno.serve(async (req: Request) => {
           if (containerData.id) {
             let readyToPublish = true
 
-            // Se for vídeo, aguarda o Meta finalizar o processamento em background antes de tentar publicar
-            if (isVideo) {
+            // Se for vídeo OU Stories, aguarda o Meta terminar de processar o
+            // container antes de publicar. Achado em teste ao vivo
+            // (20/08/2026): pra Stories de FOTO, media_publish devolvia
+            // {success:true, media_id} normalmente, mas o Story não existia
+            // de verdade (GET no media_id: "does not exist"; GET
+            // /{ig-id}/stories: lista vazia) — sucesso falso do lado do
+            // Meta, mesma classe de bug que já vimos no nosso próprio
+            // código hoje. A documentação do Meta confirma: publicar antes
+            // do container chegar em "FINISHED" pode devolver sucesso sem
+            // o conteúdo ir ao ar de verdade — Stories de foto processam
+            // rápido mas não são instantâneas como Feed.
+            if (isVideo || isStories) {
               readyToPublish = await waitForInstagramMediaReady(containerData.id, token)
             }
 

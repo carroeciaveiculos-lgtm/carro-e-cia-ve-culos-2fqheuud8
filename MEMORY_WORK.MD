@@ -24,7 +24,14 @@ nos arquivos `docs/*.md` — aqui é só o resumo de estado + pendências.
   Redes Sociais → Publicações); `publicar-social` lê `content_type` e manda
   `media_type: 'STORIES'` pro Instagram quando selecionado — sem legenda,
   Stories não exibe via API. Se vier Stories + Facebook marcado, cai em erro
-  claro em vez de publicar errado no feed. Junto (pedido explícito dela,
+  claro em vez de publicar errado no feed. **Bug real achado e corrigido no
+  primeiro teste ao vivo**: Story de foto publicado sem esperar o container
+  processar devolvia sucesso do Meta (`media_id` retornado) mas o Story não
+  existia de verdade (sumia de `GET /{ig-id}/stories`) — corrigido fazendo
+  Stories esperar `status_code=FINISHED` igual vídeo já esperava. **Segundo
+  teste confirmou de verdade** (media_id apareceu em `active_stories`, não só
+  "Publicado" no banco) — registro de teste apagado, Story real segue ativo
+  no Instagram por 24h (some sozinho). Junto (pedido explícito dela,
   "inclua a unificação no escopo"): removida a aba "Redes Sociais" de dentro
   de `Marketing.tsx` — achado real: ela devia ter saído quando a Central de
   Redes Sociais foi criada em 14/08/2026 (o comentário em `CentralSocial.tsx`
