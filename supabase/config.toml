@@ -153,6 +153,16 @@ verify_jwt = true
 [functions.wm-process-lead]
 verify_jwt = false
 
+# Chamada pelo admin autenticado no painel (botão "Conectar LinkedIn").
+[functions.linkedin-oauth-start]
+verify_jwt = true
+
+# Endpoint público de propósito — é o redirect_uri que o LinkedIn chama
+# direto no navegador da Adriana depois da autorização, sem sessão Supabase.
+# Proteção é o `state` conferido contra linkedin_integracao.oauth_state.
+[functions.linkedin-oauth-callback]
+verify_jwt = false
+
 [functions.wm-webhook-leads]
 verify_jwt = false
 

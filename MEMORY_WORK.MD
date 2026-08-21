@@ -6,13 +6,47 @@ precisar reler o histórico inteiro de conversas. Diferente do
 pra ser mantido em dia de verdade. Detalhe técnico por integração continua
 nos arquivos `docs/*.md` — aqui é só o resumo de estado + pendências.
 
-Última atualização: 2026-08-20 (sessão 10).
+Última atualização: 2026-08-21 (sessão 11).
 
 **Pasta de trabalho deste projeto:** `C:\Projeto\Revenda Carro e Cia\carro-e-cia-ve-culos-2fqheuud8`
 (sempre abrir sessão nova aqui pra continuar — ver também `CLAUDE.md`).
 
 ## O que está no ar hoje
 
+- **Conexão OAuth do LinkedIn construída, publicação real ainda não
+  (21/08/2026, sessão 11)**: a pedido da Adriana pra "ativar LinkedIn e
+  WhatsApp pra publicar". LinkedIn não tem MCP (diferente de Meta/Google
+  Ads) — verificado e explicado a ela. Construído o fluxo de conexão:
+  tabela `linkedin_integracao` (linha única, token + org URN),
+  `linkedin-oauth-start` (gera link de autorização, testado ao vivo) e
+  `linkedin-oauth-callback` (troca code por token, descobre a página
+  administrada, salva tudo) — as duas Edge Functions e a migration já no
+  ar. Botão "Conectar LinkedIn" com status adicionado em `RedesSociais.tsx`
+  (Central de Redes Sociais → Publicações). **Falta a Adriana**: registrar
+  a URL de callback no app do LinkedIn (Developer Portal → Auth →
+  redirect URLs — ver `docs/linkedin-integracao.md` pra URL exata) e esperar
+  o LinkedIn aprovar o produto "Share on LinkedIn" (`w_organization_social`,
+  revisão manual, 1 a 4 semanas) — só depois disso completar o login de
+  verdade e eu implemento o bloco de publicação em `publicar-social`
+  (não escrito ainda, não faz sentido sem poder testar contra permissão
+  real). Detalhe completo em `docs/linkedin-integracao.md`.
+- **WhatsApp "publicar" — decisão tomada, implementação ainda não
+  (21/08/2026)**: perguntei o que ela queria dizer com "publicar no
+  WhatsApp" — Status (não suportado pela API oficial da Meta pra número de
+  negócio; serviços que prometem isso usam automação não-oficial, risco de
+  banimento) vs Canal (não confirmado se a API oficial libera isso pra
+  terceiros) vs mandar o post como mensagem de template (ela escolheu essa).
+  Achado no caminho: já existe uma tela pronta pra isso
+  (`WhatsAppScheduler.tsx`, dentro de Marketing → aba WhatsApp, mantida
+  quando a aba duplicada "Redes Sociais" foi removida ontem) — seleciona
+  template aprovado + telefone + agenda — mas **a tabela
+  `whatsapp_templates` está vazia** (zero templates sincronizados) e
+  **nenhuma função sincroniza os templates aprovados da Meta pra lá**.
+  `send-whatsapp` já sabe mandar mensagem de template
+  (`action:'template'`), só falta a sincronização de templates e a conexão
+  com `publicar-social`. Não implementado ainda — depende da Adriana
+  aprovar pelo menos 1 template no WhatsApp Manager da Meta primeiro
+  (esse passo é rápido, não é como o do LinkedIn).
 - **Instagram Stories habilitado + tela duplicada de post social removida
   (20/08/2026)**: testei ponta a ponta a publicação social a pedido da
   Adriana (achei a conexão Facebook/Instagram saudável, token com todas as

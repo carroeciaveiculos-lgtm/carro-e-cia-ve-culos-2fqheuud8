@@ -115,6 +115,38 @@ export default function RedesSociais({ embedded = false }: { embedded?: boolean 
     fetchVeiculos()
   }, [currentDate, viewMode])
 
+  // Conexão LinkedIn (21/08/2026) — status da linha única de
+  // linkedin_integracao, pra mostrar o botão "Conectar" ou a confirmação de
+  // que já está conectado.
+  const [linkedinStatus, setLinkedinStatus] = useState<{
+    status: string
+    organization_nome: string | null
+    expires_at: string | null
+  } | null>(null)
+  const [conectandoLinkedin, setConectandoLinkedin] = useState(false)
+
+  useEffect(() => {
+    supabase
+      .from('linkedin_integracao')
+      .select('status, organization_nome, expires_at')
+      .limit(1)
+      .single()
+      .then(({ data }) => setLinkedinStatus(data))
+  }, [])
+
+  const handleConectarLinkedin = async () => {
+    setConectandoLinkedin(true)
+    try {
+      const { data, error } = await supabase.functions.invoke('linkedin-oauth-start')
+      if (error) throw error
+      if (data?.authUrl) window.open(data.authUrl, '_blank', 'noopener,noreferrer')
+    } catch (e: any) {
+      toast({ title: 'Erro ao gerar link do LinkedIn', description: e.message, variant: 'destructive' })
+    } finally {
+      setConectandoLinkedin(false)
+    }
+  }
+
   const fetchVeiculos = async () => {
     const { data } = await supabase
       .from('veiculos')
@@ -333,6 +365,34 @@ export default function RedesSociais({ embedded = false }: { embedded?: boolean 
             </Button>
           </div>
         </div>
+
+        {/* Status de conexão LinkedIn — 21/08/2026 */}
+        {linkedinStatus && linkedinStatus.status !== 'conectado' && (
+          <div className="px-4 py-2 border-b bg-blue-50 flex items-center justify-between gap-3 text-sm">
+            <span className="text-blue-900">
+              LinkedIn ainda não conectado — publicar por lá exige autorizar o app como admin da
+              página da empresa.
+            </span>
+            <Button
+              size="sm"
+              variant="outline"
+              className="bg-white shrink-0"
+              onClick={handleConectarLinkedin}
+              disabled={conectandoLinkedin}
+            >
+              <Linkedin className="w-4 h-4 mr-2" />
+              {conectandoLinkedin ? 'Gerando link...' : 'Conectar LinkedIn'}
+            </Button>
+          </div>
+        )}
+        {linkedinStatus?.status === 'conectado' && (
+          <div className="px-4 py-2 border-b bg-green-50 text-sm text-green-800">
+            LinkedIn conectado como <strong>{linkedinStatus.organization_nome || 'página'}</strong>
+            {linkedinStatus.expires_at &&
+              ` — token válido até ${new Date(linkedinStatus.expires_at).toLocaleDateString('pt-BR')}`}
+            .
+          </div>
+        )}
 
         {/* Filters bar for list view */}
         {viewMode === 'list' && (

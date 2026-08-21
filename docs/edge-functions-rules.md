@@ -85,6 +85,7 @@ Isso quebra sincronizações de estoque, automações de leads, disparos de What
 | `wm-webhook-estoque`            | Webhook                 | Webhook de estoque Webmotors                                            |
 | `wm-process-lead`               | Server-to-Server        | Processamento de lead Webmotors                                         |
 | `wm-catalogue`                  | Server-to-Server        | Catálogo Webmotors (era órfã até 06/08/2026)                            |
+| `linkedin-oauth-callback`       | Webhook                 | Redirect OAuth do LinkedIn direto no navegador (21/08/2026)             |
 | `wm-sync-catalogo`              | Server-to-Server        | Carga em lote de marcas/modelos do catálogo Webmotors                   |
 | `wm-sync-test`                  | —                       | **Inerte**: `export default` em vez de `Deno.serve`; aponta para outra API |
 | `wm-sync-validator-test`        | —                       | **Inerte**: `export ... handler`; valida strings fixas, não chama a WM   |
@@ -98,6 +99,7 @@ Isso quebra sincronizações de estoque, automações de leads, disparos de What
 | ---------------------- | ------------------------------------------------------------ |
 | `get-r2-presigned-url`    | Gera URLs assinadas do R2; requer JWT do usuário autenticado |
 | `migrar-storage-r2`       | Migração de storage; operação privilegiada com JWT do admin  |
+| `linkedin-oauth-start`    | Gera link de autorização OAuth; botão "Conectar LinkedIn" no painel (21/08/2026) |
 | `populate-cache-test`     | Função de teste com JWT verification                         |
 | `wm-sync`                 | Publica anúncio no portal; chamada só pelo admin via `src/services/wm-sync.ts` |
 | `wm-mapear-veiculo`       | Tela de mapeamento do admin                                  |
