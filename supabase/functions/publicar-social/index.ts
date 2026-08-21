@@ -239,14 +239,72 @@ Deno.serve(async (req: Request) => {
         }
       }
 
-      // 3. ATUALIZAÇÃO DE STATUS E GRAVAÇÃO DE LOGS DETALHADOS
+      // 3. PUBLICAR NO LINKEDIN (21/08/2026)
+      // Posta em nome do MEMBRO que autorizou o app em linkedin-oauth-callback
+      // (escopo w_member_social, aprovado self-serve) — não da página da
+      // empresa (w_organization_social exigiria produto separado com revisão
+      // manual do LinkedIn). Só texto por enquanto — imagem/vídeo no LinkedIn
+      // exige um fluxo de upload em 3 passos (registerUpload → upload do
+      // binário → criar o share), não implementado ainda.
+      let liSuccess = false
+      let liPostId: string | null = null
+      if (redes.linkedin) {
+        const { data: li } = await supabase
+          .from('linkedin_integracao')
+          .select('access_token, author_urn, status')
+          .limit(1)
+          .single()
+
+        if (li?.status !== 'conectado' || !li.access_token || !li.author_urn) {
+          errorLog.linkedin = {
+            error:
+              'LinkedIn não conectado — clique em "Conectar LinkedIn" na Central de Redes Sociais.',
+          }
+        } else {
+          try {
+            const liRes = await fetch('https://api.linkedin.com/v2/ugcPosts', {
+              method: 'POST',
+              headers: {
+                Authorization: `Bearer ${li.access_token}`,
+                'Content-Type': 'application/json',
+                'X-Restli-Protocol-Version': '2.0.0',
+              },
+              body: JSON.stringify({
+                author: li.author_urn,
+                lifecycleState: 'PUBLISHED',
+                specificContent: {
+                  'com.linkedin.ugc.ShareContent': {
+                    shareCommentary: { text: post.texto },
+                    shareMediaCategory: 'NONE',
+                  },
+                },
+                visibility: { 'com.linkedin.ugc.MemberNetworkVisibility': 'PUBLIC' },
+              }),
+            })
+            if (liRes.ok || liRes.status === 201) {
+              liSuccess = true
+              liPostId = liRes.headers.get('x-restli-id')
+              console.log('Publicação realizada com sucesso no LinkedIn! ID:', liPostId)
+            } else {
+              errorLog.linkedin = await liRes.json().catch(() => ({ status: liRes.status }))
+              console.error('Falha ao publicar no LinkedIn:', errorLog.linkedin)
+            }
+          } catch (e: any) {
+            errorLog.linkedin = e.message
+          }
+        }
+      }
+
+      // 4. ATUALIZAÇÃO DE STATUS E GRAVAÇÃO DE LOGS DETALHADOS
       // O post só é dado como 'Publicado' se todas as redes solicitadas tiverem sucesso
       const requestedFb = !!redes.facebook
       const requestedIg = !!redes.instagram
+      const requestedLi = !!redes.linkedin
 
       const fbResultOk = !requestedFb || fbSuccess
       const igResultOk = !requestedIg || igSuccess
-      const isTotalSuccess = fbResultOk && igResultOk
+      const liResultOk = !requestedLi || liSuccess
+      const isTotalSuccess = fbResultOk && igResultOk && liResultOk
 
       const newStatus = isTotalSuccess ? 'Publicado' : 'Erro'
 
@@ -266,6 +324,11 @@ Deno.serve(async (req: Request) => {
         resultLog.instagram = igSuccess
           ? { success: true, media_id: igMediaId }
           : { success: false, error: errorLog.instagram }
+      }
+      if (requestedLi) {
+        resultLog.linkedin = liSuccess
+          ? { success: true, post_id: liPostId }
+          : { success: false, error: errorLog.linkedin }
       }
 
       await supabase.from('logs_integracao').insert({

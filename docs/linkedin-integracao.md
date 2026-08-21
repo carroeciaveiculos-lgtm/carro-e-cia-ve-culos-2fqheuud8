@@ -1,66 +1,93 @@
-# LinkedIn — conexão OAuth (21/08/2026)
+# LinkedIn — conexão OAuth e publicação (21/08/2026)
 
-Fluxo de autorização criado a pedido da Adriana, pra publicar post da revenda
-também no LinkedIn. **Publicar de verdade ainda não funciona** — falta o
-LinkedIn aprovar o produto do app (ver "Em aberto" abaixo). O que existe hoje
-é só a conexão (pegar e guardar o token) — a function que efetivamente
-publica (`publicar-social`) ainda não fala com o LinkedIn.
+Construído a pedido da Adriana ("ativar LinkedIn pra publicar"). Hoje
+**publica de verdade como membro pessoal** (testado ao vivo, funcionando).
+**Publicar na página da empresa ainda não** — depende de aprovação da
+LinkedIn pra um produto diferente (ver "Em aberto").
 
-## O que foi construído
+## O que existe e funciona hoje
 
-- Tabela `linkedin_integracao` (linha única — uma página só) guarda
-  `access_token`, `refresh_token`, `expires_at`, `organization_urn`,
-  `organization_nome`, `status`. RLS: só `admin_master`/`gerente` leem.
-- `linkedin-oauth-start` (`verify_jwt=true`, chamada pelo botão "Conectar
-  LinkedIn" na Central de Redes Sociais → Publicações): gera a URL de
-  autorização do LinkedIn com um `state` novo, salvo na linha única pra
-  conferir depois.
-- `linkedin-oauth-callback` (`verify_jwt=false`, é o próprio LinkedIn que
-  chama, direto no navegador de quem autorizou): troca o `code` pelo token,
-  tenta descobrir a página (organização) administrada via
-  `GET /rest/organizationAcls`, e salva tudo.
-- Secrets já configurados pela Adriana: `LINKEDIN_CLIENT_ID`,
-  `LINKEDIN_SECRET_KEY`.
+- Tabela `linkedin_integracao` (linha única — uma conta conectada por vez)
+  guarda `access_token`, `refresh_token`, `expires_at`, `author_urn`,
+  `author_nome`, `status`. RLS: só `admin_master`/`gerente` leem.
+- `linkedin-oauth-start` (`verify_jwt=true`, botão "Conectar LinkedIn" na
+  Central de Redes Sociais → Publicações): gera a URL de autorização com
+  escopo `openid profile w_member_social` e um `state` novo salvo na linha
+  única pra conferir depois.
+- `linkedin-oauth-callback` (`verify_jwt=false`, o próprio LinkedIn chama
+  direto no navegador de quem autorizou): troca `code` por token, identifica
+  o membro via `GET /v2/userinfo` (OpenID Connect) — `sub` vira
+  `author_urn` no formato `urn:li:person:{sub}` — e salva tudo.
+- `publicar-social` publica de verdade quando `redes.linkedin=true`: lê
+  `access_token`/`author_urn` de `linkedin_integracao`, `POST
+  https://api.linkedin.com/v2/ugcPosts` com `author` = essa URN,
+  `shareMediaCategory: 'NONE'` (só texto — imagem/vídeo no LinkedIn exige
+  um fluxo de upload em 3 passos: `registerUpload` → upload do binário →
+  criar o share com o asset — não implementado ainda).
+- Secrets: `LINKEDIN_CLIENT_ID`, `LINKEDIN_SECRET_KEY` (a Adriana já tinha
+  configurado). Redirect URI registrado por ela no app:
+  `https://htpcqdbhktmvppfemnad.supabase.co/functions/v1/linkedin-oauth-callback`.
 
-## Passo que falta a Adriana fazer, fora do sistema
+## Testado ao vivo (21/08/2026)
 
-**Registrar a URL de redirecionamento no app do LinkedIn** (Developer
-Portal → o app dela → aba Auth → "Authorized redirect URLs"):
+Fluxo completo: Adriana clicou "Conectar LinkedIn", autorizou como **Luiz
+Fernando Rodrigues de Araújo**, `linkedin_integracao` confirmado
+`status='conectado'` com `author_urn`/`author_nome` certos. Post de teste
+criado via `publicar-social` (chamado manualmente, sem esperar o cron de 15
+min) — **publicado de verdade**, `post_id` real (`urn:li:share:...`)
+confirmado no `payload_erro` do log. **Confirmado que NÃO aparece na página
+da empresa** (esperado — é o escopo member, não organization). Post de teste
+apagado depois via `DELETE /v2/ugcPosts/{urn}` (204 confirmado) — não sobrou
+rastro no LinkedIn nem no banco.
 
-```
-https://htpcqdbhktmvppfemnad.supabase.co/functions/v1/linkedin-oauth-callback
-```
+## Pivô de escopo (por que não é `w_organization_social`)
 
-Sem isso, o LinkedIn recusa a autorização com erro de `redirect_uri`
-inválido — testar o botão "Conectar" antes de registrar essa URL só serve
-pra confirmar que o link é gerado, não completa a conexão de verdade.
+A primeira versão desta integração pedia `w_organization_social` (postar
+como página), assumindo que era esse o produto aprovado. A Adriana leu a
+documentação oficial (via microsoft-learn MCP,
+`learn.microsoft.com/linkedin/consumer/integrations/self-serve/share-on-linkedin`)
+e confirmou: o que estava aprovado de fato, self-serve, sem revisão, é
+`w_member_social` ("Share on LinkedIn") — posta em nome de um **membro**
+autenticado, não da página. Todo o código foi recodificado pra esse escopo
+real (ver commits de 21/08/2026) — a tabela e as functions foram renomeadas
+de `organization_urn`/`organization_nome` pra `author_urn`/`author_nome`
+nesse pivô.
 
-## Testado até agora
+## Em aberto — publicar na página da empresa
 
-`linkedin-oauth-start` testado ao vivo (21/08/2026) — gera a URL corretamente
-e grava o `state` na linha única (confirmado batendo os dois). Não testado o
-fluxo completo (autorizar de verdade) — depende do passo acima primeiro.
+Postar como a página ("Carro e Cia Veículos") exige o produto
+**"Community Management API"** (escopo `w_organization_social`), que é
+diferente do que já está aprovado e passa por revisão formal da LinkedIn
+— **não é self-serve**. Pesquisado a fundo (docs oficiais):
 
-## Em aberto
+- **Pré-requisitos**: verificar a página no LinkedIn (super admin associa
+  o app à página — a Adriana já iniciou esse passo em 21/08/2026), e-mail
+  comercial verificável (não pessoal), razão social/endereço/site/política
+  de privacidade da empresa, nome do app sem "Linked"/"In"/logo do LinkedIn.
+- **Como pedir**: Developer Portal → app → aba Products → "Community
+  Management API" → Request Access → preencher o formulário.
+- **Prazo**: **não divulgado pela LinkedIn** ("avaliado caso a caso") —
+  cuidado, uma estimativa anterior de "1-4 semanas" que dei à Adriana não
+  vinha da doc oficial, não é confiável.
+- **2 tiers depois de aprovado**: Development (uso limitado — 500
+  chamadas/24h por app, 100/24h por membro, até 12 meses pra completar a
+  integração) → Standard (produção plena, mas exige pedido extra + vídeo de
+  tela de até 5 min mostrando o fluxo completo funcionando).
+- **Adriana já pediu acesso** (Request Access) em 21/08/2026. Lembrete
+  agendado (rotina cloud `trig_01TXYbwdUr6yMcRnMMrwBJxq`) pra 26/08/2026 09h
+  ela checar o status no Developer Portal.
 
-- **Aprovação do LinkedIn pro produto "Share on LinkedIn"** (escopo
-  `w_organization_social`) — revisão manual do LinkedIn, leva de 1 a 4
-  semanas. Sem essa aprovação, mesmo com o redirect_uri certo e o login
-  feito, a tela de autorização do LinkedIn provavelmente nem oferece o
-  escopo, ou a publicação real falha depois.
-- **`publicar-social` não fala com o LinkedIn ainda** — falta o bloco de
-  publicação (POST `/rest/posts` com `Linkedin-Version` no header,
-  `author` = `organization_urn` salvo aqui, escopo `w_organization_social`).
-  Só implementar depois de confirmar que o token de teste realmente
-  publica (ou pelo menos que o escopo foi aprovado) — não faz sentido
-  escrever esse código sem poder testar contra permissão real.
-- **Renovação de token**: token de acesso expira em 60 dias, o
-  `refresh_token` (se o LinkedIn devolver — não é garantido, depende do
-  produto aprovado) dura 365 dias. Nenhuma automação de renovação foi
-  criada ainda — quando a conexão estiver testada de ponta a ponta, avaliar
-  se precisa de um cron pra renovar sozinho antes de expirar.
-- **Descoberta automática da organização pode falhar** — o escopo
-  `organizationAcls` pode exigir permissão adicional (`r_organization_admin`)
-  que não foi solicitada ainda, pra não arriscar o LinkedIn rejeitar a tela
-  de autorização por pedir escopo não aprovado. Se `organization_urn` ficar
-  vazio depois de conectar, precisa completar essa coluna à mão no banco.
+### Quando for aprovado, o que precisa mudar no código
+
+1. `linkedin-oauth-start`: escopo passa a incluir `w_organization_social`
+   (mantendo `w_member_social` se quiser as duas opções).
+2. `linkedin-oauth-callback`: depois do token, buscar a organização
+   administrada via `GET /rest/organizationAcls?q=roleAssignee&role=ADMINISTRATOR`
+   (não `/v2/userinfo`, que só dá o membro) — salvar como
+   `organization_urn`/`organization_nome` (colunas novas, não reaproveitar
+   `author_urn` — um token pode ter os dois tipos de acesso ao mesmo tempo).
+3. `publicar-social`: bloco de LinkedIn passa a usar `author` =
+   `organization_urn` em vez de `author_urn` quando publicar como página
+   (decidir se vira opção por post ou substitui de vez o modo member).
+4. Renovação de token: expira em 60 dias, `refresh_token` dura 365 dias —
+   nenhuma automação de renovação existe ainda, avaliar se precisa de cron.

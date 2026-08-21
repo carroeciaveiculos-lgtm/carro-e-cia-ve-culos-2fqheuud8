@@ -1,11 +1,6 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from 'jsr:@supabase/supabase-js@2'
 
-// Versão da API do LinkedIn no formato YYYYMM exigido no header
-// LinkedIn-Version. Atualizar de tempos em tempos (LinkedIn versiona por
-// mês, versões muito antigas param de responder).
-const LINKEDIN_API_VERSION = '202608'
-
 function paginaResposta(titulo: string, mensagem: string, ok: boolean): Response {
   return new Response(
     `<!DOCTYPE html>
@@ -102,40 +97,24 @@ Deno.serve(async (req: Request) => {
       ? new Date(Date.now() + tokenData.refresh_token_expires_in * 1000).toISOString()
       : null
 
-    // Descobre a organização (página da empresa) que esse admin gerencia —
-    // melhor esforço: se a permissão aprovada não cobrir isso, o token
-    // ainda é salvo, só sem o nome/URN da página (precisaria completar à
-    // mão depois).
-    let organizationUrn: string | null = null
-    let organizationNome: string | null = null
+    // Identifica o membro autenticado via OpenID Connect (escopo aprovado
+    // de fato: w_member_social posta EM NOME DESSE MEMBRO, não da página
+    // da empresa — ver comentário em linkedin-oauth-start). O `sub` do
+    // userinfo é o id que forma a Person URN usada como `author` ao
+    // publicar.
+    let authorUrn: string | null = null
+    let authorNome: string | null = null
     try {
-      const aclRes = await fetch(
-        'https://api.linkedin.com/rest/organizationAcls?q=roleAssignee&role=ADMINISTRATOR&state=APPROVED',
-        {
-          headers: {
-            Authorization: `Bearer ${tokenData.access_token}`,
-            'LinkedIn-Version': LINKEDIN_API_VERSION,
-            'X-Restli-Protocol-Version': '2.0.0',
-          },
-        },
-      )
-      const aclData = await aclRes.json()
-      const primeiraOrg = aclData?.elements?.[0]?.organization
-      if (primeiraOrg) {
-        organizationUrn = primeiraOrg
-        const orgId = String(primeiraOrg).split(':').pop()
-        const orgRes = await fetch(`https://api.linkedin.com/rest/organizations/${orgId}`, {
-          headers: {
-            Authorization: `Bearer ${tokenData.access_token}`,
-            'LinkedIn-Version': LINKEDIN_API_VERSION,
-            'X-Restli-Protocol-Version': '2.0.0',
-          },
-        })
-        const orgData = await orgRes.json()
-        organizationNome = orgData?.localizedName || orgData?.vanityName || null
+      const userRes = await fetch('https://api.linkedin.com/v2/userinfo', {
+        headers: { Authorization: `Bearer ${tokenData.access_token}` },
+      })
+      const userData = await userRes.json()
+      if (userData?.sub) {
+        authorUrn = `urn:li:person:${userData.sub}`
+        authorNome = userData.name || null
       }
     } catch (e) {
-      console.error('Erro ao buscar organização administrada no LinkedIn:', e)
+      console.error('Erro ao buscar userinfo do LinkedIn:', e)
     }
 
     await supabase
@@ -146,8 +125,8 @@ Deno.serve(async (req: Request) => {
         refresh_token: tokenData.refresh_token || null,
         expires_at: expiresAt,
         refresh_token_expires_at: refreshExpiresAt,
-        organization_urn: organizationUrn,
-        organization_nome: organizationNome,
+        author_urn: authorUrn,
+        author_nome: authorNome,
         oauth_state: null,
         ultimo_erro: null,
       })
@@ -155,9 +134,9 @@ Deno.serve(async (req: Request) => {
 
     return paginaResposta(
       'LinkedIn conectado!',
-      organizationNome
-        ? `Conectado como <strong>${organizationNome}</strong>.`
-        : 'Token salvo, mas não consegui identificar a página automaticamente — confirme com a equipe.',
+      authorNome
+        ? `Conectado como <strong>${authorNome}</strong> — os posts vão sair em nome desse perfil, não como página da empresa (isso exigiria um produto separado, com revisão do LinkedIn).`
+        : 'Token salvo, mas não consegui identificar o membro automaticamente — confirme com a equipe.',
       true,
     )
   } catch (err: any) {

@@ -13,23 +13,47 @@ nos arquivos `docs/*.md` — aqui é só o resumo de estado + pendências.
 
 ## O que está no ar hoje
 
-- **Conexão OAuth do LinkedIn construída, publicação real ainda não
-  (21/08/2026, sessão 11)**: a pedido da Adriana pra "ativar LinkedIn e
-  WhatsApp pra publicar". LinkedIn não tem MCP (diferente de Meta/Google
-  Ads) — verificado e explicado a ela. Construído o fluxo de conexão:
-  tabela `linkedin_integracao` (linha única, token + org URN),
-  `linkedin-oauth-start` (gera link de autorização, testado ao vivo) e
-  `linkedin-oauth-callback` (troca code por token, descobre a página
-  administrada, salva tudo) — as duas Edge Functions e a migration já no
-  ar. Botão "Conectar LinkedIn" com status adicionado em `RedesSociais.tsx`
-  (Central de Redes Sociais → Publicações). **Falta a Adriana**: registrar
-  a URL de callback no app do LinkedIn (Developer Portal → Auth →
-  redirect URLs — ver `docs/linkedin-integracao.md` pra URL exata) e esperar
-  o LinkedIn aprovar o produto "Share on LinkedIn" (`w_organization_social`,
-  revisão manual, 1 a 4 semanas) — só depois disso completar o login de
-  verdade e eu implemento o bloco de publicação em `publicar-social`
-  (não escrito ainda, não faz sentido sem poder testar contra permissão
-  real). Detalhe completo em `docs/linkedin-integracao.md`.
+- **LinkedIn — publicação como membro pessoal no ar e testada ao vivo;
+  página da empresa aguardando aprovação do LinkedIn (21/08/2026, sessão
+  11)**: a pedido da Adriana pra "ativar LinkedIn e WhatsApp pra publicar".
+  LinkedIn não tem MCP (diferente de Meta/Google Ads) — verificado e
+  explicado a ela. Construído o fluxo completo: tabela `linkedin_integracao`
+  (linha única, token + `author_urn`), `linkedin-oauth-start` (gera link de
+  autorização) e `linkedin-oauth-callback` (troca code por token, identifica
+  o membro via OpenID Connect `/v2/userinfo`) — Edge Functions, migration e
+  botão "Conectar LinkedIn" em `RedesSociais.tsx` (Central de Redes Sociais
+  → Publicações), tudo no ar.
+  **Pivô importante no meio do caminho**: a Adriana leu a doc oficial
+  (Share on LinkedIn, via microsoft-learn MCP) e descobriu que o que estava
+  de fato aprovado no app dela (self-serve, sem revisão) é `w_member_social`
+  — posta como MEMBRO, não como página (`w_organization_social` exige o
+  produto separado "Community Management API", com revisão formal da
+  LinkedIn). Recodificado pra esse escopo real: `linkedin-oauth-start`
+  pede `openid profile w_member_social`, `linkedin-oauth-callback` busca
+  `author_urn`/`author_nome` via userinfo (não mais `organizationAcls`),
+  bloco de publicação real adicionado em `publicar-social` (POST
+  `/v2/ugcPosts`, só texto por enquanto — imagem/vídeo no LinkedIn exige
+  fluxo de upload em 3 passos, não implementado).
+  **Testado ao vivo com sucesso**: Adriana autorizou como Luiz Fernando
+  Rodrigues de Araújo, post de teste publicado (`urn:li:share:...`),
+  confirmado que satisfaz o pipeline real (`payload_erro` com `post_id`
+  real) — post de teste apagado depois via API (DELETE, 204 confirmado).
+  **Confirmado que NÃO aparece na página da empresa** — é o comportamento
+  esperado do escopo member, não bug.
+  **Em andamento pra publicar na página de verdade**: a Adriana já iniciou
+  a verificação da página no LinkedIn e pediu "Request Access" pro produto
+  "Community Management API" (`w_organization_social`) em 21/08/2026 —
+  aprovação sem prazo fixo divulgado pela LinkedIn (não é confiável a
+  estimativa "1-4 semanas" que dei antes, baseada em busca genérica, não na
+  doc oficial). **Lembrete agendado pra 26/08/2026 09h** (rotina cloud
+  `trig_01TXYbwdUr6yMcRnMMrwBJxq`) pra ela checar o status do pedido —
+  quando aprovado, preciso mudar o escopo pra `w_organization_social`,
+  voltar a buscar `organization_urn`/`organization_nome` (código removido
+  do callback quando pivotei pra escopo member — reescrever, não só
+  reverter, porque a estrutura do lookup usa `organizationAcls`, permissão
+  diferente) e trocar o `author_urn` usado em `publicar-social` pela URN da
+  organização. Detalhe completo (requisitos, processo de 2 tiers
+  Development/Standard, permissões) em `docs/linkedin-integracao.md`.
 - **WhatsApp "publicar" — decisão tomada, implementação ainda não
   (21/08/2026)**: perguntei o que ela queria dizer com "publicar no
   WhatsApp" — Status (não suportado pela API oficial da Meta pra número de

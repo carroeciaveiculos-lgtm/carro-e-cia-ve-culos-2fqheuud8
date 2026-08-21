@@ -41,7 +41,13 @@ Deno.serve(async (req: Request) => {
     authUrl.searchParams.set('response_type', 'code')
     authUrl.searchParams.set('client_id', clientId)
     authUrl.searchParams.set('redirect_uri', redirectUri)
-    authUrl.searchParams.set('scope', 'w_organization_social')
+    // Escopos aprovados de fato no app (21/08/2026, self-serve — não
+    // exigem revisão do LinkedIn): openid+profile (Sign In with OpenID
+    // Connect, pra identificar quem autorizou) e w_member_social (Share on
+    // LinkedIn, posta em nome do membro). w_organization_social (postar
+    // como página da empresa) exigiria produto separado com revisão
+    // manual de 1-4 semanas — não solicitado ainda.
+    authUrl.searchParams.set('scope', 'openid profile w_member_social')
     authUrl.searchParams.set('state', state)
 
     return new Response(JSON.stringify({ authUrl: authUrl.toString() }), {

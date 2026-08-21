@@ -120,7 +120,7 @@ export default function RedesSociais({ embedded = false }: { embedded?: boolean 
   // que já está conectado.
   const [linkedinStatus, setLinkedinStatus] = useState<{
     status: string
-    organization_nome: string | null
+    author_nome: string | null
     expires_at: string | null
   } | null>(null)
   const [conectandoLinkedin, setConectandoLinkedin] = useState(false)
@@ -128,7 +128,7 @@ export default function RedesSociais({ embedded = false }: { embedded?: boolean 
   useEffect(() => {
     supabase
       .from('linkedin_integracao')
-      .select('status, organization_nome, expires_at')
+      .select('status, author_nome, expires_at')
       .limit(1)
       .single()
       .then(({ data }) => setLinkedinStatus(data))
@@ -370,8 +370,8 @@ export default function RedesSociais({ embedded = false }: { embedded?: boolean 
         {linkedinStatus && linkedinStatus.status !== 'conectado' && (
           <div className="px-4 py-2 border-b bg-blue-50 flex items-center justify-between gap-3 text-sm">
             <span className="text-blue-900">
-              LinkedIn ainda não conectado — publicar por lá exige autorizar o app como admin da
-              página da empresa.
+              LinkedIn ainda não conectado — clique e autorize com a conta que vai assinar os
+              posts (publica em nome dessa pessoa, não como página da empresa).
             </span>
             <Button
               size="sm"
@@ -387,7 +387,7 @@ export default function RedesSociais({ embedded = false }: { embedded?: boolean 
         )}
         {linkedinStatus?.status === 'conectado' && (
           <div className="px-4 py-2 border-b bg-green-50 text-sm text-green-800">
-            LinkedIn conectado como <strong>{linkedinStatus.organization_nome || 'página'}</strong>
+            LinkedIn conectado como <strong>{linkedinStatus.author_nome || 'perfil'}</strong>
             {linkedinStatus.expires_at &&
               ` — token válido até ${new Date(linkedinStatus.expires_at).toLocaleDateString('pt-BR')}`}
             .
