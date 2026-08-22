@@ -6,10 +6,39 @@ precisar reler o histórico inteiro de conversas. Diferente do
 pra ser mantido em dia de verdade. Detalhe técnico por integração continua
 nos arquivos `docs/*.md` — aqui é só o resumo de estado + pendências.
 
-Última atualização: 2026-08-21 (sessão 11).
+Última atualização: 2026-08-22 (sessão 12).
 
 **Pasta de trabalho deste projeto:** `C:\Projeto\Revenda Carro e Cia\carro-e-cia-ve-culos-2fqheuud8`
 (sempre abrir sessão nova aqui pra continuar — ver também `CLAUDE.md`).
+
+## Sessão 12 (22/08/2026) — sem mudança de código, só duas coisas fora do projeto
+
+- **Triagem de candidatos "Assistente financeiro" no LinkedIn Hiring**: a
+  pedido da Adriana, revisei os 26 candidatos da vaga (link
+  `linkedin.com/hiring/jobs/4452586753`) via navegador (Chrome com a sessão
+  dela logada), avaliando formação/experiência/respostas de triagem, e
+  entreguei um ranking do mais pro menos compatível. **Top recomendado pra
+  entrevistar primeiro**: Kathyuça Melo e Larissa Felix (aderência forte,
+  sem risco de overqualification). Joe Luiz, Lidyane Guerra e Gilberto
+  Hermann ficaram como "plano B de luxo" — os currículos tecnicamente mais
+  fortes (todos com décadas de experiência em contábil/financeiro), mas
+  arriscam ser seniores demais/caros demais pra uma vaga de assistente.
+  Achados de alerta: 3 candidatas (Jane Vogado, Gabriela Duarte, Mariana S.)
+  declararam muitos anos de experiência financeira na pergunta de triagem
+  sem nenhum respaldo no histórico de cargos exibido — vale conferir na
+  entrevista antes de confiar no número. Duas candidatas fortes tecnicamente
+  (Adeliane Cristina Barbosa Batista, Maria Bárbara Silveira Orlando)
+  responderam "Não" pra presencial/início imediato — desqualificador
+  provável dado que a vaga é presencial e urgente. **Isso é uma tarefa
+  pontual de RH, não altera nada no código/site** — não repetir essa
+  triagem do zero se a Adriana perguntar de novo sobre esses candidatos,
+  só relembrar o ranking acima.
+- **2 conectores MCP novos adicionados (escopo `user`, disponíveis em
+  qualquer sessão/projeto)**: `microsoft-learn` (docs oficiais LinkedIn/
+  Microsoft — foi o que permitiu pesquisar a fundo os requisitos do
+  Community Management API) e `magnific` (`mcp.magnific.com`) — este
+  último ainda com status "Needs authentication", falta a Adriana rodar
+  `/mcp` e autenticar antes de usar.
 
 ## O que está no ar hoje
 

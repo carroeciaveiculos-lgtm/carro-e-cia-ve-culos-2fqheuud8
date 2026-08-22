@@ -3,15 +3,25 @@
 Copie e cole como primeira mensagem numa sessão nova do Claude Code.
 
 ```
-Continuando de uma sessão anterior (21/08/2026, sessão 11). Leia primeiro:
-- MEMORY_WORK.MD deste projeto (seção "O que está no ar hoje" tem tudo
-  de 21/08: LinkedIn publicando como membro pessoal, testado ao vivo;
-  página da empresa aguardando aprovação da LinkedIn)
+Continuando de uma sessão anterior (22/08/2026, sessão 12). Leia primeiro:
+- MEMORY_WORK.MD deste projeto (seção "Sessão 12" tem a triagem de
+  candidatos do LinkedIn Hiring feita em 22/08 — não é código, é uma
+  tarefa de RH pontual, só pra não repetir do zero se ela perguntar de
+  novo; seção "O que está no ar hoje" tem o LinkedIn de 21/08:
+  publicando como membro pessoal, testado ao vivo, página da empresa
+  aguardando aprovação da LinkedIn)
 - docs/linkedin-integracao.md — tudo sobre a conexão OAuth, o pivô de
   escopo (member vs organização) e o que muda no código quando a
   LinkedIn aprovar o Community Management API
 - docs/meta-integracao.md — Instagram Stories, unificação Marketing/
   Central de Redes Sociais (20/08)
+
+## Sem mudança de código desde a sessão 11
+O commit `cb5ae29` (21/08/2026) continua sendo o mais recente — nada
+novo foi implantado na sessão 12, só a triagem de candidatos (fora do
+código) e 2 conectores MCP novos em escopo `user` (`microsoft-learn`,
+`magnific` — este último ainda "Needs authentication", a Adriana
+precisa rodar `/mcp` e autenticar).
 
 ## Lembrete agendado — não precisa fazer nada até lá
 Rotina cloud `trig_01TXYbwdUr6yMcRnMMrwBJxq` dispara em **26/08/2026 09h**
@@ -20,6 +30,10 @@ avisando a Adriana pra checar se a LinkedIn aprovou o "Request Access" do
 foi aprovado antes disso, pular direto pro item 1 de "Precisa de decisão".
 
 ## Precisa de decisão/ação da Adriana
+0. **Triagem de candidatos do LinkedIn Hiring (22/08/2026)**: perguntei se
+   ela quer que eu já mande mensagem pra alguma candidata recomendada
+   (Kathyuça Melo e Larissa Felix, no topo do ranking) — sem resposta
+   ainda. Ver ranking completo em `MEMORY_WORK.MD`, seção "Sessão 12".
 1. **Quando a LinkedIn aprovar o Community Management API**: mudar o
    escopo OAuth pra incluir `w_organization_social`, reescrever a busca de
    organização em `linkedin-oauth-callback` (usar `/rest/organizationAcls`,
