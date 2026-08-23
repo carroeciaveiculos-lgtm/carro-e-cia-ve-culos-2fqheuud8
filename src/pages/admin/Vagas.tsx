@@ -73,6 +73,7 @@ export default function VagasAdmin() {
   const [titulo, setTitulo] = useState('')
   const [descricao, setDescricao] = useState('')
   const [imagemUrl, setImagemUrl] = useState('')
+  const [opcoesImagem, setOpcoesImagem] = useState<string[]>([])
   const [ajusteImagem, setAjusteImagem] = useState('')
   const [ativa, setAtiva] = useState(true)
 
@@ -102,6 +103,7 @@ export default function VagasAdmin() {
     setTitulo('')
     setDescricao('')
     setImagemUrl('')
+    setOpcoesImagem([])
     setAjusteImagem('')
     setAtiva(true)
     setDialogAberto(true)
@@ -114,6 +116,7 @@ export default function VagasAdmin() {
     setTitulo(vaga.titulo)
     setDescricao(vaga.descricao || '')
     setImagemUrl(vaga.imagem_url || '')
+    setOpcoesImagem([])
     setAjusteImagem('')
     setAtiva(vaga.ativa)
     setDialogAberto(true)
@@ -152,7 +155,7 @@ export default function VagasAdmin() {
     try {
       const { data, error } = await gerarImagemVaga(titulo)
       if (error) throw error
-      if (data) setImagemUrl(data)
+      setOpcoesImagem(data || [])
       setAjusteImagem('')
     } catch (err: any) {
       toast({
@@ -177,7 +180,7 @@ export default function VagasAdmin() {
         imagemAtualUrl: imagemUrl || undefined,
       })
       if (error) throw error
-      if (data) setImagemUrl(data)
+      setOpcoesImagem(data || [])
       setAjusteImagem('')
     } catch (err: any) {
       toast({
@@ -188,6 +191,11 @@ export default function VagasAdmin() {
     } finally {
       setGerandoImagem(false)
     }
+  }
+
+  const handleEscolherOpcaoImagem = (url: string) => {
+    setImagemUrl(url)
+    setOpcoesImagem([])
   }
 
   const handleSalvar = async () => {
@@ -465,7 +473,25 @@ export default function VagasAdmin() {
             <div className="space-y-2">
               <Label>Imagem padrão para redes sociais</Label>
 
-              {imagemUrl ? (
+              {opcoesImagem.length > 0 ? (
+                <div className="space-y-1.5">
+                  <p className="text-sm text-muted-foreground text-center">
+                    Escolha uma das opções abaixo:
+                  </p>
+                  <div className="grid grid-cols-2 gap-3 max-w-md mx-auto">
+                    {opcoesImagem.map((url, i) => (
+                      <button
+                        key={url}
+                        type="button"
+                        onClick={() => handleEscolherOpcaoImagem(url)}
+                        className="rounded-lg border-2 border-transparent hover:border-primary transition-colors overflow-hidden"
+                      >
+                        <img src={url} alt={`Opção ${i + 1}`} className="w-full object-cover" />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ) : imagemUrl ? (
                 <img
                   src={imagemUrl}
                   alt="Imagem da vaga"
@@ -492,7 +518,7 @@ export default function VagasAdmin() {
                 {imagemUrl ? 'Gerar do zero de novo' : 'Gerar imagem'}
               </Button>
 
-              {imagemUrl && (
+              {imagemUrl && opcoesImagem.length === 0 && (
                 <div className="flex gap-2 pt-1">
                   <Input
                     placeholder='Peça um ajuste (ex: "fundo mais claro")'

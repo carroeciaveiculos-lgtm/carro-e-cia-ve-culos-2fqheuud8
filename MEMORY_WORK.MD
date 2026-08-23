@@ -11,6 +11,26 @@ nos arquivos `docs/*.md` — aqui é só o resumo de estado + pendências.
 **Pasta de trabalho deste projeto:** `C:\Projeto\Revenda Carro e Cia\carro-e-cia-ve-culos-2fqheuud8`
 (sempre abrir sessão nova aqui pra continuar — ver também `CLAUDE.md`).
 
+## Sessão 13 (23/08/2026) — padrão único de imagem de vaga (2 pessoas, 2 opções)
+
+A pedido da Adriana: a imagem "do zero" de `gerar-imagem-vaga` agora segue
+um **padrão fixo**, não muda mais por cargo — mostra sempre duas pessoas
+reais (uma mulher, um homem), roupa profissional, ambiente de
+concessionária, logo oficial em destaque, área vazia reservada pro texto
+do cargo (que continua sendo adicionado depois, fora da IA). O `titulo`
+(cargo) parou de entrar na descrição visual do prompt — só é usado pra
+validar que o campo foi preenchido. Cada geração agora retorna **2 opções**
+numa chamada só (`n=2`), e o painel (`Vagas.tsx`) mostra as duas lado a
+lado pra ela clicar em qual quer usar — nenhuma é salva até ela escolher.
+Isso vale tanto pra "gerar do zero" quanto pro fluxo de "ajuste" (edita
+imagem existente). Resposta da function mudou de `{url}` pra `{urls:
+string[]}` — `gerarImagemVaga()` em `services/vagas.ts` já atualizado.
+Function reimplantada (versão 12). `bun run lint`/`build` passaram limpos.
+**Sessão interrompida no meio por limite de uso da assinatura Claude
+(resetou 19h50) e retomada depois** — nada foi perdido, o código já estava
+pronto e testado (lint/build), só faltava reimplantar, o que foi feito ao
+retomar.
+
 ## Sessão 13 (23/08/2026) — gpt-image-2 em todo o sistema + rotina mensal de checar modelos novos
 
 A pedido da Adriana, auditei o sistema inteiro atrás de qualquer função

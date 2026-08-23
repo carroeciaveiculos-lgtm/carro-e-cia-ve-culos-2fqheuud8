@@ -95,6 +95,8 @@ export const gerarVagaComIA = async (cargo: string, palavrasChave?: string) => {
   return { data: data?.data as { titulo: string; descricao: string }, error: null }
 }
 
+// Sempre retorna 2 opções (padrão único de imagem, achado 23/08/2026) pra
+// escolher qual fica — nenhuma é salva na vaga até ela clicar em uma.
 export const gerarImagemVaga = async (
   titulo: string,
   opts?: { ajuste?: string; imagemAtualUrl?: string },
@@ -103,7 +105,7 @@ export const gerarImagemVaga = async (
     body: { titulo, ajuste: opts?.ajuste, imagemAtualUrl: opts?.imagemAtualUrl },
   })
   if (error) return { data: null, error }
-  return { data: data?.url as string, error: null }
+  return { data: (data?.urls as string[]) || [], error: null }
 }
 
 // Cria um post agendado pro agora, reaproveitando a mesma fila que o resto do

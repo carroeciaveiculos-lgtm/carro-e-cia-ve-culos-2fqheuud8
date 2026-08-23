@@ -4,8 +4,9 @@ Copie e cole como primeira mensagem numa sessão nova do Claude Code.
 
 ```
 Continuando de uma sessão anterior (23/08/2026, sessão 13). Leia primeiro:
-- MEMORY_WORK.MD deste projeto (7 seções "Sessão 13" no topo: gpt-image-2
-  em todo o sistema + rotina mensal de checar modelos novos; modelo
+- MEMORY_WORK.MD deste projeto (8 seções "Sessão 13" no topo: padrão único
+  de imagem de vaga com 2 pessoas + 2 opções pra escolher; gpt-image-2 em
+  todo o sistema + rotina mensal de checar modelos novos; modelo
   gpt-image-2 + fidelidade da logo na imagem da vaga; página dedicada por
   vaga + formulário vinculado; regras da Clara sincronizadas + confirmação
   de envio de foto de veículo; imagens no chat da Clara corrigidas —

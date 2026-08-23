@@ -45,15 +45,20 @@ Deno.serve(async (req) => {
     const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY')
     if (!OPENAI_API_KEY) throw new Error('OPENAI_API_KEY not configured')
 
-    // Achado 23/08/2026: com só "use a logo fornecida", o modelo às vezes
-    // inventava um logo genérico (ex: um ícone de carro estilizado) em vez de
-    // reproduzir a marca real — mais provável de acontecer quando duas
-    // imagens de referência (logo + fachada) são mandadas juntas e o modelo
-    // não sabe qual é qual. Labels explícitos + instrução de fidelidade
-    // reduzem isso.
+    // Padrão único de imagem (achado 23/08/2026, pedido da Adriana): a
+    // composição da foto (pessoas, ambiente, layout) fica sempre igual,
+    // não muda por cargo — só o texto do cargo (adicionado depois, fora da
+    // IA) muda. Por isso o "titulo" NÃO entra na descrição visual do
+    // prompt de geração do zero, só é usado como validação/registro.
+    //
+    // Achado anterior (23/08/2026): com só "use a logo fornecida", o modelo
+    // às vezes inventava um logo genérico em vez de reproduzir a marca real
+    // — mais provável quando duas imagens de referência (logo + fachada)
+    // são mandadas juntas e o modelo não sabe qual é qual. Labels
+    // explícitos + instrução de fidelidade reduzem isso.
     const promptBase = imagemAtualUrl
-      ? `Crie uma imagem para post de rede social anunciando uma vaga de emprego de "${titulo}" na revenda de veículos Carro e Cia. Mantenha a identidade visual da marca (vermelho, branco, preto), estilo corporativo e moderno. Deixe um espaço vazio reservado para texto ser adicionado depois. Sem texto na imagem.`
-      : `Crie uma imagem para post de rede social anunciando uma vaga de emprego de "${titulo}" na revenda de veículos Carro e Cia. A primeira imagem anexada é a logomarca OFICIAL da empresa — reproduza ela exatamente como está (mesmo desenho, mesmas cores, mesma tipografia), com destaque; NÃO invente ou desenhe um logo novo. A segunda imagem anexada é uma foto real da fachada da loja, use só como referência de ambientação. Mantenha a identidade visual da marca (vermelho, branco, preto), estilo corporativo e moderno. Deixe um espaço vazio reservado para texto ser adicionado depois. Sem texto na imagem.`
+      ? `Ajuste a imagem enviada mantendo a identidade visual da marca (vermelho, branco, preto), estilo corporativo e moderno, as duas pessoas (uma mulher e um homem) e a área vazia reservada para o texto do cargo. Sem texto na imagem.`
+      : `Crie uma foto realista e profissional (não é ilustração nem desenho vetorial) para post de vaga de emprego da revenda de veículos Carro e Cia. Mostre duas pessoas reais, uma mulher e um homem, ambos com vestimenta profissional (camisa social ou blazer), em pé lado a lado, com expressão confiante e simpática, num ambiente de concessionária de veículos (loja ou com um carro desfocado ao fundo). A primeira imagem anexada é a logomarca OFICIAL da empresa — reproduza ela exatamente como está (mesmo desenho, mesmas cores, mesma tipografia), com destaque; NÃO invente ou desenhe um logo novo. A segunda imagem anexada é uma foto real da fachada da loja, use só como referência de ambientação. Mantenha a identidade visual da marca (vermelho, branco, preto), estilo corporativo e moderno. Deixe uma área vazia e limpa reservada para o texto do cargo ser adicionado depois. Sem nenhum texto na imagem. Essa composição (as duas pessoas, cores, posição da logo, área pro texto) deve se manter sempre igual, independente do cargo específico da vaga.`
     const prompt = ajuste ? `${promptBase}\n\nAjuste pedido pelo usuário: ${ajuste}` : promptBase
 
     // Usa a API de edição (não a de geração pura) pra compor com referências
@@ -61,10 +66,15 @@ Deno.serve(async (req) => {
     // em vez de a IA "adivinhar" a marca só pela descrição em texto. Se já
     // existe uma imagem anterior (pedido de ajuste), edita ela em vez de
     // regenerar do zero, pra manter o que já estava bom.
+    //
+    // n=2 (achado 23/08/2026, pedido da Adriana): gera 2 opções na mesma
+    // chamada pra ela escolher, em vez de forçar regenerar do zero até
+    // gostar de uma.
     const form = new FormData()
     form.append('model', 'gpt-image-2')
     form.append('prompt', prompt)
     form.append('size', '1024x1024')
+    form.append('n', '2')
     if (imagemAtualUrl) {
       form.append('image[]', await fetchAsFile(imagemAtualUrl, 'imagem-atual.png'))
     } else {
@@ -80,20 +90,7 @@ Deno.serve(async (req) => {
 
     const data = await res.json()
     if (!res.ok) throw new Error(data.error?.message || 'Erro na API da OpenAI')
-
-    // gpt-image-1 retorna base64 (b64_json), não URL como o dall-e-3 antigo —
-    // suporta os dois formatos pra não quebrar se isso mudar de novo.
-    const item = data.data?.[0]
-    let bytes: Uint8Array
-    if (item?.b64_json) {
-      bytes = Uint8Array.from(atob(item.b64_json), (c) => c.charCodeAt(0))
-    } else if (item?.url) {
-      const imageRes = await fetch(item.url)
-      if (!imageRes.ok) throw new Error('Falha ao baixar a imagem gerada')
-      bytes = new Uint8Array(await imageRes.arrayBuffer())
-    } else {
-      throw new Error('Nenhuma imagem foi retornada pelo provedor')
-    }
+    if (!data.data?.length) throw new Error('Nenhuma imagem foi retornada pelo provedor')
 
     const R2_ACCESS_KEY_ID = Deno.env.get('R2_ACCESS_KEY_ID')
     const R2_SECRET_ACCESS_KEY = Deno.env.get('R2_SECRET_ACCESS_KEY')
@@ -111,15 +108,33 @@ Deno.serve(async (req) => {
       forcePathStyle: true,
     })
 
-    const key = `vagas/${Date.now()}_ia_generated.png`
-    await s3Client.send(
-      new PutObjectCommand({
-        Bucket: R2_BUCKET,
-        Key: key,
-        Body: bytes,
-        ContentType: 'image/png',
-      }),
-    )
+    // gpt-image-1/2 retorna base64 (b64_json), não URL como o dall-e-3 antigo —
+    // suporta os dois formatos pra não quebrar se isso mudar de novo.
+    const urls: string[] = []
+    for (const item of data.data) {
+      let bytes: Uint8Array
+      if (item?.b64_json) {
+        bytes = Uint8Array.from(atob(item.b64_json), (c) => c.charCodeAt(0))
+      } else if (item?.url) {
+        const imageRes = await fetch(item.url)
+        if (!imageRes.ok) throw new Error('Falha ao baixar a imagem gerada')
+        bytes = new Uint8Array(await imageRes.arrayBuffer())
+      } else {
+        continue
+      }
+
+      const key = `vagas/${Date.now()}_${urls.length}_ia_generated.png`
+      await s3Client.send(
+        new PutObjectCommand({
+          Bucket: R2_BUCKET,
+          Key: key,
+          Body: bytes,
+          ContentType: 'image/png',
+        }),
+      )
+      urls.push(`${R2_PUBLIC_BASE}/${key}`)
+    }
+    if (!urls.length) throw new Error('Nenhuma imagem foi retornada pelo provedor')
 
     const supabaseService = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
@@ -133,7 +148,7 @@ Deno.serve(async (req) => {
       status: 'sucesso',
     })
 
-    return new Response(JSON.stringify({ success: true, url: `${R2_PUBLIC_BASE}/${key}` }), {
+    return new Response(JSON.stringify({ success: true, urls }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
   } catch (err: any) {
