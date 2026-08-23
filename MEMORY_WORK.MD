@@ -6,10 +6,36 @@ precisar reler o histórico inteiro de conversas. Diferente do
 pra ser mantido em dia de verdade. Detalhe técnico por integração continua
 nos arquivos `docs/*.md` — aqui é só o resumo de estado + pendências.
 
-Última atualização: 2026-08-22 (sessão 12).
+Última atualização: 2026-08-23 (sessão 13).
 
 **Pasta de trabalho deste projeto:** `C:\Projeto\Revenda Carro e Cia\carro-e-cia-ve-culos-2fqheuud8`
 (sempre abrir sessão nova aqui pra continuar — ver também `CLAUDE.md`).
+
+## Sessão 13 (23/08/2026) — usuário Roberto Junior resolvido
+
+**Achado real**: a Adriana perguntou por que o "Roberto Junior" (vendedor)
+não aparecia na lista de usuários. Investigando, achei **duas contas
+diferentes** ao longo do histórico do projeto:
+- `roberto@carroecia.com` (domínio antigo, criada 14/04/2026 via migration
+  `add_access_control.sql`) — essa foi **apagada de verdade** em algum
+  momento (sumiu de `auth.users` E de `usuarios`, sem migration nem log
+  registrando quem/quando — não existe tabela de auditoria de usuários no
+  projeto, só `ads_audit_logs` que é sobre anúncios).
+- `roberto@carroeciamotors.com.br` (domínio novo, criada 29/06/2026) —
+  essa **existe em `auth.users` (login válido) mas nunca teve linha em
+  `usuarios`** — por isso não aparecia na lista (a tela lê de `usuarios`,
+  não de `auth.users`). Provavelmente um cadastro que travou no meio.
+
+**Corrigido**: completei o perfil que faltava pra essa segunda conta e
+defini a senha nova que a Adriana passou (`Roberto94@@`, ela mesma vai
+pedir pra ele trocar no primeiro acesso) — usando `auth.admin.updateUserById`
+via function temporária (mesmo caminho do `criar-usuario-admin` oficial,
+nunca senha em texto plano em migration). Nível `operador`, setor
+**Vendas**. Function de apoio já removida do Supabase e do disco, `git
+status` limpo — não sobrou nada versionado dessa operação.
+**Não recriar essa conta do zero se o problema reaparecer** — primeiro
+conferir se é o mesmo padrão (login existe, perfil não) antes de tentar
+`createUser` de novo (vai dar erro de e-mail duplicado).
 
 ## Sessão 12 (22/08/2026) — sem mudança de código, só duas coisas fora do projeto
 
