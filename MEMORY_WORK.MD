@@ -11,6 +11,30 @@ nos arquivos `docs/*.md` — aqui é só o resumo de estado + pendências.
 **Pasta de trabalho deste projeto:** `C:\Projeto\Revenda Carro e Cia\carro-e-cia-ve-culos-2fqheuud8`
 (sempre abrir sessão nova aqui pra continuar — ver também `CLAUDE.md`).
 
+## Sessão 13 (23/08/2026) — gpt-image-2 em todo o sistema + rotina mensal de checar modelos novos
+
+A pedido da Adriana, auditei o sistema inteiro atrás de qualquer função
+que gere imagem por IA — **só existem duas**: `gerar-imagem-vaga` (já
+trocada nessa mesma sessão, ver seção abaixo) e `gerar-imagem` (usada em
+conteúdo de blog/artigos, chamada por `use-gerar-conteudo.ts`,
+`ArticleSEOEditor.tsx` e `ImageEditorModal.tsx`). Ambas agora usam
+`gpt-image-2`, já reimplantadas no Supabase (`gerar-imagem` versão 33).
+Confirmado por grep (`api.openai.com/v1/images`) que não existe nenhuma
+outra chamada de geração de imagem no projeto (nem Gemini/Imagen, nem
+outro provedor).
+
+**Rotina nova**: criada `verificar-atualizacoes-modelos-ia-carro-e-cia`
+(`trig_01Ngz5GoZGfEPrxrSCj36ztp`), roda todo dia 1º do mês às 9h
+(horário de Brasília) — confere se saiu modelo de imagem (OpenAI) ou
+texto (Gemini) mais novo que os já em uso, e só avisa a Adriana se tiver
+mesmo novidade oficial (ignora rumor/leak). Escopo por decisão dela:
+cobre todos os modelos de IA do sistema, não só imagem. Modelos de texto
+hoje (Gemini, não mexidos ainda): `gemini-3.6-flash` (principal, usado
+pela Clara via `_shared/gemini-client.ts` + `gerar-conteudo-social` +
+`gerar-vaga-ia`), `gemini-3.5-flash` (`gerar-conteudo`), `gemini-1.5-flash`
+(fallback em alguns lugares), `gemini-2.0-flash`
+(`_shared/whatsapp-conteudo.ts`).
+
 ## Sessão 13 (23/08/2026) — modelo gpt-image-2 na imagem da vaga + fidelidade da logo
 
 A pedido da Adriana: (1) troquei o modelo de `gpt-image-1` pra `gpt-image-2`

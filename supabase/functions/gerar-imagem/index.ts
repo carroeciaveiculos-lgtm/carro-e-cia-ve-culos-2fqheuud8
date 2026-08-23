@@ -44,8 +44,9 @@ Deno.serve(async (req) => {
       },
       body: JSON.stringify({
         // dall-e-3 foi descontinuado pela OpenAI (achado 17/08/2026) — a
-        // família atual é gpt-image-*. gpt-image-1 é a opção estável.
-        model: 'gpt-image-1',
+        // família atual é gpt-image-*. Trocado pro gpt-image-2 (23/08/2026,
+        // lançado em abril/2026, melhor qualidade e mais fiel a instrução).
+        model: 'gpt-image-2',
         prompt: `Uma foto profissional para blog de loja de carros sobre: ${prompt}. Estilo realista, editorial, sem texto na imagem.`,
         n: 1,
         size: '1024x1024',
@@ -107,7 +108,7 @@ Deno.serve(async (req) => {
       usuario_id: user.id,
       acao: 'gerar_imagem',
       provider: 'openai',
-      modelo: 'gpt-image-1',
+      modelo: 'gpt-image-2',
       status: 'sucesso',
     })
 

@@ -4,12 +4,14 @@ Copie e cole como primeira mensagem numa sessão nova do Claude Code.
 
 ```
 Continuando de uma sessão anterior (23/08/2026, sessão 13). Leia primeiro:
-- MEMORY_WORK.MD deste projeto (6 seções "Sessão 13" no topo: modelo
+- MEMORY_WORK.MD deste projeto (7 seções "Sessão 13" no topo: gpt-image-2
+  em todo o sistema + rotina mensal de checar modelos novos; modelo
   gpt-image-2 + fidelidade da logo na imagem da vaga; página dedicada por
   vaga + formulário vinculado; regras da Clara sincronizadas + confirmação
   de envio de foto de veículo; imagens no chat da Clara corrigidas —
   recepção e envio; menu lateral reorganizado por setor + fix do item
   faltando na tela de permissões; usuário Roberto Junior resolvido)
+
 - docs/leads-e-sdr.md — detalhe técnico completo do fix de imagem no
   chat da Clara (seção "Fatos confirmados")
 - docs/clara-prompt.md — prompt da Clara, agora sincronizado com o que
@@ -17,6 +19,13 @@ Continuando de uma sessão anterior (23/08/2026, sessão 13). Leia primeiro:
 - docs/linkedin-integracao.md — conexão OAuth, pivô de escopo (member
   vs organização) e o que muda no código quando a LinkedIn aprovar o
   Community Management API
+
+## Lembrete agendado (recorrente, mensal) — não precisa fazer nada até lá
+Rotina mensal `trig_01Ngz5GoZGfEPrxrSCj36ztp` roda todo dia 1º às 9h
+(Brasília), verifica se saiu modelo de IA mais novo que o gpt-image-2
+(OpenAI) ou a família Gemini atual (texto), e só avisa a Adriana se tiver
+novidade oficial de verdade. Não precisa lembrar ela nem checar
+manualmente — a rotina mesma avisa quando tiver algo.
 
 ## Lembrete agendado — não precisa fazer nada até lá
 Rotina cloud `trig_01TXYbwdUr6yMcRnMMrwBJxq` dispara em **26/08/2026 09h**
