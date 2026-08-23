@@ -11,6 +11,29 @@ nos arquivos `docs/*.md` — aqui é só o resumo de estado + pendências.
 **Pasta de trabalho deste projeto:** `C:\Projeto\Revenda Carro e Cia\carro-e-cia-ve-culos-2fqheuud8`
 (sempre abrir sessão nova aqui pra continuar — ver também `CLAUDE.md`).
 
+## Sessão 13 (23/08/2026) — achado: geração de imagem "sumia" por demorar demais, sem aviso
+
+Adriana reportou que a imagem da vaga "não foi gerada". Investigando pelos
+logs (`function_edge_logs` + `logs_ia`), achei que **a geração sempre deu
+certo no servidor** — 8 tentativas dela ao longo do dia, todas com
+`status_code 200` e `logs_ia.status = 'sucesso'`. **Causa raiz real**: o
+`gpt-image-2` gerando 2 imagens (`n=2`) leva de 45 a 90 segundos (esse
+modelo "pensa antes de desenhar", é bem mais lento que o `gpt-image-1`) —
+e a tela não avisava disso, só um spinner no botão. Ela devia estar
+fechando a janela ou saindo da página antes do resultado chegar, achando
+que travou — aí a atualização do estado (`setOpcoesImagem`) acontecia
+num componente que já não estava mais visível/montado, e nada aparecia.
+**Corrigido** (só front-end, sem mudar a function): (1) toast avisando
+"pode levar até 1 minuto, não feche esta janela" assim que clica em
+gerar; (2) card de carregamento visível dentro do próprio diálogo (spinner
++ o mesmo aviso), não só o botão; (3) diálogo agora **não fecha** enquanto
+está gerando (nem pelo X, nem clicando fora, nem pelo botão Cancelar) —
+garante que o resultado sempre aparece antes de dar pra sair da tela.
+**Não recuperei as imagens das 8 tentativas anteriores** — foram geradas
+de verdade e estão em algum lugar do R2 (`vagas/...png`), mas sem o nome
+exato do arquivo não dá pra achar sem uma busca cara; não vale o custo,
+é só gerar de novo (agora com o aviso, ela vai saber que precisa esperar).
+
 ## Sessão 13 (23/08/2026) — padrão único de imagem de vaga (2 pessoas, 2 opções)
 
 A pedido da Adriana: a imagem "do zero" de `gerar-imagem-vaga` agora segue

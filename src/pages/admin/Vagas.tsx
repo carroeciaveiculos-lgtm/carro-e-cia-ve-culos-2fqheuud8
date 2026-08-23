@@ -152,6 +152,14 @@ export default function VagasAdmin() {
       return
     }
     setGerandoImagem(true)
+    // Achado 23/08/2026: o gpt-image-2 gerando 2 imagens leva de 45 a 90
+    // segundos (ele "pensa antes de desenhar") — sem esse aviso, a geração
+    // sempre funcionava no servidor mas a pessoa fechava a tela ou saía da
+    // página antes de aparecer, achando que tinha travado.
+    toast({
+      title: 'Gerando 2 opções de imagem...',
+      description: 'Isso pode levar até 1 minuto. Não feche esta janela.',
+    })
     try {
       const { data, error } = await gerarImagemVaga(titulo)
       if (error) throw error
@@ -174,6 +182,10 @@ export default function VagasAdmin() {
       return
     }
     setGerandoImagem(true)
+    toast({
+      title: 'Ajustando e gerando 2 opções...',
+      description: 'Isso pode levar até 1 minuto. Não feche esta janela.',
+    })
     try {
       const { data, error } = await gerarImagemVaga(titulo, {
         ajuste: ajusteImagem,
@@ -417,7 +429,15 @@ export default function VagasAdmin() {
         </TabsContent>
       </Tabs>
 
-      <Dialog open={dialogAberto} onOpenChange={setDialogAberto}>
+      <Dialog
+        open={dialogAberto}
+        onOpenChange={(open) => {
+          // Não deixa fechar enquanto gera imagem (achado 23/08/2026) —
+          // fechar no meio da geração fazia o resultado nunca aparecer.
+          if (!open && gerandoImagem) return
+          setDialogAberto(open)
+        }}
+      >
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>{vagaEmEdicao ? 'Editar Vaga' : 'Nova Vaga'}</DialogTitle>
@@ -473,7 +493,13 @@ export default function VagasAdmin() {
             <div className="space-y-2">
               <Label>Imagem padrão para redes sociais</Label>
 
-              {opcoesImagem.length > 0 ? (
+              {gerandoImagem ? (
+                <div className="w-full max-w-sm h-56 rounded-lg border border-dashed flex flex-col items-center justify-center gap-2 text-sm text-muted-foreground mx-auto text-center px-4">
+                  <Loader2 className="w-6 h-6 animate-spin" />
+                  <span>Gerando 2 opções de imagem...</span>
+                  <span className="text-xs">Pode levar até 1 minuto. Não feche esta janela.</span>
+                </div>
+              ) : opcoesImagem.length > 0 ? (
                 <div className="space-y-1.5">
                   <p className="text-sm text-muted-foreground text-center">
                     Escolha uma das opções abaixo:
@@ -550,7 +576,7 @@ export default function VagasAdmin() {
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDialogAberto(false)}>
+            <Button variant="outline" onClick={() => setDialogAberto(false)} disabled={gerandoImagem}>
               Cancelar
             </Button>
             <Button onClick={handleSalvar} disabled={salvando}>
