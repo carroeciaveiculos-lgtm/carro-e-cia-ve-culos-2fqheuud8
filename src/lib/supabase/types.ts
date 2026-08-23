@@ -3926,6 +3926,7 @@ export type Database = {
           descricao: string | null
           id: string
           imagem_url: string | null
+          slug: string | null
           titulo: string
           updated_at: string
         }
@@ -3935,6 +3936,7 @@ export type Database = {
           descricao?: string | null
           id?: string
           imagem_url?: string | null
+          slug?: string | null
           titulo: string
           updated_at?: string
         }
@@ -3944,6 +3946,7 @@ export type Database = {
           descricao?: string | null
           id?: string
           imagem_url?: string | null
+          slug?: string | null
           titulo?: string
           updated_at?: string
         }

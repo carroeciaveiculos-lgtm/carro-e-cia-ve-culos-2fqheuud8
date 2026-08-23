@@ -31,6 +31,7 @@ import {
   Pencil,
   Trash2,
   FileText,
+  Link as LinkIcon,
 } from 'lucide-react'
 import {
   Vaga,
@@ -226,6 +227,12 @@ export default function VagasAdmin() {
     carregarDados()
   }
 
+  const handleCopiarLink = (vaga: Vaga) => {
+    const link = `https://carroeciamotors.com.br/vagas/${vaga.slug || vaga.id}`
+    navigator.clipboard.writeText(link)
+    toast({ title: 'Link copiado!', description: link })
+  }
+
   const handlePostarRedes = async (vaga: Vaga) => {
     if (!vaga.imagem_url) {
       toast({
@@ -315,6 +322,9 @@ export default function VagasAdmin() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
+                    <Button variant="outline" size="sm" onClick={() => handleCopiarLink(vaga)}>
+                      <LinkIcon className="w-4 h-4 mr-1" /> Copiar link
+                    </Button>
                     <Button variant="outline" size="sm" onClick={() => handlePostarRedes(vaga)}>
                       <Share2 className="w-4 h-4 mr-1" /> Postar
                     </Button>
