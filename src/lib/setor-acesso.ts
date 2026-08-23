@@ -17,6 +17,12 @@ export const ROTA_SETORES: Record<string, string[]> = {
   '/admin/administrativo': ['Financeiro/Administrativo'],
   '/admin/modelos-documentos': ['Financeiro/Administrativo'],
   '/admin/portais': ['Estoque/Portais'],
+  // Achado 23/08/2026: existe como rota irmã, não sub-rota de /admin/portais
+  // (é acessada por um link de dentro da aba Mercado Livre do Portais, não
+  // pelo menu) — por isso não caía no match por prefixo como
+  // /admin/portais/revisao cai. Sem essa linha, ficava fora do mapa e o
+  // guard liberava geral (rota sem entrada = liberada pra qualquer login).
+  '/admin/ml-diagnosis': ['Estoque/Portais'],
   '/admin/vagas': ['Institucional'],
   '/admin/marketing': ['Marketing'],
   '/admin/anuncios': ['Marketing'],
