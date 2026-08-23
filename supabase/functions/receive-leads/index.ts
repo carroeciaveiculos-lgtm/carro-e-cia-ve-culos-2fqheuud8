@@ -55,6 +55,54 @@ async function rehospedarThumbnail(thumbnailUrl: string): Promise<string | null>
   }
 }
 
+// Achado 23/08/2026 (a pedido da Adriana, "problemas com envio e recepção
+// de imagens no chat da Clara"): mensagem de imagem do WhatsApp não tem
+// campo `.text` — o código só lia `msg.text?.body`, então toda foto que um
+// cliente mandava virava `message_text: ''` (52 mensagens vazias
+// confirmadas no banco, a mais recente do dia anterior) e nunca acionava a
+// Clara (`if (messageText)` abaixo). A mídia em si não vem no payload do
+// webhook, só um `id` — precisa buscar a URL de download (expira rápido) e
+// os bytes via Graph API, depois re-hospedar no R2 (mesmo motivo do
+// rehospedarThumbnail: link da Meta não é permanente).
+async function rehospedarMidiaWhatsApp(mediaId: string): Promise<string | null> {
+  try {
+    const waToken = Deno.env.get('WHATSAPP_TOKEN')
+    const R2_ACCESS_KEY_ID = Deno.env.get('R2_ACCESS_KEY_ID')
+    const R2_SECRET_ACCESS_KEY = Deno.env.get('R2_SECRET_ACCESS_KEY')
+    const R2_ENDPOINT = Deno.env.get('R2_ENDPOINT')
+    const R2_BUCKET = Deno.env.get('R2_BUCKET') || 'carroeciamotors-imagens'
+    if (!waToken || !R2_ACCESS_KEY_ID || !R2_SECRET_ACCESS_KEY || !R2_ENDPOINT) return null
+
+    const metaRes = await fetch(`https://graph.facebook.com/v20.0/${mediaId}`, {
+      headers: { Authorization: `Bearer ${waToken}` },
+    })
+    if (!metaRes.ok) return null
+    const metaData = await metaRes.json()
+    if (!metaData.url) return null
+
+    const imgRes = await fetch(metaData.url, { headers: { Authorization: `Bearer ${waToken}` } })
+    if (!imgRes.ok) return null
+    const bytes = new Uint8Array(await imgRes.arrayBuffer())
+    const contentType = metaData.mime_type || imgRes.headers.get('content-type') || 'image/jpeg'
+    const ext = contentType.includes('png') ? 'png' : contentType.includes('webp') ? 'webp' : 'jpg'
+
+    const s3Client = new S3Client({
+      region: 'auto',
+      endpoint: R2_ENDPOINT,
+      credentials: { accessKeyId: R2_ACCESS_KEY_ID, secretAccessKey: R2_SECRET_ACCESS_KEY },
+      forcePathStyle: true,
+    })
+    const key = `leads-midia/${Date.now()}_${crypto.randomUUID().slice(0, 8)}.${ext}`
+    await s3Client.send(
+      new PutObjectCommand({ Bucket: R2_BUCKET, Key: key, Body: bytes, ContentType: contentType }),
+    )
+    return `${R2_PUBLIC_BASE}/${key}`
+  } catch (e) {
+    console.error('Falha ao re-hospedar imagem recebida do WhatsApp:', e)
+    return null
+  }
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
@@ -254,7 +302,39 @@ Deno.serve(async (req: Request) => {
                 const contact = contacts.find((c: any) => c.wa_id === msg.from)
                 const senderName = contact?.profile?.name || 'Cliente WhatsApp'
                 const senderPhone = msg.from
-                const messageTextBruto = msg.text?.body || ''
+
+                // Mensagem pra guardar no histórico (o que a equipe vê no
+                // Conversador) pode ser diferente da mensagem pra Clara
+                // entender (ela não tem visão de imagem — só texto).
+                let messageTextBruto = ''
+                let mensagemParaClara = ''
+                if (msg.type === 'image' && msg.image?.id) {
+                  const midiaUrl = await rehospedarMidiaWhatsApp(msg.image.id)
+                  const legenda = (msg.image.caption || '').trim()
+                  messageTextBruto = midiaUrl
+                    ? `[IMAGEM]${midiaUrl}${legenda ? '\n' + legenda : ''}`
+                    : legenda || '[Cliente enviou uma imagem — falha ao baixar do WhatsApp, confira direto no app]'
+                  mensagemParaClara = legenda
+                    ? `[o cliente enviou uma foto com a legenda: "${legenda}"]`
+                    : '[o cliente enviou uma foto/imagem nesta mensagem]'
+                } else if (msg.type && msg.type !== 'text') {
+                  // Outros tipos (áudio, vídeo, documento, figurinha,
+                  // localização...) ainda não têm tratamento dedicado, mas
+                  // não podem mais sumir em silêncio como sumiam antes.
+                  const rotulos: Record<string, string> = {
+                    audio: 'um áudio',
+                    video: 'um vídeo',
+                    document: 'um documento',
+                    sticker: 'uma figurinha',
+                    location: 'uma localização',
+                    contacts: 'um contato',
+                  }
+                  const rotulo = rotulos[msg.type] || `uma mensagem do tipo "${msg.type}"`
+                  messageTextBruto = `[Cliente enviou ${rotulo} — tipo ainda não suportado no chat, confira direto no WhatsApp]`
+                  mensagemParaClara = `[o cliente enviou ${rotulo} nesta mensagem, ainda não consigo abrir esse tipo de conteúdo]`
+                } else {
+                  messageTextBruto = msg.text?.body || ''
+                }
 
                 // Achado 18/08/2026 (auditoria de origem): clique em botão de
                 // WhatsApp do site (cta-router.ts) embute uma referência no fim
@@ -270,6 +350,11 @@ Deno.serve(async (req: Request) => {
                 const messageText = refMatch
                   ? messageTextBruto.slice(0, refMatch.index).trim()
                   : messageTextBruto
+
+                // Pra texto puro, a mensagem pra Clara é a mesma já sem a
+                // referência do site (pro caso de imagem/outro tipo,
+                // mensagemParaClara já foi definida acima).
+                if (!mensagemParaClara) mensagemParaClara = messageText
 
                 const { data: leads } = await supabase
                   .from('leads')
@@ -385,10 +470,14 @@ Deno.serve(async (req: Request) => {
                   // em segundo plano depois da resposta HTTP sem
                   // EdgeRuntime.waitUntil (não usado em nenhum outro lugar do
                   // projeto ainda, não quis introduzir sem testar isolado).
-                  if (messageText) {
+                  // Usa mensagemParaClara (não messageText) — pra imagem/
+                  // outro tipo, o texto rico com [IMAGEM]/url é só pro
+                  // histórico do painel; a Clara não tem visão, recebe uma
+                  // descrição em texto do que chegou.
+                  if (mensagemParaClara) {
                     try {
                       await supabase.functions.invoke('ai-sdr', {
-                        body: { action: 'continue_conversation', lead_id: leadId, mensagem: messageText },
+                        body: { action: 'continue_conversation', lead_id: leadId, mensagem: mensagemParaClara },
                       })
                     } catch (e) {
                       console.error('Erro ao chamar ai-sdr:', e)

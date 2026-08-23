@@ -84,7 +84,12 @@ Deno.serve(async (req) => {
     if (leadId) {
       let msgText = text || `[Template: ${templateName}]`
       if (action === 'document') msgText = `[Documento Enviado: ${filename}] ${text || ''}`
-      if (action === 'image') msgText = `[Imagem Enviada] ${text || ''}`
+      // Achado 23/08/2026: gravava só o rótulo "[Imagem Enviada]", sem a
+      // URL — o painel não tinha como mostrar a imagem de volta, só o
+      // texto. Usa o mesmo formato [IMAGEM]<url> que receive-leads grava
+      // pra foto recebida do cliente, pra ConversationPanel.tsx renderizar
+      // os dois lados da conversa igual.
+      if (action === 'image') msgText = `[IMAGEM]${documentUrl}${text ? '\n' + text : ''}`
 
       const { error: dbError } = await supabase.from('conversation_history').insert({
         lead_id: leadId,

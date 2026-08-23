@@ -16,6 +16,8 @@ import {
   FilePlus,
   Calendar as CalendarIcon,
   Target,
+  ImagePlus,
+  Loader2,
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { cn } from '@/lib/utils'
@@ -23,6 +25,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { getWhatsAppLink } from '@/lib/whatsapp'
 import { useAuth } from '@/hooks/use-auth'
 import { getOriginIcon } from '@/lib/lead-origin'
+import { uploadToR2 } from '@/lib/r2-upload'
 
 interface ConversationPanelProps {
   lead: any
@@ -43,6 +46,7 @@ export function ConversationPanel({ lead, usuariosMap, onBack }: ConversationPan
   const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false)
   const [templates, setTemplates] = useState<any[]>([])
   const [followupDate, setFollowupDate] = useState<Date | undefined>(new Date())
+  const [enviandoImagem, setEnviandoImagem] = useState(false)
 
   useEffect(() => {
     if (lead?.id) {
@@ -136,6 +140,38 @@ export function ConversationPanel({ lead, usuariosMap, onBack }: ConversationPan
       setMessage('')
     } catch (err: any) {
       toast({ title: 'Erro ao enviar', description: err.message, variant: 'destructive' })
+    }
+  }
+
+  // Achado 23/08/2026 (a pedido da Adriana): o painel nunca teve como o
+  // atendente mandar uma foto pro cliente — send-whatsapp já sabia mandar
+  // imagem (a Clara usa isso pra fotos de veículo), só faltava essa UI.
+  const enviarImagem = async (file: File) => {
+    if (!lead?.telefone) {
+      toast({ title: 'Lead sem telefone cadastrado', variant: 'destructive' })
+      return
+    }
+    const cleanPhone = lead.telefone.replace(/\D/g, '')
+    if (cleanPhone.length < 10) {
+      toast({ title: 'Número inválido', variant: 'destructive' })
+      return
+    }
+    setEnviandoImagem(true)
+    try {
+      const ext = file.name.split('.').pop() || 'jpg'
+      const fileName = `${Date.now()}_${crypto.randomUUID().slice(0, 8)}.${ext}`
+      // Bucket 'media' (padrão de uploadToR2) — get-r2-presigned-url só
+      // aceita uma lista fechada de buckets, sem 'leads-anexos' nela.
+      const { publicUrl } = await uploadToR2(file, fileName, file.type, 'media')
+
+      const { error } = await supabase.functions.invoke('send-whatsapp', {
+        body: { action: 'image', to: cleanPhone, documentUrl: publicUrl, text: '', leadId: lead.id },
+      })
+      if (error) throw error
+    } catch (err: any) {
+      toast({ title: 'Erro ao enviar imagem', description: err.message, variant: 'destructive' })
+    } finally {
+      setEnviandoImagem(false)
     }
   }
 
@@ -235,6 +271,14 @@ export function ConversationPanel({ lead, usuariosMap, onBack }: ConversationPan
             const isHuman = msg.sender === 'human'
             const isAudio = msg.message_text.includes('[AUDIO]')
             const textClean = msg.message_text.replace('[AUDIO]', '').trim()
+            // Imagem recebida do cliente (achado 23/08/2026 — antes sumia
+            // em silêncio, corrigido em receive-leads). Formato:
+            // "[IMAGEM]<url>" + legenda opcional numa linha depois.
+            const isImage = msg.message_text.startsWith('[IMAGEM]')
+            const imageUrl = isImage ? msg.message_text.slice('[IMAGEM]'.length).split('\n')[0] : ''
+            const imageCaption = isImage
+              ? msg.message_text.slice('[IMAGEM]'.length + imageUrl.length).trim()
+              : ''
 
             return (
               <div
@@ -264,6 +308,19 @@ export function ConversationPanel({ lead, usuariosMap, onBack }: ConversationPan
                     <p className="text-xs text-slate-500 italic border-l-2 border-slate-300 pl-2">
                       Transcrição (IA): {textClean || 'Áudio processado.'}
                     </p>
+                  </div>
+                ) : isImage ? (
+                  <div className="flex flex-col gap-2">
+                    <a href={imageUrl} target="_blank" rel="noopener noreferrer">
+                      <img
+                        src={imageUrl}
+                        alt="Imagem enviada pelo cliente"
+                        className="max-w-[220px] max-h-[220px] rounded-lg border object-cover hover:opacity-90 transition-opacity"
+                      />
+                    </a>
+                    {imageCaption && (
+                      <p className="text-sm text-slate-800 whitespace-pre-wrap">{imageCaption}</p>
+                    )}
                   </div>
                 ) : (
                   <p className="text-sm text-slate-800 whitespace-pre-wrap">{msg.message_text}</p>
@@ -344,6 +401,31 @@ export function ConversationPanel({ lead, usuariosMap, onBack }: ConversationPan
           >
             <FilePlus className="w-4 h-4" />
           </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 text-slate-500 hover:text-blue-600 hover:bg-blue-50"
+            title="Enviar imagem"
+            disabled={enviandoImagem}
+            onClick={() => document.getElementById('conversation-panel-image-input')?.click()}
+          >
+            {enviandoImagem ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <ImagePlus className="w-4 h-4" />
+            )}
+          </Button>
+          <input
+            id="conversation-panel-image-input"
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0]
+              if (file) enviarImagem(file)
+              e.target.value = ''
+            }}
+          />
         </div>
         <div className="flex gap-2 items-center">
           <Input

@@ -11,6 +11,42 @@ nos arquivos `docs/*.md` — aqui é só o resumo de estado + pendências.
 **Pasta de trabalho deste projeto:** `C:\Projeto\Revenda Carro e Cia\carro-e-cia-ve-culos-2fqheuud8`
 (sempre abrir sessão nova aqui pra continuar — ver também `CLAUDE.md`).
 
+## Sessão 13 (23/08/2026) — imagens no chat da Clara corrigidas
+
+**Causa raiz achada e corrigida**: `receive-leads` só lia `msg.text?.body`
+do webhook do WhatsApp — qualquer foto que um cliente mandasse virava
+mensagem vazia no histórico **e nunca acionava a Clara** (o `if
+(messageText)` que dispara o `ai-sdr` ficava falso). Achado real: 52
+mensagens de cliente gravadas vazias no banco, a mais recente do dia
+anterior (22/08) — provavelmente clientes mandando foto do carro que
+querem vender/trocar, documento, etc., e a Clara simplesmente nunca
+respondia, parecendo bug de atendimento.
+- **Recepção**: imagem agora baixa da Graph API e re-hospeda no R2 (mesmo
+  padrão do `rehospedarThumbnail` já usado pra thumbnail de anúncio),
+  grava `[IMAGEM]<url>` no histórico, painel mostra a foto de verdade. A
+  Clara (que não tem visão) recebe uma descrição textual do que chegou.
+  Outros tipos (áudio, vídeo, documento, figurinha, localização) não têm
+  tratamento dedicado ainda, mas também pararam de sumir em silêncio —
+  geram um aviso genérico em vez de mensagem vazia. **Achado apontado
+  como bônus, não implementado ainda**: o front (`ConversationPanel.tsx`)
+  já tinha um bloco pronto pra mostrar transcrição de `[AUDIO]`, mas
+  nenhuma function no backend nunca gerou essa tag — código morto que
+  antecipava uma feature de transcrição que nunca foi construída.
+- **Envio**: o painel (`/admin/conversas`) nunca teve como um atendente
+  humano mandar foto pro cliente — `send-whatsapp` já sabia fazer isso
+  (`action:'image'`, é o que a Clara usa pra mandar foto de veículo), só
+  faltava a UI. Adicionado botão de anexo no `ConversationPanel.tsx`
+  (upload pro R2 via `uploadToR2`, bucket `media`). Também corrigido:
+  `send-whatsapp` gravava só o rótulo "[Imagem Enviada]" no histórico, sem
+  a URL — painel não conseguia mostrar a foto enviada de volta. Agora usa
+  o mesmo formato `[IMAGEM]<url>` dos dois lados da conversa.
+- **Testado ao vivo** com payload de webhook simulado (media_id falso,
+  força o caminho de fallback) — confirmado que a Clara respondeu de
+  verdade pela primeira vez a uma mensagem de imagem. Registro de teste
+  apagado. **Não dá pra recuperar as 52 imagens antigas** — o media_id
+  nunca foi salvo antes da correção, e o link de mídia da Meta expira em
+  minutos. Detalhe completo em `docs/leads-e-sdr.md`.
+
 ## Sessão 13 (23/08/2026) — usuário Roberto Junior resolvido
 
 **Achado real**: a Adriana perguntou por que o "Roberto Junior" (vendedor)
