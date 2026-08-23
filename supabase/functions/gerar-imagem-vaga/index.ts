@@ -45,7 +45,15 @@ Deno.serve(async (req) => {
     const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY')
     if (!OPENAI_API_KEY) throw new Error('OPENAI_API_KEY not configured')
 
-    const promptBase = `Crie uma imagem para post de rede social anunciando uma vaga de emprego de "${titulo}" na revenda de veículos Carro e Cia. Use a logo fornecida com destaque e mantenha a identidade visual da marca (vermelho, branco, preto), estilo corporativo e moderno. Deixe um espaço vazio reservado para texto ser adicionado depois. Sem texto na imagem.`
+    // Achado 23/08/2026: com só "use a logo fornecida", o modelo às vezes
+    // inventava um logo genérico (ex: um ícone de carro estilizado) em vez de
+    // reproduzir a marca real — mais provável de acontecer quando duas
+    // imagens de referência (logo + fachada) são mandadas juntas e o modelo
+    // não sabe qual é qual. Labels explícitos + instrução de fidelidade
+    // reduzem isso.
+    const promptBase = imagemAtualUrl
+      ? `Crie uma imagem para post de rede social anunciando uma vaga de emprego de "${titulo}" na revenda de veículos Carro e Cia. Mantenha a identidade visual da marca (vermelho, branco, preto), estilo corporativo e moderno. Deixe um espaço vazio reservado para texto ser adicionado depois. Sem texto na imagem.`
+      : `Crie uma imagem para post de rede social anunciando uma vaga de emprego de "${titulo}" na revenda de veículos Carro e Cia. A primeira imagem anexada é a logomarca OFICIAL da empresa — reproduza ela exatamente como está (mesmo desenho, mesmas cores, mesma tipografia), com destaque; NÃO invente ou desenhe um logo novo. A segunda imagem anexada é uma foto real da fachada da loja, use só como referência de ambientação. Mantenha a identidade visual da marca (vermelho, branco, preto), estilo corporativo e moderno. Deixe um espaço vazio reservado para texto ser adicionado depois. Sem texto na imagem.`
     const prompt = ajuste ? `${promptBase}\n\nAjuste pedido pelo usuário: ${ajuste}` : promptBase
 
     // Usa a API de edição (não a de geração pura) pra compor com referências
@@ -54,7 +62,7 @@ Deno.serve(async (req) => {
     // existe uma imagem anterior (pedido de ajuste), edita ela em vez de
     // regenerar do zero, pra manter o que já estava bom.
     const form = new FormData()
-    form.append('model', 'gpt-image-1')
+    form.append('model', 'gpt-image-2')
     form.append('prompt', prompt)
     form.append('size', '1024x1024')
     if (imagemAtualUrl) {
@@ -121,7 +129,7 @@ Deno.serve(async (req) => {
       usuario_id: user.id,
       acao: 'gerar_imagem_vaga',
       provider: 'openai',
-      modelo: 'gpt-image-1',
+      modelo: 'gpt-image-2',
       status: 'sucesso',
     })
 

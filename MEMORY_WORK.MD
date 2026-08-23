@@ -11,6 +11,53 @@ nos arquivos `docs/*.md` — aqui é só o resumo de estado + pendências.
 **Pasta de trabalho deste projeto:** `C:\Projeto\Revenda Carro e Cia\carro-e-cia-ve-culos-2fqheuud8`
 (sempre abrir sessão nova aqui pra continuar — ver também `CLAUDE.md`).
 
+## Sessão 13 (23/08/2026) — modelo gpt-image-2 na imagem da vaga + fidelidade da logo
+
+A pedido da Adriana: (1) troquei o modelo de `gpt-image-1` pra `gpt-image-2`
+em `gerar-imagem-vaga/index.ts` — confirmei antes que o modelo existe de
+verdade (lançado em abril/2026, mesmo endpoint `/v1/images/edits`, mesmos
+parâmetros) pra não trocar por um nome que não existe e quebrar a função.
+Function já reimplantada no Supabase (versão 11, `ACTIVE`). (2) Investiguei
+o relato de que "a IA não achou a logo oficial": as duas URLs de referência
+(`logo-oficial.png` e `fachada-da-loja.png` no R2) **respondem 200 e sempre
+estiveram acessíveis** — não era um problema de acesso. Baixei e comparei
+visualmente as 3 imagens de vaga já geradas: 2 das 3 reproduziram a logo
+real corretamente, mas a mais antiga ("Consultor(a) de Consórcios") saiu
+com um logo **inventado** pelo modelo (um ícone de carro genérico, nada a
+ver com a marca real). **Causa raiz**: inconsistência do próprio modelo de
+imagem ao usar 2 referências (logo + fachada) juntas sem saber qual é
+qual — não falta de acesso. **Corrigido**: prompt agora rotula
+explicitamente "a primeira imagem anexada é a logomarca OFICIAL... NÃO
+invente um logo novo", só nesse texto (o caminho de ajustar uma imagem já
+existente continua sem essa instrução, já que aí só uma imagem é enviada).
+gpt-image-2 também tem "instruction following" melhor segundo a OpenAI, o
+que deve ajudar. **Pendente pra Adriana**: a imagem do "Consultor(a) de
+Consórcios" continua com o logo errado — não consegui regenerar por aqui
+(a function exige login de usuário real, não dá pra chamar de fora); da
+próxima vez que ela entrar, é só abrir essa vaga em Vagas → editar → "Gerar
+do zero de novo" que agora deve sair certo.
+
+## Sessão 13 (23/08/2026) — página dedicada por vaga + formulário vinculado
+
+A pedido da Adriana: (1) verifiquei qual IA gera a imagem da vaga — já era
+`gpt-image-1` da OpenAI (o "GPT Image" que ela pediu), em `1024x1024`
+(quadrado 1:1, formato que já cabe sem cortar em Instagram feed, Facebook
+feed e LinkedIn). **Não precisou trocar nada, já estava certo.** (2)
+Implementei a página dedicada por vaga: nova rota pública `/vagas/:id`
+(aceita id ou slug, mesmo padrão de `/estoque/:id` dos veículos), mostrando
+imagem + título + descrição completa + formulário de candidatura já
+vinculado àquela vaga (sem menu suspenso pra escolher). Coluna `slug` nova
+na tabela `vagas` (gerada sozinha a partir do título ao salvar, com sufixo
+numérico se colidir). O post automático nas redes sociais e a lista "Temos
+vaga!" da página genérica agora linkam direto pra página específica da
+vaga. Painel admin ganhou botão "Copiar link" por vaga. Formulário
+extraído pra um componente compartilhado (`FormularioCandidatura.tsx`),
+usado nas duas páginas. **Testado ao vivo no navegador** (localhost) —
+`/vagas/vendedor-a-de-automoveis` carregou com todos os dados certos e sem
+erro de console; `/trabalhe-conosco` também, com os links das vagas na
+lista. `bun run lint`/`bun run build` passaram limpos. Commit `16dac3c`,
+já com push.
+
 ## Sessão 13 (23/08/2026) — regras da Clara sincronizadas + confirmado envio de mídia de veículo
 
 A pedido da Adriana: (1) confirmei que a Clara já consegue mandar foto/vídeo
