@@ -68,6 +68,29 @@ respondia, parecendo bug de atendimento.
   nunca foi salvo antes da correção, e o link de mídia da Meta expira em
   minutos. Detalhe completo em `docs/leads-e-sdr.md`.
 
+## Sessão 13 (23/08/2026) — menu lateral reorganizado por setor + item faltando na tela de permissões
+
+A pedido da Adriana: (1) reorganizei o "Menu Principal" do painel admin em
+submenus colapsáveis por setor — Vendas, Estoque/Portais, Financiamentos,
+Financeiro/Administrativo, Marketing, Institucional (Administração e Área
+de Ajuda ficaram como estavam, sem subgrupo). O submenu da rota atual abre
+sozinho ao navegar; com o menu lateral em modo ícone (colapsado), os itens
+voltam a aparecer soltos, sem o agrupamento. (2) Ela reportou que a tela de
+permissões de usuário estava com vários itens de menu faltando pra
+selecionar/autorizar — a causa raiz era `/admin/ml-diagnosis`: é uma rota
+irmã de `/admin/portais` (acessada por um link de dentro da aba Mercado
+Livre do Portais, não pelo menu lateral), então não caía no match por
+prefixo (`pathname.startsWith(path)`) que cobre as sub-rotas normais.
+Sem entrada no mapa `ROTA_SETORES`, ela ficava **liberada geral pra
+qualquer login** — não era só sumiço na tela de permissões, era também um
+gap de controle de acesso. Corrigido com uma linha nova no mapa (setor
+Estoque/Portais). Alterações em `src/components/AdminLayout.tsx` e
+`src/lib/setor-acesso.ts`, `bun run lint`/`bun run build` passaram limpos.
+**Não testado logado no navegador** (sem credencial de admin nesta sessão
+— limitação de sempre); confirmei só que a página carrega sem erro de
+console até a tela de login. Pedir pra Adriana dar uma olhada no menu novo
+na próxima vez que ela entrar e avisar se algum setor ficou estranho.
+
 ## Sessão 13 (23/08/2026) — usuário Roberto Junior resolvido
 
 **Achado real**: a Adriana perguntou por que o "Roberto Junior" (vendedor)

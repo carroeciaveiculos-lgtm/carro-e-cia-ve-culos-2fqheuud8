@@ -4,10 +4,11 @@ Copie e cole como primeira mensagem numa sessão nova do Claude Code.
 
 ```
 Continuando de uma sessão anterior (23/08/2026, sessão 13). Leia primeiro:
-- MEMORY_WORK.MD deste projeto (3 seções "Sessão 13" no topo: regras da
+- MEMORY_WORK.MD deste projeto (4 seções "Sessão 13" no topo: regras da
   Clara sincronizadas + confirmação de envio de foto de veículo; imagens
-  no chat da Clara corrigidas — recepção e envio; usuário Roberto Junior
-  resolvido)
+  no chat da Clara corrigidas — recepção e envio; menu lateral
+  reorganizado por setor + fix do item faltando na tela de permissões;
+  usuário Roberto Junior resolvido)
 - docs/leads-e-sdr.md — detalhe técnico completo do fix de imagem no
   chat da Clara (seção "Fatos confirmados")
 - docs/clara-prompt.md — prompt da Clara, agora sincronizado com o que
@@ -61,6 +62,17 @@ foi aprovado antes disso, pular direto pro item 1 de "Precisa de decisão".
 ## Conferir, sem precisar perguntar
 - **Push em dia**: confira `git log -1` — todo commit de 23/08 foi
   pushado no mesmo bloco de autorização, sem exceção.
+- **Menu lateral reorganizado por setor** (23/08) — "Menu Principal" virou
+  submenus colapsáveis (Vendas, Estoque/Portais, Financiamentos,
+  Financeiro/Administrativo, Marketing, Institucional); abre sozinho o
+  grupo da rota atual. Junto, corrigido `/admin/ml-diagnosis` faltando no
+  mapa `ROTA_SETORES` (sumia da tela de permissões E ficava liberado geral
+  pra qualquer login — rota irmã de `/admin/portais`, não sub-rota, não
+  batia no match por prefixo). **Não testado logado** (sem credencial
+  nesta sessão) — só confirmado que carrega sem erro até a tela de login.
+  Se a Adriana comentar algo estranho no menu, é primeiro lugar a olhar;
+  não reabrir a investigação do ml-diagnosis do zero, já está documentado
+  aqui e em `src/lib/setor-acesso.ts`.
 - **Imagens no chat da Clara corrigidas e testadas** (23/08): cliente
   mandando foto pro WhatsApp agora funciona de verdade (antes virava
   mensagem vazia e a Clara nunca respondia — 52 casos reais confirmados
