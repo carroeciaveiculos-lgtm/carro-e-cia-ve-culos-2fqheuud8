@@ -3,25 +3,18 @@
 Copie e cole como primeira mensagem numa sessão nova do Claude Code.
 
 ```
-Continuando de uma sessão anterior (22/08/2026, sessão 12). Leia primeiro:
-- MEMORY_WORK.MD deste projeto (seção "Sessão 12" tem a triagem de
-  candidatos do LinkedIn Hiring feita em 22/08 — não é código, é uma
-  tarefa de RH pontual, só pra não repetir do zero se ela perguntar de
-  novo; seção "O que está no ar hoje" tem o LinkedIn de 21/08:
-  publicando como membro pessoal, testado ao vivo, página da empresa
-  aguardando aprovação da LinkedIn)
-- docs/linkedin-integracao.md — tudo sobre a conexão OAuth, o pivô de
-  escopo (member vs organização) e o que muda no código quando a
-  LinkedIn aprovar o Community Management API
-- docs/meta-integracao.md — Instagram Stories, unificação Marketing/
-  Central de Redes Sociais (20/08)
-
-## Sem mudança de código desde a sessão 11
-O commit `cb5ae29` (21/08/2026) continua sendo o mais recente — nada
-novo foi implantado na sessão 12, só a triagem de candidatos (fora do
-código) e 2 conectores MCP novos em escopo `user` (`microsoft-learn`,
-`magnific` — este último ainda "Needs authentication", a Adriana
-precisa rodar `/mcp` e autenticar).
+Continuando de uma sessão anterior (23/08/2026, sessão 13). Leia primeiro:
+- MEMORY_WORK.MD deste projeto (3 seções "Sessão 13" no topo: regras da
+  Clara sincronizadas + confirmação de envio de foto de veículo; imagens
+  no chat da Clara corrigidas — recepção e envio; usuário Roberto Junior
+  resolvido)
+- docs/leads-e-sdr.md — detalhe técnico completo do fix de imagem no
+  chat da Clara (seção "Fatos confirmados")
+- docs/clara-prompt.md — prompt da Clara, agora sincronizado com o que
+  está em produção (tinha ficado desatualizado desde 19/08)
+- docs/linkedin-integracao.md — conexão OAuth, pivô de escopo (member
+  vs organização) e o que muda no código quando a LinkedIn aprovar o
+  Community Management API
 
 ## Lembrete agendado — não precisa fazer nada até lá
 Rotina cloud `trig_01TXYbwdUr6yMcRnMMrwBJxq` dispara em **26/08/2026 09h**
@@ -66,8 +59,30 @@ foi aprovado antes disso, pular direto pro item 1 de "Precisa de decisão".
    settings/basic/).
 
 ## Conferir, sem precisar perguntar
-- **Push em dia**: confira `git log -1` — todo commit de 21/08 foi
+- **Push em dia**: confira `git log -1` — todo commit de 23/08 foi
   pushado no mesmo bloco de autorização, sem exceção.
+- **Imagens no chat da Clara corrigidas e testadas** (23/08): cliente
+  mandando foto pro WhatsApp agora funciona de verdade (antes virava
+  mensagem vazia e a Clara nunca respondia — 52 casos reais confirmados
+  no banco antes da correção). Painel também ganhou botão de anexo pra
+  atendente humano mandar foto. Não reabrir essa investigação — se
+  aparecer relato de imagem que não chegou, é caso novo (ex.: falha
+  pontual de download da Graph API), não regressão do que foi corrigido.
+  Detalhe em `docs/leads-e-sdr.md`.
+- **Clara já manda foto/vídeo de veículo sozinha** — ferramenta
+  `enviar_midia_veiculo`, confirmado em 23/08 que já funciona e é usada
+  por decisão própria da IA (não precisa o cliente pedir).
+- **Usuário Roberto Junior resolvido** (23/08) — o problema real era um
+  cadastro que travou no meio (login existia, perfil não). Completado e
+  senha nova definida. **Achado à parte, sem ação pendente**: existia uma
+  conta Roberto ANTIGA (`roberto@carroecia.com`, domínio antigo) que foi
+  apagada de verdade em algum momento do histórico, sem nenhum rastro de
+  quem/quando — não existe tabela de auditoria de usuários no projeto.
+  Não é mais um problema (a conta atual, `@carroeciamotors.com.br`, está
+  funcionando), só fica registrado como achado.
+- **`docs/clara-prompt.md` sincronizado com produção** (23/08) — estava
+  desatualizado desde 19/08 (faltava a seção "Qualificação do Lead").
+  Reforçar esse hábito sempre que `ai_prompts_config` for editado de novo.
 - **LinkedIn publicando como membro pessoal, testado ao vivo** (21/08):
   post de teste real publicado e confirmado (`urn:li:share:...`), depois
   apagado via API (DELETE, 204) — não sobrou rastro. Não confunde com
@@ -107,15 +122,20 @@ foi aprovado antes disso, pular direto pro item 1 de "Precisa de decisão".
 ## Segurança — não esquecer
 - Nunca usar `execute_sql` direto pra mudança de **schema/cron** —
   sempre via migration. Mudança de **dado** (update/delete/insert em
-  linha existente) pode ser direto, com cautela, a pedido explícito.
+  linha existente) pode ser direto, com cautela, a pedido explícito —
+  foi assim que o perfil do Roberto foi completado em 23/08 (senha via
+  `auth.admin.updateUserById` numa function temporária, nunca em
+  arquivo versionado).
 - Nunca escrever senha/segredo em texto plano numa migration.
 - Antes de propor mudança em produção, autocrítica proativa própria
   ("o que um especialista atacaria nisso?") sem esperar ser perguntado.
 - Ao criar function de diagnóstico temporária (ex.: checar permissão de
-  token direto numa API externa), sempre remover a function E a entrada
-  em `config.toml` depois de usar.
-- Senha do Roberto e da conta kmzero (Webmotors) continuam expostas
-  numa migration antiga — decisão da Adriana foi não mexer.
+  token direto numa API externa, ou completar um cadastro), sempre
+  remover a function E a entrada em `config.toml` depois de usar.
+- Senha da conta kmzero (Webmotors) continua exposta numa migration
+  antiga — decisão da Adriana foi não mexer. (A senha do Roberto que
+  estava na mesma migration não é mais um risco — a conta que ela
+  pertencia foi apagada, ver "Conferir" acima.)
 
 ## Não repetir do zero
 - A investigação de integridade de migrations (16/08) já está
@@ -126,6 +146,10 @@ foi aprovado antes disso, pular direto pro item 1 de "Precisa de decisão".
 - O pivô de escopo do LinkedIn (member vs organização) já foi
   investigado a fundo com a doc oficial — não repetir essa pesquisa,
   só consultar `docs/linkedin-integracao.md`.
+- O bug de imagem/áudio sumindo em silêncio no chat da Clara (causa
+  raiz: `receive-leads` só lia `msg.text?.body`) já foi achado,
+  corrigido e testado — não reinvestigar do zero, só consultar
+  `docs/leads-e-sdr.md`.
 ```
 
 Depois de usar, atualize este arquivo antes de fechar a sessão (regra no

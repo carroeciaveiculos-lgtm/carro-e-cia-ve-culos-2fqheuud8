@@ -11,6 +11,27 @@ nos arquivos `docs/*.md` — aqui é só o resumo de estado + pendências.
 **Pasta de trabalho deste projeto:** `C:\Projeto\Revenda Carro e Cia\carro-e-cia-ve-culos-2fqheuud8`
 (sempre abrir sessão nova aqui pra continuar — ver também `CLAUDE.md`).
 
+## Sessão 13 (23/08/2026) — regras da Clara sincronizadas + confirmado envio de mídia de veículo
+
+A pedido da Adriana: (1) confirmei que a Clara já consegue mandar foto/vídeo
+de veículo pro cliente sozinha, sem ela precisar pedir — ferramenta
+`enviar_midia_veiculo` (até 5 fotos + 1 vídeo, só depois de já ter
+consultado o estoque na mesma conversa), chamada quando "fizer sentido"
+segundo o próprio prompt. (2) Ela pediu as regras atuais da Clara pra
+analisar atendimentos reais — mandei um arquivo com prompt completo +
+camada dinâmica (data/hora, número da loja, memória ativa,
+instrução de ferramentas) + as 7 ferramentas que a Clara aciona de
+verdade (`consultar_estoque`, `criar_lead_crm`, `salvar_email_lead`,
+`agendar_visita`, `atualizar_estagio_lead`, `solicitar_atendimento_humano`,
+`enviar_midia_veiculo`). **Achado no caminho**: `docs/clara-prompt.md`
+(cópia de referência versionada) estava desatualizado desde 19/08/2026 —
+faltava a seção "Qualificação do Lead" que já estava em produção
+(`ai_prompts_config.prompt_text`) havia 4 dias. Corrigido — os dois lugares
+batem de novo. **Lembrete pra próxima vez que o prompt mudar**: o doc já
+tem instrução explícita ("Ao editar o prompt, atualize os dois lugares"),
+mas na prática isso não estava sendo seguido — vale conferir sempre que
+mexer em `ai_prompts_config` de novo.
+
 ## Sessão 13 (23/08/2026) — imagens no chat da Clara corrigidas
 
 **Causa raiz achada e corrigida**: `receive-leads` só lia `msg.text?.body`
