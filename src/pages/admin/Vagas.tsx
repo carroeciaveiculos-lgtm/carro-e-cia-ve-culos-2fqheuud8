@@ -49,6 +49,7 @@ import { Candidatura, listCandidaturas, updateCandidaturaStatus } from '@/servic
 import { Badge } from '@/components/ui/badge'
 import { RichTextEditor } from '@/components/RichTextEditor'
 import { stripHtml } from '@/lib/utils'
+import { parseMarkdown } from '@/lib/markdown'
 
 export default function VagasAdmin() {
   const { toast } = useToast()
@@ -224,7 +225,7 @@ export default function VagasAdmin() {
   // separado — só não gera de novo se ela já escreveu/ajustou um resumo à
   // mão (nesse caso, respeita o que ela escreveu).
   const gerarResumoSeNecessario = async (descricaoAtual: string) => {
-    const textoPlano = stripHtml(descricaoAtual)
+    const textoPlano = stripHtml(parseMarkdown(descricaoAtual))
     if (!textoPlano) return ''
     if (resumoRedes.trim()) return resumoRedes
     setGerandoResumo(true)
@@ -245,7 +246,7 @@ export default function VagasAdmin() {
   }
 
   const handleGerarResumo = async () => {
-    const textoPlano = stripHtml(descricao)
+    const textoPlano = stripHtml(parseMarkdown(descricao))
     if (!textoPlano) {
       toast({ title: 'Escreva a descrição primeiro', description: 'O resumo é gerado a partir da descrição da vaga.' })
       return
@@ -400,7 +401,7 @@ export default function VagasAdmin() {
                         </Badge>
                       </div>
                       <p className="text-sm text-muted-foreground truncate max-w-md">
-                        {stripHtml(vaga.descricao || '')}
+                        {stripHtml(parseMarkdown(vaga.descricao || ''))}
                       </p>
                     </div>
                   </div>
@@ -571,7 +572,7 @@ export default function VagasAdmin() {
                 variant="outline"
                 size="sm"
                 onClick={handleGerarResumo}
-                disabled={gerandoResumo || !stripHtml(descricao)}
+                disabled={gerandoResumo || !stripHtml(parseMarkdown(descricao))}
               >
                 {gerandoResumo ? (
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />

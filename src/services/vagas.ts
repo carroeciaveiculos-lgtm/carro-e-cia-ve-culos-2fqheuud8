@@ -1,6 +1,7 @@
 import { supabase } from '@/lib/supabase/client'
 import { Database } from '@/lib/supabase/types'
 import { stripHtml } from '@/lib/utils'
+import { parseMarkdown } from '@/lib/markdown'
 
 export type Vaga = Database['public']['Tables']['vagas']['Row']
 export type VagaInsert = Database['public']['Tables']['vagas']['Insert']
@@ -119,11 +120,12 @@ export const gerarImagemVaga = async (
 // Resumo curto pra redes sociais, gerado por IA a partir da descrição
 // completa (achado 23/08/2026: descrições longas — a de SDR tem +3000
 // caracteres — quebram a publicação no Instagram, que corta em 2200). O
-// texto vem sempre em texto puro (sem HTML), mesmo se a descrição usar o
-// editor de formatação.
-export const gerarResumoVaga = async (titulo: string, descricaoHtml: string) => {
+// texto vem sempre em texto puro (sem markdown), mesmo se a descrição
+// usar o editor de formatação (achado 24/08/2026: descrição virou
+// markdown, não HTML, depois da reescrita do editor).
+export const gerarResumoVaga = async (titulo: string, descricaoMarkdown: string) => {
   const { data, error } = await supabase.functions.invoke('gerar-resumo-vaga', {
-    body: { titulo, descricao: stripHtml(descricaoHtml) },
+    body: { titulo, descricao: stripHtml(parseMarkdown(descricaoMarkdown)) },
   })
   if (error) return { data: null, error }
   return { data: (data?.resumo as string) || '', error: null }
@@ -144,12 +146,13 @@ export const postarVagaNasRedes = async (vaga: Vaga) => {
     ? `https://carroeciamotors.com.br/vagas/${vaga.slug}`
     : 'https://carroeciamotors.com.br/trabalhe-conosco'
   // Usa o resumo (curto, pronto pra rede social) em vez da descrição
-  // completa — a descrição pode ter formatação/HTML do editor e/ou ser
-  // longa demais pro limite do Instagram. Se por algum motivo a vaga não
-  // tiver resumo salvo (vaga antiga, criada antes dessa função existir),
-  // cai pra descrição sem HTML, cortada no limite seguro.
+  // completa — a descrição pode ter formatação/markdown do editor e/ou
+  // ser longa demais pro limite do Instagram. Se por algum motivo a vaga
+  // não tiver resumo salvo (vaga antiga, criada antes dessa função
+  // existir), cai pra descrição sem markdown, cortada no limite seguro.
   const corpo =
-    vaga.resumo_redes || stripHtml(vaga.descricao || '').slice(0, LIMITE_CARACTERES_RESUMO_REDES)
+    vaga.resumo_redes ||
+    stripHtml(parseMarkdown(vaga.descricao || '')).slice(0, LIMITE_CARACTERES_RESUMO_REDES)
   let texto = `📢 Estamos contratando: ${vaga.titulo}!\n\n${corpo}\n\n👉 Candidate-se agora, clique no link: ${link}`
   // Cinto de segurança: garante que o texto final nunca estoura o limite do
   // Instagram, mesmo que o resumo salvo tenha vindo de uma versão antiga

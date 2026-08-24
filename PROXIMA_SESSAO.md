@@ -3,8 +3,12 @@
 Copie e cole como primeira mensagem numa sessão nova do Claude Code.
 
 ```
-Continuando de uma sessão anterior (23/08/2026, sessão 13). Leia primeiro:
-- MEMORY_WORK.MD deste projeto (11 seções "Sessão 13" no topo: editor de
+Continuando de uma sessão anterior (23-24/08/2026, sessão 13). Leia primeiro:
+- MEMORY_WORK.MD deste projeto (13 seções "Sessão 13" no topo: editor de
+  texto reescrito de contentEditable pra markdown depois de achar bug
+  real de perda de dados — testado ao vivo de verdade dessa vez; teste
+  real de publicação da vaga SDR — Instagram funcionou, achado bug real no
+  token do Facebook (publish_actions descontinuada); editor de
   texto na descrição + resumo automático pra redes sociais (limite de
   caracteres) + CTA com link + imagem cortada corrigida + layout com
   formulário à direita; logo só em fundo branco + texto da vaga escrito
@@ -41,22 +45,24 @@ avisando a Adriana pra checar se a LinkedIn aprovou o "Request Access" do
 foi aprovado antes disso, pular direto pro item 1 de "Precisa de decisão".
 
 ## Precisa de decisão/ação da Adriana
-0. **Testar o resumo automático + publicação da vaga SDR** (23/08/2026) —
-   não testei a geração do resumo pela IA nem a publicação de verdade
-   (function exige seu login, não tenho como clicar por você). Passo a
-   passo: abra a vaga "Representante de Desenvolvimento de Vendas (SDR)"
-   em Vagas → editar → clique em "Salvar" (isso gera o resumo automático
-   pela primeira vez, já que essa vaga foi criada antes dessa função
-   existir) → confira se o resumo ficou bom e dentro do contador de
-   caracteres → clique em "Postar" pra publicar de verdade no Facebook e
-   Instagram → me avise que eu confirmo pelos logs se dois deram certo. A
-   lógica de corte de caracteres (nunca passar de 2200) já foi testada e
-   confirmada com o texto real dessa vaga — só a parte de IA que falta
-   confirmar ao vivo.
-   — **Já confirmado visualmente** (sem precisar de teste dela): logo em
-   fundo branco + texto do cargo escrito na imagem (function versão 13) e
-   imagem sem corte na página pública — ambos vistos funcionando de
-   verdade na foto real da vaga SDR.
+0. **Facebook não publica mais — token com permissão descontinuada**
+   (achado 24/08/2026, testando a publicação real da vaga SDR): toda
+   publicação no Facebook via `publicar-social` falha com "(#200) The
+   permission(s) publish_actions are not available. It has been
+   deprecated." — confirmei que já estava falhando desde pelo menos
+   19h15 de 23/08 (não é bug de hoje, é achado novo). **Afeta qualquer
+   post no Facebook, não só vaga** — o Instagram continua funcionando
+   normal. Precisa reconectar/gerar de novo o token de acesso da Página
+   do Facebook (`META_PAGE_ACCESS_TOKEN`) com a permissão atual
+   (`pages_manage_posts` ou equivalente) no Meta Business Suite — não é
+   algo que dá pra resolver só no código, precisa da Adriana (ou de quem
+   administra a Página) gerando o token novo.
+   — **Já testado e confirmado funcionando** (24/08/2026, publicação
+   real): resumo automático da vaga (limite de caracteres) + Instagram —
+   publiquei de verdade a vaga SDR no Instagram como teste (post real,
+   ficou no ar a pedido dela). Logo em fundo branco + texto do cargo
+   escrito na imagem, e imagem sem corte na página pública — tudo
+   confirmado com a vaga SDR real. Não precisa retestar nenhum desses.
 1. **Regenerar a imagem do "Consultor(a) de Consórcios"**: essa vaga saiu
    com um logo inventado (não é o oficial). Já corrigido o prompt + trocado
    pro modelo `gpt-image-2` (23/08) — só falta ela entrar em Vagas → editar
@@ -206,6 +212,26 @@ foi aprovado antes disso, pular direto pro item 1 de "Precisa de decisão".
   raiz: `receive-leads` só lia `msg.text?.body`) já foi achado,
   corrigido e testado — não reinvestigar do zero, só consultar
   `docs/leads-e-sdr.md`.
+- **Cliques por coordenada de screenshot no navegador de teste erram o
+  alvo** (achado 24/08/2026): a ferramenta de automação tira screenshot
+  numa resolução diferente do tamanho real da página (devicePixelRatio ≠
+  1 nesta máquina) — clicar em pixel do screenshot é impreciso e pode
+  achar "bugs" fantasmas. Pra testar interação de verdade (digitar,
+  clicar botão, selecionar texto), usar `javascript_tool` com
+  `getBoundingClientRect()` pra achar a posição real, ou melhor,
+  disparar os eventos direto via JS (`element.focus()`,
+  `element.dispatchEvent(...)`, `botao.click()`) em vez de clique por
+  coordenada. Não repetir esse fio de investigação do zero.
+- **Como testar publicação real no Facebook/Instagram sem precisar do
+  login da Adriana** (achado 24/08/2026): o cron `publicar-social-cron-job`
+  chama a function via `net.http_post` direto no Postgres, pegando o
+  segredo sozinho com `public.get_internal_service_secret()`. Dá pra
+  disparar a mesma chamada manualmente por SQL (`execute_sql`) pra testar
+  publicação de verdade na hora, sem esperar os 15 min do cron e sem
+  precisar saber o valor do segredo. Não reinvestigar esse método do
+  zero — só repetir o `SELECT net.http_post(...)` com a mesma URL/headers
+  do `cron.job` (`select command from cron.job where jobname =
+  'publicar-social-cron-job'` pra conferir o comando exato).
 ```
 
 Depois de usar, atualize este arquivo antes de fechar a sessão (regra no

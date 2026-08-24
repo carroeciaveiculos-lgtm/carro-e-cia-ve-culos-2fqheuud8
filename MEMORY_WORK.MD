@@ -6,10 +6,98 @@ precisar reler o histórico inteiro de conversas. Diferente do
 pra ser mantido em dia de verdade. Detalhe técnico por integração continua
 nos arquivos `docs/*.md` — aqui é só o resumo de estado + pendências.
 
-Última atualização: 2026-08-23 (sessão 13).
+Última atualização: 2026-08-24 (sessão 13).
 
 **Pasta de trabalho deste projeto:** `C:\Projeto\Revenda Carro e Cia\carro-e-cia-ve-culos-2fqheuud8`
 (sempre abrir sessão nova aqui pra continuar — ver também `CLAUDE.md`).
+
+## Sessão 13 (24/08/2026) — editor de texto reescrito: achado bug real de perda de dados, corrigido com markdown
+
+Adriana perguntou se o editor básico de formatação (item 1 do pedido
+anterior, contentEditable + `document.execCommand`) "deu certo". Eu não
+tinha testado de verdade ainda (só lint/build). Testei ao vivo agora e
+**achei um bug real de perda de dados**: selecionar um texto já digitado
+e clicar num botão da barra (negrito, marcadores etc.) podia **apagar o
+conteúdo inteiro** em vez de formatar — bug clássico e bem documentado da
+combinação `contentEditable` + seleção de texto + React (é literalmente
+por isso que ferramentas como TipTap/Slate/Lexical existem). Também achei
+e corrigi no caminho um bug menor: reaplicar `dangerouslySetInnerHTML` a
+cada tecla fazia o texto sair invertido durante a digitação.
+
+**Decisão**: dado o risco real de perda de dados (ela poderia perder uma
+descrição de vaga inteira sem aviso), abandonei a abordagem
+`contentEditable`/`execCommand` completamente — não valia a pena tentar
+remendar algo estruturalmente frágil. Reescrito usando **markdown simples**
+(`**negrito**`, `*itálico*`, `- item`, `1. item`, `# título`) numa caixa de
+texto comum (`<Textarea>`), com prévia renderizada ao vivo logo abaixo.
+Os botões inserem a sintaxe usando `textarea.selectionStart/selectionEnd`
+— API nativa, sem os problemas de seleção do contentEditable. **Reaproveita
+`src/lib/markdown.ts` (`parseMarkdown`), o mesmo parser que o blog do site
+já usa em produção** — não é código novo e arriscado, é um caminho já
+testado. `descricao` da vaga agora é markdown, não HTML — `VagaDetalhe.tsx`,
+`Vagas.tsx` (prévia da lista) e `services/vagas.ts` (resumo pra redes
+sociais) atualizados pra rodar `parseMarkdown()` antes de qualquer
+`stripHtml()`.
+
+**Testado e confirmado de verdade** (não só lint/build) — negrito, listas
+com marcador, numeração e título grande, todos aplicando certo no texto
+selecionado e renderizando certo na prévia. Testei criando uma página
+pública temporária (`/teste-editor-temp`, sem autenticação) só pra isso,
+removida depois de usar (nada sobrou no `git status`).
+
+**Achado à parte sobre como testar no navegador nesta máquina**: a
+ferramenta de automação de navegador tira screenshot numa resolução que
+NÃO bate com o tamanho real da página (`devicePixelRatio` ≠ 1) — clicar
+em coordenadas de pixel baseadas no screenshot erra o alvo de forma
+inconsistente (foi isso que me fez achar "bugs" fantasmas no início dos
+testes). **Pra testar interação de verdade daqui pra frente, usar
+`javascript_tool` com `getBoundingClientRect()` e/ou disparar eventos
+direto via JS, não clique por coordenada de screenshot.**
+
+## Sessão 13 (23-24/08/2026) — teste real de publicação da vaga SDR: Instagram funcionou, achado bug real no Facebook
+
+Testei a publicação de verdade da vaga SDR sem precisar do login da
+Adriana — descobri que o cron `publicar-social-cron-job` (roda a cada 15
+min) chama a function via `net.http_post` direto no Postgres, usando
+`public.get_internal_service_secret()` pra pegar o segredo sozinho. Dá
+pra disparar essa mesma chamada manualmente por SQL pra testar publicação
+de verdade sem precisar de login nem saber o segredo (só repetir a mesma
+chamada que o cron já faz). **Registrar esse método** — evita reinvestigar
+"como testar publicação sem login" da próxima vez.
+
+**Resultado do teste**:
+- Escrevi um resumo à mão pra vaga SDR (não consegui chamar a IA de
+  resumo — mesma limitação de sempre, function exige login real) e salvei
+  em `resumo_redes` direto por SQL. 353 caracteres, dentro do alvo.
+- Criei o post e disparei a publicação de verdade. **Instagram publicou
+  com sucesso** (media_id real) — confirma que a lógica do resumo curto
+  funciona ponta a ponta.
+- **Facebook falhou** — mas por um bug separado, já existente antes de
+  qualquer mudança de hoje: token com a permissão `publish_actions`
+  (descontinuada pela própria Meta). Confirmei que o mesmo erro já
+  aparecia em publicações de outras vagas desde pelo menos 19h15 de
+  23/08. **Afeta TODAS as publicações no Facebook via `publicar-social`,
+  não só vaga** — precisa reconectar a Página do Facebook com permissões
+  atuais (`pages_manage_posts` ou equivalente). Não é bug de hoje, é
+  achado novo que precisa de ação da Adriana (ver "Precisa de decisão").
+- **Achado à parte**: a Adriana já tinha clicado em "Postar" nessa mesma
+  vaga antes (21h10 de 23/08), só que antes do resumo existir — criou um
+  post de 4490 caracteres que falhou no Instagram por "legenda muito
+  longa" e ficou preso na fila com erro. Apagado a pedido dela
+  (24/08/2026) — o post do Instagram que publicou de verdade ficou no ar,
+  a pedido dela.
+- **UX esclarecida**: o botão "Postar" não é "Gerar rascunho" (não existe
+  botão com esse nome) — é só "Postar" (ícone de compartilhar), na lista
+  de Vagas Abertas, ao lado de Copiar link/Editar/Excluir. Ele **agenda**
+  a publicação (fila que roda a cada 15 min), não publica na hora — o
+  aviso na tela não deixava isso claro, causou confusão. Não mexi na cópia
+  do toast ainda (fora do escopo pedido nessa rodada).
+- **Confirmado via documentação oficial da Meta**: não dá pra colocar
+  botão clicável tipo "Saiba mais" nem em Stories nem em Feed publicando
+  via API automática — a doc da Meta diz explicitamente "publicar
+  stickers (link, enquete, localização) não é suportado" em Stories via
+  Content Publishing API. Link clicável em Stories só rolando manual
+  dentro do app depois. Não é limitação do nosso código.
 
 ## Sessão 13 (23/08/2026) — editor de texto, resumo automático pra redes, layout da página de vaga
 

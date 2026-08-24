@@ -7,6 +7,7 @@ import { Briefcase, ArrowLeft } from 'lucide-react'
 import { getVagaPorIdOuSlug, Vaga } from '@/services/vagas'
 import { FormularioCandidatura } from '@/components/FormularioCandidatura'
 import { stripHtml } from '@/lib/utils'
+import { parseMarkdown } from '@/lib/markdown'
 
 export default function VagaDetalhe() {
   const { id } = useParams()
@@ -55,7 +56,7 @@ export default function VagaDetalhe() {
       <SEO
         title={`${vaga.titulo} | Trabalhe Conosco - Carro e Cia Veículos`}
         description={
-          stripHtml(vaga.descricao || '').slice(0, 160) ||
+          stripHtml(parseMarkdown(vaga.descricao || '')).slice(0, 160) ||
           `Vaga de ${vaga.titulo} na Carro e Cia Veículos.`
         }
         canonical={`https://carroeciamotors.com.br/vagas/${vaga.slug || vaga.id}`}
@@ -93,8 +94,8 @@ export default function VagaDetalhe() {
             {vaga.descricao && (
               <Card className="p-6 md:p-8">
                 <div
-                  className="prose prose-sm sm:prose-base max-w-none leading-relaxed whitespace-pre-line"
-                  dangerouslySetInnerHTML={{ __html: vaga.descricao }}
+                  className="prose prose-sm sm:prose-base max-w-none leading-relaxed"
+                  dangerouslySetInnerHTML={{ __html: parseMarkdown(vaga.descricao) }}
                 />
               </Card>
             )}
