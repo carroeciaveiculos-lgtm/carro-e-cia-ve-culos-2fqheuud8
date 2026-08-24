@@ -21,7 +21,26 @@ const waPhoneId =
 // atendimento pra humano).
 const ADRIANA_PHONE = '5534984080220'
 
-async function getSystemPrompt() {
+// Achado 24/08/2026, pedido da Adriana: o prompt já pedia "convide pra
+// visita só uma vez, não insista" desde sempre, mas numa conversa real a
+// Clara convidou 4 vezes na mesma conversa — pedir educadamente em texto
+// corrido não é suficiente (mesma lição do achado de temperatura). Conta
+// quantas vezes um convite já apareceu nas mensagens dela pra esse lead e
+// injeta isso como um fato explícito no prompt, difícil de ignorar.
+const PADRAO_CONVITE_VISITA =
+  /passar aqui|vir aqui na loja|dar um pulo aqui|test-?drive|conhecer (?:ele|ela) de perto|ver (?:ele|ela) de perto|agendar (?:uma )?visita/i
+
+async function contarConvitesVisita(leadId: string): Promise<number> {
+  const { data } = await supabase
+    .from('conversation_history')
+    .select('message_text')
+    .eq('lead_id', leadId)
+    .eq('sender', 'bot')
+    .limit(50)
+  return (data || []).filter((m: any) => PADRAO_CONVITE_VISITA.test(m.message_text || '')).length
+}
+
+async function getSystemPrompt(leadId?: string) {
   const { data } = await supabase
     .from('social_configuracoes')
     .select('ai_system_prompt, whatsapp_number')
@@ -78,11 +97,19 @@ async function getSystemPrompt() {
     minute: '2-digit',
   })
 
+  // Achado 24/08/2026: contador de convites já feitos nessa conversa,
+  // injetado como fato explícito (ver comentário em contarConvitesVisita).
+  const convitesJaFeitos = leadId ? await contarConvitesVisita(leadId) : 0
+  const avisoConvite =
+    convitesJaFeitos > 0
+      ? `\nATENÇÃO: você já convidou esse cliente pra visitar a loja/fazer test-drive ${convitesJaFeitos}x nesta conversa. NÃO convide de novo, a não ser que o próprio cliente pergunte sobre visitar ou já tenha topado. Continue a conversa normalmente sem repetir o convite.`
+      : ''
+
   return `${basePrompt}${memoryContext}
 Data e hora atuais (horário de Brasília): ${agoraBR}. Use isso pra calcular datas relativas como "amanhã", "sexta-feira" etc — nunca invente uma data sem se basear nisso. Ao chamar agendar_visita, sempre mande data_hora em ISO 8601 com o fuso de Brasília (-03:00).
 ${waNumber ? `O número oficial de WhatsApp da loja é: ${waNumber}. Se for necessário enviar um link direto, use https://wa.me/${waNumber}` : ''}
-Ferramentas disponíveis: use consultar_estoque pra verificar veículos disponíveis antes de falar sobre eles; use agendar_visita quando o cliente confirmar dia e horário de visita/avaliação; use salvar_email_lead assim que o cliente informar um e-mail em qualquer momento da conversa, mesmo que já tenha lead criado; use enviar_midia_veiculo quando fizer sentido mandar foto ou vídeo de um veículo específico já consultado; use solicitar_atendimento_humano quando o lead estiver qualificado e pronto pra avançar, ou pedir explicitamente para falar com uma pessoa; use atualizar_estagio_lead pra refletir o andamento da conversa no funil, reavaliar a temperatura (frio/morno/quente) sempre que o interesse do lead mudar, e SEMPRE que identificar qual veículo (marca/modelo/ano) o cliente quer — mesmo que ele já tenha mencionado isso logo na primeira mensagem (ex: veio de um anúncio de um carro específico) — chame com veiculo_interesse assim que confirmar qual é, e de novo se o cliente trocar de interesse no meio da conversa. Ao chamar criar_lead_crm, escolha o tipo com cuidado — se o cliente disser que quer seguro do carro ou consórcio, use tipo seguro_auto/consorcio: isso encaminha automaticamente o lead pro responsável (Gabriel pra seguro, a própria loja pra consórcio), então avise o cliente que alguém vai entrar em contato em breve.
-REGRA CRÍTICA: nunca diga "agendado", "confirmado" ou "marcado" sem ANTES ter chamado a função correspondente (ex: agendar_visita) na mesma resposta — se a data/horário ainda não estiver 100% definida, pergunte de novo em vez de dar a confirmação por feita.`
+Ferramentas disponíveis: use consultar_estoque pra verificar veículos disponíveis antes de falar sobre eles; use agendar_visita quando o cliente confirmar dia e horário de visita/avaliação; use salvar_email_lead assim que o cliente informar um e-mail em qualquer momento da conversa, mesmo que já tenha lead criado; use enviar_midia_veiculo quando fizer sentido mandar foto ou vídeo de um veículo específico já consultado (chame no máximo 1 vez por veículo por resposta — nunca repita se o cliente só reforçar o mesmo pedido em seguida); use solicitar_atendimento_humano quando o lead estiver qualificado e pronto pra avançar, ou pedir explicitamente para falar com uma pessoa; use atualizar_estagio_lead pra refletir o andamento da conversa no funil, reavaliar a temperatura (frio/morno/quente) sempre que o interesse do lead mudar, e SEMPRE que identificar qual veículo (marca/modelo/ano) o cliente quer — mesmo que ele já tenha mencionado isso logo na primeira mensagem (ex: veio de um anúncio de um carro específico) — chame com veiculo_interesse assim que confirmar qual é, e de novo se o cliente trocar de interesse no meio da conversa. Depois que o cliente já demonstrou interesse num veículo específico, chame atualizar_estagio_lead de novo com forma_pagamento (à vista, financiamento, ou troca — com carro de valor menor ou maior que o veículo de interesse) assim que ele mencionar como pretende pagar, e veiculo_troca_descricao se ele descrever o carro que vai dar de entrada. Ao chamar criar_lead_crm, escolha o tipo com cuidado — se o cliente disser que quer seguro do carro ou consórcio, use tipo seguro_auto/consorcio: isso encaminha automaticamente o lead pro responsável (Gabriel pra seguro, a própria loja pra consórcio), então avise o cliente que alguém vai entrar em contato em breve.
+REGRA CRÍTICA: nunca diga "agendado", "confirmado" ou "marcado" sem ANTES ter chamado a função correspondente (ex: agendar_visita) na mesma resposta — se a data/horário ainda não estiver 100% definida, pergunte de novo em vez de dar a confirmação por feita.${avisoConvite}`
 }
 
 // Execução de verdade das funções que o Gemini decide chamar — corrigido em
@@ -127,7 +154,17 @@ async function executeFunction(name: string, args: any, leadId: string): Promise
       .select()
       .single()
     if (error) return { error: error.message }
-    await supabase.from('leads').update({ status: 'agendamento' }).eq('id', leadId)
+    // Rede de segurança (24/08/2026, achado real: 100% dos leads amostrados
+    // ficavam presos em temperatura='frio' mesmo com conversas de 30+
+    // mensagens e agendamento fechado — a Clara raramente chamava
+    // atualizar_estagio_lead na prática, apesar da instrução no prompt).
+    // Confiar só em pedir educadamente no prompt já falhou por dias — aqui a
+    // temperatura é forçada pelo próprio código sempre que uma visita é
+    // agendada de verdade, sem depender da IA lembrar de mais uma chamada.
+    await supabase
+      .from('leads')
+      .update({ status: 'agendamento', temperatura: 'quente' })
+      .eq('id', leadId)
     // Bloco 3 (13/08/2026, pedido da Adriana): avisar a loja no WhatsApp assim
     // que a Clara fecha um agendamento — antes só dava pra saber entrando na
     // conversa. Envolto em try/catch pra nunca quebrar a resposta ao cliente.
@@ -158,7 +195,28 @@ async function executeFunction(name: string, args: any, leadId: string): Promise
     if (args.veiculo_interesse !== undefined && args.veiculo_interesse !== '') {
       update.veiculo_interesse = args.veiculo_interesse
     }
-    if (Object.keys(update).length === 0) return { error: 'informe status, temperatura e/ou veiculo_interesse' }
+    // Achado 24/08/2026, pedido da Adriana: filtro de forma de pagamento
+    // (à vista, financiamento, troca com carro de menor ou maior valor) —
+    // usa colunas que já existiam no banco (forma_pagamento, trade_in_car)
+    // mas nunca tinham sido conectadas à Clara.
+    const formaPagamentoPermitida = [
+      'a_vista',
+      'financiamento',
+      'troca_valor_menor',
+      'troca_valor_maior',
+    ]
+    if (args.forma_pagamento !== undefined) {
+      if (!formaPagamentoPermitida.includes(args.forma_pagamento))
+        return { error: `forma_pagamento inválida: ${args.forma_pagamento}` }
+      update.forma_pagamento = args.forma_pagamento
+    }
+    if (args.veiculo_troca_descricao !== undefined && args.veiculo_troca_descricao !== '') {
+      update.trade_in_car = args.veiculo_troca_descricao
+    }
+    if (Object.keys(update).length === 0)
+      return {
+        error: 'informe status, temperatura, veiculo_interesse, forma_pagamento e/ou veiculo_troca_descricao',
+      }
 
     const { error } = await supabase.from('leads').update(update).eq('id', leadId)
     if (error) return { error: error.message }
@@ -432,7 +490,7 @@ async function runGemini(
   novaMensagem: string,
   leadId: string,
 ) {
-  const systemPrompt = await getSystemPrompt()
+  const systemPrompt = await getSystemPrompt(leadId)
   const todosResultados: Array<{ name: string; result: any }> = []
   let contextoAtual = novaMensagem
   let historicoAtual = history
@@ -564,40 +622,77 @@ Deno.serve(async (req) => {
         })
       }
 
-      const { data: historico } = await supabase
-        .from('conversation_history')
-        .select('sender, message_text, created_at')
-        .eq('lead_id', lead_id)
-        .order('created_at', { ascending: true })
-        .limit(30)
+      // Trava contra respostas duplicadas (24/08/2026, achado real numa
+      // conversa: cliente mandando várias mensagens/fotos em sequência
+      // rápida disparava várias chamadas concorrentes de
+      // continue_conversation pro mesmo lead — cada uma decidia mandar
+      // mídia/responder por conta própria, e o cliente recebia uma
+      // enxurrada de mensagens e fotos repetidas em poucos segundos.
+      // Trava otimista via UPDATE condicional (só um processo consegue
+      // "reservar" o lead por vez); se não conseguir, essa chamada específica
+      // é pulada sem erro — a mensagem do cliente já foi salva no histórico
+      // antes de chegar aqui (ver receive-leads), então não se perde, só não
+      // gera uma resposta duplicada. Timeout de 40s (dá folga pra até
+      // MAX_RODADAS_FUNCOES chamadas encadeadas ao Gemini numa única
+      // resposta) evita lead travado pra sempre se algo quebrar no meio do
+      // processamento.
+      const agoraLock = new Date()
+      const corteLock = new Date(agoraLock.getTime() - 40_000).toISOString()
+      const { data: lockAdquirido } = await supabase
+        .from('leads')
+        .update({ ai_processing_started_at: agoraLock.toISOString() })
+        .eq('id', lead_id)
+        .or(`ai_processing_started_at.is.null,ai_processing_started_at.lt.${corteLock}`)
+        .select('id')
 
-      const history = (historico || [])
-        .filter((h: any) => h.message_text && h.sender !== 'internal_note')
-        .map((h: any) => ({
-          role: h.sender === 'bot' ? ('model' as const) : ('user' as const),
-          text: h.message_text,
-        }))
-
-      const aiRes = await runGemini(history, mensagem, lead.id)
-
-      await supabase
-        .from('conversation_history')
-        .insert({ lead_id: lead.id, sender: 'bot', message_text: aiRes.text })
-
-      if (lead.telefone) {
-        await sendWhatsApp(lead.telefone, aiRes.text)
+      if (!lockAdquirido || lockAdquirido.length === 0) {
+        return new Response(
+          JSON.stringify({ success: true, skipped: 'already_processing' }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+        )
       }
 
-      // ai_score recalculado a cada mensagem — não depende da Clara ter
-      // chamado nenhuma ferramenta nessa rodada (ver _shared/lead-score.ts).
-      await recalcularAiScore(supabase, lead.id).catch((e) =>
-        console.error('Erro ao recalcular ai_score:', e),
-      )
+      try {
+        const { data: historico } = await supabase
+          .from('conversation_history')
+          .select('sender, message_text, created_at')
+          .eq('lead_id', lead_id)
+          .order('created_at', { ascending: true })
+          .limit(30)
 
-      return new Response(
-        JSON.stringify({ success: true, functionResults: aiRes.functionResults }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
-      )
+        const history = (historico || [])
+          .filter((h: any) => h.message_text && h.sender !== 'internal_note')
+          .map((h: any) => ({
+            role: h.sender === 'bot' ? ('model' as const) : ('user' as const),
+            text: h.message_text,
+          }))
+
+        const aiRes = await runGemini(history, mensagem, lead.id)
+
+        await supabase
+          .from('conversation_history')
+          .insert({ lead_id: lead.id, sender: 'bot', message_text: aiRes.text })
+
+        if (lead.telefone) {
+          await sendWhatsApp(lead.telefone, aiRes.text)
+        }
+
+        // ai_score recalculado a cada mensagem — não depende da Clara ter
+        // chamado nenhuma ferramenta nessa rodada (ver _shared/lead-score.ts).
+        await recalcularAiScore(supabase, lead.id).catch((e) =>
+          console.error('Erro ao recalcular ai_score:', e),
+        )
+
+        return new Response(
+          JSON.stringify({ success: true, functionResults: aiRes.functionResults }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+        )
+      } finally {
+        await supabase
+          .from('leads')
+          .update({ ai_processing_started_at: null })
+          .eq('id', lead_id)
+      }
     }
 
     return new Response(JSON.stringify({ error: 'Unknown action' }), {

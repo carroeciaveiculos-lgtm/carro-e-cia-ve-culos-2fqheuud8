@@ -111,7 +111,7 @@ export const CRM_FUNCTIONS = [
   {
     name: 'atualizar_estagio_lead',
     description:
-      'Atualizar estagio do lead no funil de vendas, a temperatura (qualificacao) e/ou o veiculo de interesse dele. Pode chamar so com um campo, ou varios juntos.',
+      'Atualizar estagio do lead no funil de vendas, a temperatura (qualificacao), o veiculo de interesse e/ou a forma de pagamento planejada dele. Pode chamar so com um campo, ou varios juntos.',
     parameters: {
       type: 'OBJECT',
       properties: {
@@ -130,6 +130,17 @@ export const CRM_FUNCTIONS = [
           type: 'STRING',
           description:
             'Marca, modelo e ano do veiculo que o cliente demonstrou interesse (ex: "Honda HR-V 2017", "Toyota RAV4 2.5 SX Hibrido 2023"). Chame assim que identificar ou o cliente trocar de veiculo de interesse na conversa — mesmo que ja tenha sido mencionado no anuncio que trouxe o lead, o campo so fica preenchido se voce chamar isso.',
+        },
+        forma_pagamento: {
+          type: 'STRING',
+          description:
+            'Como o cliente pretende pagar o veiculo de interesse — so preencha depois que ele ja demonstrou interesse real num veiculo especifico, nunca pergunte isso logo de cara. a_vista: vai pagar tudo direto, sem financiar. financiamento: vai financiar (parte ou o total, com ou sem entrada) e nao tem carro pra dar de entrada. troca_valor_menor: vai dar um carro na troca que vale menos que o veiculo de interesse (provavel complemento em dinheiro ou financiamento da diferenca). troca_valor_maior: vai dar um carro na troca que vale mais que o veiculo de interesse (provavel troco ou credito pra proxima compra) — sinalize isso, o time de vendas trata diferente.',
+          enum: ['a_vista', 'financiamento', 'troca_valor_menor', 'troca_valor_maior'],
+        },
+        veiculo_troca_descricao: {
+          type: 'STRING',
+          description:
+            'Se o cliente mencionou um carro pra dar de entrada/troca, descreva o que ele ja disse (marca, modelo, ano, quilometragem aproximada — so o que ele informou, sem inventar). Ex: "Jeep Compass Limited Diesel 2018, uso particular". Preencha junto com forma_pagamento quando for troca_valor_menor ou troca_valor_maior.',
         },
       },
       required: ['lead_id'],

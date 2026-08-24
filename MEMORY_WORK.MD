@@ -6,10 +6,86 @@ precisar reler o histórico inteiro de conversas. Diferente do
 pra ser mantido em dia de verdade. Detalhe técnico por integração continua
 nos arquivos `docs/*.md` — aqui é só o resumo de estado + pendências.
 
-Última atualização: 2026-08-24 (sessão 13).
+Última atualização: 2026-08-24 (sessão 14).
 
 **Pasta de trabalho deste projeto:** `C:\Projeto\Revenda Carro e Cia\carro-e-cia-ve-culos-2fqheuud8`
 (sempre abrir sessão nova aqui pra continuar — ver também `CLAUDE.md`).
+
+## Sessão 14 (24/08/2026) — Conversão da Clara (SDR) + achado de templates WhatsApp quebrados
+
+**Diagnóstico inicial:** Adriana notou abertura robótica/scriptada da Clara e
+grande abandono de leads. Auditoria confirmou: 132/135 leads travados em
+`status='novo'`/`temperatura='frio'` mesmo com conversas longas —
+`atualizar_estagio_lead` quase nunca era chamado de fato pelo modelo, apesar
+da instrução no prompt. Plano A-F aprovado e implementado nesta ordem:
+
+- **A** — regra de prioridade: pergunta direta do cliente (preço,
+  disponibilidade) é respondida antes de qualquer pergunta de qualificação;
+  a pergunta fixa "cidade/viagens/uso misto" virou opcional, com 3
+  variações em vez de frase única repetida.
+- **B** — Passo 5.5 novo no fluxo: pergunta natural sobre forma de pagamento
+  (à vista/financiamento/troca) só depois do cliente confirmar interesse no
+  veículo; `atualizar_estagio_lead` ganhou os campos `forma_pagamento` e
+  `veiculo_troca_descricao` (gravam em `leads.forma_pagamento`/`trade_in_car`).
+- **C** — rede de segurança por código: `agendar_visita` bem-sucedido força
+  `temperatura='quente'` direto no banco, não depende do modelo lembrar de
+  chamar `atualizar_estagio_lead` de novo.
+- **D** — trava anti-duplicidade: `leads.ai_processing_started_at` (nova
+  coluna) + UPDATE condicional otimista no `continue_conversation`, timeout
+  de 40s. Resolve o caso real de flood de 14+ fotos repetidas.
+- **E** — contador de convite: `contarConvitesVisita()` conta quantas vezes
+  a Clara já convidou aquele lead pra visita/test-drive na conversa e
+  injeta isso como aviso explícito no prompt dinâmico — não repete.
+- **F** — `re-engagement-cron` ganhou uma segunda rota: lead morno/quente
+  em silêncio por 48h (não só frio/7 dias), cap de 2 tentativas (vs 3 do
+  frio), exclui quem já tem visita agendada.
+- **Encaminhamento humano** — critério vago ("quando o lead estiver
+  qualificado") substituído por 4 gatilhos explícitos no prompt: pedido
+  direto, travado em algo que só humano resolve, reclamação real, ou 2
+  tentativas sem conseguir ajudar. Achado: 0 de 136 leads em 30 dias tiveram
+  a IA desligada — a função nunca disparava na prática.
+
+Todos os itens publicados em produção (`ai-sdr` v154, `re-engagement-cron`
+v83→86). Prompt B/A/encaminhamento vivem em `ai_prompts_config` (banco,
+sem deploy) — `docs/clara-prompt.md` mantido sincronizado.
+
+**Achado grande, não relacionado ao plano A-F:** ao testar o reengajamento
+morno/quente, descobri que o template `reengajamento_frio` **nunca existiu
+de verdade** na conta aprovada da Meta — `re-engagement-cron` vinha
+falhando silenciosamente (erro 132001) toda vez que rodava, há semanas,
+zero mensagem de reengajamento realmente enviada. Pausei o envio no código
+(`REENGAJAMENTO_PAUSADO = true`) até haver um template real. Ver
+`PROXIMA_SESSAO.md` pra reativar.
+
+**Tokens Meta:** Adriana gerou novos `WHATSAPP_TOKEN` (com permissão
+`whatsapp_business_management`, confirmada funcionando) e `META_ADS_TOKEN`,
+já salvos no Supabase. Usuário de sistema: `carroecia_bot` (ID
+`61590821367352`). Usei a permissão nova pra: (1) listar templates
+aprovados via function temporária (apagada depois), achando 2 templates
+prontos e nunca usados — `lembrete_agendamento` (lembrete de visita, 2
+variáveis, confirmado pela Adriana) e `agendamento_reagendar` (na real é
+follow-up de no-show: "sentimos sua falta hoje na loja..."); (2) submeter
+2 templates novos pra aprovação — `reengajamento_quente` e
+`reengajamento_pos_visita`, status PENDING em 24/08.
+
+**Não testado ainda:** nenhuma das travas A-F foi observada em conversa
+real de cliente — só revisão de código e diagnóstico via SQL/logs.
+
+**Correção importante (mesmo dia):** eu tinha afirmado errado que
+`lembrete_agendamento` e `agendamento_reagendar` "não são referenciados em
+nenhum lugar do código" e propus construir lembrete de visita + follow-up
+de no-show do zero. Errado — `lembrete-agendamento-cron` e
+`agendamento-no-show-cron` **já existiam** (13/08/2026, "Bloco 4"/"Bloco 5"
+nos comentários), já publicados, já agendados via pg_cron (jobid 12 e 13,
+de hora em hora). O bug real: as duas foram publicadas com `verify_jwt:
+true` — a própria Supabase rejeitava a chamada do cron com 401 antes de
+chegar no código (`x-internal-secret` nunca era nem checado). Confirmado
+pelo log real em `net._http_response`. **Fix aplicado e testado de
+verdade:** republiquei as duas com `verify_jwt: false` (só essa flag,
+nenhuma linha de lógica mudou) e testei chamando `net.http_post` manual —
+as duas responderam HTTP 200. Rodam de novo, de hora em hora, desde
+24/08/2026 ~17h30 UTC. Lição: **sempre `Grep` o nome do template/função
+antes de propor construir algo do zero.**
 
 ## Sessão 13 (24/08/2026) — "Gerar com IA" da vaga agora pesquisa de verdade + gera SEO (JobPosting)
 

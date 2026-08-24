@@ -19,11 +19,33 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
     )
 
+    // PAUSADO em 24/08/2026 (achado real, confirmado via logs_integracao): o
+    // template 'reengajamento_frio' usado abaixo NUNCA existiu de verdade na
+    // conta aprovada da Meta — toda tentativa falhava com erro 132001
+    // ("template name does not exist"), silenciosamente, desde sempre. Dois
+    // templates novos (reengajamento_quente, reengajamento_pos_visita) já
+    // foram submetidos pra aprovação da Meta (24/08/2026, status PENDING).
+    // Reative trocando REENGAJAMENTO_PAUSADO pra false E trocando o nome do
+    // template no corpo da função pelo nome aprovado de verdade, assim que a
+    // Meta aprovar.
+    const REENGAJAMENTO_PAUSADO = true
+    if (REENGAJAMENTO_PAUSADO) {
+      return new Response(
+        JSON.stringify({
+          success: true,
+          paused: true,
+          motivo:
+            "Reengajamento pausado — template 'reengajamento_frio' não existe na conta aprovada da Meta. Ver comentário no código.",
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 },
+      )
+    }
+
     const sevenDaysAgo = new Date()
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
 
     // Busca leads frios inativos de forma controlada (limitado a 30 por execução para evitar timeouts)
-    const { data: leadsCandidatos, error } = await supabase
+    const { data: leadsFrios, error: errorFrios } = await supabase
       .from('leads')
       .select('id, telefone, nome, status, temperatura')
       .eq('temperatura', 'frio')
@@ -32,7 +54,33 @@ Deno.serve(async (req) => {
       .lt('updated_at', sevenDaysAgo.toISOString())
       .limit(30) // Garantia de estabilidade e prevenção contra quedas de execução
 
-    if (error) throw error
+    if (errorFrios) throw errorFrios
+
+    // Item F (24/08/2026, pedido da Adriana): lead frio espera 7 dias pra
+    // reengajar, mas um lead que já esquentou (morno/quente) e foi pro
+    // silêncio merece retorno bem mais rápido — 48h — porque ele já
+    // demonstrou interesse real; silêncio nessa faixa é sinal de abandono
+    // no meio do processo, não só "ainda não decidiu". Reusa o MESMO
+    // template já aprovado (reengajamento_frio) pra não depender de um novo
+    // ciclo de aprovação da Meta — o texto do template não foi revisado pra
+    // esse caso específico, então se soar frio demais pra um lead quente,
+    // vale considerar pedir um template novo mais pra frente. Exclui
+    // agendamento/visita porque esses leads já têm um próximo passo marcado
+    // — reengajar de novo seria confuso.
+    const twoDaysAgo = new Date()
+    twoDaysAgo.setDate(twoDaysAgo.getDate() - 2)
+
+    const { data: leadsMornoQuente, error: errorMornoQuente } = await supabase
+      .from('leads')
+      .select('id, telefone, nome, status, temperatura')
+      .in('temperatura', ['morno', 'quente'])
+      .not('status', 'in', '(perdido,fechado,agendamento,visita)')
+      .lt('updated_at', twoDaysAgo.toISOString())
+      .limit(20)
+
+    if (errorMornoQuente) throw errorMornoQuente
+
+    const leadsCandidatos = [...(leadsFrios || []), ...(leadsMornoQuente || [])]
 
     // Limite de reengajamentos por lead (12/08/2026, pedido da Adriana): sem
     // isso, um lead que nunca esquenta recebe o mesmo template a cada 7 dias
@@ -41,11 +89,18 @@ Deno.serve(async (req) => {
     // pode restringir o número de enviar mais mensagens) — por isso o limite,
     // não é só spam pro cliente. Contado via conversation_history (sem
     // migration nova): cada envio anterior já grava o marcador abaixo.
-    const MAX_REENGAJAMENTOS = 3
+    const MAX_REENGAJAMENTOS_FRIO = 3
+    // Item F: cap mais baixo pra morno/quente — se um lead que já esquentou
+    // não responde a 2 tentativas, o caminho certo é virar tarefa humana
+    // (ver item de encaminhamento humano), não continuar insistindo por
+    // automação.
+    const MAX_REENGAJAMENTOS_QUENTE = 2
     const MARCADOR_REENGAJAMENTO = '[Template Automático de Reengajamento Enviado]'
+    const maxReengajamentosPara = (l: { temperatura: string }) =>
+      l.temperatura === 'frio' ? MAX_REENGAJAMENTOS_FRIO : MAX_REENGAJAMENTOS_QUENTE
 
-    const idsCandidatos = (leadsCandidatos || []).map((l) => l.id)
-    let leads = leadsCandidatos || []
+    const idsCandidatos = leadsCandidatos.map((l) => l.id)
+    let leads = leadsCandidatos
     if (idsCandidatos.length > 0) {
       const { data: historico } = await supabase
         .from('conversation_history')
@@ -58,16 +113,16 @@ Deno.serve(async (req) => {
         contagemPorLead.set(h.lead_id, (contagemPorLead.get(h.lead_id) || 0) + 1)
       }
 
-      const noLimite = (leadsCandidatos || []).filter(
-        (l) => (contagemPorLead.get(l.id) || 0) >= MAX_REENGAJAMENTOS,
+      const noLimite = leadsCandidatos.filter(
+        (l) => (contagemPorLead.get(l.id) || 0) >= maxReengajamentosPara(l),
       )
       if (noLimite.length > 0) {
         console.log(
-          `${noLimite.length} lead(s) já atingiram o limite de ${MAX_REENGAJAMENTOS} reengajamentos, pulando: ${noLimite.map((l) => l.id).join(', ')}`,
+          `${noLimite.length} lead(s) já atingiram o limite de reengajamentos, pulando: ${noLimite.map((l) => l.id).join(', ')}`,
         )
       }
-      leads = (leadsCandidatos || []).filter(
-        (l) => (contagemPorLead.get(l.id) || 0) < MAX_REENGAJAMENTOS,
+      leads = leadsCandidatos.filter(
+        (l) => (contagemPorLead.get(l.id) || 0) < maxReengajamentosPara(l),
       )
     }
 

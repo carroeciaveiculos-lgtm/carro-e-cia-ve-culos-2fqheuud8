@@ -3,6 +3,32 @@
 Copie e cole como primeira mensagem numa sessão nova do Claude Code.
 
 ```
+Continuando de uma sessão anterior (24/08/2026, sessão 14 — Clara/SDR e
+tokens Meta). Leia primeiro:
+- MEMORY_WORK.MD, seção "Sessão 14": diagnóstico de conversão da Clara
+  (padrão robótico, zero funil funcionando) + plano A-F implementado e
+  publicado (regra de prioridade pra pergunta direta, forma de pagamento
+  qualificada, trava de temperatura, trava anti-duplicidade, contador de
+  convite único, encaminhamento humano com critério explícito,
+  reengajamento morno/quente 48h). Achado grande: template
+  `reengajamento_frio` usado pelo `re-engagement-cron` NUNCA existiu de
+  verdade na Meta — função rodava há semanas só gerando erro silencioso,
+  zero mensagem de reengajamento saiu. Pausado no código (flag
+  `REENGAJAMENTO_PAUSADO`) até aprovação. Dois templates novos
+  (`reengajamento_quente`, `reengajamento_pos_visita`) já submetidos à
+  Meta, status PENDING em 24/08. Descoberto de brinde: `lembrete_agendamento`
+  (lembrete de visita, 2 variáveis) e `agendamento_reagendar` (na real é
+  follow-up de no-show, apesar do nome) já tinham função pronta desde
+  13/08 (`lembrete-agendamento-cron`, `agendamento-no-show-cron`),
+  publicadas e agendadas via pg_cron — mas voltavam 401 sempre, porque
+  publicadas com `verify_jwt: true` (cron não manda JWT, só o segredo
+  interno). Corrigido pra `false` e testado de verdade (HTTP 200 via
+  `net.http_post` manual) — rodam de hora em hora desde 24/08/2026. Não
+  precisou construir nada do zero, só corrigir essa flag.
+  `WHATSAPP_TOKEN` novo confirmado com permissão
+  `whatsapp_business_management` funcionando (testado via function
+  temporária, já apagada).
+
 Continuando de uma sessão anterior (23-24/08/2026, sessão 13). Leia primeiro:
 - MEMORY_WORK.MD deste projeto (15 seções "Sessão 13" no topo: "Gerar com
   IA" da vaga agora pesquisa de verdade no Google + gera SEO/JobPosting
@@ -51,6 +77,19 @@ avisando a Adriana pra checar se a LinkedIn aprovou o "Request Access" do
 foi aprovado antes disso, pular direto pro item 1 de "Precisa de decisão".
 
 ## Precisa de decisão/ação da Adriana
+-1. **Reativar `re-engagement-cron` quando a Meta aprovar os templates
+   novos** (24/08/2026) — `reengajamento_quente` e `reengajamento_pos_visita`
+   estão PENDING. Quando aprovar: trocar `REENGAJAMENTO_PAUSADO` pra
+   `false` em `supabase/functions/re-engagement-cron/index.ts` e trocar o
+   nome do template hardcoded (`reengajamento_frio`, que não existe) pelo
+   nome aprovado de verdade — hoje a função só tem 1 template usado pros
+   2 públicos (frio e morno/quente), pode fazer sentido usar
+   `reengajamento_quente` só pro público morno/quente e manter frio à
+   parte, decisão dela quando aprovar.
+-0.5. **Testar em conversa real** as travas publicadas em 24/08 (C, D, E,
+   regra de prioridade do A, forma de pagamento do B, critério de
+   encaminhamento humano) — só revisão de código até agora, não
+   observado em atendimento de cliente de verdade ainda.
 0. **Testar o botão "Gerar com IA" de verdade no painel** (24/08/2026) —
    a lógica foi testada por fora (function de diagnóstico), mas o botão
    em si dentro do formulário de Vagas ainda não foi clicado por ninguém.
