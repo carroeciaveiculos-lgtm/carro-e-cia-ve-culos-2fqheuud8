@@ -2,6 +2,7 @@ import { supabase } from '@/lib/supabase/client'
 import { Database } from '@/lib/supabase/types'
 import { stripHtml } from '@/lib/utils'
 import { parseMarkdown } from '@/lib/markdown'
+import { BRAND } from '@/lib/brand'
 
 export type Vaga = Database['public']['Tables']['vagas']['Row']
 export type VagaInsert = Database['public']['Tables']['vagas']['Insert']
@@ -131,17 +132,21 @@ export const gerarResumoVaga = async (titulo: string, descricaoMarkdown: string)
   return { data: (data?.resumo as string) || '', error: null }
 }
 
-// Cria um post agendado pro agora, reaproveitando a mesma fila que o resto do
-// site já usa pra publicar no Facebook/Instagram (tabela social_posts + cron
-// que roda publicar-social).
+function cortarNoLimite(texto: string): string {
+  if (texto.length <= LIMITE_CARACTERES_RESUMO_REDES) return texto
+  return `${texto.slice(0, LIMITE_CARACTERES_RESUMO_REDES - 1)}…`
+}
+
+// Cria os posts agendados pro agora, reaproveitando a mesma fila que o resto
+// do site já usa pra publicar no Facebook/Instagram (tabela social_posts +
+// cron que roda publicar-social).
+//
+// Achado 24/08/2026, pedido da Adriana: manda o MESMO texto pras duas redes
+// não fazia sentido, porque o Instagram não deixa link clicável na legenda
+// de jeito nenhum (limitação da própria plataforma) — "clique no link" ali
+// engana quem lê. Por isso agora cria DOIS posts separados (um pra cada
+// rede), cada um com o CTA certo pro que aquela rede realmente permite.
 export const postarVagaNasRedes = async (vaga: Vaga) => {
-  // Link direto pra página da vaga específica (não mais a genérica
-  // /trabalhe-conosco) — achado 23/08/2026, pedido da Adriana: o CTA do
-  // post precisa levar direto pra vaga. URL completa com https:// pra
-  // ficar clicável de verdade onde a rede social suporta link na legenda
-  // (Facebook reconhece automaticamente; Instagram não deixa link clicável
-  // na legenda de jeito nenhum — limitação da própria plataforma, não do
-  // nosso código — só "link na bio").
   const link = vaga.slug
     ? `https://carroeciamotors.com.br/vagas/${vaga.slug}`
     : 'https://carroeciamotors.com.br/trabalhe-conosco'
@@ -153,24 +158,35 @@ export const postarVagaNasRedes = async (vaga: Vaga) => {
   const corpo =
     vaga.resumo_redes ||
     stripHtml(parseMarkdown(vaga.descricao || '')).slice(0, LIMITE_CARACTERES_RESUMO_REDES)
-  let texto = `📢 Estamos contratando: ${vaga.titulo}!\n\n${corpo}\n\n👉 Candidate-se agora, clique no link: ${link}`
-  // Cinto de segurança: garante que o texto final nunca estoura o limite do
-  // Instagram, mesmo que o resumo salvo tenha vindo de uma versão antiga
-  // sem esse corte.
-  if (texto.length > LIMITE_CARACTERES_RESUMO_REDES) {
-    texto = `${texto.slice(0, LIMITE_CARACTERES_RESUMO_REDES - 1)}…`
-  }
+  const cabecalho = `📢 Estamos contratando: ${vaga.titulo}!\n\n${corpo}`
+
+  const textoFacebook = cortarNoLimite(
+    `${cabecalho}\n\n👉 Candidate-se agora, clique no link: ${link}`,
+  )
+  const textoInstagram = cortarNoLimite(
+    `${cabecalho}\n\n👉 Candidate-se: copie o link e cole no navegador (o Instagram não deixa link clicável aqui)\n${link}\n\nOu chame no WhatsApp: ${BRAND.whatsappDisplay}`,
+  )
+
   const { data, error } = await supabase
     .from('social_posts')
-    .insert({
-      texto,
-      imagem: vaga.imagem_url,
-      redes: { facebook: true, instagram: true },
-      data_agendamento: new Date().toISOString(),
-      status: 'Agendado',
-      content_type: 'feed',
-    })
+    .insert([
+      {
+        texto: textoFacebook,
+        imagem: vaga.imagem_url,
+        redes: { facebook: true },
+        data_agendamento: new Date().toISOString(),
+        status: 'Agendado',
+        content_type: 'feed',
+      },
+      {
+        texto: textoInstagram,
+        imagem: vaga.imagem_url,
+        redes: { instagram: true },
+        data_agendamento: new Date().toISOString(),
+        status: 'Agendado',
+        content_type: 'feed',
+      },
+    ])
     .select()
-    .single()
   return { data, error }
 }

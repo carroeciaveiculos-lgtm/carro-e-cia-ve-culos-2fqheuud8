@@ -332,7 +332,8 @@ export default function VagasAdmin() {
     }
     toast({
       title: 'Postagem agendada!',
-      description: 'A vaga entrou na fila de publicação do Facebook/Instagram.',
+      description:
+        'Entrou na fila do Facebook e do Instagram — publica em até 15 minutos, não precisa fazer mais nada.',
     })
   }
 

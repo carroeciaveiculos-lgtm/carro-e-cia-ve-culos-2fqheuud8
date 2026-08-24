@@ -11,6 +11,36 @@ nos arquivos `docs/*.md` — aqui é só o resumo de estado + pendências.
 **Pasta de trabalho deste projeto:** `C:\Projeto\Revenda Carro e Cia\carro-e-cia-ve-culos-2fqheuud8`
 (sempre abrir sessão nova aqui pra continuar — ver também `CLAUDE.md`).
 
+## Sessão 13 (24/08/2026) — texto do post diferente por rede + confirmação real do markdown em produção
+
+Duas coisas nessa rodada:
+
+1. **Confirmação real da reescrita do editor pra markdown** (ver seção
+   abaixo) — Adriana cobrou, com razão, que eu não podia afirmar "é o
+   mesmo sistema do blog" sem checar. Fui conferir e achei que o blog
+   guarda o conteúdo já em HTML pronto, não markdown — então o parser de
+   markdown nunca era exercitado lá de verdade, minha afirmação anterior
+   era imprecisa. Corrigido criando uma vaga temporária de teste (com
+   negrito, itálico, lista e numeração) **direto no site de produção**
+   (carroeciamotors.com.br), confirmando visualmente que renderizou
+   certo, e apagando a vaga de teste logo em seguida (ficou no ar menos
+   de 2 minutos).
+
+2. **Texto diferente por rede social** — achado real: o post de vaga
+   mandava o mesmo texto pra Facebook e Instagram, com "clique no link"
+   — mas o Instagram nunca deixa link clicável na legenda (confirmado
+   antes via doc oficial da Meta), então essa frase engana quem lê lá.
+   `postarVagaNasRedes` agora cria **dois posts separados** (não mais um
+   só pras duas redes): Facebook mantém "clique no link" (funciona lá);
+   Instagram diz pra copiar o link + oferece o WhatsApp da loja como
+   alternativa (`BRAND.whatsappDisplay`). Também melhorei o aviso na tela
+   depois de clicar "Postar" pra deixar claro que publica em até 15
+   minutos (achado 23/08: o aviso antigo não dizia isso, causou confusão
+   de "não vi nada acontecer" quando na real só precisava esperar).
+   Verificado por script local: textos ficam em 553 (Facebook) e 646
+   (Instagram) caracteres com o resumo real da vaga SDR — bem dentro do
+   limite de 2200.
+
 ## Sessão 13 (24/08/2026) — editor de texto reescrito: achado bug real de perda de dados, corrigido com markdown
 
 Adriana perguntou se o editor básico de formatação (item 1 do pedido

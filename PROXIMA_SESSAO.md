@@ -4,9 +4,12 @@ Copie e cole como primeira mensagem numa sessão nova do Claude Code.
 
 ```
 Continuando de uma sessão anterior (23-24/08/2026, sessão 13). Leia primeiro:
-- MEMORY_WORK.MD deste projeto (13 seções "Sessão 13" no topo: editor de
-  texto reescrito de contentEditable pra markdown depois de achar bug
-  real de perda de dados — testado ao vivo de verdade dessa vez; teste
+- MEMORY_WORK.MD deste projeto (14 seções "Sessão 13" no topo: texto do
+  post diferente por rede (Instagram não deixa link clicável, ganhou CTA
+  com WhatsApp) + confirmação real do markdown em produção (criei e
+  apaguei vaga de teste no site real); editor de texto reescrito de
+  contentEditable pra markdown depois de achar bug real de perda de
+  dados — testado ao vivo de verdade dessa vez; teste
   real de publicação da vaga SDR — Instagram funcionou, achado bug real no
   token do Facebook (publish_actions descontinuada); editor de
   texto na descrição + resumo automático pra redes sociais (limite de
