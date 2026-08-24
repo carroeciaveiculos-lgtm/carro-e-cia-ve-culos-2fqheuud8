@@ -21,3 +21,14 @@ export function extractFinalPlaca(placa: string): string {
     .slice(-1)
     .toUpperCase()
 }
+
+// Tira as tags HTML de um texto gerado pelo RichTextEditor — usado onde só o
+// texto puro importa (prévia truncada de lista, resumo pra redes sociais).
+export function stripHtml(html: string): string {
+  return (html || '')
+    .replace(/<(br|\/p|\/div|\/li)>/gi, '\n')
+    .replace(/<[^>]*>/g, '')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim()
+}

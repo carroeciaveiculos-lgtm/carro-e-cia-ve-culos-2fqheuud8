@@ -4,16 +4,20 @@ Copie e cole como primeira mensagem numa sessão nova do Claude Code.
 
 ```
 Continuando de uma sessão anterior (23/08/2026, sessão 13). Leia primeiro:
-- MEMORY_WORK.MD deste projeto (9 seções "Sessão 13" no topo: achado de
-  que a geração de imagem de vaga demorava 45-90s sem avisar e por isso
-  "sumia" da tela; padrão único de imagem de vaga com 2 pessoas + 2
-  opções pra escolher; gpt-image-2 em todo o sistema + rotina mensal de
-  checar modelos novos; modelo gpt-image-2 + fidelidade da logo na
-  imagem da vaga; página dedicada por vaga + formulário vinculado; regras
-  da Clara sincronizadas + confirmação de envio de foto de veículo;
-  imagens no chat da Clara corrigidas — recepção e envio; menu lateral
-  reorganizado por setor + fix do item faltando na tela de permissões;
-  usuário Roberto Junior resolvido)
+- MEMORY_WORK.MD deste projeto (11 seções "Sessão 13" no topo: editor de
+  texto na descrição + resumo automático pra redes sociais (limite de
+  caracteres) + CTA com link + imagem cortada corrigida + layout com
+  formulário à direita; logo só em fundo branco + texto da vaga escrito
+  de verdade no cartão + ajuste sempre visível; achado de que a geração de
+  imagem de vaga demorava 45-90s sem avisar e por isso "sumia" da tela;
+  padrão único de imagem de vaga com 2 pessoas + 2 opções pra escolher;
+  gpt-image-2 em todo o sistema + rotina mensal de checar modelos novos;
+  modelo gpt-image-2 + fidelidade da logo na imagem da vaga; página
+  dedicada por vaga + formulário vinculado; regras da Clara sincronizadas
+  + confirmação de envio de foto de veículo; imagens no chat da Clara
+  corrigidas — recepção e envio; menu lateral reorganizado por setor +
+  fix do item faltando na tela de permissões; usuário Roberto Junior
+  resolvido)
 
 - docs/leads-e-sdr.md — detalhe técnico completo do fix de imagem no
   chat da Clara (seção "Fatos confirmados")
@@ -37,23 +41,39 @@ avisando a Adriana pra checar se a LinkedIn aprovou o "Request Access" do
 foi aprovado antes disso, pular direto pro item 1 de "Precisa de decisão".
 
 ## Precisa de decisão/ação da Adriana
-0. **Regenerar a imagem do "Consultor(a) de Consórcios"**: essa vaga saiu
+0. **Testar o resumo automático + publicação da vaga SDR** (23/08/2026) —
+   não testei a geração do resumo pela IA nem a publicação de verdade
+   (function exige seu login, não tenho como clicar por você). Passo a
+   passo: abra a vaga "Representante de Desenvolvimento de Vendas (SDR)"
+   em Vagas → editar → clique em "Salvar" (isso gera o resumo automático
+   pela primeira vez, já que essa vaga foi criada antes dessa função
+   existir) → confira se o resumo ficou bom e dentro do contador de
+   caracteres → clique em "Postar" pra publicar de verdade no Facebook e
+   Instagram → me avise que eu confirmo pelos logs se dois deram certo. A
+   lógica de corte de caracteres (nunca passar de 2200) já foi testada e
+   confirmada com o texto real dessa vaga — só a parte de IA que falta
+   confirmar ao vivo.
+   — **Já confirmado visualmente** (sem precisar de teste dela): logo em
+   fundo branco + texto do cargo escrito na imagem (function versão 13) e
+   imagem sem corte na página pública — ambos vistos funcionando de
+   verdade na foto real da vaga SDR.
+1. **Regenerar a imagem do "Consultor(a) de Consórcios"**: essa vaga saiu
    com um logo inventado (não é o oficial). Já corrigido o prompt + trocado
    pro modelo `gpt-image-2` (23/08) — só falta ela entrar em Vagas → editar
    essa vaga → "Gerar do zero de novo" pra sair certo. Não é um bug
    pendente de código, só uma ação manual que precisa do login dela.
-1. **Triagem de candidatos do LinkedIn Hiring (22/08/2026)**: perguntei se
+2. **Triagem de candidatos do LinkedIn Hiring (22/08/2026)**: perguntei se
    ela quer que eu já mande mensagem pra alguma candidata recomendada
    (Kathyuça Melo e Larissa Felix, no topo do ranking) — sem resposta
    ainda. Ver ranking completo em `MEMORY_WORK.MD`, seção "Sessão 12".
-2. **Quando a LinkedIn aprovar o Community Management API**: mudar o
+3. **Quando a LinkedIn aprovar o Community Management API**: mudar o
    escopo OAuth pra incluir `w_organization_social`, reescrever a busca de
    organização em `linkedin-oauth-callback` (usar `/rest/organizationAcls`,
    não `/v2/userinfo` — são permissões diferentes), e trocar o `author_urn`
    usado em `publicar-social` pela URN da organização quando publicar como
    página. Passo a passo completo em `docs/linkedin-integracao.md`, seção
    "Quando for aprovado". Não mexer nisso até ela confirmar a aprovação.
-3. **LinkedIn e WhatsApp — WhatsApp ainda não implementado**: LinkedIn já
+4. **LinkedIn e WhatsApp — WhatsApp ainda não implementado**: LinkedIn já
    funciona (membro pessoal). WhatsApp: ela decidiu que "publicar" significa
    mandar o post como mensagem de template (não Status, não Canal — ver
    `docs/meta-integracao.md` pro porquê). Falta: (a) ela aprovar pelo menos
@@ -62,17 +82,17 @@ foi aprovado antes disso, pular direto pro item 1 de "Precisa de decisão".
    tabela `whatsapp_templates` está vazia), (c) conectar `publicar-social`
    ao `send-whatsapp` (que já sabe mandar template). Não implementado
    ainda, esperando ela aprovar o template primeiro.
-4. **Facebook Stories** — decisão dela em 20/08 foi tratar como etapa
+5. **Facebook Stories** — decisão dela em 20/08 foi tratar como etapa
    separada do Instagram Stories (já no ar). Usa endpoint diferente
    (`/photo_stories`/`/video_stories`) e a permissão do app pra isso
    ainda não foi confirmada. Só mexer se ela pedir explicitamente.
-5. **Automações de e-mail de nutrição de lead** — único item do
+6. **Automações de e-mail de nutrição de lead** — único item do
    backlog de 17/08 que ainda não foi implementado. Precisa de decisão
    de escopo (o que dispara o e-mail, frequência) e da chave de API do
    Brevo (nada configurado ainda, sem conector oficial).
-6. Rodar `claude mcp list` — conferir se o Canva aparece conectado. Se
+7. Rodar `claude mcp list` — conferir se o Canva aparece conectado. Se
    ainda "Needs authentication", pedir pra ela rodar /mcp e autenticar.
-7. Confirmar se ela já trocou o `client_secret` do app Meta ("APP
+8. Confirmar se ela já trocou o `client_secret` do app Meta ("APP
    CARRO E CIA") que foi colado em texto puro no chat em 16/08/2026 —
    ainda não confirmado (developers.facebook.com/apps/1369928368361968/
    settings/basic/).

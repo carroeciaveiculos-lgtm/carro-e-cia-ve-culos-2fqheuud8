@@ -10,6 +10,9 @@ verify_jwt = true
 [functions.gerar-imagem-vaga]
 verify_jwt = true
 
+[functions.gerar-resumo-vaga]
+verify_jwt = true
+
 [functions.sitemap]
 verify_jwt = false
 

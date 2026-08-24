@@ -41,10 +41,14 @@ import {
   deleteVaga,
   gerarVagaComIA,
   gerarImagemVaga,
+  gerarResumoVaga,
   postarVagaNasRedes,
+  LIMITE_CARACTERES_RESUMO_REDES,
 } from '@/services/vagas'
 import { Candidatura, listCandidaturas, updateCandidaturaStatus } from '@/services/candidaturas'
 import { Badge } from '@/components/ui/badge'
+import { RichTextEditor } from '@/components/RichTextEditor'
+import { stripHtml } from '@/lib/utils'
 
 export default function VagasAdmin() {
   const { toast } = useToast()
@@ -76,9 +80,11 @@ export default function VagasAdmin() {
   const [opcoesImagem, setOpcoesImagem] = useState<string[]>([])
   const [ajusteImagem, setAjusteImagem] = useState('')
   const [ativa, setAtiva] = useState(true)
+  const [resumoRedes, setResumoRedes] = useState('')
 
   const [gerandoTexto, setGerandoTexto] = useState(false)
   const [gerandoImagem, setGerandoImagem] = useState(false)
+  const [gerandoResumo, setGerandoResumo] = useState(false)
   const [salvando, setSalvando] = useState(false)
 
   const carregarDados = async () => {
@@ -106,6 +112,7 @@ export default function VagasAdmin() {
     setOpcoesImagem([])
     setAjusteImagem('')
     setAtiva(true)
+    setResumoRedes('')
     setDialogAberto(true)
   }
 
@@ -119,6 +126,7 @@ export default function VagasAdmin() {
     setOpcoesImagem([])
     setAjusteImagem('')
     setAtiva(vaga.ativa)
+    setResumoRedes(vaga.resumo_redes || '')
     setDialogAberto(true)
   }
 
@@ -210,6 +218,54 @@ export default function VagasAdmin() {
     setOpcoesImagem([])
   }
 
+  // Achado 23/08/2026, pedido da Adriana: descrições completas (a de SDR
+  // passa de 3000 caracteres) quebram a publicação no Instagram (limite de
+  // 2200). Gera o resumo automaticamente ao salvar, sem precisar de botão
+  // separado — só não gera de novo se ela já escreveu/ajustou um resumo à
+  // mão (nesse caso, respeita o que ela escreveu).
+  const gerarResumoSeNecessario = async (descricaoAtual: string) => {
+    const textoPlano = stripHtml(descricaoAtual)
+    if (!textoPlano) return ''
+    if (resumoRedes.trim()) return resumoRedes
+    setGerandoResumo(true)
+    try {
+      const { data, error } = await gerarResumoVaga(titulo, descricaoAtual)
+      if (error) throw error
+      setResumoRedes(data || '')
+      return data || ''
+    } catch (err: any) {
+      toast({
+        title: 'Não consegui gerar o resumo pra redes sociais',
+        description: `${err?.message || 'Tente novamente'} — a vaga foi salva mesmo assim, você pode gerar o resumo depois.`,
+      })
+      return ''
+    } finally {
+      setGerandoResumo(false)
+    }
+  }
+
+  const handleGerarResumo = async () => {
+    const textoPlano = stripHtml(descricao)
+    if (!textoPlano) {
+      toast({ title: 'Escreva a descrição primeiro', description: 'O resumo é gerado a partir da descrição da vaga.' })
+      return
+    }
+    setGerandoResumo(true)
+    try {
+      const { data, error } = await gerarResumoVaga(titulo, descricao)
+      if (error) throw error
+      setResumoRedes(data || '')
+    } catch (err: any) {
+      toast({
+        title: 'Erro ao gerar resumo',
+        description: err?.message || 'Tente novamente.',
+        variant: 'destructive',
+      })
+    } finally {
+      setGerandoResumo(false)
+    }
+  }
+
   const handleSalvar = async () => {
     if (!titulo) {
       toast({ title: 'Título obrigatório', variant: 'destructive' })
@@ -217,7 +273,14 @@ export default function VagasAdmin() {
     }
     setSalvando(true)
     try {
-      const payload = { titulo, descricao, imagem_url: imagemUrl || null, ativa }
+      const resumoFinal = await gerarResumoSeNecessario(descricao)
+      const payload = {
+        titulo,
+        descricao,
+        imagem_url: imagemUrl || null,
+        resumo_redes: resumoFinal || null,
+        ativa,
+      }
       const { error } = vagaEmEdicao
         ? await updateVaga(vagaEmEdicao.id, payload)
         : await createVaga(payload)
@@ -337,7 +400,7 @@ export default function VagasAdmin() {
                         </Badge>
                       </div>
                       <p className="text-sm text-muted-foreground truncate max-w-md">
-                        {vaga.descricao}
+                        {stripHtml(vaga.descricao || '')}
                       </p>
                     </div>
                   </div>
@@ -487,7 +550,40 @@ export default function VagasAdmin() {
 
             <div className="space-y-1.5">
               <Label>Descrição</Label>
-              <Textarea rows={8} value={descricao} onChange={(e) => setDescricao(e.target.value)} />
+              <RichTextEditor value={descricao} onChange={setDescricao} placeholder="Descreva a vaga..." />
+            </div>
+
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <Label>Resumo para redes sociais</Label>
+                <span className="text-xs text-muted-foreground">
+                  {resumoRedes.length}/{LIMITE_CARACTERES_RESUMO_REDES} caracteres
+                </span>
+              </div>
+              <Textarea
+                rows={4}
+                value={resumoRedes}
+                onChange={(e) => setResumoRedes(e.target.value)}
+                placeholder="Gerado automaticamente a partir da descrição ao salvar — pode editar à vontade"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleGerarResumo}
+                disabled={gerandoResumo || !stripHtml(descricao)}
+              >
+                {gerandoResumo ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <Wand2 className="w-4 h-4 mr-2" />
+                )}
+                {resumoRedes ? 'Atualizar resumo' : 'Gerar resumo agora'}
+              </Button>
+              <p className="text-xs text-muted-foreground">
+                É esse texto (curto, dentro do limite do Instagram) que vai no post das redes
+                sociais — a descrição completa acima fica só na página da vaga.
+              </p>
             </div>
 
             <div className="space-y-2">
@@ -544,7 +640,7 @@ export default function VagasAdmin() {
                 {imagemUrl ? 'Gerar do zero de novo' : 'Gerar imagem'}
               </Button>
 
-              {imagemUrl && opcoesImagem.length === 0 && (
+              {(imagemUrl || opcoesImagem.length > 0) && !gerandoImagem && (
                 <div className="flex gap-2 pt-1">
                   <Input
                     placeholder='Peça um ajuste (ex: "fundo mais claro")'

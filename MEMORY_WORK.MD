@@ -11,6 +11,98 @@ nos arquivos `docs/*.md` — aqui é só o resumo de estado + pendências.
 **Pasta de trabalho deste projeto:** `C:\Projeto\Revenda Carro e Cia\carro-e-cia-ve-culos-2fqheuud8`
 (sempre abrir sessão nova aqui pra continuar — ver também `CLAUDE.md`).
 
+## Sessão 13 (23/08/2026) — editor de texto, resumo automático pra redes, layout da página de vaga
+
+A pedido da Adriana, em bloco:
+
+1. **Editor de texto básico na descrição** — `src/components/RichTextEditor.tsx`
+   (contentEditable + `document.execCommand`, sem adicionar dependência
+   nova): negrito, itálico, marcadores, numeração, tamanho da fonte. Usado
+   no campo Descrição de `Vagas.tsx`. Descrição passa a guardar HTML (não
+   mais texto puro) — página pública (`VagaDetalhe.tsx`) renderiza com
+   `dangerouslySetInnerHTML` (mesmo padrão já usado pros artigos de blog
+   nesse projeto, `BlogPost.tsx`); prévia truncada na lista do admin usa
+   `stripHtml()` (novo helper em `src/lib/utils.ts`) pra não mostrar tags
+   cru.
+
+2. **Resumo automático pra redes sociais** — achado real testando com a
+   vaga "Representante de Desenvolvimento de Vendas (SDR)" que a Adriana
+   tinha acabado de criar: a descrição completa tem **4324 caracteres**,
+   bem acima do limite de legenda do Instagram (2200) — se fosse publicada
+   direto, quebraria a publicação no Instagram (Facebook tolera, Instagram
+   não). Nova coluna `vagas.resumo_redes`; nova function
+   `gerar-resumo-vaga` (Gemini, mesmo padrão de `gerar-vaga-ia`) gera um
+   resumo curto (~450 caracteres) automaticamente ao salvar a vaga, sem
+   precisar de botão separado — só não gera de novo se ela já editou um
+   resumo à mão. Botão "Atualizar resumo" disponível a qualquer momento.
+   `postarVagaNasRedes` agora usa esse resumo (com corte de segurança
+   travado em 2200 caracteres, `LIMITE_CARACTERES_RESUMO_REDES` em
+   `services/vagas.ts`) em vez da descrição completa. **Verificado**: testei
+   a lógica de corte com o texto real da descrição do SDR — confirma que
+   sem resumo o post ficaria travado exatamente em 2200 (não quebra), e
+   com resumo fica em ~420 caracteres. **Não testei a geração do resumo
+   pela IA ao vivo** (function exige login real) — só a lógica de limite.
+   Escopo: cobre Facebook + Instagram feed (os dois já publicados pra
+   vaga); não inclui Stories/Reels pra vaga (imagem quadrada não é o
+   formato certo pra isso) nem LinkedIn — se ela quiser isso, é pedido à
+   parte.
+
+3. **CTA com link direto pra vaga**: `postarVagaNasRedes` agora usa a URL
+   completa com `https://` (mais garantia de ficar clicável onde a
+   plataforma permite) e frase de chamada mais forte ("👉 Candidate-se
+   agora, clique no link"). Nota importante: **Instagram não deixa link
+   clicável em legenda** — isso é limitação da própria plataforma, não do
+   código (só "link na bio"). No Facebook funciona normal.
+
+4. **Imagem cortada na página da vaga corrigida**: `VagaDetalhe.tsx` usava
+   `object-cover` + `max-h-96`, que cortava topo/base de uma imagem
+   quadrada dentro de um container mais largo que alto — indo contra a
+   preferência já registrada da Adriana de nunca cortar/dar zoom em foto
+   (ver `[[prioriza-consistencia-visual-cards]]`). Trocado pra
+   `object-contain` + `aspect-square` + fundo branco — mostra a imagem
+   inteira sempre. **Confirmado visualmente** (localhost, vaga SDR real):
+   imagem aparece completa, incluindo o cartão de logo e o texto do cargo
+   que tinham sido corrigidos antes nessa mesma sessão.
+
+5. **Layout da página da vaga**: formulário de candidatura movido pra
+   coluna da direita, começando no topo (`sticky`), descrição na coluna da
+   esquerda — via CSS grid + `order` (mobile continua mostrando o
+   formulário primeiro, antes da descrição longa). **Confirmado
+   visualmente** (localhost) — layout responsivo funcionando como pedido.
+
+Arquivos tocados: `RichTextEditor.tsx` (novo), `lib/utils.ts` (+`stripHtml`),
+`services/vagas.ts`, `pages/admin/Vagas.tsx`, `pages/VagaDetalhe.tsx`,
+`supabase/functions/gerar-resumo-vaga/` (novo), `supabase/config.toml`,
+migration `vagas_adiciona_resumo_redes`, `lib/supabase/types.ts`.
+`bun run lint`/`build` passaram limpos.
+
+## Sessão 13 (23/08/2026) — logo só em fundo branco + texto da vaga no cartão + ajuste sempre visível
+
+Feedback direto da Adriana depois de ver as imagens geradas: (1) a logo
+fica ilegível em fundo preto/escuro — só funciona em fundo branco/claro.
+(2) o campo de "pedir ajuste" tinha sumido — na real ele só aparecia
+DEPOIS de escolher uma das 2 opções (`opcoesImagem.length === 0`); se ela
+tentasse pedir ajuste antes de escolher, não tinha onde. (3) ela quer os
+dados da vaga (cargo) escritos de verdade dentro do card branco da
+imagem, não mais deixados em branco pra completar depois.
+
+**Corrigido**:
+- `gerar-imagem-vaga/index.ts`: prompt de geração do zero agora prende a
+  logo a um "cartão de fundo BRANCO" explícito, com instrução clara de
+  nunca colocar a logo sobre preto/escuro. No mesmo cartão, pede pra
+  escrever de verdade "ESTAMOS CONTRATANDO" + o nome do cargo (`${titulo}`)
+  — o `gpt-image-2` é bem melhor em renderizar texto que o `gpt-image-1`,
+  por isso essa mudança só ficou viável agora. Prompt de ajuste (editar
+  imagem existente) atualizado no mesmo sentido. Function reimplantada
+  (versão 13). **Não testado ao vivo** (function exige login real) — pedir
+  pra Adriana conferir se a logo saiu legível e o texto do cargo saiu
+  legível/sem erro de digitação na próxima geração; texto gerado por IA
+  não tem garantia 100% de grafia perfeita.
+- `Vagas.tsx`: campo de ajuste agora aparece sempre que já existe alguma
+  imagem gerada nessa sessão do diálogo — seja as 2 opções ainda não
+  escolhidas, seja depois de escolher uma. Antes só aparecia no segundo
+  caso.
+
 ## Sessão 13 (23/08/2026) — achado: geração de imagem "sumia" por demorar demais, sem aviso
 
 Adriana reportou que a imagem da vaga "não foi gerada". Investigando pelos

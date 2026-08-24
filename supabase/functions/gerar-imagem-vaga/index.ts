@@ -47,9 +47,14 @@ Deno.serve(async (req) => {
 
     // Padrão único de imagem (achado 23/08/2026, pedido da Adriana): a
     // composição da foto (pessoas, ambiente, layout) fica sempre igual,
-    // não muda por cargo — só o texto do cargo (adicionado depois, fora da
-    // IA) muda. Por isso o "titulo" NÃO entra na descrição visual do
-    // prompt de geração do zero, só é usado como validação/registro.
+    // não muda por cargo — só o texto do cargo muda.
+    //
+    // Achado 23/08/2026 (2ª rodada, feedback direto da Adriana vendo as
+    // imagens geradas): (1) a logo fica ilegível quando cai sobre fundo
+    // preto/escuro — só funciona em fundo branco/claro, então o prompt
+    // agora prende a logo a um cartão branco explícito. (2) ela quer os
+    // dados da vaga (cargo) escritos de verdade dentro desse cartão
+    // branco, não mais deixados em branco pra adicionar depois.
     //
     // Achado anterior (23/08/2026): com só "use a logo fornecida", o modelo
     // às vezes inventava um logo genérico em vez de reproduzir a marca real
@@ -57,8 +62,14 @@ Deno.serve(async (req) => {
     // são mandadas juntas e o modelo não sabe qual é qual. Labels
     // explícitos + instrução de fidelidade reduzem isso.
     const promptBase = imagemAtualUrl
-      ? `Ajuste a imagem enviada mantendo a identidade visual da marca (vermelho, branco, preto), estilo corporativo e moderno, as duas pessoas (uma mulher e um homem) e a área vazia reservada para o texto do cargo. Sem texto na imagem.`
-      : `Crie uma foto realista e profissional (não é ilustração nem desenho vetorial) para post de vaga de emprego da revenda de veículos Carro e Cia. Mostre duas pessoas reais, uma mulher e um homem, ambos com vestimenta profissional (camisa social ou blazer), em pé lado a lado, com expressão confiante e simpática, num ambiente de concessionária de veículos (loja ou com um carro desfocado ao fundo). A primeira imagem anexada é a logomarca OFICIAL da empresa — reproduza ela exatamente como está (mesmo desenho, mesmas cores, mesma tipografia), com destaque; NÃO invente ou desenhe um logo novo. A segunda imagem anexada é uma foto real da fachada da loja, use só como referência de ambientação. Mantenha a identidade visual da marca (vermelho, branco, preto), estilo corporativo e moderno. Deixe uma área vazia e limpa reservada para o texto do cargo ser adicionado depois. Sem nenhum texto na imagem. Essa composição (as duas pessoas, cores, posição da logo, área pro texto) deve se manter sempre igual, independente do cargo específico da vaga.`
+      ? `Ajuste a imagem enviada mantendo: a identidade visual da marca (vermelho, branco, preto), as duas pessoas (uma mulher e um homem), e o cartão de fundo BRANCO com a logomarca oficial e o texto "ESTAMOS CONTRATANDO" / "${titulo}". A logo e esse texto precisam continuar SOMENTE sobre fundo branco/claro — nunca sobre preto ou escuro, porque fica ilegível.`
+      : `Crie uma foto realista e profissional (não é ilustração nem desenho vetorial) para post de vaga de emprego da revenda de veículos Carro e Cia. Mostre duas pessoas reais, uma mulher e um homem, ambos com vestimenta profissional (camisa social ou blazer), em pé lado a lado, com expressão confiante e simpática, num ambiente de concessionária de veículos (loja ou com um carro desfocado ao fundo).
+
+Inclua um cartão ou faixa de fundo BRANCO (nunca preto ou escuro) numa das bordas da composição. É SOMENTE nesse cartão branco que a logomarca oficial da empresa (primeira imagem anexada) deve aparecer — reproduza ela exatamente como está (mesmo desenho, mesmas cores, mesma tipografia), com destaque, sem inventar um logo novo. A logo NUNCA deve ficar sobre fundo preto ou escuro — só sobre fundo branco/claro, senão fica ilegível.
+
+Nesse mesmo cartão branco, escreva com ótima legibilidade (fonte grossa, estilo corporativo, texto preto ou vermelho) o seguinte, em duas linhas: um cabeçalho pequeno "ESTAMOS CONTRATANDO" e, logo abaixo, bem maior e em negrito, o nome do cargo: "${titulo}".
+
+A segunda imagem anexada é uma foto real da fachada da loja, use só como referência de ambientação. Mantenha a identidade visual da marca (vermelho, branco, preto) no restante da composição, estilo corporativo e moderno. Essa composição (as duas pessoas, o cartão branco com a logo e o texto) deve se manter sempre no mesmo estilo — só o cargo muda.`
     const prompt = ajuste ? `${promptBase}\n\nAjuste pedido pelo usuário: ${ajuste}` : promptBase
 
     // Usa a API de edição (não a de geração pura) pra compor com referências

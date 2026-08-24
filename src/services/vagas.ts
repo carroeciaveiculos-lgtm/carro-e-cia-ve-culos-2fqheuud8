@@ -1,9 +1,17 @@
 import { supabase } from '@/lib/supabase/client'
 import { Database } from '@/lib/supabase/types'
+import { stripHtml } from '@/lib/utils'
 
 export type Vaga = Database['public']['Tables']['vagas']['Row']
 export type VagaInsert = Database['public']['Tables']['vagas']['Insert']
 export type VagaUpdate = Database['public']['Tables']['vagas']['Update']
+
+// Limite real do Instagram pra legenda (2200 caracteres) — é o mais apertado
+// entre Facebook/Instagram, então usar ele como teto garante que o post
+// funciona nas duas redes (achado 23/08/2026: a vaga de SDR tinha uma
+// descrição de +3000 caracteres, que quebraria a publicação no Instagram
+// se fosse mandada direto, sem resumo).
+export const LIMITE_CARACTERES_RESUMO_REDES = 2200
 
 export const slugifyTitulo = (titulo: string) =>
   titulo
@@ -108,14 +116,47 @@ export const gerarImagemVaga = async (
   return { data: (data?.urls as string[]) || [], error: null }
 }
 
+// Resumo curto pra redes sociais, gerado por IA a partir da descrição
+// completa (achado 23/08/2026: descrições longas — a de SDR tem +3000
+// caracteres — quebram a publicação no Instagram, que corta em 2200). O
+// texto vem sempre em texto puro (sem HTML), mesmo se a descrição usar o
+// editor de formatação.
+export const gerarResumoVaga = async (titulo: string, descricaoHtml: string) => {
+  const { data, error } = await supabase.functions.invoke('gerar-resumo-vaga', {
+    body: { titulo, descricao: stripHtml(descricaoHtml) },
+  })
+  if (error) return { data: null, error }
+  return { data: (data?.resumo as string) || '', error: null }
+}
+
 // Cria um post agendado pro agora, reaproveitando a mesma fila que o resto do
 // site já usa pra publicar no Facebook/Instagram (tabela social_posts + cron
 // que roda publicar-social).
 export const postarVagaNasRedes = async (vaga: Vaga) => {
+  // Link direto pra página da vaga específica (não mais a genérica
+  // /trabalhe-conosco) — achado 23/08/2026, pedido da Adriana: o CTA do
+  // post precisa levar direto pra vaga. URL completa com https:// pra
+  // ficar clicável de verdade onde a rede social suporta link na legenda
+  // (Facebook reconhece automaticamente; Instagram não deixa link clicável
+  // na legenda de jeito nenhum — limitação da própria plataforma, não do
+  // nosso código — só "link na bio").
   const link = vaga.slug
-    ? `carroeciamotors.com.br/vagas/${vaga.slug}`
-    : 'carroeciamotors.com.br/trabalhe-conosco'
-  const texto = `📢 Estamos contratando: ${vaga.titulo}!\n\n${vaga.descricao || ''}\n\nCandidate-se pelo site: ${link}`
+    ? `https://carroeciamotors.com.br/vagas/${vaga.slug}`
+    : 'https://carroeciamotors.com.br/trabalhe-conosco'
+  // Usa o resumo (curto, pronto pra rede social) em vez da descrição
+  // completa — a descrição pode ter formatação/HTML do editor e/ou ser
+  // longa demais pro limite do Instagram. Se por algum motivo a vaga não
+  // tiver resumo salvo (vaga antiga, criada antes dessa função existir),
+  // cai pra descrição sem HTML, cortada no limite seguro.
+  const corpo =
+    vaga.resumo_redes || stripHtml(vaga.descricao || '').slice(0, LIMITE_CARACTERES_RESUMO_REDES)
+  let texto = `📢 Estamos contratando: ${vaga.titulo}!\n\n${corpo}\n\n👉 Candidate-se agora, clique no link: ${link}`
+  // Cinto de segurança: garante que o texto final nunca estoura o limite do
+  // Instagram, mesmo que o resumo salvo tenha vindo de uma versão antiga
+  // sem esse corte.
+  if (texto.length > LIMITE_CARACTERES_RESUMO_REDES) {
+    texto = `${texto.slice(0, LIMITE_CARACTERES_RESUMO_REDES - 1)}…`
+  }
   const { data, error } = await supabase
     .from('social_posts')
     .insert({
