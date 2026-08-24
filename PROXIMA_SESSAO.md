@@ -4,9 +4,12 @@ Copie e cole como primeira mensagem numa sessão nova do Claude Code.
 
 ```
 Continuando de uma sessão anterior (23-24/08/2026, sessão 13). Leia primeiro:
-- MEMORY_WORK.MD deste projeto (14 seções "Sessão 13" no topo: texto do
-  post diferente por rede (Instagram não deixa link clicável, ganhou CTA
-  com WhatsApp) + confirmação real do markdown em produção (criei e
+- MEMORY_WORK.MD deste projeto (15 seções "Sessão 13" no topo: "Gerar com
+  IA" da vaga agora pesquisa de verdade no Google + gera SEO/JobPosting
+  (achado: search + JSON estrito do Gemini não funcionam juntos, testado
+  antes de usar); texto do post diferente por rede (Instagram não deixa
+  link clicável, ganhou CTA com WhatsApp) + confirmação real do markdown
+  em produção (criei e
   apaguei vaga de teste no site real); editor de texto reescrito de
   contentEditable pra markdown depois de achar bug real de perda de
   dados — testado ao vivo de verdade dessa vez; teste
@@ -48,7 +51,14 @@ avisando a Adriana pra checar se a LinkedIn aprovou o "Request Access" do
 foi aprovado antes disso, pular direto pro item 1 de "Precisa de decisão".
 
 ## Precisa de decisão/ação da Adriana
-0. **Facebook não publica mais — token com permissão descontinuada**
+0. **Testar o botão "Gerar com IA" de verdade no painel** (24/08/2026) —
+   a lógica foi testada por fora (function de diagnóstico), mas o botão
+   em si dentro do formulário de Vagas ainda não foi clicado por ninguém.
+   Abra Vagas → Nova Vaga → digite só um cargo (ex: "Consultor(a) de
+   Financiamentos") → Gerar com IA → espere uns 20-40s (agora pesquisa de
+   verdade, é mais lento que antes) → confira se veio título, descrição
+   formatada (títulos/listas) e palavras-chave preenchidas.
+1. **Facebook não publica mais — token com permissão descontinuada**
    (achado 24/08/2026, testando a publicação real da vaga SDR): toda
    publicação no Facebook via `publicar-social` falha com "(#200) The
    permission(s) publish_actions are not available. It has been
@@ -66,23 +76,23 @@ foi aprovado antes disso, pular direto pro item 1 de "Precisa de decisão".
    ficou no ar a pedido dela). Logo em fundo branco + texto do cargo
    escrito na imagem, e imagem sem corte na página pública — tudo
    confirmado com a vaga SDR real. Não precisa retestar nenhum desses.
-1. **Regenerar a imagem do "Consultor(a) de Consórcios"**: essa vaga saiu
+2. **Regenerar a imagem do "Consultor(a) de Consórcios"**: essa vaga saiu
    com um logo inventado (não é o oficial). Já corrigido o prompt + trocado
    pro modelo `gpt-image-2` (23/08) — só falta ela entrar em Vagas → editar
    essa vaga → "Gerar do zero de novo" pra sair certo. Não é um bug
    pendente de código, só uma ação manual que precisa do login dela.
-2. **Triagem de candidatos do LinkedIn Hiring (22/08/2026)**: perguntei se
+3. **Triagem de candidatos do LinkedIn Hiring (22/08/2026)**: perguntei se
    ela quer que eu já mande mensagem pra alguma candidata recomendada
    (Kathyuça Melo e Larissa Felix, no topo do ranking) — sem resposta
    ainda. Ver ranking completo em `MEMORY_WORK.MD`, seção "Sessão 12".
-3. **Quando a LinkedIn aprovar o Community Management API**: mudar o
+4. **Quando a LinkedIn aprovar o Community Management API**: mudar o
    escopo OAuth pra incluir `w_organization_social`, reescrever a busca de
    organização em `linkedin-oauth-callback` (usar `/rest/organizationAcls`,
    não `/v2/userinfo` — são permissões diferentes), e trocar o `author_urn`
    usado em `publicar-social` pela URN da organização quando publicar como
    página. Passo a passo completo em `docs/linkedin-integracao.md`, seção
    "Quando for aprovado". Não mexer nisso até ela confirmar a aprovação.
-4. **LinkedIn e WhatsApp — WhatsApp ainda não implementado**: LinkedIn já
+5. **LinkedIn e WhatsApp — WhatsApp ainda não implementado**: LinkedIn já
    funciona (membro pessoal). WhatsApp: ela decidiu que "publicar" significa
    mandar o post como mensagem de template (não Status, não Canal — ver
    `docs/meta-integracao.md` pro porquê). Falta: (a) ela aprovar pelo menos
@@ -91,17 +101,17 @@ foi aprovado antes disso, pular direto pro item 1 de "Precisa de decisão".
    tabela `whatsapp_templates` está vazia), (c) conectar `publicar-social`
    ao `send-whatsapp` (que já sabe mandar template). Não implementado
    ainda, esperando ela aprovar o template primeiro.
-5. **Facebook Stories** — decisão dela em 20/08 foi tratar como etapa
+6. **Facebook Stories** — decisão dela em 20/08 foi tratar como etapa
    separada do Instagram Stories (já no ar). Usa endpoint diferente
    (`/photo_stories`/`/video_stories`) e a permissão do app pra isso
    ainda não foi confirmada. Só mexer se ela pedir explicitamente.
-6. **Automações de e-mail de nutrição de lead** — único item do
+7. **Automações de e-mail de nutrição de lead** — único item do
    backlog de 17/08 que ainda não foi implementado. Precisa de decisão
    de escopo (o que dispara o e-mail, frequência) e da chave de API do
    Brevo (nada configurado ainda, sem conector oficial).
-7. Rodar `claude mcp list` — conferir se o Canva aparece conectado. Se
+8. Rodar `claude mcp list` — conferir se o Canva aparece conectado. Se
    ainda "Needs authentication", pedir pra ela rodar /mcp e autenticar.
-8. Confirmar se ela já trocou o `client_secret` do app Meta ("APP
+9. Confirmar se ela já trocou o `client_secret` do app Meta ("APP
    CARRO E CIA") que foi colado em texto puro no chat em 16/08/2026 —
    ainda não confirmado (developers.facebook.com/apps/1369928368361968/
    settings/basic/).

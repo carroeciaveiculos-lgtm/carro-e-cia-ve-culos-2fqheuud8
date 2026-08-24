@@ -11,6 +11,51 @@ nos arquivos `docs/*.md` — aqui é só o resumo de estado + pendências.
 **Pasta de trabalho deste projeto:** `C:\Projeto\Revenda Carro e Cia\carro-e-cia-ve-culos-2fqheuud8`
 (sempre abrir sessão nova aqui pra continuar — ver também `CLAUDE.md`).
 
+## Sessão 13 (24/08/2026) — "Gerar com IA" da vaga agora pesquisa de verdade + gera SEO (JobPosting)
+
+Pedido da Adriana: dar só o cargo e a IA fazer o resto "com maestria"
+(pesquisar requisitos reais, seguir o modelo de escrita da vaga de SDR
+que ela escreveu à mão, gerar palavras-chave de SEO), ela revisa antes
+de salvar.
+
+**Achado técnico importante, testado antes de implementar** (function de
+diagnóstico temporária, deletada depois): `google_search` (busca real do
+Google dentro da própria chamada do Gemini) e `responseMimeType:
+'application/json'` (modo JSON estrito) **não funcionam juntos** — a
+resposta vem vazia (sem erro, só sem `candidates`), o que seria fácil de
+não perceber. A solução: pedir JSON só no texto do prompt (sem forçar o
+modo), que funciona bem e sai limpo. Documentado no código de
+`gerar-vaga-ia` pra não redescobrir isso do zero.
+
+**Implementado**:
+- `gerar-vaga-ia` reescrita: ativa `google_search`, usa a estrutura da
+  vaga de SDR como MODELO (7 seções: Responsabilidades, Requisitos,
+  Diferenciais, Perfil Comportamental, Benefícios, Chamada — não copia o
+  texto dela, só a estrutura/tom), pede a descrição em markdown (mesmo
+  editor novo da sessão), e gera 5-8 palavras-chave junto.
+- Nova coluna `vagas.palavras_chave`. Painel ganhou campo pra ver/editar
+  as palavras-chave geradas, junto com aviso de que a geração agora
+  demora 20-40s (busca real) — mesmo cuidado de UX já aplicado na
+  geração de imagem.
+- **SEO de verdade**: `VagaDetalhe.tsx` agora manda uma ficha estruturada
+  `JobPosting` (schema.org) pro Google — é isso que faz a vaga aparecer
+  na busca de emprego do Google, não a tag "keywords" (que não pesa mais
+  no Google há +15 anos, mas mesmo assim geramos ela também, só que pra
+  organização/revisão da Adriana, não por peso de SEO real).
+  `validThrough` usa prazo padrão de 60 dias da criação (não existe campo
+  de prazo na vaga ainda).
+
+**Testado**: a function inteira (prompt + busca + parsing) testada numa
+function de diagnóstico temporária com o cargo "Vendedor(a) de
+Automóveis" — resultado real, bem pesquisado (citou CNH B, tabela FIPE,
+sistema CRM), markdown correto, palavras-chave relevantes. A ficha
+JobPosting testada de verdade na página real da vaga SDR (localhost) —
+JSON-LD válido, todos os campos corretos (endereço, logo, datas).
+**Não testado**: o botão "Gerar com IA" dentro do painel de verdade (a
+lógica de conexão é a mesma já usada pro resumo/imagem nessa mesma
+sessão, já provada — só o encaixe final no formulário que falta ela
+confirmar clicando).
+
 ## Sessão 13 (24/08/2026) — texto do post diferente por rede + confirmação real do markdown em produção
 
 Duas coisas nessa rodada:

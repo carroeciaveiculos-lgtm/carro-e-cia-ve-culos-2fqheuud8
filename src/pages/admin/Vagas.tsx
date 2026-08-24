@@ -82,6 +82,7 @@ export default function VagasAdmin() {
   const [ajusteImagem, setAjusteImagem] = useState('')
   const [ativa, setAtiva] = useState(true)
   const [resumoRedes, setResumoRedes] = useState('')
+  const [palavrasChaveSeo, setPalavrasChaveSeo] = useState('')
 
   const [gerandoTexto, setGerandoTexto] = useState(false)
   const [gerandoImagem, setGerandoImagem] = useState(false)
@@ -114,6 +115,7 @@ export default function VagasAdmin() {
     setAjusteImagem('')
     setAtiva(true)
     setResumoRedes('')
+    setPalavrasChaveSeo('')
     setDialogAberto(true)
   }
 
@@ -128,6 +130,7 @@ export default function VagasAdmin() {
     setAjusteImagem('')
     setAtiva(vaga.ativa)
     setResumoRedes(vaga.resumo_redes || '')
+    setPalavrasChaveSeo(vaga.palavras_chave || '')
     setDialogAberto(true)
   }
 
@@ -137,12 +140,20 @@ export default function VagasAdmin() {
       return
     }
     setGerandoTexto(true)
+    // Achado 24/08/2026: com pesquisa real (google_search) a resposta demora
+    // mais que antes — mesmo problema já visto na geração de imagem (achado
+    // 23/08/2026), então já aviso aqui antes de acontecer de novo.
+    toast({
+      title: 'Pesquisando e escrevendo a vaga...',
+      description: 'Pode levar de 20 a 40 segundos. Não feche esta janela.',
+    })
     try {
       const { data, error } = await gerarVagaComIA(cargo, palavrasChave)
       if (error) throw error
       if (data) {
         setTitulo(data.titulo)
         setDescricao(data.descricao)
+        setPalavrasChaveSeo(data.palavras_chave || '')
       }
     } catch (err: any) {
       toast({
@@ -280,6 +291,7 @@ export default function VagasAdmin() {
         descricao,
         imagem_url: imagemUrl || null,
         resumo_redes: resumoFinal || null,
+        palavras_chave: palavrasChaveSeo || null,
         ativa,
       }
       const { error } = vagaEmEdicao
@@ -511,6 +523,11 @@ export default function VagasAdmin() {
           <div className="space-y-4">
             {!vagaEmEdicao && (
               <Card className="p-4 bg-muted/40">
+                <p className="text-sm text-muted-foreground mb-3">
+                  Digite só o cargo — a IA pesquisa requisitos e diferenciais reais do mercado,
+                  escreve a descrição completa (seguindo a mesma estrutura da vaga de SDR) e já
+                  sugere as palavras-chave de SEO. Revise tudo antes de salvar.
+                </p>
                 <div className="grid md:grid-cols-2 gap-3 mb-3">
                   <div className="space-y-1.5">
                     <Label>Cargo</Label>
@@ -521,7 +538,7 @@ export default function VagasAdmin() {
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <Label>Palavras-chave (opcional)</Label>
+                    <Label>Detalhes extras (opcional)</Label>
                     <Input
                       value={palavrasChave}
                       onChange={(e) => setPalavrasChave(e.target.value)}
@@ -540,7 +557,7 @@ export default function VagasAdmin() {
                   ) : (
                     <Wand2 className="w-4 h-4 mr-2" />
                   )}
-                  Gerar com IA
+                  {gerandoTexto ? 'Pesquisando e escrevendo...' : 'Gerar com IA'}
                 </Button>
               </Card>
             )}
@@ -553,6 +570,18 @@ export default function VagasAdmin() {
             <div className="space-y-1.5">
               <Label>Descrição</Label>
               <RichTextEditor value={descricao} onChange={setDescricao} placeholder="Descreva a vaga..." />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label>Palavras-chave (SEO da página da vaga)</Label>
+              <Input
+                value={palavrasChaveSeo}
+                onChange={(e) => setPalavrasChaveSeo(e.target.value)}
+                placeholder="Gerado junto com a descrição ao clicar em Gerar com IA — pode editar"
+              />
+              <p className="text-xs text-muted-foreground">
+                Separe por vírgula. Ajuda o Google a entender do que a vaga trata.
+              </p>
             </div>
 
             <div className="space-y-1.5">

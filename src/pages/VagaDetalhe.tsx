@@ -8,11 +8,13 @@ import { getVagaPorIdOuSlug, Vaga } from '@/services/vagas'
 import { FormularioCandidatura } from '@/components/FormularioCandidatura'
 import { stripHtml } from '@/lib/utils'
 import { parseMarkdown } from '@/lib/markdown'
+import { useBrandConfig } from '@/hooks/use-brand-config'
 
 export default function VagaDetalhe() {
   const { id } = useParams()
   const [vaga, setVaga] = useState<Vaga | null>(null)
   const [loading, setLoading] = useState(true)
+  const { config: brand } = useBrandConfig()
 
   useEffect(() => {
     if (!id) return
@@ -51,6 +53,43 @@ export default function VagaDetalhe() {
     )
   }
 
+  // Ficha estruturada JobPosting (achado 24/08/2026, pedido da Adriana): é o
+  // que faz a vaga poder aparecer na busca de emprego do Google — a tag
+  // "meta keywords" que também mandamos abaixo não pesa mais no Google há
+  // mais de 15 anos, isso aqui é o que realmente ajuda. validThrough usa um
+  // prazo padrão de 60 dias da criação (não temos um campo de "prazo" na
+  // vaga ainda) — recomendado pelo Google, mas não inventamos salário nem
+  // nada que não temos de verdade.
+  const [addressLocality, addressRegion] = brand.city.split(' - ').map((s) => s.trim())
+  const jobPostingSchema = {
+    '@context': 'https://schema.org/',
+    '@type': 'JobPosting',
+    title: vaga.titulo,
+    description: parseMarkdown(vaga.descricao || vaga.titulo),
+    datePosted: vaga.created_at,
+    validThrough: new Date(
+      new Date(vaga.created_at).getTime() + 60 * 24 * 60 * 60 * 1000,
+    ).toISOString(),
+    employmentType: 'FULL_TIME',
+    hiringOrganization: {
+      '@type': 'Organization',
+      name: brand.name,
+      sameAs: 'https://www.carroeciamotors.com.br',
+      logo: brand.logoUrl,
+    },
+    jobLocation: {
+      '@type': 'Place',
+      address: {
+        '@type': 'PostalAddress',
+        streetAddress: brand.address,
+        addressLocality: addressLocality || 'Uberaba',
+        addressRegion: addressRegion || 'MG',
+        postalCode: brand.addressCep,
+        addressCountry: 'BR',
+      },
+    },
+  }
+
   return (
     <main className="flex-1 bg-background pt-24 pb-16">
       <SEO
@@ -60,6 +99,8 @@ export default function VagaDetalhe() {
           `Vaga de ${vaga.titulo} na Carro e Cia Veículos.`
         }
         canonical={`https://carroeciamotors.com.br/vagas/${vaga.slug || vaga.id}`}
+        keywords={vaga.palavras_chave || undefined}
+        schema={jobPostingSchema}
       />
 
       <section className="container max-w-5xl mx-auto px-4">

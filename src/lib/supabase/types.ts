@@ -3926,6 +3926,7 @@ export type Database = {
           descricao: string | null
           id: string
           imagem_url: string | null
+          palavras_chave: string | null
           resumo_redes: string | null
           slug: string | null
           titulo: string
@@ -3937,6 +3938,7 @@ export type Database = {
           descricao?: string | null
           id?: string
           imagem_url?: string | null
+          palavras_chave?: string | null
           resumo_redes?: string | null
           slug?: string | null
           titulo: string
@@ -3948,6 +3950,7 @@ export type Database = {
           descricao?: string | null
           id?: string
           imagem_url?: string | null
+          palavras_chave?: string | null
           resumo_redes?: string | null
           slug?: string | null
           titulo?: string

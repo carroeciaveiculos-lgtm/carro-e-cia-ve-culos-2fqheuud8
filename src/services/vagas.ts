@@ -102,7 +102,10 @@ export const gerarVagaComIA = async (cargo: string, palavrasChave?: string) => {
     body: { cargo, palavrasChave },
   })
   if (error) return { data: null, error }
-  return { data: data?.data as { titulo: string; descricao: string }, error: null }
+  return {
+    data: data?.data as { titulo: string; descricao: string; palavras_chave?: string },
+    error: null,
+  }
 }
 
 // Sempre retorna 2 opções (padrão único de imagem, achado 23/08/2026) pra
