@@ -1,5 +1,11 @@
 import { createClient } from 'jsr:@supabase/supabase-js@2'
-import { ML_BODY_TYPE_MAP } from './ml-client.ts'
+import {
+  ML_BODY_TYPE_MAP,
+  ML_COLOR_MAP,
+  ML_FUEL_MAP,
+  ML_TRANSMISSION_MAP,
+  normalizeValue,
+} from './ml-client.ts'
 
 type SupabaseClient = ReturnType<typeof createClient>
 
@@ -125,9 +131,32 @@ export async function validarPayloadML(
   const qualityAlerts: string[] = []
   const corrections: any = {}
 
-  const categoriaRaw = (veiculo.categoria || '').toLowerCase().trim()
-  if (!ML_BODY_TYPE_MAP[categoriaRaw]) {
-    blockingErrors.push(`VEHICLE_BODY_TYPE inválido: categoria='${veiculo.categoria || ''}'`)
+  // Achado 25/08/2026 (pedido da Adriana, caso real do Hilux com
+  // cor="BRANC0" — zero no lugar do "O"): até aqui só categoria era
+  // conferida contra o catálogo do ML antes de tentar sincronizar; cor,
+  // câmbio e combustível só eram checados no preflight do front
+  // (ml-preflight.ts), que não roda em sincronização automática por cron.
+  // Um typo desses passava direto sem barreira nenhuma no backend.
+  const categoriaNorm = normalizeValue(veiculo.categoria)
+  if (!categoriaNorm || !ML_BODY_TYPE_MAP[categoriaNorm]) {
+    blockingErrors.push(`Categoria não reconhecida pelo Mercado Livre: '${veiculo.categoria || ''}'`)
+  }
+
+  const corNorm = normalizeValue(veiculo.cor)
+  if (!corNorm || !ML_COLOR_MAP[corNorm]) {
+    blockingErrors.push(`Cor não reconhecida pelo Mercado Livre: '${veiculo.cor || ''}'`)
+  }
+
+  const combustivelNorm = normalizeValue(veiculo.combustivel)
+  if (!combustivelNorm || !ML_FUEL_MAP[combustivelNorm]) {
+    blockingErrors.push(
+      `Combustível não reconhecido pelo Mercado Livre: '${veiculo.combustivel || ''}'`,
+    )
+  }
+
+  const cambioNorm = normalizeValue(veiculo.cambio)
+  if (!cambioNorm || !ML_TRANSMISSION_MAP[cambioNorm]) {
+    blockingErrors.push(`Câmbio não reconhecido pelo Mercado Livre: '${veiculo.cambio || ''}'`)
   }
 
   const titleResult = montarTituloML(veiculo)

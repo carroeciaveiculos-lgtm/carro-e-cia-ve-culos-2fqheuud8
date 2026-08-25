@@ -6,7 +6,63 @@ precisar reler o histórico inteiro de conversas. Diferente do
 pra ser mantido em dia de verdade. Detalhe técnico por integração continua
 nos arquivos `docs/*.md` — aqui é só o resumo de estado + pendências.
 
-Última atualização: 2026-08-24 (sessão 14).
+Última atualização: 2026-08-25 (sessão 14, continuação).
+
+## Sessão 14 (25/08/2026) — Correção do body_type/ML e automação de mapeamento NaPista
+
+Investigando erro real do Hilux ("subimos ontem e deu erro"), achei 3 bugs
+empilhados, todos corrigidos e publicados:
+
+1. **`sync_log` mentia a causa do bloqueio no ML** — sempre gravava
+   "VEHICLE_BODY_TYPE inválido" pra qualquer validação bloqueante (preço,
+   foto, cidade, etc.), mesmo com categoria válida. Corrigido em
+   `ml-sync/index.ts` pra gravar `validation.errors.join('; ')` de
+   verdade. `sync-plataforma/index.ts` (usado pelo botão "Sincronizar
+   Agora") já fazia isso certo.
+2. **Backend do ML nunca conferia cor/câmbio/combustível** — só
+   `ml-preflight.ts` (front, só roda se alguém passar pela tela) conferia.
+   Achado real: veículo com `cor="BRANC0"` (zero no lugar do "O") passava
+   direto pro backend sem barreira. Adicionado em
+   `_shared/validate-payload.ts` (mapas `ML_COLOR_MAP`/`ML_FUEL_MAP`/
+   `ML_TRANSMISSION_MAP` agora exportados de `ml-client.ts`).
+3. **Formulário de veículo tinha `categoria: 'Carro'` como padrão** — valor
+   que não é nenhuma categoria real do ML. Se ninguém trocasse no
+   dropdown, ficava salvo assim. Corrigido pra `''` + campo agora
+   obrigatório em `validatePortalFields`. Achado: 7 veículos (todos já
+   vendidos) tinham esse valor — corrigidos na migração com a categoria
+   certa de cada um, pelo nome do modelo.
+
+**Trava de banco nova**: `categoria_valida_ml` (CHECK constraint) —
+impede `categoria` de voltar a receber valor que o ML não reconhece,
+qualquer que seja o caminho de entrada (form, importação, feature
+futura). Permite NULL, só bloqueia valor errado de verdade.
+
+**Automação de mapeamento NaPista** (pedido real: por que o Hilux ficou
+dias sem publicar no NaPista): `napista-mapear-veiculo` já faz
+correspondência automática (trigram pra marca/modelo/versão, exata pra
+cor/câmbio/combustível) — só nunca era chamada automaticamente, diferente
+da Webmotors (que já chama `wm-mapear-veiculo` no botão "Validar e
+Salvar" desde 12/08). Replicado o mesmo padrão pro NaPista em
+`VehicleFormModal.tsx` — agora todo veículo novo/editado já sai mapeado
+(ou com aviso na hora) nas duas plataformas.
+
+**Testado de verdade**: rodei `napista-mapear-veiculo` pro Hilux real
+depois da correção do `cor` — antes nem tinha registro de mapeamento
+nenhum; agora resolve marca (TOYOTA) e modelo (HILUX SW4) sozinho, e
+corretamente pede revisão só na versão (NaPista não tem nenhuma versão
+"SRX 4x4 2.8 TDI" cadastrada pra esse ano no catálogo deles — caso
+legítimo de revisão manual, não bug).
+
+**Publicado**: `ml-sync` v39, `sync-plataforma` v40. `VehicleFormModal.tsx`
+e demais mudanças de frontend só entram em produção depois do commit +
+push (build do Cloudflare). Migração `corrige_categoria_carro_e_typo_cor_hilux`
+aplicada.
+
+**Pendente**: contador de "veículos pendentes de mapeamento" nas telas de
+WM/NaPista — pausado por enquanto (esbarrei num comentário desatualizado
+em `NapistaCatalogPanel.tsx` que diz que "publicação no NaPista não
+existe" — contradiz os logs reais, não investiguei a fundo ainda, não
+travar em cima disso sem confirmar primeiro).
 
 **Pasta de trabalho deste projeto:** `C:\Projeto\Revenda Carro e Cia\carro-e-cia-ve-culos-2fqheuud8`
 (sempre abrir sessão nova aqui pra continuar — ver também `CLAUDE.md`).

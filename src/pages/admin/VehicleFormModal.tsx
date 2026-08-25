@@ -236,7 +236,12 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
   }
 
   const [formData, setFormData] = useState<any>({
-    categoria: 'Carro',
+    // Achado 25/08/2026 (pedido da Adriana): 'Carro' era um valor padrão
+    // que parecia preenchido mas não é nenhuma categoria real aceita pelo
+    // Mercado Livre — se ninguém trocasse no dropdown antes de salvar,
+    // ficava gravado assim e só quebrava dias depois, na sincronização.
+    // Vazio força escolha explícita (ver validatePortalFields).
+    categoria: '',
     placa: '',
     chassi: '',
     renavam: '',
@@ -403,7 +408,7 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
           })
       } else {
         setFormData({
-          categoria: 'Carro',
+          categoria: '',
           placa: '',
           chassi: '',
           renavam: '',
@@ -664,6 +669,7 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
   const PORTAL_FIELD_TABS: Record<string, string> = {
     marca: 'geral',
     modelo: 'geral',
+    categoria: 'geral',
     ano_fabricacao: 'geral',
     cor: 'geral',
     combustivel: 'geral',
@@ -676,6 +682,9 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
     const missing: { field: string; label: string }[] = []
     if (!formData.marca) missing.push({ field: 'marca', label: 'Marca' })
     if (!formData.modelo) missing.push({ field: 'modelo', label: 'Modelo' })
+    // Achado 25/08/2026: categoria não era exigida aqui — o valor padrão
+    // inválido 'Carro' passava direto e só quebrava na sincronização.
+    if (!formData.categoria) missing.push({ field: 'categoria', label: 'Categoria' })
     if (!formData.ano_fabricacao) missing.push({ field: 'ano_fabricacao', label: 'Ano' })
     if (!formData.cor) missing.push({ field: 'cor', label: 'Cor' })
     if (!formData.combustivel) missing.push({ field: 'combustivel', label: 'Combustível' })
@@ -902,6 +911,34 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
       onClose()
     } finally {
       setLoadingWmMapeamento(false)
+    }
+
+    // Achado 25/08/2026 (pedido da Adriana, caso real: um Hilux ficou dias
+    // sem publicar no NaPista porque o mapeamento de catálogo nunca foi
+    // disparado — a Webmotors já roda automático aqui em cima, o NaPista
+    // dependia de alguém clicar "Remapear" na tela de Pendências depois).
+    // Mesmo padrão da Webmotors: roda na hora de salvar, sem esperar uma
+    // tentativa de publicação falhar pra descobrir. Não bloqueia o fluxo
+    // acima nem troca a tela — só avisa se precisar de revisão.
+    try {
+      const { data: napistaMapData } = await supabase.functions.invoke('napista-mapear-veiculo', {
+        body: { veiculo_id: savedId },
+      })
+      if (napistaMapData?.status === 'revisao_necessaria') {
+        const { data: napistaMapeamento } = await supabase
+          .from('napista_mapeamento_veiculos')
+          .select('erro_msg')
+          .eq('veiculo_id', savedId)
+          .maybeSingle()
+        toast({
+          title: 'Veículo precisa de revisão no catálogo NaPista',
+          description:
+            napistaMapeamento?.erro_msg ||
+            'Confira em Portais → aba NaPista antes de tentar publicar.',
+        })
+      }
+    } catch (napistaErr: any) {
+      console.debug('Falha ao checar mapeamento NaPista (não bloqueia o salvamento):', napistaErr)
     }
   }
 

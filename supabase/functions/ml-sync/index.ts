@@ -290,14 +290,17 @@ async function handleCreate(
     await supabase.from('ml_listings').update({ status: 'blocked' }).eq('id', listing.id)
     await supabase.from('veiculos').update({ requires_review: true }).eq('id', veiculo.id)
     if (mlPlataformaId) {
-      const categoria = veiculo.categoria || ''
+      // Corrigido 25/08/2026 (achado real: veículos com categoria VÁLIDA
+      // apareciam com esse erro fixo, porque a mensagem sempre dizia
+      // "VEHICLE_BODY_TYPE inválido" não importa qual validação bloqueou de
+      // verdade — preço, foto, cor, o que fosse). Agora grava o motivo real.
       await supabase.from('sync_log').insert({
         plataforma_id: mlPlataformaId,
         veiculo_id: veiculo.id,
         acao: 'sync',
         status: 'erro',
-        mensagem: `VEHICLE_BODY_TYPE inválido: categoria='${categoria}'`,
-        metadata: { categoria, atributo: 'VEHICLE_BODY_TYPE', motivo: 'sem_mapeamento' },
+        mensagem: validation.errors.join('; ') || 'Validação bloqueante sem detalhe',
+        metadata: { erros: validation.errors, motivo: 'validacao_bloqueante' },
       })
     }
     return { error: validation.errors.join('; '), blocked: true, cachedAttrs, cachedCityId }
@@ -433,14 +436,17 @@ async function handleUpdate(
     await supabase.from('ml_listings').update({ status: 'blocked' }).eq('id', listing.id)
     await supabase.from('veiculos').update({ requires_review: true }).eq('id', veiculo.id)
     if (mlPlataformaId) {
-      const categoria = veiculo.categoria || ''
+      // Corrigido 25/08/2026 (achado real: veículos com categoria VÁLIDA
+      // apareciam com esse erro fixo, porque a mensagem sempre dizia
+      // "VEHICLE_BODY_TYPE inválido" não importa qual validação bloqueou de
+      // verdade — preço, foto, cor, o que fosse). Agora grava o motivo real.
       await supabase.from('sync_log').insert({
         plataforma_id: mlPlataformaId,
         veiculo_id: veiculo.id,
         acao: 'sync',
         status: 'erro',
-        mensagem: `VEHICLE_BODY_TYPE inválido: categoria='${categoria}'`,
-        metadata: { categoria, atributo: 'VEHICLE_BODY_TYPE', motivo: 'sem_mapeamento' },
+        mensagem: validation.errors.join('; ') || 'Validação bloqueante sem detalhe',
+        metadata: { erros: validation.errors, motivo: 'validacao_bloqueante' },
       })
     }
     return { error: validation.errors.join('; '), blocked: true, cachedAttrs, cachedCityId }

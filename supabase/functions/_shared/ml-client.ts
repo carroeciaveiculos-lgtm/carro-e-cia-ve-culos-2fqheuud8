@@ -62,7 +62,7 @@ function lookupNormalized(value: unknown, map: Record<string, string>): string |
 // visível como JSON cru no log). Nomes errados nunca usados ainda (Prata,
 // Vinho, CVT, Automatizada, Sedán, Picape) também corrigidos aqui antes de
 // darem o mesmo problema em outro veículo.
-const ML_FUEL_MAP: Record<string, string> = {
+export const ML_FUEL_MAP: Record<string, string> = {
   flex: 'Gasolina e álcool',
   gasolina: 'Gasolina',
   diesel: 'Diesel',
@@ -71,7 +71,7 @@ const ML_FUEL_MAP: Record<string, string> = {
   eletrico: 'Elétrico',
 }
 
-const ML_TRANSMISSION_MAP: Record<string, string> = {
+export const ML_TRANSMISSION_MAP: Record<string, string> = {
   manual: 'Manual',
   automatico: 'Automática',
   automatica: 'Automática',
@@ -85,7 +85,7 @@ const ML_STEERING_MAP: Record<string, string> = {
   mecanica: 'Mecânica',
 }
 
-const ML_COLOR_MAP: Record<string, string> = {
+export const ML_COLOR_MAP: Record<string, string> = {
   branco: 'Branco',
   preto: 'Preto',
   prata: 'Prateado',
