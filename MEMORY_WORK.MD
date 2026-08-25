@@ -87,6 +87,49 @@ as duas responderam HTTP 200. Rodam de novo, de hora em hora, desde
 24/08/2026 ~17h30 UTC. Lição: **sempre `Grep` o nome do template/função
 antes de propor construir algo do zero.**
 
+## Sessão 14 (continuação) — Conversions API for Messaging (dataset carroecia_mensagens)
+
+Adriana já tinha o token com permissão `whatsapp_business_management`
+salvo. Implementado o Conversions API for Messaging (dataset separado do
+Pixel do site, ID `1740865157112022`, ligado ao WhatsApp) — manda de volta
+pra Meta o que acontece de verdade com um lead vindo de clique em anúncio
+pro WhatsApp, pro algoritmo aprender a buscar quem compra de verdade.
+
+- **`LeadSubmitted`** — dispara em `receive-leads` quando um lead novo
+  chega via WhatsApp com `referral` de anúncio (facebook_ads/instagram_ads)
+  E tem `ctwa_clid` capturado (obrigatório pro dataset, testado contra o
+  validador real da Meta).
+- **`Purchase`** — dispara via trigger de banco
+  (`trigger_notify_lead_fechado`, mesmo padrão do CAPI de veículo vendido)
+  quando `leads.status` vira `'fechado'`, chamando a função nova
+  `meta-messaging-capi-purchase`. Usa `leads.valor_veiculo` como valor do
+  evento.
+- **Achado novo, capturado agora**: `ctwa_clid` (identificação do clique no
+  anúncio) sempre chegou no `referral` do WhatsApp e sempre foi descartado
+  — nova coluna `leads.ctwa_clid`.
+- **Achado real testado contra a API da Meta** (não adivinhado): `page_id`
+  vai dentro de `user_data`, não no nível raiz do evento (a ordem da tela
+  do Payload Helper sugeria o contrário — testei com `TEST42877`, a Meta
+  rejeitou até eu corrigir). `ctwa_clid` é obrigatório nesse dataset —
+  sem ele a Meta rejeita o evento inteiro (por isso o guard "sem_ctwa_clid"
+  nas duas funções, evita chamada fadada a falhar).
+- **Page ID usado**: `1419304271478565` (confirmado pela Adriana — é o
+  mesmo valor já salvo em `FACEBOOK_PAGE_ID`, mas hardcoded separado em
+  `_shared/meta-messaging-capi.ts` pra não acoplar os dois usos). A tela
+  de Payload Helper mostrava `150270571501412` como "conta conectada" —
+  Adriana disse que está errado do lado da Meta (Configurações do Negócio,
+  vínculo Página↔WhatsApp Business Account), não mexi nisso, é fora do meu
+  alcance seguro por API.
+- **Testado de verdade**: payload validado contra a API real da Meta com
+  `test_event_code TEST42877` (função temporária, apagada); guard
+  `sem_ctwa_clid` testado via chamada manual à função em produção — HTTP
+  200, skip correto. **Não testado**: um evento real passando (precisa de
+  um clique de anúncio de verdade, com `ctwa_clid` real, pra confirmar
+  200 sem erro na Meta).
+- Publicado: `receive-leads` v203, `meta-messaging-capi-purchase` v1 (novo),
+  migração `leads_ctwa_clid_e_trigger_purchase_capi` +
+  `notify_lead_fechado_capi_inclui_valor`.
+
 ## Sessão 13 (24/08/2026) — "Gerar com IA" da vaga agora pesquisa de verdade + gera SEO (JobPosting)
 
 Pedido da Adriana: dar só o cargo e a IA fazer o resto "com maestria"

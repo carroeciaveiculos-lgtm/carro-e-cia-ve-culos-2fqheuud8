@@ -3,6 +3,7 @@ import { createClient } from 'jsr:@supabase/supabase-js@2'
 import { corsHeaders } from '../_shared/cors.ts'
 import { encontrarLeadAtivo, anexarNotaContato, normalizarTelefone } from '../_shared/lead-dedup.ts'
 import { recalcularAiScore } from '../_shared/lead-score.ts'
+import { enviarEventoMensagem } from '../_shared/meta-messaging-capi.ts'
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3'
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL') || ''
@@ -380,12 +381,19 @@ Deno.serve(async (req: Request) => {
                   let gclidDetectado: string | null = null
                   let thumbnailAnuncio: string | null = null
                   let videoAnuncio: string | null = null
+                  // Achado 24/08/2026 (pedido da Adriana, Conversions API for
+                  // Messaging): ctwa_clid identifica o clique exato no anuncio
+                  // que abriu essa conversa de WhatsApp — sempre chegou dentro
+                  // de referral, sempre foi descartado, igual os outros campos
+                  // desse objeto antes dos achados de 17-19/08.
+                  let ctwaClidDetectado: string | null = null
                   if (referral) {
                     const sourceUrl = (referral.source_url || '').toLowerCase()
                     origemDetectada = sourceUrl.includes('instagram')
                       ? 'instagram_ads'
                       : 'facebook_ads'
                     campanhaDetectada = referral.headline || referral.source_id || null
+                    ctwaClidDetectado = referral.ctwa_clid || null
                     // Achado em auditoria (17/08/2026): a Meta manda o corpo do
                     // criativo do anúncio em referral.body — nos nossos anúncios
                     // isso sempre começa com "Marca Modelo Versao Ano: descrição"
@@ -429,12 +437,35 @@ Deno.serve(async (req: Request) => {
                       veiculo_interesse: veiculoDoAnuncio,
                       anuncio_thumbnail_url: thumbnailAnuncio,
                       anuncio_video_url: videoAnuncio,
+                      ctwa_clid: ctwaClidDetectado,
                       tipo: 'compra',
                       status: 'novo',
                     })
                     .select()
                     .single()
                   leadId = newLead?.id
+
+                  // Conversions API for Messaging (24/08/2026, pedido da
+                  // Adriana): so dispara LeadSubmitted pra lead que veio de
+                  // clique em anuncio de verdade (tem referral) — contato
+                  // organico nao e "lead capturado por anuncio". Testado
+                  // contra o validador real da Meta antes de usar aqui:
+                  // ctwa_clid e OBRIGATORIO nesse dataset — sem ele a Meta
+                  // rejeita o evento inteiro, entao nem tenta mandar se nao
+                  // capturou (evita chamada fadada a falhar). Nunca derruba
+                  // a criacao do lead se a Meta falhar de qualquer jeito.
+                  if (leadId && ctwaClidDetectado && (origemDetectada === 'facebook_ads' || origemDetectada === 'instagram_ads')) {
+                    try {
+                      await enviarEventoMensagem({
+                        eventName: 'LeadSubmitted',
+                        eventId: `lead-${leadId}`,
+                        telefone: senderPhone,
+                        ctwaClid: ctwaClidDetectado,
+                      })
+                    } catch (err) {
+                      console.error('Erro ao enviar LeadSubmitted pro Conversions API for Messaging:', err)
+                    }
+                  }
                 }
 
                 if (leadId) {
