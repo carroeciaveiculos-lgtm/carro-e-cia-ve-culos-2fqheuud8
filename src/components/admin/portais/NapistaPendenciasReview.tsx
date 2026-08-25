@@ -182,6 +182,20 @@ export function NapistaPendenciasReview() {
               </div>
             )}
 
+            {/* Achado 25/08/2026 (caso real do Hilux SW4): quando o NaPista
+                não tem NENHUMA versão cadastrada (nem no ano certo, nem em
+                outro ano), essa tela não mostrava nada além do aviso — sem
+                nenhum botão, sem explicação do que fazer. Parecia que a
+                opção de mapear tinha sumido. */}
+            {motivo === 'versao' && p.candidatos_versao.length === 0 && (
+              <p className="text-[10px] text-amber-700 mt-2">
+                O catálogo do NaPista não tem nenhuma versão cadastrada pra
+                esse modelo — não há nada pra escolher aqui até eles
+                atualizarem o catálogo deles. Esse veículo fica de fora do
+                NaPista por enquanto.
+              </p>
+            )}
+
             {(motivo === 'marca' || motivo === 'catalogo_napista') && (
               <p className="text-[10px] text-amber-700 mt-2">
                 Sem escolha automática pra esse caso — ajuste o cadastro do veículo (ou o catálogo,

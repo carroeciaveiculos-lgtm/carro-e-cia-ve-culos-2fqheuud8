@@ -44,13 +44,20 @@ export interface PlatformSyncResult {
 }
 
 // Cada plataforma real tem sua própria function de sincronização e sua
-// própria fila — Webmotors usa estoque_publicacoes, Mercado Livre usa
-// ml_listings (schema diferente, sem coluna de erro por linha; os erros de
-// ML só existem em sync_log). OLX/iCarros/Napista não têm function nem fila
-// real ainda — não entram aqui.
+// própria fila — Webmotors e NaPista usam estoque_publicacoes, Mercado
+// Livre usa ml_listings (schema diferente, sem coluna de erro por linha; os
+// erros de ML só existem em sync_log). OLX/iCarros não têm function nem
+// fila real ainda — não entram aqui.
+// Corrigido 25/08/2026 (achado real, pedido da Adriana): o comentário aqui
+// dizia que o NaPista também não tinha function real — errado, o
+// `napista-sync` já existe e publica de verdade (24/25 veículos ativos já
+// estavam no ar por lá) — só nunca tinha sido ligado a este mapa, então
+// tentar sincronizar um veículo específico do NaPista por aqui sempre
+// caía no erro genérico "Sem sincronização real configurada".
 const SYNC_FUNCTION_BY_PLATFORM: Record<string, string> = {
   webmotors: 'wm-sync',
   mercadolivre: 'sync-plataforma',
+  napista: 'napista-sync',
 }
 
 const MAX_RETRIES = 2

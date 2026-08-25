@@ -93,11 +93,23 @@ Deno.serve(async (req: Request) => {
       .eq('slug', 'napista')
       .maybeSingle()
 
+    // Achado 25/08/2026 (pedido da Adriana): retry manual de um veiculo
+    // especifico (via botao "Sincronizar" na tela) nao incluia status
+    // 'error' - clicar em retry num veiculo que ja tinha falhado antes
+    // simplesmente nao encontrava nenhuma linha e nao fazia nada,
+    // silenciosamente. So inclui 'error' quando ha um veiculo_id especifico
+    // (retry manual) - a varredura geral do cron continua sem re-tentar
+    // erro sozinha, pra nao ficar reprocessando veiculo genuinamente
+    // bloqueado (ex: sem mapeamento) a cada 30min sem necessidade.
+    const statusAceitos = specificVeiculoId
+      ? ['agendado', 'pending_create', 'pending_update', 'pending_close', 'error']
+      : ['agendado', 'pending_create', 'pending_update', 'pending_close']
+
     let pubQuery = supabase
       .from('estoque_publicacoes')
       .select('id, veiculo_id, platform, status, post_id')
       .eq('platform', 'napista')
-      .in('status', ['agendado', 'pending_create', 'pending_update', 'pending_close'])
+      .in('status', statusAceitos)
 
     if (specificVeiculoId) pubQuery = pubQuery.eq('veiculo_id', specificVeiculoId)
 
@@ -143,7 +155,15 @@ Deno.serve(async (req: Request) => {
       const fotosVeiculo: string[] = Array.isArray(veiculo.fotos) ? veiculo.fotos : []
 
       try {
-        if (pub.status === 'pending_create' || pub.status === 'agendado') {
+        // 'error' sem post_id ainda nunca chegou a criar oferta nenhuma -
+        // trata igual pending_create. 'error' com post_id ja existente
+        // trata igual pending_update (tentativa de atualizacao anterior
+        // que falhou, mas a oferta ja existe do lado do NaPista).
+        if (
+          pub.status === 'pending_create' ||
+          pub.status === 'agendado' ||
+          (pub.status === 'error' && !pub.post_id)
+        ) {
           const res = await fetch(`${BASE}/seller/${sellerId}/offer`, {
             method: 'POST',
             headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
@@ -181,7 +201,7 @@ Deno.serve(async (req: Request) => {
             await supabase.from('estoque_publicacoes').update({ status: 'error', erro_msg: msg }).eq('id', pub.id)
             results.push({ id: pub.id, status: 'error', error: msg })
           }
-        } else if (pub.status === 'pending_update' && pub.post_id) {
+        } else if ((pub.status === 'pending_update' || pub.status === 'error') && pub.post_id) {
           const res = await fetch(`${BASE}/seller/${sellerId}/offer/${pub.post_id}`, {
             method: 'PATCH',
             headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },

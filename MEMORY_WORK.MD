@@ -6,7 +6,7 @@ precisar reler o histórico inteiro de conversas. Diferente do
 pra ser mantido em dia de verdade. Detalhe técnico por integração continua
 nos arquivos `docs/*.md` — aqui é só o resumo de estado + pendências.
 
-Última atualização: 2026-08-25 (sessão 14, continuação).
+Última atualização: 2026-08-25 (sessão 14, continuação — bug "sem sincronização real configurada" NaPista + teste FIPE).
 
 ## Sessão 14 (25/08/2026) — Correção do body_type/ML e automação de mapeamento NaPista
 
@@ -64,8 +64,73 @@ em `NapistaCatalogPanel.tsx` que diz que "publicação no NaPista não
 existe" — contradiz os logs reais, não investiguei a fundo ainda, não
 travar em cima disso sem confirmar primeiro).
 
+**Verificação completa WM/ML/NaPista (25/08/2026):** 24 de 25 veículos
+ativos publicados nas 3 plataformas — o único gargalo nas 3 é o mesmo
+Hilux SW4. Confirmado que `napista-sync` publica de verdade (cria oferta,
+sobe fotos, publica via PUT .../PUBLISHED) — o comentário desatualizado
+citado acima está confirmado ERRADO, mas não corrigi o texto ainda.
+
+**Bug real achado e corrigido na tela de Pendências NaPista**
+(`NapistaPendenciasReview.tsx` + `napista-mapear-veiculo/index.ts`): quando
+o NaPista não tem NENHUMA versão cadastrada pro ano do veículo, a tela não
+mostrava nenhum botão de escolha (parecia que a opção tinha sumido) — e a
+busca de fallback só olhava um cache local nunca populado pra esse modelo,
+sem nunca consultar a API ao vivo. Corrigido nos dois: função agora busca
+ao vivo em qualquer ano quando o cache está vazio, e a tela sempre mostra
+os candidatos encontrados (ou uma mensagem clara se realmente não existir
+nenhuma versão em lugar nenhum). Testado de verdade com o Hilux: agora
+mostra 5 candidatos reais de outros anos (nenhum é motor 2.8 exato — não
+existe no catálogo deles, aguardando decisão da Adriana sobre aproximar ou
+deixar de fora).
+
 **Pasta de trabalho deste projeto:** `C:\Projeto\Revenda Carro e Cia\carro-e-cia-ve-culos-2fqheuud8`
 (sempre abrir sessão nova aqui pra continuar — ver também `CLAUDE.md`).
+
+## Sessão 14 (25/08/2026, continuação) — "sem sincronização real configurada" + teste de lookup por FIPE no NaPista
+
+Pedido da Adriana, depois de tentar mapear manualmente o Hilux e receber
+"sem sincronização real configurada napista": investigar essa mensagem e
+testar se o NaPista aceita buscar versão pelo código FIPE (já buscado no
+cadastro do veículo) como alternativa quando o casamento por catálogo
+falha.
+
+**Achado 1 — "sem sincronização real configurada" (bug real, corrigido):**
+causa em `src/services/platform-sync.ts` — o mapa `SYNC_FUNCTION_BY_PLATFORM`
+nunca incluía `napista`, apesar de `napista-sync` já publicar de verdade
+(comentário antigo no próprio arquivo dizia o contrário, desatualizado).
+Corrigido: `napista: 'napista-sync'` adicionado ao mapa. **Só entra em
+produção depois do commit+push** (é frontend).
+
+**Achado 2 — retry manual não funcionava em veículo já com erro:** mesmo
+depois de corrigir o mapa acima, clicar em "Sincronizar" num veículo que já
+tinha status `error` não fazia nada — a query de `napista-sync` só aceitava
+status `agendado/pending_create/pending_update/pending_close`, nunca
+`error`. Corrigido em `napista-sync/index.ts`: quando a chamada é pra um
+veículo específico (retry manual, não a varredura geral do cron), `error`
+também entra — tratado como "create" se ainda não tem `post_id`, como
+"update" se já tem. **Já reimplantado no Supabase (v16)** — só isso, ainda
+sem commit/push do arquivo local.
+
+**Achado 3 — lookup por FIPE no NaPista NÃO funciona (testado ao vivo,
+function de diagnóstico temporária já apagada):** chamei
+`/catalog/versions/CAR` com `?fipeCode=002146-6` e `?fipe_code=002146-6`
+(código FIPE real do Hilux) — as duas vezes a API respondeu HTTP 200, mas
+com uma lista de veículos completamente aleatórios (BMW, Porsche, Renault
+elétrico) — ou seja, a API **ignora silenciosamente** o parâmetro
+desconhecido e devolve algum resultado padrão, não faz busca real por
+FIPE. Outras rotas tentadas (`/catalog/fipe/...`,
+`/catalog/version/fipe/...`) deram 404 de verdade. **Conclusão: não existe
+esse recurso na API do NaPista — não é bug nosso, é limite do catálogo
+deles.** Não adianta tentar de novo sem uma confirmação nova da
+documentação oficial deles.
+
+**Pendente de decisão da Adriana:** o Hilux continua sem versão exata no
+catálogo NaPista (só 5 aproximações de outros anos, ver seção anterior) —
+falta ela decidir: aceitar uma aproximação ou deixar o Hilux fora do
+NaPista por enquanto.
+
+**Pendente de commit+push:** `platform-sync.ts`, `napista-sync/index.ts`,
+`NapistaPendenciasReview.tsx` (sessão anterior), este arquivo.
 
 ## Sessão 14 (24/08/2026) — Conversão da Clara (SDR) + achado de templates WhatsApp quebrados
 
