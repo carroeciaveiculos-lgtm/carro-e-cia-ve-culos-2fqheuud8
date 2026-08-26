@@ -4,6 +4,7 @@ import { corsHeaders } from '../_shared/cors.ts'
 import { encontrarLeadAtivo, anexarNotaContato, normalizarTelefone } from '../_shared/lead-dedup.ts'
 import { recalcularAiScore } from '../_shared/lead-score.ts'
 import { enviarEventoMensagem } from '../_shared/meta-messaging-capi.ts'
+import { baixarETranscreverAudioWhatsApp } from '../_shared/audio-transcricao.ts'
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3'
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL') || ''
@@ -300,6 +301,26 @@ Deno.serve(async (req: Request) => {
               const contacts = value.contacts || []
 
               for (const msg of messages) {
+                // Trava contra reenvio de webhook (26/08/2026, achado real: a
+                // mesma mensagem de áudio foi processada 3 vezes — a Meta
+                // reenvia o mesmo wamid quando a resposta demora, e áudio
+                // (baixar + transcrever + gerar resposta + gerar áudio +
+                // subir + enviar) é bem mais lento que texto, estourando o
+                // prazo deles quase sempre). Tenta "reservar" o wamid antes
+                // de processar; se já foi processado, pula sem gerar
+                // resposta duplicada.
+                if (msg.id) {
+                  const { error: dedupError } = await supabase
+                    .from('whatsapp_mensagens_processadas')
+                    .insert({ wamid: msg.id })
+                  if (dedupError) {
+                    // Conflito de chave primária = mensagem já processada
+                    // antes (reenvio da Meta). Qualquer outro erro de banco
+                    // aqui não deve travar o atendimento — segue normal.
+                    if (dedupError.code === '23505') continue
+                  }
+                }
+
                 const contact = contacts.find((c: any) => c.wa_id === msg.from)
                 const senderName = contact?.profile?.name || 'Cliente WhatsApp'
                 const senderPhone = msg.from
@@ -309,6 +330,7 @@ Deno.serve(async (req: Request) => {
                 // entender (ela não tem visão de imagem — só texto).
                 let messageTextBruto = ''
                 let mensagemParaClara = ''
+                const foiAudio = msg.type === 'audio'
                 if (msg.type === 'image' && msg.image?.id) {
                   const midiaUrl = await rehospedarMidiaWhatsApp(msg.image.id)
                   const legenda = (msg.image.caption || '').trim()
@@ -318,12 +340,25 @@ Deno.serve(async (req: Request) => {
                   mensagemParaClara = legenda
                     ? `[o cliente enviou uma foto com a legenda: "${legenda}"]`
                     : '[o cliente enviou uma foto/imagem nesta mensagem]'
+                } else if (msg.type === 'audio' && msg.audio?.id) {
+                  // Transcrição real de áudio (26/08/2026, pedido da Adriana):
+                  // antes só avisava "recebi um áudio, não consigo abrir".
+                  // Agora baixa e manda pro Gemini entender de verdade — Clara
+                  // segue o atendimento normal a partir do que foi dito, só
+                  // que a resposta sai em áudio (decidido em ai-sdr via
+                  // foi_audio, não aqui).
+                  const transcricao = await baixarETranscreverAudioWhatsApp(msg.audio.id)
+                  messageTextBruto = transcricao
+                    ? `[ÁUDIO] "${transcricao}"`
+                    : '[Cliente enviou um áudio — não consegui entender o conteúdo, confira direto no WhatsApp]'
+                  mensagemParaClara = transcricao
+                    ? transcricao
+                    : '[o cliente enviou um áudio, mas não consegui entender o que foi dito]'
                 } else if (msg.type && msg.type !== 'text') {
-                  // Outros tipos (áudio, vídeo, documento, figurinha,
-                  // localização...) ainda não têm tratamento dedicado, mas
-                  // não podem mais sumir em silêncio como sumiam antes.
+                  // Outros tipos (vídeo, documento, figurinha, localização...)
+                  // ainda não têm tratamento dedicado, mas não podem mais
+                  // sumir em silêncio como sumiam antes.
                   const rotulos: Record<string, string> = {
-                    audio: 'um áudio',
                     video: 'um vídeo',
                     document: 'um documento',
                     sticker: 'uma figurinha',
@@ -508,7 +543,15 @@ Deno.serve(async (req: Request) => {
                   if (mensagemParaClara) {
                     try {
                       await supabase.functions.invoke('ai-sdr', {
-                        body: { action: 'continue_conversation', lead_id: leadId, mensagem: mensagemParaClara },
+                        body: {
+                          action: 'continue_conversation',
+                          lead_id: leadId,
+                          mensagem: mensagemParaClara,
+                          // Pedido da Adriana 26/08/2026: Clara só responde por
+                          // áudio (voz clonada dela) quando o cliente mandou
+                          // áudio primeiro nesta mensagem.
+                          foi_audio: foiAudio,
+                        },
                       })
                     } catch (e) {
                       console.error('Erro ao chamar ai-sdr:', e)

@@ -5,6 +5,8 @@ import { GeminiClient, CRM_FUNCTIONS } from '../_shared/gemini-client.ts'
 import { COLUNAS_VEICULO_SEGURAS } from '../_shared/veiculo-safe-fields.ts'
 import { enviarContatoBrevo } from '../_shared/brevo.ts'
 import { recalcularAiScore } from '../_shared/lead-score.ts'
+import { gerarAudioClara } from '../_shared/elevenlabs-client.ts'
+import { uploadToR2, getR2PublicUrl } from '../_shared/r2-storage.ts'
 
 const supabase = createClient(
   Deno.env.get('SUPABASE_URL')!,
@@ -530,8 +532,40 @@ async function runGemini(
   return { text: followUp.text, functionResults: todosResultados }
 }
 
-async function sendWhatsApp(to: string, text: string) {
+// enviarComoAudio (26/08/2026, pedido da Adriana): a Clara só responde por
+// áudio (voz clonada dela na ElevenLabs) quando o cliente mandou áudio
+// primeiro nessa mensagem — nunca por padrão, nunca em texto longo com
+// preço/número (mais fácil ler que ouvir, e essa decisão já é natural aqui
+// porque só ativa quando o INBOUND foi áudio). Qualquer falha na geração
+// cai pro texto normal — nunca trava a conversa por causa disso.
+async function sendWhatsApp(to: string, text: string, enviarComoAudio = false) {
   if (!waToken) return console.log('Mocked WA to:', to, 'Msg:', text)
+
+  if (enviarComoAudio) {
+    const audioBytes = await gerarAudioClara(text)
+    if (audioBytes) {
+      try {
+        const key = `clara-audio/${Date.now()}_${crypto.randomUUID().slice(0, 8)}.mp3`
+        await uploadToR2(key, new Blob([audioBytes], { type: 'audio/mpeg' }), 'audio/mpeg')
+        const audioUrl = getR2PublicUrl(key)
+        const res = await fetch(`https://graph.facebook.com/v20.0/${waPhoneId}/messages`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${waToken}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            messaging_product: 'whatsapp',
+            to: to.replace(/\D/g, ''),
+            type: 'audio',
+            audio: { link: audioUrl },
+          }),
+        })
+        if (res.ok) return
+        console.error('WhatsApp recusou o áudio, caindo para texto:', await res.text())
+      } catch (err) {
+        console.error('Falha ao enviar áudio da Clara, caindo para texto:', err)
+      }
+    }
+  }
+
   await fetch(`https://graph.facebook.com/v20.0/${waPhoneId}/messages`, {
     method: 'POST',
     headers: { Authorization: `Bearer ${waToken}`, 'Content-Type': 'application/json' },
@@ -596,7 +630,7 @@ Deno.serve(async (req) => {
     // receive-leads quando chega mensagem nova de WhatsApp e
     // leads.ai_enabled != false.
     if (body.action === 'continue_conversation') {
-      const { lead_id, mensagem } = body
+      const { lead_id, mensagem, foi_audio } = body
       if (!lead_id || !mensagem) {
         return new Response(JSON.stringify({ error: 'lead_id e mensagem são obrigatórios' }), {
           status: 400,
@@ -674,7 +708,7 @@ Deno.serve(async (req) => {
           .insert({ lead_id: lead.id, sender: 'bot', message_text: aiRes.text })
 
         if (lead.telefone) {
-          await sendWhatsApp(lead.telefone, aiRes.text)
+          await sendWhatsApp(lead.telefone, aiRes.text, foi_audio === true)
         }
 
         // ai_score recalculado a cada mensagem — não depende da Clara ter
