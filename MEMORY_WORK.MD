@@ -6,7 +6,75 @@ precisar reler o histórico inteiro de conversas. Diferente do
 pra ser mantido em dia de verdade. Detalhe técnico por integração continua
 nos arquivos `docs/*.md` — aqui é só o resumo de estado + pendências.
 
-Última atualização: 2026-08-26 (sessão 15 — empate de modelo NaPista, cilindrada numérica, versão só pra plataformas).
+Última atualização: 2026-08-26 (sessão 15, continuação — descrição não sincronizava, gatilhos de reenvio corrigidos nas 3 plataformas).
+
+## Sessão 15 (26/08/2026, continuação) — descrição não sincronizava + gatilhos de reenvio incompletos nas 3 plataformas
+
+Adriana perguntou por que a descrição não sincronizava em alguns veículos e
+se existia limite de caractere. Achei **duas causas diferentes**, uma por
+plataforma:
+
+**Mercado Livre**: o gatilho automático que decide "esse veículo precisa
+reenviar" só reagia a Preço/Status/Exibir no site — editar só a Descrição
+(ou qualquer outro campo técnico) nunca disparava reenvio. Confirmado com
+dado real: 9 veículos ativos editados depois da última sincronização real.
+
+**Webmotors**: o próprio código cortava a descrição em 500 caracteres antes
+de mandar — sem nenhuma documentação confirmando que esse é um limite real
+da Webmotors. **Testado ao vivo** (autorizado pela Adriana, usando o
+anúncio real do VW up! move, `AlterarCarro` com a descrição completa de
+1104 caracteres): a Webmotors aceitou e ecoou o texto inteiro, sem
+reclamar — não existe esse limite do lado deles. 17 dos veículos publicados
+tinham a descrição cortada no meio da frase por causa dessa trava nossa.
+
+**Corrigido**: removido o corte de 500 no `wm-soap.ts`; gatilho do ML
+ampliado pra reagir também a Descrição/Quilometragem/Cor/Combustível/
+Câmbio/Portas/Direção/Cilindrada/Versão/Categoria.
+
+**Pedido seguinte da Adriana**: garantir que QUALQUER edição futura de
+campo com dependência de sincronia dispare reenvio automático pras
+plataformas que já têm aquele veículo em anúncio ativo — não só descrição.
+Auditei os 3 gatilhos (ML, Webmotors, NaPista) contra o que cada
+`buildXPayload`/`buildAnuncioXML` realmente lê da tabela `veiculos` e achei
+o mesmo padrão de bug nas 3:
+
+- **ML**: gatilho ampliado de novo pra incluir Marca/Modelo/Ano Modelo
+  (compõem o título do anúncio), Zero KM (decide Novo/Usado) e Fotos.
+- **Webmotors**: o gatilho já disparava em qualquer UPDATE, mas só
+  enfileirava reenvio se Preço/Km/Descrição mudassem — Portas, Ano, Placa
+  e todo campo Sim/Não (Blindado, Alienado, Único Dono, IPVA Pago, etc.) e
+  os opcionais/diferenciais nunca reenviavam. Corrigido pra cobrir todos.
+- **NaPista**: gatilho só observava Preço/Km/Descrição — Ano, Placa e
+  Portas (que `buildOfferPayload` realmente manda) nunca disparavam.
+  Corrigido.
+
+**Limitação conhecida, não resolvida ainda**: Cor/Câmbio/Combustível da
+Webmotors e do NaPista vêm de uma tabela de mapeamento própria
+(`wm_mapeamento_veiculos`/`napista_mapeamento_veiculos`), não direto da
+coluna do veículo — editar `veiculos.cor` já dispara o remapeamento
+automático (desde sessão anterior), mas nada ainda liga esse remapeamento
+de volta pra fila de republicação (`estoque_publicacoes`). Ou seja: o
+mapeamento interno fica certo, mas o anúncio JÁ publicado só pega essa
+mudança se algum outro campo (preço, km, descrição, etc.) também tiver
+mudado junto. Não implementado nesta sessão — é mais complexo (precisa
+decidir se remapeamento sempre republica, mesmo quando o resultado do
+remapeamento não muda nada) e não foi pedido explicitamente.
+
+**Testado ao vivo nas 3 plataformas** (editando um campo real e revertendo
+em seguida, sem deixar nada errado no estoque): Webmotors (Portas no
+Land Rover Discovery), NaPista (Portas no Honda CITY), Mercado Livre
+(Marca no BMW 320iA) — as 3 vezes a fila reagiu na hora com
+`pending_update`.
+
+**Pendente de decisão da Adriana**: os 17 veículos já publicados na
+Webmotors com descrição cortada não se corrigem sozinhos — precisam de um
+reenvio forçado (ela ainda não respondeu se quer isso agora).
+
+**Publicado**: `wm-soap.ts` (função `buildAnuncioXML`, usada por
+`wm-sync`), migrations `ml_sync_trigger_inclui_campos_tecnicos`,
+`wm_sync_trigger_inclui_todos_campos_anuncio`,
+`napista_sync_trigger_inclui_todos_campos_anuncio`,
+`ml_sync_trigger_inclui_marca_modelo_ano_km_fotos`.
 
 ## Sessão 15 (26/08/2026) — Hilux/NaPista resolvido, cilindrada numérica, versão restrita a integrações
 
