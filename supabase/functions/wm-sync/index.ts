@@ -238,22 +238,60 @@ Deno.serve(async (req: Request) => {
       .eq('slug', 'webmotors')
       .maybeSingle()
 
+    // Retry manual de um veiculo especifico agora inclui 'error' -- mesmo
+    // ajuste ja feito no napista-sync 25/08/2026 (achado real: clicar em
+    // retry num veiculo que ja tinha falhado antes nao encontrava linha
+    // nenhuma e nao fazia nada). A varredura geral do cron continua sem
+    // re-tentar erro sozinha.
+    const statusAceitosWM = specificVeiculoId
+      ? ['agendado', 'pending_create', 'pending_update', 'pending_close', 'error']
+      : ['agendado', 'pending_create', 'pending_update', 'pending_close']
+
     let pubQuery = supabase
       .from('estoque_publicacoes')
-      .select('id, veiculo_id, platform, status, post_id')
+      .select('id, veiculo_id, platform, status, post_id, created_at')
       .eq('platform', 'webmotors')
-      .in('status', ['agendado', 'pending_create', 'pending_update', 'pending_close'])
+      .in('status', statusAceitosWM)
+      .order('created_at', { ascending: false })
 
     if (specificVeiculoId) {
       pubQuery = pubQuery.eq('veiculo_id', specificVeiculoId)
     }
 
-    const { data: pendingPubs } = await pubQuery.limit(50)
-    if (!pendingPubs || pendingPubs.length === 0) {
+    const { data: pendingPubsBrutos } = await pubQuery.limit(50)
+    if (!pendingPubsBrutos || pendingPubsBrutos.length === 0) {
       return new Response(JSON.stringify({ success: true, processed: 0 }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
+
+    // Achado real 26/08/2026 (Fit LX, publicado 2x na Webmotors): mais de uma
+    // linha pendente SEM post_id ainda pro MESMO veiculo (duas gravacoes
+    // quase simultaneas do formulario, ou varios erros acumulados de
+    // tentativas antigas) fazia esta function processar cada linha como uma
+    // criacao SEPARADA -- publicando o mesmo carro varias vezes de verdade.
+    // A checagem contra estoqueAtualWebmotors (abaixo) so pega duplicata
+    // entre RODADAS diferentes, nao dentro da mesma rodada. Dedup so entre
+    // linhas SEM post_id -- linhas com post_id sao anuncios JA criados de
+    // verdade (ex.: pending_close de ofertas duplicadas antigas, cada uma
+    // apontando pra um anuncio real diferente) e continuam sendo
+    // processadas todas.
+    const maisRecenteCriacaoPorVeiculoWM = new Map<string, (typeof pendingPubsBrutos)[number]>()
+    const idsCanceladosWM: string[] = []
+    for (const pub of pendingPubsBrutos) {
+      if (pub.post_id) continue
+      const existente = maisRecenteCriacaoPorVeiculoWM.get(pub.veiculo_id)
+      if (!existente) {
+        maisRecenteCriacaoPorVeiculoWM.set(pub.veiculo_id, pub)
+      } else {
+        idsCanceladosWM.push(pub.id)
+      }
+    }
+    if (idsCanceladosWM.length > 0) {
+      await supabase.from('estoque_publicacoes').update({ status: 'cancelado' }).in('id', idsCanceladosWM)
+    }
+    const idsCanceladosWMSet = new Set(idsCanceladosWM)
+    const pendingPubs = pendingPubsBrutos.filter((pub) => !idsCanceladosWMSet.has(pub.id))
 
     const results: any[] = []
     for (const pub of pendingPubs) {
@@ -360,7 +398,7 @@ Deno.serve(async (req: Request) => {
       const fotosVeiculo: string[] = Array.isArray(veiculo.fotos) ? veiculo.fotos : []
 
       try {
-        if (pub.status === 'pending_create' || pub.status === 'agendado') {
+        if (pub.status === 'pending_create' || pub.status === 'agendado' || (pub.status === 'error' && !pub.post_id)) {
           const placaVeiculo = normalizarPlaca(veiculo.placa)
           const jaAnunciado = placaVeiculo
             ? estoqueAtualWebmotors.find((a) => a.placa === placaVeiculo)
@@ -439,7 +477,7 @@ Deno.serve(async (req: Request) => {
               .eq('id', pub.id)
             results.push({ id: pub.id, status: 'error', error: res.error })
           }
-        } else if (pub.status === 'pending_update' && pub.post_id) {
+        } else if ((pub.status === 'pending_update' || pub.status === 'error') && pub.post_id) {
           const xml = buildAlterarCarroXML(veiculo, hash, mapa, pub.post_id, codigosOpcionais)
           const res = await callSOAP(xml, 'AlterarCarro', hash)
           await registrarTrocaXML(supabase, veiculo.id, 'AlterarCarro', xml, res.raw)

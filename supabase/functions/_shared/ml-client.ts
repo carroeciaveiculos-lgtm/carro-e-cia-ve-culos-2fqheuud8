@@ -85,18 +85,31 @@ const ML_STEERING_MAP: Record<string, string> = {
   mecanica: 'Mecânica',
 }
 
+// Achado real 26/08/2026 (Haval H6 19, cor "BRANCA"): só existiam as formas
+// no masculino — "branca"/"preta"/etc. (concordando com "cor", como o
+// cadastro costuma vir digitado) batiam em `undefined` e travavam a
+// publicação. Mesmo problema já resolvido pro NaPista (NAPISTA_COR_FALLBACK
+// em napista-client.ts) nunca tinha sido replicado aqui.
 export const ML_COLOR_MAP: Record<string, string> = {
   branco: 'Branco',
+  branca: 'Branco',
   preto: 'Preto',
+  preta: 'Preto',
   prata: 'Prateado',
+  prateada: 'Prateado',
   vermelho: 'Vermelho',
+  vermelha: 'Vermelho',
   azul: 'Azul',
   verde: 'Verde',
   amarelo: 'Amarelo',
+  amarela: 'Amarelo',
   cinza: 'Cinza',
   marrom: 'Marrom',
   bege: 'Bege',
   dourado: 'Dourado',
+  dourada: 'Dourado',
+  roxo: 'Roxo',
+  roxa: 'Roxo',
   vinho: 'Bordô',
 }
 

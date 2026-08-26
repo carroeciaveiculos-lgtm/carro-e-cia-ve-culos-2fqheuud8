@@ -107,18 +107,45 @@ Deno.serve(async (req: Request) => {
 
     let pubQuery = supabase
       .from('estoque_publicacoes')
-      .select('id, veiculo_id, platform, status, post_id')
+      .select('id, veiculo_id, platform, status, post_id, created_at')
       .eq('platform', 'napista')
       .in('status', statusAceitos)
+      .order('created_at', { ascending: false })
 
     if (specificVeiculoId) pubQuery = pubQuery.eq('veiculo_id', specificVeiculoId)
 
-    const { data: pendingPubs } = await pubQuery.limit(50)
-    if (!pendingPubs || pendingPubs.length === 0) {
+    const { data: pendingPubsBrutos } = await pubQuery.limit(50)
+    if (!pendingPubsBrutos || pendingPubsBrutos.length === 0) {
       return new Response(JSON.stringify({ success: true, processed: 0 }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
+
+    // Achado real 26/08/2026 (Fit LX, Hilux): mais de uma linha pendente SEM
+    // post_id ainda (ex.: 3 tentativas de erro acumuladas de quando nunca
+    // chegou a criar, ou duas gravações do formulário quase simultâneas)
+    // fazia esta function processar cada linha como uma criação SEPARADA —
+    // publicando o mesmo carro várias vezes de verdade. Dedup só entre
+    // linhas SEM post_id (candidatas a criar um anúncio novo) — linhas com
+    // post_id são ofertas JÁ criadas de verdade (ex.: duas pending_close de
+    // ofertas duplicadas antigas) e cada uma continua sendo processada,
+    // porque apontam pra anúncios reais diferentes.
+    const maisRecenteCriacaoPorVeiculo = new Map<string, (typeof pendingPubsBrutos)[number]>()
+    const idsCancelados: string[] = []
+    for (const pub of pendingPubsBrutos) {
+      if (pub.post_id) continue
+      const existente = maisRecenteCriacaoPorVeiculo.get(pub.veiculo_id)
+      if (!existente) {
+        maisRecenteCriacaoPorVeiculo.set(pub.veiculo_id, pub)
+      } else {
+        idsCancelados.push(pub.id)
+      }
+    }
+    if (idsCancelados.length > 0) {
+      await supabase.from('estoque_publicacoes').update({ status: 'cancelado' }).in('id', idsCancelados)
+    }
+    const idsCanceladosSet = new Set(idsCancelados)
+    const pendingPubs = pendingPubsBrutos.filter((pub) => !idsCanceladosSet.has(pub.id))
 
     const results: any[] = []
     for (const pub of pendingPubs) {
