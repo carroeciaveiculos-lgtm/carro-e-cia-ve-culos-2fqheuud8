@@ -35,6 +35,108 @@ function similaridade(a: string, b: string): number {
   return inter / (ta.size + tb.size - inter)
 }
 
+// Busca a melhor versão pra um modelo específico: cache do ano exato -> API
+// ao vivo do ano exato -> cache de qualquer ano -> API ao vivo de qualquer
+// ano (esse último nunca confirma sozinho, é aproximação). Extraído pra
+// função à parte em 26/08/2026 pra poder rodar a mesma busca em mais de um
+// modelo candidato (ver uso em modelosEmpatados abaixo).
+async function buscarMelhorVersaoParaModelo(
+  supabase: any,
+  modeloId: string,
+  marcaId: string,
+  anoModelo: number | null,
+  textoModeloCompleto: string,
+): Promise<{ versoesComScore: any[]; usouFallbackAno: boolean }> {
+  const { data: versoesCache } = await supabase
+    .from('napista_versoes')
+    .select('id, nome')
+    .eq('modelo_id', modeloId)
+    .eq('model_year', anoModelo)
+
+  let versoes = versoesCache || []
+  if (versoes.length === 0) {
+    const { token } = await getValidNapistaToken(supabase)
+    if (token) {
+      const yearParam = anoModelo ? `&modelYear=${anoModelo}` : ''
+      const res = await fetch(
+        `${BASE}/catalog/versions/CAR?modelId=${encodeURIComponent(modeloId)}${yearParam}`,
+        { headers: { Authorization: `Bearer ${token}` } },
+      )
+      if (res.ok) {
+        const data = await res.json()
+        const novasVersoes = (data.items || [])
+          .filter((v: any) => v.id)
+          .map((v: any) => ({
+            id: v.id,
+            modelo_id: modeloId,
+            marca_id: marcaId,
+            nome: v.name,
+            model_year: anoModelo,
+            atualizado_em: new Date().toISOString(),
+          }))
+        if (novasVersoes.length > 0) {
+          await supabase.from('napista_versoes').upsert(novasVersoes, { onConflict: 'id' })
+          versoes = novasVersoes
+        }
+      }
+    }
+  }
+
+  let versoesComScore = versoes
+    .map((v: any) => ({ id: v.id, nome: v.nome, score: similaridade(textoModeloCompleto, v.nome || '') }))
+    .sort((a: any, b: any) => b.score - a.score)
+
+  let usouFallbackAno = false
+  if (versoesComScore.length === 0) {
+    let versoesQualquerAno = null as any
+    const { data: cacheQualquerAno } = await supabase
+      .from('napista_versoes')
+      .select('id, nome, model_year')
+      .eq('modelo_id', modeloId)
+    versoesQualquerAno = cacheQualquerAno
+
+    if (!versoesQualquerAno || versoesQualquerAno.length === 0) {
+      const { token: tokenFallback } = await getValidNapistaToken(supabase)
+      if (tokenFallback) {
+        const resFallback = await fetch(
+          `${BASE}/catalog/versions/CAR?modelId=${encodeURIComponent(modeloId)}`,
+          { headers: { Authorization: `Bearer ${tokenFallback}` } },
+        )
+        if (resFallback.ok) {
+          const dataFallback = await resFallback.json()
+          const novasVersoesFallback = (dataFallback.items || [])
+            .filter((v: any) => v.id)
+            .map((v: any) => ({
+              id: v.id,
+              modelo_id: modeloId,
+              marca_id: marcaId,
+              nome: v.name,
+              model_year: v.modelYear ?? null,
+              atualizado_em: new Date().toISOString(),
+            }))
+          if (novasVersoesFallback.length > 0) {
+            await supabase.from('napista_versoes').upsert(novasVersoesFallback, { onConflict: 'id' })
+            versoesQualquerAno = novasVersoesFallback
+          }
+        }
+      }
+    }
+
+    if (versoesQualquerAno && versoesQualquerAno.length > 0) {
+      usouFallbackAno = true
+      versoesComScore = versoesQualquerAno
+        .map((v: any) => ({
+          id: v.id,
+          nome: v.model_year ? `${v.nome} (${v.model_year})` : v.nome,
+          score: similaridade(textoModeloCompleto, v.nome || ''),
+        }))
+        .sort((a: any, b: any) => b.score - a.score)
+    }
+  }
+
+  return { versoesComScore, usouFallbackAno }
+}
+
 async function salvarPendencia(supabase: any, veiculoId: string, campos: Record<string, any>) {
   const { data: existing } = await supabase
     .from('napista_mapeamento_veiculos')
@@ -103,7 +205,7 @@ Deno.serve(async (req: Request) => {
       texto_busca: textoModeloCompleto,
       p_marca_id: melhorMarca.id,
     })
-    const melhorModelo = modeloMatches?.[0]
+    let melhorModelo = modeloMatches?.[0]
     const confiancaModelo = melhorModelo?.score ?? 0
     const candidatosModelo = (modeloMatches || []).slice(0, 3)
 
@@ -119,59 +221,78 @@ Deno.serve(async (req: Request) => {
       return responder({ success: true, status: 'revisao_necessaria', motivo: 'modelo' })
     }
 
-    // 3) VERSAO - verifica cache PARA O ANO DO VEÍCULO; se vazio, busca ao
-    // vivo na API do NaPista com o filtro modelYear. Achado testando ao vivo
-    // (14/08/2026): o mesmo modelo tem conjuntos de versionId BEM diferentes
-    // por ano — cachear sem separar por ano devolvia versão de outro ano,
-    // que o NaPista rejeita no cadastro ("versionId invalid for the
-    // informed modelYear").
+    // 3) VERSAO - busca a melhor versão pro modelo escolhido no passo 2.
+    // Achado 26/08/2026 (caso real: Hilux SW4): o NaPista tem modelos
+    // "duplicados" pro mesmo veículo (ex.: HILUX, HILUX SW4 e SW4, todos com
+    // score de texto igual/muito próximo) — comprometer com o modelo de
+    // maior score e seguir só por ele pode deixar o veículo preso em
+    // "revisão necessária" mesmo quando a versão exata existe de verdade no
+    // catálogo, só que sob outro modelo empatado (era exatamente o caso do
+    // Hilux: a versão real só existe sob "SW4", nunca sob "HILUX SW4", que
+    // foi o modelo escolhido). Quando há empate (mesma faixa de score),
+    // busca a versão em TODOS os empatados e usa o que realmente bater
+    // melhor — prioriza sempre um match do ano exato (sem aproximação de
+    // outro ano) sobre qualquer aproximação, mesmo que a aproximação tenha
+    // score de texto maior.
     const anoModelo = Number(veiculo.ano_modelo) || null
-    const { data: versoesCache } = await supabase
-      .from('napista_versoes')
-      .select('id, nome')
-      .eq('modelo_id', melhorModelo.id)
-      .eq('model_year', anoModelo)
+    const EPSILON_EMPATE_MODELO = 0.02
+    const modelosEmpatados = candidatosModelo.filter(
+      (m: any) => (m.score ?? 0) >= confiancaModelo - EPSILON_EMPATE_MODELO,
+    )
 
-    let versoes = versoesCache || []
-    if (versoes.length === 0) {
-      const { token, error: tokenError } = await getValidNapistaToken(supabase)
-      if (!token) throw new Error(tokenError || 'Sem token válido do NaPista')
+    let versoesComScore: any[]
+    let usouFallbackAno: boolean
 
-      const yearParam = anoModelo ? `&modelYear=${anoModelo}` : ''
-      const res = await fetch(
-        `${BASE}/catalog/versions/CAR?modelId=${encodeURIComponent(melhorModelo.id)}${yearParam}`,
-        { headers: { Authorization: `Bearer ${token}` } },
-      )
-      if (!res.ok) throw new Error(`Falha ao buscar versões no NaPista: ${res.status}`)
-      const data = await res.json()
-      const novasVersoes = (data.items || [])
-        .filter((v: any) => v.id)
-        .map((v: any) => ({
-          id: v.id,
-          modelo_id: melhorModelo.id,
-          marca_id: melhorMarca.id,
-          nome: v.name,
-          model_year: anoModelo,
-          atualizado_em: new Date().toISOString(),
-        }))
-      if (novasVersoes.length > 0) {
-        await supabase.from('napista_versoes').upsert(novasVersoes, { onConflict: 'id' })
-        versoes = novasVersoes
+    if (modelosEmpatados.length > 1) {
+      let melhorResultado: { modelo: any; versoesComScore: any[]; usouFallbackAno: boolean } | null = null
+      for (const candidato of modelosEmpatados) {
+        const resultado = await buscarMelhorVersaoParaModelo(
+          supabase,
+          candidato.id,
+          melhorMarca.id,
+          anoModelo,
+          textoModeloCompleto,
+        )
+        const scoreAtual = resultado.versoesComScore[0]?.score ?? 0
+        const scoreMelhorAtual = melhorResultado?.versoesComScore[0]?.score ?? -1
+        const prefereAtual =
+          !melhorResultado ||
+          (!resultado.usouFallbackAno && melhorResultado.usouFallbackAno) ||
+          (resultado.usouFallbackAno === melhorResultado.usouFallbackAno && scoreAtual > scoreMelhorAtual)
+        if (prefereAtual) {
+          melhorResultado = { modelo: candidato, versoesComScore: resultado.versoesComScore, usouFallbackAno: resultado.usouFallbackAno }
+        }
       }
+      melhorModelo = melhorResultado!.modelo
+      versoesComScore = melhorResultado!.versoesComScore
+      usouFallbackAno = melhorResultado!.usouFallbackAno
+    } else {
+      const resultado = await buscarMelhorVersaoParaModelo(
+        supabase,
+        melhorModelo.id,
+        melhorMarca.id,
+        anoModelo,
+        textoModeloCompleto,
+      )
+      versoesComScore = resultado.versoesComScore
+      usouFallbackAno = resultado.usouFallbackAno
     }
-
-    const versoesComScore = versoes
-      .map((v: any) => ({ id: v.id, nome: v.nome, score: similaridade(textoModeloCompleto, v.nome || '') }))
-      .sort((a: any, b: any) => b.score - a.score)
 
     const melhorVersao = versoesComScore[0]
     const confiancaVersao = melhorVersao?.score ?? 0
-    const candidatosVersao = versoesComScore.slice(0, 3)
+    // Fallback de ano nunca confirma sozinho (é aproximação de outro ano) —
+    // sempre exige escolha manual, mesmo com score alto.
+    const candidatosVersao = versoesComScore.slice(0, 5)
 
-    if (!melhorVersao || confiancaVersao < LIMIAR_CONFIANCA) {
+    if (!melhorVersao || confiancaVersao < LIMIAR_CONFIANCA || usouFallbackAno) {
+      const semNenhumaVersaoCadastrada = versoesComScore.length === 0
       await salvarPendencia(supabase, veiculo_id, {
         status_sincronizacao: 'revisao_necessaria',
-        erro_msg: `Versão para "${textoModeloCompleto}" sem correspondência confiável`,
+        erro_msg: semNenhumaVersaoCadastrada
+          ? `NaPista não tem nenhuma versão cadastrada pro modelo "${melhorModelo.id}" (nenhum ano) — não há como mapear até o catálogo deles ser atualizado.`
+          : usouFallbackAno
+            ? `NaPista não tem versão cadastrada pro ano ${anoModelo} — mostrando aproximações de outros anos pra escolha manual (nenhuma foi confirmada automaticamente).`
+            : `Versão para "${textoModeloCompleto}" sem correspondência confiável`,
         napista_marca_id: melhorMarca.id,
         napista_modelo_id: melhorModelo.id,
         confianca_marca: confiancaMarca,
