@@ -152,6 +152,12 @@ export function buildAnuncioXML(
   const precoRealTag = temPrecoRealValido
     ? `\n      <PrecoReal>${precoRevendaBruto.toFixed(2)}</PrecoReal>`
     : ''
+  // Corte de 500 caracteres na Observacao removido (26/08/2026, achado real,
+  // pedido da Adriana): não existia nenhum limite confirmado da Webmotors —
+  // testado ao vivo com AlterarCarro mandando 1104 caracteres, a resposta
+  // ecoou o texto completo sem reclamar. Era só uma trava nossa sem
+  // necessidade, que vinha cortando a descrição de 17 dos veículos
+  // publicados no meio da frase.
   return `
       <CodigoAnuncio>${codigoAnuncio}</CodigoAnuncio>
       <CodigoMarca>${mapa.codigo_marca_wm}</CodigoMarca>
@@ -174,7 +180,7 @@ export function buildAnuncioXML(
       <IpvaPago>${snField(veiculo.ipva_pago)}</IpvaPago>
       <Km>${veiculo.quilometragem || 0}</Km>
       <Licenciado>${snField(veiculo.licenciado, 'S')}</Licenciado>
-      <Observacao>${escapeXml((veiculo.descricao || '').slice(0, 500))}</Observacao>
+      <Observacao>${escapeXml(veiculo.descricao || '')}</Observacao>
       <Placa>${escapeXml(veiculo.placa || '')}</Placa>${precoRealTag}
       <PrecoVenda>${precoVenda.toFixed(2)}</PrecoVenda>
       <RevisadoOficinaAgendaDoCarro>${snField(veiculo.revisado_oficina)}</RevisadoOficinaAgendaDoCarro>
