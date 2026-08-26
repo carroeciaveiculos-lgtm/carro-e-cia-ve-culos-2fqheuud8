@@ -172,8 +172,30 @@ Deno.serve(async (req: Request) => {
   )
 
   try {
-    const { veiculo_id } = await req.json()
+    const { veiculo_id, force } = await req.json()
     if (!veiculo_id) throw new Error('veiculo_id obrigatorio')
+
+    // Achado real 26/08/2026 (Fit LX): "Validar e Salvar" chama esta function
+    // TODA VEZ que o veículo é salvo, sem checar se já existe mapeamento
+    // confirmado. Um veículo já mapeado (automático OU manual em
+    // napista-confirmar-mapeamento) sendo salvo de novo por qualquer outro
+    // motivo (preço, foto, o que for) reavaliava a versão do zero — se o
+    // texto não batesse com confiança alta o bastante, sobrescrevia
+    // "mapeado" de volta pra "revisão necessária", derrubando uma escolha
+    // que a Adriana já tinha feito manualmente. Mesmo bug existia no
+    // wm-mapear-veiculo (corrigido junto). Mapeia só na primeira vez — só
+    // roda de novo se pedido explicitamente (botão "Remapear", force:true).
+    const { data: mapeamentoExistente } = await supabase
+      .from('napista_mapeamento_veiculos')
+      .select('status_sincronizacao')
+      .eq('veiculo_id', veiculo_id)
+      .maybeSingle()
+    if (!force && mapeamentoExistente?.status_sincronizacao === 'mapeado') {
+      return responder({ success: true, status: 'mapeado', skipped: true })
+    }
+    if (!force && mapeamentoExistente?.status_sincronizacao === 'excluido_manualmente') {
+      return responder({ success: true, status: 'excluido_manualmente', skipped: true })
+    }
 
     const { data: veiculo, error: veiculoErr } = await supabase
       .from('veiculos')
@@ -200,11 +222,39 @@ Deno.serve(async (req: Request) => {
       return responder({ success: true, status: 'revisao_necessaria', motivo: 'marca' })
     }
 
-    // 2) MODELO - trigram match contra napista_modelos filtrado pela marca
-    const { data: modeloMatches } = await supabase.rpc('match_napista_modelo', {
-      texto_busca: textoModeloCompleto,
-      p_marca_id: melhorMarca.id,
-    })
+    // 2) MODELO - trigram match contra napista_modelos filtrado pela marca.
+    // Regra fixa pra Toyota Hilux SW4 (pedido da Adriana, 26/08/2026): o
+    // catálogo do NaPista tem 3 modelos "duplicados" pro mesmo veículo real
+    // (HILUX, HILUX SW4, SW4) — a versão de verdade só existe cadastrada
+    // sob "SW4". A busca por empate já resolvia isso (ver modelosEmpatados
+    // mais abaixo), mas fixa aqui como garantia — não depende de nenhuma
+    // heurística de score pra acertar esse caso específico, que já causou
+    // confusão real duas vezes nesta sessão.
+    const ALIAS_MODELO_NAPISTA: Record<string, { marca: string; contemNoTexto: string; modeloId: string }> = {
+      hilux_sw4: { marca: 'toyota', contemNoTexto: 'sw4', modeloId: 'SW4' },
+    }
+    const marcaNorm = normalizar(veiculo.marca)
+    const textoNorm = normalizar(textoModeloCompleto)
+    const alias = Object.values(ALIAS_MODELO_NAPISTA).find(
+      (a) => marcaNorm.includes(a.marca) && textoNorm.includes(a.contemNoTexto),
+    )
+
+    let modeloMatches: any[] | null = null
+    if (alias) {
+      const { data: modeloAlias } = await supabase
+        .from('napista_modelos')
+        .select('id, nome')
+        .eq('id', alias.modeloId)
+        .maybeSingle()
+      if (modeloAlias) modeloMatches = [{ id: modeloAlias.id, nome: modeloAlias.nome, score: 1 }]
+    }
+    if (!modeloMatches) {
+      const { data } = await supabase.rpc('match_napista_modelo', {
+        texto_busca: textoModeloCompleto,
+        p_marca_id: melhorMarca.id,
+      })
+      modeloMatches = data
+    }
     let melhorModelo = modeloMatches?.[0]
     const confiancaModelo = melhorModelo?.score ?? 0
     const candidatosModelo = (modeloMatches || []).slice(0, 3)

@@ -6,7 +6,87 @@ precisar reler o histórico inteiro de conversas. Diferente do
 pra ser mantido em dia de verdade. Detalhe técnico por integração continua
 nos arquivos `docs/*.md` — aqui é só o resumo de estado + pendências.
 
-Última atualização: 2026-08-26 (sessão 15, continuação — descrição não sincronizava, gatilhos de reenvio corrigidos nas 3 plataformas).
+Última atualização: 2026-08-26 (sessão 15, continuação — Fit LX/Hilux publicados, mapeamento manual não era mais derrubado, 2 duplicações reais corrigidas).
+
+## Sessão 15 (26/08/2026, continuação) — publicação real do Fit LX/Hilux, bug sério achado: mapeamento manual era derrubado sozinho
+
+Adriana pediu pra publicar o Fit LX (deu erro nas 3 plataformas) e a Hilux
+(nunca publicada). Fazendo isso ao vivo, achei e corrigi 3 problemas reais
+— dois deles causados por mim mesmo no processo, corrigidos na hora.
+
+**1. Bug sério, sistêmico, achado nos dois (WM e NaPista): salvar o veículo
+de novo derrubava um mapeamento já confirmado manualmente.** `wm-mapear-
+veiculo` e `napista-mapear-veiculo` rodavam TODA VEZ que "Validar e Salvar"
+era clicado, mesmo se o veículo já estivesse `mapeado` — se o texto não
+batesse com confiança automática, sobrescrevia de volta pra "revisão
+necessária", desfazendo a escolha manual da Adriana sem avisar. Foi
+exatamente isso que aconteceu com o Fit LX ("já havia mapeado... ficou
+pedindo de novo"), e eu mesmo reproduzi o mesmo bug sem querer testando a
+Hilux nesta sessão. **Corrigido nos dois**: mapeia só na primeira vez —
+se já está `mapeado` (ou `excluido_manualmente`), pula sem reavaliar,
+a não ser que seja pedido explícito (`force: true`, usado pelo botão
+"Remapear" da tela de Pendências). Testado ao vivo nos dois lados
+(Hilux) — confirmado que roda de novo só com force, e que sem force o
+mapeamento fica intacto.
+
+**Por que o erro da SW4 aconteceu** (autocrítica pedida pela Adriana): eu
+tinha corrigido o empate de modelo (HILUX/HILUX SW4/SW4) numa parte
+anterior desta mesma sessão e testado com sucesso — mas depois, ao
+responder uma pergunta nova sobre "opções pra resolver a falta de versão
+exata", reformulei de memória sem reconferir os dados reais que eu mesmo
+tinha acabado de salvar, e afirmei errado que a versão "não existe em
+nenhum modelo do catálogo deles". **Lição aplicada**: depois de confirmar
+um fato com dado real, não reafirmar de memória em resposta futura sem
+reconferir o registro — sempre que uma alegação factual for repetida,
+checar contra o estado atual do banco antes de escrever, não confiar na
+lembrança da própria conversa.
+
+**2. Regra fixa criada pra Hilux SW4** (pedido direto): Toyota + texto
+contendo "sw4" agora força a busca do modelo NaPista direto pra "SW4",
+sem depender de nenhuma heurística de empate — mais garantia, não menos.
+
+**3. Duas duplicações reais causadas por mim, achadas e corrigidas ao
+vivo:**
+- **NaPista, Hilux**: minhas duas tentativas manuais de enfileirar a
+  publicação se somaram — o veículo foi criado 3 vezes lá. Fechei as 2
+  ofertas extras pela API real, sobrou 1.
+- **Webmotors, Fit LX**: 2 anúncios reais (`78447603` e `78447550`)
+  criados quase ao mesmo tempo (17:42:10 e 17:42:11) — provavelmente duas
+  gravações do formulário muito próximas enfileiraram 2 `pending_create`
+  antes de qualquer um virar anúncio de verdade. Fechei o órfão
+  (`78447603`) pela API real, ficou só `78447550`.
+
+**Cota "19/18" da Webmotors (Anúncio Básico)**: depois de fechar as
+duplicatas e o Commander (vendido hoje, despublicado corretamente nas 3
+plataformas — confirmado), nosso banco já conta certinho **18 veículos**
+nessa modalidade (bate com o limite). O número que a própria Webmotors
+reporta (`wm_modalidades.quantidade_usados`) ainda mostrava 19 mesmo
+depois de atualizado — parece atraso do lado deles pra processar as
+exclusões recentes, não um erro nosso. Vale a Adriana conferir direto no
+painel da Webmotors se sumiu de lá; se a contagem deles continuar presa,
+é caso pra suporte da Webmotors.
+
+**Status final testado ao vivo:**
+- Fit LX: ML publicado (`MLB7523352248`), WM publicado (`78447550`, sem
+  duplicata), NaPista ainda pendente — versão não confirmada
+  (candidato forte: "1.5 16V FLEX LX", aguardando escolha da Adriana em
+  Portais → NaPista → Pendências).
+- Hilux: ML publicado (atualizado), Webmotors publicado
+  (`78447550`... — checar código real na tela), NaPista publicado (1
+  oferta só, versão 7 lugares confirmada pela Adriana).
+
+**Publicado**: `napista-mapear-veiculo` (regra SW4 + trava de re-mapeamento),
+`wm-mapear-veiculo` (trava de re-mapeamento), `plataformas.ts`
+(`remapearVeiculoNapista` agora manda `force:true`).
+
+**Não corrigido ainda, causa raiz identificada**: nada garante hoje que
+duas gravações do formulário muito próximas no tempo não enfileirem
+publicações duplicadas de novo (foi isso que causou a duplicata real do
+Fit LX) — os gatilhos do banco não têm proteção contra corrida (race
+condition) entre inserções quase simultâneas. Vale tratar numa próxima
+rodada se voltar a acontecer.
+
+## Sessão 15 (26/08/2026, continuação) — descrição não sincronizava + gatilhos de reenvio incompletos nas 3 plataformas
 
 ## Sessão 15 (26/08/2026, continuação) — descrição não sincronizava + gatilhos de reenvio incompletos nas 3 plataformas
 

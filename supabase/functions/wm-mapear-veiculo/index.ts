@@ -70,7 +70,7 @@ Deno.serve(async (req: Request) => {
   )
 
   try {
-    const { veiculo_id } = await req.json()
+    const { veiculo_id, force } = await req.json()
     if (!veiculo_id) throw new Error('veiculo_id obrigatorio')
 
     const { data: veiculo, error: veiculoErr } = await supabase
@@ -85,13 +85,22 @@ Deno.serve(async (req: Request) => {
     // disponível). Sem esse guard, salvar o veículo de novo no admin
     // ("Validar e Salvar" chama esta function) reavaliaria o mapeamento do
     // zero e podia trazer o veículo de volta pra fila de revisão.
+    // Achado real 26/08/2026 (mesmo bug do NaPista, Fit LX): um veículo já
+    // "mapeado" (automático OU confirmado manualmente em
+    // wm-confirmar-mapeamento) sendo salvo de novo por qualquer outro
+    // motivo reavaliava a versão do zero e podia derrubar uma confirmação
+    // manual já feita. Mapeia só na primeira vez — só roda de novo se
+    // pedido explicitamente (botão "Remapear", force:true).
     const { data: mapeamentoExistente } = await supabase
       .from('wm_mapeamento_veiculos')
       .select('status_sincronizacao')
       .eq('veiculo_id', veiculo_id)
       .maybeSingle()
-    if (mapeamentoExistente?.status_sincronizacao === 'excluido_manualmente') {
-      return responder({ success: true, status: 'excluido_manualmente' })
+    if (!force && mapeamentoExistente?.status_sincronizacao === 'excluido_manualmente') {
+      return responder({ success: true, status: 'excluido_manualmente', skipped: true })
+    }
+    if (!force && mapeamentoExistente?.status_sincronizacao === 'mapeado') {
+      return responder({ success: true, status: 'mapeado', skipped: true })
     }
 
     const textoModeloCompleto = [veiculo.modelo, veiculo.versao].filter(Boolean).join(' ')

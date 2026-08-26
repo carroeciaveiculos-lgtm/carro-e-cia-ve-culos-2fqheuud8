@@ -433,8 +433,12 @@ export async function confirmarMapeamentoNapista(
 export async function remapearVeiculoNapista(
   veiculoId: string,
 ): Promise<{ success: boolean; status?: string; motivo?: string; error?: string }> {
+  // force:true (26/08/2026) -- clique explícito em "Remapear" deve sempre
+  // rodar de novo, mesmo que já esteja "mapeado" -- diferente da chamada
+  // automática no salvar do formulário, que agora pula veículo já mapeado
+  // pra não derrubar confirmação manual sem querer.
   const { data, error } = await supabase.functions.invoke('napista-mapear-veiculo', {
-    body: { veiculo_id: veiculoId },
+    body: { veiculo_id: veiculoId, force: true },
   })
   if (error) return { success: false, error: error.message }
   return data
