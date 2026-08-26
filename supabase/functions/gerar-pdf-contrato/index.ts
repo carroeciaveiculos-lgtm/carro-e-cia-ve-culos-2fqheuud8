@@ -117,7 +117,6 @@ Deno.serve(async (req: Request) => {
         veiculo_modelo: veiculo.modelo || '',
         veiculo_id: veiculo.id || '',
         marca: veiculo.marca || '',
-        versao: veiculo.versao || '',
         placa: veiculo.placa || '',
         chassi: veiculo.chassi || '',
         renavam: veiculo.renavam || '',

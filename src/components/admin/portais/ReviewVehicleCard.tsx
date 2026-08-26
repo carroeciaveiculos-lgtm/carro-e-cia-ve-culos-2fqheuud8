@@ -43,7 +43,7 @@ export function ReviewVehicleCard({ veiculo, onResync, resyncingPlatforms }: Pro
       <div className="flex items-start justify-between gap-4 mb-3">
         <div>
           <h3 className="font-bold text-sm">
-            {veiculo.marca} {veiculo.modelo} {veiculo.versao || ''}
+            {veiculo.marca} {veiculo.modelo}
           </h3>
           <div className="flex flex-wrap gap-1 mt-1">
             <Badge variant="secondary" className="text-[10px]">

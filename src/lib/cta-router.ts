@@ -92,7 +92,10 @@ export const getShareText = (vehicle: any) => {
     ? `${vehicle.quilometragem.toLocaleString('pt-BR')} km`
     : 'Excelente km'
   const ano = `${vehicle.ano_fabricacao}/${vehicle.ano_modelo}`
-  const name = `${vehicle.marca} ${vehicle.modelo} ${vehicle.versao || ''}`.trim()
+  // Versão removida daqui (pedido da Adriana, 26/08/2026) — repetia o que já
+  // está em Modelo, ficava duplicado na mensagem. Continua usada só nas
+  // integrações que exigem o campo (Mercado Livre, Webmotors, NaPista).
+  const name = `${vehicle.marca} ${vehicle.modelo}`.trim()
   const url = getShareUrl(vehicle)
   return sanitizeText(
     `${name} | Ano: ${ano} | KM: ${km} | Preço: ${price}. Venda ou Compre seu carro rápido e seguro. ${url}`,
@@ -105,7 +108,7 @@ export const getCommercialText = (
   simDetails?: { entrada: string; parcelas: string },
 ) => {
   if (!vehicle) return 'Olá! Gostaria de mais informações.'
-  const name = `${vehicle.marca} ${vehicle.modelo} ${vehicle.versao || ''}`.trim()
+  const name = `${vehicle.marca} ${vehicle.modelo}`.trim()
   if (isSimulacao && simDetails) {
     return sanitizeText(
       `Olá! Tenho interesse em simular o financiamento do ${name} (${vehicle.ano_fabricacao}).\n\n💰 Valor: ${formatCurrency(vehicle.preco_venda || 0)}\n💵 Entrada: R$ ${simDetails.entrada || '0'}\n📅 Parcelas: ${simDetails.parcelas}x`,

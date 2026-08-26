@@ -20,7 +20,7 @@ export function calculateAdQualityScore(vehicle: {
   combustivel?: string | null
   placa?: string | null
   descricao?: string | null
-  cilindrada?: string | null
+  cilindrada?: number | null
   cambio?: string | null
   portas?: number | null
   direcao?: string | null

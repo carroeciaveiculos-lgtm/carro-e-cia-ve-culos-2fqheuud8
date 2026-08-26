@@ -49,7 +49,6 @@ Deno.serve(async (req) => {
       proprietario_telefone: cliente.telefone || '',
       marca: veiculo.marca || '',
       veiculo_modelo: veiculo.modelo || '',
-      versao: veiculo.versao || '',
       placa: veiculo.placa || '',
       ano_fabricacao: String(veiculo.ano_fabricacao || ''),
       ano_modelo: String(veiculo.ano_modelo || ''),

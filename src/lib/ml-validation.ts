@@ -33,7 +33,7 @@ export interface VehicleForValidation {
   cor: string | null
   portas: number | null
   direcao: string | null
-  cilindrada: string | null
+  cilindrada: number | null
   final_placa: string | null
   codigo_fipe: string | null
   placa: string | null

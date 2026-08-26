@@ -38,7 +38,7 @@ O robô automático (cron `ml-sync`) usa o mesmo código de montagem de payload
 | ID de cidade do ML é um valor opaco tipo `TUxCQ1VCRWE3Nzcz` — **não é sequencial nem fácil de adivinhar**, tem que vir da API (`/classified_locations/states/BR-MG`) | consulta ao vivo, 12/08/2026 |
 | O cache `ml_cities_cache` para Uberaba estava com o ID errado desde que foi criado (22/07/2026) — nunca tinha sido conferido contra a API real | comparação direta, 12/08/2026 |
 | Em UPDATE (PUT, veículo já publicado), o ML parece ser mais tolerante — não bloqueia a sincronização toda por um atributo opcional errado (fica com o valor antigo). Em CREATE (POST, veículo novo) ele bloqueia. | 12 veículos flex já ativos continuaram sincronizando normalmente mesmo com o bug do "Flex" no ar; só o City (uma publicação nova) travou |
-| A cilindrada no cadastro (`veiculos.cilindrada`) não tem padrão — vem tanto em litros ("1.5") quanto em cc direto ("1598") | placeholder do próprio formulário de cadastro |
+| A cilindrada no cadastro (`veiculos.cilindrada`) virou campo numérico só em litros (26/08/2026) — antes era texto livre e vinha misturado (litro "1.5" ou cc direto "1598") | correção real, pedido da Adriana |
 
 ## Becos sem saída — não repetir
 

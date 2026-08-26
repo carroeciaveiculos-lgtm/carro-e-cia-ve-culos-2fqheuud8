@@ -756,6 +756,15 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
       // "De" (preco_revenda) não é mais digitado — é sempre igual ao Valor FIPE
       // (12/08/2026, pedido da Adriana). Único ponto que grava esse campo.
       sanitizedNumeric.preco_revenda = sanitizedNumeric.valor_fipe
+      // Cilindrada não passa pelo sanitizeNumber acima (26/08/2026): esse
+      // helper trata "." como separador de milhar (formato de preço em
+      // real), o que trocaria "1.6" por "16". Campo numérico nativo sempre
+      // manda o valor com ponto decimal, então converte direto.
+      const cilindradaNum = Number(merged.cilindrada)
+      sanitizedNumeric.cilindrada =
+        merged.cilindrada === '' || merged.cilindrada === null || merged.cilindrada === undefined || isNaN(cilindradaNum)
+          ? null
+          : cilindradaNum
       const payload = {
         ...merged,
         ...sanitizedNumeric,
@@ -1496,12 +1505,22 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
                       </Select>
                     </div>
                     <div>
-                      <Label>Cilindrada</Label>
+                      <Label>Cilindrada (litros)</Label>
                       <Input
-                        value={formData.cilindrada || ''}
-                        onChange={(e) => setFormData({ ...formData, cilindrada: e.target.value })}
-                        placeholder="Ex: 1.0, 2.0, 1598"
+                        type="number"
+                        step="0.1"
+                        min={0.1}
+                        max={15}
+                        value={formData.cilindrada ?? ''}
+                        onChange={(e) => {
+                          setFormData({ ...formData, cilindrada: e.target.value })
+                          validateNumericField('cilindrada', e.target.value, { min: 0.1, max: 15 })
+                        }}
+                        placeholder="Ex: 1.0, 1.6, 2.0"
                       />
+                      {validationErrors.cilindrada && (
+                        <p className="text-xs text-red-500 mt-1">{validationErrors.cilindrada}</p>
+                      )}
                     </div>
                     <div>
                       <Label>Versão</Label>
@@ -1510,6 +1529,11 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
                         onChange={(e) => setFormData({ ...formData, versao: e.target.value })}
                         placeholder="Ex: 1.0 Flex, LTZ, GT-Line"
                       />
+                      <p className="text-[10px] text-gray-500 mt-1">
+                        Usado só pra casar com o catálogo do Mercado Livre, Webmotors e
+                        NaPista — não aparece no site nem em PDFs. Pode deixar em branco
+                        se o Modelo já é completo.
+                      </p>
                     </div>
                     <div>
                       <Label>Categoria *</Label>

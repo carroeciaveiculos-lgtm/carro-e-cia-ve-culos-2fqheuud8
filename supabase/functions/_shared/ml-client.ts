@@ -365,15 +365,12 @@ function buildLocation(_v: any, cityId?: string | null): any {
   return location
 }
 
-// cilindrada no cadastro aceita tanto litros ("1.5") quanto cc direto
-// ("1598"), sem padrão fixo. O ML só aceita um número em cc como texto
-// (ex.: "1500cc"), então valores pequenos (<10) são tratados como litros.
-function formatCilindradaCC(cilindrada: string | null | undefined): string | undefined {
+// cilindrada agora é numérico e sempre em litros (padronizado 26/08/2026,
+// migration converte_cilindrada_para_numero) — o ML só aceita cc como texto
+// (ex.: "1500cc"), então converte direto sem precisar mais adivinhar formato.
+function formatCilindradaCC(cilindrada: number | null | undefined): string | undefined {
   if (!cilindrada) return undefined
-  const raw = parseFloat(String(cilindrada).replace(',', '.'))
-  if (!raw || Number.isNaN(raw)) return undefined
-  const cc = raw < 10 ? Math.round(raw * 1000) : Math.round(raw)
-  return `${cc}cc`
+  return `${Math.round(cilindrada * 1000)}cc`
 }
 
 function buildAttributes(v: any, isZeroKm: boolean): any[] {

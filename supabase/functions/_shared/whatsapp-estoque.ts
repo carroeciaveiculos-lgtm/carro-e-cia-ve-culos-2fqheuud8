@@ -43,10 +43,14 @@ export async function handleBuscar(termo: string, ctx: CommandContext): Promise<
 
   if (error || !data || data.length === 0) return `❌ Nenhum veículo encontrado para "${termo}".`
 
+  // Versão removida da listagem (pedido da Adriana, 26/08/2026) — repetia
+  // texto já presente em Modelo. Continua entrando na busca acima (.or) pra
+  // não perder resultado por palavra-chave de versão, só não aparece mais
+  // duplicado no texto mostrado.
   const list = data
     .map(
       (v, i) =>
-        `${i + 1}. *${v.marca} ${v.modelo}* ${v.versao || ''}\n   Ano: ${v.ano_modelo || 'N/A'} | R$ ${(v.preco_venda || 0).toLocaleString('pt-BR')}`,
+        `${i + 1}. *${v.marca} ${v.modelo}*\n   Ano: ${v.ano_modelo || 'N/A'} | R$ ${(v.preco_venda || 0).toLocaleString('pt-BR')}`,
     )
     .join('\n\n')
 

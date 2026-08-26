@@ -52,7 +52,7 @@ export interface VeiculoSync {
   cor: string | null
   combustivel: string | null
   cambio: string | null
-  cilindrada: string | null
+  cilindrada: number | null
   direcao: string | null
   descricao: string | null
   portas: number | null

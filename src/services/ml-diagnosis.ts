@@ -20,7 +20,7 @@ export interface DiagnosisVehicle {
   cor: string | null
   quilometragem: number | null
   direcao: string | null
-  cilindrada: string | null
+  cilindrada: number | null
   ml_listing_type: string | null
   status: 'ready' | 'pending' | 'blocked'
   validation: MLValidationResult

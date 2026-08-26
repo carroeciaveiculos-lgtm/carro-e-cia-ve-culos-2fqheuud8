@@ -28,7 +28,7 @@ export interface VeiculoRecord {
   cor?: string | null
   portas?: number | null
   direcao?: string | null
-  cilindrada?: string | null
+  cilindrada?: number | null
   final_placa?: string | null
   categoria?: string | null
   codigo_fipe?: string | null

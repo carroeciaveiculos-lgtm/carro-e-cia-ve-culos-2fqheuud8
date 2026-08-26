@@ -6,7 +6,103 @@ precisar reler o histórico inteiro de conversas. Diferente do
 pra ser mantido em dia de verdade. Detalhe técnico por integração continua
 nos arquivos `docs/*.md` — aqui é só o resumo de estado + pendências.
 
-Última atualização: 2026-08-25 (sessão 14, continuação — bug "sem sincronização real configurada" NaPista + teste FIPE).
+Última atualização: 2026-08-26 (sessão 15 — empate de modelo NaPista, cilindrada numérica, versão só pra plataformas).
+
+## Sessão 15 (26/08/2026) — Hilux/NaPista resolvido, cilindrada numérica, versão restrita a integrações
+
+Sequência: Adriana descobriu por conta própria a causa exata do Hilux no
+NaPista (marca Toyota bate, mas o modelo certo é "SW4", não "HILUX SW4" —
+o NaPista tem 3 modelos "duplicados" pro mesmo veículo real). Pediu pra
+resolver isso, entender as "2 pendências" fantasma no dashboard WM/ML, e
+criar um jeito de a fila nunca ficar suja com erro parado — pedi
+autocrítica antes de decidir automatizar retry sozinho (achei arriscado
+publicar sem revisão humana pra veículos que já falharam uma vez, ela
+concordou em seguir com cautela).
+
+**1. Empate de modelo no NaPista — corrigido e testado ao vivo.**
+`napista-mapear-veiculo/index.ts`: quando o trigram-match de modelo retorna
+mais de um candidato com score muito próximo (diferença < 0.02), busca a
+versão em TODOS os empatados (não só no primeiro) e fica com o que achar
+uma versão de verdade — nunca "aposta" cedo demais num modelo que pode nem
+ter o carro cadastrado. Testado com o Hilux real: agora escolhe "SW4"
+sozinho e mostra a versão certa ("2.8 TDI SRX 7L AUTO 4WD") como candidata
+na tela de Pendências — falta só a Adriana confirmar clicando. Publicado
+`napista-mapear-veiculo` v17.
+
+**2. Dashboard de sincronização mentia números.** `get_platform_sync_dashboard`
+(função do banco): Mercado Livre sempre mostrava "0 publicados" (lia a
+tabela errada — `estoque_publicacoes`, que o ML nunca usa, em vez de
+`ml_listings`); "pendências" contava um status de log (`sync_log.status =
+'pending'`) que nenhuma function grava mais — as "2 pendências" eram 2
+linhas órfãs de 22-23/07/2026 (GWM Haval H6, BMW 320iA), ambos já
+publicados normalmente há semanas. Corrigido pra contar da fila real de
+cada plataforma. Confirmado depois da correção: WM 0 pendências reais, ML
+24 publicados/1 pendência real (o próprio Hilux, aguardando o mapeamento),
+NaPista 24/0.
+
+**3. Retry manual de veículo com erro** (não fica mais preso pra sempre):
+`napista-sync` já aceita reprocessar um veículo específico mesmo com
+status `error` (v16, sessão anterior) — decidido NÃO criar auto-retry
+automático que publica sozinho sem revisão (risco identificado na
+autocrítica: veículo que já falhou geralmente tem problema de dado, não é
+seguro deixar o sistema tentar de novo sozinho e publicar). Mesma lacuna
+(`error` não incluído no retry) ainda existe no `wm-sync` — fora de escopo
+desta sessão.
+
+**4. Auditoria dos campos "versão" e "cilindrada"** (pedido direto da
+Adriana): mapeei todo uso — versão alimenta correspondência de catálogo em
+3 integrações reais (Mercado Livre/atributo TRIM, Webmotors, NaPista) mas
+também vazava, sem necessidade, pra 4 lugares de conteúdo nosso (prévia de
+link no WhatsApp/Facebook, PDF de Proposta/Contrato de Consignação,
+mensagem de "tenho interesse" no WhatsApp, resultado do comando `BUSCAR`
+da equipe) — repetindo o que já está em Modelo, cara de erro. Cilindrada é
+texto livre sem padrão nenhum (banco tinha "2.0" e "2.0 " como valores
+diferentes, e 2 veículos misturavam cilindrada com potência: "1.0 -
+88CV").
+
+**Decisão da Adriana**: versão passa a servir só pra atender exigência de
+plataforma — removida dos 4 lugares de conteúdo próprio (mantida a lógica
+já esperta que existia em 2 lugares — título do site/SEO e título do ML —
+que só mostra a versão quando ela acrescenta algo que Modelo não tem,
+essas duas não foram mexidas). Cilindrada vira campo numérico, só litros.
+
+**Implementado e publicado:**
+- Migração `converte_cilindrada_para_numero`: corrige os 2 valores com CV
+  misturado, limpa espaço/vírgula, converte a coluna pra `numeric(3,1)`,
+  trava `cilindrada_valida` (0 a 15).
+- `VehicleFormModal.tsx`: campo Cilindrada vira numérico com validação (mesmo
+  padrão do campo Portas); campo Versão ganha aviso explicando que é só
+  pra integrações, pode ficar em branco se Modelo já é completo.
+- `ml-client.ts`: `formatCilindradaCC` simplificado (não precisa mais
+  adivinhar litro vs cc, entrada já vem sempre em litros numérico).
+- Versão removida de: `og-vehicle` (prévia WhatsApp/Facebook — testado ao
+  vivo com veículo real que tinha versão idêntica ao modelo, confirmado
+  título sem repetição), `cta-router.ts` (mensagens de WhatsApp),
+  `whatsapp-estoque.ts` (resultado do comando `BUSCAR` — buscar por versão
+  continua funcionando, só não aparece mais repetido no texto), templates
+  de PDF "Contrato de Consignação" e "Proposta Comercial" (banco,
+  `document_templates`), e do card de revisão de portais
+  (`ReviewVehicleCard.tsx`).
+- Tipos TS atualizados de `string|null` pra `number|null` em cilindrada
+  (`supabase/types.ts`, `ml-validation.ts`, `ad-quality-score.ts`,
+  `plataformas.ts`, `ml-diagnosis.ts`, `validate-payload.ts`).
+- Funções reimplantadas via CLI local (bundle automático, sem risco de
+  transcrição manual incompleta que já aconteceu antes nesta sessão):
+  `og-vehicle`, `ml-sync`, `sync-plataforma`, `gerar-pdf-contrato`,
+  `gerar-pdf-proposta`, `webhook-portais`, `whatsapp-webhook`.
+- `bun run build` passou limpo depois de todas as mudanças de tipo.
+
+**Pendente:** commit+push de todos os arquivos (aguardando autorização
+separada, como sempre). Adriana ainda precisa confirmar a versão do Hilux
+na tela de Pendências NaPista.
+
+**Achado útil pra próxima vez**: `supabase functions deploy <nome>
+--project-ref htpcqdbhktmvppfemnad` (CLI local, dentro da pasta do
+projeto) bundla sozinho todas as dependências `_shared/*.ts` de verdade —
+muito mais seguro que reconstruir o payload de deploy manualmente arquivo
+por arquivo (esse segundo método já causou uma transcrição incompleta de
+`ml-cache.ts` na sessão passada). Preferir CLI local sempre que o Bash/
+PowerShell estiver disponível.
 
 ## Sessão 14 (25/08/2026) — Correção do body_type/ML e automação de mapeamento NaPista
 

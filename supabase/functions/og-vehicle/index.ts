@@ -237,13 +237,15 @@ Deno.serve(async (req) => {
     const ogUrl = `${BASE_URL}/s/${vehicleSlugOrId}`
     const canonicalUrl = `${BASE_URL}/estoque/${vehicleSlugOrId}`
 
-    const versaoStr = vehicle.versao ? ` ${vehicle.versao}` : ''
+    // Versão removida da prévia de compartilhamento (pedido da Adriana,
+    // 26/08/2026) — repetia texto já presente em Modelo, ficava duplicado e
+    // confuso. Versão continua alimentando integrações que exigem o campo
+    // (Mercado Livre, Webmotors, NaPista) — só não aparece mais aqui.
     const anoModeloStr = vehicle.ano_modelo || vehicle.ano_fabricacao || ''
 
-    const pageTitle = `${vehicle.marca} ${vehicle.modelo}${versaoStr} ${anoModeloStr} à venda em Uberaba | Carro e Cia Motors`
+    const pageTitle = `${vehicle.marca} ${vehicle.modelo} ${anoModeloStr} à venda em Uberaba | Carro e Cia Motors`
 
-    // Exact format required by AC: "[Brand] [Model] [Version] [Year]"
-    const ogTitle = `${vehicle.marca} ${vehicle.modelo}${versaoStr} ${anoModeloStr}`
+    const ogTitle = `${vehicle.marca} ${vehicle.modelo} ${anoModeloStr}`
       .trim()
       .replace(/\s+/g, ' ')
     const ogDescription = generateOGDescription(vehicle)

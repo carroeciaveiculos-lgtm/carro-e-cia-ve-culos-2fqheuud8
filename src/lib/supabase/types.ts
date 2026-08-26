@@ -3972,7 +3972,7 @@ export type Database = {
           categoria_sintetica: string | null
           chassi: string | null
           chassi_completo: string | null
-          cilindrada: string | null
+          cilindrada: number | null
           cliques_whatsapp: number | null
           codigo_fipe: string | null
           combustivel: string | null
@@ -4080,7 +4080,7 @@ export type Database = {
           categoria_sintetica?: string | null
           chassi?: string | null
           chassi_completo?: string | null
-          cilindrada?: string | null
+          cilindrada?: number | null
           cliques_whatsapp?: number | null
           codigo_fipe?: string | null
           combustivel?: string | null
@@ -4188,7 +4188,7 @@ export type Database = {
           categoria_sintetica?: string | null
           chassi?: string | null
           chassi_completo?: string | null
-          cilindrada?: string | null
+          cilindrada?: number | null
           cliques_whatsapp?: number | null
           codigo_fipe?: string | null
           combustivel?: string | null
