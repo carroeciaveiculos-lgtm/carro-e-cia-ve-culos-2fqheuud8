@@ -252,9 +252,86 @@ antes pra isolar se é só dado antigo incompleto ou bug atual na
 mapeamento de Cor/Combustível da API Brasil — fora do escopo do plano de
 corte Modelo/Versão, tratar como item separado se confirmado.
 
-**Esperando autorização da Adriana pra Fase 4** (migração dos 26 veículos
-existentes — a fase que mexe em dado real, com backup e piloto antes do
-lote completo).
+**Commit + push feito** (27/08/2026, commit `7f5a22e`) — Fases 1, 2 e 3
+completas, testadas e no GitHub. Deploy do frontend é automático
+(Cloudflare Workers Builds); as 4 Edge Functions tocadas
+(`ai-sdr`, `consultar-placa`) já tinham sido reimplantadas manualmente
+durante os testes, antes mesmo do commit.
+
+**Fase 4 implementada e confirmada de ponta a ponta** (migração dos 26
+veículos existentes):
+- Backup de Modelo/Versão original dos 26 numa tabela nova
+  (`veiculos_modelo_versao_backup_fase4`) antes de qualquer sobrescrita.
+- Piloto (2 Hilux SW4) migrado, conferido manualmente (Modelo="Hilux SW4",
+  Versão="SRX 4x4 2.8 TDI 16V Dies. Aut." nos dois — antes tinham Versão
+  inconsistente entre si), mapeamento WM/NaPista continuou `mapeado` (não
+  foi resetado).
+- **Achado confirmado ao vivo, previsto no plano**: o gatilho do Mercado
+  Livre observa Modelo/Versão — a migração enfileirou `pending_update`
+  pros 26 de verdade. WM e NaPista não reagiram (gatilhos deles não
+  observam esses campos), confirmado sem nenhuma mudança de status.
+- Lote completo (24 restantes) migrado — reconferido 26/26 idêntico ao
+  teste a seco da Fase 1.
+- **Disparei o `ml-sync` manualmente 3 vezes** (a function tem limite de
+  idle de 150s da Supabase, processa em lotes) pra não esperar os 30min
+  do cron — **26/26 confirmados `sync_log.status='success'`** no Mercado
+  Livre, todos com timestamp de hoje (~17h18-17h25 UTC). 2 itens
+  retornaram um erro transitório `409 Conflict` de um sistema interno do
+  ML (`KVS API`, não relacionado ao nosso payload) na resposta HTTP, mas
+  o `sync_log` confirma que o update real teve sucesso nos dois — não
+  ficou nada travado.
+- **WM e NaPista reconferidos depois**: contagem de `status_sincronizacao`
+  idêntica à de antes da migração (mesma 1 pendência conhecida do H6 19
+  em cada, nada novo quebrou).
+
+**As 5 fases do plano de corte Modelo/Versão estão completas** (falta só
+a Fase 5, auditoria mensal — não é urgente, próximo ciclo real 15/09).
+
+## Sessão 17 (27/08/2026) — mapeamento Webmotors + NaPista unificado no cadastro
+
+Achado relatado pela Adriana: ao salvar um veículo, o NaPista pedia revisão
+só num toast passivo ("confira em Portais → aba NaPista"), enquanto a
+Webmotors já abria um diálogo interativo com os candidatos ali mesmo — era
+assim desde o início (comentário em `NapistaPendenciasReview.tsx` confirma
+que era intencional, não bug), mas obrigava sair do cadastro pra resolver
+o NaPista.
+
+**Corrigido em `VehicleFormModal.tsx`**: unificado num diálogo só
+("Confirmar mapeamento de catálogo"), com uma seção por plataforma que
+precisar de revisão — pode aparecer só Webmotors, só NaPista, ou as duas ao
+mesmo tempo, sem sair da tela de edição. NaPista ganhou os mesmos botões de
+candidato (Modelo/Versão, com % de confiança) que a Webmotors já tinha,
+reaproveitando `confirmarMapeamentoNapista`/`remapearVeiculoNapista`/
+`motivoPendenciaNapista` (já existiam em `services/plataformas.ts`, usados
+por `NapistaPendenciasReview.tsx` — nenhuma function nova no backend).
+
+**"Não perguntar de novo" já era garantido** desde a sessão 15
+(`wm-mapear-veiculo`/`napista-mapear-veiculo` pulam reavaliação se já
+`mapeado`/`excluido_manualmente`) — confirmado de novo hoje na própria
+Fase 4. Não precisou mexer em persistência, só na tela.
+
+**Testado ao vivo de verdade** (sessão logada real no navegador): editei o
+Haval H6 19 (`SGI9C15`) — Webmotors já estava `mapeado` (não apareceu
+seção), só a seção NaPista apareceu com 5 candidatos reais de versão.
+Cliquei em "1.5T PHEV 19 PREMIUM DHT" — confirmado com sucesso, diálogo e
+formulário fecharam sozinhos, **`napista_mapeamento_veiculos.status_sincronizacao`
+virou `mapeado` de verdade no banco** (conferido depois via SQL). Não
+testei ao vivo o caso "só Webmotors pendente" (o veículo candidato,
+`ASZ7D15`, está com status `devolvido`, não achei fácil na tela) — a seção
+Webmotors é código já existente, só movido pra dentro do diálogo
+combinado, risco baixo.
+
+**Achado à parte, não corrigido (fora de escopo, só registrado)**:
+`Portais.tsx:54` (`PLATAFORMAS_COM_SYNC_REAL = ['webmotors',
+'mercadolivre']`) tem comentário de 12/08/2026 dizendo que NaPista "não tem
+integração real ainda" — desatualizado desde 18/08/2026 (mesma classe de
+comentário obsoleto já achada 2x antes, sessões 8 e 14). Por causa disso a
+aba NaPista aparece agrupada com OLX/iCarros na tela `/admin/portais`, em
+vez de ao lado de Webmotors/ML. Não corrigido — só rótulo/agrupamento
+visual, não afeta o que foi pedido hoje.
+
+`bun run lint`/`build` limpos (mesmos 103 avisos pré-existentes, 0 novos).
+Pendente: commit + push.
 
 ## Sessão 15 (26/08/2026, continuação) — publicação real do Fit LX/Hilux, bug sério achado: mapeamento manual era derrubado sozinho
 
