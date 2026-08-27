@@ -422,7 +422,7 @@ export default function AdminEstoque() {
                   <TableCell>
                     <div className="flex items-center gap-2 mb-1">
                       <p className="font-bold text-slate-800">
-                        {v.marca} {v.modelo}
+                        {v.marca} {v.modelo} {v.versao}
                       </p>
                       {getStatusBadge(v.status)}
                       {v.is_consignado && (

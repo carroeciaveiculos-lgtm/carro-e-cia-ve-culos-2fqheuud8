@@ -331,7 +331,33 @@ vez de ao lado de Webmotors/ML. Não corrigido — só rótulo/agrupamento
 visual, não afeta o que foi pedido hoje.
 
 `bun run lint`/`build` limpos (mesmos 103 avisos pré-existentes, 0 novos).
-Pendente: commit + push.
+**Commitado e enviado** (commit `a86e4f9`).
+
+## Sessão 17 (continuação) — nome do veículo sem Versão na lista admin + Cor não vem da API Brasil
+
+**Achado real (Adriana, olhando `/admin/estoque` em produção)**: a lista
+mostrava só Marca+Modelo, sem Versão — `src/pages/admin/Estoque.tsx:425`
+tinha `{v.marca} {v.modelo}` sem `{v.versao}`. **Corrigido** (linha única).
+Testado ao vivo no navegador antes de considerar pronto.
+
+**Investigação de Cor/Combustível na consulta por placa — causa raiz real,
+não é bug de código**: criei uma function de diagnóstico temporária (já
+apagada, function + entrada em `config.toml`) pra ver a resposta bruta da
+API Brasil (`tipo: 'fipe-chassi'`) pra uma placa real, sem cache. Resultado:
+o combustível vem certo (`"combustivel":"híbrido"`), mas **`"cor":null` na
+resposta bruta da própria API** — não é mapeamento errado no nosso código
+(`veiculoData?.cor || ''` está correto), é a API mesmo que não traz cor
+nessa consulta. Faz sentido: é uma consulta de tipo FIPE (focada em
+avaliação/tabela), e FIPE não tem cor — cor é dado de DETRAN/RENAVAM, não
+de FIPE. **A afirmação anterior (sessão 16) de que "Cor já é preenchida
+sozinha hoje" estava errada pra esse campo especificamente** — provavelmente
+baseada no modo mock (que sempre inventa uma cor) ou num teste antigo sem
+confirmar a resposta real da API.
+**Pendente de decisão da Adriana**: perguntar/verificar se a API Brasil
+oferece outro tipo de consulta (não-FIPE) que traga cor de verdade — pode
+ter custo extra por consulta, não decidi sozinha. Até lá, Cor continua
+precisando ser preenchida manualmente no cadastro quando a consulta por
+placa não trouxer.
 
 ## Sessão 15 (26/08/2026, continuação) — publicação real do Fit LX/Hilux, bug sério achado: mapeamento manual era derrubado sozinho
 
