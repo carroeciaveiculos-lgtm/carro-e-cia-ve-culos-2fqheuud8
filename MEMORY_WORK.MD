@@ -359,6 +359,64 @@ ter custo extra por consulta, não decidi sozinha. Até lá, Cor continua
 precisando ser preenchida manualmente no cadastro quando a consulta por
 placa não trouxer.
 
+## Sessão 17 (continuação) — limpeza de logs de erro e fila de sincronização
+
+Pedido: limpar logs de erro já resolvidos e veículos presos em
+sincronização, deixando tudo apto pra novas sincronizações. Investiguei
+antes de mexer (estado real por veículo, não só contagem agregada, que
+mistura histórico com estado atual).
+
+**Reprocessados de verdade (chamando as functions reais, não só limpando
+status na mão)**:
+- **NaPista, Haval H6 19 (`SGI9C15`)**: erro de "sem mapeamento" era
+  realmente antigo (26/08) — o mapeamento já tinha sido confirmado hoje
+  mais cedo (teste ao vivo do diálogo unificado). Reprocessado com
+  sucesso real: oferta criada, 10 fotos enviadas, publicado de verdade.
+- **Mercado Livre, `ml_listings` órfão do Toyota Hilux SW4 (`QXH1J94`)**:
+  achado real — linha `status='pending_update'` sem `ml_item_id`, criada
+  em 21/08, nunca processava porque o `ml-sync` só trata `pending_update`
+  quando já existe `ml_item_id` (senão devia ser `pending_create`).
+  Veículo está com `publicado_mercadolivre=false` — não tinha nada de
+  verdade pendente. Apagada a linha travada (migration
+  `limpa_ml_listing_orfao_qxh1j94`). Se ela ativar publicação no ML pra
+  esse veículo depois, o gatilho cria uma linha nova e correta.
+
+**Tentei reprocessar, mas o erro real NÃO estava resolvido — não é mais
+stale, mas continua bloqueado por motivo genuíno, registrado com
+mensagem atualizada**:
+- **Webmotors, Hilux SW4 (`PYT5J89`)**: o erro antigo dizia "sem
+  mapeamento" (mapeamento já tinha sido confirmado há dias). Reprocessei
+  e o erro mudou pra o motivo real: **sem vaga na modalidade Básico
+  (18/18 em uso)** — mesma pendência de cota já conhecida, só que agora
+  com o diagnóstico certo em vez do antigo desatualizado.
+- **Webmotors, HR-V (`PZQ2F46`)**: reprocessado, **mesmo erro
+  persistiu** — `CodigoRetorno 43|36: posição 36 desconhecida`. Mapeamento
+  confirmado desde 10/08 (não é bloqueio de catálogo), então o problema é
+  outra coisa que ainda não identifiquei — precisa investigar o
+  significado real desse código de retorno da Webmotors.
+
+**Não toquei (erro real, sem relação com "resolvido e preso")**:
+- **Webmotors, Haval H6 19 (`SGI9C15`)**: rejeição real da modalidade VIP
+  (achado ontem, já documentado) — continua esperando decisão da Adriana
+  (chamado no suporte ou vaga na Básica).
+- **NaPista, Toyota Hilux SW4 novo (`QXH1J94`)**: pedindo revisão de
+  versão de verdade (ela estava cadastrando esse veículo durante a
+  sessão) — não escolhi a versão por ela, precisa confirmar no diálogo
+  unificado (ver achado anterior desta sessão).
+
+**Outras coisas identificadas que dava pra limpar, mas não mexi sem
+perguntar antes**:
+- `ml_listings` do rascunho `TCT5A21` tem um registro `blocked` órfão de
+  maio — inofensivo (rascunho nunca publica), mas dá pra apagar se quiser
+  deixar mais limpo.
+- `sync_log` tem 633 linhas desde 13/07 — volume baixo, não causa
+  problema nenhum, e é o histórico que alimenta o painel de erros do
+  admin — recomendo **não apagar**.
+
+**Estado final conferido**: 0 pendências travadas em qualquer plataforma
+(NaPista 0 erro, ML 0 pending órfão, Webmotors só os 3 erros reais e
+atualizados acima). Sistema apto pra novas sincronizações.
+
 ## Sessão 15 (26/08/2026, continuação) — publicação real do Fit LX/Hilux, bug sério achado: mapeamento manual era derrubado sozinho
 
 Adriana pediu pra publicar o Fit LX (deu erro nas 3 plataformas) e a Hilux
