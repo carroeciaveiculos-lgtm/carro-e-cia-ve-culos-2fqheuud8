@@ -3,6 +3,27 @@
 Copie e cole como primeira mensagem numa sessão nova do Claude Code.
 
 ```
+Projeto: Carro e Cia Veículos (revenda). Pasta de trabalho:
+C:\Projeto\Revenda Carro e Cia\carro-e-cia-ve-culos-2fqheuud8
+
+Continuando de uma sessão anterior (27/08/2026, sessão 16 — áudio da
+Clara + plano de corte Modelo/Versão). Leia primeiro:
+- MEMORY_WORK.MD, seção "Sessão 16": áudio da Clara publicado e testado
+  (ElevenLabs + Gemini + dedup de webhook duplicado da Meta) + toda a
+  investigação de por que Modelo/Versão duplicam no cadastro (origem
+  real: texto de ajuda do formulário, não bug de sincronização) + plano
+  completo de 17 passos pra separar Modelo de Versão, validado com dados
+  reais (auditoria completa da FIPE, simulação nos 26 veículos ativos,
+  teste ao vivo confirmando que NaPista/Webmotors não quebram).
+  **NADA desse plano foi implementado ainda** — toda decisão de escopo
+  já foi tomada pela Adriana (lista de exceção fechada, busca versão
+  completa com correção de acento, migração em 2 lotes com backup). Só
+  falta ela dizer "autorizo" pra eu começar pela Fase 1 (tabela de
+  exceções + função de corte + teste a seco — risco zero, não mexe em
+  nada que já existe). Se ela já tiver decidido, começar direto por ali,
+  sem reabrir nenhuma das perguntas já respondidas (listadas na seção
+  "Sessão 16" com a palavra "Decisão da Adriana").
+
 Continuando de uma sessão anterior (24/08/2026, sessão 14 — Clara/SDR e
 tokens Meta). Leia primeiro:
 - MEMORY_WORK.MD, seção "Sessão 14": diagnóstico de conversão da Clara
@@ -77,6 +98,32 @@ avisando a Adriana pra checar se a LinkedIn aprovou o "Request Access" do
 foi aprovado antes disso, pular direto pro item 1 de "Precisa de decisão".
 
 ## Precisa de decisão/ação da Adriana
+-2. **Plano de corte Modelo/Versão (17 passos, sessão 16)**: pronto,
+   todas as decisões de escopo já tomadas — só falta o "autorizo" pra
+   começar pela Fase 1. Ver MEMORY_WORK.MD seção "Sessão 16" pro plano
+   completo. Não redesenhar do zero nem reabrir as perguntas já
+   respondidas.
+-1.5. **H6 19 (o que NÃO é o de placa SIQ-5H93)**: não consegue ser
+   publicado na Webmotors em nenhuma modalidade hoje — VIP é rejeitado
+   por um motivo do lado da própria Webmotors (testado isolando a
+   variável, confirmado ao vivo), Básica aceitaria mas não tem vaga
+   livre. Precisa a Adriana escolher entre abrir chamado no suporte da
+   Webmotors ou liberar 1 vaga Básica despublicando outro veículo. Não
+   reabrir a investigação — causa já isolada e documentada.
+-1.4. **RAM Rampage (placa da unidade `7c3a8c92-9f20-4c70-aec0-
+   e628b86b875f`) com anúncio desatualizado na Webmotors**: km, "revisões
+   pela concessionária" e IPVA pago no anúncio real batem com o cadastro
+   antigo, não com o atual (achado comparando o anúncio ao vivo com o
+   banco) — o mapeamento desse veículo também está sem nenhum código
+   salvo (versão/cor/câmbio/combustível), então nenhuma atualização
+   automática vai sair até alguém rodar o mapeamento de novo. Precisa a
+   Adriana autorizar remapear + forçar um resync pra esse veículo
+   específico.
+-1.3. **PDF de contrato/proposta sem placeholder de Versão** (achado
+   sessão 16): a tela de editar modelo já mostra `{{versao}}` como
+   disponível, mas o motor de gerar PDF não lê esse dado — hoje sem
+   impacto real (nenhum modelo salvo usa isso ainda), mas combinado que
+   fica pra depois do plano de corte Modelo/Versão, não antes.
 -1. **Reativar `re-engagement-cron` quando a Meta aprovar os templates
    novos** (24/08/2026) — `reengajamento_quente` e `reengajamento_pos_visita`
    estão PENDING. Quando aprovar: trocar `REENGAJAMENTO_PAUSADO` pra

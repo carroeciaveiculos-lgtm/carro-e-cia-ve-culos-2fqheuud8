@@ -1,12 +1,260 @@
 # Memória de trabalho — Carro e Cia
 
+Projeto: Carro e Cia Veículos (revenda). Pasta de trabalho:
+`C:\Projeto\Revenda Carro e Cia\carro-e-cia-ve-culos-2fqheuud8`
+
 Este arquivo existe pra responder uma pergunta: **"onde paramos?"** — sem
 precisar reler o histórico inteiro de conversas. Diferente do
 `AUDIT_REPORT.md` (mantido como está, não é mais atualizado), este arquivo é
 pra ser mantido em dia de verdade. Detalhe técnico por integração continua
 nos arquivos `docs/*.md` — aqui é só o resumo de estado + pendências.
 
-Última atualização: 2026-08-26 (sessão 15, continuação — Fit LX/Hilux publicados, mapeamento manual não era mais derrubado, 2 duplicações reais corrigidas).
+Última atualização: 2026-08-27 (sessão 16 — áudio da Clara publicado; plano completo de corte Modelo/Versão desenhado e validado com dados reais; Fase 1 do plano (tabela de exceções + função de corte) implementada, testada nos 26 veículos reais e no matching real do WM/NaPista, fechada — esperando autorização pra Fase 2).
+
+## Sessão 16 (27/08/2026) — áudio da Clara publicado; investigação completa e plano de corte Modelo/Versão (nada implementado ainda)
+
+### Áudio da Clara (ElevenLabs + Gemini) — publicado e testado ao vivo
+Cliente manda áudio no WhatsApp → `_shared/audio-transcricao.ts` baixa da
+Graph API e transcreve com Gemini multimodal → Clara responde por áudio
+gerado pela ElevenLabs (`_shared/elevenlabs-client.ts`, voz "Adriana Voz
+pra Clara IA") → sobe no R2 → manda como áudio de verdade no WhatsApp.
+Testado com mensagens de voz reais da própria Adriana.
+
+**Bug achado e corrigido nesse processo**: retry de webhook da Meta
+processava a MESMA mensagem de áudio até 3 vezes (áudio demora mais que
+texto pra responder, estoura o prazo que a Meta espera, ela reenvia o
+mesmo `wamid`) — gerava 3 respostas diferentes pra mesma pergunta.
+Corrigido com tabela nova `whatsapp_mensagens_processadas` (chave
+primária = `wamid`, insere e ignora se já existe).
+
+**Achados de brinde, corrigidos juntos**: `ML_COLOR_MAP` só tinha cor no
+masculino (branco/preto) — formas femininas (branca/preta) falhavam
+validação do Mercado Livre; mesmo bug já corrigido no NaPista há meses,
+nunca replicado pro ML, agora replicado. `wm-soap.ts` cortava a
+descrição em 500 caracteres sem limite real confirmado — testado ao vivo
+(envio de 1104 caracteres) que a Webmotors aceita texto completo; corte
+removido.
+
+### Investigação grande: por que Modelo e Versão duplicam/não separam
+**Origem real, não é bug de sincronização**: o campo Versão no formulário
+de cadastro (`VehicleFormModal.tsx`) tem um texto de ajuda dizendo "pode
+deixar em branco se o Modelo já é completo" — ensina a própria equipe a
+digitar tudo em Modelo. `consultar-placa` **nunca** preencheu Versão, em
+nenhuma API testada (nem a "API Placa FIPE" usada hoje, nem a FIPE
+pública) — confirmado lendo o código e um JSON real de retorno que a
+Adriana mandou. Cor/Chassi/Combustível/Ano Modelo **já são** preenchidos
+sozinhos hoje (o formulário espalha o objeto de resposta inteiro em cima
+do cadastro) — não precisa mexer nisso, conferido antes de propor algo
+que já existia.
+
+**PDF (contrato/proposta)**: achado que a tela de editar modelo de
+documento já anuncia `{{versao}}` como campo disponível (com prévia
+funcionando), mas o motor de gerar PDF de verdade nunca lê esse dado —
+lacuna real, mas **0 contratos afetados até hoje** (conferido direto no
+banco, nenhum dos 6 modelos salvos usa esse placeholder ainda). Decisão
+da Adriana: PDF fica pra **depois** do plano de corte abaixo, não faz
+parte dele.
+
+**Regra de corte validada com dado real da FIPE (não suposição)**:
+separar no primeiro espaço — Modelo = 1ª palavra, Versão = resto — com
+lista de exceções pra nome de modelo composto. Auditoria completa da
+API pública da FIPE (107 de 107 marcas, 214 chamadas HTTP, ~3 minutos,
+zero erro de limite de taxa — **confirmado seguro rodar isso todo
+mês**). Lista final de exceção fechada:
+- Genéricos (vale pra qualquer marca que comece assim): Grand, Land,
+  Range (cobre também as variações de abreviação "Range R.", "Range
+  R.Evoque", "Range R.Sport" que a própria FIPE usa), New, Haval, XC.
+- Compostos específicos: Corolla Cross, C4 Cactus, Grand Vitara, XC 40,
+  L200 Triton, Classe A, Classe B, Santa Fe, Ram 2500, PT Cruiser,
+  Corolla Fielder.
+- Ficam de fora por padrão (parecem acabamento, não modelo — decisão
+  minha, pendente de confirmação se a Adriana discordar): EcoSport
+  Freestyle, Ranger Tropivan, Wrangler Unlimited, Jimny Sierra, Vitara
+  JLX, Livina Grand.
+
+**3 achados críticos que mudaram o plano, todos testados/confirmados com
+dado real (não suposição)**:
+1. **Nenhum dos 26 veículos ativos tem Versão vazia hoje** — todos têm
+   Versão preenchida à mão, de forma inconsistente (prova: as 2 Hilux
+   SW4, placas PYT5J89 e SSF5A83, têm o MESMO texto de Modelo mas Versão
+   salva diferente). A migração vai ter que reescrever Modelo+Versão dos
+   26 de uma vez, não dá pra fazer só "nos que estão vazios".
+2. **O casamento de catálogo NaPista/Webmotors é matematicamente
+   indiferente a onde o corte cai** — as duas plataformas juntam
+   Modelo+Versão de novo antes de comparar com o catálogo delas (testado
+   ao vivo com a RPC real: Honda Fit e Ford Mustang deram score idêntico
+   antes/depois do corte). **O corte não quebra publicação em
+   plataforma nenhuma.**
+3. **Busca de veículo por texto só olha Modelo, nunca Versão, em 3
+   lugares** (confirmado por busca no código, não só nos 2 que eu já
+   sabia): Clara (`ai-sdr`), site (`Estoque.tsx`) e admin
+   (`Leads.tsx`). Os 3 vão parar de achar carro por palavra de
+   motorização/acabamento assim que o corte for ligado, se não forem
+   corrigidos primeiro. Decisão da Adriana: versão **completa** — 2
+   functions novas no banco (uma de busca livre pra site/admin, uma de
+   critério separado pra Clara), as duas com `unaccent()` pra também
+   resolver busca sem acento (ex: "hibrido" achar "Híbrido"), não só
+   adicionar Versão no filtro.
+
+**Plano final de execução, 5 fases / 17 passos, com 5 correções de
+segurança incorporadas** (a pedido da Adriana, depois de autocrítica
+sobre o próprio plano):
+1. Tabela de exceções + função de corte compartilhada.
+2. Teste a seco com o **código final de verdade** contra os 26 veículos
+   reais (correção 1 — não vale mais reusar a simulação antiga de
+   subagente, a lista de exceção mudou desde então).
+3. Corrigir busca nos 3 lugares (site/Clara/admin), versão completa com
+   acento — motivo real de vir ANTES do resto (correção 2): sem isso,
+   até um veículo NOVO cadastrado por placa já nasceria com o mesmo bug
+   de busca, não é só sobre os 26 antigos.
+4. Deploy backend liberado direto; deploy frontend só depois do teste no
+   link localhost (correção 5 — etapa explícita, não automática).
+5. Ajustar `consultar-placa` + trocar texto de ajuda do campo Versão no
+   cadastro (pra frente, sem mexer nos 26 existentes ainda).
+6. Migração dos 26 existentes em 2 lotes (correção 3): backup do
+   Modelo/Versão antigo antes de sobrescrever (correção 4), piloto com
+   as 2 Hilux SW4 já testadas à mão, só depois o resto.
+7. Function de auditoria mensal da FIPE + agendamento pro dia 15 (sem
+   pressa — próximo ciclo é 15/09).
+8. PDF ({{versao}} nas functions de contrato/proposta) — fica pra
+   **depois** desse plano de 17 passos inteiro, não faz parte dele.
+
+**Nada disso foi implementado ainda** — é só investigação, simulação
+(com dados reais, via subagentes de auditoria) e desenho de plano. Toda
+decisão de escopo já foi tomada pela Adriana; falta só ela dizer
+"autorizo" pra eu começar pela Fase 1 (passo 1-2 acima, tabela +
+função + teste a seco, risco zero).
+
+## Sessão 16 (27/08/2026, continuação) — Fase 1 do corte Modelo/Versão implementada e testada
+
+Autorizado por partes: plano de execução em 5 fases (uma por vez, testada
+antes de implantar) aprovado via plan mode; Fase 1 (tabela de exceções +
+função de corte) implementada, testada e fechada nesta sessão.
+
+**Implementado e aplicado em produção (Supabase)**:
+- Migration `modelo_versao_excecoes_e_funcao_corte` — tabela
+  `modelo_versao_excecoes` (tipo `generico`/`composto`) com a lista fechada
+  da sessão 16, + função `public.cortar_modelo_versao(texto)` que devolve
+  `{modelo, versao}`.
+- Migration `modelo_versao_excecoes_hilux_sw4_discovery_sport` — 2 exceções
+  novas, achadas no teste a seco (ver abaixo).
+
+**Teste a seco nos 26 veículos ativos reais — achou 2 bugs na lista fechada
+da sessão 16, ambos corrigidos**:
+1. **Hilux SW4** (`PYT5J89`, `SSF5A83`) cortava pra Modelo="Hilux" — errado,
+   contraria a própria investigação das sessões 14/15 que tratou "Hilux SW4"
+   como modelo distinto (por isso a regra de alias no NaPista). Faltava na
+   lista fechada — parece esquecimento, não decisão consciente.
+2. **Discovery Sport** (`FJK7E17`, cadastrado como "Discovery Sp.") cortava
+   pra Modelo="Discovery" — errado, é um SUV bem menor/diferente. Adicionado
+   `"Discovery Sp."` literal (é assim que está abreviado no cadastro, não
+   "Discovery Sport" por extenso).
+Depois de adicionar as duas, reconferido: **26/26 corretos.**
+
+**Teste de matching de verdade (não só leitura de código) contra as RPCs
+reais do WM e NaPista, pros 2 casos acima — confirmado que o corte não
+afeta a sincronização**: `wm-mapear-veiculo` e `napista-mapear-veiculo`
+casam contra o texto de Modelo+Versão JUNTOS (`[modelo, versao].join(' ')`),
+não o Modelo isolado — então o texto que chega no matching é idêntico não
+importa onde o corte cai. Rodei `match_wm_modelo`/`match_napista_modelo`
+com o texto de hoje (com a duplicação real que já existe, já que `versao`
+desses veículos já tinha dado próprio, inconsistente entre os dois Hilux)
+e com o texto limpo pós-migração — scores idênticos nos dois casos.
+
+**Achado extra, real e ao vivo, NÃO relacionado ao nosso plano (não
+corrigido, só documentado)**: o Discovery Sport (`FJK7E17`, já `mapeado`
+nas duas plataformas hoje) na verdade casa melhor com o modelo genérico
+"DISCOVERY" (score 1.0) do que com "DISCOVERY SPORT" (NaPista tem essa
+entrada no catálogo, mas só score 0.75, porque o texto real usa a
+abreviação "Sp." em vez de "Sport" por extenso). Isso já é assim
+independente do nosso corte (testado com o texto de hoje e o de depois —
+mesmo resultado nos dois). Ou seja: esse veículo específico já está
+mapeado pro modelo errado no WM/NaPista **hoje**, antes de qualquer mudança
+nossa — bug pré-existente, não criado nem corrigido pela Fase 1. Se a
+Adriana quiser corrigir, precisaria de um alias tipo o do SW4 (`contemNoTexto:
+'sp.'` ou normalizar "Sp." → "Sport" antes do match) + remapear com
+`force:true`. Fora de escopo deste plano.
+
+**Fase 2 implementada e testada** (corrigir busca nos 3 lugares antes de
+mexer nos 26 veículos existentes):
+- Migration `veiculos_busca_normalizada_modelo_versao` — coluna
+  `veiculos.busca_normalizada` (marca+modelo+versão+placa, sem acento,
+  minúsculo), mantida por trigger (não `GENERATED ALWAYS AS` — `unaccent()`
+  é STABLE, não IMMUTABLE, Postgres não aceita em coluna gerada), com
+  backfill dos 26 e índice trigram pra performance.
+- `Estoque.tsx` (site) e `Leads.tsx` (admin): trocado o filtro antigo
+  (`.or('marca.ilike...,modelo.ilike...,placa.ilike...')` / `.ilike('modelo'...)`)
+  por `.ilike('busca_normalizada', ...)`, normalizando o termo digitado
+  com `normalizeValue()` (já existia em `lib/ml-normalize.ts`, reaproveitado).
+- `ai-sdr` (Clara): tool `consultar_estoque` ganhou parâmetro `versao`
+  (`_shared/gemini-client.ts`); a query combina modelo+versão contra
+  `busca_normalizada`, normalizando com `normalizarNapista` (já existia em
+  `_shared/napista-client.ts`, reaproveitado com alias). Function reimplantada.
+- **Testado de verdade**: busca por "hibrido" (sem acento) no
+  `localhost:8084/estoque` ao vivo no navegador — antes achava só 2 (Haval
+  H6 ×2, que tinham a palavra em Modelo); agora acha os 4 reais (+ RAV4,
+  XC 60, que só tinham "Híbrido" em Versão/acentuado). Busca por marca
+  (Toyota) e placa (`PYT5J89`) confirmada ainda funcionando igual —
+  nenhuma regressão. Mesma query testada direto no banco pros 3 casos
+  (marca/placa/modelo) antes do teste no navegador. `bun run lint`/`build`
+  limpos. **Leads.tsx não testado logado** (sem credencial admin nesta
+  sessão) — mesma function/coluna já provada nos outros 2 lugares.
+
+**Fase 3 implementada e testada** (cadastro novo, pra frente — sem mexer
+nos 26 veículos existentes ainda):
+- Migration `veiculos_cache_adiciona_versao` — coluna `versao` nova em
+  `veiculos_cache` (não existia).
+- `consultar-placa/index.ts`: nem a API Brasil nem o mock trazem versão
+  separada, só um Modelo composto (ex: "Corolla Cross XRE") — a function
+  agora chama a RPC `cortar_modelo_versao` (Fase 1) sobre esse texto antes
+  de gravar no cache/devolver, preenchendo Modelo e Versão separados. Não
+  mexe no cache-hit de placas já consultadas antes desta mudança (fica
+  igual estava, mesmo espírito de "não mexer nos 26 existentes ainda").
+  `VehicleFormModal.tsx` já espalha a resposta da API em cima do
+  `formData` — não precisou mudar nada lá pra Versão aparecer preenchida
+  sozinha.
+- Texto de ajuda do campo Versão trocado (era "pode deixar em branco se o
+  Modelo já é completo" — virou o oposto: agora explica que ajuda a busca
+  do site/painel/Clara, não só integração, e que a consulta por placa já
+  tenta preencher sozinho).
+- **Testado**: rodei a função de corte contra as 40 combinações reais de
+  marca/modelo que o mock do `consultar-placa` pode gerar (Fiat, VW,
+  Chevrolet, Ford, Hyundai, Toyota, Honda, Jeep, Renault, Nissan) —
+  **40/40 corretos**, incluindo "Corolla Cross XRE" → Modelo="Corolla
+  Cross" (exceção da Fase 1 funcionando). `bun run lint`/`build` limpos,
+  function reimplantada.
+
+**Bug real achado e corrigido no teste ao vivo da Adriana** (placa
+TCT5A21, sessão já logada no navegador local): Modelo veio inteiro sem
+corte, Versão em branco. **Causa raiz**: essa placa já estava em
+`veiculos_cache` desde 04/05/2026 (Jaguar F-Pace) — o caminho de
+cache-hit (`consultar-placa/index.ts`, linha ~36) devolve o registro
+salvo direto, sem passar pela função de corte da Fase 1, que só rodava no
+caminho de consulta nova. Qualquer placa já consultada antes de hoje ia
+continuar quebrada pra sempre, não só essa. **Corrigido**: cache-hit
+agora também roda `cortar_modelo_versao` quando o registro salvo não tem
+`versao` ainda, e persiste a correção de volta no cache. Redeployado e
+**reconfirmado ao vivo com a mesma placa**: Modelo="F-Pace", Versão="2.0
+R-Dynamic SE 404cv (Hibrido)" — corretos.
+
+**Achado à parte, não relacionado ao corte Modelo/Versão**: nessa mesma
+placa, Cor e Combustível vieram em branco/não selecionado. O registro de
+cache de maio já tinha `cor=""` (nunca foi preenchido, de muito antes
+desta sessão) e `combustivel="híbrido"` minúsculo (o `<Select>` do
+formulário pode exigir a grafia exata das opções, por isso aparece sem
+seleção mesmo com o dado presente). **Não é bug introduzido pela Fase
+3** — tentei isolar testando com placa forjada (`ZZZ9Z99`) pra forçar
+consulta nova sem cache, mas a API Brasil corretamente rejeitou (placa
+não existe de verdade, sem registro criado) — não tive uma placa real
+sem cache à mão pra confirmar se Cor/Combustível vêm certos numa consulta
+nova de verdade hoje. **Pendente**: pedir uma placa real nunca consultada
+antes pra isolar se é só dado antigo incompleto ou bug atual na
+mapeamento de Cor/Combustível da API Brasil — fora do escopo do plano de
+corte Modelo/Versão, tratar como item separado se confirmado.
+
+**Esperando autorização da Adriana pra Fase 4** (migração dos 26 veículos
+existentes — a fase que mexe em dado real, com backup e piloto antes do
+lote completo).
 
 ## Sessão 15 (26/08/2026, continuação) — publicação real do Fit LX/Hilux, bug sério achado: mapeamento manual era derrubado sozinho
 

@@ -1530,9 +1530,11 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
                         placeholder="Ex: 1.0 Flex, LTZ, GT-Line"
                       />
                       <p className="text-[10px] text-gray-500 mt-1">
-                        Usado só pra casar com o catálogo do Mercado Livre, Webmotors e
-                        NaPista — não aparece no site nem em PDFs. Pode deixar em branco
-                        se o Modelo já é completo.
+                        Motorização/acabamento (ex: "1.5 16V Aut.", "XRE", "GT-Line") —
+                        separado do Modelo. Ajuda a achar o veículo na busca do site, do
+                        painel e da Clara, além de casar com o catálogo do Mercado Livre,
+                        Webmotors e NaPista. A consulta por placa já tenta preencher
+                        sozinho; confira antes de salvar.
                       </p>
                     </div>
                     <div>

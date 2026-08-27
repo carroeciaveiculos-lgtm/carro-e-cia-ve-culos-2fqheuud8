@@ -7,6 +7,7 @@ import { enviarContatoBrevo } from '../_shared/brevo.ts'
 import { recalcularAiScore } from '../_shared/lead-score.ts'
 import { gerarAudioClara } from '../_shared/elevenlabs-client.ts'
 import { uploadToR2, getR2PublicUrl } from '../_shared/r2-storage.ts'
+import { normalizarNapista as normalizarTextoBusca } from '../_shared/napista-client.ts'
 
 const supabase = createClient(
   Deno.env.get('SUPABASE_URL')!,
@@ -127,7 +128,11 @@ async function executeFunction(name: string, args: any, leadId: string): Promise
     // final a partir daqui.
     let q = supabase.from('veiculos').select(COLUNAS_VEICULO_SEGURAS).eq('status', 'disponivel')
     if (args.marca) q = q.ilike('marca', `%${args.marca}%`)
-    if (args.modelo) q = q.ilike('modelo', `%${args.modelo}%`)
+    // Busca combinada em marca+modelo+versao+placa (busca_normalizada, sem
+    // acento) -- antes so filtrava por Modelo, entao um carro descrito por
+    // versao/acabamento (ex: "automatico", "hibrido") nunca era encontrado.
+    const termoModeloVersao = [args.modelo, args.versao].filter(Boolean).join(' ')
+    if (termoModeloVersao) q = q.ilike('busca_normalizada', `%${normalizarTextoBusca(termoModeloVersao)}%`)
     if (args.preco_max) q = q.lte('preco_venda', args.preco_max)
     const { data, error } = await q.limit(args.limite || 5)
     if (error) return { error: error.message }

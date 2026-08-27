@@ -34,6 +34,25 @@ Deno.serve(async (req) => {
       .single()
 
     if (cacheData) {
+      // Achado real (27/08/2026, teste ao vivo com placa TCT5A21): cache
+      // antigo (de antes da Fase 3 do corte Modelo/Versão) nunca tinha
+      // `versao` -- o cache-hit devolvia direto sem passar pela função de
+      // corte, então Modelo continuava vindo inteiro e Versão em branco pra
+      // qualquer placa já consultada antes dessa mudança. Corrige na hora
+      // (e persiste), sem esperar o cache expirar.
+      if (!cacheData.versao && cacheData.modelo) {
+        const { data: corte } = await supabase.rpc('cortar_modelo_versao', {
+          texto_modelo: cacheData.modelo,
+        })
+        if (corte?.[0]) {
+          cacheData.modelo = corte[0].modelo
+          cacheData.versao = corte[0].versao || ''
+          await supabase
+            .from('veiculos_cache')
+            .update({ modelo: cacheData.modelo, versao: cacheData.versao })
+            .eq('placa', cleanPlaca)
+        }
+      }
       return new Response(JSON.stringify({ success: true, data: cacheData, cached: true }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
@@ -220,6 +239,22 @@ Deno.serve(async (req) => {
         }
       }
     }
+
+    // Fase 3 do plano de corte Modelo/Versão (MEMORY_WORK.MD): nem a API
+    // Brasil nem o mock trazem um campo de versão separado -- só um Modelo
+    // composto (ex: "Corolla Cross XRE"). Usa a mesma função de corte da
+    // Fase 1 (com a tabela de exceções) pra já cadastrar Modelo/Versão
+    // separados, em vez de deixar tudo em Modelo e Versão em branco.
+    if (result.modelo) {
+      const { data: corte } = await supabase.rpc('cortar_modelo_versao', {
+        texto_modelo: result.modelo,
+      })
+      if (corte?.[0]) {
+        result.modelo = corte[0].modelo
+        result.versao = corte[0].versao || ''
+      }
+    }
+
     // Sincronização Automática (Upsert) no Cache
     await supabase.from('veiculos_cache').upsert({
       ...result,

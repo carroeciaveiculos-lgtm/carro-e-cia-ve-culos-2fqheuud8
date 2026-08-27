@@ -16,6 +16,7 @@ import { Slider } from '@/components/ui/slider'
 import { Label } from '@/components/ui/label'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
 import { supabase } from '@/lib/supabase/client'
+import { normalizeValue } from '@/lib/ml-normalize'
 import {
   Filter,
   Search,
@@ -127,9 +128,10 @@ export default function Estoque() {
       .eq('exibir_no_site', true)
 
     if (debouncedSearch) {
-      query = query.or(
-        `marca.ilike.%${debouncedSearch}%,modelo.ilike.%${debouncedSearch}%,placa.ilike.%${debouncedSearch}%`,
-      )
+      // busca_normalizada cobre marca+modelo+versao+placa sem acento -- antes
+      // so olhava marca/modelo/placa, entao um termo que so existe na Versao
+      // (ex: "automatico", "hibrido") nunca encontrava o veiculo.
+      query = query.ilike('busca_normalizada', `%${normalizeValue(debouncedSearch) || ''}%`)
     }
     if (marca !== 'Todas') query = query.eq('marca', marca)
     if (ano !== 'Todos') query = query.eq('ano_fabricacao', parseInt(ano))

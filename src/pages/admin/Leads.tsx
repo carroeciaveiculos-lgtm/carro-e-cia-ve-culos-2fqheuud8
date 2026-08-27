@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase/client'
+import { normalizeValue } from '@/lib/ml-normalize'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -173,7 +174,10 @@ export default function AdminLeads() {
     if (isVeiculoModalOpen) {
       const fetchVeiculos = async () => {
         let q = supabase.from('veiculos').select('*').eq('status', 'disponivel')
-        if (searchVeiculo) q = q.ilike('modelo', `%${searchVeiculo}%`)
+        // busca_normalizada cobre marca+modelo+versao+placa sem acento --
+        // antes so olhava Modelo, entao buscar por versao/acabamento nunca
+        // achava o veiculo.
+        if (searchVeiculo) q = q.ilike('busca_normalizada', `%${normalizeValue(searchVeiculo) || ''}%`)
         const { data } = await q.limit(20)
         if (data) setVeiculosBusca(data)
       }

@@ -48,6 +48,11 @@ export const CRM_FUNCTIONS = [
       properties: {
         marca: { type: 'STRING', description: 'Marca do veiculo' },
         modelo: { type: 'STRING', description: 'Modelo do veiculo' },
+        versao: {
+          type: 'STRING',
+          description:
+            'Versao/acabamento/motorizacao do veiculo (ex: automatico, hibrido, LTZ, GT-Line, diesel) -- use quando o cliente descrever o carro por essas caracteristicas em vez do nome do modelo',
+        },
         preco_max: { type: 'NUMBER', description: 'Preco maximo' },
         limite: { type: 'INTEGER', description: 'Limite de resultados' },
       },
