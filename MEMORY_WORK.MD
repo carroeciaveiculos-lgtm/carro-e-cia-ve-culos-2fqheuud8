@@ -417,6 +417,116 @@ perguntar antes**:
 (NaPista 0 erro, ML 0 pending órfão, Webmotors só os 3 erros reais e
 atualizados acima). Sistema apto pra novas sincronizações.
 
+## Sessão 17 (continuação) — regra de Cor da API + lista de erros da Webmotors
+
+**Regra de Cor implementada** (pedido direto da Adriana, ela reparou que
+"alguns veículos trazem cor e outros não" na consulta por placa): não é
+bug — a própria API Brasil (`fipe-chassi`) às vezes traz `cor` e às vezes
+`null`, dependendo do veículo. Regra nova em `consultar-placa/index.ts`:
+mantém `null` (em vez de forçar `''`) quando a API não traz. Em
+`VehicleFormModal.tsx` (`consultarAPIPlaca`): se a Cor vier da API,
+popula; se não vier, **mantém o que já estava digitado** (não apaga com
+vazio) e mostra aviso pedindo preenchimento manual. **Testado ao vivo**:
+digitei uma cor manual, consultei uma placa que não traz cor (mesma
+Jaguar F-Pace de sempre) — cor digitada continuou lá, não foi apagada.
+`bun run lint`/`build` limpos, function reimplantada.
+
+**Lista de erros da Webmotors** (enviada pela Adriana, 27/08/2026 — guardar
+aqui pra consultar sempre que aparecer um `CodigoRetorno` desconhecido,
+em vez de reinvestigar do zero):
+
+| Código | Descrição |
+|---|---|
+| 28\|2 | Preço de venda inválido |
+| 31 | Hash de autenticação inválido |
+| 32 | Falha inesperada, favor entrar em contato com o Suporte Técnico |
+| 31\|1 | Campo {nome campo} não preenchido |
+| 43\|1 | Somente anúncios ativos podem ser desativados |
+| 43\|2 | Aviso de desconto de dias ao desativar (confirmação) |
+| 43\|3 | Anúncio desativado com sucesso |
+| 43\|4 | Somente anúncios desativados podem ser reativados |
+| 43\|5 | Confirma a ativação do anúncio? |
+| 43\|6 | Anúncio ativado com sucesso |
+| 43\|7 | Preço do carro deve ser preenchido |
+| 43\|8 | Ano do modelo deve ser preenchido |
+| 43\|9 | Ano de fabricação deve ser preenchido |
+| 43\|10 | Câmbio deve ser preenchido |
+| 43\|11 / 43\|22 / 43\|73 | Cor deve ser preenchida |
+| 43\|12 / 43\|21 / 43\|76 | Número de portas deve ser preenchido |
+| 43\|13 / 43\|19 / 43\|74 | Placa deve ser preenchida |
+| 43\|14 / 43\|18 | Quilometragem deve ser preenchida |
+| 43\|15 / 43\|70 | Marca deve ser preenchida |
+| 43\|16 / 43\|71 | Modelo deve ser preenchido |
+| 43\|17 / 43\|72 | Versão deve ser preenchida |
+| 43\|20 / 43\|75 | Câmbio deve ser preenchido |
+| 43\|23 | Anúncio não pode ser bloqueado |
+| 43\|24 | Somente anúncios bloqueados podem ser desbloqueados |
+| 43\|25 | Anúncios só pra anunciante não bloqueado |
+| 43\|26 / 43\|81 | Somente anúncios ativos, vencidos ou desativados podem ser renovados |
+| 43\|27 | Confirma baixa de pagamento manual? |
+| 43\|28 | Parcela a ser paga não encontrada |
+| 43\|29 | Cobrança não encontrada |
+| 43\|30 / 43\|77 | Combustível deve ser preenchido |
+| 43\|31 | Só anúncio aguardando pagamento pode confirmar pagamento |
+| **43\|32** | **Número de anúncios disponíveis pra modalidade esgotado** (a cota — já achado real, H6 19/Hilux SW4) |
+| 43\|33 | Número de anúncios do pacote esgotado |
+| 43\|34 | Não há venda vigente pro pacote de $param1$ |
+| 43\|35 | Não foi possível bloquear anúncios do cliente |
+| **43\|36** | **Anúncio não pode ser alterado** — **achado importante**: é esse o código que estava travando o HR-V (`PZQ2F46`) há dias como "posição desconhecida" — agora sabemos o que significa. Não é erro de dado — o anúncio está num estado que não aceita edição (precisa investigar qual estado é esse do lado da Webmotors: vencido? aguardando pagamento? Ver pendência abaixo). |
+| 43\|37 | Ano do modelo inválido |
+| 43\|38 | Seleção opcional: $param1$ |
+| 43\|39 | Anúncio não pertence ao revendedor conectado |
+| 43\|40 / 43\|84 | Anúncio / Placa inválida |
+| 43\|41 | Marca-Modelo-Versão-Ano Modelo inconsistentes (achado real: H6 19 na modalidade VIP) |
+| 43\|42 | Cor Externa inválida pra Versão |
+| 43\|43 | Lista de Opcionais de Novos com valores inválidos |
+| 43\|44 / 43\|63 | Tipo Combustível inválido |
+| 43\|45 | Câmbio inválido |
+| 43\|46 a 43\|54 | Campos booleanos (Adaptado/Alienado/Blindado/IpvaPago/Garantia/Licenciado/Revisado/RevisõesConcessionária/ÚnicoDono) devem ser S ou N |
+| 43\|55 | TipoAnuncio deve ser U ou N |
+| 43\|56 | Código da modalidade inválido pro Revendedor/Tipo |
+| 43\|57 | Tipo de Anúncio não pode ser alterado |
+| 43\|58 | Motivo de Exclusão deve ser informado |
+| 43\|59 | Desbloqueio só com anunciante Ativo/Pós-ativo |
+| 43\|60 | Só aguardando pagamento pode ser pago |
+| 43\|61 | Placa não pode ser impressa |
+| 43\|62 | Número de porta inválido |
+| 43\|64 | Cor inválida |
+| 43\|65 | HTML injection identificado |
+| 43\|66 / 43\|104 | Preço (venda/revenda) fora do praticado pelo mercado |
+| 43\|67 | Preço de Revenda inválido |
+| 43\|68 / 43\|95 | Quilometragem não permitida |
+| 43\|69 | Código de Foto não pertence ao Código de Anúncio |
+| 43\|78 | Preço de Venda deve ser preenchido |
+| 43\|79 | $param1$ contém número inválido |
+| 43\|80 | Anunciante bloqueado — só desbloqueia anúncio se anunciante não bloqueado |
+| 43\|82 | Somente o preço do anúncio pode ser alterado |
+| 43\|83 | Só anúncios ativos/editáveis/prestes a vencer podem ser visualizados |
+| 43\|85 / 43\|112 | Ano de fabricação inválido |
+| 43\|86 | O anúncio foi pago? |
+| 43\|87 a 43\|89 | SMS/celular (habilitado, sem celular cadastrado, sem saldo) |
+| 43\|90 a 43\|101 | Campos de moto (tipo motor, partida, freio, cilindradas, marchas, refrigeração, alimentação) |
+| 43\|97 | Observações excedem 1500 caracteres |
+| 43\|98 | Nenhum anúncio nessa situação |
+| 43\|102 / 43\|105 | Preço (venda/revenda) acima da FIPE além do permitido |
+| 43\|103 | Confirma a Desativação do Anúncio? |
+| 43\|106 | Código do anúncio deve ser preenchido |
+| 43\|107 | Quilometragem só pode subir em relação à inicial |
+| 43\|108 | Só modalidade Publicado pode pagar |
+| 43\|109 | Pagamento já efetuado |
+| 43\|110 / 43\|111 | Selecione um CEP (ou do histórico) |
+| 53 | Cor interna inválida pra versão |
+| 74\|13 | Informações não permitidas no anúncio — contatar Atendimento Webmotors |
+| 82 | {Nome do campo} contém números inválidos |
+| 500 | Operação realizada com sucesso |
+
+**Pendência nova, decorrente do achado acima**: `PZQ2F46` (HR-V) está
+travado com `43|36` ("Anúncio não pode ser alterado") — não é mais um
+código misterioso, mas ainda não sei **por que** o anúncio dele está num
+estado que não aceita alteração (mapeamento de catálogo está confirmado
+desde 10/08, não é isso). Precisa checar o status desse anúncio
+diretamente no painel/API da Webmotors antes de tentar de novo.
+
 ## Sessão 15 (26/08/2026, continuação) — publicação real do Fit LX/Hilux, bug sério achado: mapeamento manual era derrubado sozinho
 
 Adriana pediu pra publicar o Fit LX (deu erro nas 3 plataformas) e a Hilux

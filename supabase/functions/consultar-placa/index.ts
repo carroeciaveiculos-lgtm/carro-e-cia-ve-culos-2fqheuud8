@@ -204,7 +204,13 @@ Deno.serve(async (req) => {
         combustivel: veiculoData?.combustivel || '',
         combustivel_sintetico:
           veiculoData?.extra?.combustivel?.sintetico || veiculoData?.sintetico || '',
-        cor: veiculoData?.cor || '',
+        // Achado real 27/08/2026: essa consulta (fipe-chassi) traz Cor pra
+        // alguns veiculos e null pra outros -- nao e' bug nosso, e' a API
+        // mesma que as vezes nao tem esse dado. Mantém null (em vez de '')
+        // quando não vier, pra quem consome saber diferenciar "sem dado" de
+        // "veio vazio de propósito" e não sobrescrever um valor já digitado
+        // à mão.
+        cor: veiculoData?.cor || null,
         preco_fipe: veiculoData?.valor || veiculoData?.preco_fipe || veiculoData?.fipe?.valor || 0,
         mes_referencia: veiculoData?.mesReferencia || '',
         codigo_fipe:

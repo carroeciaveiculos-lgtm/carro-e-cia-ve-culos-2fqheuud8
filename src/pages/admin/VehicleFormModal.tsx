@@ -589,9 +589,15 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
         body: { placa: formData.placa },
       })
       if (error || !data.success) throw new Error()
+      // Achado real 27/08/2026: a consulta traz Cor pra alguns veículos e
+      // não pra outros (não é bug, é a própria API) — regra: popula se
+      // vier, senão mantém o que já estava digitado (não apaga com vazio)
+      // e avisa que precisa preencher à mão.
+      const corVeioDaApi = !!data.data.cor
       setFormData((p: any) => ({
         ...p,
         ...data.data,
+        cor: corVeioDaApi ? data.data.cor : p.cor,
         ano_fabricacao: data.data.ano_fab || p.ano_fabricacao,
         valor_fipe: data.data.preco_fipe || p.valor_fipe,
         info_personalizadas: {
@@ -601,7 +607,12 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
           historico_fipe: data.data.historico_fipe,
         },
       }))
-      toast({ title: 'Dados importados!' })
+      toast({
+        title: 'Dados importados!',
+        description: corVeioDaApi
+          ? undefined
+          : 'Essa consulta não trouxe a Cor — preencha manualmente antes de salvar.',
+      })
     } catch (err: any) {
       toast({ title: 'Erro na consulta', variant: 'destructive' })
     } finally {
