@@ -41,6 +41,7 @@ Deno.serve(async (req) => {
       article_title,
       is_seo_agent,
       agenda_id,
+      is_vehicle_description,
     } = await req.json()
 
     const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY')
@@ -83,7 +84,7 @@ Deno.serve(async (req) => {
 
     const { data: promptsData } = await supabaseService
       .from('ai_prompts_config')
-      .select('slug, prompt_text')
+      .select('slug, prompt_text, rodape_fixo')
     const getPromptText = (slug: string, defaultText: string) => {
       const found = promptsData?.find((p: any) => p.slug === slug)
       return found?.prompt_text || defaultText
@@ -105,6 +106,13 @@ Deno.serve(async (req) => {
       'ai_assistant',
       'Você é um "Master Arquiteto de Conteúdo" especialista em veículos seminovos.',
     )
+    const sysPromptVehicleDescription = getPromptText(
+      'vehicle_description',
+      'Foque no estilo, apelo visual, diferenciais exclusivos e desempenho do veículo.',
+    )
+    const rodapeFixoVeiculo = promptsData?.find(
+      (p: any) => p.slug === 'vehicle_description',
+    )?.rodape_fixo
 
     const customPrompt = socialConfig?.ai_system_prompt || sysPromptGeneral
     // Fixo (14/08/2026, regra da Adriana): antes lia whatsapp_number do
@@ -198,10 +206,28 @@ Responda APENAS com um objeto JSON válido, sem formatação markdown:
   "palavras_chave_secundarias": ["keyword 3", "keyword 4"],
   "conteudo_html": "<h2>...</h2><p>...</p><h3>...</h3><p>...</p>"
 }`
-          : is_seo_agent
+          : is_vehicle_description
             ? `${basePrompt}
+${sysPromptVehicleDescription}
+
+Dados reais do veículo: ${tema}
+
+Tom: ${tom || 'Persuasivo'}.
+
+REGRAS DE FORMATAÇÃO (IMPORTANTE):
+- Texto puro, sem markdown, sem tags HTML, sem títulos ou marcadores.
+- Máximo de 500 caracteres no total (limite rígido — conte antes de responder).
+- Parágrafo único ou no máximo 2 parágrafos curtos.
+
+SAÍDA OBRIGATÓRIA (JSON VÁLIDO):
+Responda APENAS com um objeto JSON válido, sem formatação markdown:
+{
+  "texto_html": "texto da descrição do veículo, pronto para uso direto, até 500 caracteres"
+}`
+            : is_seo_agent
+              ? `${basePrompt}
 ${buildSeoAgentPrompt(tema || '', palavraChave || '')}`
-            : `${basePrompt}
+              : `${basePrompt}
 Sua tarefa é gerar conteúdo para o tema "${tema}" com foco na palavra-chave "${palavraChave}".
 Tom: ${tom || 'Conversacional'}.
 
@@ -473,6 +499,21 @@ Responda APENAS com um objeto JSON válido, sem formatação markdown:
     }
 
     resultJson.texto_html = htmlOutput.trim()
+
+    // Descrição de veículo: o rodapé institucional é colado por código, não
+    // pedido à IA — garante o texto legal exato, sem risco de paráfrase.
+    // A parte da IA é truncada em espaço (nunca no meio de uma palavra)
+    // antes de colar o rodapé, pra nunca cortar o texto fixo no meio.
+    if (is_vehicle_description) {
+      let textoCarro = resultJson.texto_html || ''
+      const LIMITE_TEXTO_CARRO = 550
+      if (textoCarro.length > LIMITE_TEXTO_CARRO) {
+        textoCarro = textoCarro.slice(0, LIMITE_TEXTO_CARRO).replace(/\s+\S*$/, '') + '...'
+      }
+      resultJson.texto_html = rodapeFixoVeiculo
+        ? `${textoCarro}\n\n${rodapeFixoVeiculo}`
+        : textoCarro
+    }
 
     // SEO Agent: Save to blog_posts, validate, and notify manager via WhatsApp
     if (is_seo_agent && resultJson) {

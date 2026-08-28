@@ -1356,12 +1356,13 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
       const diferenciaisText = Array.isArray(formData.diferenciais)
         ? formData.diferenciais.join(', ')
         : ''
-      const tema = `Gere uma descrição persuasiva de vendedor para o veículo: ${formData.marca} ${formData.modelo} ${formData.versao || ''} - Ano Fab: ${formData.ano_fabricacao || 'N/A'}, Ano Mod: ${formData.ano_modelo || 'N/A'}. Cor: ${formData.cor}. Quilometragem: ${formData.quilometragem} km. Combustível: ${formData.combustivel}. Câmbio: ${formData.cambio}. Portas: ${formData.portas || 'N/A'}. Preço: R$ ${formData.preco_venda || 'N/A'}. Diferenciais e opcionais: ${diferenciaisText || 'Nenhum'}. ${primeiraFoto ? `Foto de referência: ${primeiraFoto}` : ''}. REGRAS OBRIGATÓRIAS: Foque no estilo, apelo visual, diferenciais exclusivos e desempenho do veículo. NÃO mencione serviços da concessionária, garantias, financiamento, informações de contato ou frases como "nossa loja" ou "entre em contato".`
+      const tema = `${formData.marca} ${formData.modelo} ${formData.versao || ''} - Ano Fab: ${formData.ano_fabricacao || 'N/A'}, Ano Mod: ${formData.ano_modelo || 'N/A'}. Cor: ${formData.cor}. Quilometragem: ${formData.quilometragem} km. Combustível: ${formData.combustivel}. Câmbio: ${formData.cambio}. Portas: ${formData.portas || 'N/A'}. Preço: R$ ${formData.preco_venda || 'N/A'}. Diferenciais e opcionais: ${diferenciaisText || 'Nenhum'}. ${primeiraFoto ? `Foto de referência: ${primeiraFoto}` : ''}`
       const { data, error } = await supabase.functions.invoke('gerar-conteudo', {
         body: {
           tema,
           palavraChave: `${formData.marca} ${formData.modelo} seminovo uberaba`,
           tom: aiTone,
+          is_vehicle_description: true,
         },
       })
       if (error) throw error
@@ -1372,7 +1373,7 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
         const cleanedText = sanitizeAiText(plainText)
         setFormData((p: any) => ({
           ...p,
-          descricao: cleanedText.substring(0, 1000),
+          descricao: cleanedText.substring(0, 1600),
           requires_review: true,
         }))
         toast({ title: 'Descrição gerada com IA! Marque para revisão.' })
