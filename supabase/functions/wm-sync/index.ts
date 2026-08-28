@@ -4,6 +4,7 @@ import {
   buildAuthXML,
   buildIncluirCarroXML,
   buildAlterarCarroXML,
+  buildTrocarModalidadeXML,
   buildExcluirCarroXML,
   buildObterEstoqueAtualXML,
   parseEstoqueAtual,
@@ -243,8 +244,8 @@ Deno.serve(async (req: Request) => {
     // nenhuma e nao fazia nada). A varredura geral do cron continua sem
     // re-tentar erro sozinha.
     const statusAceitosWM = specificVeiculoId
-      ? ['agendado', 'pending_create', 'pending_update', 'pending_close', 'error']
-      : ['agendado', 'pending_create', 'pending_update', 'pending_close']
+      ? ['agendado', 'pending_create', 'pending_update', 'pending_modalidade', 'pending_close', 'error']
+      : ['agendado', 'pending_create', 'pending_update', 'pending_modalidade', 'pending_close']
 
     let pubQuery = supabase
       .from('estoque_publicacoes')
@@ -507,6 +508,31 @@ Deno.serve(async (req: Request) => {
               // não bloqueia o update por falha nessa checagem extra
             }
             results.push({ id: pub.id, status: 'updated', fotos: fotosResultado })
+          } else {
+            await supabase
+              .from('estoque_publicacoes')
+              .update({ status: 'error', erro_msg: res.error })
+              .eq('id', pub.id)
+            results.push({ id: pub.id, status: 'error', error: res.error })
+          }
+        } else if (pub.status === 'pending_modalidade' && pub.post_id && mapa.codigo_modalidade_wm) {
+          // TrocarModalidadeCarro -- criado 28/08/2026 pra trocar SÓ a
+          // modalidade de um anúncio já existente. Diferente de AlterarCarro
+          // (bloco acima), que reenvia o anúncio inteiro; essa é a operação
+          // que o manual documenta especificamente pra mudança de modalidade.
+          // Enfileirado pelo trigger `wm_sync_on_modalidade_change` sempre
+          // que codigo_modalidade_wm muda pra um veículo já publicado -- pega
+          // o próximo ciclo do cron (a cada 30min), sem precisar clicar em
+          // "Publicar/Sincronizar Agora".
+          const xml = buildTrocarModalidadeXML(hash, pub.post_id, mapa.codigo_modalidade_wm)
+          const res = await callSOAP(xml, 'TrocarModalidadeCarro', hash)
+          await registrarTrocaXML(supabase, veiculo.id, 'TrocarModalidadeCarro', xml, res.raw)
+          if (res.success) {
+            await supabase
+              .from('estoque_publicacoes')
+              .update({ status: 'publicado', erro_msg: null })
+              .eq('id', pub.id)
+            results.push({ id: pub.id, status: 'modalidade_trocada' })
           } else {
             await supabase
               .from('estoque_publicacoes')

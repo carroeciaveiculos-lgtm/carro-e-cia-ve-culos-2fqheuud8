@@ -226,6 +226,23 @@ export function buildAlterarCarroXML(
   return wrapSOAP(WM_ESTOQUE_NAMESPACE, 'AlterarCarro', innerXml)
 }
 
+// TrocarModalidadeCarro -- operacao dedicada do manual oficial pra mudar a
+// modalidade de um anuncio JA existente (pedido da Adriana, 28/08/2026).
+// Diferente de AlterarCarro (que reenvia o anuncio inteiro e cujo suporte
+// real a mudanca de CodigoModalidade nunca foi confirmado), essa e' a
+// chamada que o manual documenta especificamente pra isso.
+export function buildTrocarModalidadeXML(
+  hash: string,
+  codigoAnuncio: string,
+  codigoModalidade: string,
+): string {
+  const innerXml = `
+      <pHashAutenticacao>${hash}</pHashAutenticacao>
+      <pCodigoAnuncio>${codigoAnuncio}</pCodigoAnuncio>
+      <pCodigoModalidade>${codigoModalidade}</pCodigoModalidade>`
+  return wrapSOAP(WM_ESTOQUE_NAMESPACE, 'TrocarModalidadeCarro', innerXml)
+}
+
 export function buildExcluirCarroXML(hash: string, codigoAnuncio: string): string {
   const innerXml = `
       <pHashAutenticacao>${hash}</pHashAutenticacao>

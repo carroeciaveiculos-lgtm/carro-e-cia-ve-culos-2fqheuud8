@@ -10,7 +10,7 @@ import {
 import { validateImagesForML } from '../_shared/image-validation.ts'
 import { getCityId, checkAvailableListingTypes } from '../_shared/ml-cache.ts'
 import { fetchAndStorePerformance } from '../_shared/ml-performance.ts'
-import { validatePayload } from '../_shared/validate-payload.ts'
+import { validatePayload, filtrarDescricao } from '../_shared/validate-payload.ts'
 
 type SupabaseClient = ReturnType<typeof createClient>
 
@@ -154,6 +154,26 @@ export async function syncVehicleToML(
       })
       mlData = await createRes.json()
       if (!createRes.ok) throw new Error(JSON.stringify(mlData))
+    }
+
+    // Achado 28/08/2026 (pedido da Adriana): a API do Mercado Livre nao
+    // aceita a descricao no PUT principal do item quando ele ja existe --
+    // precisa da chamada dedicada abaixo. O cron (ml-sync/index.ts) ja fazia
+    // isso; este caminho (usado por sync-plataforma, o clique manual em
+    // "Publicar/Sincronizar Agora") nunca fazia, entao a descricao gerada
+    // por IA nunca chegava no anuncio real quando sincronizado manualmente
+    // -- confirmado ao vivo com o Honda Fit LX (PUQ3A75).
+    if (veiculo.descricao && veiculo.descricao.length > 0) {
+      try {
+        const filteredDesc = filtrarDescricao(veiculo.descricao)
+        await fetchWithBackoff(`https://api.mercadolibre.com/items/${mlData.id}/description`, {
+          method: 'PUT',
+          headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ plain_text: filteredDesc }),
+        })
+      } catch {
+        // Falha ao atualizar descricao nao bloqueia o restante do sync
+      }
     }
 
     await supabase.from('ml_listings').upsert(

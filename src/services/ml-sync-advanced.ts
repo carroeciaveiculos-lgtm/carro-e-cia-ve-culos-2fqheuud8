@@ -74,7 +74,7 @@ export async function selectiveSync(
     const vid = vehicleIds[i]
     try {
       if (plan === 'mercadolivre') {
-        await supabase.from('veiculos').update({ ml_listing_type: 'gold_pro' }).eq('id', vid)
+        await supabase.from('veiculos').update({ ml_listing_type: 'gold_premium' }).eq('id', vid)
         await supabase.from('ml_listings').upsert(
           {
             veiculo_id: vid,

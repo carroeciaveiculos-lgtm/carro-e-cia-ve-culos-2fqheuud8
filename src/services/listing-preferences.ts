@@ -47,11 +47,11 @@ export async function saveListingPreference(
 }
 
 export function mlListingTypeToPreference(mlListingType: string): string {
-  if (mlListingType === 'gold_pro') return 'diamante'
+  if (mlListingType === 'gold_premium') return 'diamante'
   return 'prata'
 }
 
 export function preferenceToMlListingType(preference: string): string {
-  if (preference === 'diamante') return 'gold_pro'
+  if (preference === 'diamante') return 'gold_premium'
   return 'silver'
 }

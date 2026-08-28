@@ -9,8 +9,9 @@ export interface MLCredentials {
 }
 
 const LISTING_TYPE_MAP: Record<string, string> = {
-  diamante: 'gold_pro',
+  diamante: 'gold_premium',
   prata: 'silver',
+  gold_premium: 'gold_premium',
   gold_pro: 'gold_pro',
   gold_special: 'gold_special',
   silver: 'silver',

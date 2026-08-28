@@ -24,7 +24,7 @@ const SLUG_MAP: Record<string, keyof VeiculoSync> = {
 }
 
 const AD_TYPE_OPTIONS = [
-  { value: 'gold_pro', label: 'Diamante' },
+  { value: 'gold_premium', label: 'Diamante' },
   { value: 'gold_special', label: 'Ouro' },
   { value: 'silver', label: 'Prata' },
 ]

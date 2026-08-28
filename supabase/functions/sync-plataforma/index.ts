@@ -10,7 +10,7 @@ import {
   traduzirErroSyncML,
 } from '../_shared/ml-client.ts'
 import { validateImagesForML } from '../_shared/image-validation.ts'
-import { validatePayload } from '../_shared/validate-payload.ts'
+import { validatePayload, filtrarDescricao } from '../_shared/validate-payload.ts'
 import { fetchAndStorePerformance } from '../_shared/ml-performance.ts'
 import { getCityId } from '../_shared/ml-cache.ts'
 
@@ -278,6 +278,39 @@ async function handlePublish(
       })
     }
     return json({ success: false, message: errMsg })
+  }
+
+  // Achado 28/08/2026 (pedido da Adriana, reproduzido ao vivo com o Honda
+  // Fit LX / PUQ3A75): a API do Mercado Livre nao aceita descricao no PUT
+  // principal do item quando ele ja existe -- precisa da chamada dedicada
+  // abaixo. So o cron (ml-sync/index.ts) fazia isso; este arquivo (usado
+  // pelo clique manual em "Publicar/Sincronizar Agora") nunca fazia, entao
+  // a descricao gerada por IA nunca chegava no anuncio real por aqui.
+  if (veiculo.descricao && veiculo.descricao.length > 0) {
+    try {
+      const filteredDesc = filtrarDescricao(veiculo.descricao)
+      const descRes = await fetchWithBackoff(`https://api.mercadolibre.com/items/${mlData.id}/description`, {
+        method: 'PUT',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ plain_text: filteredDesc }),
+      })
+      if (!descRes.ok) {
+        const errBody = await descRes.text()
+        await supabase.from('logs_integracao').insert({
+          veiculo_id: veiculoId,
+          portal: 'mercadolivre',
+          status: 'falha',
+          payload_erro: { origem: 'update_description', http_status: descRes.status, body: errBody },
+        })
+      }
+    } catch (descErr: any) {
+      await supabase.from('logs_integracao').insert({
+        veiculo_id: veiculoId,
+        portal: 'mercadolivre',
+        status: 'falha',
+        payload_erro: { origem: 'update_description', error: descErr.message },
+      })
+    }
   }
 
   await supabase.from('ml_listings').upsert(

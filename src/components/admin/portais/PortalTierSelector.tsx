@@ -60,7 +60,7 @@ export function PortalTierSelector({ plataforma, veiculo, onUpdateAdType }: Prop
       : (veiculo.ad_types?.[plataforma.slug] as string) || defaultTier
 
   const isDiamondFull = diamondQuota ? diamondQuota.used >= diamondQuota.limit : false
-  const isCurrentDiamond = currentValue === 'gold_pro'
+  const isCurrentDiamond = currentValue === 'gold_premium'
 
   const handleChange = async (v: string) => {
     setSaving(true)
@@ -99,7 +99,7 @@ export function PortalTierSelector({ plataforma, veiculo, onUpdateAdType }: Prop
           </SelectTrigger>
           <SelectContent>
             {tiers.map((t) => {
-              const isDisabled = t.value === 'gold_pro' && isDiamondFull && !isCurrentDiamond
+              const isDisabled = t.value === 'gold_premium' && isDiamondFull && !isCurrentDiamond
               return (
                 <SelectItem key={t.value} value={t.value} className="text-xs" disabled={isDisabled}>
                   {t.label}

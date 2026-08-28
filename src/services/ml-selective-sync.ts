@@ -17,7 +17,7 @@ export async function syncSelectedVehicles(
 
   for (let i = 0; i < selections.length; i++) {
     const { veiculoId, plan } = selections[i]
-    const mlListingType = plan === 'diamante' ? 'gold_pro' : 'silver'
+    const mlListingType = plan === 'diamante' ? 'gold_premium' : 'silver'
 
     try {
       await updateAdType(veiculoId, 'mercadolivre', mlListingType)

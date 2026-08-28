@@ -743,7 +743,7 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
       return null
     }
     setLoading(true)
-    if (formData.ml_listing_type === 'gold_pro') {
+    if (formData.ml_listing_type === 'gold_premium') {
       const { canPromote } = await checkDiamondQuota(formData.id)
       if (!canPromote) {
         toast({
