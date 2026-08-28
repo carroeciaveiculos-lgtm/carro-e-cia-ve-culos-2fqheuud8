@@ -16,7 +16,9 @@ import {
   triggerNapistaSync,
   type Plataforma,
   type VeiculoSync,
+  type FiltrosPortais,
 } from '@/services/plataformas'
+import { getTiersForPlatform } from '@/lib/platform-tiers'
 import { fetchPublicacoes } from '@/services/portais-sync'
 import { syncVehicleToPlatform, batchSyncVehicles } from '@/services/sync-plataforma'
 import { triggerWMSync } from '@/services/wm-sync'
@@ -77,6 +79,14 @@ export default function Portais() {
     Array<{ veiculo_id: string; marca: string; modelo: string; error: string }>
   >([])
   const [activePortalFilter, setActivePortalFilter] = useState<string | null>(null)
+  // Filtros de busca do cabeçalho (28/08/2026, pedido da Adriana) — distintos
+  // do activePortalFilter acima, que é um atalho de seleção pra sync em lote
+  // (GlobalActionsBar). Esses aqui mudam a query real (fetchVeiculosForPortais),
+  // não só o que já foi carregado na página atual.
+  const [filtroPlataforma, setFiltroPlataforma] = useState<string>('todas')
+  const [filtroModalidade, setFiltroModalidade] = useState<string>('todas')
+  const [filtroTempoEstoque, setFiltroTempoEstoque] = useState<string>('todos')
+  const [filtroStatusPublicacao, setFiltroStatusPublicacao] = useState<string>('todos')
   const [showDiagnosis, setShowDiagnosis] = useState(false)
   const preflightProceedRef = useRef<(() => void) | null>(null)
   const [syncFailures, setSyncFailures] = useState<SyncFailure[]>([])
@@ -91,11 +101,22 @@ export default function Portais() {
   const loadVeiculos = useCallback(async () => {
     setLoading(true)
     try {
+      const filtros: FiltrosPortais = {
+        plataforma: filtroPlataforma !== 'todas' ? filtroPlataforma : null,
+        modalidade: filtroModalidade !== 'todas' ? filtroModalidade : null,
+        tempoEstoque:
+          filtroTempoEstoque !== 'todos' ? (filtroTempoEstoque as FiltrosPortais['tempoEstoque']) : null,
+        statusPublicacao:
+          filtroStatusPublicacao !== 'todos'
+            ? (filtroStatusPublicacao as FiltrosPortais['statusPublicacao'])
+            : null,
+      }
       const { vehicles: data, total: count } = await fetchVeiculosForPortais(
         search,
         page,
         pageSize,
         sortBy,
+        filtros,
       )
       const ids = data.map((v) => v.id)
       const pubMap = ids.length > 0 ? await fetchPublicacoes(ids) : {}
@@ -106,7 +127,16 @@ export default function Portais() {
     } finally {
       setLoading(false)
     }
-  }, [search, page, pageSize, sortBy])
+  }, [
+    search,
+    page,
+    pageSize,
+    sortBy,
+    filtroPlataforma,
+    filtroModalidade,
+    filtroTempoEstoque,
+    filtroStatusPublicacao,
+  ])
 
   useEffect(() => {
     const timer = setTimeout(loadVeiculos, 300)
@@ -416,6 +446,110 @@ export default function Portais() {
             <SelectItem value="recentes">Mais Recentes</SelectItem>
           </SelectContent>
         </Select>
+      </div>
+
+      <div className="flex flex-wrap gap-2 items-center bg-white rounded-lg border p-2">
+        <span className="text-xs font-bold text-gray-600 mr-1">Filtros:</span>
+
+        <Select
+          value={filtroPlataforma}
+          onValueChange={(v) => {
+            setFiltroPlataforma(v)
+            setFiltroModalidade('todas')
+            setPage(1)
+          }}
+        >
+          <SelectTrigger className="w-[160px] h-8 text-xs">
+            <SelectValue placeholder="Plataforma" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="todas">Todas as plataformas</SelectItem>
+            {plataformas.map((p) => (
+              <SelectItem key={p.slug} value={p.slug}>
+                {p.nome}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        {getTiersForPlatform(filtroPlataforma).length > 0 && (
+          <Select
+            value={filtroModalidade}
+            onValueChange={(v) => {
+              setFiltroModalidade(v)
+              setPage(1)
+            }}
+          >
+            <SelectTrigger className="w-[160px] h-8 text-xs">
+              <SelectValue placeholder="Modalidade" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="todas">Todas as modalidades</SelectItem>
+              {getTiersForPlatform(filtroPlataforma).map((t) => (
+                <SelectItem key={t.value} value={t.value}>
+                  {t.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
+
+        <Select
+          value={filtroTempoEstoque}
+          onValueChange={(v) => {
+            setFiltroTempoEstoque(v)
+            setPage(1)
+          }}
+        >
+          <SelectTrigger className="w-[170px] h-8 text-xs">
+            <SelectValue placeholder="Tempo no estoque" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="todos">Qualquer tempo no estoque</SelectItem>
+            <SelectItem value="ate_30">Até 30 dias</SelectItem>
+            <SelectItem value="30_60">30 a 60 dias</SelectItem>
+            <SelectItem value="60_90">60 a 90 dias</SelectItem>
+            <SelectItem value="mais_90">Mais de 90 dias</SelectItem>
+          </SelectContent>
+        </Select>
+
+        <Select
+          value={filtroStatusPublicacao}
+          onValueChange={(v) => {
+            setFiltroStatusPublicacao(v)
+            setPage(1)
+          }}
+          disabled={filtroPlataforma === 'todas'}
+        >
+          <SelectTrigger className="w-[150px] h-8 text-xs">
+            <SelectValue placeholder="Status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="todos">Publicado e não publicado</SelectItem>
+            <SelectItem value="publicado">Só publicados</SelectItem>
+            <SelectItem value="nao_publicado">Só não publicados</SelectItem>
+          </SelectContent>
+        </Select>
+
+        {(filtroPlataforma !== 'todas' ||
+          filtroModalidade !== 'todas' ||
+          filtroTempoEstoque !== 'todos' ||
+          filtroStatusPublicacao !== 'todos') && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-8 text-xs text-gray-500"
+            onClick={() => {
+              setFiltroPlataforma('todas')
+              setFiltroModalidade('todas')
+              setFiltroTempoEstoque('todos')
+              setFiltroStatusPublicacao('todos')
+              setPage(1)
+            }}
+          >
+            Limpar filtros
+          </Button>
+        )}
       </div>
 
       {loading ? (

@@ -49,6 +49,15 @@ function formatLastSync(dateStr: string | null): string {
   return `há ${Math.floor(hours / 24)}d`
 }
 
+function formatDataAbsoluta(dateStr: string | null): string | null {
+  if (!dateStr) return null
+  return new Date(dateStr).toLocaleDateString('pt-BR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  })
+}
+
 interface Props {
   plataforma: Plataforma
   veiculo: VeiculoSync
@@ -130,7 +139,11 @@ export function PortalCard({ plataforma, veiculo, publicacao, onSync, onUpdateAd
 
       <div className="flex items-center gap-1 text-[10px] text-gray-500">
         <Clock className="w-3 h-3" />
-        <span>{formatLastSync(publicacao?.publicado_em || publicacao?.updated_at || null)}</span>
+        {published && publicacao?.publicado_em ? (
+          <span>Publicado em {formatDataAbsoluta(publicacao.publicado_em)}</span>
+        ) : (
+          <span>{formatLastSync(publicacao?.publicado_em || publicacao?.updated_at || null)}</span>
+        )}
       </div>
 
       {errorMsg && (

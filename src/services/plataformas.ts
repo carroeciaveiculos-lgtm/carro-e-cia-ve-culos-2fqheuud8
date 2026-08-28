@@ -1,4 +1,13 @@
 import { supabase } from '@/lib/supabase/client'
+import { getTierLabel } from '@/lib/platform-tiers'
+
+const SLUG_MAP_PUBLICADO: Record<string, string> = {
+  mercadolivre: 'publicado_mercadolivre',
+  webmotors: 'publicado_webmotors',
+  olx: 'publicado_olx',
+  icarros: 'publicado_icarros',
+  napista: 'publicado_napista',
+}
 
 export interface Plataforma {
   id: string
@@ -71,11 +80,46 @@ export async function fetchPlataformas(): Promise<Plataforma[]> {
   return (data || []) as Plataforma[]
 }
 
+export interface FiltrosPortais {
+  plataforma?: string | null
+  modalidade?: string | null
+  tempoEstoque?: 'ate_30' | '30_60' | '60_90' | 'mais_90' | null
+  statusPublicacao?: 'publicado' | 'nao_publicado' | null
+}
+
+// Modalidade real da Webmotors vive em wm_mapeamento_veiculos.codigo_modalidade_wm
+// (não em ad_types, que é só preferência — wm-sync nunca lê isso, ver
+// PortalTierSelector). Pra filtrar por ela sem trazer o catálogo inteiro,
+// resolve o código real via wm_modalidades (mesmo casamento por texto que
+// updateModalidadeWebmotors já usa) e busca os veiculo_id que batem.
+async function resolverVeiculoIdsPorModalidadeWebmotors(tierLabel: string): Promise<string[] | null> {
+  const termoBusca = tierLabel.replace(/^Anúncio\s+/i, '').replace(/\s+VIP$/i, '').trim()
+  const { data: modalidade } = await supabase
+    .from('wm_modalidades')
+    .select('codigo_wm')
+    .ilike('descricao', `%${termoBusca}%`)
+    .maybeSingle()
+  if (!modalidade) return []
+  const { data: mapeamentos } = await supabase
+    .from('wm_mapeamento_veiculos')
+    .select('veiculo_id')
+    .eq('codigo_modalidade_wm', modalidade.codigo_wm)
+  return (mapeamentos || []).map((m: any) => m.veiculo_id)
+}
+
+const FAIXAS_TEMPO_ESTOQUE: Record<string, { minDias?: number; maxDias?: number }> = {
+  ate_30: { maxDias: 30 },
+  '30_60': { minDias: 30, maxDias: 60 },
+  '60_90': { minDias: 60, maxDias: 90 },
+  mais_90: { minDias: 90 },
+}
+
 export async function fetchVeiculosForPortais(
   search?: string,
   page?: number,
   pageSize?: number,
   sortBy?: string,
+  filtros?: FiltrosPortais,
 ): Promise<{ vehicles: VeiculoSync[]; total: number }> {
   const currentPage = page || 1
   const size = pageSize || 20
@@ -86,6 +130,35 @@ export async function fetchVeiculosForPortais(
 
   if (search) {
     query = query.or(`marca.ilike.%${search}%,modelo.ilike.%${search}%,placa.ilike.%${search}%`)
+  }
+
+  if (filtros?.statusPublicacao && filtros.plataforma) {
+    const campo = SLUG_MAP_PUBLICADO[filtros.plataforma]
+    if (campo) query = query.eq(campo, filtros.statusPublicacao === 'publicado')
+  }
+
+  if (filtros?.plataforma === 'mercadolivre' && filtros.modalidade) {
+    query = query.eq('ml_listing_type', filtros.modalidade)
+  }
+
+  if (filtros?.plataforma === 'webmotors' && filtros.modalidade) {
+    const tierLabel = getTierLabel('webmotors', filtros.modalidade)
+    const ids = await resolverVeiculoIdsPorModalidadeWebmotors(tierLabel)
+    if (!ids || ids.length === 0) return { vehicles: [], total: 0 }
+    query = query.in('id', ids)
+  }
+
+  if (filtros?.tempoEstoque) {
+    const faixa = FAIXAS_TEMPO_ESTOQUE[filtros.tempoEstoque]
+    const agora = new Date()
+    if (faixa.maxDias !== undefined) {
+      const limite = new Date(agora.getTime() - faixa.maxDias * 24 * 60 * 60 * 1000)
+      query = query.gte('created_at', limite.toISOString())
+    }
+    if (faixa.minDias !== undefined) {
+      const limite = new Date(agora.getTime() - faixa.minDias * 24 * 60 * 60 * 1000)
+      query = query.lt('created_at', limite.toISOString())
+    }
   }
 
   if (sortBy === 'recentes') {
