@@ -182,13 +182,12 @@ Deno.serve(async (req: Request) => {
       // fail-open — ver comentário acima
     }
 
-    // Cota de anúncios simultâneos por modalidade (pedido da Adriana,
-    // 13/08/2026). Não é limite de estoque — é quanto pode ficar ATIVO ao
-    // mesmo tempo em cada modalidade contratada. Atualiza wm_modalidades a
-    // cada rodada (mesmo padrão de persistência do wm-catalog-fetch manual) e
-    // usa o resultado pra travar IncluirCarro sem vaga, abaixo. Fail-open: se
-    // a consulta falhar, não trava nada por falta de dado (evita travar
-    // publicação legítima por um erro de rede nessa checagem extra).
+    // Cota de anúncios simultâneos por modalidade — só informativo agora
+    // (painel/dashboard). Até 27/08/2026 travava IncluirCarro aqui, mas
+    // ObterModalidade provou ficar desatualizada por horas depois de
+    // exclusões manuais no painel (18/18 quando o real já era 16/18),
+    // bloqueando publicações que cabiam de verdade. A trava real hoje é a
+    // própria resposta da Webmotors no IncluirCarro (43|32/43|33).
     const quotaPorModalidade: Record<string, { total: number; usados: number }> = {}
     try {
       const modalidadeRes = await callSOAP(buildObterModalidadeXML(hash), 'ObterModalidade', hash)
@@ -356,6 +355,7 @@ Deno.serve(async (req: Request) => {
         descricao_cor: corRow?.nome_wm || veiculo.cor || '',
         descricao_cambio: cambioRow?.nome_wm || veiculo.cambio || '',
         descricao_combustivel: combustivelRow?.nome_wm || veiculo.combustivel || '',
+        ano_modelo_override_wm: mapeamento.ano_modelo_override_wm,
       }
 
       // Guard corrigido em 07/08/2026: a validação original só checava as
@@ -400,9 +400,26 @@ Deno.serve(async (req: Request) => {
       try {
         if (pub.status === 'pending_create' || pub.status === 'agendado' || (pub.status === 'error' && !pub.post_id)) {
           const placaVeiculo = normalizarPlaca(veiculo.placa)
-          const jaAnunciado = placaVeiculo
+          const candidatoDuplicado = placaVeiculo
             ? estoqueAtualWebmotors.find((a) => a.placa === placaVeiculo)
             : undefined
+          // Achado real 27/08/2026 (HR-V, CodigoAnuncio 77614580): a lista
+          // do ObterEstoqueAtual pode ficar presa com um anuncio ja
+          // excluido manualmente no painel por muito tempo (+24h) --
+          // confiar cegamente nela quase causou um falso "ja publicado"
+          // que teria travado uma publicacao legitima pra sempre.
+          // Confirma com ObterFotosCarro antes de aceitar o match: se o
+          // anuncio realmente existe, ele ecoa o mesmo CodigoAnuncio de
+          // volta; se for fantasma, ecoa 0.
+          let jaAnunciado = candidatoDuplicado
+          if (candidatoDuplicado) {
+            const fotosXml = buildObterFotosCarroXML(hash, candidatoDuplicado.codigoAnuncio)
+            const fotosRes = await callSOAP(fotosXml, 'ObterFotosCarro', hash)
+            const codigoEcoado = fotosRes.raw ? (fotosRes.raw.match(/<(?:\w+:)?CodigoAnuncio>([^<]*)</)?.[1] ?? '0') : '0'
+            if (codigoEcoado === '0' || codigoEcoado !== candidatoDuplicado.codigoAnuncio) {
+              jaAnunciado = undefined
+            }
+          }
           if (jaAnunciado) {
             const msg = `Este veículo já está anunciado na Webmotors (CodigoAnuncio ${jaAnunciado.codigoAnuncio}) — envio pulado pra não duplicar. Se precisar atualizar o anúncio existente, use a edição, não uma nova publicação.`
             await supabase
@@ -421,31 +438,18 @@ Deno.serve(async (req: Request) => {
             continue
           }
 
-          const quota = quotaPorModalidade[mapa.codigo_modalidade_wm]
-          if (quota && quota.usados >= quota.total) {
-            // Regra criada em 20/08/2026 (pedido da Adriana): antes essa
-            // falha marcava status='error' e a linha ficava presa na fila
-            // pra sempre — achado real, 4 veículos parados desde 13/08/2026
-            // sem ninguém conseguir agir (não é problema de mapeamento, é
-            // capacidade da conta). Agora remove da fila; publicar de novo
-            // é uma ação manual (toggle/"Sincronizar Agora" no painel) pra
-            // quando houver vaga — mas fica registrado no log de
-            // sincronização (sync_log) abaixo, não desaparece sem rastro.
-            const msg = `Sem vaga de anúncio simultâneo na modalidade ${mapa.codigo_modalidade_wm} (${quota.usados}/${quota.total} em uso). Removido da fila — publique de novo quando houver vaga (encerre outro anúncio ou contrate mais cota).`
-            await supabase.from('estoque_publicacoes').delete().eq('id', pub.id)
-            results.push({ id: pub.id, status: 'error', error: msg })
-            continue
-          }
-
+          // Trava de cota local removida (27/08/2026, pedido da Adriana):
+          // ObterModalidade provou repetidas vezes nesta sessao estar
+          // desatualizada por horas depois de exclusoes manuais no painel
+          // (18/18 quando o real ja era 16/18) -- bloqueava publicacoes que
+          // cabiam de verdade. Agora tenta sempre; se nao houver vaga real,
+          // a propria Webmotors recusa no IncluirCarro com 43|32 (modalidade
+          // esgotada) ou 43|33 (pacote esgotado), e cai no tratamento de
+          // erro abaixo -- auditoria pelo retorno real, nao por cache local.
           const xml = buildIncluirCarroXML(veiculo, hash, mapa, codigosOpcionais)
           const res = await callSOAP(xml, 'IncluirCarro', hash)
           await registrarTrocaXML(supabase, veiculo.id, 'IncluirCarro', xml, res.raw)
           if (res.success && res.codigoAnuncio) {
-            // Desconta a vaga em memória assim que usada — sem isso, dois
-            // veículos pendentes na MESMA rodada podiam passar os dois pela
-            // checagem de cota (lida uma vez só no início da rodada),
-            // mesmo com só 1 vaga real disponível.
-            if (quota) quota.usados += 1
             await supabase
               .from('estoque_publicacoes')
               .update({

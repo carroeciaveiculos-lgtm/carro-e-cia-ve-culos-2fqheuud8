@@ -527,6 +527,76 @@ estado que não aceita alteração (mapeamento de catálogo está confirmado
 desde 10/08, não é isso). Precisa checar o status desse anúncio
 diretamente no painel/API da Webmotors antes de tentar de novo.
 
+**[ATUALIZADO 27/08/2026, à noite] Causa raiz do `43|36` no HR-V — parcialmente
+resolvida, mistério ainda não fechado.** Achado 1 (bug real, corrigido):
+`wm_mapeamento_veiculos.codigo_modalidade_wm` estava `6914` (VIP) — nenhum
+código atual grava esse valor, e a cota VIP real (`ObterModalidade`, 1 uso =
+só o Jeep Compass `QUK1J80`) confirmou que o anúncio do HR-V não é VIP de
+verdade. Corrigido pra `6351` (Básico). **Testado ao vivo depois (`wm-sync`
+real): o erro `43|36` PERSISTIU mesmo com a modalidade certa.** O anúncio
+`73668233` responde OK com fotos reais em `ObterFotosCarro` (existe de
+verdade) mas não aparece em `ObterEstoqueAtual` — aponta pra travamento do
+lado da Webmotors nesse anúncio específico, não diagnosticável só com nossos
+dados. Precisa de chamado com o suporte citando esse `CodigoAnuncio`. Achado
+2, à parte: existiam 2 linhas duplicadas em `estoque_publicacoes` pro HR-V
+(mesmo anúncio) — removida a mais antiga.
+
+## Sessão 17 (27/08/2026, continuação) — H6 19 na VIP, 6 veículos atualizados, AnoModelo descoberto no WSDL
+
+**H6 19 (`SGI9C15`) não publicado em VIP — não foi possível "resolver a
+rejeição" como pedido, e o motivo real é outro do que eu tinha concluído
+antes.** Auditei o WSDL real (`?WSDL`) e confirmei: `Versao` tem um campo
+real `AnoModelo` (array de anos válidos por versão), que nosso parser em
+`wm-mapear-veiculo` **descarta**. O H6 19 tem 3 candidatos de versão quase
+idênticos por texto (scores 0,058/0,062/0,082, bem abaixo do limiar 0,35),
+`confirmado_manualmente=true` mesmo assim — a tela nunca mostrou ano porque
+o dado nem é salvo. Teoria mais provável agora: versão errada por falta de
+ano, não restrição de elegibilidade Webmotors pro VIP (teoria anterior,
+enfraquecida: o "Básico passa, só VIP falha" pode só significar que a
+Webmotors valida cota antes de validar marca/modelo/versão, então Básico
+nunca chegou a testar esse dado de verdade). **Proposto, aguardando
+autorização**: capturar `AnoModelo` em `wm_versoes` + usar como filtro
+obrigatório no matching. `ObterVersao` também se mostrou não-confiável pra
+recarga sob demanda — mesma chamada, mesmos parâmetros, resultado diferente
+em datas diferentes (hipótese: Webmotors não respeita o intervalo de data
+enviado). Detalhe técnico completo em `docs/webmotors-integracao.md`.
+
+**Status atualizado dos 6 veículos (napista/webmotors/mercado livre),
+27/08/2026 à noite**: Fit LX e RAM Rampage — publicados nos 3. H6 19 —
+publicado NaPista+ML, erro real na Webmotors (acima). HR-V — publicado
+NaPista+ML, erro real na Webmotors (acima). SW4 2017 (`PYT5J89`) — reativado
+de verdade no NaPista (testado, `PUT .../PUBLISHED` confirmado por `GET`),
+sem anúncio ativo na Webmotors, publicado no ML. SW4 2020 (`QXH1J94`) —
+nunca publicado em nenhuma plataforma (rascunho), aguardando decisão da
+Adriana se publica.
+
+**Achado e corrigido, à parte**: 1 anúncio duplicado no NaPista pro SW4 2017
+(oferta antiga de 24/08, ainda ativa) — fechado (`UNPUBLISHED`, confirmado).
+**Achado e corrigido**: `publicado_napista/webmotors/mercadolivre` em
+`veiculos` não são fonte de verdade — confirmado com o próprio SW4 2017 (as
+3 diziam `true`, realidade era outra). Adriana pediu explicitamente pra não
+usar mais essas flags, só `sync_log`/`estoque_publicacoes` — memória salva
+no perfil dela (`napista-webmotors-flags-vs-sync-log.md`).
+
+**Erro meu, corrigido no caminho**: cheguei a concluir (errado) que o
+anúncio real do HR-V tinha mudado de código (`73668233` → `77614580`) só
+por aparecer numa lista do `ObterEstoqueAtual` — a Adriana corrigiu na hora
+("eu mesmo excluí ele manualmente ontem"). Reteste com `ObterFotosCarro`
+confirmou: `77614580` era a duplicata que ela apagou (retorna vazio),
+`73668233` é o anúncio real (fotos reais). Lição registrada em
+`docs/webmotors-integracao.md` (seção Becos sem saída): presença em
+`ObterEstoqueAtual` não é prova confiável de existência/estado real de um
+anúncio — usar `ObterFotosCarro` pra confirmar.
+
+**Cota Webmotors confirmada por 2 fontes cruzadas**: 19 anúncios reais = 18
+Básico (cheio) + 1 VIP (Jeep Compass). Segue pendente conferir com a Adriana
+os 16 vs 18 nomes que ela vê como ativos no próprio painel dela (lista
+completa dos 18 placas está em `docs/webmotors-integracao.md`).
+
+Artigo da Central de Ajuda criado pro diálogo unificado de mapeamento
+(Sessão 17 anterior) — "Confirmar mapeamento de catálogo (Webmotors e
+NaPista)", categoria Estoque/operacional.
+
 ## Sessão 15 (26/08/2026, continuação) — publicação real do Fit LX/Hilux, bug sério achado: mapeamento manual era derrubado sozinho
 
 Adriana pediu pra publicar o Fit LX (deu erro nas 3 plataformas) e a Hilux

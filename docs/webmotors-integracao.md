@@ -5,7 +5,39 @@ _Becos sem saída_ lista o que já foi testado e falhou — **não repita**. Ao
 descobrir algo novo, acrescente aqui com data e fonte, em vez de deixar só no
 histórico de conversa.
 
-Última atualização: 2026-08-12.
+Última atualização: 2026-08-27.
+
+## Protocolo de verificação segura (ler antes de qualquer ação real)
+
+Destilado depois de uma sessão (27/08/2026) com vários erros reais em
+sequência — todos com a mesma raiz: tratar sinal indireto como fonte de
+verdade.
+
+**Onde olhar:**
+1. **O Cockpit ao vivo** (`cockpit.com.br/inventory`, sessão logada da
+   Adriana, via browser) pra qualquer "está publicado/ativo agora?" — única
+   fonte que não falhou numa sessão inteira de tentativas.
+2. **A placa exata** antes de agir sobre qualquer veículo citado por
+   marca/modelo — nunca presumir qual é "o Haval" ou "o BMW" quando existe
+   mais de um na conta (achado real: 2 Haval H6, 2 BMW 320iA).
+3. **`sync_log`** pra histórico de tentativas — não pra status atual.
+4. **A linha específica (`id`) em `estoque_publicacoes`** antes de qualquer
+   `UPDATE` — `SELECT` primeiro, sempre, pra ver se existe mais de uma linha
+   pro mesmo veículo+plataforma (bug recorrente: linhas duplicadas de datas
+   diferentes, nunca limpas).
+
+**Onde NÃO confiar:**
+1. **`ObterModalidade`, `ObterEstoqueAtual` e `ObterFotosCarro` como prova
+   final de status "agora"** — nenhuma tem campo de status documentado
+   (confirmado auditando o manual oficial), e as três já mostraram
+   atraso real depois de ação manual no painel. Servem só como pista.
+2. **Mexer em `publicado_webmotors`/`publicado_napista` como atalho pra
+   corrigir um status errado.** Essas flags disparam gatilhos automáticos
+   (`trigger_wm_sync_on_veiculo_change`) — já quase causou uma exclusão real
+   e irreversível de um anúncio ativo. Corrigir sempre direto em
+   `estoque_publicacoes`.
+3. **Memória de conversa como identificador de veículo.** Só a placa
+   identifica — descrição por marca/modelo não é suficiente nesta conta.
 
 ## O caminho de um veículo até o anúncio
 
@@ -88,6 +120,30 @@ homologação. Reconferir `CodigoRetorno 400` antes de continuar.
   com código; 503 volta **página nginx**, que é camada de transporte. Se o
   `catalogo: "cores"` (sem parâmetro nenhum) falhar igual, a quebra é no
   `autenticar`, antes do método.
+- **Mudar `publicado_webmotors` pra `false` num veículo que tem anúncio real
+  (mesmo travado) sem checar o que o trigger faz com isso.** Achado real
+  27/08/2026: corrigir um falso positivo do HR-V (marcando
+  `publicado_webmotors=false`) fez o `trigger_wm_sync_on_veiculo_change`
+  criar sozinho uma linha `pending_close` mirando o anúncio REAL
+  (`73668233`, fotos confirmadas) — se um `wm-sync` rodasse antes de eu
+  perceber, teria chamado `ExcluirCarro` nesse anúncio de verdade, **sem
+  volta**. Antes de mexer nessa flag em qualquer veículo com anúncio
+  existente (mesmo travado/`error`), checar se virou uma linha
+  `pending_close` nova e cancelar se for indevida.
+- **Assumir que "aparece em `ObterEstoqueAtual`" ou "`ObterFotosCarro`
+  retorna fotos" prova que um anúncio existe de verdade.** Nenhuma das duas
+  é confiável sozinha pra detectar exclusão manual recente. Achado real
+  27/08/2026: (1) HR-V `77614580` (excluído manualmente pela Adriana)
+  apareceu em `ObterEstoqueAtual`, e só depois `ObterFotosCarro` confirmou
+  vazio — parece propagação com atraso. (2) BMW 320iA `UDJ9A33`/anúncio
+  `75274239`, excluído manualmente pela Adriana no mesmo dia,
+  **`ObterFotosCarro` continuou retornando sucesso com 20 fotos reais**
+  horas depois — contradiz a conclusão do caso (1). Conclusão: as duas
+  consultas podem ficar desatualizadas por tempo indefinido depois de uma
+  exclusão manual no painel. **A única fonte confiável pra "esse anúncio
+  ainda existe?" é o próprio painel da Webmotors (ou a palavra da Adriana,
+  que olha lá direto)** — não insista em reconferir por API quando ela já
+  confirmou uma exclusão manual.
 
 ## De/para do vocabulário CRM ↔ Webmotors
 
@@ -318,6 +374,270 @@ resíduo das tentativas anteriores ao `PrecoReal`.
   usamos (`AnuncioWM`, `TipoAnuncio=U`) — não geraram pista direta, mas
   reforçam o beco sem saída já registrado acima sobre schemas do manual não
   baterem entre métodos/direções diferentes.
+
+## Achados — 27/08/2026
+
+**`TrocarModalidadeCarro` — troca a modalidade de um anúncio JÁ existente.**
+Extraído do manual oficial (as 3 páginas que a Adriana mandou):
+- Entrada: `pHashAutenticacao`, `pCodigoAnuncio` (o anúncio a alterar) e **ou**
+  `pCodigoModalidade` (código direto da modalidade nova) **ou**
+  `pCodigoAnuncio2` (troca com a modalidade de outro anúncio seu).
+- Retorno: `RetornoTrocaModalidade` — mesmo padrão `CodigoRetorno` do resto da
+  API.
+- **Não existe Ativar/Desativar/Reativar anúncio.** "Despublicar" na
+  Webmotors é `ExcluirCarro` de verdade (apaga o `CodigoAnuncio`) — não tem
+  volta pro mesmo código.
+
+**Cota de modalidade confirmada ao vivo (`ObterModalidade` + `ObterEstoqueAtual`
+cruzados, 27/08/2026):** 19 anúncios reais ativos = 18 em Básico (`6351`,
+cheio, 18/18) + 1 em VIP "Super Acelerador Vip - M" (`6914`, 1/2 — 1 vaga
+livre, ocupada hoje pelo Jeep Compass `QUK1J80`). As duas fontes batem exato.
+
+**H6 19 (`SGI9C15`) rejeitado em VIP (`43|41`+`43|37`) — causa mais provável:
+versão errada escolhida por falta de dado de ano, não restrição de
+elegibilidade Webmotors.** Auditei o WSDL real
+(`wsEstoqueRevendedorWebMotors.asmx?WSDL`): o tipo `Versao` tem um campo real
+`AnoModelo` (`ArrayOfAnoModeloWM` — lista de anos válidos por versão), que
+nosso parser em `wm-mapear-veiculo/index.ts` **descarta** (só lê
+`NomeVersao`/`CodigoVersao`). O H6 19 tem 3 candidatos de versão com nomes
+quase idênticos (`HEV ONE`/`HEV2`/`PHEV19`, todos "E-TRACTION") e scores de
+texto pífios (0,058/0,062/0,082 — bem abaixo do `LIMIAR_CONFIANCA=0.35`), mas
+o registro está `confirmado_manualmente=true` — a tela de confirmação também
+nunca mostrou ano, porque o dado nem chega a ser salvo. **Proposto, não
+implementado:** capturar `AnoModelo` em `wm_versoes` e usar como filtro
+obrigatório no matching (texto só desempata versões do mesmo ano).
+
+**`ObterVersao` não é confiável para recarga sob demanda — mesma chamada,
+resultado diferente em datas diferentes.** Reproduzido ao vivo 27/08/2026:
+chamar `ObterVersao` para o modelo do H6 19 (`20891`) com os MESMOS parâmetros
+exatos que `wm-mapear-veiculo` usa em produção (`pDataInicioAtualizacao
+2010-01-01`, `pDataFimAtualizacao` = hoje) devolve `CodigoVersao=0`/`AnoModelo`
+vazio — nada. As 3 versões hoje em `wm_versoes` para esse modelo vieram de um
+cache antigo, gravado num momento em que essa mesma chamada retornou dado
+real. Hipótese mais provável: a Webmotors não respeita de verdade o intervalo
+de datas enviado — só devolve o que mudou numa janela curta e recente do lado
+deles. **Não confirmado sem abrir chamado com o suporte.**
+
+**HR-V (`PZQ2F46`) — `43|36` ("Anúncio não pode ser alterado") em
+`73668233`.** Dois achados reais:
+1. **Bug real, corrigido:** `wm_mapeamento_veiculos.codigo_modalidade_wm`
+   estava `6914` (VIP) pra esse veículo — nenhum código atual grava esse
+   valor (`wm-mapear-veiculo` sempre grava Básico via
+   `obterCodigoModalidadeBasico()`), então era um valor manual/antigo
+   destoante. A cota VIP real (`ObterModalidade`, 1 uso = só o Jeep Compass)
+   confirma que esse anúncio não é VIP de verdade. Corrigido pra `6351`.
+2. **Testado ao vivo depois da correção — o erro 43|36 PERSISTIU.** A
+   modalidade errada era um bug real, mas não era a causa raiz. O anúncio
+   `73668233` responde com sucesso e fotos reais em `ObterFotosCarro` (existe
+   de verdade), mas **não aparece em `ObterEstoqueAtual`** (lista de
+   anúncios "ativos") e continua recusando qualquer `AlterarCarro`. Aponta
+   pra um travamento do lado da Webmotors nesse anúncio específico (revisão
+   manual, sinalização de compliance, etc.) — não é diagnosticável só com os
+   dados que temos. **Precisa de chamado com o suporte Webmotors citando esse
+   `CodigoAnuncio`.**
+
+**Achado dentro do mesmo diagnóstico — linha duplicada em
+`estoque_publicacoes`.** O HR-V tinha 2 linhas pra webmotors, mesmo `post_id`,
+criadas em datas diferentes (13/08 e 26/08) — o `wm-sync` processava as duas
+por rodada. Removida a mais antiga. Vale conferir se outros veículos têm o
+mesmo problema (não auditado além do HR-V).
+
+**Confirmado — não existe, no manual oficial, nenhuma forma documentada de
+checar se um anúncio está realmente ativo agora, nem garantia de tempo
+real.** Auditei as páginas oficiais do manual (as que a Adriana mandou):
+
+- **`ObterEstoqueAtual` (entrada)**: só recebe `pHashAutenticacao` — nenhum
+  parâmetro de filtro por status. Bate com o que o código já usa.
+- **`AnuncioWM2` (tipo de retorno do `ObterEstoqueAtual`)** — tabela completa
+  (extraída pela Adriana direto do manual, 27/08/2026), **nenhum campo de
+  status/situação do anúncio** entre eles:
+
+  | Atributo | Obrigatório | Tipo | Descrição |
+  |---|---|---|---|
+  | CodigoAnuncio | Sim | Decimal | Código identificador do anúncio |
+  | CodigoModalidade | Sim | Decimal | Código da modalidade do anúncio |
+  | TipoAnuncio | Sim | String | Código do tipo de anúncio |
+  | CodigoMarca | Sim | Decimal | Código da marca do carro |
+  | CodigoModelo | Sim | Decimal | Código do modelo do carro |
+  | CodigoVersao | Sim | Decimal | Código da versão do carro |
+  | AnoDoModelo | Sim | Inteiro | Ano do modelo do carro |
+  | AnoFabricacao | Sim | Inteiro | Ano de fabricação do carro |
+  | Km | Não *05 | Inteiro | Quilometragem atual (só usados) |
+  | Placa | Sim *07 | String | Placa do veículo |
+  | CodigoCambio | Sim | Decimal | Código do câmbio |
+  | DescricaoCambio | Sim | String | Descrição do câmbio |
+  | NrPortas | Sim | Inteiro | Número de portas |
+  | CodigoCor | Não *02 | Decimal | Código de cor genérica |
+  | DescricaoCor | Não | String | Descrição da cor |
+  | CodigoCombustivel | Sim | Decimal | Código do combustível |
+  | DescricaoCombustivel | Sim | String | Descrição do combustível |
+  | Blindado | Sim | String | Indica blindagem |
+  | AdaptadoDeficientesFisicos | Sim | String | Indica adaptação |
+  | UnicoDono | Sim ** | String | Indica único dono |
+  | Alienado | Sim ** | String | Indica alienação |
+  | IpvaPago | Sim ** | String | Indica IPVA pago |
+  | RevisadoOficinaAgendaDoCarro | Sim ** | String | Revisão em oficina credenciada |
+  | RevisoesEmConcessionaria | Sim ** | String | Revisões em concessionária |
+  | GarantiaDeFabrica | Sim ** | String | Garantia de fábrica |
+  | Licenciado | Sim ** | String | Indica licenciamento |
+  | PrecoVenda | Sim | Decimal | Preço de venda *09 |
+  | Observacao | Não | String | Observações, máx. 500 caracteres *06 |
+  | DataInclusao | Não *03 | String | Só consulta |
+  | DataUltimaAlteracao | Não *04 | String | Só consulta |
+  | Opcional | Não | OpcionalWM[] | Lista de opcionais |
+  | CodigoRetorno | Não | String | Código de retorno do método |
+
+  `** Depende do tipo de anúncio (novo x usado) — ver detalhe no rodapé da
+  página do manual.` `*02/*03/*04/*01` não valem pra manutenção (só
+  consulta ou dispensável). `*05` só usados. `*06` máx. 500 caracteres.
+  `*07` obrigatório só em usados. `*09` usado nas buscas do site.
+
+  A simples presença na lista é o único sinal que a API dá sobre um
+  anúncio, e — pelos casos reais de hoje (HR-V, BMW) — esse sinal pode
+  ficar desatualizado por tempo indefinido depois de uma exclusão manual no
+  painel.
+- **`EntradaModalidadeManutCarros` (entrada do `ObterModalidade`)**: também
+  só `pHashAutenticacao`, sem parâmetro adicional.
+- **`ModalidadeWM` (tipo de retorno do `ObterModalidade`)**: 10 campos —
+  `QuantidadeAnunciosTotal`/`QuantidadeAnuncios` entre eles, mas **sem campo
+  de status** e sem qualquer nota sobre o quão "em tempo real" esse número
+  é.
+- **`RetornoManutencao`/`RetornoObterModalidade`**: só a tabela genérica de
+  `CodigoRetorno`, nada específico sobre frescor de dado ou cache.
+
+**FECHADO DE VERDADE 27/08/2026 — auditado direto no Cockpit (painel oficial,
+sessão logada da Adriana), não só por conta.** Lista completa dos 17
+veículos reais (via `read_page` no `cockpit.com.br/inventory`):
+
+| Placa | Veículo | publishId (CodigoAnuncio real) |
+|---|---|---|
+| PUQ-3A75 | Honda Fit | 78447550 |
+| TCQ-0B23 | Honda City | 78229773 |
+| QMY-0E06 | Toyota RAV4 | 77894794 |
+| RFV-1E55 | Hyundai HB20X | 77894718 |
+| STE-4D79 | VW T-Cross | 77533344 |
+| LSL-9F31 | Range Rover Evoque | 76829636 |
+| RCC-9H74 | Ford Ranger | 76953232 |
+| FJK-7E17 | Discovery Sport | 76240125 |
+| TZG-3I61 | Fiat Toro | 76126328 |
+| JKJ-1C64 | Kia Sportage | 75501198 |
+| UDJ-9A33 | BMW 320i (2026) | 75274239 |
+| PZL-2G96 | VW up! | 74807577 |
+| SYI-6C55 | Volvo XC60 | 74036597 |
+| RUG-8F56 | Toyota Hilux | 74036318 |
+| QUK-1J80 | Jeep Compass (**VIP**) | 73666856 |
+| SIQ-5H93 | Haval H6 (outro, não confundir com o SGI9C15) | 73579434 |
+| GTN-5D81 | RAM Rampage | 73318104 |
+
+16 Básico + 1 VIP = 17, exato. **Não incluem HR-V, SW4 2017, SW4 2020 nem
+H6 19 (`SGI9C15`)** — confirmado que nenhum dos 4 está publicado agora.
+
+**Correção de um erro meu no caminho**: eu tinha marcado o BMW `UDJ9A33`
+como excluído, achando que era o carro que a Adriana tinha apagado — errado.
+Quem ela excluiu de verdade foi outro BMW 320iA, **`FVY4J44` (2015)**, que
+por isso não aparece na lista acima. Os dois têm marca/modelo idênticos
+(fácil de confundir numa conversa) — o dado real do Cockpit desfez a
+confusão.
+
+**Conclusão prática, agora quantificada com certeza**: a cota real de
+Básico é **16 de 18 usados — 2 vagas livres de verdade** — mas
+`ObterModalidade` (usado pelo guard de quota do `wm-sync`) continua
+reportando `18/18`, bloqueando publicações novas que na realidade caberiam.
+Não existe, hoje, uma forma 100% confiável — nem pela API, nem documentada
+pela Webmotors — de perguntar "esse anúncio específico está ativo agora?"
+logo depois de uma ação manual no painel; **o Cockpit (navegador, sessão
+logada) é a única fonte que nunca falhou nesse diagnóstico.** As únicas
+fontes que temos (`ObterEstoqueAtual`, `ObterModalidade`, `ObterFotosCarro`)
+já mostraram, em teste real, atraso após exclusão manual. **Decisão da
+Adriana (27/08/2026): não existe canal de e-mail/chamado com o suporte
+Webmotors disponível — parar de tentar esse caminho.** A partir daqui, a
+verificação de "isso está mesmo no ar?" é sempre manual, feita por ela
+olhando o painel — não por tentativa de contato ou nova chamada de API.
+
+**BUG REAL encontrado no `wm-sync`, não só nos meus testes: o guard de
+duplicidade confia cegamente em `ObterEstoqueAtual`.** Testado ao vivo
+27/08/2026: ao tentar publicar o HR-V (`PZQ2F46`) de novo, o `wm-sync`
+achou a placa em `ObterEstoqueAtual` sob o código `77614580` e marcou como
+`already_published` — **mas esse código já tinha sido excluído
+manualmente pela Adriana** (confirmado por ela, e reconfirmado ao vivo por
+`ObterFotosCarro`, que devolveu `CodigoAnuncio=0`/`0 fotos` pra esse mesmo
+código, mesmo `ObterEstoqueAtual` ainda listando ele). Ou seja: não é só um
+problema de diagnóstico manual — a checagem de duplicidade em produção
+(`wm-sync/index.ts`, comentário "achado real 12/08/2026") pode gerar falso
+positivo real, bloqueando uma publicação legítima achando (errado) que já
+existe. **Não corrigido ainda** — precisaria de uma segunda confirmação
+(ex.: `ObterFotosCarro`) antes de aceitar o resultado de
+`ObterEstoqueAtual` como definitivo, o que gasta mais uma chamada por
+veículo a cada sync.
+
+## Correções reais implementadas — 27/08/2026, noite (código de produção)
+
+**1. Bug real corrigido: guard de duplicidade do `wm-sync` confiava cego em
+`ObterEstoqueAtual`.** Achado ao vivo (HR-V, `CodigoAnuncio 77614580`): esse
+endpoint pode continuar listando um anúncio já excluído manualmente no
+painel por mais de 24h — e o guard usava só isso pra decidir "já está
+publicado", quase bloqueando uma publicação legítima com um falso positivo.
+**Corrigido em `wm-sync/index.ts`**: antes de aceitar um match de placa em
+`estoqueAtualWebmotors`, chama `ObterFotosCarro` pro `CodigoAnuncio`
+candidato — só aceita como "já publicado" se o `CodigoAnuncio` ecoado bater
+(anúncio fantasma ecoa `0`). **Testado ao vivo, funcionou**: reprocessar o
+HR-V depois do fix não caiu mais no falso positivo, chegou até a checagem
+real de cota (que aí sim bloqueou por falta de vaga genuína).
+
+**2. Campo novo `wm_mapeamento_veiculos.ano_modelo_override_wm`** — permite
+sobrescrever, só no XML mandado à Webmotors, o `AnoDoModelo` de uma
+`CodigoVersao` específica, sem tocar em `veiculos.ano_modelo` (dado real do
+carro, usado por NaPista/ML/contratos). Implementado em
+`_shared/wm-soap.ts` (`buildAnuncioXML` usa
+`mapa.ano_modelo_override_wm ?? veiculo.ano_modelo`) e propagado em
+`wm-sync/index.ts`.
+
+**3. H6 19 (`SGI9C15`) — RESOLVIDO DE VERDADE. Causa raiz real: marca e
+modelo errados no cache, não o ano.** Depois de refutar a hipótese do ano
+2024 por teste real (XML confirmado com `AnoDoModelo=2024`, recusado do
+mesmo jeito com `43|41,43|37`), comparei ao vivo com o outro Haval H6 do
+estoque (`SIQ5H93`), já publicado com sucesso, puxando o anúncio real dele
+via `ObterEstoqueAtual`. **Descoberta**: `SIQ5H93` usa `CodigoMarca=352` e
+`CodigoModelo=3895` — completamente diferentes do que estava cacheado pro
+GWM/Haval H6 no nosso sistema (`CodigoMarca=5296`, `CodigoModelo=20891`).
+Confirmei via `ObterModelo(352)` que `3895` é mesmo "HAVAL H6" — um código
+de catálogo real e válido que nosso cache nunca tinha. Chamei `ObterVersao`
+pra esse modelo correto e (ao contrário do modelo errado, que sempre
+voltava vazio) **voltou o catálogo completo, com `AnoModelo` real por
+versão** — incluindo `379677 "1.5 PHEV19 E-TRACTION"`, válida pra
+`AnoModelo 2025/2026`, batendo exato com o carro (ano real 2025, "H6 19" no
+nome). Corrigi o cache (`wm_marcas`, `wm_modelos`, `wm_versoes`) e o
+mapeamento do veículo pros códigos certos, sem nenhum override de ano
+necessário — e **publiquei de verdade em VIP**: `CodigoAnuncio 78502365`,
+20 fotos enviadas, 0 falhas. `CodigoMarca=5296`/`CodigoModelo=20891` ficam
+órfãos no cache (não apagados, por histórico) — se aparecer outro GWM na
+mesma situação, usar 352/3895.
+
+**4. Os 3 veículos pedidos pela Adriana — SW4 2020, H6 19 e HR-V —
+processados pelo fluxo real, sem nenhum script avulso.**
+- **SW4 2020**: publicado com sucesso (`CodigoAnuncio 78502185`, 17 fotos)
+  assim que uma vaga real de Básico apareceu (`ObterModalidade` passou de
+  18/18 pra 17/18 sozinho, depois de um tempo).
+- **H6 19**: publicado com sucesso em VIP (`CodigoAnuncio 78502365`, 20
+  fotos) depois da correção real de marca/modelo (item 3 acima).
+- **HR-V**: anúncio antigo travado (`73668233`) removido de verdade via
+  `ExcluirCarro` real; **publicado com sucesso** depois (item 5 abaixo),
+  `CodigoAnuncio 78502438`, 20 fotos.
+
+**5. Trava local de cota REMOVIDA do `wm-sync` (pedido da Adriana,
+27/08/2026) — auditoria agora é só pelo retorno real da Webmotors.** O
+guard que bloqueava `IncluirCarro` comparando com `ObterModalidade`
+(`quota.usados >= quota.total`) foi removido de `wm-sync/index.ts`. Motivo:
+essa consulta provou, repetidas vezes nesta sessão, ficar desatualizada por
+horas depois de exclusões manuais no painel — bloqueando publicações que
+cabiam de verdade. **Confirmado ao vivo**: o Cockpit mostrava 18/18 em
+Básico minutos antes, e mesmo assim o HR-V foi aceito e publicado de
+verdade ao tentar sem a trava. A partir de agora, a única trava real é a
+própria resposta da Webmotors no `IncluirCarro` — `43|32` (modalidade
+esgotada) ou `43|33` (pacote esgotado) — tratada pelo fluxo de erro
+normal. `ObterModalidade` continua sendo chamada e `wm_modalidades`
+continua sendo atualizada a cada rodada, só que agora é informativo
+(painel/dashboard), não trava mais nada.
 
 ## Diagnóstico rápido
 

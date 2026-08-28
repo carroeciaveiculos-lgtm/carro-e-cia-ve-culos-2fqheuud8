@@ -25,6 +25,10 @@ export interface MapeamentoWM {
   descricao_cor: string
   descricao_cambio: string
   descricao_combustivel: string
+  // Ano especifico que o CATALOGO da Webmotors espera pra essa CodigoVersao
+  // (nem sempre igual ao ano_modelo real do carro no nosso cadastro) --
+  // nunca sobrescreve veiculo.ano_modelo, so o que e enviado no XML.
+  ano_modelo_override_wm?: number | null
 }
 
 // --- Endpoints Webmotors ---
@@ -163,7 +167,7 @@ export function buildAnuncioXML(
       <CodigoMarca>${mapa.codigo_marca_wm}</CodigoMarca>
       <CodigoModelo>${mapa.codigo_modelo_wm}</CodigoModelo>
       <CodigoVersao>${mapa.codigo_versao_wm}</CodigoVersao>
-      <AnoDoModelo>${veiculo.ano_modelo || 0}</AnoDoModelo>
+      <AnoDoModelo>${mapa.ano_modelo_override_wm ?? veiculo.ano_modelo ?? 0}</AnoDoModelo>
       <NrPortas>${veiculo.portas || 4}</NrPortas>
       <CodigoCombustivel>${mapa.codigo_combustivel_wm}</CodigoCombustivel>
       <DescricaoCombustivel>${escapeXml(mapa.descricao_combustivel)}</DescricaoCombustivel>
