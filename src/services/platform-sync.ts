@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase/client'
+import { getTiersForPlatform } from '@/lib/platform-tiers'
 
 // Generaliza o que já existia só pra Webmotors em src/services/wm-sync.ts —
 // usado pelo painel por plataforma em acordeão (PlatformSyncPanel) e pelo
@@ -216,6 +217,74 @@ export async function getWMModalidadesQuota(): Promise<WMModalidadeQuota[]> {
     .order('descricao')
   if (error) throw error
   return data || []
+}
+
+export interface ContadorModalidade {
+  plataforma: string
+  modalidade: string
+  quantidade: number
+}
+
+// Pedido da Adriana 28/08/2026: contador de veiculos publicados por
+// modalidade em TODAS as plataformas (antes so existia pra Webmotors, via
+// getWMModalidadesQuota -- essa e' cota real CONTRATADA, vinda da API).
+// Calculado ao vivo direto do nosso proprio banco pras demais plataformas
+// (nao ha cota externa pra consultar) -- por isso nao precisa de
+// cache/cron: sempre reflete o estado atual, sem risco de ficar
+// desatualizado como aconteceu com wm_modalidades (achado do dia).
+export async function getContadoresModalidadeTodasPlataformas(): Promise<ContadorModalidade[]> {
+  const resultado: ContadorModalidade[] = []
+
+  const wmQuota = await getWMModalidadesQuota()
+  for (const q of wmQuota) {
+    resultado.push({
+      plataforma: 'Webmotors',
+      modalidade: q.descricao || q.codigo_wm,
+      quantidade: q.quantidade_usados ?? 0,
+    })
+  }
+
+  const { data: mlRows } = await supabase
+    .from('veiculos')
+    .select('ml_listing_type')
+    .eq('status', 'disponivel')
+    .eq('publicado_mercadolivre', true)
+  for (const tier of getTiersForPlatform('mercadolivre')) {
+    resultado.push({
+      plataforma: 'Mercado Livre',
+      modalidade: tier.label,
+      quantidade: (mlRows || []).filter((v) => v.ml_listing_type === tier.value).length,
+    })
+  }
+
+  const outrasPlataformas: Array<[string, string, 'publicado_napista' | 'publicado_olx']> = [
+    ['napista', 'NaPista', 'publicado_napista'],
+    ['olx', 'OLX', 'publicado_olx'],
+  ]
+  for (const [slug, label, campoPublicado] of outrasPlataformas) {
+    const { data: rows } = await supabase
+      .from('veiculos')
+      .select('ad_types')
+      .eq('status', 'disponivel')
+      .eq(campoPublicado, true)
+    const tiers = getTiersForPlatform(slug)
+    for (const tier of tiers) {
+      resultado.push({
+        plataforma: label,
+        modalidade: tier.label,
+        quantidade: (rows || []).filter((v) => (v.ad_types as Record<string, string> | null)?.[slug] === tier.value)
+          .length,
+      })
+    }
+    const semModalidade = (rows || []).filter(
+      (v) => !(v.ad_types as Record<string, string> | null)?.[slug],
+    ).length
+    if (semModalidade > 0) {
+      resultado.push({ plataforma: label, modalidade: 'Não definida', quantidade: semModalidade })
+    }
+  }
+
+  return resultado
 }
 
 export async function getPlatformSyncLogs(platform: string, limit = 20): Promise<PlatformSyncLog[]> {

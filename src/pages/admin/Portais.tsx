@@ -31,6 +31,7 @@ import { SyncFailureModal } from '@/components/admin/portais/SyncFailureModal'
 import type { SyncFailure } from '@/components/admin/portais/SyncFailureModal'
 import { ConversionMonitor } from '@/components/admin/portais/ConversionMonitor'
 import { PlatformSyncPanel } from '@/components/admin/portais/PlatformSyncPanel'
+import { ContadoresModalidadePanel } from '@/components/admin/portais/ContadoresModalidadePanel'
 import { NapistaCatalogPanel } from '@/components/admin/portais/NapistaCatalogPanel'
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@/components/ui/accordion'
 import {
@@ -551,6 +552,8 @@ export default function Portais() {
           </Button>
         )}
       </div>
+
+      <ContadoresModalidadePanel />
 
       {loading ? (
         <div className="flex justify-center py-20">
