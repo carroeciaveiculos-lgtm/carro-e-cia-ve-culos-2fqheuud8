@@ -32,6 +32,8 @@ import {
   Trash2,
   FileText,
   Link as LinkIcon,
+  Power,
+  PowerOff,
 } from 'lucide-react'
 import {
   Vaga,
@@ -88,6 +90,7 @@ export default function VagasAdmin() {
   const [gerandoImagem, setGerandoImagem] = useState(false)
   const [gerandoResumo, setGerandoResumo] = useState(false)
   const [salvando, setSalvando] = useState(false)
+  const [alternandoId, setAlternandoId] = useState<string | null>(null)
 
   const carregarDados = async () => {
     setLoadingLista(true)
@@ -323,6 +326,20 @@ export default function VagasAdmin() {
     carregarDados()
   }
 
+  const handleAlternarAtiva = async (vaga: Vaga) => {
+    setAlternandoId(vaga.id)
+    try {
+      const { error } = await updateVaga(vaga.id, { ativa: !vaga.ativa })
+      if (error) throw error
+      setVagas((prev) => prev.map((v) => (v.id === vaga.id ? { ...v, ativa: !v.ativa } : v)))
+      toast({ title: vaga.ativa ? 'Vaga desativada' : 'Vaga ativada' })
+    } catch (err: any) {
+      toast({ title: 'Erro ao mudar status', description: err?.message, variant: 'destructive' })
+    } finally {
+      setAlternandoId(null)
+    }
+  }
+
   const handleCopiarLink = (vaga: Vaga) => {
     const link = `https://carroeciamotors.com.br/vagas/${vaga.slug || vaga.id}`
     navigator.clipboard.writeText(link)
@@ -419,6 +436,21 @@ export default function VagasAdmin() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleAlternarAtiva(vaga)}
+                      disabled={alternandoId === vaga.id}
+                    >
+                      {alternandoId === vaga.id ? (
+                        <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                      ) : vaga.ativa ? (
+                        <PowerOff className="w-4 h-4 mr-1" />
+                      ) : (
+                        <Power className="w-4 h-4 mr-1" />
+                      )}
+                      {vaga.ativa ? 'Desativar' : 'Ativar'}
+                    </Button>
                     <Button variant="outline" size="sm" onClick={() => handleCopiarLink(vaga)}>
                       <LinkIcon className="w-4 h-4 mr-1" /> Copiar link
                     </Button>
