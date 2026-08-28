@@ -639,6 +639,40 @@ normal. `ObterModalidade` continua sendo chamada e `wm_modalidades`
 continua sendo atualizada a cada rodada, só que agora é informativo
 (painel/dashboard), não trava mais nada.
 
+## Verificações comprovadas — 28/08/2026
+
+**1. A troca de `codigo_wm` (5296→352, 20891→3895) em `wm_marcas`/`wm_modelos`
+não afeta o `SIQ5H93` (outro Haval H6, já publicado) nem qualquer outro
+veículo já mapeado — confirmado lendo o código-fonte real, não por
+suposição.** `wm-sync/index.ts` não tem nenhuma referência a `wm_marcas`
+nem `wm_modelos` (confirmado por busca no arquivo inteiro) — o XML enviado
+usa sempre o valor já gravado em `wm_mapeamento_veiculos`, nunca relê essas
+tabelas. Só `wm-mapear-veiculo/index.ts` lê `wm_marcas`/`wm_modelos`, e só
+durante o match por trigram de um veículo **ainda não mapeado** ou
+remapeado com `force:true`. `SIQ5H93` está com `status_sincronizacao =
+'mapeado'` e mantém `codigo_marca_wm='5296'`/`codigo_modelo_wm='20891'` na
+própria linha (inalterado pela migração de hoje) — seu anúncio real
+(`73579434`) foi criado em 14/07/2026 e nunca sofreu um `AlterarCarro`
+desde então (confirmado via `sync_log`: único evento depois da criação foi
+`skip_duplicado` em 13/08/2026). Não há, portanto, nenhuma tentativa real
+registrada de enviar esses códigos antigos numa alteração — não dá pra
+afirmar se um `AlterarCarro` futuro pra esse veículo funcionaria ou não com
+os códigos que ele já tinha antes de hoje; isso é inalterado pela correção
+de hoje, não uma consequência dela.
+
+**2. Código publicado no Supabase confirmado idêntico ao commitado no
+GitHub — diff byte a byte, sem diferença.** Busquei o código real via
+`get_edge_function` (API do Supabase), extraí o conteúdo de
+`wm-sync/index.ts` e `_shared/wm-soap.ts` preservando UTF-8, e comparei
+contra `git show HEAD:...` dos mesmos arquivos (normalizando só CRLF vs LF,
+que é convenção de quebra de linha, não código). **Resultado: `diff`
+retornou vazio nos dois arquivos (exit code 0).** Uma primeira tentativa
+de comparação apontou dezenas de diferenças — todas eram mojibake
+(acentos corrompidos) introduzido pela minha própria extração via
+PowerShell, confirmado comparando o JSON bruto original (que já vinha com
+UTF-8 correto da API) antes de qualquer processamento meu. Refeita a
+extração sem esse problema, a comparação real deu zero diferenças.
+
 ## Diagnóstico rápido
 
 ```sql
