@@ -11,6 +11,12 @@ const corsHeaders = {
 
 const R2_PUBLIC_BASE = 'https://imagens.carroeciamotors.com.br'
 
+// Fallback só pro caso raro da linha 'gerar_imagem_generica' sumir do banco
+// — no dia a dia, quem manda é o prompt_text/formato_resposta editáveis em
+// ai_prompts_config (Fase 3 da unificação de regras de IA, 28/08/2026).
+const PROMPT_PADRAO = `Gere uma foto profissional para o blog/site da loja de carros, com o tema descrito pelo usuário no momento. Estilo realista, editorial.`
+const FORMATO_PADRAO = `Nunca inclua texto dentro da imagem.`
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
 
@@ -36,6 +42,18 @@ Deno.serve(async (req) => {
     const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY')
     if (!OPENAI_API_KEY) throw new Error('OPENAI_API_KEY not configured')
 
+    const supabaseService = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+    )
+    const { data: promptRow } = await supabaseService
+      .from('ai_prompts_config')
+      .select('prompt_text, formato_resposta')
+      .eq('slug', 'gerar_imagem_generica')
+      .maybeSingle()
+    const regraImagem = promptRow?.prompt_text || PROMPT_PADRAO
+    const formatoImagem = promptRow?.formato_resposta || FORMATO_PADRAO
+
     const res = await fetch('https://api.openai.com/v1/images/generations', {
       method: 'POST',
       headers: {
@@ -47,7 +65,11 @@ Deno.serve(async (req) => {
         // família atual é gpt-image-*. Trocado pro gpt-image-2 (23/08/2026,
         // lançado em abril/2026, melhor qualidade e mais fiel a instrução).
         model: 'gpt-image-2',
-        prompt: `Uma foto profissional para blog de loja de carros sobre: ${prompt}. Estilo realista, editorial, sem texto na imagem.`,
+        prompt: `${regraImagem}
+
+Tema descrito pelo usuário: ${prompt}
+
+${formatoImagem}`,
         n: 1,
         size: '1024x1024',
       }),
@@ -97,11 +119,6 @@ Deno.serve(async (req) => {
         Body: bytes,
         ContentType: 'image/png',
       }),
-    )
-
-    const supabaseService = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
     )
 
     await supabaseService.from('logs_ia').insert({

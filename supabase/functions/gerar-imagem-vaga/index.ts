@@ -13,6 +13,13 @@ const R2_PUBLIC_BASE = 'https://imagens.carroeciamotors.com.br'
 const LOGO_URL = `${R2_PUBLIC_BASE}/logos-e-imagens/marca/logo-oficial.png`
 const FACHADA_URL = `${R2_PUBLIC_BASE}/logos-e-imagens/marca/fachada-da-loja.png`
 
+// Fallback só pro caso raro da linha 'gerar_imagem_vaga' sumir do banco —
+// no dia a dia, quem manda é o prompt_text/formato_resposta editáveis em
+// ai_prompts_config (Fase 3 da unificação de regras de IA, 28/08/2026).
+const PROMPT_PADRAO = `Crie uma foto realista e profissional (não é ilustração nem desenho vetorial) para post de vaga de emprego da revenda de veículos Carro e Cia. Mostre duas pessoas reais, uma mulher e um homem, ambos com vestimenta profissional (camisa social ou blazer), em pé lado a lado, com expressão confiante e simpática, num ambiente de concessionária de veículos (loja ou com um carro desfocado ao fundo). Mantenha a identidade visual da marca (vermelho, branco, preto) no restante da composição, estilo corporativo e moderno.`
+
+const FORMATO_PADRAO = `Regras de segurança de marca (protegidas, não remover): incluir sempre um cartão/faixa de fundo BRANCO (nunca preto/escuro) numa das bordas — é SOMENTE nesse cartão branco que a logomarca oficial (anexada como referência real) aparece, reproduzida fielmente, sem inventar logo novo. A fachada real da loja (segunda imagem anexada) é usada só como referência de ambientação.`
+
 async function fetchAsFile(url: string, name: string): Promise<File> {
   const res = await fetch(url)
   if (!res.ok) throw new Error(`Falha ao buscar referência de imagem (${name})`)
@@ -45,6 +52,18 @@ Deno.serve(async (req) => {
     const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY')
     if (!OPENAI_API_KEY) throw new Error('OPENAI_API_KEY not configured')
 
+    const supabaseService = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+    )
+    const { data: promptRow } = await supabaseService
+      .from('ai_prompts_config')
+      .select('prompt_text, formato_resposta')
+      .eq('slug', 'gerar_imagem_vaga')
+      .maybeSingle()
+    const regraImagem = promptRow?.prompt_text || PROMPT_PADRAO
+    const formatoImagem = promptRow?.formato_resposta || FORMATO_PADRAO
+
     // Padrão único de imagem (achado 23/08/2026, pedido da Adriana): a
     // composição da foto (pessoas, ambiente, layout) fica sempre igual,
     // não muda por cargo — só o texto do cargo muda.
@@ -63,13 +82,11 @@ Deno.serve(async (req) => {
     // explícitos + instrução de fidelidade reduzem isso.
     const promptBase = imagemAtualUrl
       ? `Ajuste a imagem enviada mantendo: a identidade visual da marca (vermelho, branco, preto), as duas pessoas (uma mulher e um homem), e o cartão de fundo BRANCO com a logomarca oficial e o texto "ESTAMOS CONTRATANDO" / "${titulo}". A logo e esse texto precisam continuar SOMENTE sobre fundo branco/claro — nunca sobre preto ou escuro, porque fica ilegível.`
-      : `Crie uma foto realista e profissional (não é ilustração nem desenho vetorial) para post de vaga de emprego da revenda de veículos Carro e Cia. Mostre duas pessoas reais, uma mulher e um homem, ambos com vestimenta profissional (camisa social ou blazer), em pé lado a lado, com expressão confiante e simpática, num ambiente de concessionária de veículos (loja ou com um carro desfocado ao fundo).
+      : `${regraImagem}
 
-Inclua um cartão ou faixa de fundo BRANCO (nunca preto ou escuro) numa das bordas da composição. É SOMENTE nesse cartão branco que a logomarca oficial da empresa (primeira imagem anexada) deve aparecer — reproduza ela exatamente como está (mesmo desenho, mesmas cores, mesma tipografia), com destaque, sem inventar um logo novo. A logo NUNCA deve ficar sobre fundo preto ou escuro — só sobre fundo branco/claro, senão fica ilegível.
+${formatoImagem}
 
-Nesse mesmo cartão branco, escreva com ótima legibilidade (fonte grossa, estilo corporativo, texto preto ou vermelho) o seguinte, em duas linhas: um cabeçalho pequeno "ESTAMOS CONTRATANDO" e, logo abaixo, bem maior e em negrito, o nome do cargo: "${titulo}".
-
-A segunda imagem anexada é uma foto real da fachada da loja, use só como referência de ambientação. Mantenha a identidade visual da marca (vermelho, branco, preto) no restante da composição, estilo corporativo e moderno. Essa composição (as duas pessoas, o cartão branco com a logo e o texto) deve se manter sempre no mesmo estilo — só o cargo muda.`
+Nesse cartão branco, escreva com ótima legibilidade (fonte grossa, estilo corporativo, texto preto ou vermelho) o seguinte, em duas linhas: um cabeçalho pequeno "ESTAMOS CONTRATANDO" e, logo abaixo, bem maior e em negrito, o nome do cargo: "${titulo}". Essa composição deve se manter sempre no mesmo estilo — só o cargo muda.`
     const prompt = ajuste ? `${promptBase}\n\nAjuste pedido pelo usuário: ${ajuste}` : promptBase
 
     // Usa a API de edição (não a de geração pura) pra compor com referências
@@ -147,10 +164,6 @@ A segunda imagem anexada é uma foto real da fachada da loja, use só como refer
     }
     if (!urls.length) throw new Error('Nenhuma imagem foi retornada pelo provedor')
 
-    const supabaseService = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-    )
     await supabaseService.from('logs_ia').insert({
       usuario_id: user.id,
       acao: 'gerar_imagem_vaga',

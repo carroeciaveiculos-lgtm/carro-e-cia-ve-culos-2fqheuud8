@@ -10,11 +10,24 @@ const corsHeaders = {
 
 // Teto absoluto = limite real do Instagram pra legenda (2200 caracteres),
 // o mais apertado entre Facebook/Instagram — nunca deixa passar disso,
-// mesmo que a IA ignore a instrução de tamanho (achado 23/08/2026).
+// mesmo que a IA ignore a instrução de tamanho (achado 23/08/2026). Isso é
+// trava técnica de plataforma, não faz parte da regra editável no banco.
 const LIMITE_CARACTERES_RESUMO = 2200
-// Tamanho pedido à IA — bem mais curto que o teto, pra ficar bom de ler
-// num post de rede social de verdade.
-const TAMANHO_ALVO = 450
+
+// Fallback só pro caso raro da linha 'gerar_resumo_vaga' sumir do banco —
+// no dia a dia, quem manda é o prompt_text editável em ai_prompts_config
+// (Fase 3 da unificação de regras de IA, 28/08/2026).
+const PROMPT_PADRAO = `Você é responsável por RH da Carro e Cia Veículos, revenda de carros seminovos em Uberaba - MG. Resuma a vaga informada num texto pronto pra postar no Facebook e Instagram, no MÁXIMO 450 caracteres (conte os caracteres, é um limite rígido).
+
+Regras do resumo:
+- Direto e convidativo, foco nos pontos mais atrativos (o que a pessoa vai fazer + 1 ou 2 requisitos principais).
+- NÃO use tags HTML, markdown, asteriscos ou links.
+- NÃO repita o cargo várias vezes.
+- Pode usar 1 ou 2 emojis, sem exagero.
+- NÃO inclua "candidate-se" nem link no final — isso é adicionado depois, fora do resumo.`
+
+const FORMATO_PADRAO = `Responda APENAS com um JSON válido, sem formatação markdown, no formato:
+{"resumo": "texto do resumo aqui"}`
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
@@ -42,22 +55,26 @@ Deno.serve(async (req) => {
     const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY') || Deno.env.get('GEMINI_APY_KEY')
     if (!GEMINI_API_KEY) throw new Error('GEMINI_API_KEY não configurada')
 
-    const prompt = `Você é responsável por RH da Carro e Cia Veículos, revenda de carros seminovos em Uberaba - MG. Resuma a vaga abaixo num texto pronto pra postar no Facebook e Instagram, no MÁXIMO ${TAMANHO_ALVO} caracteres (conte os caracteres, é um limite rígido).
+    const supabaseService = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+    )
+    const { data: promptRow } = await supabaseService
+      .from('ai_prompts_config')
+      .select('prompt_text, formato_resposta')
+      .eq('slug', 'gerar_resumo_vaga')
+      .maybeSingle()
+    const regraResumo = promptRow?.prompt_text || PROMPT_PADRAO
+    const formatoResumo = promptRow?.formato_resposta || FORMATO_PADRAO
+
+    const prompt = `${regraResumo}
 
 Cargo: ${titulo}
 
 Descrição completa da vaga:
 ${descricao}
 
-Regras do resumo:
-- Direto e convidativo, foco nos pontos mais atrativos (o que a pessoa vai fazer + 1 ou 2 requisitos principais).
-- NÃO use tags HTML, markdown, asteriscos ou links.
-- NÃO repita o cargo várias vezes.
-- Pode usar 1 ou 2 emojis, sem exagero.
-- NÃO inclua "candidate-se" nem link no final — isso é adicionado depois, fora do resumo.
-
-Responda APENAS com um JSON válido, sem formatação markdown, no formato:
-{"resumo": "texto do resumo aqui"}`
+${formatoResumo}`
 
     const res = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${GEMINI_API_KEY}`,
