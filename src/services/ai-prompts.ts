@@ -8,7 +8,21 @@ export interface AIPromptConfig {
   description: string | null
   default_prompt: string
   updated_at: string | null
+  onde_fica: string | null
+  api_provider: 'gemini' | 'openai' | null
+  formato_resposta: string | null
+  rodape_fixo: string | null
 }
+
+// Slugs que hoje leem 'ai_assistant' como base quando não têm regra
+// própria configurada (gerar-conteudo/index.ts, customPrompt fallback).
+// Lista mantida manualmente -- se um botão novo passar a depender do
+// Assistente Interno, atualizar aqui também.
+export const DEPENDENTES_ASSISTENTE_INTERNO = [
+  'seo_copilot',
+  'seo_optimizer',
+  'seo_heading_draft',
+]
 
 export async function fetchAIPrompts(): Promise<AIPromptConfig[]> {
   const { data, error } = await supabase.from('ai_prompts_config').select('*').order('name')
