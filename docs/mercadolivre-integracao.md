@@ -5,7 +5,7 @@ _Becos sem saída_ lista o que já foi testado e falhou — **não repita**. Ao
 descobrir algo novo, acrescente aqui com data e fonte, em vez de deixar só no
 histórico de conversa.
 
-Última atualização: 2026-08-12.
+Última atualização: 2026-09-03.
 
 ## O caminho de um veículo até o anúncio
 
@@ -81,6 +81,38 @@ O site foi originalmente montado na plataforma Skip (`goskip.dev`), que
 injetava um selo no rodapé via `<script src="https://goskip.dev/skip.js">`
 no `index.html`. Removido em 12/08/2026 (não é mais editado por lá).
 Confirmado sumido no site publicado pela Adriana no mesmo dia.
+
+## Correções e achados — 03/09/2026
+
+- **Descrição não tem limite de caracteres documentado.** Conferido na
+  fonte oficial (`developers.mercadolivre.com.br/pt_br/descricao-de-produtos`,
+  atualizada 13/03/2026): só regras de formato (texto simples, sem
+  HTML/negrito, quebra de linha só com `\n`), nenhum limite numérico.
+  Testado ao vivo: anúncio real com 1144 caracteres de descrição aparece
+  inteiro na página pública, sem cortar.
+- **Bug real: veículo nunca publicado pode ficar preso em `pending_update`
+  pra sempre.** `ml_listings.status` vira `pending_update` sempre que o
+  veículo é editado no admin — mas se `ml_item_id` ainda é `null` (nunca
+  publicado de verdade, ex.: a primeira tentativa falhou por falta de
+  foto), o `ml-sync` só processa `pending_update` quando `ml_item_id` está
+  preenchido (`ml-sync/index.ts` linha ~152: `status === 'pending_update'
+  && listing.ml_item_id`). Resultado: a linha nunca bate em nenhum branch,
+  fica parada pra sempre, sem erro nenhum registrado. Achado real: Hyundai
+  ix35 (`MWV1232`), cadastrado 03/09/2026 — primeira tentativa falhou por
+  falta de foto, ficou preso assim até a foto ser adicionada e ninguém
+  perceber que precisava reprocessar. Corrigido manualmente (trocado pra
+  `pending_create`) e publicado com sucesso. **Não corrigido na raiz** —
+  o gatilho que marca `pending_update` deveria checar se `ml_item_id`
+  existe antes de decidir entre `pending_create`/`pending_update`; mesmo
+  padrão de bug existe no lado da Webmotors (ver
+  `docs/webmotors-integracao.md`).
+- **"Anúncio pendente" na tela pode ser só as fotos processando, não erro
+  real.** Anúncio recém-criado mostrou "Anúncio pendente" na página
+  pública por alguns minutos — a API real (`GET /items/{id}`) já retornava
+  `status: "active"` nesse meio tempo, e as fotos com URL
+  `processing-image` (placeholder) foram todas substituídas pelas
+  definitivas pouco depois. Recarregando a página, o aviso sumiu sozinho.
+  Não tratar isso como falha sem antes checar o `status` real via API.
 
 ## Em aberto — pendente pra continuar amanhã
 

@@ -114,6 +114,20 @@ Deno.serve(async (req) => {
       (p: any) => p.slug === 'vehicle_description',
     )?.rodape_fixo
 
+    // Decisao da Adriana (03/09/2026): texto da IA + rodape fixo nunca
+    // passam de 900 caracteres juntos, pra NaPista/Mercado Livre/OLX/site
+    // (a Webmotors nao usa mais esse texto -- passou a usar so o rodape
+    // fixo puro, ajuste feito em wm-sync/index.ts). Calculado a partir do
+    // tamanho REAL do rodape hoje, nao fixo "na unha" -- se ela editar o
+    // rodape pela tela um dia, esse orcamento se recalcula sozinho. Piso de
+    // 150 caracteres pra IA nunca ficar espremida a quase nada, caso o
+    // rodape cresca muito no futuro.
+    const LIMITE_TOTAL_DESCRICAO_VEICULO = 900
+    const LIMITE_TEXTO_IA_VEICULO = Math.max(
+      150,
+      LIMITE_TOTAL_DESCRICAO_VEICULO - (rodapeFixoVeiculo?.length || 0) - 2,
+    )
+
     const customPrompt = socialConfig?.ai_system_prompt || sysPromptGeneral
     // Fixo (14/08/2026, regra da Adriana): antes lia whatsapp_number do
     // social_configuracoes, que guarda o celular pessoal dela (usado pros
@@ -216,13 +230,13 @@ Tom: ${tom || 'Persuasivo'}.
 
 REGRAS DE FORMATAÇÃO (IMPORTANTE):
 - Texto puro, sem markdown, sem tags HTML, sem títulos ou marcadores.
-- Máximo de 500 caracteres no total (limite rígido — conte antes de responder).
+- Máximo de ${LIMITE_TEXTO_IA_VEICULO} caracteres no total (limite rígido — conte antes de responder).
 - Parágrafo único ou no máximo 2 parágrafos curtos.
 
 SAÍDA OBRIGATÓRIA (JSON VÁLIDO):
 Responda APENAS com um objeto JSON válido, sem formatação markdown:
 {
-  "texto_html": "texto da descrição do veículo, pronto para uso direto, até 500 caracteres"
+  "texto_html": "texto da descrição do veículo, pronto para uso direto, até ${LIMITE_TEXTO_IA_VEICULO} caracteres"
 }`
             : is_seo_agent
               ? `${basePrompt}
@@ -506,9 +520,8 @@ Responda APENAS com um objeto JSON válido, sem formatação markdown:
     // antes de colar o rodapé, pra nunca cortar o texto fixo no meio.
     if (is_vehicle_description) {
       let textoCarro = resultJson.texto_html || ''
-      const LIMITE_TEXTO_CARRO = 550
-      if (textoCarro.length > LIMITE_TEXTO_CARRO) {
-        textoCarro = textoCarro.slice(0, LIMITE_TEXTO_CARRO).replace(/\s+\S*$/, '') + '...'
+      if (textoCarro.length > LIMITE_TEXTO_IA_VEICULO) {
+        textoCarro = textoCarro.slice(0, LIMITE_TEXTO_IA_VEICULO).replace(/\s+\S*$/, '') + '...'
       }
       resultJson.texto_html = rodapeFixoVeiculo
         ? `${textoCarro}\n\n${rodapeFixoVeiculo}`

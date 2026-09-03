@@ -9,7 +9,96 @@ precisar reler o histórico inteiro de conversas. Diferente do
 pra ser mantido em dia de verdade. Detalhe técnico por integração continua
 nos arquivos `docs/*.md` — aqui é só o resumo de estado + pendências.
 
-Última atualização: 2026-08-27 (sessão 16 — áudio da Clara publicado; plano completo de corte Modelo/Versão desenhado e validado com dados reais; Fase 1 do plano (tabela de exceções + função de corte) implementada, testada nos 26 veículos reais e no matching real do WM/NaPista, fechada — esperando autorização pra Fase 2).
+Última atualização: 2026-09-03 (sessão 18 — causa raiz real do mapeamento de modelo Webmotors/NaPista corrigida em ambas plataformas; descrição do veículo passa a ter regra diferente pra Webmotors (rodapé fixo, 500 chars) e demais plataformas (900 chars); GTN5D81 e QXH1J94 diagnosticados e resolvidos; auditoria completa do estoque em ML/NaPista; em andamento: auditoria de sincronização de vídeo).
+
+## Sessão 18 (03/09/2026) — mapeamento Webmotors/NaPista corrigido na raiz, descrição por plataforma, 2 veículos travados resolvidos
+
+**Causa raiz real do Volvo XC60 publicado errado na Webmotors (XC40)**:
+`match_wm_modelo` comparava por trigram sem ignorar espaço — a FIPE grava
+"XC 60" (com espaço), o catálogo da Webmotors tem "XC60" (sem espaço), e o
+texto com espaço empatava em 0,40 entre XC40/XC60/XC70/XC90 (nenhum
+ganhava de verdade), mas o sistema confirmava sozinho o primeiro da lista
+sem pedir revisão porque 0,40 já passa do limiar de 0,35. `SYI6C55` estava
+publicado como XC40 há semanas sem ninguém perceber. **Corrigido**:
+`match_wm_modelo` agora tira o maior score entre a comparação normal e a
+mesma comparação sem espaço dos dois lados. Testado ao vivo: XC60 passa a
+vencer com 0,80 contra 0,40. Varredura no catálogo inteiro não achou
+colisão nova, mas o mesmo padrão existe em várias marcas que podem entrar
+no estoque no futuro (BMW, Mercedes, Audi, Porsche, Peugeot) — ver
+`docs/webmotors-integracao.md`.
+
+**NaPista tinha uma causa raiz diferente, mais sutil**: descobri que a
+NaPista cadastra o Volvo XC60 em **dois modelos separados** no catálogo
+deles — "XC 60" (com espaço, só até 2024) e "XC60" (sem espaço, catálogo
+completo 2009-2026, com todos os T8 híbridos recentes). Como o texto da
+FIPE tem espaço, sempre batia 1,00 no modelo errado (truncado) — não era
+empate, era confiança enganosa. Corrigido em duas frentes:
+`napista-sync-catalogo` agora sincroniza versões de todos os modelos
+candidatos (não só o primeiro com nome exato), e `napista-mapear-veiculo`
+agora testa os outros candidatos do top-6 quando o modelo de maior score
+não produz uma versão boa (antes só testava alternativas em empate de
+texto — regra do caso Hilux, 26/08 — que não pegava esse caso). Testado
+ao vivo no `SYI6C55`: o sistema achou sozinho o modelo e a versão certos.
+Achado no caminho: `PUT` de oferta existente na NaPista rejeita troca de
+`versionId` ("Request has field cannot be changed!") — pra trocar versão
+precisa fechar o anúncio antigo e criar um novo (que não herda fotos,
+precisa reenviar). Detalhe completo em `docs/integracao-napista.md`.
+
+**Descrição do veículo — regra diferente por plataforma, decisão da
+Adriana**: confirmei na fonte oficial que o limite real da Webmotors é
+500 caracteres (nosso corte tinha sido removido em 26/08 por um teste que
+só provou que a API aceita texto maior, não que publica — testado ao vivo,
+descrição de 1144 chars não aparecia nenhuma linha na página pública,
+mesmo com corte). A Adriana decidiu: Webmotors usa sempre o mesmo
+parágrafo institucional fixo (492 chars, sem texto individual do carro —
+perda de personalização aceita conscientemente); as outras plataformas
+(NaPista, Mercado Livre, OLX, site) somam no máximo 900 chars (texto da
+IA + rodapé), calculado dinamicamente a partir do tamanho real do rodapé.
+Implementado em `wm-sync/index.ts` (busca o rodapé de
+`ai_prompts_config`, com fallback fixo no código) e `gerar-conteudo/index.ts`.
+Reenviado em lote pra 19 dos 21 veículos publicados na Webmotors — 2
+falharam por motivos pré-existentes (ver abaixo). **Confirmação visual na
+página pública da Webmotors ainda pendente** (mesmo problema de atraso já
+visto antes com o HR-V).
+
+**Autocrítica pedida repetidamente pela Adriana achou 2 erros reais no
+meio da investigação**: (1) eu tinha afirmado "o cache de placa já
+resolve isso" sem checar dado real — na prática vários campos vinham
+vazios por limitação da própria API Brasil, não bug (achado: Renavam
+nunca vem, Chassi só faltou numa placa específica). (2) eu tinha
+concluído que o Hilux SW4 (`QXH1J94`) tinha o mesmo travamento misterioso
+do HR-V antigo — errado: olhando o histórico completo de
+`estoque_publicacoes` (não só o log de erros), achei que era um bug real
+nosso (corrida entre duas tarefas simultâneas fechando o anúncio sem
+recriar). Ver `[[autocritica-antes-de-propor]]` na memória — reforçada de
+novo nesta sessão.
+
+**2 veículos travados resolvidos**:
+- `GTN5D81` (RAM Rampage): estava com exclusão manual permanente desde
+  20/08/2026 sem motivo técnico documentado em lugar nenhum (nem
+  MEMORY_WORK nem sync_log) — só "decisão de negócio". A Adriana confirmou
+  que não vale mais a pena e pediu pra tirar a trava sem publicar ainda.
+  Feito — ficou em `revisao_necessaria` (Webmotors não tem "RAMPAGE"
+  cadastrado, só 1500/2500/3500). Já publicado de verdade no Mercado Livre
+  e na NaPista (confirmado ao vivo).
+- `QXH1J94` (Hilux SW4): anúncio Webmotors recriado (`78814595`) depois do
+  diagnóstico da causa raiz acima. Já publicado no ML e NaPista havia dias.
+
+**Auditoria completa do estoque (Mercado Livre + NaPista, ~30 veículos
+disponíveis)**: só 1 sem publicação — Hyundai ix35 (`MWV1232`), cadastrado
+no mesmo dia, travado por um bug real: veículo nunca publicado
+(`ml_item_id`/post_id nulo) fica marcado `pending_update` em vez de
+`pending_create` depois de qualquer edição, e como as functions de sync só
+processam `pending_update` quando já existe um id publicado, a linha nunca
+é reprocessada sozinha — mesmo padrão em Webmotors e Mercado Livre, ainda
+não corrigido na raiz (só o veículo specific foi corrigido manualmente).
+Ver "achado à parte" em `docs/webmotors-integracao.md` e
+`docs/mercadolivre-integracao.md`.
+
+**Pendente pra próxima sessão**: auditoria de por que o vídeo do cadastro
+do veículo não sincroniza (pedido pela Adriana, ainda não investigado) e
+retomar a consolidação das telas de IA do admin (Regras de IA + Automação
++ aba duplicada em Configurações) — ver `PROXIMA_SESSAO.md`.
 
 ## Sessão 16 (27/08/2026) — áudio da Clara publicado; investigação completa e plano de corte Modelo/Versão (nada implementado ainda)
 

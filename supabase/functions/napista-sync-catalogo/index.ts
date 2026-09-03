@@ -222,31 +222,54 @@ Deno.serve(async (req: Request) => {
               `${falhasModelo}/${modelosNapista.length} modelos de ${marcaNapista.id} falharam ao salvar no banco`,
             )
           }
-          const modeloNapista = modelosNapista.find((mo) => normalizar(mo.name) === normalizar(modelo))
-          if (!modeloNapista) {
+          // Achado real 02/09/2026 (Volvo XC60): a NaPista às vezes tem MAIS
+          // DE UM registro de modelo pro mesmo carro, diferindo só por espaço
+          // ("XC 60" x "XC60") -- um deles pode ser um catálogo truncado
+          // (só um ano) e o outro o catálogo completo de verdade. Match exato
+          // só achava o primeiro, e a versão certa do outro nunca era
+          // sincronizada -- ficava invisível pro nosso banco pra sempre.
+          // Agora compara ignorando espaço também e sincroniza TODOS os
+          // modelos candidatos, não só o primeiro que bater exato.
+          const normalizarSemEspaco = (s: string) => normalizar(s).replace(/\s+/g, '')
+          const modelosCandidatos = modelosNapista.filter(
+            (mo) => normalizarSemEspaco(mo.name) === normalizarSemEspaco(modelo),
+          )
+          if (modelosCandidatos.length === 0) {
             resultados.push({ marca, modelo, ano, erro: 'modelo não encontrado no catálogo NaPista' })
             continue
           }
           const yearParam = ano ? `&modelYear=${ano}` : ''
-          const versoesData = await napistaFetch(
-            `/catalog/versions/CAR?modelId=${encodeURIComponent(modeloNapista.id)}${yearParam}`,
-            token,
-          )
-          const versoes: { id: string; name: string }[] = (versoesData.items || []).filter((v: any) => v.id)
-          for (const v of versoes) {
-            await supabase.from('napista_versoes').upsert(
-              {
-                id: v.id,
-                modelo_id: modeloNapista.id,
-                marca_id: marcaNapista.id,
-                nome: v.name,
-                model_year: ano,
-                atualizado_em: new Date().toISOString(),
-              },
-              { onConflict: 'id' },
+          let totalVersoes = 0
+          for (const modeloNapista of modelosCandidatos) {
+            const versoesData = await napistaFetch(
+              `/catalog/versions/CAR?modelId=${encodeURIComponent(modeloNapista.id)}${yearParam}`,
+              token,
             )
+            const versoes: { id: string; name: string }[] = (versoesData.items || []).filter(
+              (v: any) => v.id,
+            )
+            for (const v of versoes) {
+              await supabase.from('napista_versoes').upsert(
+                {
+                  id: v.id,
+                  modelo_id: modeloNapista.id,
+                  marca_id: marcaNapista.id,
+                  nome: v.name,
+                  model_year: ano,
+                  atualizado_em: new Date().toISOString(),
+                },
+                { onConflict: 'id' },
+              )
+            }
+            totalVersoes += versoes.length
           }
-          resultados.push({ marca, modelo, ano, versoes_encontradas: versoes.length })
+          resultados.push({
+            marca,
+            modelo,
+            ano,
+            versoes_encontradas: totalVersoes,
+            modelos_candidatos: modelosCandidatos.map((mo) => mo.id),
+          })
         } catch (e: any) {
           resultados.push({ marca, modelo, ano, erro: e.message })
         }

@@ -345,6 +345,67 @@ ainda, mas relevante pro futuro (Clara/CRM podem precisar receber isso).
   tinha sido criado de verdade, tentei recriar). **Antes de assumir que
   uma criação falhou, checar pela lista paginada, não só por ID direto.**
 
+## Correções e achados — 02-03/09/2026
+
+- **Descoberta real: a NaPista tem DOIS registros de modelo pro Volvo XC60**
+  — `"XC 60"` (com espaço, id `napista_modelos` literal `"XC 60"`) e
+  `"XC60"` (sem espaço). Não é erro nosso, é assim no catálogo deles.
+  Testado direto na API real: `modelId=XC 60` só devolve versões até o ano
+  2024; `modelId=XC60` (sem espaço) é o catálogo completo de verdade, 2009
+  até 2026, incluindo todos os T8 híbridos recentes ("2.0 PHEV ULTRA T8
+  AUTO AWD" etc.). O texto que vem da FIPE tem espaço ("XC 60"), então
+  `match_napista_modelo` sempre batia 1,00 no modelo errado (o truncado) e
+  nunca sequer via o certo — não era um empate como no caso da Webmotors,
+  era uma "confiança" enganosa. `sync_para_estoque` também nunca
+  sincronizava o modelo certo, porque só busca o que bate **exato** depois
+  de normalizar (sem tirar espaço) — "XC 60" normalizado nunca vira igual a
+  "XC60".
+- **Corrigido em duas frentes, ambas testadas ao vivo:**
+  1. `napista-sync-catalogo` (`sync_para_estoque`): em vez de achar só o
+     primeiro modelo com nome exato, agora compara ignorando espaço também
+     e sincroniza versões de **todos** os modelos candidatos, não só o
+     primeiro — garante que um modelo "gêmeo" nunca mais fica invisível no
+     nosso cache.
+  2. `napista-mapear-veiculo`: quando o modelo de maior score de texto não
+     produz uma versão boa (sem versão do ano exato, sem versão nenhuma, ou
+     mesmo com o ano certo mas nenhuma bate bem com o nome real), agora
+     testa os outros candidatos do top-6 antes de desistir — antes só
+     testava alternativas quando os *scores de texto* empatavam de perto
+     (regra criada pro caso Hilux/HILUX SW4/SW4, 26/08/2026), o que não
+     pegava esse caso porque "XC 60" bateu 1,00 e "XC60" só 0,40, longe de
+     empate. `match_napista_modelo` também passou de `LIMIT 3` pra
+     `LIMIT 6`, porque com só 3 um modelo certo mas com nome bem diferente
+     podia nem aparecer entre os candidatos testados.
+  - Testado ao vivo no `SYI6C55`: depois do fix, o sistema achou sozinho
+    `XC60` (sem espaço) e a versão "2.0 T8 PHEV RECHARGE ULTIMATE AT AWD"
+    como melhor candidata — sem eu precisar apontar manualmente.
+- **Achado no caminho: `PUT` de oferta existente rejeita troca de
+  `versionId`** — `"Request has field cannot be changed!"`. Pra trocar a
+  versão de um anúncio já publicado, não dá pra só editar: precisa
+  encerrar o anúncio antigo (`PUT .../offer/{id}/UNPUBLISHED` ou o branch
+  `pending_close` do `napista-sync`) e criar um novo do zero
+  (`pending_create`) com o `versionId` certo. O anúncio novo **não herda
+  as fotos** automaticamente — precisa reenviar depois de confirmar a
+  criação (achado ao vivo: primeiro anúncio recriado do `SYI6C55` saiu com
+  `"photos":[]`, corrigido reenviando via `pending_update` sobre o
+  `post_id` novo).
+- **Auditoria de duplicatas no catálogo (marcas já usadas no estoque)**:
+  rodada a mesma varredura feita na Webmotors (nomes iguais ignorando
+  espaço/acento/caixa, agrupados por marca). Resultado: só o próprio caso
+  do Volvo XC60 — nenhum outro modelo duplicado hoje. Cobertura limitada
+  às marcas que já sincronizamos pro estoque atual, não o catálogo inteiro
+  da NaPista.
+- **`GTN5D81` (RAM Rampage) e `QXH1J94` (Toyota Hilux SW4) confirmados
+  publicados de verdade na NaPista** (checado ao vivo na página pública),
+  durante a investigação de pendências da Webmotors.
+- **Hyundai ix35 (`MWV1232`)**: achado no meio de uma auditoria geral do
+  estoque — veículo cadastrado no mesmo dia, a primeira tentativa de
+  publicação (Mercado Livre) falhou por falta de foto na hora, e a linha
+  de publicação nunca foi reprocessada depois que as fotos foram
+  adicionadas (nunca tinha linha de publicação na NaPista nem-nenhuma
+  tentativa registrada). Corrigido manualmente e publicado nos dois,
+  confirmado ao vivo.
+
 ## Becos sem saída
 
 - **`GET /catalog/{category}/make` (como a doc descreve) devolve 404.** O

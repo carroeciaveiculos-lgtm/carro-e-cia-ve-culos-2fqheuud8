@@ -293,15 +293,33 @@ Deno.serve(async (req: Request) => {
     const idsCanceladosWMSet = new Set(idsCanceladosWM)
     const pendingPubs = pendingPubsBrutos.filter((pub) => !idsCanceladosWMSet.has(pub.id))
 
+    // Decisao da Adriana (03/09/2026): a Webmotors passa a usar sempre o
+    // MESMO paragrafo institucional (492 caracteres, cabe nos 500 reais dela
+    // -- manual oficial confirmado) em vez de um texto individual por
+    // veiculo. Busca da mesma fonte usada pelas outras plataformas
+    // (ai_prompts_config.rodape_fixo, regra "vehicle_description") -- nunca
+    // duplicar esse texto em outro lugar, pra nao dessincronizar se ela
+    // editar pela tela um dia. Fallback fixo abaixo so pra nao deixar TODOS
+    // os anuncios sem observacao de uma vez se essa linha do banco sumir ou
+    // vier vazia (achado da autocritica pedida por ela, 03/09/2026).
+    const OBSERVACAO_WM_FALLBACK =
+      'Há mais de 25 anos no mercado, a Carro & Cia Veículos trabalha com 0 km e seminovos com laudo cautelar aprovado, qualidade e procedência garantidas. Atendimento personalizado, preço justo, pronta entrega, melhor avaliação na troca, financiamento em até 60 vezes com aprovação imediata, seguro auto e consórcios. Consulte nossos vendedores sobre versões, modelos, pintura e frete. Reservamo-nos o direito de corrigir eventuais erros de digitação; valores sujeitos a alteração sem aviso prévio.'
+    const { data: rodapeRow } = await supabase
+      .from('ai_prompts_config')
+      .select('rodape_fixo')
+      .eq('slug', 'vehicle_description')
+      .maybeSingle()
+    const observacaoPadraoWM = rodapeRow?.rodape_fixo || OBSERVACAO_WM_FALLBACK
+
     const results: any[] = []
     for (const pub of pendingPubs) {
-      const { data: veiculo } = await supabase
+      const { data: veiculoReal } = await supabase
         .from('veiculos')
         .select('*')
         .eq('id', pub.veiculo_id)
         .maybeSingle()
 
-      if (!veiculo) {
+      if (!veiculoReal) {
         await supabase
           .from('estoque_publicacoes')
           .update({ status: 'error', erro_msg: 'Vehicle not found' })
@@ -309,6 +327,10 @@ Deno.serve(async (req: Request) => {
         results.push({ id: pub.id, status: 'error', error: 'Vehicle not found' })
         continue
       }
+      // Sobrescreve so a descricao (Observacao do XML) com o paragrafo fixo
+      // -- todo o resto do veiculo (marca, modelo, cor etc.) continua o dado
+      // real, usado normalmente no resto do fluxo abaixo.
+      const veiculo = { ...veiculoReal, descricao: observacaoPadraoWM }
 
       const { data: mapeamento } = await supabase
         .from('wm_mapeamento_veiculos')

@@ -673,6 +673,113 @@ PowerShell, confirmado comparando o JSON bruto original (que já vinha com
 UTF-8 correto da API) antes de qualquer processamento meu. Refeita a
 extração sem esse problema, a comparação real deu zero diferenças.
 
+## Correções e achados — 02-03/09/2026
+
+- **Causa raiz real do Volvo XC60 publicado como XC40**: `match_wm_modelo`
+  comparava por trigram sem ignorar espaço. A FIPE grava "XC 60" (com
+  espaço); o catálogo da Webmotors tem "XC60" (sem espaço) — o texto com
+  espaço empatava em 0,40 entre XC40/XC60/XC70/XC90 (nenhum ganhava de
+  verdade), e o sistema confirmava sozinho o primeiro da lista (por acaso
+  XC40) sem pedir revisão, porque 0,40 já passa do limiar de 0,35. Achado
+  ao vivo: `SYI6C55` estava publicado como XC40 há semanas sem ninguém
+  perceber. **Corrigido**: `match_wm_modelo` agora tira o score máximo
+  entre a comparação normal e a mesma comparação sem espaço dos dois lados
+  (migration `fix_match_wm_modelo_ignora_espaco`). Testado ao vivo: XC60
+  passa a vencer com 0,80 contra 0,40 dos outros. Varredura no catálogo
+  inteiro não achou nenhuma colisão nova por causa dessa mudança — mas o
+  mesmo padrão (código numérico + prefixo de letra) existe em várias
+  marcas que podem entrar no estoque no futuro (BMW Série/X/M, Mercedes
+  Classe/SL/CLK, Audi A/S, Porsche 9xx, Peugeot 1xx-8xx) — vale reconferir
+  se algum desses vier a dar problema parecido.
+- **`SYI6C55` e `TFF8I00` remapeados e resincronizados** com o fix acima —
+  ambos confirmados com modelo XC60 certo na resposta real da Webmotors
+  (`CodigoModelo 2997`), versão escolhida manualmente batendo com o nome
+  real do carro (Ultimate/Ultra).
+- **Limite real da `Observacao`: 500 caracteres, confirmado na fonte
+  oficial da Webmotors** (manual `AnuncioWM.htm`, campo Observacao, "o
+  texto deve possuir no máximo 500 caracteres"). A remoção desse corte em
+  26/08/2026 (`docs` linha ~159 do arquivo `_shared/wm-soap.ts`) só tinha
+  testado que a API *aceita* texto maior sem erro — não que ela *publica*.
+  Confirmado ao vivo: descrição de 1144 caracteres em um anúncio real não
+  aparecia **nenhuma linha** na página pública, mesmo com `CodigoRetorno`
+  de sucesso.
+- **Decisão da Adriana (03/09/2026): a Webmotors passa a usar sempre o
+  mesmo parágrafo institucional fixo, igual pra todo veículo, em vez de um
+  texto individual por carro.** Simplifica o problema do limite de 500
+  (o parágrafo tem 492 caracteres, cabe com folga de 8 — não sobra espaço
+  pra nada específico do carro, e essa perda de personalização foi aceita
+  conscientemente). Implementado em `wm-sync/index.ts`: antes de montar o
+  XML, busca `ai_prompts_config.rodape_fixo` (regra `vehicle_description`,
+  a mesma fonte usada pelas outras plataformas) e sobrescreve só a cópia
+  de `descricao` usada no XML — o `veiculos.descricao` real no banco não é
+  tocado. Tem fallback fixo no código (mesmo texto) caso a busca no banco
+  falhe ou venha vazia, pra nunca publicar um anúncio sem observação
+  nenhuma por um problema pontual de banco. Reenviado em lote pra 19 dos
+  21 veículos publicados na Webmotors — 2 falharam por motivos
+  pré-existentes, não relacionados (ver abaixo). **Ainda não confirmado
+  visualmente na página pública** (mesmo problema acima, de atraso/ausência
+  de exibição — precisa reconferir depois).
+- **`gerar-conteudo/index.ts` (texto de IA pra outras plataformas) agora
+  soma no máximo 900 caracteres (texto do carro + rodapé), calculado
+  dinamicamente a partir do tamanho real do rodapé** (não fixo "na unha" —
+  se o rodapé mudar de tamanho, o orçamento da IA se recalcula sozinho,
+  com piso de 150 caracteres). Isso é preferência de estilo da Adriana, não
+  correção de bug — testei ao vivo que NaPista e Mercado Livre mostram
+  descrições de 1144 caracteres inteiras, sem cortar.
+- **`GTN5D81` (RAM Rampage) — trava de exclusão manual removida.**
+  Pesquisei o motivo da decisão de 20/08/2026 (`status_sincronizacao =
+  'excluido_manualmente'`) em toda a documentação e no `sync_log` completo
+  do veículo — **não achei nenhum erro técnico registrado que a
+  motivasse**, nem no MEMORY_WORK.MD nem aqui; só o registro "decisão de
+  negócio, não pendência técnica", sem detalhar qual. A Adriana confirmou
+  que não vale mais a pena manter essa exclusão e pediu pra remover a
+  trava sem publicar ainda. Rodei `wm-mapear-veiculo` com `force:true` —
+  isso só reavalia marca/modelo/versão/cor/câmbio/combustível
+  internamente, não fala com a Webmotors. Resultado: `revisao_necessaria`,
+  motivo modelo — o catálogo RAM na Webmotors só tem "1500"/"2500"/"3500",
+  não tem "RAMPAGE" cadastrado ainda. Fica pendente de mapeamento manual
+  antes de publicar de verdade (não publicado ainda, como pedido). RAM
+  Rampage já está publicado de verdade no Mercado Livre e na NaPista
+  (confirmado ao vivo nas duas), só faltava a Webmotors.
+- **`QXH1J94` (Toyota Hilux SW4) — causa raiz real encontrada: não era
+  travamento misterioso da Webmotors, era um bug nosso de corrida entre
+  duas tarefas simultâneas.** Erro observado: `CodigoRetorno 43|36` ao
+  tentar `AlterarCarro`, e o anúncio (`78502185`) sumido de
+  `ObterEstoqueAtual` — sintoma idêntico ao caso antigo do HR-V
+  (`73668233`, ver seção acima), que na época só pôde ser explicado como
+  "travamento do lado da Webmotors, precisa de suporte". **Dessa vez,
+  olhando o histórico completo de `estoque_publicacoes` (não só o
+  `sync_log` de erros), achei a causa real**: em 29/08/2026, às
+  14:55:31 (mesmíssimo segundo), duas linhas pendentes do mesmo veículo
+  foram processadas na mesma rodada do `wm-sync` — uma fechou o anúncio
+  antigo de verdade (`ExcluirCarro`, sucesso), e a outra checou
+  duplicidade contra `ObterEstoqueAtual`, viu o mesmo anúncio (que estava
+  sendo fechado *naquele instante*) e decidiu pular a criação de um
+  substituto, achando que já existia. Resultado: o anúncio ficou fechado
+  pra sempre, sem ninguém perceber, e qualquer tentativa de alteração
+  depois disso batia em "anúncio não existe" (`43|36`). **Não é o mesmo
+  problema do HR-V antigo** — aquele de fato não tinha explicação nos
+  dados disponíveis; este tinha, só que escondida numa tabela diferente da
+  que eu tinha olhado da primeira vez. **Corrigido**: marcada uma linha
+  nova como `pending_create` (post_id antigo era mesmo inválido), `wm-sync`
+  criou um anúncio novo (`78814595`), confirmado na API real
+  (`ObterEstoqueAtual`). Hilux SW4 já estava publicado de verdade no
+  Mercado Livre e na NaPista havia dias — só a Webmotors precisou ser
+  recriada.
+- **Achado à parte, ainda não corrigido**: o gatilho que marca
+  `estoque_publicacoes` como `pending_update` depois de qualquer edição do
+  veículo não checa se já existe um `post_id` de verdade — um veículo
+  nunca publicado (post_id nulo) pode ficar marcado `pending_update` em
+  vez de `pending_create`, e como o `wm-sync`/`ml-sync` só processam
+  `pending_update` quando há `post_id`, essa linha nunca é reprocessada
+  sozinha (achado replicado também no Mercado Livre, ver
+  `docs/mercadolivre-integracao.md`). Vale corrigir o gatilho pra nunca
+  gerar `pending_update` sem `post_id`.
+- **Auditoria completa do estoque (Mercado Livre + NaPista, ~30 veículos
+  disponíveis)**: só 1 sem publicação (Hyundai ix35, `MWV1232`, cadastrado
+  no mesmo dia — caiu exatamente no bug do item acima). Corrigido e
+  publicado nos dois, confirmado ao vivo.
+
 ## Diagnóstico rápido
 
 ```sql

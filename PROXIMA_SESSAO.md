@@ -6,6 +6,150 @@ Copie e cole como primeira mensagem numa sessão nova do Claude Code.
 Projeto: Carro e Cia Veículos (revenda). Pasta de trabalho:
 C:\Projeto\Revenda Carro e Cia\carro-e-cia-ve-culos-2fqheuud8
 
+Continuando de uma sessão anterior (02-03/09/2026, sessão 18 —
+mapeamento Webmotors/NaPista corrigido na raiz + descrição por
+plataforma + 2 veículos travados resolvidos + auditoria de estoque).
+Leia primeiro MEMORY_WORK.MD, seção "Sessão 18", pro resumo completo.
+Destaques:
+
+- Causa raiz real do Volvo XC60 publicado errado (XC40) na Webmotors
+  corrigida (`match_wm_modelo` ignorando espaço) — testado ao vivo,
+  reenviado em lote pra 19/21 veículos publicados.
+- NaPista tinha causa raiz diferente (dois modelos "XC 60"/"XC60" no
+  catálogo deles) — corrigido em `napista-sync-catalogo` e
+  `napista-mapear-veiculo`, testado ao vivo.
+- Webmotors passa a usar sempre o mesmo parágrafo institucional fixo
+  (500 chars, decisão da Adriana); outras plataformas somam até 900
+  chars (texto IA + rodapé). **Confirmação visual na página pública da
+  Webmotors ainda pendente** — precisa reconferir se já apareceu.
+- `GTN5D81` (RAM Rampage): trava de exclusão manual removida (sem
+  motivo técnico documentado), ficou em revisão de modelo (Webmotors
+  não tem "RAMPAGE" cadastrado) — não publicado ainda, como pedido.
+- `QXH1J94` (Hilux SW4): causa raiz real era bug nosso (corrida entre
+  2 tarefas fechando o anúncio sem recriar), não travamento da
+  Webmotors — anúncio novo criado e confirmado.
+- Auditoria completa do estoque em ML/NaPista: só 1 veículo sem
+  publicação (Hyundai ix35 `MWV1232`, bug de `pending_update` sem
+  post_id) — corrigido e publicado.
+- **Achado, não corrigido ainda**: o gatilho que marca
+  `pending_update` depois de editar um veículo não checa se já existe
+  um id publicado — pode travar um veículo recém-cadastrado pra
+  sempre (mesmo padrão em Webmotors e Mercado Livre). Vale corrigir o
+  gatilho na raiz.
+
+**Pedido pela Adriana no fim da sessão 18, ainda não iniciado**:
+auditar por que o vídeo do cadastro do veículo (seção junto das fotos)
+não está sincronizando — investigar e trazer o resultado antes de
+corrigir qualquer coisa.
+
+---
+
+Continuando de uma sessão anterior (28-29/08/2026 — unificação de
+regras de IA por botão + consolidação de telas). Leia primeiro:
+
+**O que foi feito e testado (Fases 1 a 4, todas commitadas e
+pushadas — `c2cf42e`, `0c7618c`, `e5f564c`):**
+
+- **Fase 1**: tabela `ai_prompts_config` ganhou 3 colunas —
+  `onde_fica`, `api_provider` (fixo: imagem sempre openai, texto/
+  pesquisa sempre gemini — decisão da Adriana, sem seletor na tela),
+  `formato_resposta` (parte técnica protegida, sempre visível mas não
+  editável). 4 linhas novas criadas com o texto exato que já estava
+  craveiro no código: `gerar_vaga_texto`, `gerar_resumo_vaga`,
+  `gerar_imagem_vaga`, `gerar_imagem_generica`.
+- **Fase 2**: "Gerar Descrição com IA" do veículo ganhou prompt
+  dedicado (`vehicle_description`), separado do prompt genérico
+  "Assistente Interno" que também servia SEO Copilot/Optimizer/
+  Heading-draft. Novo branch `is_vehicle_description` em
+  `gerar-conteudo/index.ts`, resposta simples (`texto_html`) em vez
+  do esquema pesado de "seções de site". Texto institucional fixo
+  (pedido dela) colado por CÓDIGO depois da resposta da IA (nova
+  coluna `rodape_fixo`), nunca gerado pela IA — pra nunca sair
+  parafraseado. Testado ao vivo no Honda Fit LX (PUQ3A75): antes
+  cortava no meio da palavra "elétrica" em 1000 caracteres, depois
+  saiu completo (971 chars, sem corte).
+- **Fase 3**: os 4 botões da Fase 1 pararam de usar texto craveiro no
+  código das edge functions e passaram a ler `prompt_text`/
+  `formato_resposta` do banco (fallback pro texto antigo só se a
+  linha sumir). Testado ao vivo cada um (vaga com cargo real
+  "Vendedor de Veículos", resumo, imagem de vaga incluindo o branch
+  de AJUSTE de imagem existente, otimização de foto de veículo).
+  Depois de autocrítica pedida pela Adriana, 6 correções feitas:
+  removido texto técnico ("Modelo: gpt-image-2...") que vazava pro
+  prompt de imagem enviado à IA; 15 arquivos de teste apagados do
+  bucket R2 de produção; confirmado que o teste do botão de ajuste de
+  imagem não tinha chamado a API de verdade da primeira vez (erro de
+  sequência no teste manual, não bug no código — refeito com sucesso
+  real, 200 OK confirmado via rede); fallback testado trocando o slug
+  temporariamente; pasta órfã `diag-temp-wm-publicar-3` (de outra
+  sessão, vazia, não deployada) removida.
+- **Fase 4**: `/admin/prompts-ia` reescrita como página única — 12
+  regras realmente usadas hoje, cada uma com card próprio (regra
+  editável + formato protegido visível + badge de API); avisos
+  automáticos quando um botão é usado em mais de um lugar (ex: Gerar
+  Imagem de Veículo/Blog) e quando o "Assistente Interno" serve de
+  base pra outros botões; a Clara (SDR WhatsApp, prompt de 14.711
+  caracteres) ganhou editor separado em modal de tela cheia com
+  aviso de que atende clientes reais; os 5 slugs sem uso real
+  (`negociacao`, `gerar_conteudo_social`, `gerar_conteudo`,
+  `re_engagement`, `ai_sdr`) ficam numa seção "Sem uso hoje" à parte.
+  Testado ao vivo: salvei uma regra de teste, confirmei no banco que
+  gravou, usei "Restaurar Padrão", confirmei que voltou ao original.
+  `bun run lint` e `bun run build` limpos.
+
+**O que ficou em aberto (pedido mais recente dela — consolidar as
+telas de IA em 1-2 páginas no máximo):**
+
+- Achado importante: existem **4 superfícies de IA**, não 3 — além de
+  `/admin/prompts-ia` e `/admin/autonomia`, tem `/admin/configuracoes`
+  com DUAS abas relevantes: "Brain IA" (base de conhecimento +
+  AI Playground) e **uma aba "Prompts" duplicada** (linhas 262 e 477
+  de `Configuracoes.tsx`) editando a MESMA tabela `ai_prompts_config`
+  de um jeito antigo/simples, sem nenhum dos avisos/cuidados da tela
+  nova.
+- Minha recomendação: **2 páginas** — "Regras de IA" (a atual,
+  unindo com Brain IA, já que o conteúdo dela é injetado nos
+  prompts) + "Automação" (ex-Autonomia, renomeada, mas só DEPOIS de
+  corrigir os toggles enganosos — 5 dos 9 já fazem a coisa sempre,
+  independente do toggle, e 4 não têm nenhum código por trás; achado
+  de sessão anterior à unificação, ainda não corrigido).
+- A Adriana pediu 3 verificações antes de decidir a ordem — **2
+  resolvidas, 1 bloqueada**:
+  - ✅ Permissão: `/admin/configuracoes`, `/admin/prompts-ia` e
+    `/admin/autonomia` exigem exatamente o mesmo setor
+    ("Desenvolvedor e TI", `src/lib/setor-acesso.ts`) — remover a
+    duplicata não tira acesso de ninguém.
+  - ✅ Referências: só o próprio `Configuracoes.tsx` referencia a
+    aba "prompts"; nenhum artigo da Central de Ajuda (`ajuda_conteudos`)
+    menciona essa aba especificamente. Achado à parte: o doc técnico
+    `docs/admin-ia-conteudo.md` está desatualizado desde 18/08 (não
+    reflete nada das Fases 1-4) e revelou que a function `ai-assistant`
+    (usada pela Central de Ajuda pública e pelo onboarding do site,
+    não só pelo AI Playground) lê o MESMO slug `ai_assistant` já
+    documentado na tela nova — ou seja, **o aviso de "efeito
+    cascata" que a tela mostra hoje está incompleto**: só menciona
+    SEO Copilot/Optimizer/Heading-draft, mas o alcance real inclui
+    também a Central de Ajuda pública e o onboarding. Isso precisa
+    ser corrigido no texto do card `ai_assistant` em `PromptsIA.tsx`.
+  - ❌ Teste ao vivo: **bloqueado** — a extensão do Chrome desconectou
+    no meio da sessão e não reconectou. Nunca cheguei a abrir
+    `/admin/configuracoes` no navegador pra confirmar visualmente a
+    aba duplicada antes de recomendar removê-la. **Primeiro passo da
+    próxima sessão**: tentar reconectar a extensão e fazer esse teste
+    antes de mexer em qualquer coisa.
+- Depois do teste ao vivo confirmado, ordem sugerida: (1) apagar a
+  aba duplicada de Configurações — baixo risco; (2) mover Brain IA
+  pra dentro de "Regras de IA" — risco médio, é refatoração de
+  componente; (3) corrigir os toggles de Autonomia — mais delicado,
+  precisa decisão dela sobre cada um dos 9.
+- **Fase 6, ainda não iniciada**: decidir o destino dos 5 slugs "sem
+  uso hoje" — excluir de vez ou reconectar a algum código real.
+- **Doc técnico a atualizar**: `docs/admin-ia-conteudo.md` não reflete
+  nada desta sessão (Fases 1-4, achado da aba duplicada, achado do
+  alcance real de `ai_assistant`). Vale atualizar como fonte de
+  referência técnica, seguindo o padrão de "becos sem saída" já usado
+  nesse arquivo.
+
 Continuando de uma sessão anterior (27/08/2026, sessão 16 — áudio da
 Clara + plano de corte Modelo/Versão). Leia primeiro:
 - MEMORY_WORK.MD, seção "Sessão 16": áudio da Clara publicado e testado
@@ -98,6 +242,12 @@ avisando a Adriana pra checar se a LinkedIn aprovou o "Request Access" do
 foi aprovado antes disso, pular direto pro item 1 de "Precisa de decisão".
 
 ## Precisa de decisão/ação da Adriana
+-3. **Consolidação das telas de IA (sessão de 28-29/08/2026)**: extensão
+   do Chrome desconectada, teste ao vivo da aba duplicada em
+   `/admin/configuracoes` ficou pendente. Reconectar e testar antes de
+   decidir a ordem de execução (apagar duplicata → mover Brain IA →
+   corrigir toggles de Autonomia). Ver bloco completo no topo deste
+   arquivo. Não redesenhar a análise do zero — já está pronta.
 -2. **Plano de corte Modelo/Versão (17 passos, sessão 16)**: pronto,
    todas as decisões de escopo já tomadas — só falta o "autorizo" pra
    começar pela Fase 1. Ver MEMORY_WORK.MD seção "Sessão 16" pro plano

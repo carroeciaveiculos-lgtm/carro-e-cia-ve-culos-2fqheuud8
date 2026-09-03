@@ -156,12 +156,21 @@ export function buildAnuncioXML(
   const precoRealTag = temPrecoRealValido
     ? `\n      <PrecoReal>${precoRevendaBruto.toFixed(2)}</PrecoReal>`
     : ''
-  // Corte de 500 caracteres na Observacao removido (26/08/2026, achado real,
-  // pedido da Adriana): não existia nenhum limite confirmado da Webmotors —
-  // testado ao vivo com AlterarCarro mandando 1104 caracteres, a resposta
-  // ecoou o texto completo sem reclamar. Era só uma trava nossa sem
-  // necessidade, que vinha cortando a descrição de 17 dos veículos
-  // publicados no meio da frase.
+  // Corte de 500 caracteres RESTAURADO (02/09/2026). O teste de 26/08/2026
+  // (mandar 1104 caracteres via AlterarCarro e a resposta ecoar o texto
+  // completo) só provou que a API não valida o tamanho na escrita — não que
+  // ela publica o texto inteiro. Confirmado ao vivo na página pública de um
+  // anúncio real (HR-V, 78502438) com descrição de 1144 caracteres: a seção
+  // de descrição não aparece NENHUMA linha dela pro comprador. Confirmado
+  // também no manual oficial da Webmotors (AnuncioWM.htm): "o texto deve
+  // possuir no máximo 500 caracteres". Corta em espaço, nunca no meio da
+  // palavra (mesmo padrão do limite de 1000 caracteres da IA em
+  // gerar-conteudo/index.ts).
+  const observacaoBruta = veiculo.descricao || ''
+  const observacaoCortada =
+    observacaoBruta.length <= 500
+      ? observacaoBruta
+      : observacaoBruta.slice(0, observacaoBruta.lastIndexOf(' ', 500))
   return `
       <CodigoAnuncio>${codigoAnuncio}</CodigoAnuncio>
       <CodigoMarca>${mapa.codigo_marca_wm}</CodigoMarca>
@@ -184,7 +193,7 @@ export function buildAnuncioXML(
       <IpvaPago>${snField(veiculo.ipva_pago)}</IpvaPago>
       <Km>${veiculo.quilometragem || 0}</Km>
       <Licenciado>${snField(veiculo.licenciado, 'S')}</Licenciado>
-      <Observacao>${escapeXml(veiculo.descricao || '')}</Observacao>
+      <Observacao>${escapeXml(observacaoCortada)}</Observacao>
       <Placa>${escapeXml(veiculo.placa || '')}</Placa>${precoRealTag}
       <PrecoVenda>${precoVenda.toFixed(2)}</PrecoVenda>
       <RevisadoOficinaAgendaDoCarro>${snField(veiculo.revisado_oficina)}</RevisadoOficinaAgendaDoCarro>

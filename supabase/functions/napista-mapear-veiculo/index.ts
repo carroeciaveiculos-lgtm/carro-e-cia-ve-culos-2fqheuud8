@@ -257,7 +257,12 @@ Deno.serve(async (req: Request) => {
     }
     let melhorModelo = modeloMatches?.[0]
     const confiancaModelo = melhorModelo?.score ?? 0
-    const candidatosModelo = (modeloMatches || []).slice(0, 3)
+    // Ampliado de 3 pra 6 (02/09/2026, achado Volvo XC60): com só 3, um
+    // modelo genuinamente certo mas com nome bem diferente (ex.: "XC60" sem
+    // espaço, 0,40) podia ficar de fora do top-3 por causa de outro modelo
+    // irrelevante com score de texto maior por coincidência (ex.: "V70 XC",
+    // 0,43) -- nunca chegava nem a ser testado no passo de versão abaixo.
+    const candidatosModelo = (modeloMatches || []).slice(0, 6)
 
     if (!melhorModelo || confiancaModelo < LIMIAR_CONFIANCA) {
       await salvarPendencia(supabase, veiculo_id, {
@@ -285,17 +290,42 @@ Deno.serve(async (req: Request) => {
     // outro ano) sobre qualquer aproximação, mesmo que a aproximação tenha
     // score de texto maior.
     const anoModelo = Number(veiculo.ano_modelo) || null
-    const EPSILON_EMPATE_MODELO = 0.02
-    const modelosEmpatados = candidatosModelo.filter(
-      (m: any) => (m.score ?? 0) >= confiancaModelo - EPSILON_EMPATE_MODELO,
+
+    // Resolve a versao pro modelo de maior score primeiro (caso comum, 1 so
+    // chamada na NaPista).
+    const resultadoTop = await buscarMelhorVersaoParaModelo(
+      supabase,
+      melhorModelo.id,
+      melhorMarca.id,
+      anoModelo,
+      textoModeloCompleto,
     )
+    let versoesComScore = resultadoTop.versoesComScore
+    let usouFallbackAno = resultadoTop.usouFallbackAno
 
-    let versoesComScore: any[]
-    let usouFallbackAno: boolean
-
-    if (modelosEmpatados.length > 1) {
-      let melhorResultado: { modelo: any; versoesComScore: any[]; usouFallbackAno: boolean } | null = null
-      for (const candidato of modelosEmpatados) {
+    // Achado real 02/09/2026 (Volvo XC60): a NaPista pode ter um modelo
+    // "gemeo" pro mesmo carro -- nome quase igual, id diferente ("XC 60" x
+    // "XC60") -- um deles cobrindo só alguns anos, o outro o catálogo
+    // completo. O de maior score de TEXTO pode não ser o que tem a versão
+    // certa pro ano do veículo. Antes, só testava os outros candidatos do
+    // top-3 quando o score de texto empatava de perto (regra criada pro caso
+    // Hilux/HILUX SW4/SW4, 26/08/2026) -- não pegava esse caso, porque
+    // "XC 60" bateu 1,00 e "XC60" só 0,40, longe de empate. Agora testa os
+    // outros candidatos sempre que o principal já falhou -- sem versão do
+    // ano exato, sem versão nenhuma, OU (achado real testando o SYI6C55,
+    // 02/09/2026) com versão do ano certo mas nenhuma bate bem com o nome
+    // real (o catálogo antigo "XC 60" tem só T8 Inscription/R-Design pro
+    // ano 2024, nenhum "Ultimate" -- fallback de ano nunca disparava porque
+    // o ano batia, só o nome que não). Só gasta a chamada extra na NaPista
+    // quando o principal não resolveu bem, não em toda sincronização.
+    const scoreVersaoTop = versoesComScore[0]?.score ?? 0
+    if (
+      (usouFallbackAno || versoesComScore.length === 0 || scoreVersaoTop < LIMIAR_CONFIANCA) &&
+      candidatosModelo.length > 1
+    ) {
+      let melhorResultado = { modelo: melhorModelo, versoesComScore, usouFallbackAno }
+      for (const candidato of candidatosModelo) {
+        if (candidato.id === melhorModelo.id) continue
         const resultado = await buscarMelhorVersaoParaModelo(
           supabase,
           candidato.id,
@@ -304,28 +334,17 @@ Deno.serve(async (req: Request) => {
           textoModeloCompleto,
         )
         const scoreAtual = resultado.versoesComScore[0]?.score ?? 0
-        const scoreMelhorAtual = melhorResultado?.versoesComScore[0]?.score ?? -1
+        const scoreMelhorAtual = melhorResultado.versoesComScore[0]?.score ?? -1
         const prefereAtual =
-          !melhorResultado ||
           (!resultado.usouFallbackAno && melhorResultado.usouFallbackAno) ||
           (resultado.usouFallbackAno === melhorResultado.usouFallbackAno && scoreAtual > scoreMelhorAtual)
         if (prefereAtual) {
           melhorResultado = { modelo: candidato, versoesComScore: resultado.versoesComScore, usouFallbackAno: resultado.usouFallbackAno }
         }
       }
-      melhorModelo = melhorResultado!.modelo
-      versoesComScore = melhorResultado!.versoesComScore
-      usouFallbackAno = melhorResultado!.usouFallbackAno
-    } else {
-      const resultado = await buscarMelhorVersaoParaModelo(
-        supabase,
-        melhorModelo.id,
-        melhorMarca.id,
-        anoModelo,
-        textoModeloCompleto,
-      )
-      versoesComScore = resultado.versoesComScore
-      usouFallbackAno = resultado.usouFallbackAno
+      melhorModelo = melhorResultado.modelo
+      versoesComScore = melhorResultado.versoesComScore
+      usouFallbackAno = melhorResultado.usouFallbackAno
     }
 
     const melhorVersao = versoesComScore[0]
