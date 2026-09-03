@@ -825,6 +825,39 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
           'mercadolivre',
           mlListingTypeToPreference(merged.ml_listing_type || 'silver'),
         )
+        // Achado real 02/09/2026: veiculos_cache só era gravado na consulta
+        // da placa (consultar-placa/index.ts) e nunca mais atualizado -- se
+        // alguém corrigisse Marca/Modelo/Versão/etc à mão depois, uma
+        // pesquisa futura da mesma placa voltava a mostrar o texto original
+        // da API, não a correção. Mantém o cache alinhado com o que foi
+        // salvo de verdade no veículo. Best-effort: não bloqueia nem falha
+        // o salvamento do veículo se o cache não gravar.
+        if (merged.placa) {
+          const cleanPlaca = String(merged.placa).replace(/[^A-Z0-9]/gi, '').toUpperCase()
+          if (cleanPlaca) {
+            await supabase
+              .from('veiculos_cache')
+              .upsert(
+                {
+                  placa: cleanPlaca,
+                  marca: merged.marca || null,
+                  modelo: merged.modelo || null,
+                  versao: merged.versao || null,
+                  ano_fab: merged.ano_fabricacao || null,
+                  ano_modelo: merged.ano_modelo || null,
+                  combustivel: merged.combustivel || null,
+                  cor: merged.cor || null,
+                  chassi: merged.chassi || null,
+                  renavam: merged.renavam || null,
+                  updated_at: new Date().toISOString(),
+                },
+                { onConflict: 'placa' },
+              )
+              .then(({ error: cacheError }) => {
+                if (cacheError) console.debug('veiculos_cache upsert falhou:', cacheError.message)
+              })
+          }
+        }
       }
       toast({ title: 'Veículo salvo com sucesso!' })
       onSuccess()
