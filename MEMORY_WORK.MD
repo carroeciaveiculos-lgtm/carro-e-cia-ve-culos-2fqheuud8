@@ -9,7 +9,54 @@ precisar reler o histórico inteiro de conversas. Diferente do
 pra ser mantido em dia de verdade. Detalhe técnico por integração continua
 nos arquivos `docs/*.md` — aqui é só o resumo de estado + pendências.
 
-Última atualização: 2026-09-03 (sessão 18 — causa raiz real do mapeamento de modelo Webmotors/NaPista corrigida em ambas plataformas; descrição do veículo passa a ter regra diferente pra Webmotors (rodapé fixo, 500 chars) e demais plataformas (900 chars); GTN5D81 e QXH1J94 diagnosticados e resolvidos; auditoria completa do estoque em ML/NaPista; em andamento: auditoria de sincronização de vídeo).
+Última atualização: 2026-09-04 (sessão 19 — sync de vídeo do Drive corrigido na raiz, migrado de Edge Function pra Cloudflare Worker; 13/14 vídeos sincronizados ao vivo).
+
+## Sessão 19 (04/09/2026) — sync de vídeo corrigido na raiz (migrado pra Cloudflare Worker)
+
+**Pedido no fim da sessão 18** ("por que o vídeo do cadastro não sincroniza")
+foi resolvido de ponta a ponta nesta sessão. Resumo pra quem só quer o
+estado atual (detalhe técnico completo em `docs/google-drive-integracao.md`,
+seção "Vídeo — arquitetura nova"):
+
+- **Causa raiz real**: Supabase Edge Function só tem 2s de CPU por chamada;
+  o SDK da AWS calculava checksum de vídeo grande (~99MB) e estourava esse
+  limite, matando a function sem logar nada. Confirmado via documentação
+  oficial da Supabase, não suposição.
+- **Descartado antes de implementar** (registrado em
+  `docs/mercadolivre-integracao.md`/`docs/google-drive-integracao.md`):
+  nenhuma das 3 plataformas (Webmotors, Mercado Livre, NaPista) precisa
+  receber o arquivo de vídeo — Webmotors e NaPista não suportam vídeo,
+  Mercado Livre só aceita link do YouTube. O vídeo do Drive serve só pro
+  nosso próprio site. Cloudflare Stream também foi cogitado e descartado
+  (API de import por URL não aceita header de autenticação, não dava pra
+  apontar pro link do Drive).
+- **Solução implementada**: download do Drive + upload pro R2 saiu da Edge
+  Function e foi pra um Cloudflare Worker novo
+  (`cloudflare/sync-drive-videos-worker/`), com binding nativo do R2
+  (sem SDK, sem checksum pesado) e 5 min de CPU disponíveis. A Edge Function
+  `sync-drive-videos` virou só uma porta de entrada fina que autentica e
+  repassa pro Worker — nada mudou pro front-end.
+- **Testado ao vivo**: 13 de 14 veículos com vídeo sincronizaram com
+  sucesso, incluindo o SYR9D60 (vídeo de ~99,6MB que travava antes de
+  qualquer jeito). 0 erros em `logs_integracao`. 1 pendência: pasta
+  "TFF8IOO" no Drive tem erro de digitação (letra O em vez de zero) e não
+  bate com a placa real `TFF8I00` — renomear a pasta resolve.
+- **Achado de infraestrutura, não corrigido ainda**: durante o trabalho, um
+  `wrangler deploy` sem `--config` explícito acabou implantando (sem
+  quebrar nada, conteúdo idêntico) o Worker do site de produção em vez do
+  Worker novo — o repositório tem dois `wrangler.toml`/`.jsonc` (raiz = site,
+  `cloudflare/sync-drive-videos-worker/` = vídeo) e o `cd` de terminal nem
+  sempre "gruda" entre comandos nesta ferramenta. Lição registrada em
+  `docs/google-drive-integracao.md`: sempre usar `--config` explícito.
+- **Em aberto pra próxima sessão**: a Adriana conectou o Worker novo a um
+  repositório Git no painel da Cloudflare (recurso "Workers Builds") — ainda
+  não confirmamos se o diretório raiz do build está apontando pro lugar
+  certo (`cloudflare/sync-drive-videos-worker`, não a raiz do repo). Checar
+  antes do próximo `git push`, senão um push pode disparar um build errado.
+- **Nova regra permanente da Adriana**: sempre que ela avisar que vai
+  iniciar um chat novo, antes de encerrar: atualizar memória/documentação,
+  conferir o que falta commitar, e deixar tudo pronto pra continuar sem
+  perda de contexto.
 
 ## Sessão 18 (03/09/2026) — mapeamento Webmotors/NaPista corrigido na raiz, descrição por plataforma, 2 veículos travados resolvidos
 

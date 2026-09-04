@@ -5,31 +5,29 @@ _Becos sem saída_ lista o que já foi testado e falhou — **não repita**. Ao
 descobrir algo novo, acrescente aqui com data e fonte, em vez de deixar só no
 histórico de conversa.
 
-Última atualização: 2026-08-18.
+Última atualização: 2026-09-04.
 
 ## O que é
 
 Importa fotos e vídeos de veículo direto de uma pasta do Google Drive pra
 dentro do sistema (R2 + `veiculos.fotos`/vídeos), sem precisar fazer upload
 manual arquivo por arquivo. Cada veículo tem sua própria subpasta dentro de
-uma pasta raiz fixa do Drive.
+uma pasta raiz fixa do Drive — **fotos e vídeos ficam em pastas raiz
+diferentes** (ver tabela de IDs abaixo), não confundir uma com a outra.
 
-`sync-google-drive` cuida das fotos, `sync-drive-videos` cuida dos vídeos —
-duas functions separadas, mesma lógica e mesma pasta raiz, cada uma com seu
-próprio controle de progresso.
+`sync-google-drive` cuida das fotos. Vídeo tem uma arquitetura diferente
+desde 04/09/2026 — ver seção própria abaixo.
 
-## Como funciona
+## Fotos — como funciona
 
 ```
-Google Drive (pasta raiz fixa: 1D6UAaVY7k_Hy1gKVmjQY-sDISchOhwEY)
+Google Drive (pasta raiz de FOTOS: 1D6UAaVY7k_Hy1gKVmjQY-sDISchOhwEY)
   └─ subpasta por veículo — nome precisa COMEÇAR com a placa
      (ex.: "ABC1D23 Toyota Corolla" → placa extraída: ABC1D23)
-     ├─ sync-google-drive   lê as imagens da subpasta, casa a placa com
-     │                      veiculos.placa, baixa cada foto nova, sobe pro
-     │                      R2 (bucket via S3Client) e adiciona a URL em
-     │                      veiculos.fotos (dedup automático)
-     └─ sync-drive-videos   mesma lógica, pra vídeo — grava em logs_integracao
-                             além de atualizar o veículo
+     └─ sync-google-drive   lê as imagens da subpasta, casa a placa com
+                            veiculos.placa, baixa cada foto nova, sobe pro
+                            R2 (bucket via S3Client) e adiciona a URL em
+                            veiculos.fotos (dedup automático)
 ```
 
 **Autenticação**: conta de serviço do Google (`DRIVE_CLIENT_EMAIL` +
@@ -47,33 +45,87 @@ Supabase.
   limite de execução — processar TODAS as subpastas numa chamada só
   estouraria o tempo, então cada chamada processa só `BATCH_SIZE = 1`
   subpasta e devolve quanto falta.
-- O offset de cada function fica salvo em `sync_control`
-  (`sync_key = 'drive_offset'` pras fotos, `'drive_video_offset'` pros
-  vídeos) — se a sincronização em lote for interrompida, o próximo "play"
-  continua de onde parou, não do zero.
+- O offset fica salvo em `sync_control` (`sync_key = 'drive_offset'`) — se a
+  sincronização em lote for interrompida, o próximo "play" continua de onde
+  parou, não do zero.
+
+## Vídeo — arquitetura nova (desde 04/09/2026)
+
+**Causa raiz do problema antigo (vídeo grande travava sem erro nenhum):** a
+Supabase Edge Function só tem **2 segundos de tempo de CPU** por chamada
+(https://supabase.com/docs/guides/functions/limits). O SDK da AWS usado pra
+subir pro R2 calcula checksum do arquivo inteiro — isso é processamento de
+CPU de verdade, e num vídeo de ~99MB estourava esse limite. A function
+morria no meio, sem conseguir gravar log nenhum (por isso nunca aparecia
+nada em `logs_integracao`).
+
+**Solução:** o download do Drive + upload pro R2 saiu da Edge Function e foi
+pra um **Cloudflare Worker** (`cloudflare/sync-drive-videos-worker/`), que
+tem 5 minutos de CPU e sobe pro R2 via binding nativo (`env.BUCKET.put()`,
+sem SDK, sem checksum pesado). A `sync-drive-videos` (Edge Function) virou
+só uma porta de entrada fina: confere quem chamou e repassa pro Worker com
+um segredo compartilhado (`SYNC_WORKER_SECRET`) — o contrato com o front
+(`supabase.functions.invoke('sync-drive-videos', {...})`) não mudou nada.
+
+```
+VehicleFormModal / hook → supabase.functions.invoke('sync-drive-videos')
+  └─ Edge Function (só autentica e repassa, header X-Sync-Secret)
+     └─ Worker sync-drive-videos-worker (Cloudflare)
+        ├─ pasta raiz de VÍDEOS: 1QKGIaPvoZLv-ifhxlaqzrirH38HAMRTo (≠ fotos!)
+        ├─ getAccessToken/listDriveItems: cópia local de
+        │  supabase/functions/_shared/google-drive.ts — corrigir nos DOIS
+        │  lugares se mexer em auth/listagem do Drive
+        └─ env.BUCKET.put(key, stream) — binding R2 nativo, streaming direto
+```
+
+**Secrets do Worker** (`wrangler secret put`, nunca ficam no `wrangler.toml`):
+`DRIVE_CLIENT_EMAIL`, `DRIVE_PRIVATE_KEY`, `SUPABASE_URL`,
+`SUPABASE_SERVICE_ROLE_KEY`, `SYNC_WORKER_SECRET`. Esse último também existe
+como secret da Edge Function `sync-drive-videos` no Supabase (mesmo valor
+nos dois lados, gerado uma vez e nunca reaparece em lugar nenhum).
+
+**Testado ao vivo em 04/09/2026:** 13 de 14 pastas de vídeo sincronizaram
+com sucesso (incluindo o SYR9D60, vídeo de 104.423.176 bytes/~99.6MB que
+travava antes) — 0 erros em `logs_integracao`.
 
 ## Fatos confirmados
 
 | Fato | Como se sabe |
 |---|---|
-| A pasta raiz do Drive é um ID **fixo no código** (`ROOT_FOLDER_ID`), igual nas duas functions — trocar de pasta exige editar e reimplantar o código, não é configurável pela tela | leitura de `sync-google-drive/index.ts` e `sync-drive-videos/index.ts`, linha 7-8 (mesmo ID nas duas) |
-| A placa é extraída da **primeira palavra do nome da subpasta** (`extractPlate`) — se a subpasta não começar com algo que pareça placa (mín. 4 caracteres alfanuméricos), a pasta inteira é ignorada, sem erro visível pra quem está sincronizando em lote | leitura de `extractPlate()`, linha 31-35 |
-| Cada chamada de "uma placa só" refaz a listagem de **todas** as subpastas da raiz até achar a que bate com a placa pedida — não é um lookup direto, é busca linear | leitura do bloco `PLACA-SPECIFIC SYNC`, linha 323-333 |
-| Download/listagem do Drive tem retry automático (até 3 tentativas, espera crescente) — falha de rede pontual não quebra a sincronização, só atrasa | leitura de `downloadWithRetry`/`listWithRetry`, `MAX_RETRIES = 3` |
+| A pasta raiz de FOTOS (`1D6UAaVY7k_Hy1gKVmjQY-sDISchOhwEY`) e a de VÍDEOS (`1QKGIaPvoZLv-ifhxlaqzrirH38HAMRTo`) são **diferentes** — não mexer no ID de `sync-google-drive/index.ts` (fotos, funcionando) ao ajustar vídeo | confirmado pela Adriana em 03/09/2026, corrigido no Worker |
+| A placa é extraída da **primeira palavra do nome da subpasta** (`extractPlate`) — se a subpasta não começar com algo que pareça placa (mín. 4 caracteres alfanuméricos), a pasta inteira é ignorada, sem erro visível | leitura de `extractPlate()` |
+| Download/listagem do Drive nas fotos tem retry automático (até 3 tentativas, espera crescente) — falha de rede pontual não quebra a sincronização, só atrasa | leitura de `downloadWithRetry`/`listWithRetry`, `MAX_RETRIES = 3` em `sync-google-drive` |
 | Fotos já existentes em `veiculos.fotos` são deduplicadas antes de comparar com o Drive — sincronizar de novo não duplica foto já importada | leitura do bloco `dedupUrls(vehicle.fotos)` |
+| Supabase Edge Function: só 2s de CPU por chamada (não conta espera de rede); Cloudflare Worker pago: 5 min de CPU — essa diferença é a causa raiz do travamento de vídeo grande | doc oficial Supabase e Cloudflare, 03/09/2026 |
+| O nome da pasta no Drive pode não bater com a placa real no cadastro por erro de digitação (ex.: "TFF8IOO" com letra O na pasta, placa real "TFF8I00" com zero) — nesse caso o sync acha a pasta mas não acha o veículo, e falha silenciosamente (sem log de erro) | achado real, 04/09/2026 — corrigir renomeando a pasta no Drive |
 
 ## Becos sem saída — não repetir
 
-- Não testei uma sincronização em lote completa nesta sessão (só li o
-  código) — o comportamento de borda (offset além do total de pastas,
-  pasta raiz vazia) não foi observado ao vivo.
+- Cloudflare Stream (upload por URL) **não resolve** o timeout de vídeo
+  grande: o campo `url` da API de import só aceita link público simples, sem
+  jeito de mandar header de autenticação — não dá pra apontar direto pro
+  link do Drive (que exige `Authorization: Bearer`). Verificado na
+  documentação oficial (`developers.cloudflare.com/stream/uploading-videos/upload-via-link/`
+  e referência da API `POST /accounts/{id}/stream/copy`), 03/09/2026.
+- Rodar `wrangler deploy` de dentro de uma subpasta sem `--config` explícito
+  é arriscado neste repositório: há um `wrangler.jsonc` na raiz (Worker do
+  site de produção) e o `cd` pra subpasta não necessariamente "gruda" entre
+  comandos nesta ferramenta de terminal — já aconteceu de um `wrangler
+  deploy` acabar mirando o Worker errado. **Sempre usar `--config
+  "<caminho completo>/wrangler.toml"` explícito.**
 
 ## Em aberto
 
-- Não confirmado se as 3 variáveis (`DRIVE_CLIENT_EMAIL`,
-  `DRIVE_PRIVATE_KEY`, `DRIVE_PROJECT_ID`) estão configuradas hoje nos
-  Secrets — não investigado nesta sessão (fora do escopo pedido, que foi só
-  documentar).
+- **`sync-drive-videos-worker` foi conectado a repositório Git no painel da
+  Cloudflare em 04/09/2026** (recurso "Workers Builds") — ainda não
+  confirmamos se o diretório raiz do build está configurado como
+  `cloudflare/sync-drive-videos-worker` (e não a raiz do repo, que é o
+  Worker do site). Se estiver errado, um push futuro pode tentar buildar o
+  Worker errado. **Conferir nas configurações de Build do Worker no painel
+  antes do próximo push.**
+- Pasta "TFF8IOO - VOLVO ULTRA HIBRID 2026" no Drive não bateu com a placa
+  real `TFF8I00` (zero, não letra O) — vídeo desse veículo não sincronizou.
+  Renomear a pasta no Drive resolve.
 - Nenhum log de auditoria pra fotos (`sync-google-drive` só atualiza
   `veiculos`/`sync_control`) — se uma foto errada for importada, não tem
   como saber de qual sincronização ela veio, diferente dos vídeos que

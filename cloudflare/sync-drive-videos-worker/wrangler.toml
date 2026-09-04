@@ -1,0 +1,12 @@
+name = "sync-drive-videos-worker"
+main = "src/index.ts"
+compatibility_date = "2026-09-01"
+account_id = "96c599909cb2c55408eceedc08a01aca"
+
+[[r2_buckets]]
+binding = "BUCKET"
+bucket_name = "carroeciamotors-imagens"
+
+# Secrets (definidos via `wrangler secret put <NOME>`, não ficam neste arquivo):
+# DRIVE_CLIENT_EMAIL, DRIVE_PRIVATE_KEY, SUPABASE_URL,
+# SUPABASE_SERVICE_ROLE_KEY, SYNC_WORKER_SECRET

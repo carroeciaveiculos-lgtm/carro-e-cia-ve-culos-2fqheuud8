@@ -6,6 +6,43 @@ Copie e cole como primeira mensagem numa sessão nova do Claude Code.
 Projeto: Carro e Cia Veículos (revenda). Pasta de trabalho:
 C:\Projeto\Revenda Carro e Cia\carro-e-cia-ve-culos-2fqheuud8
 
+Continuando de uma sessão anterior (04/09/2026, sessão 19 — sync de
+vídeo do Drive corrigido na raiz, migrado pra Cloudflare Worker).
+Leia primeiro MEMORY_WORK.MD, seção "Sessão 19", pro resumo completo.
+Destaques:
+
+- Causa raiz real do vídeo grande travando: Supabase Edge Function só
+  tem 2s de CPU por chamada, o SDK da AWS estourava esse limite
+  calculando checksum de vídeo de ~99MB. Corrigido movendo o
+  download-do-Drive+upload-pro-R2 pra um Cloudflare Worker novo
+  (`cloudflare/sync-drive-videos-worker/`), com 5 min de CPU e binding
+  nativo do R2. A Edge Function `sync-drive-videos` virou só uma porta
+  de entrada fina — nada mudou pro front-end.
+- Testado ao vivo: 13 de 14 vídeos sincronizaram com sucesso (inclusive
+  o SYR9D60 de ~99,6MB que travava). 1 pendência: pasta "TFF8IOO" no
+  Drive tem erro de digitação (placa real é TFF8I00, com zero) —
+  renomear a pasta resolve.
+- **Confirmar antes de qualquer `git push`**: a Adriana conectou o
+  Worker novo a um repositório Git no painel da Cloudflare ("Workers
+  Builds") — ainda não confirmamos se o diretório raiz do build está
+  certo (`cloudflare/sync-drive-videos-worker`, não a raiz do repo, que
+  é o Worker do site). Checar nas configurações de Build do Worker no
+  painel da Cloudflare antes do próximo push.
+- Lição registrada: `wrangler deploy` sem `--config` explícito é
+  arriscado neste repo (dois wrangler.toml/.jsonc diferentes) — sempre
+  usar o caminho completo do arquivo certo.
+- **Nova regra permanente**: sempre que a Adriana avisar que vai abrir
+  um chat novo, antes de encerrar atualizar memória/documentação,
+  conferir o que falta commitar, e deixar tudo pronto pra continuar sem
+  perda de contexto — sem precisar ela pedir de novo.
+
+**Ainda pendente da sessão 18** (adiado pra depois do vídeo, ainda não
+retomado): voltar nos ajustes das seções de IA do CRM — consolidar
+Regras de IA + Automação, remover aba "Prompts" duplicada em
+Configurações, corrigir toggles em Autonomia.
+
+---
+
 Continuando de uma sessão anterior (02-03/09/2026, sessão 18 —
 mapeamento Webmotors/NaPista corrigido na raiz + descrição por
 plataforma + 2 veículos travados resolvidos + auditoria de estoque).
