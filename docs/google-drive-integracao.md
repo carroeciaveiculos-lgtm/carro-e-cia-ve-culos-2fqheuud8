@@ -84,9 +84,13 @@ VehicleFormModal / hook → supabase.functions.invoke('sync-drive-videos')
 como secret da Edge Function `sync-drive-videos` no Supabase (mesmo valor
 nos dois lados, gerado uma vez e nunca reaparece em lugar nenhum).
 
-**Testado ao vivo em 04/09/2026:** 13 de 14 pastas de vídeo sincronizaram
-com sucesso (incluindo o SYR9D60, vídeo de 104.423.176 bytes/~99.6MB que
-travava antes) — 0 erros em `logs_integracao`.
+**Testado ao vivo em 04/09/2026:** 15 de 15 pastas de vídeo válidas
+sincronizaram com sucesso (incluindo o SYR9D60, vídeo de 104.423.176
+bytes/~99.6MB que travava antes, e o TFF8I00, que só sincronizou depois de
+renomear a pasta no Drive) — 0 erros em `logs_integracao`. Duas pastas
+ficam de fora de propósito: "HR-V EXL 2020 e HR-V EX 2017" (mistura 2
+veículos, nome não extrai placa válida) e "Video CONSIGNAÇÃO" (não é
+veículo do estoque).
 
 ## Fatos confirmados
 
@@ -113,19 +117,21 @@ travava antes) — 0 erros em `logs_integracao`.
   comandos nesta ferramenta de terminal — já aconteceu de um `wrangler
   deploy` acabar mirando o Worker errado. **Sempre usar `--config
   "<caminho completo>/wrangler.toml"` explícito.**
+- **"Workers Builds" (Git integration da Cloudflare) NÃO deve ser usado
+  neste Worker — incidente real em 04/09/2026.** A Adriana conectou o
+  repositório no painel; o build automático disparado pelo push pegou o
+  diretório raiz errado (o `wrangler.jsonc` do site, não o
+  `wrangler.toml` do Worker de vídeo) e **sobrescreveu o código do Worker
+  de vídeo com o build do site, além de apagar os 5 secrets** (sem aviso,
+  sem log nosso). Sintoma: `POST` no Worker passou a devolver `405` com
+  corpo vazio, e os headers da resposta batiam com o CSP do site, não do
+  Worker. Corrigido restaurando o código via `wrangler deploy --config` e
+  recriando os 5 secrets; a Adriana desconectou o Git desse Worker no
+  painel (Settings → Build → Disconnect) em seguida. **Não reconectar** —
+  o deploy continua sendo manual via `wrangler deploy --config`.
 
 ## Em aberto
 
-- **`sync-drive-videos-worker` foi conectado a repositório Git no painel da
-  Cloudflare em 04/09/2026** (recurso "Workers Builds") — ainda não
-  confirmamos se o diretório raiz do build está configurado como
-  `cloudflare/sync-drive-videos-worker` (e não a raiz do repo, que é o
-  Worker do site). Se estiver errado, um push futuro pode tentar buildar o
-  Worker errado. **Conferir nas configurações de Build do Worker no painel
-  antes do próximo push.**
-- Pasta "TFF8IOO - VOLVO ULTRA HIBRID 2026" no Drive não bateu com a placa
-  real `TFF8I00` (zero, não letra O) — vídeo desse veículo não sincronizou.
-  Renomear a pasta no Drive resolve.
 - Nenhum log de auditoria pra fotos (`sync-google-drive` só atualiza
   `veiculos`/`sync_control`) — se uma foto errada for importada, não tem
   como saber de qual sincronização ela veio, diferente dos vídeos que
