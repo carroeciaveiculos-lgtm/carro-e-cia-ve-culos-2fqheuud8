@@ -18,16 +18,18 @@ Destaques:
   (`cloudflare/sync-drive-videos-worker/`), com 5 min de CPU e binding
   nativo do R2. A Edge Function `sync-drive-videos` virou só uma porta
   de entrada fina — nada mudou pro front-end.
-- Testado ao vivo: 13 de 14 vídeos sincronizaram com sucesso (inclusive
-  o SYR9D60 de ~99,6MB que travava). 1 pendência: pasta "TFF8IOO" no
-  Drive tem erro de digitação (placa real é TFF8I00, com zero) —
-  renomear a pasta resolve.
-- **Confirmar antes de qualquer `git push`**: a Adriana conectou o
-  Worker novo a um repositório Git no painel da Cloudflare ("Workers
-  Builds") — ainda não confirmamos se o diretório raiz do build está
-  certo (`cloudflare/sync-drive-videos-worker`, não a raiz do repo, que
-  é o Worker do site). Checar nas configurações de Build do Worker no
-  painel da Cloudflare antes do próximo push.
+- Testado ao vivo, resultado final: 15 de 15 pastas de vídeo válidas
+  sincronizaram com sucesso (SYR9D60 de ~99,6MB que travava, TFF8I00
+  depois de corrigir o nome da pasta, e o PYT5J89 que apareceu novo
+  durante a sessão). 0 erros.
+- **Incidente resolvido — não reconectar Git nesse Worker**: a Adriana
+  conectou o Worker novo a um repositório Git no painel da Cloudflare
+  ("Workers Builds"); o build automático do push seguinte sobrescreveu
+  o código do Worker (usando a config do site por engano) e apagou os
+  5 secrets. Corrigido (código restaurado, secrets recriados) e a
+  Adriana já desconectou o Git no painel. Deploy desse Worker continua
+  sendo só manual via `wrangler deploy --config`. Detalhe em
+  `docs/google-drive-integracao.md`.
 - Lição registrada: `wrangler deploy` sem `--config` explícito é
   arriscado neste repo (dois wrangler.toml/.jsonc diferentes) — sempre
   usar o caminho completo do arquivo certo.
@@ -35,6 +37,8 @@ Destaques:
   um chat novo, antes de encerrar atualizar memória/documentação,
   conferir o que falta commitar, e deixar tudo pronto pra continuar sem
   perda de contexto — sem precisar ela pedir de novo.
+- **Estado no fechamento**: tudo commitado e no `origin/main` (commits
+  `68f123f` e `e59f7e7`). Nada pendente de autorização.
 
 **Ainda pendente da sessão 18** (adiado pra depois do vídeo, ainda não
 retomado): voltar nos ajustes das seções de IA do CRM — consolidar
