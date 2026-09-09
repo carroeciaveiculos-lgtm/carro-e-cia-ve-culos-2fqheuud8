@@ -1,12 +1,22 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { toast } from 'sonner'
-import { Bot, Save, RotateCcw, Loader2, MapPin, AlertTriangle, Maximize2 } from 'lucide-react'
+import {
+  Bot,
+  Save,
+  RotateCcw,
+  Loader2,
+  MapPin,
+  AlertTriangle,
+  Maximize2,
+  BrainCircuit,
+} from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Separator } from '@/components/ui/separator'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
   Dialog,
   DialogContent,
@@ -22,6 +32,7 @@ import {
   DEPENDENTES_ASSISTENTE_INTERNO,
   type AIPromptConfig,
 } from '@/services/ai-prompts'
+import { BrainIAPanel } from '@/components/admin/BrainIAPanel'
 
 const SEM_USO_MARCADOR = 'Nenhum lugar hoje'
 
@@ -324,33 +335,53 @@ export default function PromptsIAPage() {
         </p>
       </div>
 
-      {loading ? (
-        <div className="space-y-4">
-          {Array.from({ length: 5 }).map((_, i) => (
-            <Skeleton key={i} className="h-48 w-full" />
-          ))}
-        </div>
-      ) : (
-        <>
-          <div className="space-y-4">{ativos.map((p) => renderCard(p))}</div>
+      <Tabs defaultValue="regras" className="w-full">
+        <TabsList className="mb-4">
+          <TabsTrigger value="regras" className="flex items-center gap-2">
+            <Bot className="w-4 h-4" /> Regras
+          </TabsTrigger>
+          <TabsTrigger value="brain" className="flex items-center gap-2">
+            <BrainCircuit className="w-4 h-4" /> Brain IA
+          </TabsTrigger>
+        </TabsList>
 
-          {semUso.length > 0 && (
+        <TabsContent value="regras" className="space-y-4">
+          {loading ? (
+            <div className="space-y-4">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <Skeleton key={i} className="h-48 w-full" />
+              ))}
+            </div>
+          ) : (
             <>
-              <Separator className="my-6" />
-              <div>
-                <h2 className="text-sm font-semibold text-muted-foreground mb-1">
-                  Sem uso hoje
-                </h2>
-                <p className="text-xs text-muted-foreground mb-4">
-                  Esses cards existem no banco, mas nenhum código do sistema lê essa regra hoje —
-                  editar aqui não muda nenhum comportamento real até serem reconectados.
-                </p>
-                <div className="space-y-4">{semUso.map((p) => renderCard(p, { semUso: true }))}</div>
-              </div>
+              <div className="space-y-4">{ativos.map((p) => renderCard(p))}</div>
+
+              {semUso.length > 0 && (
+                <>
+                  <Separator className="my-6" />
+                  <div>
+                    <h2 className="text-sm font-semibold text-muted-foreground mb-1">
+                      Sem uso hoje
+                    </h2>
+                    <p className="text-xs text-muted-foreground mb-4">
+                      Esses cards existem no banco, mas nenhum código do sistema lê essa regra
+                      hoje — editar aqui não muda nenhum comportamento real até serem
+                      reconectados.
+                    </p>
+                    <div className="space-y-4">
+                      {semUso.map((p) => renderCard(p, { semUso: true }))}
+                    </div>
+                  </div>
+                </>
+              )}
             </>
           )}
-        </>
-      )}
+        </TabsContent>
+
+        <TabsContent value="brain">
+          <BrainIAPanel />
+        </TabsContent>
+      </Tabs>
 
       <Dialog open={clarModalOpen} onOpenChange={setClaraModalOpen}>
         <DialogContent className="max-w-3xl max-h-[85vh] flex flex-col">

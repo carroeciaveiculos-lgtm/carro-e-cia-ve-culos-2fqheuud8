@@ -102,7 +102,7 @@ const SIDEBAR_MENUS = [
     items: [
       { label: 'Configurações', path: '/admin/configuracoes', icon: Settings },
       { label: 'Autonomia', path: '/admin/autonomia', icon: Cpu },
-      { label: 'Prompts IA', path: '/admin/prompts-ia', icon: Bot },
+      { label: 'Regras de IA', path: '/admin/prompts-ia', icon: Bot },
       { label: 'Usuários', path: '/admin/usuarios', icon: Users },
       { label: 'Auditoria', path: '/admin/auditoria', icon: ScrollText },
       { label: 'Logs do Sistema', path: '/admin/logs', icon: Activity },
