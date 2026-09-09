@@ -205,3 +205,6 @@ verify_jwt = false
 
 [functions.publicar-social]
 verify_jwt = false
+
+[functions.fipe-auditoria-modelo-versao]
+verify_jwt = false

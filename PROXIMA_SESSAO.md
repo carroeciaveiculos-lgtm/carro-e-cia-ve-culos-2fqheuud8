@@ -6,6 +6,35 @@ Copie e cole como primeira mensagem numa sessão nova do Claude Code.
 Projeto: Carro e Cia Veículos (revenda). Pasta de trabalho:
 C:\Projeto\Revenda Carro e Cia\carro-e-cia-ve-culos-2fqheuud8
 
+Continuando de uma sessão anterior (09/09/2026, sessão 20 — telas de IA
+do CRM consolidadas + Fase 5 do corte Modelo/Versão implementada). Leia
+primeiro MEMORY_WORK.MD, seção "Sessão 20", pro resumo completo.
+Destaques:
+
+- **Consolidação das telas de IA fechada**: aba "Prompts IA" duplicada de
+  Configurações removida (era um risco real, não só duplicata visual);
+  Brain IA movido pra dentro de "Regras de IA" (`/admin/prompts-ia`,
+  menu renomeado); Painel de Autonomia trocou os 9 toggles fake por
+  status real (4 "Sempre ativo", 5 "Não implementado") depois de achar
+  que nenhum toggle nunca fez nada de verdade. Testado ao vivo, commits
+  `358aad7` e `faceaf7`, push feito. **Item fechado, não reabrir.**
+- **Plano de corte Modelo/Versão (17 passos) agora 100% completo.**
+  Achado importante: as Fases 1-4 já estavam prontas desde 27/08/2026 —
+  a nota antiga deste arquivo (abaixo) tinha ficado desatualizada.
+  Reconferido direto no Supabase de produção antes de confiar na memória
+  (migrations aplicadas, functions com deploy real, 27 veículos ativos
+  sem regressão). Só faltava a **Fase 5** (auditoria mensal da FIPE),
+  implementada e testada nesta sessão: function
+  `fipe-auditoria-modelo-versao` + cron dia 15 às 9h Brasília, avisa por
+  WhatsApp sem nunca alterar `modelo_versao_excecoes` sozinha. Primeira
+  auditoria real rodou: 19 marcas, 4630 modelos, ~90 candidatos (ruído
+  conhecido: nomes de linha de acabamento tipo "Comfortline"/"Vision"
+  passam no filtro por parecerem nome próprio — decisão consciente de
+  não curar isso à mão, é julgamento que fica pra Adriana revisar no
+  WhatsApp mensal). **Plano inteiro fechado, não reabrir — próximo passo
+  é só esperar o aviso do dia 15 e decidir candidato por candidato, se
+  quiser.**
+
 Continuando de uma sessão anterior (04/09/2026, sessão 19 — sync de
 vídeo do Drive corrigido na raiz, migrado pra Cloudflare Worker).
 Leia primeiro MEMORY_WORK.MD, seção "Sessão 19", pro resumo completo.
@@ -283,17 +312,6 @@ avisando a Adriana pra checar se a LinkedIn aprovou o "Request Access" do
 foi aprovado antes disso, pular direto pro item 1 de "Precisa de decisão".
 
 ## Precisa de decisão/ação da Adriana
--3. **Consolidação das telas de IA (sessão de 28-29/08/2026)**: extensão
-   do Chrome desconectada, teste ao vivo da aba duplicada em
-   `/admin/configuracoes` ficou pendente. Reconectar e testar antes de
-   decidir a ordem de execução (apagar duplicata → mover Brain IA →
-   corrigir toggles de Autonomia). Ver bloco completo no topo deste
-   arquivo. Não redesenhar a análise do zero — já está pronta.
--2. **Plano de corte Modelo/Versão (17 passos, sessão 16)**: pronto,
-   todas as decisões de escopo já tomadas — só falta o "autorizo" pra
-   começar pela Fase 1. Ver MEMORY_WORK.MD seção "Sessão 16" pro plano
-   completo. Não redesenhar do zero nem reabrir as perguntas já
-   respondidas.
 -1.5. **H6 19 (o que NÃO é o de placa SIQ-5H93)**: não consegue ser
    publicado na Webmotors em nenhuma modalidade hoje — VIP é rejeitado
    por um motivo do lado da própria Webmotors (testado isolando a
@@ -396,6 +414,13 @@ foi aprovado antes disso, pular direto pro item 1 de "Precisa de decisão".
 ## Conferir, sem precisar perguntar
 - **Push em dia**: confira `git log -1` — todo commit de 23/08 foi
   pushado no mesmo bloco de autorização, sem exceção.
+- **Auditoria mensal FIPE (Fase 5, 09/09/2026)**: cron
+  `fipe-auditoria-modelo-versao-cron-job` roda todo dia 15 às 12h UTC
+  (~9h Brasília) sozinho — não precisa fazer nada até lá. Se a Adriana
+  perguntar por que recebeu um WhatsApp de "Auditoria mensal FIPE", é
+  isso, é normal e mensal. Resultado completo sempre em
+  `fipe_auditoria_modelo_versao_runs` (Supabase) se precisar olhar mais
+  fundo que a mensagem manda.
 - **Página dedicada por vaga no ar** (23/08) — `/vagas/:id` (aceita id ou
   slug) mostra imagem + descrição completa + formulário já vinculado à
   vaga. Testado ao vivo no navegador (localhost), sem erro. IA de imagem

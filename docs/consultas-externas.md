@@ -33,6 +33,14 @@ painel pede.
 | `consultar-cpf` tenta extrair o nome da pessoa de formatos de resposta bem variados da ApiBrasil (função `findNome`, busca recursiva no JSON) — indício de que o formato de retorno real da ApiBrasil já mudou ou é inconsistente entre tipos de consulta | leitura do código, linhas 11-43 |
 | Nenhuma das três grava log de auditoria (quem consultou o quê, quando) — só atualiza a linha de cache | leitura das três functions, nenhuma escreve em tabela de log/histórico |
 
+## Ver também
+
+- `docs/modelo-versao-corte.md` — usa uma API de FIPE **diferente** desta
+  (a pública/gratuita `parallelum.com.br`, não a ApiBrasil paga daqui)
+  pra auditar mensalmente se o catálogo de modelos da FIPE tem nome
+  composto novo não coberto pelas exceções de corte Modelo/Versão. Não
+  confundir as duas integrações de FIPE do projeto.
+
 ## Becos sem saída — não repetir
 
 - Não é possível confirmar se `API_BRASIL_TOKEN` está configurado sem

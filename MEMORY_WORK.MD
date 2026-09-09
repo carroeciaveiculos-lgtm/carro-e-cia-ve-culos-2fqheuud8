@@ -9,7 +9,97 @@ precisar reler o histórico inteiro de conversas. Diferente do
 pra ser mantido em dia de verdade. Detalhe técnico por integração continua
 nos arquivos `docs/*.md` — aqui é só o resumo de estado + pendências.
 
-Última atualização: 2026-09-04 (sessão 19 — sync de vídeo do Drive corrigido na raiz, migrado de Edge Function pra Cloudflare Worker; 13/14 vídeos sincronizados ao vivo).
+Última atualização: 2026-09-09 (sessão 20 — consolidação das telas de IA do CRM fechada + Fase 5 do corte Modelo/Versão implementada, plano de 17 passos 100% completo).
+
+## Sessão 20 (09/09/2026) — telas de IA consolidadas + Fase 5 do corte Modelo/Versão fecha o plano de 17 passos
+
+**Parte 1 — Consolidação das telas de IA do CRM (retomada da sessão de
+28-29/08/2026)**:
+- Aba "Prompts IA" duplicada de `/admin/configuracoes` **removida** — editava
+  `ai_prompts_config` sem nenhuma proteção da tela nova (permitia editar
+  regra protegida sem aviso de efeito cascata, achado real, não só
+  cosmético).
+- **Brain IA movido** de `/admin/configuracoes` pra dentro de
+  `/admin/prompts-ia`, que virou "Regras de IA" no menu lateral, com abas
+  "Regras" e "Brain IA". Novo componente
+  `src/components/admin/BrainIAPanel.tsx`. `/admin/configuracoes` ficou só
+  com Contatos, Loja & SEO, Integrações.
+- **Painel de Autonomia investigado a fundo**: `isAutonomiaEnabled()` e
+  `logAutonomiaAction()` (`src/services/autonomia.ts`) nunca eram chamados
+  em lugar nenhum do sistema — os 9 toggles nunca fizeram nada de verdade.
+  4 (`ml_auto_publish`, `wm_auto_publish`, `unpublish_on_sold`,
+  `reengage_leads_24h`) já rodam sempre via cron/trigger, ignorando o
+  toggle; os outros 5 nunca tiveram nenhuma automação por trás. Toggles
+  trocados por badges de status real ("Sempre ativo"/"Não implementado").
+  Removido o card "Log de Auditoria — Ações Recentes" (ficava sempre
+  vazio) e o código órfão (`fetchAutonomiaLogs`, `toggleAutonomiaConfig`,
+  `isAutonomiaEnabled`, `logAutonomiaAction`, tipo `AutonomiaLog`).
+- Testado ao vivo (localhost logado): aba duplicada sumiu, Brain IA carrega
+  dados reais dentro de Regras de IA, badges do Autonomia corretos.
+  `bun run lint`/`build` limpos. Commits `358aad7` e `faceaf7`, push feito.
+- Os 5 slugs "sem uso hoje" em `ai_prompts_config` (`negociacao`,
+  `gerar_conteudo_social`, `gerar_conteudo`, `re_engagement`, `ai_sdr`):
+  decisão foi **não apagar**, ficam como estão (zero risco, já sinalizados
+  na tela).
+
+**Parte 2 — Achado importante: o plano de 17 passos do corte Modelo/Versão
+já estava 100% pronto, só faltava 1 fase.** `PROXIMA_SESSAO.md` tinha
+ficado com uma nota velha (de antes da continuação da própria sessão 16)
+dizendo que nada tinha sido implementado — na verdade as Fases 1-4 foram
+implementadas, testadas e publicadas em 27/08/2026 (ver seção "Sessão 16,
+continuação" abaixo). **Reconferido direto no Supabase de produção antes
+de confiar na memória** (autocrítica pedida, 4 pontos):
+1. As 5 migrations das Fases 1-4 realmente aplicadas (`list_migrations`).
+2. `consultar-placa`/`ai-sdr` com deploy real de 27/08/2026, nenhum
+   redeploy depois que pudesse ter revertido.
+3. Os 27 veículos ativos hoje (26 de então + 1 novo) — **nenhum** com
+   Modelo/Versão juntos de novo, inclusive os 2 cadastrados depois de
+   27/08 (nenhuma regressão).
+4. Nenhum cron de auditoria FIPE existia — Fase 5 realmente nunca foi
+   feita (confirmado, não só suposição).
+
+**Fase 5 implementada, testada e no ar — plano de 17 passos agora 100%
+completo**:
+- Migration `fipe_auditoria_modelo_versao` — tabela
+  `fipe_auditoria_modelo_versao_runs` (histórico de cada auditoria:
+  marcas/modelos auditados, candidatos, marcas sem correspondência,
+  status/erro) + `cron.schedule('fipe-auditoria-modelo-versao-cron-job',
+  '0 12 15 * *', ...)` (dia 15, ~9h Brasília).
+- Function nova `supabase/functions/fipe-auditoria-modelo-versao/` —
+  busca o catálogo da API pública gratuita da FIPE (`parallelum.com.br`,
+  já usada em `src/services/fipe.ts`) só das marcas que a loja já teve
+  (`veiculos`/`veiculos_cache`, hoje 19 marcas — escopo deliberado, não as
+  ~130 da FIPE inteira, tanto por relevância quanto por segurança: rodar
+  as ~130 dentro de uma Edge Function arriscaria o mesmo tipo de limite
+  que já tirou o sync de vídeo do Supabase, ver Sessão 19). Pra cada nome
+  de modelo com 2+ palavras não coberto por uma exceção existente, agrupa
+  por (marca, 1ª palavra, 2ª palavra); vira candidato quando a 2ª palavra
+  "parece" nome próprio (não sigla de acabamento tipo GLi/XLi/SE-G) e
+  recorre 3+ vezes. **Nunca insere exceção sozinha** — só grava o
+  resultado e avisa por WhatsApp (mesmo canal do `daily-report-cron`).
+- Testado ao vivo de verdade (disparo manual via `net.http_post`, mesmo
+  truque já documentado — a role do `execute_sql` da MCP `supabase` não
+  tem permissão em `get_internal_service_secret()`, precisou ser via MCP
+  `claude_ai_Supabase`): 19 marcas, 4630 modelos, 0 erro, WhatsApp de
+  teste realmente enviado. Achou ~90 candidatos — a maioria plausível
+  (ex: "S10 Blazer", "Civic Sedan", "Passat Variant", "Wrangler
+  Unlimited" — esse último já era um "fica de fora por padrão" da sessão
+  16), mas com ruído conhecido: nomes de linha de acabamento formatados
+  como palavra normal escapam do filtro (ex: VW "Comfortline"/
+  "Trendline"/"Highline", Hyundai "Vision"/"Sense"/"Platinum"/"Ocean" são
+  trim, não nameplate distinta, mas passam no filtro de formato). Decisão
+  consciente: não curar essa lista à mão agora — seria eu decidindo o que
+  é ou não nameplate, exatamente o julgamento que o desenho reserva pra
+  Adriana. O relatório de WhatsApp já corta pros 15 mais frequentes
+  (ordenação por ocorrência tende a favorecer os casos reais, que
+  recorrem mais), e a lista completa fica salva no banco pra quem quiser
+  olhar mais fundo.
+- Advisor de segurança e performance do Supabase conferidos depois do
+  deploy — nenhum achado novo relacionado a `fipe_auditoria_modelo_versao_runs`
+  nem à function nova (achados existentes são todos de tabelas/funções
+  anteriores, fora de escopo).
+- `bun run lint`/`build` do front-end continuam limpos (Fase 5 é só
+  backend, não toca o bundle Vite).
 
 ## Sessão 19 (04/09/2026) — sync de vídeo corrigido na raiz (migrado pra Cloudflare Worker)
 
