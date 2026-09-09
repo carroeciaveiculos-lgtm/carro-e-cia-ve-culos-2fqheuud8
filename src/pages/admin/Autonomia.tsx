@@ -7,20 +7,24 @@ import {
   ShoppingCart,
   AlertTriangle,
   ClipboardList,
-  Loader2,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Switch } from '@/components/ui/switch'
-import { ScrollArea } from '@/components/ui/scroll-area'
+import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
-import {
-  fetchAutonomiaConfig,
-  toggleAutonomiaConfig,
-  fetchAutonomiaLogs,
-  type AutonomiaConfig,
-  type AutonomiaLog,
-} from '@/services/autonomia'
+import { fetchAutonomiaConfig, type AutonomiaConfig } from '@/services/autonomia'
 import { SystemDirectives } from '@/components/admin/SystemDirectives'
+
+// Achado 08/09/2026: nenhum dos 9 toggles desta tela é lido em lugar
+// nenhum do sistema (isAutonomiaEnabled/logAutonomiaAction nunca são
+// chamados). Os 4 abaixo já rodam sempre, via cron/trigger, independente
+// do que estiver marcado aqui; os outros 5 não têm nenhuma automação
+// implementada. Ver docs/admin-ia-conteudo.md, seção "Painel de Autonomia".
+const SEMPRE_ATIVO = new Set([
+  'ml_auto_publish',
+  'wm_auto_publish',
+  'unpublish_on_sold',
+  'reengage_leads_24h',
+])
 
 const GROUPS = [
   {
@@ -69,19 +73,13 @@ const GROUPS = [
 
 export default function AutonomiaPage() {
   const [configs, setConfigs] = useState<AutonomiaConfig[]>([])
-  const [logs, setLogs] = useState<AutonomiaLog[]>([])
   const [loading, setLoading] = useState(true)
-  const [toggling, setToggling] = useState<string | null>(null)
 
   const loadData = useCallback(async () => {
     setLoading(true)
     try {
-      const [configData, logData] = await Promise.all([
-        fetchAutonomiaConfig(),
-        fetchAutonomiaLogs(30),
-      ])
+      const configData = await fetchAutonomiaConfig()
       setConfigs(configData)
-      setLogs(logData)
     } catch (err: any) {
       toast.error(`Erro ao carregar configurações: ${err?.message}`)
     } finally {
@@ -93,19 +91,6 @@ export default function AutonomiaPage() {
     loadData()
   }, [loadData])
 
-  const handleToggle = async (slug: string, enabled: boolean) => {
-    setToggling(slug)
-    try {
-      await toggleAutonomiaConfig(slug, enabled)
-      setConfigs((prev) => prev.map((c) => (c.slug === slug ? { ...c, enabled } : c)))
-      toast.success(`Configuração ${enabled ? 'ativada' : 'desativada'}`)
-    } catch (err: any) {
-      toast.error(`Erro ao atualizar: ${err?.message}`)
-    } finally {
-      setToggling(null)
-    }
-  }
-
   const getConfig = (slug: string) => configs.find((c) => c.slug === slug)
 
   return (
@@ -113,7 +98,8 @@ export default function AutonomiaPage() {
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Painel de Autonomia</h1>
         <p className="text-muted-foreground text-sm mt-1">
-          Configure as automações do sistema em tempo real.
+          Status real de cada automação — nenhuma delas tem um interruptor de verdade por trás,
+          então esta tela só mostra o que já roda sozinho e o que ainda não existe.
         </p>
       </div>
 
@@ -134,17 +120,22 @@ export default function AutonomiaPage() {
                   : group.slugs.map((slug) => {
                       const cfg = getConfig(slug)
                       if (!cfg) return null
+                      const sempreAtivo = SEMPRE_ATIVO.has(slug)
                       return (
                         <div
                           key={slug}
                           className="flex items-center justify-between gap-3 rounded-lg border p-3 hover:bg-accent/50 transition-colors"
                         >
                           <span className="text-sm font-medium flex-1">{cfg.label}</span>
-                          <Switch
-                            checked={cfg.enabled}
-                            disabled={toggling === slug}
-                            onCheckedChange={(v) => handleToggle(slug, v)}
-                          />
+                          {sempreAtivo ? (
+                            <Badge className="bg-green-600 hover:bg-green-600 shrink-0">
+                              Sempre ativo
+                            </Badge>
+                          ) : (
+                            <Badge variant="outline" className="text-muted-foreground shrink-0">
+                              Não implementado
+                            </Badge>
+                          )}
                         </div>
                       )
                     })}
@@ -153,58 +144,6 @@ export default function AutonomiaPage() {
           )
         })}
       </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-base">
-            <ClipboardList className="h-5 w-5 text-purple-600" />
-            Log de Auditoria — Ações Recentes
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {loading ? (
-            <div className="space-y-2">
-              {Array.from({ length: 5 }).map((_, i) => (
-                <Skeleton key={i} className="h-12 w-full" />
-              ))}
-            </div>
-          ) : logs.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-8">
-              Nenhuma ação registrada ainda.
-            </p>
-          ) : (
-            <ScrollArea className="h-[300px] pr-4">
-              <div className="space-y-2">
-                {logs.map((log) => (
-                  <div
-                    key={log.id}
-                    className="flex items-start gap-3 rounded-lg border p-3 text-sm"
-                  >
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium">{log.action}</p>
-                      {log.details && (
-                        <p className="text-xs text-muted-foreground truncate">
-                          {typeof log.details === 'string'
-                            ? log.details
-                            : JSON.stringify(log.details)}
-                        </p>
-                      )}
-                      {log.result && (
-                        <span className="inline-block mt-1 text-xs px-2 py-0.5 rounded-full bg-accent">
-                          {log.result}
-                        </span>
-                      )}
-                    </div>
-                    <span className="text-xs text-muted-foreground whitespace-nowrap">
-                      {new Date(log.created_at).toLocaleString('pt-BR')}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </ScrollArea>
-          )}
-        </CardContent>
-      </Card>
 
       <SystemDirectives />
     </div>
