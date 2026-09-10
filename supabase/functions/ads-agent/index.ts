@@ -143,6 +143,18 @@ Deno.serve(async (req) => {
         new_status: params?.new_status,
         data,
       }
+    } else if (action === 'get_account_balance') {
+      const data = await metaGet(`act_${META_AD_ACCOUNT_ID}`, {
+        fields: 'balance,amount_spent,spend_cap,currency,funding_source_details',
+      })
+      result = { account: data }
+    } else if (action === 'get_recommendations') {
+      // Recomendacoes da Meta sao por CONTA, nao por campanha -- testado
+      // 10/09/2026, `/{campaign_id}/recommendations` devolve erro "nonexisting
+      // field"; `act_{id}/recommendations` funciona e traz recomendacao real
+      // (ex: variar texto/criativo do anuncio, com estimativa de ganho).
+      const data = await metaGet(`act_${META_AD_ACCOUNT_ID}/recommendations`, {})
+      result = { recomendacoes: data.data?.[0]?.recommendations || [] }
     } else if (action === 'pause_sold_ads') {
       const { data: soldVehicles } = await supabase
         .from('veiculos')
