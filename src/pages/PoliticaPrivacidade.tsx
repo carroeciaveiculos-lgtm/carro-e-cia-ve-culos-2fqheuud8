@@ -270,6 +270,74 @@ export default function PoliticaPrivacidade() {
             navegador de internet. A desativação de determinados cookies poderá afetar o
             carregamento e o desempenho de algumas páginas do nosso portal de veículos.
           </p>
+
+          <h2 className="text-xl md:text-2xl font-bold text-left pt-8">
+            SEÇÃO 4: INTEGRAÇÃO GOOGLE ADS (APP "CARRO E CIA — GESTÃO DE ANÚNCIOS GOOGLE ADS")
+          </h2>
+          <p>
+            Esta seção descreve especificamente o tratamento de dados feito pela nossa ferramenta
+            interna de gestão de anúncios Google Ads, usada exclusivamente pela nossa própria
+            equipe autorizada para administrar a conta de anúncios da Carro e Cia Motors na
+            plataforma Google Ads. Não é um produto oferecido a clientes ou terceiros. Mais
+            detalhes sobre o app em{' '}
+            <Link to="/integracao-google-ads" className="text-primary hover:underline">
+              /integracao-google-ads
+            </Link>
+            .
+          </p>
+
+          <h3 className="text-lg md:text-xl font-semibold text-left pt-4">
+            1. Dados Acessados
+          </h3>
+          <p>
+            O app acessa, via API do Google Ads (escopo{' '}
+            <code>https://www.googleapis.com/auth/adwords</code>), apenas dados da própria conta
+            de anúncios da empresa: lista e status de campanhas, orçamento diário, métricas de
+            desempenho (impressões, cliques, custo, conversões), gasto/limite de cobrança da conta
+            e recomendações geradas pela plataforma Google Ads. O app não acessa e-mail, contatos,
+            arquivos, agenda ou qualquer outro dado pessoal da conta Google usada para autorizar o
+            acesso.
+          </p>
+
+          <h3 className="text-lg md:text-xl font-semibold text-left pt-4">2. Uso dos Dados</h3>
+          <p>
+            Os dados lidos são exibidos num painel interno para que nossa equipe acompanhe o
+            desempenho das campanhas publicitárias da revenda e, quando necessário, solicite
+            ajuste de orçamento ou status de campanha. Toda solicitação de ajuste fica pendente
+            numa fila de aprovação interna — nenhuma mudança é enviada à API do Google
+            automaticamente, só depois de confirmação manual de um responsável autorizado.
+          </p>
+
+          <h3 className="text-lg md:text-xl font-semibold text-left pt-4">
+            3. Compartilhamento de Dados
+          </h3>
+          <p>
+            Os dados da conta de anúncios não são compartilhados, vendidos ou cedidos a terceiros
+            sob nenhuma hipótese. São processados apenas pela nossa infraestrutura de hospedagem
+            (Supabase, Inc.), na função exclusiva de suboperadora de dados, e acessados somente por
+            usuários autenticados e autorizados do nosso painel administrativo interno.
+          </p>
+
+          <h3 className="text-lg md:text-xl font-semibold text-left pt-4">4. Proteção dos Dados</h3>
+          <p>
+            As credenciais de acesso à API do Google Ads (token de desenvolvedor, client ID/secret
+            e refresh token) são armazenadas como segredos criptografados na nossa infraestrutura
+            de hospedagem, nunca em texto plano ou em arquivo versionado publicamente. O acesso ao
+            painel que exibe esses dados exige autenticação e é restrito a usuários com permissão
+            específica no nosso sistema de controle de acesso interno.
+          </p>
+
+          <h3 className="text-lg md:text-xl font-semibold text-left pt-4">
+            5. Retenção e Exclusão
+          </h3>
+          <p>
+            Os dados da conta de anúncios são consultados em tempo real a cada acesso ao painel e
+            não ficam armazenados de forma permanente além do necessário para o histórico de
+            solicitações de ajuste e registro de auditoria das ações realizadas. O acesso do app à
+            conta Google Ads pode ser revogado a qualquer momento pelo proprietário da conta,
+            diretamente nas configurações de segurança da Conta Google, o que interrompe
+            imediatamente qualquer novo acesso aos dados.
+          </p>
         </div>
       </div>
     </div>

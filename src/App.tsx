@@ -177,6 +177,7 @@ const Contato = lazyWithRetry(() => import('./pages/Contato'))
 const TrabalheConosco = lazyWithRetry(() => import('./pages/TrabalheConosco'))
 const VagaDetalhe = lazyWithRetry(() => import('./pages/VagaDetalhe'))
 const PoliticaPrivacidade = lazyWithRetry(() => import('./pages/PoliticaPrivacidade'))
+const IntegracaoGoogleAds = lazyWithRetry(() => import('./pages/IntegracaoGoogleAds'))
 const Termos = lazyWithRetry(() => import('./pages/Termos'))
 const Seguranca = lazyWithRetry(() => import('./pages/consignacao/Seguranca'))
 const Praticidade = lazyWithRetry(() => import('./pages/consignacao/Praticidade'))
@@ -305,6 +306,7 @@ const MainApp = () => (
       <Route path="/trabalhe-conosco" element={<TrabalheConosco />} />
       <Route path="/vagas/:id" element={<VagaDetalhe />} />
       <Route path="/politica-de-privacidade" element={<PoliticaPrivacidade />} />
+      <Route path="/integracao-google-ads" element={<IntegracaoGoogleAds />} />
       <Route path="/termos" element={<Termos />} />
 
       {/* Landing Pages LPs */}
