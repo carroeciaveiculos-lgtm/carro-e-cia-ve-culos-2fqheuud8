@@ -278,12 +278,7 @@ export default function PoliticaPrivacidade() {
             Esta seção descreve especificamente o tratamento de dados feito pela nossa ferramenta
             interna de gestão de anúncios Google Ads, usada exclusivamente pela nossa própria
             equipe autorizada para administrar a conta de anúncios da Carro e Cia Motors na
-            plataforma Google Ads. Não é um produto oferecido a clientes ou terceiros. Mais
-            detalhes sobre o app em{' '}
-            <Link to="/integracao-google-ads" className="text-primary hover:underline">
-              /integracao-google-ads
-            </Link>
-            .
+            plataforma Google Ads. Não é um produto oferecido a clientes ou terceiros.
           </p>
 
           <h3 className="text-lg md:text-xl font-semibold text-left pt-4">
