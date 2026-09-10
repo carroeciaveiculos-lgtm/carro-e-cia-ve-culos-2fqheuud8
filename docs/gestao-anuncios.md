@@ -3,7 +3,7 @@
 **Como usar este documento.** Vá direto à seção do seu assunto. A seção
 _Becos sem saída_ lista o que já foi testado e falhou — **não repita**.
 
-Última atualização: 2026-09-10.
+Última atualização: 2026-09-10 (verificação OAuth do Google Ads em andamento).
 
 ## Pedido original (10/09/2026)
 
@@ -172,6 +172,75 @@ pausada) com **mudança neutra de propósito** (orçamento pro mesmo valor
 que já tinha) — `resultado_api` confirmou mutate real aceito pela API
 (`resourceName` do orçamento atualizado devolvido), sem efeito prático
 real, registro de teste apagado do banco depois.
+
+## Verificação do app OAuth Google Ads (10/09/2026)
+
+Enviado pra produção com o nome "Carro e Cia — Gestão de Anúncios Google
+Ads" (conta dona: `lgacomerciodeveiculos@gmail.com`). Google rejeitou
+**2 vezes seguidas com os 4 mesmos erros**, mesmo depois de corrigir o
+conteúdo de verdade (política de privacidade Seção 4, página pública
+`/integracao-google-ads`, nome do app renomeado no Console):
+
+1. Política de privacidade sem conteúdo suficiente.
+2. Homepage atrás de login.
+3. Homepage não explica o propósito do app.
+4. Nome do app não bate com o da homepage.
+
+**Causa raiz (achada testando com `curl`, sem rodar JS):** o site
+principal é uma SPA React/Vite. O HTML que o servidor entrega pra
+qualquer rota é sempre o mesmo: `<div id="root"></div>` vazio e
+`<title>Carro e Cia Veículos</title>` genérico — confirmado idêntico nas
+3 páginas (raiz, `/integracao-google-ads`, `/politica-de-privacidade`).
+`wrangler.jsonc` do site tem `"not_found_handling":
+"single-page-application"`: sem prerender/SSR, todo conteúdo só existe
+depois do JS rodar no navegador. O revisor de verificação do Google (ao
+que tudo indica) não executa JavaScript — por isso os 4 erros voltaram
+idênticos, palavra por palavra, na segunda tentativa.
+
+**Solução escolhida — micro-site estático separado, não prerender do
+site principal.** Adriana lembrou que também tem o registro de
+`carroeciaveiculos.com.br` (domínio antigo, hoje só com um redirect pra
+`carroeciamotors.com.br`, na mesma conta Cloudflare). Em vez de mexer no
+pipeline de build do site (mais arriscado, cria dependência de
+build-script), foi criado um subdomínio novo, `hub.` — sem tocar nos
+registros DNS existentes:
+
+- Repositório `hub-carroeciaveiculos` (fora do monorepo do site,
+  conta GitHub `carroeciaveiculos-lgtm`, público): `worker.js` (HTML puro
+  em template string, sem framework, sem build — serve `/` e
+  `/politica-de-privacidade`), `wrangler.jsonc` (documenta a config, não
+  testada via `wrangler deploy`), `README.md`.
+- Publicado via API da Cloudflare direto (`PUT
+  /accounts/{id}/workers/scripts/hub-carroeciaveiculos` multipart +
+  `PUT /accounts/{id}/workers/domains` pro domínio customizado
+  `hub.carroeciaveiculos.com.br`, zona `d5d420ba92e73d9ee3e509a79eeb9c9a`).
+- Testado com `curl` (sem JS): título do app bate exatamente com o
+  Console, as 5 subseções da política aparecem em texto puro. Confirmado
+  que o redirect antigo do domínio (`carroeciaveiculos.com.br` →
+  `carroeciamotors.com.br`) continua intacto.
+- Commit `2e25bcd` no repo novo; **push ainda não feito** (remote
+  configurado, falta autorização/pedido).
+
+**3ª tentativa de verificação (10/09/2026) — erro novo, diferente dos 4
+antigos (sinal de que a causa raiz foi resolvida):**
+
+> O site do URL da sua página inicial "https://hub.carroeciaveiculos.com.br/"
+> não está registrado para você.
+
+Esse é um requisito separado: o Google exige que o domínio da homepage
+esteja verificado no **Google Search Console**, com a mesma conta que é
+dona do projeto (`lgacomerciodeveiculos@gmail.com`). Passo pendente (só a
+Adriana, precisa do login dela):
+
+1. `search.google.com/search-console` → Adicionar propriedade → tipo
+   **Domínio** (não "Prefixo de URL") → `carroeciaveiculos.com.br` (cobre
+   o subdomínio `hub.` junto).
+2. Google devolve um registro **TXT** (`google-site-verification=...`)
+   pra adicionar no DNS da zona `carroeciaveiculos.com.br`.
+3. Adicionar esse TXT no Cloudflare (já tenho acesso à zona — é só
+   passar o valor).
+4. Verificar no Search Console → conferir que o domínio aparece
+   autorizado na Tela de consentimento OAuth → reenviar pra verificação.
 
 ## Em aberto
 

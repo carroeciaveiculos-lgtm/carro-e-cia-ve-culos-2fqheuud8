@@ -9,7 +9,48 @@ precisar reler o histórico inteiro de conversas. Diferente do
 pra ser mantido em dia de verdade. Detalhe técnico por integração continua
 nos arquivos `docs/*.md` — aqui é só o resumo de estado + pendências.
 
-Última atualização: 2026-09-09 (sessão 20 — consolidação das telas de IA do CRM fechada + Fase 5 do corte Modelo/Versão implementada, plano de 17 passos 100% completo).
+Última atualização: 2026-09-10 (sessão 21 — painel real de Gestão de Anúncios com fila de aprovação, Meta e Google Ads; verificação do app OAuth do Google em andamento).
+
+## Sessão 21 (10/09/2026) — painel de Gestão de Anúncios (Meta + Google) com fila de aprovação; verificação OAuth do Google Ads em andamento
+
+**Auditoria do menu "Marketing"** (submenus Marketing, Gestão de Anúncios,
+Central de Redes Sociais, Conteúdo, Design & Mídias): confirmado que
+"Gestão de Anúncios" era decorativa — a aba "Google Ads" nunca chamava a
+API do Google, tudo caía na Meta por engano (parâmetro `platform` sem
+uso real). Resto do menu Marketing (WhatsApp scheduler + Analytics) segue
+sem decisão tomada (deletar vs. manter) — não foi mexido.
+
+**Painel real construído, prioridade Meta → Google, como pedido pela
+Adriana.** Decisão de segurança dela, respeitada em todo o desenho: **nenhum
+ajuste de orçamento ou status vai direto pra API — sempre nasce numa fila
+de aprovação (`ads_solicitacoes_ajuste`) e só é aplicado depois de clique
+manual em "Aprovar".** Achado de segurança corrigido no meio do caminho: o
+chat "Agente IA" (`AdsAgentChat.tsx`) contornava a fila nova, chamando a
+API direto — fechado antes de considerar a Fase 2 concluída. Testado ao
+vivo de ponta a ponta nas duas plataformas (Meta: conta real
+`act_515820120462587`; Google: conta real `8695704366`, token OAuth
+renovado depois de expirado desde 27/08). Detalhe técnico completo,
+"becos sem saída" e testes em `docs/gestao-anuncios.md`.
+
+**Verificação do app OAuth Google Ads — em andamento, não fechada.** O
+Google rejeitou a submissão 2x com 4 erros idênticos (política de
+privacidade insuficiente, homepage atrás de login, homepage não explica o
+app, nome do app não bate) mesmo depois do conteúdo certo estar no ar —
+causa raiz: o site principal é uma SPA React/Vite, o servidor entrega HTML
+vazio (`<div id="root"></div>`), robô de verificação do Google não roda
+JavaScript. Resolvido criando um micro-site estático separado (HTML puro,
+sem framework), publicado em `hub.carroeciaveiculos.com.br` (domínio já
+registrado pela Adriana, ocioso; subdomínio novo, sem tocar no
+redirecionamento existente do domínio nem no site principal). Repositório
+próprio: `hub-carroeciaveiculos` (conta `carroeciaveiculos-lgtm`, público,
+commit `2e25bcd`, remote configurado mas **push ainda não autorizado/feito**).
+3ª tentativa de verificação trouxe um erro novo e diferente (bom sinal —
+os 4 antigos sumiram): **"homepage não registrada pra você"** — falta
+verificar a propriedade do domínio `carroeciaveiculos.com.br` no Google
+Search Console (mesma conta `lgacomerciodeveiculos@gmail.com` do projeto),
+adicionando um registro TXT no DNS. Passo seguinte, pendente: a Adriana
+gerar o valor TXT no Search Console e mandar pra eu adicionar no
+Cloudflare. Detalhe completo em `docs/gestao-anuncios.md`.
 
 ## Sessão 20 (09/09/2026) — telas de IA consolidadas + Fase 5 do corte Modelo/Versão fecha o plano de 17 passos
 

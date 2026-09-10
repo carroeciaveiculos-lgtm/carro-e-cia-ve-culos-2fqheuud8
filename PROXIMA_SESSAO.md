@@ -6,6 +6,32 @@ Copie e cole como primeira mensagem numa sessão nova do Claude Code.
 Projeto: Carro e Cia Veículos (revenda). Pasta de trabalho:
 C:\Projeto\Revenda Carro e Cia\carro-e-cia-ve-culos-2fqheuud8
 
+Continuando de uma sessão anterior (10/09/2026, sessão 21 — painel de
+Gestão de Anúncios com fila de aprovação; verificação OAuth do Google
+Ads em andamento, não fechada). Leia primeiro MEMORY_WORK.MD, seção
+"Sessão 21", pro resumo completo. Destaques:
+
+- **Painel real de Gestão de Anúncios (Meta + Google) construído e
+  testado ao vivo nas duas plataformas.** Fila de aprovação
+  (`ads_solicitacoes_ajuste`) pra todo ajuste de orçamento/status — nunca
+  aplica direto na API, só depois de "Aprovar" manual. Achado de
+  segurança (chat "Agente IA" contornava a fila) corrigido antes de
+  fechar. Detalhe técnico em `docs/gestao-anuncios.md`. **Item fechado,
+  não reabrir** (exceto se pedir mais telas/relatórios).
+- **PENDENTE — verificação do app OAuth Google Ads, não fechada.** Google
+  rejeitou 2x com os mesmos 4 erros (causa raiz: site principal é SPA,
+  servidor entrega HTML vazio, robô de verificação não roda JS).
+  Resolvido com um micro-site estático separado
+  (`hub.carroeciaveiculos.com.br`, repo `hub-carroeciaveiculos`, conta
+  GitHub `carroeciaveiculos-lgtm`, commit `2e25bcd`, **push ainda não
+  feito**). 3ª tentativa trouxe erro novo e diferente (bom sinal):
+  precisa verificar a propriedade do domínio `carroeciaveiculos.com.br`
+  no Google Search Console (registro TXT no DNS). **Próximo passo:
+  esperar a Adriana gerar o valor TXT no Search Console (conta
+  `lgacomerciodeveiculos@gmail.com`) e adicionar no Cloudflare.** Detalhe
+  completo em `docs/gestao-anuncios.md`, seção "Verificação do app OAuth
+  Google Ads".
+
 Continuando de uma sessão anterior (09/09/2026, sessão 20 — telas de IA
 do CRM consolidadas + Fase 5 do corte Modelo/Versão implementada). Leia
 primeiro MEMORY_WORK.MD, seção "Sessão 20", pro resumo completo.
