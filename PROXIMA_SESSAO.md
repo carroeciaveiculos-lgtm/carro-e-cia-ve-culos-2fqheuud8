@@ -18,19 +18,15 @@ Ads em andamento, não fechada). Leia primeiro MEMORY_WORK.MD, seção
   segurança (chat "Agente IA" contornava a fila) corrigido antes de
   fechar. Detalhe técnico em `docs/gestao-anuncios.md`. **Item fechado,
   não reabrir** (exceto se pedir mais telas/relatórios).
-- **PENDENTE — verificação do app OAuth Google Ads, não fechada.** Google
+- **Verificação do app OAuth Google Ads — aprovada, fechada.** Google
   rejeitou 2x com os mesmos 4 erros (causa raiz: site principal é SPA,
   servidor entrega HTML vazio, robô de verificação não roda JS).
   Resolvido com um micro-site estático separado
   (`hub.carroeciaveiculos.com.br`, repo `hub-carroeciaveiculos`, conta
-  GitHub `carroeciaveiculos-lgtm`, commit `2e25bcd`, **push ainda não
-  feito**). 3ª tentativa trouxe erro novo e diferente (bom sinal):
-  precisa verificar a propriedade do domínio `carroeciaveiculos.com.br`
-  no Google Search Console (registro TXT no DNS). **Próximo passo:
-  esperar a Adriana gerar o valor TXT no Search Console (conta
-  `lgacomerciodeveiculos@gmail.com`) e adicionar no Cloudflare.** Detalhe
-  completo em `docs/gestao-anuncios.md`, seção "Verificação do app OAuth
-  Google Ads".
+  GitHub `carroeciaveiculos-lgtm`). Verificação de domínio no Search
+  Console feita via autorização OAuth direta na conta Cloudflare (sem
+  TXT manual). **Reenviado e aprovado em 10/09/2026 — item fechado, não
+  reabrir.** Detalhe completo em `docs/gestao-anuncios.md`.
 
 Continuando de uma sessão anterior (09/09/2026, sessão 20 — telas de IA
 do CRM consolidadas + Fase 5 do corte Modelo/Versão implementada). Leia

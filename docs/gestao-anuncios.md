@@ -3,7 +3,7 @@
 **Como usar este documento.** Vá direto à seção do seu assunto. A seção
 _Becos sem saída_ lista o que já foi testado e falhou — **não repita**.
 
-Última atualização: 2026-09-10 (verificação OAuth do Google Ads em andamento).
+Última atualização: 2026-09-10 (verificação OAuth do Google Ads aprovada).
 
 ## Pedido original (10/09/2026)
 
@@ -235,12 +235,19 @@ Adriana, precisa do login dela):
 1. `search.google.com/search-console` → Adicionar propriedade → tipo
    **Domínio** (não "Prefixo de URL") → `carroeciaveiculos.com.br` (cobre
    o subdomínio `hub.` junto).
-2. Google devolve um registro **TXT** (`google-site-verification=...`)
-   pra adicionar no DNS da zona `carroeciaveiculos.com.br`.
-3. Adicionar esse TXT no Cloudflare (já tenho acesso à zona — é só
-   passar o valor).
-4. Verificar no Search Console → conferir que o domínio aparece
-   autorizado na Tela de consentimento OAuth → reenviar pra verificação.
+2. Na prática o Search Console não pediu TXT manual — reconheceu o
+   Cloudflare como provedor de DNS e ofereceu verificação automática via
+   autorização OAuth direta na conta Cloudflare (`Lgacomerciodeveiculos@gmail.com`).
+   Adriana autorizou, verificação instantânea, sem precisar de nenhum
+   passo manual meu no DNS.
+3. Reenviado pra verificação do app — **aprovado em 10/09/2026.**
+   Confirmação recebida: "Sua marca foi verificada e está aparecendo
+   para os usuários."
+
+**Status final: verificação OAuth do app "Carro e Cia — Gestão de
+Anúncios Google Ads" concluída e aprovada. Item fechado, não reabrir**
+(a menos que o Google exija renovação/nova verificação no futuro, o que
+não é o caso hoje).
 
 ## Em aberto
 

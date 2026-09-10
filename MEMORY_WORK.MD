@@ -9,7 +9,7 @@ precisar reler o histórico inteiro de conversas. Diferente do
 pra ser mantido em dia de verdade. Detalhe técnico por integração continua
 nos arquivos `docs/*.md` — aqui é só o resumo de estado + pendências.
 
-Última atualização: 2026-09-10 (sessão 21 — painel real de Gestão de Anúncios com fila de aprovação, Meta e Google Ads; verificação do app OAuth do Google em andamento).
+Última atualização: 2026-09-10 (sessão 21 — painel real de Gestão de Anúncios com fila de aprovação, Meta e Google Ads; verificação do app OAuth do Google **aprovada**).
 
 ## Sessão 21 (10/09/2026) — painel de Gestão de Anúncios (Meta + Google) com fila de aprovação; verificação OAuth do Google Ads em andamento
 
@@ -44,13 +44,15 @@ registrado pela Adriana, ocioso; subdomínio novo, sem tocar no
 redirecionamento existente do domínio nem no site principal). Repositório
 próprio: `hub-carroeciaveiculos` (conta `carroeciaveiculos-lgtm`, público,
 commit `2e25bcd`, remote configurado mas **push ainda não autorizado/feito**).
-3ª tentativa de verificação trouxe um erro novo e diferente (bom sinal —
-os 4 antigos sumiram): **"homepage não registrada pra você"** — falta
-verificar a propriedade do domínio `carroeciaveiculos.com.br` no Google
-Search Console (mesma conta `lgacomerciodeveiculos@gmail.com` do projeto),
-adicionando um registro TXT no DNS. Passo seguinte, pendente: a Adriana
-gerar o valor TXT no Search Console e mandar pra eu adicionar no
-Cloudflare. Detalhe completo em `docs/gestao-anuncios.md`.
+3ª tentativa trouxe um erro novo e diferente (bom sinal — os 4 antigos
+sumiram): **"homepage não registrada pra você"** — precisava verificar a
+propriedade do domínio `carroeciaveiculos.com.br` no Google Search
+Console. Na prática não pediu TXT manual: reconheceu o Cloudflare como
+provedor de DNS e ofereceu verificação automática via autorização OAuth
+direta na conta Cloudflare — a Adriana autorizou, verificou na hora.
+**Reenviado e aprovado em 10/09/2026** ("Sua marca foi verificada e está
+aparecendo para os usuários"). **Item fechado, não reabrir.** Detalhe
+completo em `docs/gestao-anuncios.md`.
 
 ## Sessão 20 (09/09/2026) — telas de IA consolidadas + Fase 5 do corte Modelo/Versão fecha o plano de 17 passos
 
