@@ -155,6 +155,82 @@ Deno.serve(async (req) => {
       // (ex: variar texto/criativo do anuncio, com estimativa de ganho).
       const data = await metaGet(`act_${META_AD_ACCOUNT_ID}/recommendations`, {})
       result = { recomendacoes: data.data?.[0]?.recommendations || [] }
+    } else if (action === 'criar_solicitacao') {
+      // NUNCA chama a API da plataforma aqui -- so grava um pedido pendente.
+      // Decisao da Adriana (10/09/2026): todo ajuste de orcamento/status
+      // espera aprovacao explicita antes de mexer em dinheiro de verdade.
+      const { data, error } = await supabase
+        .from('ads_solicitacoes_ajuste')
+        .insert({
+          plataforma: platform || 'meta',
+          tipo_ajuste: params?.tipo_ajuste,
+          campanha_id: params?.campanha_id,
+          campanha_nome: params?.campanha_nome || null,
+          valor_atual: params?.valor_atual ?? null,
+          valor_novo: params?.valor_novo,
+          origem: params?.origem || 'manual',
+          descricao: params?.descricao || null,
+          solicitado_por: userId,
+        })
+        .select()
+        .single()
+      if (error) throw error
+      result = { solicitacao: data }
+    } else if (action === 'aplicar_solicitacao') {
+      const { data: solicitacao, error: fetchError } = await supabase
+        .from('ads_solicitacoes_ajuste')
+        .select('*')
+        .eq('id', params?.solicitacao_id)
+        .single()
+      if (fetchError) throw fetchError
+      if (solicitacao.status !== 'pendente') {
+        throw new Error(`Solicitação já está com status "${solicitacao.status}", não pode aplicar de novo.`)
+      }
+
+      let apiResult: any = null
+      let novoStatus = 'aplicado'
+      let erroMsg: string | null = null
+      try {
+        if (solicitacao.tipo_ajuste === 'orcamento') {
+          apiResult = await metaPost(solicitacao.campanha_id, {
+            daily_budget: Math.round((solicitacao.valor_novo?.daily_budget || 0) * 100).toString(),
+          })
+        } else if (solicitacao.tipo_ajuste === 'status') {
+          apiResult = await metaPost(solicitacao.campanha_id, {
+            status: solicitacao.valor_novo?.status,
+          })
+        } else {
+          throw new Error(`tipo_ajuste "${solicitacao.tipo_ajuste}" não tem execução automática.`)
+        }
+      } catch (e: any) {
+        novoStatus = 'erro'
+        erroMsg = e.message
+      }
+
+      const { data: atualizada, error: updateError } = await supabase
+        .from('ads_solicitacoes_ajuste')
+        .update({
+          status: novoStatus,
+          decidido_por: userId,
+          decidido_em: new Date().toISOString(),
+          resultado_api: apiResult,
+          erro: erroMsg,
+        })
+        .eq('id', solicitacao.id)
+        .select()
+        .single()
+      if (updateError) throw updateError
+
+      await supabase.from('ads_audit_logs').insert({
+        usuario_id: userId,
+        plataforma: solicitacao.plataforma,
+        acao: `aplicar_solicitacao:${solicitacao.tipo_ajuste}`,
+        campanha_id: solicitacao.campanha_id,
+        detalhes: { solicitacao_id: solicitacao.id, valor_novo: solicitacao.valor_novo },
+        status: novoStatus === 'aplicado' ? 'sucesso' : 'erro',
+      })
+
+      result = { solicitacao: atualizada }
     } else if (action === 'pause_sold_ads') {
       const { data: soldVehicles } = await supabase
         .from('veiculos')
@@ -192,14 +268,21 @@ Deno.serve(async (req) => {
       }
     }
 
-    await supabase.from('ads_audit_logs').insert({
-      usuario_id: userId,
-      plataforma: platform || 'meta',
-      acao: action,
-      campanha_id: params?.campaign_id || null,
-      detalhes: params || {},
-      status: 'sucesso',
-    })
+    // aplicar_solicitacao ja grava seu proprio log (com o status real,
+    // sucesso ou erro) porque captura o resultado da API dentro do proprio
+    // bloco -- esse log generico sempre grava "sucesso", registraria errado.
+    // criar_solicitacao nao precisa de log aqui: o pedido em si ja fica
+    // rastreado em ads_solicitacoes_ajuste, sem chamar a API da plataforma.
+    if (action !== 'aplicar_solicitacao' && action !== 'criar_solicitacao') {
+      await supabase.from('ads_audit_logs').insert({
+        usuario_id: userId,
+        plataforma: platform || 'meta',
+        acao: action,
+        campanha_id: params?.campaign_id || null,
+        detalhes: params || {},
+        status: 'sucesso',
+      })
+    }
 
     return new Response(JSON.stringify(result), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
