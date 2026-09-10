@@ -12,13 +12,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { RefreshCw, AlertTriangle, Check, X } from 'lucide-react'
-import {
-  listCampaigns,
-  updateBudget,
-  toggleStatus,
-  criarSolicitacaoAjuste,
-  type Campaign,
-} from '@/services/ads-manager'
+import { listCampaigns, criarSolicitacaoAjuste, type Campaign } from '@/services/ads-manager'
 import { useToast } from '@/hooks/use-toast'
 
 export function CampaignPanel({
@@ -72,50 +66,37 @@ export function CampaignPanel({
   const executeConfirmed = async () => {
     if (!confirmingAction) return
     try {
-      if (platform === 'meta') {
-        // Decisao da Adriana (10/09/2026): ajuste de orcamento/status na Meta
-        // nunca aplica na hora -- vira pedido pendente, ela aprova na fila.
-        const original = campaigns.find((c) => c.id === confirmingAction.campaign.id)
-        if (confirmingAction.type === 'budget') {
-          const budgetAtual = original?.daily_budget
-          await criarSolicitacaoAjuste({
-            platform,
-            tipo_ajuste: 'orcamento',
-            campanha_id: confirmingAction.campaign.id,
-            campanha_nome: confirmingAction.campaign.name,
-            valor_atual: { daily_budget: budgetAtual ?? null },
-            valor_novo: { daily_budget: confirmingAction.campaign.daily_budget },
-            descricao: `Orçamento de ${budgetAtual != null ? `R$ ${budgetAtual}` : 'valor não informado pela Meta'} para R$ ${confirmingAction.campaign.daily_budget}/dia`,
-          })
-        } else {
-          await criarSolicitacaoAjuste({
-            platform,
-            tipo_ajuste: 'status',
-            campanha_id: confirmingAction.campaign.id,
-            campanha_nome: confirmingAction.campaign.name,
-            valor_atual: { status: original?.status },
-            valor_novo: { status: confirmingAction.campaign.status },
-            descricao:
-              confirmingAction.campaign.status === 'ACTIVE'
-                ? 'Ativar campanha'
-                : 'Pausar campanha',
-          })
-        }
-        toast({ title: 'Enviado para a fila de aprovação — nada foi alterado na Meta ainda' })
-        onSolicitacaoCriada?.()
-      } else if (confirmingAction.type === 'budget') {
-        await updateBudget(
+      // Decisao da Adriana (10/09/2026): ajuste de orcamento/status nunca
+      // aplica na hora em nenhuma plataforma -- vira pedido pendente, ela
+      // aprova na fila (ver AdsDashboard.tsx).
+      const original = campaigns.find((c) => c.id === confirmingAction.campaign.id)
+      if (confirmingAction.type === 'budget') {
+        const budgetAtual = original?.daily_budget
+        await criarSolicitacaoAjuste({
           platform,
-          confirmingAction.campaign.id,
-          confirmingAction.campaign.daily_budget,
-        )
-        toast({ title: 'Orçamento atualizado com sucesso' })
-        fetchCampaigns()
+          tipo_ajuste: 'orcamento',
+          campanha_id: confirmingAction.campaign.id,
+          campanha_nome: confirmingAction.campaign.name,
+          valor_atual: { daily_budget: budgetAtual ?? null },
+          valor_novo: { daily_budget: confirmingAction.campaign.daily_budget },
+          descricao: `Orçamento de ${budgetAtual != null ? `R$ ${budgetAtual}` : 'valor não informado'} para R$ ${confirmingAction.campaign.daily_budget}/dia`,
+        })
       } else {
-        await toggleStatus(platform, confirmingAction.campaign.id, confirmingAction.campaign.status)
-        toast({ title: 'Status atualizado com sucesso' })
-        fetchCampaigns()
+        await criarSolicitacaoAjuste({
+          platform,
+          tipo_ajuste: 'status',
+          campanha_id: confirmingAction.campaign.id,
+          campanha_nome: confirmingAction.campaign.name,
+          valor_atual: { status: original?.status },
+          valor_novo: { status: confirmingAction.campaign.status },
+          descricao:
+            confirmingAction.campaign.status === 'ACTIVE' ? 'Ativar campanha' : 'Pausar campanha',
+        })
       }
+      toast({
+        title: `Enviado para a fila de aprovação — nada foi alterado na ${platform === 'google' ? 'Google' : 'Meta'} ainda`,
+      })
+      onSolicitacaoCriada?.()
     } catch (e: any) {
       toast({ title: 'Erro', description: e.message, variant: 'destructive' })
     } finally {

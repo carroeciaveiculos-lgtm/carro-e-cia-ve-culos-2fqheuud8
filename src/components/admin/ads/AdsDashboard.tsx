@@ -23,7 +23,15 @@ function formatBRL(centavos: string | number) {
   return valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 }
 
-export function MetaAdsDashboard() {
+// "a Meta" (empresa, feminino) vs "o Google" (produto, masculino) --
+// formas prontas por plataforma pra não sair errado tipo "a Google".
+const TEXTO_PLATAFORMA = {
+  meta: { nome: 'Meta', artigo: 'a', artigoCap: 'A', em: 'na', de: 'da', pra: 'pra' },
+  google: { nome: 'Google', artigo: 'o', artigoCap: 'O', em: 'no', de: 'do', pra: 'pro' },
+} as const
+
+export function AdsDashboard({ platform }: { platform: 'meta' | 'google' }) {
+  const t = TEXTO_PLATAFORMA[platform]
   const [balance, setBalance] = useState<AccountBalance | null>(null)
   const [loadingBalance, setLoadingBalance] = useState(true)
   const [recommendations, setRecommendations] = useState<Recommendation[]>([])
@@ -35,49 +43,55 @@ export function MetaAdsDashboard() {
   const { toast } = useToast()
 
   const loadLogs = useCallback(() => {
-    getAuditLogs('meta', 15)
+    getAuditLogs(platform, 15)
       .then(setLogs)
       .catch(() => {})
-  }, [])
+  }, [platform])
 
   const loadFila = useCallback(async () => {
     setLoadingFila(true)
     try {
-      setSolicitacoes(await listSolicitacoesAjuste('meta'))
+      setSolicitacoes(await listSolicitacoesAjuste(platform))
     } catch (e: any) {
       toast({ title: 'Erro ao carregar fila', description: e.message, variant: 'destructive' })
     } finally {
       setLoadingFila(false)
     }
-  }, [toast])
+  }, [platform, toast])
 
   useEffect(() => {
-    getAccountBalance('meta')
+    setLoadingBalance(true)
+    getAccountBalance(platform)
       .then(setBalance)
-      .catch((e) => toast({ title: 'Erro ao carregar gasto/limite', description: e.message, variant: 'destructive' }))
+      .catch((e) =>
+        toast({ title: 'Erro ao carregar gasto/limite', description: e.message, variant: 'destructive' }),
+      )
       .finally(() => setLoadingBalance(false))
 
-    getRecommendations('meta')
+    setLoadingRecs(true)
+    getRecommendations(platform)
       .then(setRecommendations)
-      .catch((e) => toast({ title: 'Erro ao carregar recomendações', description: e.message, variant: 'destructive' }))
+      .catch((e) =>
+        toast({ title: 'Erro ao carregar recomendações', description: e.message, variant: 'destructive' }),
+      )
       .finally(() => setLoadingRecs(false))
 
     loadFila()
     loadLogs()
-  }, [loadFila, loadLogs, toast])
+  }, [platform, loadFila, loadLogs, toast])
 
   const handleAprovar = async (id: string) => {
     setDecidindo(id)
     try {
-      const atualizada = await aplicarSolicitacaoAjuste(id)
+      const atualizada = await aplicarSolicitacaoAjuste(platform, id)
       if (atualizada.status === 'erro') {
         toast({
-          title: 'A Meta recusou o ajuste',
+          title: `${t.artigoCap} ${t.nome} recusou o ajuste`,
           description: atualizada.erro || 'Erro desconhecido',
           variant: 'destructive',
         })
       } else {
-        toast({ title: 'Aplicado na Meta com sucesso' })
+        toast({ title: `Aplicado ${t.em} ${t.nome} com sucesso` })
       }
       loadFila()
       loadLogs()
@@ -112,7 +126,7 @@ export function MetaAdsDashboard() {
             <Wallet className="w-4 h-4" /> Gasto da conta
           </CardTitle>
           <CardDescription>
-            A Meta cobra automaticamente do cartão ao atingir o limite — não é uma carteira com
+            {t.artigoCap} {t.nome} cobra automaticamente do cartão ao atingir o limite — não é uma carteira com
             saldo pra gastar, é quanto falta até a próxima cobrança.
           </CardDescription>
         </CardHeader>
@@ -145,11 +159,11 @@ export function MetaAdsDashboard() {
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2 text-base">
-            <Lightbulb className="w-4 h-4" /> Recomendações da Meta
+            <Lightbulb className="w-4 h-4" /> Recomendações {t.de} {t.nome}
           </CardTitle>
           <CardDescription>
-            Vêm direto da plataforma, por conta (não dá por campanha). Aplicar exige abrir no
-            Gerenciador de Anúncios — a Meta não permite aplicar a maioria via API.
+            Vêm direto da plataforma, por conta (não dá por campanha). {t.artigoCap} {t.nome} não permite
+            aplicar a maioria das recomendações via API.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
@@ -195,7 +209,7 @@ export function MetaAdsDashboard() {
             </Button>
           </div>
           <CardDescription>
-            Nenhum ajuste de orçamento ou status vai pra Meta sem você aprovar aqui.
+            Nenhum ajuste de orçamento ou status vai {t.pra} {t.nome} sem você aprovar aqui.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-2">
@@ -269,7 +283,7 @@ export function MetaAdsDashboard() {
         </CardContent>
       </Card>
 
-      <CampaignPanel platform="meta" onSolicitacaoCriada={loadFila} />
+      <CampaignPanel platform={platform} onSolicitacaoCriada={loadFila} />
 
       {logs.length > 0 && (
         <Card>

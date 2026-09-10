@@ -1,8 +1,7 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Activity, MessageSquare, Megaphone, FileText } from 'lucide-react'
 import { AdsAgentChat } from '@/components/admin/ads/AdsAgentChat'
-import { CampaignPanel } from '@/components/admin/ads/CampaignPanel'
-import { MetaAdsDashboard } from '@/components/admin/ads/MetaAdsDashboard'
+import { AdsDashboard } from '@/components/admin/ads/AdsDashboard'
 import { AdCopyGenerator } from '@/components/admin/ads/AdCopyGenerator'
 
 export default function AdsManager() {
@@ -49,10 +48,10 @@ export default function AdsManager() {
           <AdsAgentChat />
         </TabsContent>
         <TabsContent value="google">
-          <CampaignPanel platform="google" />
+          <AdsDashboard platform="google" />
         </TabsContent>
         <TabsContent value="meta">
-          <MetaAdsDashboard />
+          <AdsDashboard platform="meta" />
         </TabsContent>
         <TabsContent value="copy">
           <AdCopyGenerator />

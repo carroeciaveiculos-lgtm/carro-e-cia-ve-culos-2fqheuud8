@@ -1,5 +1,9 @@
 import { supabase } from '@/lib/supabase/client'
 
+function fnFor(platform: 'google' | 'meta') {
+  return platform === 'google' ? 'google-ads-agent' : 'ads-agent'
+}
+
 export interface ProposedAction {
   action: 'list_campaigns' | 'get_metrics' | 'update_budget' | 'toggle_status'
   platform: 'google' | 'meta'
@@ -32,7 +36,7 @@ export async function chatWithAgent(message: string): Promise<ProposedAction> {
 }
 
 export async function executeAction(action: ProposedAction) {
-  const { data, error } = await supabase.functions.invoke('ads-agent', {
+  const { data, error } = await supabase.functions.invoke(fnFor(action.platform), {
     body: {
       action: action.action,
       platform: action.platform,
@@ -48,7 +52,7 @@ export async function executeAction(action: ProposedAction) {
 }
 
 export async function listCampaigns(platform: 'google' | 'meta'): Promise<Campaign[]> {
-  const { data, error } = await supabase.functions.invoke('ads-agent', {
+  const { data, error } = await supabase.functions.invoke(fnFor(platform), {
     body: { action: 'list_campaigns', platform },
   })
   if (error) throw error
@@ -60,7 +64,7 @@ export async function updateBudget(
   campaignId: string,
   newBudget: number,
 ) {
-  const { data, error } = await supabase.functions.invoke('ads-agent', {
+  const { data, error } = await supabase.functions.invoke(fnFor(platform), {
     body: {
       action: 'update_budget',
       platform,
@@ -76,7 +80,7 @@ export async function toggleStatus(
   campaignId: string,
   newStatus: string,
 ) {
-  const { data, error } = await supabase.functions.invoke('ads-agent', {
+  const { data, error } = await supabase.functions.invoke(fnFor(platform), {
     body: {
       action: 'toggle_status',
       platform,
@@ -103,7 +107,7 @@ export interface AccountBalance {
 }
 
 export async function getAccountBalance(platform: 'google' | 'meta'): Promise<AccountBalance> {
-  const { data, error } = await supabase.functions.invoke('ads-agent', {
+  const { data, error } = await supabase.functions.invoke(fnFor(platform), {
     body: { action: 'get_account_balance', platform },
   })
   if (error) throw error
@@ -122,7 +126,7 @@ export interface Recommendation {
 }
 
 export async function getRecommendations(platform: 'google' | 'meta'): Promise<Recommendation[]> {
-  const { data, error } = await supabase.functions.invoke('ads-agent', {
+  const { data, error } = await supabase.functions.invoke(fnFor(platform), {
     body: { action: 'get_recommendations', platform },
   })
   if (error) throw error
@@ -154,8 +158,9 @@ export async function criarSolicitacaoAjuste(params: {
   valor_atual?: any
   valor_novo: any
   descricao?: string
+  origem?: 'manual' | 'agente_ia'
 }): Promise<SolicitacaoAjuste> {
-  const { data, error } = await supabase.functions.invoke('ads-agent', {
+  const { data, error } = await supabase.functions.invoke(fnFor(params.platform), {
     body: {
       action: 'criar_solicitacao',
       platform: params.platform,
@@ -166,7 +171,7 @@ export async function criarSolicitacaoAjuste(params: {
         valor_atual: params.valor_atual,
         valor_novo: params.valor_novo,
         descricao: params.descricao,
-        origem: 'manual',
+        origem: params.origem || 'manual',
       },
     },
   })
@@ -174,8 +179,11 @@ export async function criarSolicitacaoAjuste(params: {
   return data?.solicitacao
 }
 
-export async function aplicarSolicitacaoAjuste(solicitacaoId: string): Promise<SolicitacaoAjuste> {
-  const { data, error } = await supabase.functions.invoke('ads-agent', {
+export async function aplicarSolicitacaoAjuste(
+  platform: 'google' | 'meta',
+  solicitacaoId: string,
+): Promise<SolicitacaoAjuste> {
+  const { data, error } = await supabase.functions.invoke(fnFor(platform), {
     body: { action: 'aplicar_solicitacao', params: { solicitacao_id: solicitacaoId } },
   })
   if (error) throw error

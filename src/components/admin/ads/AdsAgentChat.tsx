@@ -3,7 +3,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Send, Bot, User, AlertTriangle, Check, X } from 'lucide-react'
-import { chatWithAgent, executeAction, type ProposedAction } from '@/services/ads-manager'
+import {
+  chatWithAgent,
+  executeAction,
+  criarSolicitacaoAjuste,
+  type ProposedAction,
+} from '@/services/ads-manager'
 import { useToast } from '@/hooks/use-toast'
 
 interface Message {
@@ -54,13 +59,44 @@ export function AdsAgentChat() {
     if (!msg.proposedAction) return
     setLoading(true)
     try {
-      await executeAction(msg.proposedAction)
-      setMessages((prev) =>
-        prev.map((m, i) =>
-          i === msgIndex ? { ...m, actionResult: 'Ação executada com sucesso!' } : m,
-        ),
-      )
-      toast({ title: 'Sucesso', description: 'Ação executada com sucesso!' })
+      const action = msg.proposedAction
+      // Decisao da Adriana (10/09/2026): ajuste de orcamento/status nunca
+      // aplica na hora, nem pelo chat -- vira pedido pendente, ela aprova
+      // na fila (aba Meta Ads / Google Ads). So acoes de leitura continuam
+      // indo direto pra API.
+      if (action.action === 'update_budget' || action.action === 'toggle_status') {
+        await criarSolicitacaoAjuste({
+          platform: action.platform,
+          tipo_ajuste: action.action === 'update_budget' ? 'orcamento' : 'status',
+          campanha_id: action.campaign_id || '',
+          campanha_nome: action.campaign_id,
+          valor_novo:
+            action.action === 'update_budget'
+              ? { daily_budget: action.new_budget }
+              : { status: action.new_status },
+          descricao: action.description,
+          origem: 'agente_ia',
+        })
+        setMessages((prev) =>
+          prev.map((m, i) =>
+            i === msgIndex
+              ? {
+                  ...m,
+                  actionResult: 'Enviado para a fila de aprovação — nada foi alterado ainda.',
+                }
+              : m,
+          ),
+        )
+        toast({ title: 'Enviado para a fila de aprovação' })
+      } else {
+        await executeAction(action)
+        setMessages((prev) =>
+          prev.map((m, i) =>
+            i === msgIndex ? { ...m, actionResult: 'Ação executada com sucesso!' } : m,
+          ),
+        )
+        toast({ title: 'Sucesso', description: 'Ação executada com sucesso!' })
+      }
     } catch (e: any) {
       toast({ title: 'Erro', description: e.message, variant: 'destructive' })
     } finally {

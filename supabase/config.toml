@@ -25,6 +25,9 @@ verify_jwt = true
 [functions.ads-agent]
 verify_jwt = true
 
+[functions.google-ads-agent]
+verify_jwt = true
+
 [functions.ai-agents]
 verify_jwt = true
 
