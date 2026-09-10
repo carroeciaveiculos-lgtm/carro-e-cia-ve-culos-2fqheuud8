@@ -257,28 +257,29 @@ export async function getContadoresModalidadeTodasPlataformas(): Promise<Contado
     })
   }
 
-  const outrasPlataformas: Array<[string, string, 'publicado_napista' | 'publicado_olx']> = [
-    ['napista', 'NaPista', 'publicado_napista'],
-    ['olx', 'OLX', 'publicado_olx'],
+  // Corrigido 10/09/2026: antes filtrava por `veiculos.publicado_napista`/
+  // `publicado_olx` (flag que pode divergir do status real — achado um
+  // caso concreto, Audi A3 placa PQE7D92, publicado de verdade na NaPista
+  // mas com a flag em false). Agora usa `get_veiculos_publicados_plataforma`,
+  // que pega só a linha mais recente por veículo em `estoque_publicacoes`
+  // (a tabela acumula uma linha por evento de sync, sem dedup).
+  const outrasPlataformas: Array<[string, string]> = [
+    ['napista', 'NaPista'],
+    ['olx', 'OLX'],
   ]
-  for (const [slug, label, campoPublicado] of outrasPlataformas) {
-    const { data: rows } = await supabase
-      .from('veiculos')
-      .select('ad_types')
-      .eq('status', 'disponivel')
-      .eq(campoPublicado, true)
+  for (const [slug, label] of outrasPlataformas) {
+    const { data: rows } = await supabase.rpc('get_veiculos_publicados_plataforma', {
+      p_platform: slug,
+    })
     const tiers = getTiersForPlatform(slug)
     for (const tier of tiers) {
       resultado.push({
         plataforma: label,
         modalidade: tier.label,
-        quantidade: (rows || []).filter((v) => (v.ad_types as Record<string, string> | null)?.[slug] === tier.value)
-          .length,
+        quantidade: (rows || []).filter((v) => v.tier === tier.value).length,
       })
     }
-    const semModalidade = (rows || []).filter(
-      (v) => !(v.ad_types as Record<string, string> | null)?.[slug],
-    ).length
+    const semModalidade = (rows || []).filter((v) => !v.tier).length
     if (semModalidade > 0) {
       resultado.push({ plataforma: label, modalidade: 'Não definida', quantidade: semModalidade })
     }
