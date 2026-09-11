@@ -33,15 +33,50 @@ aprovação antes.**
 
 ## Fase 1 (Meta) — o que foi construído
 
-### Saldo não é saldo
+### Saldo não é saldo — CORRIGIDO em 11/09/2026, achado anterior estava errado
 
-Testado ao vivo contra a conta real (`act_515820120462587`): o campo
-`balance` da Meta vem sempre próximo de zero — essa conta não é
-pré-paga, é cobrança automática por `spend_cap` (limite de gasto). Não
-existe "saldo disponível pra gastar" no sentido de carteira. A tela
-mostra 3 números reais: gasto atual (`amount_spent`), limite de cobrança
-(`spend_cap`), e a diferença entre os dois (quanto falta pra próxima
-cobrança automática no cartão).
+**Achado original (10/09/2026), errado:** testando só o campo `balance`
+do objeto de conta da API de Anúncios, ele vinha sempre perto de zero —
+concluí que a conta não era pré-paga, seria cobrança automática por
+`spend_cap`. A tela passou a mostrar gasto atual/limite/diferença como
+"orçamento".
+
+**Correção (11/09/2026):** auditando direto a Central de Pagamento do
+Business Manager (`business.facebook.com/latest/billing_hub/payment_activity`)
+a pedido da Adriana, achei o número real: **"Saldo pré-pago": R$
+431,82** — a conta **é** pré-paga de verdade, abastecida por PIX/cartão,
+debitada automaticamente todo dia conforme o gasto (transações reais:
+R$6 a R$118/dia, batendo com o relato da Adriana de R$10-15/dia por
+veículo em várias campanhas). Esse saldo pré-pago **não é o mesmo dado**
+que `balance` ou `spend_cap − amount_spent` do objeto de conta da API de
+Anúncios — são superfícies de API diferentes (Billing Hub vs. Marketing
+API), com números que não batem entre si:
+
+| Campo | Valor visto | Onde |
+|---|---|---|
+| `balance` (bruto, API de Anúncios) | R$ 43,99 | `get_account_balance` |
+| `spend_cap − amount_spent` | R$ 381,14 | `get_account_balance` |
+| `funding_source_details.display_string` | R$ 433,85 | `get_account_balance`, campo que a tela não usa hoje |
+| **"Saldo pré-pago" (Billing Hub)** | **R$ 431,82** | Business Manager, não a Marketing API |
+
+O `funding_source_details.display_string` é o que mais se aproxima do
+saldo real do Billing Hub — não exatamente igual (diferença provável por
+timing entre as duas consultas), mas é a pista mais confiável dentro da
+própria resposta do `get_account_balance` hoje.
+
+**Pendência real, não resolvida ainda:** não confirmei se existe uma
+chamada de API (Marketing API ou outra) que devolve o "Saldo pré-pago"
+exatamente como o Billing Hub mostra, sem precisar abrir o navegador.
+Enquanto isso não for resolvido, **não implementar o lembrete de saldo
+(`docs/marketing-whatsapp-comandos.md`) usando `spend_cap −
+amount_spent`** — não é o número certo pra saber quando a Adriana precisa
+mandar o PIX semanal. Investigar antes de codar essa parte.
+
+**Achado à parte, não relacionado a saldo:** a página do Billing Hub
+mostrava uma notificação ativa **"Erro no pagamento — selecione outra
+forma de pagamento"**, sem data visível. Sinalizado pra Adriana conferir
+direto — pode já estar resolvido, pode não estar. Fora do escopo de
+código, é conta de pagamento dela.
 
 ### Recomendação é por conta, não por campanha
 

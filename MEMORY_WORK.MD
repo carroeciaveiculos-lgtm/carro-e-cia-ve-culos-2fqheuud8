@@ -9,7 +9,76 @@ precisar reler o histórico inteiro de conversas. Diferente do
 pra ser mantido em dia de verdade. Detalhe técnico por integração continua
 nos arquivos `docs/*.md` — aqui é só o resumo de estado + pendências.
 
-Última atualização: 2026-09-10 (sessão 21 — painel real de Gestão de Anúncios com fila de aprovação, Meta e Google Ads; verificação do app OAuth do Google **aprovada**).
+Última atualização: 2026-09-11 (sessão 21, continuação — plano do sistema de Marketing via comandos WhatsApp fechado, **implementação pendente pra próxima sessão**).
+
+## Sessão 21 (continuação, 11/09/2026) — plano de Marketing via comandos WhatsApp fechado, nada implementado ainda
+
+Depois de fechar a verificação do Google (acima), a Adriana pediu pra
+conferir se a página "Marketing" antiga do menu ainda era usada.
+**Confirmado morta**: aba WhatsApp Scheduler nunca enviou nada de
+verdade (0 registros no banco, sem consumidor), aba Analytics mostra
+dado parado desde 22/06/2026. Ela pediu um sistema de marketing via
+comandos WhatsApp de verdade.
+
+**Achado grande:** já existe um sistema de comandos WhatsApp funcionando
+(`_shared/whatsapp-commands.ts`, 4 categorias: CRM, Estoque, Anúncios,
+Conteúdo) e um relatório diário automático (`daily-report-cron`) — não
+documentado antes, evitou reinventar do zero. Achados 2 bugs reais nele:
+(1) `whatsapp-ads.ts` nunca lê a resposta da API, sempre finge sucesso;
+(2) a chamada pro `ads-agent` provavelmente sempre falha com 401 (manda
+chave de serviço onde a function exige login de usuário). Pesquisado e
+descartado: grupo de WhatsApp com a Adriana + Fernando não é viável hoje
+(Cloud API não suporta grupo comum; Groups API nova exige requisitos não
+confirmados) — decisão foi lista de 2 números autorizados em vez de
+grupo.
+
+**Plano completo, técnico, fechado com a Adriana — está em
+`docs/marketing-whatsapp-comandos.md`, ler antes de implementar.**
+Resumo: corrigir os 2 bugs, `AUTHORIZED_PHONE` vira lista (Adriana +
+Fernando `5534984080000`), comandos `LISTAR`/`PAUSAR`/`ATIVAR`/
+`ORÇAMENTO`/`GASTO` (Meta + Google, execução direta sem fila — decisão
+dela pra esse canal específico), teto de R$ 600/semana Meta e R$
+200/semana Google por comando de orçamento, lembrete de saldo baixo
+(≤R$30) embutido no relatório diário pros dois números, apagar a página
+Marketing morta, testar tudo ao vivo.
+
+**PENDENTE, não implementado ainda:** zero código escrito. A Adriana
+também mandou instalar 2 conectores MCP oficiais da Meta nesta sessão
+(`whatsapp_business_tools`, `meta_social_technologies`) que exigem login
+dela — vai autenticar numa sessão nova e pediu pra conferir o que essas
+ferramentas oferecem **antes** de implementar o plano, caso simplifiquem
+alguma parte do desenho.
+
+**Depois disso, mais 2 achados que mudam o plano (11/09/2026):**
+- A Adriana pediu o orçamento atual da conta Meta (`act_515820120462587`).
+  O `get_account_balance` já construído deu 3 números que não batem entre
+  si. Auditando direto o Business Manager (Billing Hub), achei o real:
+  **"Saldo pré-pago": R$ 431,82** — a conta É pré-paga de verdade
+  (abastecida por PIX/cartão, debitada todo dia), **corrigindo um achado
+  que eu tinha documentado errado no dia anterior** ("não é pré-paga, é
+  spend_cap"). Detalhe e a tabela comparativa dos 4 números em
+  `docs/gestao-anuncios.md`. **Isso bloqueia o item 6 do plano de
+  Marketing** (lembrete de saldo) — não implementar ele usando `spend_cap
+  − amount_spent`, é o campo errado. Precisa achar a API certa do saldo
+  pré-pago antes.
+- Achado à parte na mesma auditoria: notificação ativa no Business
+  Manager "Erro no pagamento — selecione outra forma de pagamento", sem
+  data visível — sinalizado pra Adriana conferir direto, fora do escopo
+  de código.
+- A Adriana tentou reconfigurar o conector `meta-ads` (já existente, usa
+  token fixo, sem OAuth) com um `--client-id` que veio com `< >` sobrando
+  de um exemplo copiado — **não executado**, esclarecido que
+  provavelmente era pra um dos 2 conectores novos, não pro `meta-ads`.
+  Ainda não confirmado pra qual dos dois.
+- **Nota de segurança:** um comando de diagnóstico meu (`claude mcp get
+  meta-ads`) imprimiu o token desse conector em texto puro na conversa.
+  Avaliar com a Adriana se vale revogar/gerar novo no Gerenciador de
+  Negócios da Meta.
+
+**Próximo passo da próxima sessão:** checar as 2 ferramentas MCP
+primeiro (depois que ela autenticar), esclarecer o client-id pendente,
+investigar a API do saldo pré-pago (desbloqueia item 6), e então
+implementar o plano completo em `docs/marketing-whatsapp-comandos.md`.
 
 ## Sessão 21 (10/09/2026) — painel de Gestão de Anúncios (Meta + Google) com fila de aprovação; verificação OAuth do Google Ads em andamento
 

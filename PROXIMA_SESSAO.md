@@ -6,11 +6,35 @@ Copie e cole como primeira mensagem numa sessão nova do Claude Code.
 Projeto: Carro e Cia Veículos (revenda). Pasta de trabalho:
 C:\Projeto\Revenda Carro e Cia\carro-e-cia-ve-culos-2fqheuud8
 
-Continuando de uma sessão anterior (10/09/2026, sessão 21 — painel de
-Gestão de Anúncios com fila de aprovação; verificação OAuth do Google
-Ads em andamento, não fechada). Leia primeiro MEMORY_WORK.MD, seção
-"Sessão 21", pro resumo completo. Destaques:
+Continuando de uma sessão anterior (10-11/09/2026, sessão 21 — painel de
+Gestão de Anúncios fechado, verificação do Google aprovada, plano de
+Marketing via comandos WhatsApp fechado mas **não implementado**). Leia
+primeiro MEMORY_WORK.MD, seção "Sessão 21", pro resumo completo.
+Destaques:
 
+- **PRÓXIMO PASSO DESTA SESSÃO NOVA (nesta ordem):**
+  1. Rode `claude mcp list` — confira se `whatsapp_business_tools` e
+     `meta_social_technologies` já conectaram (a Adriana ia autenticar
+     via `/mcp`, login dela). Se conectou, veja quais ferramentas eles
+     oferecem **antes** de escrever qualquer código — podem simplificar
+     o plano abaixo.
+  2. Pergunte pra Adriana pra qual desses 2 conectores era o
+     `--client-id` que ela tentou usar no comando `claude mcp add ...
+     meta-ads ...` (não executado, detalhe em
+     `docs/marketing-whatsapp-comandos.md`, seção "Conector meta-ads").
+  3. Investigue se existe API (Marketing API ou outra) que devolve o
+     "Saldo pré-pago" da Meta direto — hoje só confirmado manualmente no
+     Billing Hub do Business Manager (`R$ 431,82` em 11/09/2026). Isso
+     desbloqueia o item 6 do plano (lembrete de saldo). Detalhe completo
+     em `docs/gestao-anuncios.md`, seção "Saldo não é saldo — CORRIGIDO".
+  4. Implemente o plano completo em `docs/marketing-whatsapp-comandos.md`
+     (já fechado com a Adriana, não precisa re-perguntar as decisões de
+     lá — só implementar, testar ao vivo, e voltar com o resultado). Os
+     itens 1-5, 7 e 8 não dependem do item 3 acima, podem ir primeiro se
+     preferir.
+  5. Perguntar pra Adriana se quer revogar/renovar o token do conector
+     `meta-ads` — ficou exposto em texto puro nesta sessão anterior (não
+     é urgente, é decisão dela).
 - **Painel real de Gestão de Anúncios (Meta + Google) construído e
   testado ao vivo nas duas plataformas.** Fila de aprovação
   (`ads_solicitacoes_ajuste`) pra todo ajuste de orçamento/status — nunca
