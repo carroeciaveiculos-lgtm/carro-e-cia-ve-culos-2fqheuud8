@@ -173,8 +173,10 @@ https://mcp.facebook.com/ads` (11/09/2026) — **não executado**: o
 literais), e um client-id não se aplica a esse conector (que não usa
 OAuth). Esse client-id provavelmente era pra um dos 2 conectores novos
 (`whatsapp_business_tools`/`meta_social_technologies`), que aí sim
-precisam de autenticação — ainda não confirmado qual. **Perguntar antes
-de rodar esse comando de novo.**
+precisam de autenticação. **Fechado em 11/09/2026 (continuação 2)**: a
+Adriana não lembrava qual era, mas ficou sem efeito prático — os dois
+conectores novos já foram autenticados/checados via `/mcp` normal, sem
+precisar desse `--client-id` manual. Não rodar esse comando de novo.
 
 Nota de segurança: um comando de diagnóstico (`claude mcp get meta-ads`)
 imprimiu o token desse conector em texto puro no meio da conversa nesta

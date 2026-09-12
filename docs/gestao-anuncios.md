@@ -64,13 +64,30 @@ saldo real do Billing Hub — não exatamente igual (diferença provável por
 timing entre as duas consultas), mas é a pista mais confiável dentro da
 própria resposta do `get_account_balance` hoje.
 
-**Pendência real, não resolvida ainda:** não confirmei se existe uma
-chamada de API (Marketing API ou outra) que devolve o "Saldo pré-pago"
-exatamente como o Billing Hub mostra, sem precisar abrir o navegador.
-Enquanto isso não for resolvido, **não implementar o lembrete de saldo
-(`docs/marketing-whatsapp-comandos.md`) usando `spend_cap −
-amount_spent`** — não é o número certo pra saber quando a Adriana precisa
-mandar o PIX semanal. Investigar antes de codar essa parte.
+**FECHADO em 11/09/2026 (continuação 2) — não existe API exata, decisão
+tomada:** pesquisa completa na documentação oficial confirmou que **não
+existe** chamada de API (Marketing API ou Business Management API) que
+devolva o "Saldo pré-pago" do Billing Hub com exatidão:
+- `balance` é literalmente "Bill amount due" (valor devido, cobrança
+  pós-paga) — por isso vem perto de zero numa conta pré-paga, onde não há
+  fatura pendente.
+- `is_prepay_account` (bool) só confirma que a conta é pré-paga, não
+  devolve valor nenhum.
+- `extendedcredits` (edge de linha de crédito) existe mas é pra cenário
+  de conta corporativa com fatura (LOC), não se aplica a conta funded por
+  carteira (PIX/cartão).
+- `funding_source_details.display_string` continua sendo a aproximação
+  mais próxima (R$ 433,85 vs. R$ 431,82 real), mas a doc oficial descreve
+  esse campo só como texto de exibição do método de pagamento, sem
+  garantia de refletir saldo em tempo real — é coincidência de
+  proximidade, não um campo de saldo documentado.
+
+**Decisão da Adriana (11/09/2026): não implementar o lembrete automático
+de saldo por enquanto** — sem API confiável, o risco de mostrar número
+errado é maior que o benefício. Item 6 do plano
+(`docs/marketing-whatsapp-comandos.md`) fica de fora da implementação
+atual. Não reabrir essa investigação — se aparecer uma API nova da Meta
+pra isso no futuro, é achado novo, não retomar a pesquisa do zero.
 
 **Achado à parte, não relacionado a saldo:** a página do Billing Hub
 mostrava uma notificação ativa **"Erro no pagamento — selecione outra

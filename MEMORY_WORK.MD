@@ -9,7 +9,57 @@ precisar reler o histórico inteiro de conversas. Diferente do
 pra ser mantido em dia de verdade. Detalhe técnico por integração continua
 nos arquivos `docs/*.md` — aqui é só o resumo de estado + pendências.
 
-Última atualização: 2026-09-11 (sessão 21, continuação — plano do sistema de Marketing via comandos WhatsApp fechado, **implementação pendente pra próxima sessão**).
+Última atualização: 2026-09-11 (sessão 21, continuação 2 — os 2 conectores MCP da Meta checados, nenhum bloqueia o plano de Marketing via WhatsApp; **implementação ainda pendente**).
+
+## Sessão 21 (continuação 2, 11/09/2026) — os 2 conectores MCP da Meta checados, item 1 da pendência fechado
+
+**Item 1 da lista de pendências ("checar as 2 ferramentas MCP antes de
+implementar") — fechado, resposta definitiva pros dois:**
+
+- **`meta_social_technologies`** (conectou de primeira): é ferramenta de
+  **configuração/diagnóstico do app** Meta (ver webhook, permissão, status
+  de App Review), não tem nenhuma ação de mandar mensagem ou mexer em
+  anúncio. **Não substitui nem simplifica** o sistema `whatsapp-commands.ts`
+  já existente — serve só pra depurar problema de permissão/webhook no
+  futuro, não pra implementar o plano.
+  - Único app retornado: "APP CARRO E CIA" (`1369928368361968`), modo
+    `live_mode`, admin com permissão `read`+`manage`.
+  - Webhooks ativos e batendo com o esperado: `catalog`, `page`,
+    `instagram`, `whatsapp_business_account` — nenhum bug novo aqui.
+  - Compliance: `compliant`, zero violação, zero ação pendente.
+  - **Achado que parece grave mas não é**: `devtools_app_review privileges`
+    mostra quase toda permissão (`whatsapp_business_management`,
+    `pages_manage_posts`, `ads_management` etc.) como `REJECTED`. Mas
+    `submission_status` é `UNSUBMITTED` — é rascunho de uma submissão de
+    App Review antiga, nunca enviada de verdade. Como o app só gerencia
+    ativos próprios (não de terceiros), essas permissões funcionam via
+    Standard Access sem precisar de revisão aprovada — condizente com o
+    sistema funcionando em produção hoje. **Não é causa dos problemas já
+    documentados (ex.: token do Facebook com `publish_actions`
+    descontinuada, sessão 14)** — não confundir os dois achados.
+- **`whatsapp_business_tools`**: tentativa de autenticação deu o erro
+  **"Not yet available for your account — WhatsApp Business Tools MCP is
+  being gradually rolled out. Please try again later."** — confirmado que é
+  limite do lado da Meta (rollout beta gradual), não erro de configuração
+  nossa. Antes de saber a mensagem exata, auditei a doc oficial
+  (developers.facebook.com/documentation/mcp/whatsapp-business-tools-mcp) e
+  já tinha levantado os pré-requisitos (admin do Negócio, caso de uso
+  WhatsApp Business Messaging vinculado, Termos da Cloud API aceitos) —
+  ficam registrados aqui caso o acesso libere no futuro e valha reconferir,
+  mas **não é o motivo do erro atual**. **Não reinvestigar este erro — só
+  tentar `/mcp` de novo de vez em quando pra ver se já liberou.**
+
+**Conclusão prática: nenhum dos dois conectores ajuda ou trava o plano.
+Pode implementar `docs/marketing-whatsapp-comandos.md` direto, sem esperar
+nenhum dos dois.**
+
+**Item 3 da lista de pendências ("investigar API do saldo pré-pago") —
+fechado, sem solução:** pesquisa completa na doc oficial confirmou que
+**não existe** API da Meta que devolva o saldo pré-pago exato do Billing
+Hub. Detalhe técnico completo em `docs/gestao-anuncios.md`, seção "Saldo
+não é saldo". **Decisão da Adriana: não implementar o lembrete automático
+de saldo (item 6 do plano) por enquanto.** Não reinvestigar — só revisitar
+se a Meta lançar uma API nova pra isso.
 
 ## Sessão 21 (continuação, 11/09/2026) — plano de Marketing via comandos WhatsApp fechado, nada implementado ainda
 
