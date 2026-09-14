@@ -537,18 +537,17 @@ export default function Dashboard() {
         <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl shadow-sm text-white p-6 flex flex-col md:flex-row items-center justify-between gap-6">
           <div>
             <h2 className="text-xl font-bold flex items-center gap-2 mb-2">
-              <Activity className="w-6 h-6" /> Hub de Marketing Integrado
+              <Activity className="w-6 h-6" /> Central de Redes Sociais
             </h2>
             <p className="text-blue-100 max-w-xl">
-              Gere posts com Inteligência Artificial, gerencie suas redes sociais e automatize
-              e-mails diretamente pelo painel de Marketing.
+              Gere posts com Inteligência Artificial e gerencie suas redes sociais.
             </p>
           </div>
           <button
-            onClick={() => handleModuleClick('/admin/marketing', 'marketing')}
+            onClick={() => handleModuleClick('/admin/central-social', 'central-social')}
             className="px-6 py-3 bg-white text-blue-700 font-semibold rounded-lg hover:bg-blue-50 transition-colors whitespace-nowrap"
           >
-            Acessar Marketing
+            Acessar
           </button>
         </div>
 

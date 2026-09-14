@@ -81,7 +81,6 @@ const SIDEBAR_MENUS = [
       {
         title: 'Marketing',
         items: [
-          { label: 'Marketing', path: '/admin/marketing', icon: Activity },
           { label: 'Gestão de Anúncios', path: '/admin/anuncios', icon: Megaphone },
           { label: 'Central de Redes Sociais', path: '/admin/central-social', icon: Share2 },
           { label: 'Conteúdo', path: '/admin/conteudo', icon: FileText },

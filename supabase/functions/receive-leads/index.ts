@@ -2,6 +2,7 @@ import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from 'jsr:@supabase/supabase-js@2'
 import { corsHeaders } from '../_shared/cors.ts'
 import { encontrarLeadAtivo, anexarNotaContato, normalizarTelefone } from '../_shared/lead-dedup.ts'
+import { processWhatsAppCommand, isAuthorizedPhone } from '../_shared/whatsapp-commands.ts'
 import { recalcularAiScore } from '../_shared/lead-score.ts'
 import { enviarEventoMensagem } from '../_shared/meta-messaging-capi.ts'
 import { baixarETranscreverAudioWhatsApp } from '../_shared/audio-transcricao.ts'
@@ -324,6 +325,48 @@ Deno.serve(async (req: Request) => {
                 const contact = contacts.find((c: any) => c.wa_id === msg.from)
                 const senderName = contact?.profile?.name || 'Cliente WhatsApp'
                 const senderPhone = msg.from
+
+                // Achado 12/09/2026: este e o webhook que a Meta de fato chama
+                // (whatsapp-webhook/index.ts e webhook-portais/index.ts nao
+                // recebem trafego real) -- sem esta checagem, mensagem da
+                // Adriana/Fernando virava lead novo e a Clara respondia como
+                // se fosse cliente. isAuthorizedPhone tolera o wa_id vir sem
+                // o 9o digito (ver whatsapp-commands.ts).
+                if (isAuthorizedPhone(senderPhone) && msg.type === 'text' && msg.text?.body) {
+                  const telefoneLimpo = senderPhone.replace(/\D/g, '')
+                  const waTokenAdmin = Deno.env.get('WHATSAPP_TOKEN') || ''
+                  const waPhoneIdAdmin = Deno.env.get('WHATSAPP_PHONE_NUMBER_ID') || WHATSAPP_PHONE_NUMBER_ID
+                  const respostaComando = await processWhatsAppCommand(
+                    msg.text.body,
+                    telefoneLimpo,
+                    supabaseUrl,
+                    supabaseKey,
+                    waTokenAdmin,
+                    waPhoneIdAdmin,
+                  )
+                  await supabase.from('agente_interacoes').insert({
+                    usuario_telefone: telefoneLimpo,
+                    mensagem_usuario: msg.text.body,
+                    resposta_agente: respostaComando || '',
+                    tipo_comando: 'admin',
+                  })
+                  if (respostaComando && waTokenAdmin && waPhoneIdAdmin) {
+                    await fetch(`https://graph.facebook.com/v20.0/${waPhoneIdAdmin}/messages`, {
+                      method: 'POST',
+                      headers: {
+                        Authorization: `Bearer ${waTokenAdmin}`,
+                        'Content-Type': 'application/json',
+                      },
+                      body: JSON.stringify({
+                        messaging_product: 'whatsapp',
+                        to: telefoneLimpo,
+                        type: 'text',
+                        text: { body: respostaComando },
+                      }),
+                    }).catch(console.error)
+                  }
+                  continue
+                }
 
                 // Mensagem pra guardar no histórico (o que a equipe vê no
                 // Conversador) pode ser diferente da mensagem pra Clara

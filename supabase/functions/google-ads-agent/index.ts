@@ -1,5 +1,6 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from 'jsr:@supabase/supabase-js@2'
+import { isInternalRequestAuthorized } from '../_shared/internal-auth.ts'
 
 // Fase 2 do painel de Gestao de Anuncios (docs/gestao-anuncios.md). Espelha
 // supabase/functions/ads-agent/index.ts (Meta), mas pra API REST do Google
@@ -93,6 +94,19 @@ const TIPOS_RECOMENDACAO: Record<string, string> = {
   TARGET_CPA_OPT_IN: 'Definir um CPA alvo pode otimizar o gasto por conversão.',
 }
 
+// Rotulo em pt-BR pro tipo do ANUNCIO (nao da campanha -- campo
+// ad_group_ad.ad.type, enum documentado da API). Lista curta, completar
+// conforme aparecer tipo novo (fica no valor cru se nao tiver traducao).
+const TIPOS_ANUNCIO: Record<string, string> = {
+  RESPONSIVE_SEARCH_AD: 'Pesquisa responsivo',
+  EXPANDED_TEXT_AD: 'Texto expandido',
+  RESPONSIVE_DISPLAY_AD: 'Display responsivo',
+  VIDEO_RESPONSIVE_AD: 'Vídeo',
+  IMAGE_AD: 'Imagem',
+  SHOPPING_PRODUCT_AD: 'Shopping',
+  DEMAND_GEN_MULTI_ASSET_AD: 'Demand Gen',
+}
+
 async function getBudgetIdForCampaign(campaignId: string): Promise<string> {
   const rows = await gaqlSearch(
     `SELECT campaign_budget.id FROM campaign WHERE campaign.id = ${campaignId}`,
@@ -124,7 +138,11 @@ Deno.serve(async (req) => {
       } = await userClient.auth.getUser()
       userId = user?.id ?? null
     }
-    if (!userId) {
+    // Comando via WhatsApp (whatsapp-ads.ts) chama servidor-a-servidor, sem
+    // sessao de usuario -- aceita o header x-internal-secret como alternativa
+    // ao login, mesmo padrao usado em ads-agent (Meta).
+    const internalCall = isInternalRequestAuthorized(req)
+    if (!userId && !internalCall) {
       return new Response(JSON.stringify({ error: 'Authentication required' }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -136,17 +154,40 @@ Deno.serve(async (req) => {
 
     if (action === 'list_campaigns') {
       const rows = await gaqlSearch(`
-        SELECT campaign.id, campaign.name, campaign.status, campaign_budget.amount_micros
+        SELECT campaign.id, campaign.name, campaign.status, campaign.advertising_channel_type,
+               campaign_budget.amount_micros
         FROM campaign WHERE campaign.status != 'REMOVED'
       `)
+      // Anuncios individuais de cada campanha (13/09/2026, pedido da Adriana
+      // de ver o conjunto completo, nao so a campanha). ad_group_ad.ad.type
+      // e campo documentado da API -- ao contrario do formato da Meta (ainda
+      // nao confirmado ao vivo), este dado e confiavel de cara.
+      const adRows = await gaqlSearch(`
+        SELECT campaign.id, ad_group_ad.ad.id, ad_group_ad.ad.name, ad_group_ad.ad.type,
+               ad_group_ad.status
+        FROM ad_group_ad WHERE campaign.status != 'REMOVED'
+      `)
+      const anunciosPorCampanha: Record<string, any[]> = {}
+      for (const r of adRows) {
+        const cid = r.campaign.id
+        if (!anunciosPorCampanha[cid]) anunciosPorCampanha[cid] = []
+        anunciosPorCampanha[cid].push({
+          id: r.adGroupAd.ad.id,
+          name: r.adGroupAd.ad.name || `Anúncio ${r.adGroupAd.ad.id}`,
+          status: r.adGroupAd.status === 'ENABLED' ? 'ACTIVE' : 'PAUSED',
+          ad_type: TIPOS_ANUNCIO[r.adGroupAd.ad.type] || r.adGroupAd.ad.type,
+        })
+      }
       result = {
         campaigns: rows.map((r) => ({
           id: r.campaign.id,
           name: r.campaign.name,
           status: r.campaign.status === 'ENABLED' ? 'ACTIVE' : 'PAUSED',
+          channel_type: r.campaign.advertisingChannelType || null,
           daily_budget: r.campaignBudget?.amountMicros
             ? Number(r.campaignBudget.amountMicros) / 1_000_000
             : null,
+          ads: anunciosPorCampanha[r.campaign.id] || [],
         })),
       }
     } else if (action === 'get_metrics') {

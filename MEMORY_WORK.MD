@@ -9,7 +9,106 @@ precisar reler o histórico inteiro de conversas. Diferente do
 pra ser mantido em dia de verdade. Detalhe técnico por integração continua
 nos arquivos `docs/*.md` — aqui é só o resumo de estado + pendências.
 
-Última atualização: 2026-09-11 (sessão 21, continuação 2 — os 2 conectores MCP da Meta checados, nenhum bloqueia o plano de Marketing via WhatsApp; **implementação ainda pendente**).
+Última atualização: 2026-09-12 (sessão 22 — Marketing via WhatsApp implementado e publicado; achado e corrigido bug grave de roteamento no webhook real (`receive-leads`); falta confirmar os comandos ao vivo e commitar. **Nada commitado ainda.**)
+
+## Sessão 22 (12/09/2026) — Marketing via WhatsApp implementado (itens 1-5, 7); função de casar nome de campanha ficou pra Adriana
+
+Implementado a partir do plano fechado em `docs/marketing-whatsapp-comandos.md`
+(ver seção "Status da implementação (12/09/2026)" lá pro detalhe técnico
+completo). Resumo:
+
+- 2 bugs corrigidos (`whatsapp-ads.ts` agora confere resposta real da API;
+  `ads-agent`/`google-ads-agent` aceitam `x-internal-secret` além do login).
+- `AUTHORIZED_PHONE` virou `AUTHORIZED_PHONES` (Adriana + Fernando).
+  **Achado não mapeado no plano**: existia um **3º lugar** checando esse
+  número (`webhook-portais/index.ts`), não só os 2 que o plano citava —
+  corrigido também, mas parece código morto/duplicado (nunca manda resposta
+  de volta, falta parâmetro na chamada) — **não apagado, só sinalizado pra
+  Adriana decidir**.
+- Comandos novos `LISTAR`/`ATIVAR`/`GASTO`, teto de R$ 600 (Meta)/R$ 200
+  (Google) no `ORÇAMENTO`.
+- **Desvio do plano**: Google não ficou com execução direta de
+  orçamento/status via WhatsApp — o classificador de segurança do Claude
+  Code bloqueou essa edição (mutação financeira direta sem aprovação,
+  categoria "Security Weaken"). Google agora cai na fila de aprovação já
+  existente (`criar_solicitacao`, mesma do painel admin); só a Meta executa
+  na hora. Decisão de forçar o direto pro Google também fica pra Adriana.
+- Página "Marketing" morta apagada de vez (arquivo, componente, rota, menu,
+  `setor-acesso.ts`); `/admin/marketing` redireciona pra
+  `/admin/central-social`.
+- Type-check do frontend (`tsc --noEmit`) rodou limpo depois de tudo.
+
+`findCampaignMatch` (acha a campanha pelo texto digitado) tinha ficado como
+TODO(human), mas a Adriana pediu a crítica da proposta em vez de escolher —
+implementada na mesma sessão: normaliza (minúscula + sem acento) e casa por
+palavra (não por trecho contínuo) contra todas as campanhas, qualquer
+status.
+
+**Achado grave no teste ao vivo (12/09/2026): Clara respondia a Adriana como
+se fosse lead.** Causa raiz, 2 problemas empilhados:
+1. **O webhook que a Meta de fato chama pra WhatsApp é
+   `receive-leads/index.ts`** — nem `whatsapp-webhook/index.ts` nem
+   `webhook-portais/index.ts` (que eu tinha corrigido antes, achando que
+   eram os únicos 2-3 lugares) recebem tráfego real da Meta. `receive-leads`
+   não tinha nenhuma checagem de número autorizado — todo mundo virava lead.
+2. **wa_id da Adriana chega sem o 9º dígito** (`553484080220`), mas
+   `AUTHORIZED_PHONES` guarda `5534984080220` (com o 9) — mesmo corrigindo
+   (1), a comparação direta nunca bateria.
+
+**Corrigido:** `isAuthorizedPhone()` nova em `whatsapp-commands.ts` (tolera
+com/sem o 9º dígito pra qualquer número da lista, não só o dela) substituiu
+toda comparação direta com `AUTHORIZED_PHONES` nos 3 arquivos. Interceptação
+de comando admin adicionada em `receive-leads/index.ts`, antes de qualquer
+criação de lead. Deploy feito (`receive-leads`, `whatsapp-webhook`,
+`webhook-portais`). Lead fantasma "Adriana Araújo" criado durante o teste —
+**pedi pra ela apagar direto no painel CRM** (minha ferramenta de banco é só
+leitura, não consegui apagar).
+
+`whatsapp-webhook.ts`/`webhook-portais.ts` continuam parecendo código
+morto/duplicado (não recebem tráfego real) — sinalizado, não apagado, fica
+pra decisão futura da Adriana.
+
+**3º achado no teste ao vivo: `LISTAR` respondia "nenhuma campanha
+encontrada" mesmo com campanha ativa.** Causa: `ads-agent`/`google-ads-agent`
+publicadas com `verify_jwt = true` (feitas pro painel admin, que sempre
+manda login de usuário) — a chamada do WhatsApp mandava só
+`x-internal-secret`, sem JWT nenhum, e a própria borda do Supabase barrava
+com 401 antes do código da function rodar (por isso nenhum log/erro
+aparecia em lugar nenhum). **Corrigido**: `callAgent()` em `whatsapp-ads.ts`
+manda `Authorization: Bearer <service_role_key>` (satisfaz a borda) junto
+com `x-internal-secret` (autoriza de verdade dentro da function).
+
+**Pedido da Adriana (13/09/2026): padrão de exibição de anúncio.** Toda
+resposta sobre anúncio de veículo mostra `[nome] [ano] [tipo de anúncio]` —
+"tipo" = **formato do criativo** (confirmado com ela: vídeo/carrossel/
+imagem), não a plataforma (isso foi mal-entendido por mim numa primeira
+pergunta, ela corrigiu antes de eu implementar). Implementado:
+- `formatarCampanha()` em `whatsapp-ads.ts` extrai o ano (4 dígitos,
+  19xx/20xx) do nome da campanha e monta `nome ano (tipo)`. Usado em
+  `handleListar` e na lista de desambiguação de `PAUSAR`/`ATIVAR`/
+  `ORÇAMENTO`.
+- **Google**: `campaign.advertising_channel_type` (campo documentado, ex.
+  SEARCH/DISPLAY/PERFORMANCE_MAX) — mapeado em `TIPOS_GOOGLE`. Testado só
+  contra a doc, não ao vivo ainda.
+- **Meta**: tipo de anúncio **não é campo da campanha, é do anúncio dentro
+  dela** — `ads-agent` (`list_campaigns`) busca o 1º anúncio de cada
+  campanha (`{campaign_id}/ads?fields=creative{object_story_spec}`) e deduz
+  vídeo/carrossel/imagem pela presença de `video_data`/
+  `link_data.child_attachments`/`link_data`. **NÃO TESTADO AO VIVO** — se
+  vier sempre "Desconhecido" ou errado, conferir a forma real do objeto
+  `creative` que a Graph API devolve antes de mexer na lógica (comentário
+  já deixado no código apontando isso).
+- `LISTAR` agora termina perguntando se quer `PAUSAR` ou `ALTERAR` algum
+  anúncio, listando as 2 alterações hoje disponíveis (orçamento via
+  `ORÇAMENTO`, reativar via `ATIVAR`).
+- Deploy feito nas 5 functions (`ads-agent`, `google-ads-agent`,
+  `receive-leads`, `whatsapp-webhook`, `webhook-portais`).
+
+**Pendente:** confirmar ao vivo que `LISTAR` mostra o formato certo pra Meta
+(risco maior, não testado) e que os outros comandos
+(`GASTO`/`PAUSAR`/`ATIVAR`/`ORÇAMENTO`) funcionam de ponta a ponta agora que
+a autenticação foi corrigida. Depois: dar por pronto e commitar. **Nada
+commitado ainda.**
 
 ## Sessão 21 (continuação 2, 11/09/2026) — os 2 conectores MCP da Meta checados, item 1 da pendência fechado
 

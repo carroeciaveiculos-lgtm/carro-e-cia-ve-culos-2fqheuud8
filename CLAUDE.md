@@ -299,7 +299,12 @@ específico aqui, menos eu erro:
   - `5534984080220` (celular pessoal da Adriana) — agora só como destino dos
     alertas administrativos internos (novo agendamento, relatório diário,
     no-show, lead do Meta Ads, artigo pronto pra revisão) e do comando de
-    WhatsApp autorizado (`AUTHORIZED_PHONE`). Vem de
+    WhatsApp autorizado (`AUTHORIZED_PHONES`, checado via `isAuthorizedPhone()`
+    — tolera o wa_id vir sem o 9º dígito, achado 12/09/2026 — junto com o
+    número do Fernando). O webhook que a Meta de fato chama pra WhatsApp é
+    `receive-leads/index.ts` (achado 12/09/2026) — `whatsapp-webhook/index.ts`
+    e `webhook-portais/index.ts` também processam `whatsapp_business_account`
+    mas não recebem tráfego real, parecem código morto/duplicado. Vem de
     `social_configuracoes.whatsapp_number` — esse campo é só pra alerta
     interno, nunca pra link público de WhatsApp.
   - `5534992000300` (Gabriel) — em botões/fluxos de **seguro auto**

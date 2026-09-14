@@ -221,7 +221,6 @@ const EmConstrucao = lazyWithRetry(() => import('./pages/admin/EmConstrucao'))
 const CentralSocial = lazyWithRetry(() => import('./pages/admin/CentralSocial'))
 const Conteudo = lazyWithRetry(() => import('./pages/admin/Conteudo'))
 const Auditoria = lazyWithRetry(() => import('./pages/admin/Auditoria'))
-const Marketing = lazyWithRetry(() => import('./pages/admin/Marketing'))
 const Ajuda = lazyWithRetry(() => import('./pages/admin/Ajuda'))
 const AdsManager = lazyWithRetry(() => import('./pages/admin/AdsManager'))
 const Autonomia = lazyWithRetry(() => import('./pages/admin/Autonomia'))
@@ -405,7 +404,7 @@ const MainApp = () => (
         <Route path="conteudo" element={<Conteudo />} />
 
         <Route path="auditoria" element={<Auditoria />} />
-        <Route path="marketing" element={<Marketing />} />
+        <Route path="marketing" element={<Navigate to="/admin/central-social" replace />} />
         <Route path="anuncios" element={<AdsManager />} />
         <Route path="autonomia" element={<Autonomia />} />
         <Route path="prompts-ia" element={<PromptsIA />} />

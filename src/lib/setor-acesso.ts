@@ -24,7 +24,6 @@ export const ROTA_SETORES: Record<string, string[]> = {
   // guard liberava geral (rota sem entrada = liberada pra qualquer login).
   '/admin/ml-diagnosis': ['Estoque/Portais'],
   '/admin/vagas': ['Institucional'],
-  '/admin/marketing': ['Marketing'],
   '/admin/anuncios': ['Marketing'],
   '/admin/central-social': ['Marketing'],
   '/admin/conteudo': ['Marketing'],

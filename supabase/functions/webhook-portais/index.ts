@@ -1,6 +1,6 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from 'jsr:@supabase/supabase-js@2'
-import { processWhatsAppCommand, AUTHORIZED_PHONE } from '../_shared/whatsapp-commands.ts'
+import { processWhatsAppCommand, isAuthorizedPhone } from '../_shared/whatsapp-commands.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -108,7 +108,7 @@ Deno.serve(async (req) => {
                     status: 'recebida',
                   })
 
-                  if (cleanPhone === AUTHORIZED_PHONE && msg.type === 'text' && msg.text?.body) {
+                  if (isAuthorizedPhone(cleanPhone) && msg.type === 'text' && msg.text?.body) {
                     const cmdResponse = await processWhatsAppCommand(
                       msg.text.body,
                       cleanPhone,

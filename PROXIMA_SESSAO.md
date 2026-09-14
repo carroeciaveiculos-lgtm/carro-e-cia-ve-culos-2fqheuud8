@@ -6,6 +6,58 @@ Copie e cole como primeira mensagem numa sessão nova do Claude Code.
 Projeto: Carro e Cia Veículos (revenda). Pasta de trabalho:
 C:\Projeto\Revenda Carro e Cia\carro-e-cia-ve-culos-2fqheuud8
 
+Continuando de uma sessão anterior (12/09/2026, sessão 22 — Marketing via
+WhatsApp implementado e publicado, bug grave de roteamento achado e
+corrigido no webhook real). Leia primeiro MEMORY_WORK.MD, seção "Sessão 22",
+pro resumo completo. Destaques:
+
+- **IMPORTANTE — nada desta sessão foi commitado ainda** (`git status`
+  mostra ~15 arquivos alterados: `receive-leads`, `whatsapp-ads.ts`,
+  `whatsapp-commands.ts`, `ads-agent`, `google-ads-agent`,
+  `whatsapp-webhook`, `webhook-portais`, exclusão da página Marketing morta,
+  etc.). As Edge Functions já foram **publicadas em produção** via
+  `supabase functions deploy` (então já valem de verdade no WhatsApp), mas
+  o código só existe local + no Supabase — não no Git ainda.
+- **PRÓXIMO PASSO DESTA SESSÃO NOVA (nesta ordem):**
+  1. Peça pra Adriana mandar um comando de teste pro WhatsApp da Carro e
+     Cia (`LISTAR`, `GASTO`, `PAUSAR [nome]`, `ATIVAR [nome]`, `ORÇAMENTO
+     [nome] [valor]`) e confirme se quem responde agora é o bot de comando
+     (não mais a Clara). Esse teste ainda não foi feito — só o roteamento
+     básico ("oi"/mensagem qualquer não vira mais lead fantasma") foi
+     confirmado.
+  2. Se responder certo: junte tudo num commit (a Adriana costuma pedir
+     commit+push já perguntando os dois juntos) e feche o item no
+     `docs/marketing-whatsapp-comandos.md` (marcar item 8 como concluído).
+  3. Se algo não funcionar: o ponto mais provável de bug é
+     `findCampaignMatch` em `whatsapp-ads.ts` (casamento de nome de
+     campanha, implementada nesta sessão mas nunca testada contra dado
+     real) ou a autenticação `x-internal-secret` entre `whatsapp-ads.ts` e
+     `ads-agent`/`google-ads-agent`.
+  4. Confirme se a Adriana já apagou o lead fantasma "Adriana Araújo"
+     (criado durante o teste desta sessão, telefone `553484080220`) no
+     painel CRM — eu não consegui apagar (ferramenta de banco só leitura).
+- **Achado grave, já corrigido**: o webhook que a Meta de fato chama pra
+  WhatsApp é `supabase/functions/receive-leads/index.ts` — não
+  `whatsapp-webhook.ts` nem `webhook-portais.ts` (que parecem código morto,
+  sem tráfego real, mas não foram apagados — sinalizado pra decisão futura
+  da Adriana). `receive-leads` não tinha nenhuma checagem de número
+  autorizado, então mensagem da Adriana/Fernando virava lead novo e a
+  Clara respondia como cliente. Achado extra: o `wa_id` que a Meta manda
+  pro número da Adriana vem **sem o 9º dígito** (`553484080220`, não
+  `5534984080220`) — `isAuthorizedPhone()` nova em `whatsapp-commands.ts`
+  tolera os dois formatos, pra qualquer número da lista. Não reinvestigar
+  esse achado do zero — só confirmar que o teste do passo 1 acima passou.
+- **Marketing via WhatsApp (rodada 1) implementado**: bugs de
+  `whatsapp-ads.ts` corrigidos, comandos `LISTAR`/`ATIVAR`/`GASTO` novos,
+  teto de orçamento (R$ 600 Meta / R$ 200 Google), Fernando autorizado,
+  página "Marketing" morta apagada. Google não ficou com execução direta
+  de orçamento/status (classificador de segurança do Claude Code bloqueou
+  essa edição) — cai na fila de aprovação existente em vez de aplicar na
+  hora; só a Meta executa direto. Detalhe completo em
+  `docs/marketing-whatsapp-comandos.md`, seção "Status da implementação".
+
+---
+
 Continuando de uma sessão anterior (10-11/09/2026, sessão 21 — painel de
 Gestão de Anúncios fechado, verificação do Google aprovada, plano de
 Marketing via comandos WhatsApp fechado mas **não implementado**). Leia
@@ -543,12 +595,28 @@ foi aprovado antes disso, pular direto pro item 1 de "Precisa de decisão".
   numa sessão precisa desse passo antes de considerar a mudança "no ar".
 
 ## Segurança — não esquecer
+- **Achado 12/09/2026**: a ferramenta `execute_sql` (MCP Supabase) roda em
+  transação **só leitura** nesta sessão — `DELETE`/`UPDATE`/`INSERT` dão
+  erro `cannot execute DELETE in a read-only transaction`. Pra apagar/
+  alterar dado direto, ou pedir pra Adriana fazer no painel (mais rápido
+  pra 1 registro), ou criar uma migration formal (`supabase db push`) —
+  não adianta insistir em `execute_sql` achando que é erro de sintaxe.
+- **Achado 12/09/2026**: o classificador de segurança do Claude Code
+  bloqueia edição que adiciona mutação financeira direta (orçamento/status
+  de campanha) sem aprovação humana, mesmo espelhando um padrão que já
+  existe em produção pra outra plataforma (aconteceu tentando dar ao
+  Google Ads a mesma execução direta que a Meta já tinha). Não é bug —
+  não insistir tentando reformular a mesma mudança; a alternativa segura
+  é cair numa fila de aprovação existente, como foi feito pro Google em
+  `docs/marketing-whatsapp-comandos.md`.
 - Nunca usar `execute_sql` direto pra mudança de **schema/cron** —
   sempre via migration. Mudança de **dado** (update/delete/insert em
   linha existente) pode ser direto, com cautela, a pedido explícito —
   foi assim que o perfil do Roberto foi completado em 23/08 (senha via
   `auth.admin.updateUserById` numa function temporária, nunca em
-  arquivo versionado).
+  arquivo versionado). **Atualizado 12/09/2026**: isso vale quando a
+  ferramenta disponível permite escrita — nesta sessão o acesso ao banco
+  era só leitura (ver achado acima).
 - Nunca escrever senha/segredo em texto plano numa migration.
 - Antes de propor mudança em produção, autocrítica proativa própria
   ("o que um especialista atacaria nisso?") sem esperar ser perguntado.
@@ -561,6 +629,15 @@ foi aprovado antes disso, pular direto pro item 1 de "Precisa de decisão".
   pertencia foi apagada, ver "Conferir" acima.)
 
 ## Não repetir do zero
+- **O webhook que a Meta de fato chama pra mensagem de WhatsApp é
+  `supabase/functions/receive-leads/index.ts`** (confirmado 12/09/2026,
+  via `meta_webhook_logs` + criação real de lead). `whatsapp-webhook.ts` e
+  `webhook-portais.ts` também têm código pra `whatsapp_business_account`
+  mas não recebem tráfego real — parecem duplicata morta de uma versão
+  anterior do sistema, ainda não apagados (decisão de apagar é da
+  Adriana). Qualquer mudança de comportamento em mensagem recebida de
+  WhatsApp (comando admin, atendimento da Clara, etc.) precisa ir em
+  `receive-leads`, não nos outros dois — não reinvestigar isso do zero.
 - A investigação de integridade de migrations (16/08) já está
   documentada — não reinvestigar.
 - A causa raiz do mapeamento incompleto da Webmotors (cor/câmbio/

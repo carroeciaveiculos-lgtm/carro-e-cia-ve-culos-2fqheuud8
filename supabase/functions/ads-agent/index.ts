@@ -1,6 +1,7 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from 'jsr:@supabase/supabase-js@2'
 import { GeminiClient } from '../_shared/gemini-client.ts'
+import { isInternalRequestAuthorized } from '../_shared/internal-auth.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -58,7 +59,11 @@ Deno.serve(async (req) => {
     const { action, platform, params, message } = await req.json()
     let result: any = {}
 
-    if (!userId && action !== 'pause_sold_ads') {
+    // Comando via WhatsApp (whatsapp-ads.ts) chama servidor-a-servidor, sem
+    // sessao de usuario -- aceita o header x-internal-secret como alternativa
+    // ao login, mesmo padrao ja usado em daily-report-cron/publicar-social.
+    const internalCall = isInternalRequestAuthorized(req)
+    if (!userId && !internalCall && action !== 'pause_sold_ads') {
       return new Response(JSON.stringify({ error: 'Authentication required' }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -91,7 +96,35 @@ Deno.serve(async (req) => {
         fields: 'id,name,status,daily_budget,objective',
         limit: '100',
       })
-      result = { campaigns: data.data || [] }
+      const campanhas = data.data || []
+      // Formato do criativo (video/carrossel/imagem) e do ANUNCIO dentro da
+      // campanha, nao da campanha em si -- busca TODOS os anuncios de cada
+      // campanha (13/09/2026, pedido da Adriana: ver o conjunto completo de
+      // anuncios, nao so 1 por campanha). Testado ao vivo em 13/09 contra a
+      // conta real -- deteccao de formato confirmada certa (Video/Carrossel
+      // batendo com o que a Adriana via no Gerenciador de Anuncios).
+      const comAnuncios = await Promise.all(
+        campanhas.map(async (c: any) => {
+          try {
+            const adsData = await metaGet(`${c.id}/ads`, {
+              fields: 'id,name,status,creative{object_story_spec}',
+              limit: '50',
+            })
+            const ads = (adsData.data || []).map((ad: any) => {
+              const spec = ad.creative?.object_story_spec
+              let ad_format = 'Desconhecido'
+              if (spec?.video_data) ad_format = 'Vídeo'
+              else if ((spec?.link_data?.child_attachments?.length || 0) > 1) ad_format = 'Carrossel'
+              else if (spec?.link_data) ad_format = 'Imagem'
+              return { id: ad.id, name: ad.name, status: ad.status, ad_format }
+            })
+            return { ...c, ads, ad_format: ads[0]?.ad_format || 'Desconhecido' }
+          } catch {
+            return { ...c, ads: [], ad_format: 'Desconhecido' }
+          }
+        }),
+      )
+      result = { campaigns: comAnuncios }
     } else if (action === 'get_metrics') {
       const campData = await metaGet(`act_${META_AD_ACCOUNT_ID}/campaigns`, {
         fields: 'id,name,status',
