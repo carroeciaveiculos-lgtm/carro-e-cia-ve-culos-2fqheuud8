@@ -236,6 +236,27 @@ export async function toggleVehiclePublication(
   if (error) throw error
 }
 
+export interface DespublicarResultado {
+  success: boolean
+  message?: string
+  resultados?: Record<string, { success: boolean; message: string }>
+}
+
+// Botão "Despublicar" da lista de Estoque (14/09/2026): descobre sozinha em
+// quais plataformas o veículo está publicado e despublica de todas — o
+// veículo continua "disponível" no nosso estoque, só sai dos portais
+// externos. Toda a lógica de qual linha/tabela conferir por plataforma fica
+// na function (despublicar-veiculo), não aqui.
+export async function despublicarDeTodasPlataformas(
+  veiculoId: string,
+): Promise<DespublicarResultado> {
+  const { data, error } = await supabase.functions.invoke('despublicar-veiculo', {
+    body: { veiculo_id: veiculoId },
+  })
+  if (error) return { success: false, message: error.message || 'Erro de conexão com o servidor' }
+  return (data || { success: false, message: 'Resposta vazia do servidor' }) as DespublicarResultado
+}
+
 export async function updateAdType(
   veiculoId: string,
   platform: string,

@@ -36,8 +36,10 @@ import {
   Share2,
   Trash2,
   Send,
+  EyeOff,
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
+import { despublicarDeTodasPlataformas } from '@/services/plataformas'
 import VehicleFormModal from './VehicleFormModal'
 import { VehicleQuickViewModal } from '@/components/admin/VehicleQuickViewModal'
 import { VehicleShareModal } from '@/components/admin/VehicleShareModal'
@@ -59,6 +61,7 @@ export default function AdminEstoque() {
   const [activeTab, setActiveTab] = useState('ativos')
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
+  const [despublicandoId, setDespublicandoId] = useState<string | null>(null)
   const [sortBy, setSortBy] = useState('recentes')
   const [diasFilter, setDiasFilter] = useState('todos')
   const [combustivelFilter, setCombustivelFilter] = useState('todos')
@@ -143,6 +146,48 @@ export default function AdminEstoque() {
   useEffect(() => {
     loadVehicles()
   }, [activeTab, debouncedSearch, sortBy, diasFilter, combustivelFilter, elegibilidadeFilter, page])
+
+  const handleDespublicar = async (id: string) => {
+    if (
+      !confirm(
+        'Despublicar este veículo de todas as plataformas onde ele estiver anunciado (Webmotors, NaPista, Mercado Livre)? O veículo continua disponível no seu estoque.',
+      )
+    )
+      return
+    setDespublicandoId(id)
+    try {
+      const resultado = await despublicarDeTodasPlataformas(id)
+      if (!resultado.success) {
+        toast({
+          title: 'Erro ao despublicar',
+          description: resultado.message,
+          variant: 'destructive',
+        })
+        return
+      }
+      const plataformas = Object.entries(resultado.resultados || {})
+      if (plataformas.length === 0) {
+        toast({ title: 'Nada pra despublicar', description: resultado.message })
+        return
+      }
+      const sucesso = plataformas.filter(([, r]) => r.success).map(([p]) => p)
+      const falha = plataformas.filter(([, r]) => !r.success).map(([p]) => p)
+      toast({
+        title: sucesso.length > 0 ? 'Veículo despublicado' : 'Falha ao despublicar',
+        description: [
+          sucesso.length > 0 ? `Despublicado: ${sucesso.join(', ')}` : null,
+          falha.length > 0 ? `Falhou: ${falha.join(', ')}` : null,
+        ]
+          .filter(Boolean)
+          .join(' — '),
+        variant: falha.length > 0 && sucesso.length === 0 ? 'destructive' : undefined,
+      })
+    } catch (err: any) {
+      toast({ title: 'Erro ao despublicar', description: err.message, variant: 'destructive' })
+    } finally {
+      setDespublicandoId(null)
+    }
+  }
 
   const handleDevolver = async (id: string) => {
     if (!confirm('Tem certeza que deseja devolver este veículo ao cliente?')) return
@@ -545,6 +590,20 @@ export default function AdminEstoque() {
                             title="Devolver ao Cliente"
                           >
                             <Undo2 className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleDespublicar(v.id)}
+                            disabled={despublicandoId === v.id}
+                            className="text-slate-600 hover:bg-slate-100"
+                            title="Despublicar de todas as plataformas"
+                          >
+                            {despublicandoId === v.id ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                              <EyeOff className="w-4 h-4" />
+                            )}
                           </Button>
                         </>
                       )}

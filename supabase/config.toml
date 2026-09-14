@@ -145,6 +145,9 @@ verify_jwt = false
 [functions.sync-plataforma]
 verify_jwt = false
 
+[functions.despublicar-veiculo]
+verify_jwt = true
+
 # Corrigido em 12/08/2026: estava false aqui enquanto produção rodava true.
 # Um deploy geral teria aberto a autenticação Webmotors sem sessão.
 [functions.wm-auth]
