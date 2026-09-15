@@ -2,6 +2,24 @@ import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from 'jsr:@supabase/supabase-js@2'
 import { corsHeaders } from '../_shared/cors.ts'
 
+const R2_BASE_URL = 'https://imagens.carroeciamotors.com.br'
+
+// Achado 15/09/2026: fotos sincronizadas do Google Drive nao passam pelo
+// resize que o formulario de cadastro ja faz (src/lib/image-resize.ts) --
+// ficam no tamanho bruto da camera do celular, as vezes >5MB. WhatsApp
+// recusa qualquer imagem acima de 5MB (erro 131053 "Media upload error"),
+// e a falha e assincrona/silenciosa -- ninguem ficava sabendo que a foto
+// nao chegou no cliente. Redimensiona via Cloudflare Image Resizing (zona
+// ja habilitada, mesmo mecanismo usado no site -- ver
+// src/lib/image-utils.ts, applyCloudflareResize) antes de mandar pro Meta.
+// Nao mexe em URL que nao seja da nossa zona R2 (link externo passa direto).
+function otimizarImagemParaWhatsApp(url: string): string {
+  if (!url || !url.startsWith(R2_BASE_URL)) return url
+  if (url.includes('/cdn-cgi/image/')) return url
+  const pathAndQuery = url.slice(R2_BASE_URL.length)
+  return `${R2_BASE_URL}/cdn-cgi/image/width=1280,quality=75,format=jpeg${pathAndQuery}`
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
 
@@ -49,7 +67,7 @@ Deno.serve(async (req) => {
       // Permite o envio de fotos do estoque pelo chat do CRM
       body.type = 'image'
       body.image = {
-        link: documentUrl,
+        link: otimizarImagemParaWhatsApp(documentUrl),
         caption: text || '',
       }
     } else if (action === 'video') {

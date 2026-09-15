@@ -307,6 +307,13 @@ específico aqui, menos eu erro:
     mas não recebem tráfego real, parecem código morto/duplicado. Vem de
     `social_configuracoes.whatsapp_number` — esse campo é só pra alerta
     interno, nunca pra link público de WhatsApp.
+  - **Conta de anúncio da Meta usada pelo sistema (`META_AD_ACCOUNT_ID`)**:
+    `4333456556917039` ("carroecia_bot_claude"), desde 15/09/2026 — trocado
+    a pedido da Adriana pra separar o número de WhatsApp
+    (+55 34 9738-4177) da conta antiga. **Regra permanente dela: nunca
+    usar/consultar a conta "Ca - Carro e Cia" (`act_515820120462587`) a
+    menos que ela peça explicitamente** — vale pro `ads-agent`, qualquer
+    diagnóstico, qualquer chamada à API da Meta.
   - `5534992000300` (Gabriel) — em botões/fluxos de **seguro auto**
     (`SeguroAuto.tsx`), e como destino do encaminhamento da Clara pra
     `tipo=seguro_auto` (mesmo mecanismo do consórcio: link pro cliente +

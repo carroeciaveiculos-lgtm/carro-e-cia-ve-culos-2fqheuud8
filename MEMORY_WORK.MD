@@ -9,7 +9,67 @@ precisar reler o histórico inteiro de conversas. Diferente do
 pra ser mantido em dia de verdade. Detalhe técnico por integração continua
 nos arquivos `docs/*.md` — aqui é só o resumo de estado + pendências.
 
-Última atualização: 2026-09-15 (sessão 22, continuação 4 — causa raiz real do Facebook não publicar achada e corrigida, testado com publicação real; achado e resolvido bug 'vendido'/'Vendido' na próxima seção; Marketing via WhatsApp testado e commitado; botão "Despublicar" novo no Estoque testado ao vivo; auditoria completa do sistema; lista de pendências antigas triada e limpa).
+Última atualização: 2026-09-15 (sessão 22, continuação 5 — Etapas 1-4 da limpeza fechadas; conta de anúncio do ads-agent trocada pra carroecia_bot_claude, testado; bug real de envio de foto por WhatsApp achado e corrigido; causa raiz do Facebook resolvida; Marketing via WhatsApp testado; botão "Despublicar" testado; auditoria completa; pendências antigas triadas).
+
+## Sessão 22 (continuação 5, 15/09/2026) — limpeza fechada, conta de anúncio trocada, bug de envio de foto corrigido
+
+**Etapas 1-4 da limpeza (propostas na auditoria) fechadas:**
+- `meta-capi-postback` recriado no Git (código igual ao publicado, só
+  passou a ser versionado).
+- `test-quota`, `teste-pdf`, `publicar-manual` apagadas do Supabase.
+- 3 das 4 branches órfãs apagadas (`agents/auditor-arquitetura-...`,
+  `agents/verificacao-mcp-integrados`, `docs/claude-md`). A 4ª
+  (`agents/token-architecture-analysis-and-fixes`) **NÃO foi apagada** —
+  achado real no meio da limpeza: tinha 391 linhas de mudança **staged,
+  nunca commitadas** (reorganização dos arquivos de agente do Claude Code
+  em `.claude/agents/*.md` + `docs/referencia-tecnica-agente-*.md`), que a
+  checagem inicial (só histórico de commit) não via. Segue no worktree
+  `carro-e-cia-ve-culos-2fqheuud8.worktrees/token-architecture-analysis-and-fixes`,
+  pendente de decisão da Adriana (commitar, descartar, ou deixar como
+  está).
+- Bug `'vendido'`/`'Vendido'` corrigido em 5 lugares (4 arquivos de código
+  + o gatilho `notify_vehicle_sold_capi` no banco, via migration
+  `20260915160000_fix_status_vendido_case.sql`). **Achado útil**:
+  `supabase db push` não funcionava por dessincronia de histórico de
+  migration antiga (não causada nesta sessão) — `supabase db query -f
+  arquivo.sql` aplica direto sem mexer nesse histórico, funcionou bem pra
+  essa correção pontual.
+
+**Conta de anúncio do `ads-agent` trocada (15/09, pedido da Adriana):**
+`META_AD_ACCOUNT_ID` mudou de `act_515820120462587` ("Ca - Carro e Cia")
+pra `4333456556917039` ("carroecia_bot_claude") — ela pediu explicitamente
+pra separar o número de WhatsApp (+55 34 9738-4177) dessa conta antiga.
+**Regra permanente dada por ela: nunca usar/acessar a conta "Ca - Carro e
+Cia" a menos que ela peça.** Segredo trocado por ela mesma (escrita de
+segredo é bloqueada pra mim). Testado com `LISTAR` antes/depois — mudou de
+verdade (campanhas diferentes: "Consórcios Carro e Cia"/"Consórcio Auto"
+em vez das antigas "[AEG][LEADS]..."). Google Ads não foi afetado (usa
+`GOOGLE_ADS_CUSTOMER_ID` separado).
+
+**Bug real achado no envio de foto de veículo por WhatsApp (15/09):**
+fotos sincronizadas do Google Drive não passam pelo resize que o
+formulário de cadastro manual já faz (`src/lib/image-resize.ts`) — ficam
+no tamanho bruto da câmera, às vezes >5MB. WhatsApp recusa qualquer
+imagem acima de 5MB (erro 131053 "Media upload error") — **confirmadas 3
+falhas reais silenciosas** em 12-13/09, pra 2 clientes diferentes,
+ninguém percebeu (falha é assíncrona, nada escuta o status de erro).
+**Corrigido**: `send-whatsapp/index.ts` agora redimensiona toda imagem via
+Cloudflare Image Resizing (mesma zona/mecanismo já usado no site,
+`src/lib/image-utils.ts`) antes de mandar pro Meta — testado
+(1,52MB → 246KB numa foto real). Vídeo checado no mesmo período, nenhuma
+falha encontrada. **Achado à parte, não implementado**: a falha continua
+silenciosa pra qualquer outro motivo de erro (número inválido, etc.) —
+ninguém escuta o status de entrega da Meta. Não mexido, fora do pedido
+desta sessão.
+
+Investigado e descartado: delay de alguns segundos pra mensagem de texto
+chegar no cliente — revisado `ConversationPanel.tsx`/`send-whatsapp`, sem
+nenhuma espera artificial nossa antes do envio; é latência normal do
+WhatsApp Business API (diferente do app nativo, ponta a ponta). Não é bug,
+não mexido.
+
+CRM: view "Lista" de leads (`Leads.tsx`) não mostrava horário de chegada
+do lead, só data — corrigido, Kanban já mostrava os dois.
 
 ## Sessão 22 (continuação 4, 15/09/2026) — causa raiz real do Facebook resolvida
 
