@@ -9,7 +9,124 @@ precisar reler o histórico inteiro de conversas. Diferente do
 pra ser mantido em dia de verdade. Detalhe técnico por integração continua
 nos arquivos `docs/*.md` — aqui é só o resumo de estado + pendências.
 
-Última atualização: 2026-09-12 (sessão 22 — Marketing via WhatsApp implementado e publicado; achado e corrigido bug grave de roteamento no webhook real (`receive-leads`); falta confirmar os comandos ao vivo e commitar. **Nada commitado ainda.**)
+Última atualização: 2026-09-15 (sessão 22, continuação 4 — causa raiz real do Facebook não publicar achada e corrigida, testado com publicação real; achado e resolvido bug 'vendido'/'Vendido' na próxima seção; Marketing via WhatsApp testado e commitado; botão "Despublicar" novo no Estoque testado ao vivo; auditoria completa do sistema; lista de pendências antigas triada e limpa).
+
+## Sessão 22 (continuação 4, 15/09/2026) — causa raiz real do Facebook resolvida
+
+**Facebook não publicava desde pelo menos 23/08 — causa raiz real achada e
+corrigida, não é mais "token vencido, precisa gerar outro".** `META_PAGE_ACCESS_TOKEN`
+tinha o **mesmo hash** que `META_ADS_TOKEN` e `WHATSAPP_TOKEN` (confirmado via
+`supabase secrets list`, que só mostra hash, nunca valor) — era o mesmo
+token de usuário/bot (`carroecia_bot`) reaproveitado pras 3 finalidades.
+Confirmado com diagnóstico ao vivo (function temporária, apagada logo
+depois, nunca expôs o valor): `/me` desse token resolvia pro bot, não pra
+Página; `/me/accounts` mostrava que o bot já tinha `MANAGE`/`CREATE_CONTENT`
+na Página, mas tentar postar/ler o feed dava **"É necessário um token de
+acesso à Página para esta ligação na nova experiência de Páginas"** — a
+Meta mudou a regra e não aceita mais token de usuário nem com permissão
+total na Página.
+
+**Corrigido**: extraído o Page Access Token de verdade (via
+`/me/accounts?fields=...,access_token`, que devolve o token específico da
+Página pro mesmo bot) e salvo em `META_PAGE_ACCESS_TOKEN` — a Adriana rodou
+o `supabase secrets set` ela mesma (o Claude Code bloqueou a escrita de
+segredo por mim, categoria "Secret-Store Writes" — correto, não tentei
+contornar). **Testado com publicação real** (vaga de SDR, 15/09): Facebook
+e Instagram saíram como "Publicado", log confirma sem erro. Item fechado
+de verdade, removido do `PROXIMA_SESSAO.md`.
+
+**Incidente próprio durante o diagnóstico**: uma das functions temporárias
+devolveu o campo `next` (paginação) da resposta do Facebook, que embute o
+token em texto puro na URL — vazou o token novo (o que ficou ativo em
+produção) na conversa por descuido meu, não filtrei antes de mostrar o
+resultado. Avisei a Adriana na hora. Ela decidiu não resetar o usuário/bot
+por enquanto (risco avaliado como baixo — ficou só na conversa, ambiente
+dela). **Lição pra não repetir**: qualquer resposta de Graph API que tenha
+`paging`/`next`/`before`/`after` carrega o `access_token` na própria URL —
+nunca devolver esses campos crus de uma function de diagnóstico, sempre
+extrair só o campo específico necessário (ex.: `data[0].id`), igual já
+fazia com o token em si.
+
+**Achado à parte, ainda não perguntado à Adriana se quer que eu corrija**:
+`META_ADS_TOKEN`, `WHATSAPP_TOKEN` e o `META_PAGE_ACCESS_TOKEN` antigo
+(pré-correção) eram o mesmo valor — vale ela saber que os 3 usos
+dependem do mesmo usuário/bot no Facebook; se ele for revogado ou perder
+permissão um dia, os 3 caem juntos.
+
+## Sessão 22 (continuação 3, 13-15/09/2026) — LISTAR por anúncio individual, botão Despublicar, auditoria e triagem de pendências
+
+**Marketing via WhatsApp — fechado e testado (13/09):**
+- `LISTAR` evoluiu de campanha pra **anúncio individual** (pedido da
+  Adriana): abre cada campanha e mostra os carros dentro dela — achado
+  que as campanhas reais são por objetivo de marketing (não por veículo),
+  quem é "por carro" é o anúncio dentro da campanha. Formato `[nome] [ano]
+  (tipo)` — tipo = formato do criativo (Vídeo/Carrossel/Imagem na Meta,
+  confirmado certo ao vivo; tipo de campanha no Google). Nomes duplicados
+  do mesmo carro (variações de formato/público, ex. "Commander Estático
+  2022" e "Commander Carrossel 2022") agrupados numa linha só —
+  `limparNomeAnuncio()` tira marcador de formato do nome antes de agrupar.
+- `PAUSAR`/`ATIVAR` passaram a agir no **anúncio individual** (não só
+  campanha) — pedido explícito da Adriana: pausa todos os anúncios do
+  carro de uma vez, mesmo com nomes de formato diferentes.
+- Testado ao vivo com sucesso: `LISTAR`, `GASTO`, `PAUSAR`/`ATIVAR`
+  agrupado. Tudo commitado e pushado (`93de36f`).
+
+**Auditoria completa do sistema (14/09, a pedido da Adriana — só leitura,
+nada alterado sem perguntar):**
+- Estável: 11 cron jobs ativos e com sucesso, zero erro em `lead_errors`
+  (7 dias) e em logs de function (24h), type-check limpo.
+- **Achado: `ads-agent`/`google-ads-agent` exigem JWT do gateway do
+  Supabase** (feitas pro painel, `verify_jwt=true`) — a chamada do
+  WhatsApp só mandava `x-internal-secret`, sem JWT, e a borda barrava
+  antes do código rodar (por isso "nenhuma campanha encontrada" sem log
+  nenhum). Corrigido mandando a chave de serviço junto.
+- **4 Edge Functions publicadas sem código no Git**: `test-quota`,
+  `teste-pdf`, `publicar-manual` (confirmado órfãs, sem uso — 
+  `publicar-manual` foi reimplementada direto em `Portais.tsx`) e
+  `meta-capi-postback` (**viva em produção**, gatilho real no banco chama
+  ela toda venda — precisa só ser recriada no Git, não apagar).
+- **4 branches Git locais nunca limpas**: 3 vazias, e `docs/claude-md` com
+  10 commits reais de 07/08 mexendo em Webmotors/SOAP — confirmado que os
+  mesmos arquivos foram reescritos de novo em 26/08 e 03/09 (sessões
+  posteriores), então é trabalho superado, não perdido.
+- **Plano de limpeza proposto e ainda não autorizado**: recriar
+  `meta-capi-postback` no Git, apagar as 3 functions órfãs, apagar as 4
+  branches. Fica pendente a autorização da Adriana.
+- **Achado à parte, não corrigido**: botão "Marcar como Vendido" grava
+  `status: 'vendido'` minúsculo, mas o postback de venda pra Meta e a
+  contagem de vendidos do relatório diário esperam `'Vendido'` maiúsculo
+  — nunca bateram, os dois mecanismos provavelmente nunca dispararam de
+  verdade. Perguntado à Adriana se quer incluir na próxima rodada de
+  limpeza — sem resposta ainda.
+
+**Botão "Despublicar" no Estoque (14/09, implementado e testado ao vivo):**
+- Novo botão na lista de veículos (`/admin/estoque`, aba Ativos), ao lado
+  de "Marcar como Vendido"/"Devolver ao Cliente" — descobre sozinho em
+  quais plataformas o veículo está publicado e despublica de todas, sem
+  mudar o status do veículo (continua "disponível").
+- Function nova `despublicar-veiculo` reaproveita os mecanismos já
+  testados (`wm-sync`/`napista-sync`/`sync-plataforma`), mesma trava de
+  permissão que `publicar-manual` já tinha (setor Estoque/Portais ou
+  admin_master) — exige login de usuário de verdade, não dá pra testar
+  via terminal sem a Adriana clicar.
+- **Achado durante a implementação**: `estoque_publicacoes` pode ter
+  **várias linhas por veiculo_id+platform** (sem unique constraint, é
+  histórico de tentativas, não 1 registro fixo) — sempre pegar a mais
+  recente, nunca assumir linha única. Mercado Livre não usa essa tabela
+  pra estado atual, usa `ml_listings.status`.
+- **Testado ao vivo com sucesso** nos veículos reais T-Cross e Strada —
+  confirmado despublicado nas 3 plataformas (Webmotors, NaPista, Mercado
+  Livre) pros dois. Commitado e pushado (`b692378`).
+
+**Triagem da lista de pendências antigas (15/09)** — 15 itens do
+`PROXIMA_SESSAO.md` reconferidos um a um contra o estado real (não confiar
+na memória). 5 resolvidos/obsoletos removidos: H6 placa SGI9C15 publicado
+sem erro agora, vaga "Consultor(a) de Consórcios" não existe mais, Canva
+MCP conectado, botão "Gerar com IA" já testado em sessão posterior, travas
+de conversa da Clara rodando 3 semanas em produção sem incidente. Os 10
+que sobraram estão na lista nova do `PROXIMA_SESSAO.md` — destaque: o
+token do Facebook **continua quebrado de verdade** (achado 4 posts com
+erro em 11/09, não é coisa antiga que sarou sozinha).
 
 ## Sessão 22 (12/09/2026) — Marketing via WhatsApp implementado (itens 1-5, 7); função de casar nome de campanha ficou pra Adriana
 

@@ -410,104 +410,55 @@ avisando a Adriana pra checar se a LinkedIn aprovou o "Request Access" do
 foi aprovado antes disso, pular direto pro item 1 de "Precisa de decisão".
 
 ## Precisa de decisão/ação da Adriana
--1.5. **H6 19 (o que NÃO é o de placa SIQ-5H93)**: não consegue ser
-   publicado na Webmotors em nenhuma modalidade hoje — VIP é rejeitado
-   por um motivo do lado da própria Webmotors (testado isolando a
-   variável, confirmado ao vivo), Básica aceitaria mas não tem vaga
-   livre. Precisa a Adriana escolher entre abrir chamado no suporte da
-   Webmotors ou liberar 1 vaga Básica despublicando outro veículo. Não
-   reabrir a investigação — causa já isolada e documentada.
--1.4. **RAM Rampage (placa da unidade `7c3a8c92-9f20-4c70-aec0-
-   e628b86b875f`) com anúncio desatualizado na Webmotors**: km, "revisões
-   pela concessionária" e IPVA pago no anúncio real batem com o cadastro
-   antigo, não com o atual (achado comparando o anúncio ao vivo com o
-   banco) — o mapeamento desse veículo também está sem nenhum código
-   salvo (versão/cor/câmbio/combustível), então nenhuma atualização
-   automática vai sair até alguém rodar o mapeamento de novo. Precisa a
-   Adriana autorizar remapear + forçar um resync pra esse veículo
-   específico.
--1.3. **PDF de contrato/proposta sem placeholder de Versão** (achado
-   sessão 16): a tela de editar modelo já mostra `{{versao}}` como
-   disponível, mas o motor de gerar PDF não lê esse dado — hoje sem
-   impacto real (nenhum modelo salvo usa isso ainda), mas combinado que
-   fica pra depois do plano de corte Modelo/Versão, não antes.
--1. **Reativar `re-engagement-cron` quando a Meta aprovar os templates
-   novos** (24/08/2026) — `reengajamento_quente` e `reengajamento_pos_visita`
-   estão PENDING. Quando aprovar: trocar `REENGAJAMENTO_PAUSADO` pra
-   `false` em `supabase/functions/re-engagement-cron/index.ts` e trocar o
-   nome do template hardcoded (`reengajamento_frio`, que não existe) pelo
-   nome aprovado de verdade — hoje a função só tem 1 template usado pros
-   2 públicos (frio e morno/quente), pode fazer sentido usar
-   `reengajamento_quente` só pro público morno/quente e manter frio à
-   parte, decisão dela quando aprovar.
--0.5. **Testar em conversa real** as travas publicadas em 24/08 (C, D, E,
-   regra de prioridade do A, forma de pagamento do B, critério de
-   encaminhamento humano) — só revisão de código até agora, não
-   observado em atendimento de cliente de verdade ainda.
-0. **Testar o botão "Gerar com IA" de verdade no painel** (24/08/2026) —
-   a lógica foi testada por fora (function de diagnóstico), mas o botão
-   em si dentro do formulário de Vagas ainda não foi clicado por ninguém.
-   Abra Vagas → Nova Vaga → digite só um cargo (ex: "Consultor(a) de
-   Financiamentos") → Gerar com IA → espere uns 20-40s (agora pesquisa de
-   verdade, é mais lento que antes) → confira se veio título, descrição
-   formatada (títulos/listas) e palavras-chave preenchidas.
-1. **Facebook não publica mais — token com permissão descontinuada**
-   (achado 24/08/2026, testando a publicação real da vaga SDR): toda
-   publicação no Facebook via `publicar-social` falha com "(#200) The
-   permission(s) publish_actions are not available. It has been
-   deprecated." — confirmei que já estava falhando desde pelo menos
-   19h15 de 23/08 (não é bug de hoje, é achado novo). **Afeta qualquer
-   post no Facebook, não só vaga** — o Instagram continua funcionando
-   normal. Precisa reconectar/gerar de novo o token de acesso da Página
-   do Facebook (`META_PAGE_ACCESS_TOKEN`) com a permissão atual
-   (`pages_manage_posts` ou equivalente) no Meta Business Suite — não é
-   algo que dá pra resolver só no código, precisa da Adriana (ou de quem
-   administra a Página) gerando o token novo.
-   — **Já testado e confirmado funcionando** (24/08/2026, publicação
-   real): resumo automático da vaga (limite de caracteres) + Instagram —
-   publiquei de verdade a vaga SDR no Instagram como teste (post real,
-   ficou no ar a pedido dela). Logo em fundo branco + texto do cargo
-   escrito na imagem, e imagem sem corte na página pública — tudo
-   confirmado com a vaga SDR real. Não precisa retestar nenhum desses.
-2. **Regenerar a imagem do "Consultor(a) de Consórcios"**: essa vaga saiu
-   com um logo inventado (não é o oficial). Já corrigido o prompt + trocado
-   pro modelo `gpt-image-2` (23/08) — só falta ela entrar em Vagas → editar
-   essa vaga → "Gerar do zero de novo" pra sair certo. Não é um bug
-   pendente de código, só uma ação manual que precisa do login dela.
-3. **Triagem de candidatos do LinkedIn Hiring (22/08/2026)**: perguntei se
-   ela quer que eu já mande mensagem pra alguma candidata recomendada
-   (Kathyuça Melo e Larissa Felix, no topo do ranking) — sem resposta
-   ainda. Ver ranking completo em `MEMORY_WORK.MD`, seção "Sessão 12".
+
+**Lista triada em 15/09/2026** (sessão 22) — reconferido status real de
+cada item antes de manter na lista. 5 itens antigos removidos por estarem
+resolvidos ou obsoletos (ver `MEMORY_WORK.MD`, sessão 22, se quiser o
+histórico de por que saíram: H6 placa SGI9C15 publicado sem erro agora,
+vaga "Consultor(a) de Consórcios" não existe mais, Canva MCP conectado,
+botão "Gerar com IA" já testado em sessão posterior, travas de conversa da
+Clara rodando 3 semanas em produção sem incidente). Não reabrir esses 5.
+
+1. **RAM Rampage (placa da unidade `7c3a8c92-9f20-4c70-aec0-
+   e628b86b875f`) com anúncio desatualizado na Webmotors** — ainda em
+   estoque, km/revisão/IPVA do anúncio real não batem com o cadastro
+   atual, mapeamento sem código salvo. Precisa a Adriana autorizar
+   remapear + forçar resync pra esse veículo específico.
+2. **Reativar `re-engagement-cron` quando a Meta aprovar os templates
+   novos** (`reengajamento_quente`/`reengajamento_pos_visita`, PENDING
+   desde 24/08) — **reconfirmado ainda pausado em 15/09**. Quando aprovar:
+   trocar `REENGAJAMENTO_PAUSADO` pra `false` em
+   `supabase/functions/re-engagement-cron/index.ts` e trocar o nome do
+   template hardcoded (`reengajamento_frio`, que não existe) pelo nome
+   aprovado de verdade.
+3. **WhatsApp — publicação de post ainda não implementada**: falta (a) a
+   Adriana aprovar pelo menos 1 template no WhatsApp Manager da Meta
+   (**reconfirmado em 15/09: tabela `whatsapp_templates` continua
+   vazia**), (b) criar function de sincronização de templates aprovados
+   (não existe ainda), (c) conectar `publicar-social` ao `send-whatsapp`.
+   Não mexer até ela aprovar o template.
 4. **Quando a LinkedIn aprovar o Community Management API**: mudar o
    escopo OAuth pra incluir `w_organization_social`, reescrever a busca de
    organização em `linkedin-oauth-callback` (usar `/rest/organizationAcls`,
-   não `/v2/userinfo` — são permissões diferentes), e trocar o `author_urn`
-   usado em `publicar-social` pela URN da organização quando publicar como
-   página. Passo a passo completo em `docs/linkedin-integracao.md`, seção
-   "Quando for aprovado". Não mexer nisso até ela confirmar a aprovação.
-5. **LinkedIn e WhatsApp — WhatsApp ainda não implementado**: LinkedIn já
-   funciona (membro pessoal). WhatsApp: ela decidiu que "publicar" significa
-   mandar o post como mensagem de template (não Status, não Canal — ver
-   `docs/meta-integracao.md` pro porquê). Falta: (a) ela aprovar pelo menos
-   1 template no WhatsApp Manager da Meta, (b) eu criar uma function de
-   sincronização de templates aprovados (não existe nenhuma hoje — a
-   tabela `whatsapp_templates` está vazia), (c) conectar `publicar-social`
-   ao `send-whatsapp` (que já sabe mandar template). Não implementado
-   ainda, esperando ela aprovar o template primeiro.
-6. **Facebook Stories** — decisão dela em 20/08 foi tratar como etapa
-   separada do Instagram Stories (já no ar). Usa endpoint diferente
-   (`/photo_stories`/`/video_stories`) e a permissão do app pra isso
-   ainda não foi confirmada. Só mexer se ela pedir explicitamente.
-7. **Automações de e-mail de nutrição de lead** — único item do
-   backlog de 17/08 que ainda não foi implementado. Precisa de decisão
-   de escopo (o que dispara o e-mail, frequência) e da chave de API do
-   Brevo (nada configurado ainda, sem conector oficial).
-8. Rodar `claude mcp list` — conferir se o Canva aparece conectado. Se
-   ainda "Needs authentication", pedir pra ela rodar /mcp e autenticar.
-9. Confirmar se ela já trocou o `client_secret` do app Meta ("APP
-   CARRO E CIA") que foi colado em texto puro no chat em 16/08/2026 —
-   ainda não confirmado (developers.facebook.com/apps/1369928368361968/
-   settings/basic/).
+   não `/v2/userinfo`), trocar o `author_urn` usado em `publicar-social`
+   pela URN da organização. Passo a passo em `docs/linkedin-integracao.md`,
+   seção "Quando for aprovado". Não mexer até ela confirmar a aprovação.
+5. **Triagem de candidatos do LinkedIn Hiring (22/08/2026)** — mais de 3
+   semanas paradas (Kathyuça Melo e Larissa Felix, topo do ranking em
+   `MEMORY_WORK.MD` sessão 12), provavelmente obsoleto por tempo — fica a
+   critério da Adriana se ainda quer contatar ou se descarta.
+6. **Facebook Stories** — decisão dela (20/08) foi tratar como etapa
+   separada do Instagram Stories (já no ar). Só mexer se ela pedir
+   explicitamente.
+7. **Automações de e-mail de nutrição de lead** — precisa de decisão de
+   escopo (o que dispara o e-mail, frequência) e da chave de API do Brevo
+   (nada configurado ainda, sem conector oficial).
+8. **Confirmar se já trocou o `client_secret` do app Meta** ("APP CARRO
+   E CIA") colado em texto puro no chat em 16/08/2026 — ainda não
+   confirmado (developers.facebook.com/apps/1369928368361968/settings/basic/).
+9. **PDF de contrato/proposta sem placeholder de Versão** (achado sessão
+   16) — sem impacto real hoje (nenhum modelo salvo usa isso ainda),
+   combinado que fica pra depois do plano de corte Modelo/Versão.
 
 ## Conferir, sem precisar perguntar
 - **Push em dia**: confira `git log -1` — todo commit de 23/08 foi
