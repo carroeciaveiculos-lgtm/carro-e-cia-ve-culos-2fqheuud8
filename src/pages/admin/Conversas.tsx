@@ -247,7 +247,11 @@ export default function Conversas() {
       </div>
 
       {/* Painel de chat */}
-      <ConversationPanel lead={selectedLead} usuariosMap={usuariosMap} />
+      <ConversationPanel
+        lead={selectedLead}
+        usuariosMap={usuariosMap}
+        onLeadUpdated={loadInitialData}
+      />
     </div>
   )
 }

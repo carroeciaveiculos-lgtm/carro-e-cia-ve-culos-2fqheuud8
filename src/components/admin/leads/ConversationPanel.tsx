@@ -18,6 +18,7 @@ import {
   Target,
   ImagePlus,
   Loader2,
+  Pencil,
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { cn } from '@/lib/utils'
@@ -26,20 +27,28 @@ import { getWhatsAppLink } from '@/lib/whatsapp'
 import { useAuth } from '@/hooks/use-auth'
 import { getOriginIcon } from '@/lib/lead-origin'
 import { uploadToR2 } from '@/lib/r2-upload'
+import { LeadFormModal } from '@/components/admin/leads/LeadFormModal'
 
 interface ConversationPanelProps {
   lead: any
   usuariosMap: Record<string, string>
   onBack?: () => void
+  onLeadUpdated?: () => void
 }
 
 // Extraído de src/pages/admin/Leads.tsx (Fase 4 do plano "Clara ponta a
 // ponta") pra ser reaproveitado também pela tela /admin/conversas, sem
 // duplicar a lógica de chat.
-export function ConversationPanel({ lead, usuariosMap, onBack }: ConversationPanelProps) {
+export function ConversationPanel({
+  lead,
+  usuariosMap,
+  onBack,
+  onLeadUpdated,
+}: ConversationPanelProps) {
   const { user } = useAuth()
   const { toast } = useToast()
 
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [message, setMessage] = useState('')
   const [isInternalNote, setIsInternalNote] = useState(false)
   const [conversation, setConversation] = useState<any[]>([])
@@ -260,8 +269,18 @@ export function ConversationPanel({ lead, usuariosMap, onBack }: ConversationPan
           >
             <MessageCircle className="w-4 h-4 mr-2" /> WhatsApp
           </Button>
+          <Button size="sm" variant="outline" onClick={() => setIsEditModalOpen(true)}>
+            <Pencil className="w-4 h-4 mr-2" /> Editar
+          </Button>
         </div>
       </div>
+
+      <LeadFormModal
+        open={isEditModalOpen}
+        onOpenChange={setIsEditModalOpen}
+        lead={lead}
+        onSuccess={() => onLeadUpdated?.()}
+      />
 
       <ScrollArea className="flex-1 p-4 bg-[#E5DDD5]/20">
         <div className="max-w-3xl mx-auto space-y-4">
@@ -334,7 +353,11 @@ export function ConversationPanel({ lead, usuariosMap, onBack }: ConversationPan
                         : ''}
                   </span>
                   <span className="text-[10px] text-slate-400 text-right shrink-0">
-                    {new Date(msg.created_at).toLocaleString('pt-BR', {
+                    {new Date(msg.created_at).toLocaleDateString('pt-BR', {
+                      day: '2-digit',
+                      month: '2-digit',
+                    })}{' '}
+                    {new Date(msg.created_at).toLocaleTimeString('pt-BR', {
                       hour: '2-digit',
                       minute: '2-digit',
                     })}

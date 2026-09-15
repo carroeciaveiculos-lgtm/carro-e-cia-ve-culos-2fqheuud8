@@ -18,10 +18,26 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { fetchTodosMotivosPerdaAtivos } from '@/lib/motivos-perda'
+
+// Campos que este formulário realmente edita — salvar só esses (achado
+// 15/09/2026: antes mandava o `formData` inteiro, que começa como uma
+// cópia crua do lead inteiro em modo edição, arriscando sobrescrever
+// campos que não aparecem nesta tela com o valor antigo sem querer).
+const CAMPOS_EDITAVEIS = [
+  'nome',
+  'telefone',
+  'email',
+  'veiculo_interesse',
+  'origem',
+  'temperatura',
+  'motivo_perda',
+] as const
 
 export function LeadFormModal({ open, onOpenChange, lead, onSuccess }: any) {
   const [formData, setFormData] = useState<any>({})
   const [loading, setLoading] = useState(false)
+  const [motivosPerda, setMotivosPerda] = useState<string[]>([])
   const { toast } = useToast()
 
   useEffect(() => {
@@ -38,15 +54,24 @@ export function LeadFormModal({ open, onOpenChange, lead, onSuccess }: any) {
       })
   }, [lead, open])
 
+  useEffect(() => {
+    if (open) fetchTodosMotivosPerdaAtivos().then(setMotivosPerda)
+  }, [open])
+
   const handleSave = async () => {
     setLoading(true)
     try {
+      const dadosParaSalvar = Object.fromEntries(
+        CAMPOS_EDITAVEIS.map((campo) => [campo, formData[campo] ?? null]),
+      )
       if (lead?.id) {
-        const { error } = await supabase.from('leads').update(formData).eq('id', lead.id)
+        const { error } = await supabase.from('leads').update(dadosParaSalvar).eq('id', lead.id)
         if (error) throw error
         toast({ title: 'Lead atualizado com sucesso' })
       } else {
-        const { error } = await supabase.from('leads').insert([formData])
+        const { error } = await supabase
+          .from('leads')
+          .insert([{ ...dadosParaSalvar, status: formData.status || 'novo' }])
         if (error) throw error
         toast({ title: 'Lead criado com sucesso' })
       }
@@ -124,6 +149,26 @@ export function LeadFormModal({ open, onOpenChange, lead, onSuccess }: any) {
               </SelectContent>
             </Select>
           </div>
+          {formData.status === 'perdido' && (
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label className="text-right">Motivo</Label>
+              <Select
+                value={formData.motivo_perda || ''}
+                onValueChange={(v) => setFormData({ ...formData, motivo_perda: v })}
+              >
+                <SelectTrigger className="col-span-3">
+                  <SelectValue placeholder="Motivo da perda" />
+                </SelectTrigger>
+                <SelectContent>
+                  {motivosPerda.map((m) => (
+                    <SelectItem key={m} value={m}>
+                      {m}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
         </div>
         <DialogFooter>
           <Button onClick={handleSave} disabled={loading}>

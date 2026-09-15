@@ -44,8 +44,10 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/hooks/use-auth'
 import { KanbanBoard } from '@/components/admin/leads/KanbanBoard'
 import { ConversationPanel } from '@/components/admin/leads/ConversationPanel'
+import { CadastroMotivosPerdaModal } from '@/components/admin/leads/CadastroMotivosPerdaModal'
+import { MotivoPerdaModal } from '@/components/admin/leads/MotivoPerdaModal'
 import { getOriginIcon } from '@/lib/lead-origin'
-import { BellRing, Activity, AlertTriangle, Zap } from 'lucide-react'
+import { BellRing, Activity, AlertTriangle, Zap, Settings } from 'lucide-react'
 
 // Agrupa valores de `tipo` por significado — 'compra' (ML/site) e 'comprador'
 // (Clara) representam a mesma coisa com nomes diferentes por origem (ver
@@ -84,6 +86,8 @@ export default function AdminLeads() {
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false)
 
   const [hasSimulation, setHasSimulation] = useState(false)
+  const [isCadastroMotivosOpen, setIsCadastroMotivosOpen] = useState(false)
+  const [leadIdPendenteMotivo, setLeadIdPendenteMotivo] = useState<string | null>(null)
 
   useEffect(() => {
     if (typeof window !== 'undefined' && 'Notification' in window) {
@@ -364,8 +368,35 @@ export default function AdminLeads() {
               <List className="w-4 h-4" />
             </Button>
           </div>
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-8"
+            onClick={() => setIsCadastroMotivosOpen(true)}
+          >
+            <Settings className="w-4 h-4 mr-2" /> Cadastro
+          </Button>
         </div>
       </div>
+
+      <CadastroMotivosPerdaModal
+        open={isCadastroMotivosOpen}
+        onOpenChange={setIsCadastroMotivosOpen}
+      />
+
+      <MotivoPerdaModal
+        open={!!leadIdPendenteMotivo}
+        onCancel={() => setLeadIdPendenteMotivo(null)}
+        onConfirm={async (motivo) => {
+          const leadId = leadIdPendenteMotivo
+          if (!leadId) return
+          setLeads((prev) =>
+            prev.map((l) => (l.id === leadId ? { ...l, status: 'perdido', motivo_perda: motivo } : l)),
+          )
+          await supabase.from('leads').update({ status: 'perdido', motivo_perda: motivo }).eq('id', leadId)
+          setLeadIdPendenteMotivo(null)
+        }}
+      />
 
       <div className="flex-1 overflow-hidden flex relative w-full">
         {viewMode === 'kanban' && !selectedLead ? (
@@ -375,6 +406,12 @@ export default function AdminLeads() {
             usuariosMap={usuariosMap}
             agendamentosMap={agendamentosMap}
             onStatusChange={async (leadId: string, status: string) => {
+              // "Perdido" pede o motivo antes de aplicar (pedido da Adriana,
+              // 15/09/2026) -- ver MotivoPerdaModal. Cancelar não move o card.
+              if (status === 'perdido') {
+                setLeadIdPendenteMotivo(leadId)
+                return
+              }
               setLeads((prev) => prev.map((l) => (l.id === leadId ? { ...l, status } : l)))
               await supabase.from('leads').update({ status }).eq('id', leadId)
             }}
@@ -442,6 +479,7 @@ export default function AdminLeads() {
                   setViewMode('kanban')
                   setSelectedLead(null)
                 }}
+                onLeadUpdated={loadLeads}
               />
             </div>
 
