@@ -207,6 +207,7 @@ const Agendamentos = lazyWithRetry(() => import('./pages/admin/Agendamentos'))
 const Design = lazyWithRetry(() => import('./pages/admin/Design'))
 const Financiamento = lazyWithRetry(() => import('./pages/admin/Financiamento'))
 const Avaliacao = lazyWithRetry(() => import('./pages/admin/Avaliacao'))
+const CadastroCrm = lazyWithRetry(() => import('./pages/admin/CadastroCrm'))
 const Administrativo = lazyWithRetry(() => import('./pages/admin/Administrativo'))
 const Portais = lazyWithRetry(() => import('./pages/admin/Portais'))
 const VagasAdmin = lazyWithRetry(() => import('./pages/admin/Vagas'))
@@ -380,6 +381,7 @@ const MainApp = () => (
         {/* Module: Financiamento */}
         <Route path="financiamento" element={<Financiamento />} />
         <Route path="avaliacao" element={<Avaliacao />} />
+        <Route path="crm-cadastro" element={<CadastroCrm />} />
         <Route path="financiamento/:submenu" element={<Financiamento />} />
 
         {/* Module: Administrativo */}

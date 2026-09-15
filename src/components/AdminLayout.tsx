@@ -25,6 +25,7 @@ import {
   Share2,
   Briefcase,
   ClipboardCheck,
+  ClipboardList,
   ChevronDown,
 } from 'lucide-react'
 import { useAuth } from '@/hooks/use-auth'
@@ -58,6 +59,7 @@ const SIDEBAR_MENUS = [
           { label: 'Conversador', path: '/admin/conversas', icon: MessageSquare },
           { label: 'Agendamentos', path: '/admin/agendamentos', icon: CalendarClock },
           { label: 'Avaliação de Veículo', path: '/admin/avaliacao', icon: ClipboardCheck },
+          { label: 'Cadastro', path: '/admin/crm-cadastro', icon: ClipboardList },
         ],
       },
       {
@@ -227,7 +229,9 @@ export default function AdminLayout() {
         to={item.path}
         className={cn(
           'relative flex items-center gap-3 px-3 py-2 rounded-lg transition-all font-medium text-sm',
-          isActive ? 'bg-blue-600 text-white shadow-md shadow-blue-900/20' : 'hover:bg-slate-800 hover:text-white',
+          isActive
+            ? 'bg-blue-600 text-white shadow-md shadow-blue-900/20'
+            : 'hover:bg-slate-800 hover:text-white',
         )}
         title={collapsed ? item.label : undefined}
       >

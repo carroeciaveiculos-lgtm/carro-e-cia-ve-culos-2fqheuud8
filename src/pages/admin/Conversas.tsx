@@ -8,6 +8,8 @@ import { Search, Bot, Headphones, MessageSquare } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { getOriginIcon } from '@/lib/lead-origin'
 import { ConversationPanel } from '@/components/admin/leads/ConversationPanel'
+import { LeadManagementPanel } from '@/components/admin/leads/LeadManagementPanel'
+import { MotivoPerdaModal } from '@/components/admin/leads/MotivoPerdaModal'
 
 // Fase 4 do plano "Clara ponta a ponta" — tela dedicada às conversas,
 // separada do Kanban de leads (docs/leads-e-sdr.md). Reaproveita o
@@ -17,6 +19,8 @@ export default function Conversas() {
   const [tab, setTab] = useState<'ia' | 'humano'>('ia')
   const [leads, setLeads] = useState<any[]>([])
   const [usuariosMap, setUsuariosMap] = useState<Record<string, string>>({})
+  const [veiculosMap, setVeiculosMap] = useState<Record<string, any>>({})
+  const [leadIdPendenteMotivo, setLeadIdPendenteMotivo] = useState<string | null>(null)
   const [ultimaMsgPorLead, setUltimaMsgPorLead] = useState<
     Record<string, { texto: string; em: string; sender: string }>
   >({})
@@ -64,22 +68,29 @@ export default function Conversas() {
 
   const loadInitialData = async () => {
     setLoading(true)
-    const [{ data: leadsData }, { data: usersData }, { data: mensagensData }] = await Promise.all([
-      supabase.from('leads').select('*').order('updated_at', { ascending: false }),
-      supabase.from('usuarios').select('id, nome'),
-      supabase
-        .from('conversation_history')
-        .select('lead_id, message_text, sender, created_at')
-        .neq('sender', 'internal_note')
-        .order('created_at', { ascending: false })
-        .limit(1000),
-    ])
+    const [{ data: leadsData }, { data: usersData }, { data: veicsData }, { data: mensagensData }] =
+      await Promise.all([
+        supabase.from('leads').select('*').order('updated_at', { ascending: false }),
+        supabase.from('usuarios').select('id, nome'),
+        supabase.from('veiculos').select('*'),
+        supabase
+          .from('conversation_history')
+          .select('lead_id, message_text, sender, created_at')
+          .neq('sender', 'internal_note')
+          .order('created_at', { ascending: false })
+          .limit(1000),
+      ])
 
     if (leadsData) setLeads(leadsData)
     if (usersData) {
       const uMap: Record<string, string> = {}
       usersData.forEach((u) => (uMap[u.id] = u.nome))
       setUsuariosMap(uMap)
+    }
+    if (veicsData) {
+      const vMap: Record<string, any> = {}
+      veicsData.forEach((v) => (vMap[v.id] = v))
+      setVeiculosMap(vMap)
     }
     if (mensagensData) {
       const map: Record<string, { texto: string; em: string; sender: string }> = {}
@@ -95,13 +106,26 @@ export default function Conversas() {
     setLoading(false)
   }
 
+  const updateLeadField = async (field: string, value: any) => {
+    if (!selectedLeadId) return
+    setLeads((prev) => prev.map((l) => (l.id === selectedLeadId ? { ...l, [field]: value } : l)))
+    await supabase
+      .from('leads')
+      .update({ [field]: value })
+      .eq('id', selectedLeadId)
+  }
+
+  const handleDeleteLead = async (id: string) => {
+    if (!confirm('Tem certeza que deseja excluir este lead permanentemente?')) return
+    await supabase.from('leads').delete().eq('id', id)
+    if (selectedLeadId === id) setSelectedLeadId(null)
+  }
+
   const leadsComAtividade = useMemo(() => {
     return leads
       .filter((l) => ultimaMsgPorLead[l.id]) // só quem já trocou mensagem
       .map((l) => ({ ...l, _ultimaMsg: ultimaMsgPorLead[l.id] }))
-      .sort(
-        (a, b) => new Date(b._ultimaMsg.em).getTime() - new Date(a._ultimaMsg.em).getTime(),
-      )
+      .sort((a, b) => new Date(b._ultimaMsg.em).getTime() - new Date(a._ultimaMsg.em).getTime())
   }, [leads, ultimaMsgPorLead])
 
   const filtrados = useMemo(() => {
@@ -251,6 +275,38 @@ export default function Conversas() {
         lead={selectedLead}
         usuariosMap={usuariosMap}
         onLeadUpdated={loadInitialData}
+      />
+
+      {/* Gestão do lead (14/09/2026) — antes só existia em Leads.tsx; sem
+          isso aqui a Adriana não achava a opção de editar o lead nessa tela,
+          que é a que ela mais usa no dia a dia. */}
+      {selectedLead && (
+        <LeadManagementPanel
+          lead={selectedLead}
+          veiculosMap={veiculosMap}
+          onFieldUpdate={updateLeadField}
+          onPerdido={() => setLeadIdPendenteMotivo(selectedLead.id)}
+          onDelete={() => handleDeleteLead(selectedLead.id)}
+        />
+      )}
+
+      <MotivoPerdaModal
+        open={!!leadIdPendenteMotivo}
+        onCancel={() => setLeadIdPendenteMotivo(null)}
+        onConfirm={async (motivo) => {
+          const leadId = leadIdPendenteMotivo
+          if (!leadId) return
+          setLeads((prev) =>
+            prev.map((l) =>
+              l.id === leadId ? { ...l, status: 'perdido', motivo_perda: motivo } : l,
+            ),
+          )
+          await supabase
+            .from('leads')
+            .update({ status: 'perdido', motivo_perda: motivo })
+            .eq('id', leadId)
+          setLeadIdPendenteMotivo(null)
+        }}
       />
     </div>
   )

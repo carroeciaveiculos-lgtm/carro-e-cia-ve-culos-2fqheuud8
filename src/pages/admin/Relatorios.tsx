@@ -1,9 +1,17 @@
 import { useEffect, useState, useMemo } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
 import { supabase } from '@/lib/supabase/client'
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart'
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Legend } from 'recharts'
-import { BarChart as BarChartIcon, Calendar, Users, TrendingUp } from 'lucide-react'
+import {
+  BarChart as BarChartIcon,
+  Calendar,
+  Users,
+  TrendingUp,
+  MapPin,
+  Download,
+} from 'lucide-react'
 import {
   Select,
   SelectContent,
@@ -11,13 +19,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { estimarRegiaoPorTelefone } from '@/lib/ddd-regiao'
 
 export default function Relatorios() {
-  const [leads, setLeads] = useState<any[]>([])
+  const [leadsRaw, setLeadsRaw] = useState<any[]>([])
   const [vendedores, setVendedores] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [periodo, setPeriodo] = useState('30')
   const [vendedorFilter, setVendedorFilter] = useState('todos')
+  const [regiaoFilter, setRegiaoFilter] = useState('todas')
 
   useEffect(() => {
     async function loadData() {
@@ -40,7 +50,7 @@ export default function Relatorios() {
         supabase.from('usuarios').select('id, nome').eq('role', 'vendedor'),
       ])
 
-      if (leadsRes.data) setLeads(leadsRes.data)
+      if (leadsRes.data) setLeadsRaw(leadsRes.data)
       if (vendRes.data) setVendedores(vendRes.data)
 
       setLoading(false)
@@ -48,6 +58,52 @@ export default function Relatorios() {
 
     loadData()
   }, [periodo, vendedorFilter])
+
+  // Lead não tem cidade/estado gravado — só dá pra estimar pelo DDD do
+  // telefone (ver src/lib/ddd-regiao.ts). É aproximado, não é endereço real.
+  const leadsComRegiao = useMemo(
+    () => leadsRaw.map((l) => ({ ...l, _regiao: estimarRegiaoPorTelefone(l.telefone) })),
+    [leadsRaw],
+  )
+
+  const regioesDisponiveis = useMemo(() => {
+    const contagem: Record<string, number> = {}
+    leadsComRegiao.forEach((l) => {
+      contagem[l._regiao] = (contagem[l._regiao] || 0) + 1
+    })
+    return Object.entries(contagem).sort((a, b) => b[1] - a[1])
+  }, [leadsComRegiao])
+
+  const leads = useMemo(
+    () =>
+      regiaoFilter === 'todas'
+        ? leadsComRegiao
+        : leadsComRegiao.filter((l) => l._regiao === regiaoFilter),
+    [leadsComRegiao, regiaoFilter],
+  )
+
+  const exportarCSV = () => {
+    const headers = ['Nome', 'Telefone', 'Região (estimada)', 'Status', 'Origem', 'Vendedor']
+    const linhas = leads.map((l) => [
+      l.nome || '',
+      l.telefone || '',
+      l._regiao,
+      l.status || '',
+      l.origem || l.source || '',
+      l.responsavel?.nome || 'IA / Não Atribuído',
+    ])
+    const csvContent =
+      'data:text/csv;charset=utf-8,' +
+      [headers, ...linhas]
+        .map((linha) => linha.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(','))
+        .join('\n')
+    const link = document.createElement('a')
+    link.setAttribute('href', encodeURI(csvContent))
+    link.setAttribute('download', 'relatorio_leads.csv')
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  }
 
   const chartDataVolume = useMemo(() => {
     const dataByDate: Record<string, number> = {}
@@ -133,8 +189,31 @@ export default function Relatorios() {
                 ))}
               </SelectContent>
             </Select>
+
+            <Select value={regiaoFilter} onValueChange={setRegiaoFilter}>
+              <SelectTrigger className="w-[220px] bg-white">
+                <MapPin className="w-4 h-4 mr-2" />
+                <SelectValue placeholder="Região" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todas">Todas as regiões</SelectItem>
+                {regioesDisponiveis.map(([regiao, count]) => (
+                  <SelectItem key={regiao} value={regiao}>
+                    {regiao} ({count})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Button variant="outline" className="bg-white" onClick={exportarCSV}>
+              <Download className="w-4 h-4 mr-2" /> Exportar CSV
+            </Button>
           </div>
         </div>
+
+        <p className="text-xs text-slate-400 -mt-4">
+          Região estimada pelo DDD do telefone — aproximada, não é o endereço real do cliente.
+        </p>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Card className="border-none shadow-sm">
@@ -262,6 +341,38 @@ export default function Relatorios() {
                     />
                   </BarChart>
                 </ChartContainer>
+              </CardContent>
+            </Card>
+
+            <Card className="border-none shadow-sm lg:col-span-2">
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <MapPin className="w-4 h-4" /> Leads por Região
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {regioesDisponiveis.length === 0 && (
+                  <p className="text-sm text-slate-400">Nenhum lead no período selecionado.</p>
+                )}
+                {regioesDisponiveis.map(([regiao, count]) => {
+                  const max = regioesDisponiveis[0]?.[1] || 1
+                  return (
+                    <div key={regiao} className="flex items-center gap-3">
+                      <span className="text-sm text-slate-600 w-52 shrink-0 truncate">
+                        {regiao}
+                      </span>
+                      <div className="flex-1 bg-slate-100 rounded-full h-3 overflow-hidden">
+                        <div
+                          className="bg-blue-500 h-full rounded-full"
+                          style={{ width: `${(count / max) * 100}%` }}
+                        />
+                      </div>
+                      <span className="text-sm font-semibold text-slate-700 w-8 text-right">
+                        {count}
+                      </span>
+                    </div>
+                  )
+                })}
               </CardContent>
             </Card>
           </div>
