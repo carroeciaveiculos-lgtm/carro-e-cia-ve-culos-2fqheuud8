@@ -92,7 +92,7 @@ const SIDEBAR_MENUS = [
       {
         title: 'Institucional',
         items: [
-          { label: 'Visão Geral (ROI)', path: '/admin/relatorios', icon: BarChart },
+          { label: 'Relatórios Gerenciais', path: '/admin/relatorios', icon: BarChart },
           { label: 'Vagas', path: '/admin/vagas', icon: Briefcase },
         ],
       },
