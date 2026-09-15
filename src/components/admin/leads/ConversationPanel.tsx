@@ -31,7 +31,6 @@ import { LeadFormModal } from '@/components/admin/leads/LeadFormModal'
 
 interface ConversationPanelProps {
   lead: any
-  usuariosMap: Record<string, string>
   onBack?: () => void
   onLeadUpdated?: () => void
 }
@@ -39,12 +38,7 @@ interface ConversationPanelProps {
 // Extraído de src/pages/admin/Leads.tsx (Fase 4 do plano "Clara ponta a
 // ponta") pra ser reaproveitado também pela tela /admin/conversas, sem
 // duplicar a lógica de chat.
-export function ConversationPanel({
-  lead,
-  usuariosMap,
-  onBack,
-  onLeadUpdated,
-}: ConversationPanelProps) {
+export function ConversationPanel({ lead, onBack, onLeadUpdated }: ConversationPanelProps) {
   const { user } = useAuth()
   const { toast } = useToast()
 
@@ -174,7 +168,13 @@ export function ConversationPanel({
       const { publicUrl } = await uploadToR2(file, fileName, file.type, 'media')
 
       const { error } = await supabase.functions.invoke('send-whatsapp', {
-        body: { action: 'image', to: cleanPhone, documentUrl: publicUrl, text: '', leadId: lead.id },
+        body: {
+          action: 'image',
+          to: cleanPhone,
+          documentUrl: publicUrl,
+          text: '',
+          leadId: lead.id,
+        },
       })
       if (error) throw error
     } catch (err: any) {
@@ -287,7 +287,6 @@ export function ConversationPanel({
           {conversation.map((msg, idx) => {
             const isInternal = msg.sender === 'internal_note'
             const isBot = msg.sender === 'bot'
-            const isHuman = msg.sender === 'human'
             const isAudio = msg.message_text.includes('[AUDIO]')
             const textClean = msg.message_text.replace('[AUDIO]', '').trim()
             // Imagem recebida do cliente (achado 23/08/2026 — antes sumia
@@ -344,14 +343,7 @@ export function ConversationPanel({
                 ) : (
                   <p className="text-sm text-slate-800 whitespace-pre-wrap">{msg.message_text}</p>
                 )}
-                <div className="flex justify-between items-center mt-1 gap-4">
-                  <span className="text-[9px] text-slate-400 font-medium">
-                    {isBot
-                      ? 'Respondido por Clara (IA)'
-                      : isHuman
-                        ? `Feito por ${usuariosMap[user?.id || ''] || 'Atendente'}`
-                        : ''}
-                  </span>
+                <div className="flex justify-end items-center mt-1 gap-4">
                   <span className="text-[10px] text-slate-400 text-right shrink-0">
                     {new Date(msg.created_at).toLocaleDateString('pt-BR', {
                       day: '2-digit',
@@ -403,7 +395,12 @@ export function ConversationPanel({
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0" align="end">
-              <Calendar mode="single" selected={followupDate} onSelect={setFollowupDate} initialFocus />
+              <Calendar
+                mode="single"
+                selected={followupDate}
+                onSelect={setFollowupDate}
+                initialFocus
+              />
               <div className="p-2 border-t">
                 <Button
                   size="sm"
@@ -467,7 +464,9 @@ export function ConversationPanel({
           />
           <Button
             onClick={sendMessage}
-            className={isInternalNote ? 'bg-yellow-600 hover:bg-yellow-700' : 'bg-blue-600 hover:bg-blue-700'}
+            className={
+              isInternalNote ? 'bg-yellow-600 hover:bg-yellow-700' : 'bg-blue-600 hover:bg-blue-700'
+            }
           >
             <Send className="w-4 h-4" />
           </Button>

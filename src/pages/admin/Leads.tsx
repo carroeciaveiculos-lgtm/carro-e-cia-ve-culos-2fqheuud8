@@ -355,7 +355,6 @@ export default function AdminLeads() {
             <div className="flex-1 min-w-[400px] border-r h-full">
               <ConversationPanel
                 lead={selectedLead}
-                usuariosMap={usuariosMap}
                 onBack={() => {
                   setViewMode('kanban')
                   setSelectedLead(null)

@@ -18,7 +18,6 @@ import { MotivoPerdaModal } from '@/components/admin/leads/MotivoPerdaModal'
 export default function Conversas() {
   const [tab, setTab] = useState<'ia' | 'humano'>('ia')
   const [leads, setLeads] = useState<any[]>([])
-  const [usuariosMap, setUsuariosMap] = useState<Record<string, string>>({})
   const [veiculosMap, setVeiculosMap] = useState<Record<string, any>>({})
   const [leadIdPendenteMotivo, setLeadIdPendenteMotivo] = useState<string | null>(null)
   const [ultimaMsgPorLead, setUltimaMsgPorLead] = useState<
@@ -68,25 +67,18 @@ export default function Conversas() {
 
   const loadInitialData = async () => {
     setLoading(true)
-    const [{ data: leadsData }, { data: usersData }, { data: veicsData }, { data: mensagensData }] =
-      await Promise.all([
-        supabase.from('leads').select('*').order('updated_at', { ascending: false }),
-        supabase.from('usuarios').select('id, nome'),
-        supabase.from('veiculos').select('*'),
-        supabase
-          .from('conversation_history')
-          .select('lead_id, message_text, sender, created_at')
-          .neq('sender', 'internal_note')
-          .order('created_at', { ascending: false })
-          .limit(1000),
-      ])
+    const [{ data: leadsData }, { data: veicsData }, { data: mensagensData }] = await Promise.all([
+      supabase.from('leads').select('*').order('updated_at', { ascending: false }),
+      supabase.from('veiculos').select('*'),
+      supabase
+        .from('conversation_history')
+        .select('lead_id, message_text, sender, created_at')
+        .neq('sender', 'internal_note')
+        .order('created_at', { ascending: false })
+        .limit(1000),
+    ])
 
     if (leadsData) setLeads(leadsData)
-    if (usersData) {
-      const uMap: Record<string, string> = {}
-      usersData.forEach((u) => (uMap[u.id] = u.nome))
-      setUsuariosMap(uMap)
-    }
     if (veicsData) {
       const vMap: Record<string, any> = {}
       veicsData.forEach((v) => (vMap[v.id] = v))
@@ -271,11 +263,7 @@ export default function Conversas() {
       </div>
 
       {/* Painel de chat */}
-      <ConversationPanel
-        lead={selectedLead}
-        usuariosMap={usuariosMap}
-        onLeadUpdated={loadInitialData}
-      />
+      <ConversationPanel lead={selectedLead} onLeadUpdated={loadInitialData} />
 
       {/* Gestão do lead (14/09/2026) — antes só existia em Leads.tsx; sem
           isso aqui a Adriana não achava a opção de editar o lead nessa tela,
