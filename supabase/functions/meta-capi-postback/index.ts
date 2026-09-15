@@ -13,7 +13,7 @@ Deno.serve(async (req) => {
     const { vehicle_id, marca, modelo, versao, ano_modelo, preco_venda, status, slug } =
       await req.json()
 
-    if (!vehicle_id || status !== 'Vendido') {
+    if (!vehicle_id || status !== 'vendido') {
       return new Response(
         JSON.stringify({ error: 'Invalid payload - vehicle_id and status=Vendido required' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },

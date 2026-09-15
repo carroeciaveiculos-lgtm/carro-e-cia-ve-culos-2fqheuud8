@@ -64,7 +64,7 @@ export function ConversionMonitor() {
         const leadsForVehicle = leadCountByVehicle[p.veiculo_id] || 0
         map[key].total_leads += leadsForVehicle
         if (leadsForVehicle > 0) map[key].lead_conversions += 1
-        if (v?.status === 'Vendido') {
+        if (v?.status === 'vendido') {
           map[key].vehicles_sold += 1
           map[key].estimated_revenue += v?.preco_venda || 0
         }

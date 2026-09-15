@@ -268,7 +268,7 @@ Deno.serve(async (req) => {
       const { data: soldVehicles } = await supabase
         .from('veiculos')
         .select('id,marca,modelo')
-        .eq('status', 'Vendido')
+        .eq('status', 'vendido')
       if (!soldVehicles?.length) {
         result = { success: true, message: 'No sold vehicles found', paused: 0 }
       } else {

@@ -71,7 +71,7 @@ export async function handleVendido(termo: string, ctx: CommandContext): Promise
 
   await ctx.supabase
     .from('veiculos')
-    .update({ status: 'Vendido', exibir_no_site: false })
+    .update({ status: 'vendido', exibir_no_site: false })
     .eq('id', veiculo.id)
 
   return `✅ Veículo marcado como *Vendido* e removido do site:\n\n*${veiculo.marca} ${veiculo.modelo}*`

@@ -419,7 +419,13 @@ export default function AdminLeads() {
                         <span>
                           {lead.responsavel_id ? usuariosMap[lead.responsavel_id] : 'Sem Vendedor'}
                         </span>
-                        <span>{new Date(lead.created_at).toLocaleDateString('pt-BR')}</span>
+                        <span>
+                          {new Date(lead.created_at).toLocaleDateString('pt-BR')}{' '}
+                          {new Date(lead.created_at).toLocaleTimeString('pt-BR', {
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })}
+                        </span>
                       </div>
                     </div>
                   ))}

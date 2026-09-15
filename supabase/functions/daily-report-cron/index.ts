@@ -65,7 +65,7 @@ Deno.serve(async (req) => {
     const { count: soldVehicles, error: soldError } = await supabase
       .from('veiculos')
       .select('*', { count: 'exact', head: true })
-      .eq('status', 'Vendido')
+      .eq('status', 'vendido')
       .gte('updated_at', yesterday)
 
     if (soldError) throw soldError
