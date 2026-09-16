@@ -9,7 +9,64 @@ precisar reler o histórico inteiro de conversas. Diferente do
 pra ser mantido em dia de verdade. Detalhe técnico por integração continua
 nos arquivos `docs/*.md` — aqui é só o resumo de estado + pendências.
 
-Última atualização: 2026-09-15 (sessão 22, continuação 6 — painel de gestão do lead unificado no Conversador, bug real do menu Cadastro corrigido, Relatórios Gerenciais com 3 abas construído e testado com dado real, legendas do chat removidas).
+Última atualização: 2026-09-15 (sessão 22, continuação 7 — templates de WhatsApp aprovados pela Meta agora usáveis e criáveis direto do chat; auditoria do Ads CLI da Meta, decisão de não adotar).
+
+## Sessão 22 (continuação 7, 15/09/2026) — Templates de WhatsApp no chat (usar + criar) + auditoria do Ads CLI
+
+**Tudo commitado e pushado** (`fb30395`, `0f87b45`, mais os commits da
+continuação 6 antes dela: `e630a01`, `737e60e`, `81a2c0f`, `278353d`,
+`cd8993e`). Nada pendente de autorização nesta frente.
+
+- **Achado inicial, corrigiu o rumo do plano**: fui checar a Meta direto
+  (function de diagnóstico temporária, apagada depois) e descobri que já
+  existiam **3 templates de negócio aprovados** (`veiculo_similar_disponivel`,
+  `simulacao_financiamento_recebida`, `lembrete_agendamento`) — a pendência
+  antiga "falta aprovar template" estava desatualizada. O que nunca existiu
+  foi a sincronização entre a Meta e a tabela `whatsapp_templates` (sempre
+  vazia) nem uma tela pra criar template novo.
+- **Etapa 1 — sincronizar**: function `sync-whatsapp-templates` (verify_jwt
+  false, mesmo padrão dos outros crons) puxa os templates da Graph API e
+  faz upsert em `whatsapp_templates` (unique constraint `nome,idioma`
+  adicionada). Cron diário às 8h + botão "Atualizar" no chat. Testado ao
+  vivo: sincronizou os 3 templates reais com corpo e variáveis certas.
+- **Etapa 2 — usar**: modal "Templates" do `ConversationPanel.tsx` (ícone
+  📄 na barra do chat) agora mostra só os aprovados em pt_BR (esconde o
+  `hello_world` de teste). Ao escolher um com variável, abre formulário
+  (rótulo amigável por `src/lib/whatsapp-templates-labels.ts`, nome do
+  lead pré-preenchido quando a variável é "nome do cliente") e manda como
+  `action:'template'` de verdade — funciona mesmo se o cliente não
+  responde há mais de 24h, diferente de texto livre. Testado ao vivo na
+  conversa do Felipe: formulário abriu com "Felipe" pré-preenchido certo.
+- **Etapa 3 — criar**: botão "+ Novo" no mesmo modal, **restrito a
+  admin_master ou setor Marketing** (decisão minha, sinalizada à Adriana —
+  submeter template mexe na conta de WhatsApp Business da empresa, risco
+  de custo/restrição de conta se categoria for escolhida errado, não é
+  ação de qualquer atendente). Formulário pede nome, categoria (com aviso
+  Utility x Marketing embutido no texto), corpo, e exemplo obrigatório por
+  variável (exigência da Meta pra revisar). Function
+  `create-whatsapp-template` (mesmo padrão de checagem de nivel/setor do
+  `despublicar-veiculo`) submete pra `POST /message_templates` da Graph
+  API. **Testado ao vivo de verdade**: criei o template
+  `teste_claude_apagar` (categoria Utility) e confirmei que foi aceito
+  pela Meta e gravado como `PENDING`. **Pendência que sobrou**: esse
+  template de teste está pendente de verdade na conta real — avisei a
+  Adriana, ela pode deixar a Meta rejeitar sozinho (sem conteúdo de
+  negócio real) ou apagar manualmente no WhatsApp Manager.
+- **Autocrítica pedida pela Adriana antes de eu implementar** (padrão
+  recorrente dela nesta sessão) apontou riscos reais que moldaram o
+  desenho: categorização errada pode suspender a conta, ciclo de vida
+  (editar/apagar template) não foi desenhado ainda, rate limit de conta
+  não conferido, e a mistura de "usar" (baixo risco) com "criar" (alto
+  risco) no mesmo pacote de autorização — por isso ela autorizou Etapas
+  1-2 primeiro e só depois a 3, separadamente.
+- **Auditoria da Ads CLI da Meta** (pedido da Adriana, url do blog post +
+  docs técnicas): é uma CLI Python que embrulha a Marketing API
+  (`pip install meta-ads`, comandos `meta ads campaign/adset/ad/insights`).
+  **Recomendação: não adotar** — é Python, não roda dentro de Edge
+  Functions Deno (exigiria infra nova só pra isso), e tudo que ela faz o
+  `ads-agent`/`google-ads-agent` já fazem direto na Marketing API, ou eu
+  já faço via o conector `meta-ads` quando ela me pede pra mexer em
+  campanha. Não é um item de trabalho — só uma resposta, sem código.
 
 ## Sessão 22 (continuação 6, 15/09/2026) — CRM: gestão de lead unificada + Relatórios Gerenciais (Leads/Estoque/Clientes)
 

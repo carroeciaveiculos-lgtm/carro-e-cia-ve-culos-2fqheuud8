@@ -6,16 +6,34 @@ Copie e cole como primeira mensagem numa sessão nova do Claude Code.
 Projeto: Carro e Cia Veículos (revenda). Pasta de trabalho:
 C:\Projeto\Revenda Carro e Cia\carro-e-cia-ve-culos-2fqheuud8
 
-Continuando de uma sessão anterior (15/09/2026, sessão 22 continuação 6 —
-CRM: gestão de lead unificada + Relatórios Gerenciais). Leia primeiro
-MEMORY_WORK.MD, seção "Sessão 22 (continuação 6...)", pro resumo completo.
+Continuando de uma sessão anterior (15/09/2026, sessão 22 continuação 7 —
+templates de WhatsApp no chat + auditoria do Ads CLI). Leia primeiro
+MEMORY_WORK.MD, seção "Sessão 22 (continuação 7...)", pro resumo completo.
 Destaques:
 
 - **Tudo commitado e pushado, nada pendente de autorização** (commits
-  `e630a01`, `737e60e`, `81a2c0f`, `278353d`).
-- Painel de gestão do lead (Venda Fechada/Perdido/IA toggle/veículo de
-  interesse/simulador) agora existe também no Conversador, não só em
-  Leads (CRM) — resolvia a queixa "não encontrei a opção de editar lead".
+  `e630a01` até `0f87b45` — 9 commits desta sessão inteira, 15-16/09).
+- **Templates aprovados da Meta agora funcionam de ponta a ponta no chat**
+  (`/admin/conversas` e `/admin/crm`, ícone 📄 na barra do chat):
+  - **Usar**: lista os 3 templates de negócio reais (`lembrete_agendamento`,
+    `simulacao_financiamento_recebida`, `veiculo_similar_disponivel`),
+    preenche variável com formulário (nome do lead pré-preenchido quando
+    aplicável), manda como template de verdade — funciona mesmo se o
+    cliente não responde há mais de 24h.
+  - **Criar**: botão "+ Novo" (só admin_master ou setor Marketing) submete
+    template novo pra aprovação da Meta. **Testado ao vivo de verdade**:
+    template `teste_claude_apagar` foi enviado com sucesso e está
+    `PENDING` na conta real — **a Adriana ainda não decidiu** se deixa a
+    Meta rejeitar sozinho ou apaga manualmente no WhatsApp Manager. Se ela
+    perguntar sobre um template estranho pendente, é esse, é teste, pode
+    apagar.
+  - Sincronização (`sync-whatsapp-templates`) roda 1x por dia às 8h +
+    botão "Atualizar" no modal — pega aprovação/rejeição sozinha.
+- **Auditoria da Ads CLI da Meta feita, decisão: não adotar.** É Python,
+  não roda em Edge Function Deno, e tudo que ela faz já fazemos direto na
+  Marketing API (`ads-agent`) ou eu já faço via conector `meta-ads`. Não
+  vale reabrir essa pergunta sem uma necessidade nova concreta que o
+  `ads-agent` não cubra.
 - **Lembrete de ferramenta, não repetir o erro**: `tsc --noEmit -p .`
   não checa nada neste projeto (tsconfig raiz só tem `references`). Usar
   sempre `tsc --noEmit -p tsconfig.app.json`.
@@ -25,11 +43,14 @@ Destaques:
   `status='fechado'` — **hoje mostra zero, porque não há nenhum lead
   fechado no banco**; não é bug, é reflexo de a equipe não marcar vendas
   como fechadas no CRM. Vale considerar reforçar esse hábito).
+- Painel de gestão do lead (Venda Fechada/Perdido/IA toggle/veículo de
+  interesse/simulador) agora existe também no Conversador, não só em
+  Leads (CRM) — resolvia a queixa "não encontrei a opção de editar lead".
 - Legenda "Respondido por Clara (IA)"/"Feito por [nome]" removida das
   mensagens do chat, a pedido da Adriana.
 - **Próximo passo natural, não iniciado**: nada pendente foi combinado
-  além do que está acima. Se a Adriana não trouxer pauta nova, pergunte
-  o que ela quer focar.
+  além do que está acima (fora a decisão sobre o template de teste). Se a
+  Adriana não trouxer pauta nova, pergunte o que ela quer focar.
 
 ---
 
@@ -458,12 +479,18 @@ Clara rodando 3 semanas em produção sem incidente). Não reabrir esses 5.
    `supabase/functions/re-engagement-cron/index.ts` e trocar o nome do
    template hardcoded (`reengajamento_frio`, que não existe) pelo nome
    aprovado de verdade.
-3. **WhatsApp — publicação de post ainda não implementada**: falta (a) a
-   Adriana aprovar pelo menos 1 template no WhatsApp Manager da Meta
-   (**reconfirmado em 15/09: tabela `whatsapp_templates` continua
-   vazia**), (b) criar function de sincronização de templates aprovados
-   (não existe ainda), (c) conectar `publicar-social` ao `send-whatsapp`.
-   Não mexer até ela aprovar o template.
+3. **WhatsApp — publicação de post ainda não implementada**: **(a) e (b)
+   resolvidas em 15/09** — 3 templates de negócio aprovados existem de
+   verdade, e `sync-whatsapp-templates` já sincroniza (usado também pelo
+   chat individual, ver "Sessão 22 continuação 7"). Falta só **(c) conectar
+   `publicar-social` ao `send-whatsapp`** pra publicação em massa/post via
+   WhatsApp — isso é diferente do envio individual no chat, que já
+   funciona. Não mexer até a Adriana pedir esse recurso especificamente.
+3b. **Template de teste pendente na conta real da Meta**
+   (`teste_claude_apagar`, categoria Utility, criado 15/09 pra testar a
+   Etapa 3 de templates) — a Adriana ainda não disse se prefere deixar a
+   Meta rejeitar sozinho (sem uso real, deve cair natural) ou apagar ela
+   mesma no WhatsApp Manager. Não é urgente, só pra não deixar acumular teste.
 4. **Quando a LinkedIn aprovar o Community Management API**: mudar o
    escopo OAuth pra incluir `w_organization_social`, reescrever a busca de
    organização em `linkedin-oauth-callback` (usar `/rest/organizationAcls`,
