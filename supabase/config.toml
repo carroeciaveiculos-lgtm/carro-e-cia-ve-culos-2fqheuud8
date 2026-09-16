@@ -4,6 +4,9 @@ verify_jwt = false
 [functions.sync-whatsapp-templates]
 verify_jwt = false
 
+[functions.create-whatsapp-template]
+verify_jwt = true
+
 [functions.enviar-candidatura]
 verify_jwt = false
 

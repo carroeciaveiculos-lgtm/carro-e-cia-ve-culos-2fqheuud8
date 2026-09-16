@@ -21,16 +21,26 @@ import {
   Pencil,
   RefreshCw,
   ArrowLeft,
+  Plus,
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { cn } from '@/lib/utils'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { getWhatsAppLink } from '@/lib/whatsapp'
 import { useAuth } from '@/hooks/use-auth'
+import { usePermissoes } from '@/hooks/use-permissoes'
 import { getOriginIcon } from '@/lib/lead-origin'
 import { uploadToR2 } from '@/lib/r2-upload'
 import { LeadFormModal } from '@/components/admin/leads/LeadFormModal'
 import { rotuloVariavel } from '@/lib/whatsapp-templates-labels'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { Textarea } from '@/components/ui/textarea'
 
 interface ConversationPanelProps {
   lead: any
@@ -44,6 +54,8 @@ interface ConversationPanelProps {
 export function ConversationPanel({ lead, onBack, onLeadUpdated }: ConversationPanelProps) {
   const { user } = useAuth()
   const { toast } = useToast()
+  const { nivel, setorNomes } = usePermissoes()
+  const podeCriarTemplate = nivel === 'admin_master' || setorNomes.includes('Marketing')
 
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [message, setMessage] = useState('')
@@ -55,6 +67,12 @@ export function ConversationPanel({ lead, onBack, onLeadUpdated }: ConversationP
   const [templateSelecionado, setTemplateSelecionado] = useState<any>(null)
   const [valoresVariaveis, setValoresVariaveis] = useState<Record<number, string>>({})
   const [enviandoTemplate, setEnviandoTemplate] = useState(false)
+  const [criandoTemplate, setCriandoTemplate] = useState(false)
+  const [novoNome, setNovoNome] = useState('')
+  const [novaCategoria, setNovaCategoria] = useState('UTILITY')
+  const [novoCorpo, setNovoCorpo] = useState('')
+  const [novosExemplos, setNovosExemplos] = useState<Record<number, string>>({})
+  const [salvandoTemplate, setSalvandoTemplate] = useState(false)
   const [followupDate, setFollowupDate] = useState<Date | undefined>(new Date())
   const [enviandoImagem, setEnviandoImagem] = useState(false)
 
@@ -96,9 +114,57 @@ export function ConversationPanel({ lead, onBack, onLeadUpdated }: ConversationP
     if (isTemplateModalOpen) {
       setTemplateSelecionado(null)
       setValoresVariaveis({})
+      setCriandoTemplate(false)
+      setNovoNome('')
+      setNovaCategoria('UTILITY')
+      setNovoCorpo('')
+      setNovosExemplos({})
       carregarTemplates()
     }
   }, [isTemplateModalOpen])
+
+  const variaveisNovoTemplate = [...novoCorpo.matchAll(/\{\{(\d+)\}\}/g)]
+    .map((m) => Number(m[1]))
+    .sort((a, b) => a - b)
+
+  // Etapa 3 do plano de templates (15/09/2026) — envia direto pra
+  // aprovação da Meta. Não é instantâneo: fica PENDING até a Meta revisar
+  // (minutos a alguns dias), o status real só aparece depois de clicar
+  // "Atualizar" na lista.
+  const criarTemplate = async () => {
+    const exemplosFaltando = variaveisNovoTemplate.some((v) => !novosExemplos[v]?.trim())
+    if (exemplosFaltando) {
+      toast({
+        title: 'Preencha um exemplo pra cada variável',
+        description: 'A Meta exige isso pra revisar o template.',
+        variant: 'destructive',
+      })
+      return
+    }
+    setSalvandoTemplate(true)
+    try {
+      const { data, error } = await supabase.functions.invoke('create-whatsapp-template', {
+        body: {
+          nome: novoNome.trim(),
+          categoria: novaCategoria,
+          corpo: novoCorpo.trim(),
+          exemplos: variaveisNovoTemplate.map((v) => novosExemplos[v]),
+        },
+      })
+      if (error) throw error
+      if (data?.error) throw new Error(data.error)
+      toast({
+        title: 'Enviado pra aprovação da Meta!',
+        description:
+          'Pode levar de minutos a alguns dias. Clique em "Atualizar" mais tarde pra ver o status.',
+      })
+      setCriandoTemplate(false)
+    } catch (err: any) {
+      toast({ title: 'Erro ao criar template', description: err.message, variant: 'destructive' })
+    } finally {
+      setSalvandoTemplate(false)
+    }
+  }
 
   // Só templates aprovados e em pt_BR — hello_world é o template de teste
   // padrão que toda conta nova do WhatsApp Business já vem com, sem uso
@@ -581,38 +647,126 @@ export function ConversationPanel({ lead, onBack, onLeadUpdated }: ConversationP
           <DialogHeader>
             <DialogTitle className="flex items-center justify-between gap-2 pr-6">
               <span className="flex items-center gap-2">
-                {templateSelecionado && (
+                {(templateSelecionado || criandoTemplate) && (
                   <Button
                     variant="ghost"
                     size="icon"
                     className="h-6 w-6"
-                    onClick={() => setTemplateSelecionado(null)}
+                    onClick={() => {
+                      setTemplateSelecionado(null)
+                      setCriandoTemplate(false)
+                    }}
                   >
                     <ArrowLeft className="w-4 h-4" />
                   </Button>
                 )}
-                {templateSelecionado ? templateSelecionado.nome : 'Templates aprovados (Meta)'}
+                {templateSelecionado
+                  ? templateSelecionado.nome
+                  : criandoTemplate
+                    ? 'Novo Template'
+                    : 'Templates aprovados (Meta)'}
               </span>
-              {!templateSelecionado && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-7 text-xs"
-                  disabled={loadingTemplates}
-                  onClick={atualizarTemplates}
-                >
-                  {loadingTemplates ? (
-                    <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
-                  ) : (
-                    <RefreshCw className="w-3.5 h-3.5 mr-1.5" />
+              {!templateSelecionado && !criandoTemplate && (
+                <div className="flex items-center gap-1">
+                  {podeCriarTemplate && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 text-xs"
+                      onClick={() => setCriandoTemplate(true)}
+                    >
+                      <Plus className="w-3.5 h-3.5 mr-1.5" />
+                      Novo
+                    </Button>
                   )}
-                  Atualizar
-                </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 text-xs"
+                    disabled={loadingTemplates}
+                    onClick={atualizarTemplates}
+                  >
+                    {loadingTemplates ? (
+                      <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+                    ) : (
+                      <RefreshCw className="w-3.5 h-3.5 mr-1.5" />
+                    )}
+                    Atualizar
+                  </Button>
+                </div>
               )}
             </DialogTitle>
           </DialogHeader>
 
-          {templateSelecionado ? (
+          {criandoTemplate ? (
+            <div className="space-y-4 py-2">
+              <div>
+                <Label className="text-xs text-slate-500 mb-1 block">
+                  Nome (sem espaço, ex: aviso_promocao)
+                </Label>
+                <Input
+                  value={novoNome}
+                  onChange={(e) =>
+                    setNovoNome(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '_'))
+                  }
+                  placeholder="aviso_promocao"
+                />
+              </div>
+              <div>
+                <Label className="text-xs text-slate-500 mb-1 block">Categoria</Label>
+                <Select value={novaCategoria} onValueChange={setNovaCategoria}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="UTILITY">Utility (atualização/atendimento)</SelectItem>
+                    <SelectItem value="MARKETING">Marketing (promocional)</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-[11px] text-slate-400 mt-1">
+                  <strong>Utility</strong>: confirmação, lembrete, retorno de algo que o cliente já
+                  pediu — mais barato, revisão mais rápida. <strong>Marketing</strong>:
+                  oferta/promoção — cobra mais e a Meta é mais rígida na revisão. Escolha errado
+                  pode gerar custo indevido ou até restrição da conta.
+                </p>
+              </div>
+              <div>
+                <Label className="text-xs text-slate-500 mb-1 block">
+                  Corpo da mensagem (use {'{{1}}'}, {'{{2}}'}... pra parte que muda por cliente)
+                </Label>
+                <Textarea
+                  value={novoCorpo}
+                  onChange={(e) => setNovoCorpo(e.target.value)}
+                  rows={4}
+                  placeholder="Oi {{1}}! ..."
+                />
+              </div>
+              {variaveisNovoTemplate.map((v) => (
+                <div key={v}>
+                  <Label className="text-xs text-slate-500 mb-1 block">
+                    Exemplo de preenchimento pra {'{{' + v + '}}'}
+                  </Label>
+                  <Input
+                    value={novosExemplos[v] || ''}
+                    onChange={(e) => setNovosExemplos((prev) => ({ ...prev, [v]: e.target.value }))}
+                    placeholder="Ex: João"
+                  />
+                </div>
+              ))}
+              <Button
+                className="w-full bg-blue-600 hover:bg-blue-700"
+                disabled={salvandoTemplate || !novoNome.trim() || !novoCorpo.trim()}
+                onClick={criarTemplate}
+              >
+                {salvandoTemplate ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <Send className="w-4 h-4 mr-2" />
+                )}
+                Enviar pra Aprovação da Meta
+              </Button>
+            </div>
+          ) : templateSelecionado ? (
             <div className="space-y-4 py-2">
               <p className="text-xs text-slate-500 bg-slate-50 p-2 rounded border">
                 {templateSelecionado.corpo}
