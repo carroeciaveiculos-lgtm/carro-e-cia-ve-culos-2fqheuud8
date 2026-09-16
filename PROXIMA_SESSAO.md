@@ -6,6 +6,33 @@ Copie e cole como primeira mensagem numa sessão nova do Claude Code.
 Projeto: Carro e Cia Veículos (revenda). Pasta de trabalho:
 C:\Projeto\Revenda Carro e Cia\carro-e-cia-ve-culos-2fqheuud8
 
+Continuando de uma sessão anterior (15/09/2026, sessão 22 continuação 6 —
+CRM: gestão de lead unificada + Relatórios Gerenciais). Leia primeiro
+MEMORY_WORK.MD, seção "Sessão 22 (continuação 6...)", pro resumo completo.
+Destaques:
+
+- **Tudo commitado e pushado, nada pendente de autorização** (commits
+  `e630a01`, `737e60e`, `81a2c0f`, `278353d`).
+- Painel de gestão do lead (Venda Fechada/Perdido/IA toggle/veículo de
+  interesse/simulador) agora existe também no Conversador, não só em
+  Leads (CRM) — resolvia a queixa "não encontrei a opção de editar lead".
+- **Lembrete de ferramenta, não repetir o erro**: `tsc --noEmit -p .`
+  não checa nada neste projeto (tsconfig raiz só tem `references`). Usar
+  sempre `tsc --noEmit -p tsconfig.app.json`.
+- `/admin/relatorios` ("Relatórios Gerenciais") ganhou 3 abas: Leads
+  (filtro de região por DDD), Estoque (valor do pátio, dias parado,
+  publicação real por portal), Clientes (redefinida como leads com
+  `status='fechado'` — **hoje mostra zero, porque não há nenhum lead
+  fechado no banco**; não é bug, é reflexo de a equipe não marcar vendas
+  como fechadas no CRM. Vale considerar reforçar esse hábito).
+- Legenda "Respondido por Clara (IA)"/"Feito por [nome]" removida das
+  mensagens do chat, a pedido da Adriana.
+- **Próximo passo natural, não iniciado**: nada pendente foi combinado
+  além do que está acima. Se a Adriana não trouxer pauta nova, pergunte
+  o que ela quer focar.
+
+---
+
 Continuando de uma sessão anterior (12/09/2026, sessão 22 — Marketing via
 WhatsApp implementado e publicado, bug grave de roteamento achado e
 corrigido no webhook real). Leia primeiro MEMORY_WORK.MD, seção "Sessão 22",

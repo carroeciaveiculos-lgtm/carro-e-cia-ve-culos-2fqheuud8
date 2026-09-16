@@ -9,7 +9,64 @@ precisar reler o histórico inteiro de conversas. Diferente do
 pra ser mantido em dia de verdade. Detalhe técnico por integração continua
 nos arquivos `docs/*.md` — aqui é só o resumo de estado + pendências.
 
-Última atualização: 2026-09-15 (sessão 22, continuação 5 — Etapas 1-4 da limpeza fechadas; conta de anúncio do ads-agent trocada pra carroecia_bot_claude, testado; bug real de envio de foto por WhatsApp achado e corrigido; causa raiz do Facebook resolvida; Marketing via WhatsApp testado; botão "Despublicar" testado; auditoria completa; pendências antigas triadas).
+Última atualização: 2026-09-15 (sessão 22, continuação 6 — painel de gestão do lead unificado no Conversador, bug real do menu Cadastro corrigido, Relatórios Gerenciais com 3 abas construído e testado com dado real, legendas do chat removidas).
+
+## Sessão 22 (continuação 6, 15/09/2026) — CRM: gestão de lead unificada + Relatórios Gerenciais (Leads/Estoque/Clientes)
+
+**Tudo commitado e pushado nesta continuação** (`e630a01`, `737e60e`,
+`81a2c0f`, `278353d`). Nada pendente de autorização.
+
+- **Painel de gestão do lead unificado**: extraído de Leads.tsx (COLUMN 3)
+  pra `LeadManagementPanel.tsx`, conectado também no Conversador — resolve
+  de vez o "não encontrei a opção de editar lead" (o Conversador, tela que
+  a Adriana mais usa no dia a dia, não tinha nada disso). Junto, unificado
+  os 2 caminhos de status "Perdido" (Kanban e o botão rápido do painel)
+  pelo mesmo popup de motivo — antes o botão rápido pulava a pergunta.
+- **Bug real achado e corrigido**: `ClipboardList` não importado em
+  `AdminLayout.tsx` (sobra da sessão anterior, nunca commitada) quebrava o
+  **AdminLayout inteiro** — painel todo em tela branca. Só apareceu porque
+  testei ao vivo no navegador antes de propor commit; nunca tinha sido
+  testado antes.
+- **Achado de ferramenta, vale lembrar sempre**: `tsc --noEmit -p .` **não
+  checa nada** neste projeto — o `tsconfig.json` raiz só tem
+  `"references"`, sem `"files"`/`"include"`. O comando certo é
+  `tsc --noEmit -p tsconfig.app.json`. Rodar `-p .` dá falsa sensação de
+  "sem erro de tipo" o tempo todo. Não repetir esse erro.
+- **Relatórios Gerenciais** (`/admin/relatorios`, menu renomeado de "Visão
+  Geral (ROI)"): virou página com 3 abas.
+  - **Leads**: adicionado filtro de região, estimada pelo DDD do telefone
+    (`src/lib/ddd-regiao.ts` — tabela fixa DDD→estado/região da ANATEL,
+    aproximada, não é endereço real) + exportação CSV.
+  - **Estoque**: veículos/valor do pátio/dias médio/parados +30 dias, por
+    marca, publicado por portal. **Achado real testando com dado ao
+    vivo**: os status de `estoque_publicacoes` são `publicado`/
+    `despublicado`/`error` (não `published`/`ativo`, que eu tinha
+    assumido errado da primeira vez); Mercado Livre não usa essa tabela,
+    tem a própria (`ml_listings`, status `active`/`closed`/`blocked`).
+    Testado ao vivo: 24 disponíveis, R$ 3,37 milhões no pátio, 18 parados
+    +30 dias, 7 veículos disponíveis fora do Webmotors.
+  - **Clientes**: redefinida a meio da implementação depois da Adriana
+    corrigir um engano meu — achei que `consultar-cpf` devia gravar
+    endereço e não gravava; ela apontou que endereço vem sempre de um
+    campo CEP + ViaCEP (`handleCepBlur` em `VehicleFormModal.tsx`), nunca
+    da consulta de CPF. Conferido: a tabela `clientes` é só cache de CPF
+    de proprietário anterior (troca/consignação), nunca ganha
+    cidade/estado, não é editada por nenhuma tela — não serve pra
+    "relatório de clientes". Redefinido como leads com `status='fechado'`
+    (mesma estimativa de região por DDD). **Achado real**: hoje há **zero
+    leads fechados no banco** — a aba funciona (testada, sem erro), mas
+    fica vazia até a equipe marcar alguma venda como fechada no CRM. Vale
+    considerar reforçar esse hábito com a equipe, senão esse relatório (e
+    a métrica "Taxa de Conversão" que já existia) ficam sempre zerados.
+- **Removido, pedido da Adriana**: legenda "Respondido por Clara (IA)" /
+  "Feito por [nome]" embaixo de cada mensagem do chat — poluía a
+  conversa. Mantido só texto + horário. Limpeza junto: a busca de
+  usuários em `Conversas.tsx` ficou sem uso depois disso (só existia pra
+  essa legenda) e foi removida.
+- **CadastroCrm.tsx** (de sessão anterior, terminado de commitar aqui):
+  página própria em `/admin/crm-cadastro`, menu "Cadastro" abaixo de
+  "Avaliação de Veículo" — Motivos de Perda Personalizados (criar/listar/
+  apagar), testado ao vivo (criei e apaguei um motivo de teste).
 
 ## Sessão 22 (continuação 5, 15/09/2026) — limpeza fechada, conta de anúncio trocada, bug de envio de foto corrigido
 
