@@ -19,6 +19,8 @@ import {
   ImagePlus,
   Loader2,
   Pencil,
+  RefreshCw,
+  ArrowLeft,
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { cn } from '@/lib/utils'
@@ -28,6 +30,7 @@ import { useAuth } from '@/hooks/use-auth'
 import { getOriginIcon } from '@/lib/lead-origin'
 import { uploadToR2 } from '@/lib/r2-upload'
 import { LeadFormModal } from '@/components/admin/leads/LeadFormModal'
+import { rotuloVariavel } from '@/lib/whatsapp-templates-labels'
 
 interface ConversationPanelProps {
   lead: any
@@ -48,6 +51,10 @@ export function ConversationPanel({ lead, onBack, onLeadUpdated }: ConversationP
   const [conversation, setConversation] = useState<any[]>([])
   const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false)
   const [templates, setTemplates] = useState<any[]>([])
+  const [loadingTemplates, setLoadingTemplates] = useState(false)
+  const [templateSelecionado, setTemplateSelecionado] = useState<any>(null)
+  const [valoresVariaveis, setValoresVariaveis] = useState<Record<number, string>>({})
+  const [enviandoTemplate, setEnviandoTemplate] = useState(false)
   const [followupDate, setFollowupDate] = useState<Date | undefined>(new Date())
   const [enviandoImagem, setEnviandoImagem] = useState(false)
 
@@ -87,14 +94,110 @@ export function ConversationPanel({ lead, onBack, onLeadUpdated }: ConversationP
 
   useEffect(() => {
     if (isTemplateModalOpen) {
-      supabase
-        .from('whatsapp_templates')
-        .select('*')
-        .then(({ data }) => {
-          if (data) setTemplates(data)
-        })
+      setTemplateSelecionado(null)
+      setValoresVariaveis({})
+      carregarTemplates()
     }
   }, [isTemplateModalOpen])
+
+  // Só templates aprovados e em pt_BR — hello_world é o template de teste
+  // padrão que toda conta nova do WhatsApp Business já vem com, sem uso
+  // real (mostrar ele pro vendedor só confunde).
+  const carregarTemplates = async () => {
+    const { data } = await supabase
+      .from('whatsapp_templates')
+      .select('*')
+      .eq('status', 'APPROVED')
+      .neq('idioma', 'en_US')
+      .order('nome')
+    if (data) setTemplates(data)
+  }
+
+  // Etapa 1 do plano de templates (15/09/2026) — puxa da Meta o que foi
+  // aprovado/rejeitado e atualiza a tabela antes de recarregar a lista.
+  const atualizarTemplates = async () => {
+    setLoadingTemplates(true)
+    try {
+      await supabase.functions.invoke('sync-whatsapp-templates')
+      await carregarTemplates()
+    } catch (err: any) {
+      toast({
+        title: 'Erro ao atualizar templates',
+        description: err.message,
+        variant: 'destructive',
+      })
+    } finally {
+      setLoadingTemplates(false)
+    }
+  }
+
+  const abrirTemplate = (t: any) => {
+    if (!t.variaveis || t.variaveis.length === 0) {
+      enviarTemplate(t, {})
+      return
+    }
+    setTemplateSelecionado(t)
+    const iniciais: Record<number, string> = {}
+    t.variaveis.forEach((v: number) => {
+      iniciais[v] = rotuloVariavel(t.nome, v) === 'Nome do cliente' ? lead?.nome || '' : ''
+    })
+    setValoresVariaveis(iniciais)
+  }
+
+  // Manda como mensagem de template de verdade (action:'template'), não
+  // como texto livre — funciona mesmo se o cliente não responde há mais de
+  // 24h, diferente de mensagem de texto comum que a Meta recusa nesse caso.
+  const enviarTemplate = async (t: any, valores: Record<number, string>) => {
+    if (!lead?.telefone) {
+      toast({ title: 'Lead sem telefone cadastrado', variant: 'destructive' })
+      return
+    }
+    const cleanPhone = lead.telefone.replace(/\D/g, '')
+    if (cleanPhone.length < 10) {
+      toast({ title: 'Número inválido', variant: 'destructive' })
+      return
+    }
+
+    const variaveisOrdenadas = [...(t.variaveis || [])].sort((a, b) => a - b)
+    const components =
+      variaveisOrdenadas.length > 0
+        ? [
+            {
+              type: 'body',
+              parameters: variaveisOrdenadas.map((v) => ({
+                type: 'text',
+                text: valores[v] || '',
+              })),
+            },
+          ]
+        : []
+    let textoFinal = t.corpo
+    variaveisOrdenadas.forEach((v) => {
+      textoFinal = textoFinal.replace(`{{${v}}}`, valores[v] || `{{${v}}}`)
+    })
+
+    setEnviandoTemplate(true)
+    try {
+      const { error } = await supabase.functions.invoke('send-whatsapp', {
+        body: {
+          action: 'template',
+          to: cleanPhone,
+          templateName: t.nome,
+          components,
+          text: textoFinal,
+          leadId: lead.id,
+        },
+      })
+      if (error) throw error
+      toast({ title: 'Template enviado!' })
+      setIsTemplateModalOpen(false)
+      setTemplateSelecionado(null)
+    } catch (err: any) {
+      toast({ title: 'Erro ao enviar template', description: err.message, variant: 'destructive' })
+    } finally {
+      setEnviandoTemplate(false)
+    }
+  }
 
   const loadConversation = async (leadId: string) => {
     const { data } = await supabase
@@ -476,23 +579,89 @@ export function ConversationPanel({ lead, onBack, onLeadUpdated }: ConversationP
       <Dialog open={isTemplateModalOpen} onOpenChange={setIsTemplateModalOpen}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Selecionar Template</DialogTitle>
+            <DialogTitle className="flex items-center justify-between gap-2 pr-6">
+              <span className="flex items-center gap-2">
+                {templateSelecionado && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6"
+                    onClick={() => setTemplateSelecionado(null)}
+                  >
+                    <ArrowLeft className="w-4 h-4" />
+                  </Button>
+                )}
+                {templateSelecionado ? templateSelecionado.nome : 'Templates aprovados (Meta)'}
+              </span>
+              {!templateSelecionado && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 text-xs"
+                  disabled={loadingTemplates}
+                  onClick={atualizarTemplates}
+                >
+                  {loadingTemplates ? (
+                    <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+                  ) : (
+                    <RefreshCw className="w-3.5 h-3.5 mr-1.5" />
+                  )}
+                  Atualizar
+                </Button>
+              )}
+            </DialogTitle>
           </DialogHeader>
-          <div className="grid gap-4 py-4 max-h-[60vh] overflow-y-auto">
-            {templates.map((t) => (
-              <div
-                key={t.id}
-                className="border p-3 rounded-lg hover:bg-slate-50 cursor-pointer"
-                onClick={() => {
-                  setMessage(t.corpo)
-                  setIsTemplateModalOpen(false)
-                }}
+
+          {templateSelecionado ? (
+            <div className="space-y-4 py-2">
+              <p className="text-xs text-slate-500 bg-slate-50 p-2 rounded border">
+                {templateSelecionado.corpo}
+              </p>
+              {(templateSelecionado.variaveis as number[]).map((v) => (
+                <div key={v}>
+                  <Label className="text-xs text-slate-500 mb-1 block">
+                    {rotuloVariavel(templateSelecionado.nome, v)}
+                  </Label>
+                  <Input
+                    value={valoresVariaveis[v] || ''}
+                    onChange={(e) =>
+                      setValoresVariaveis((prev) => ({ ...prev, [v]: e.target.value }))
+                    }
+                  />
+                </div>
+              ))}
+              <Button
+                className="w-full bg-blue-600 hover:bg-blue-700"
+                disabled={enviandoTemplate}
+                onClick={() => enviarTemplate(templateSelecionado, valoresVariaveis)}
               >
-                <p className="font-bold text-sm">{t.nome}</p>
-                <p className="text-xs text-slate-500 mt-1">{t.corpo}</p>
-              </div>
-            ))}
-          </div>
+                {enviandoTemplate ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <Send className="w-4 h-4 mr-2" />
+                )}
+                Enviar Template
+              </Button>
+            </div>
+          ) : (
+            <div className="grid gap-4 py-4 max-h-[60vh] overflow-y-auto">
+              {templates.length === 0 && (
+                <p className="text-sm text-slate-400 text-center py-6">
+                  Nenhum template aprovado ainda. Clique em "Atualizar" pra conferir com a Meta.
+                </p>
+              )}
+              {templates.map((t) => (
+                <div
+                  key={t.id}
+                  className="border p-3 rounded-lg hover:bg-slate-50 cursor-pointer"
+                  onClick={() => abrirTemplate(t)}
+                >
+                  <p className="font-bold text-sm">{t.nome}</p>
+                  <p className="text-xs text-slate-500 mt-1">{t.corpo}</p>
+                </div>
+              ))}
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>

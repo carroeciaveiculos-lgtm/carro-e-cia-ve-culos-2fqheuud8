@@ -1,6 +1,9 @@
 [functions.receive-leads]
 verify_jwt = false
 
+[functions.sync-whatsapp-templates]
+verify_jwt = false
+
 [functions.enviar-candidatura]
 verify_jwt = false
 
