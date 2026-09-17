@@ -153,6 +153,46 @@ export default function AdminLayout() {
     }
   }, [nivel, signOut, navigate])
 
+  // PWA do /admin (17/09/2026) — o site público e o /admin dividem o mesmo
+  // index.html, então o manifest/SW não podem ficar fixos nele (ofereceria
+  // "instalar app" pro visitante do site também). Injeta só enquanto o
+  // AdminLayout está montado e remove ao sair, pra nunca vazar pro público.
+  useEffect(() => {
+    const manifestLink = document.createElement('link')
+    manifestLink.rel = 'manifest'
+    manifestLink.href = '/admin-manifest.json'
+    document.head.appendChild(manifestLink)
+
+    const appleCapable = document.createElement('meta')
+    appleCapable.name = 'apple-mobile-web-app-capable'
+    appleCapable.content = 'yes'
+    document.head.appendChild(appleCapable)
+
+    const appleTitle = document.createElement('meta')
+    appleTitle.name = 'apple-mobile-web-app-title'
+    appleTitle.content = 'Carro e Cia CRM'
+    document.head.appendChild(appleTitle)
+
+    const themeColor = document.createElement('meta')
+    themeColor.name = 'theme-color'
+    themeColor.content = '#0f172a'
+    document.head.appendChild(themeColor)
+
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/admin-sw.js', { scope: '/admin/' }).catch(() => {
+        // Não crítico — sem SW o painel continua funcionando normalmente,
+        // só perde a opção de instalar em navegadores mais exigentes.
+      })
+    }
+
+    return () => {
+      manifestLink.remove()
+      appleCapable.remove()
+      appleTitle.remove()
+      themeColor.remove()
+    }
+  }, [])
+
   useEffect(() => {
     if (carregandoPermissoes || !nivel) return
     if (!rotaLiberada(location.pathname, nivel, setorNomes)) {
