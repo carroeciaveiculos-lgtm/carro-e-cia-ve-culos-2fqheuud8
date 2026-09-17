@@ -152,6 +152,8 @@ falhou; ao descobrir algo novo, acrescente lá com data e fonte.
 - `docs/R2_CORS_CONFIGURATION.md` — CORS do bucket de imagens
 - `docs/supabase-migrations.md` — integridade de migrations e crons,
   regras e becos sem saída de reparo de histórico
+- `docs/sessoes-cloud-git-push.md` — por que commits de sessão cloud/celular
+  ficam presos sem upstream, como identificar e como resolver
 
 ## Migrations
 

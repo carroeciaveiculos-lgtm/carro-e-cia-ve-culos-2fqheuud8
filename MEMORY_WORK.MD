@@ -9,7 +9,31 @@ precisar reler o histórico inteiro de conversas. Diferente do
 pra ser mantido em dia de verdade. Detalhe técnico por integração continua
 nos arquivos `docs/*.md` — aqui é só o resumo de estado + pendências.
 
-Última atualização: 2026-09-15 (sessão 22, continuação 7 — templates de WhatsApp aprovados pela Meta agora usáveis e criáveis direto do chat; auditoria do Ads CLI da Meta, decisão de não adotar).
+Última atualização: 2026-09-17 (sessão 23, desktop — localizada a causa raiz de 3 commits de PWA presos numa sessão cloud sem upstream; nada codado nesta sessão, só investigação e documentação).
+
+## Sessão 23 (17/09/2026, desktop) — 3 commits de PWA presos numa sessão cloud ("Olá")
+
+**Pendência aberta, precisa de ação da Adriana** (não é commit meu, é
+publicar o que já existe em outro lugar):
+
+- Uma sessão cloud/celular chamada "Olá" fez 3 commits numa branch local
+  dela, `claude/ola-q0f1m1`, em cima do `main` de então (`9918398`):
+  `54c0fbd` (PWA instalável em `/admin` + botão de assumir conversa no
+  chat), `7950339` (mesmo commit citado de outro ângulo) e `c0bd952`
+  (memória de trabalho da sessão 23 daquele lado). **Nenhum dos três chegou
+  ao GitHub nem ao desktop** — confirmado via `SendMessage` pra aquela
+  sessão: `git log @{u}..HEAD` retorna `fatal: no upstream configured`.
+- Causa raiz documentada em `docs/sessoes-cloud-git-push.md`: sessões
+  cloud rodam sandbox próprio, e `git push` é bloqueado de propósito pra
+  qualquer sessão Claude (`.claude/settings.json`) — só a Adriana publica,
+  e só de **dentro do ambiente daquela sessão cloud** (onde a branch
+  existe de verdade), não do desktop.
+- **Próximo passo é da Adriana**: abrir a sessão "Olá" no app/navegador e
+  usar o botão nativo de push/sincronizar/criar PR, se existir. Eu não
+  tenho como puxar essa branch pro desktop nem publicar por ela.
+- Efeito colateral notado: `public/admin-manifest.json` (parte do PWA)
+  não aparece em nenhuma busca no desktop porque só existe dentro desses
+  commits presos — não é arquivo perdido, é arquivo ainda não publicado.
 
 ## Sessão 22 (continuação 7, 15/09/2026) — Templates de WhatsApp no chat (usar + criar) + auditoria do Ads CLI
 
