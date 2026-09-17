@@ -192,6 +192,7 @@ async function handleItemContact(supabase: any, _token: string, resource: any) {
           to: buyerPhone,
           text: `Olá ${buyerName}! Recebemos seu contato sobre o ${veiculoInteresse}. Como podemos te ajudar?`,
           leadId: newLead.id,
+          origem: 'sistema',
         },
       })
     } catch {
@@ -235,6 +236,7 @@ async function handleLead(supabase: any, leadData: any) {
           to: buyerPhone,
           text: `Olá ${buyerName}! Recebemos seu contato sobre o ${veiculoInteresse}. Como podemos te ajudar?`,
           leadId: newLead.id,
+          origem: 'sistema',
         },
       })
     } catch {

@@ -26,6 +26,12 @@ Deno.serve(async (req) => {
   try {
     const payload = await req.json()
     const { action, to, templateName, components, documentUrl, filename, text, leadId } = payload
+    // origem declara quem está chamando esta function, pra gravar o sender
+    // certo no histórico e decidir se desliga a Clara pro lead (ver abaixo).
+    // Default 'sistema' é a opção mais segura pra chamada antiga sem esse
+    // campo — nunca desliga a IA por engano.
+    const origem: 'atendente' | 'clara' | 'sistema' =
+      payload.origem === 'atendente' || payload.origem === 'clara' ? payload.origem : 'sistema'
 
     if (!to) {
       return new Response(JSON.stringify({ error: "O número 'to' é obrigatório." }), {
@@ -99,6 +105,7 @@ Deno.serve(async (req) => {
       })
     }
 
+    let iaDesligadaAgora = false
     if (leadId) {
       let msgText = text || `[Template: ${templateName}]`
       if (action === 'document') msgText = `[Documento Enviado: ${filename}] ${text || ''}`
@@ -109,15 +116,37 @@ Deno.serve(async (req) => {
       // os dois lados da conversa igual.
       if (action === 'image') msgText = `[IMAGEM]${documentUrl}${text ? '\n' + text : ''}`
 
+      // Achado 17/09/2026: antes desta correção, todo envio por aqui gravava
+      // sender:'human' sem checar quem chamou — a foto/vídeo de veículo que
+      // a própria Clara manda (ai-sdr, enviar_midia_veiculo) e a mensagem de
+      // boas-vindas automática do ml-webhook ficavam com o rótulo errado.
       const { error: dbError } = await supabase.from('conversation_history').insert({
         lead_id: leadId,
-        sender: 'human',
+        sender: origem === 'atendente' ? 'human' : 'bot',
         message_text: msgText,
       })
       if (dbError) console.error('Erro ao gravar histórico do vendedor:', dbError)
+
+      // Atendente respondendo texto de verdade pelo painel = assumiu a
+      // conversa, desliga a Clara pra esse lead. Foto/documento/template
+      // avulsos do mesmo atendente NÃO desligam (decisão da Adriana,
+      // 17/09/2026) — só resposta de texto conta.
+      const ehTextoLivre = !['template', 'document', 'image', 'video'].includes(action)
+      if (origem === 'atendente' && ehTextoLivre) {
+        const { error: aiOffError } = await supabase
+          .from('leads')
+          .update({ ai_enabled: false })
+          .eq('id', leadId)
+        if (aiOffError) console.error('Erro ao desligar IA do lead:', aiOffError)
+        else iaDesligadaAgora = true
+      }
     }
 
-    return new Response(JSON.stringify(data), {
+    // `ia_desligada_agora` avisa o painel que essa chamada específica foi a
+    // que desligou a Clara (pedido da Adriana, 17/09/2026) — o toggle já
+    // reflete o estado via realtime, mas sem isso o atendente só percebe se
+    // olhar o toggle depois.
+    return new Response(JSON.stringify({ ...data, ia_desligada_agora: iaDesligadaAgora }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
     })

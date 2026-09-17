@@ -252,6 +252,7 @@ export function ConversationPanel({ lead, onBack, onLeadUpdated }: ConversationP
           components,
           text: textoFinal,
           leadId: lead.id,
+          origem: 'atendente',
         },
       })
       if (error) throw error
@@ -301,9 +302,21 @@ export function ConversationPanel({ lead, onBack, onLeadUpdated }: ConversationP
           toast({ title: 'Número inválido', variant: 'destructive' })
           return
         }
-        await supabase.functions.invoke('send-whatsapp', {
-          body: { action: 'text', to: cleanPhone, text: message, leadId: lead.id },
+        const { data } = await supabase.functions.invoke('send-whatsapp', {
+          body: {
+            action: 'text',
+            to: cleanPhone,
+            text: message,
+            leadId: lead.id,
+            origem: 'atendente',
+          },
         })
+        if (data?.ia_desligada_agora) {
+          toast({
+            title: 'Clara desligada pra este lead',
+            description: 'Você assumiu a conversa por texto — ela não responde mais sozinha aqui.',
+          })
+        }
       } else {
         await supabase
           .from('conversation_history')
@@ -343,6 +356,7 @@ export function ConversationPanel({ lead, onBack, onLeadUpdated }: ConversationP
           documentUrl: publicUrl,
           text: '',
           leadId: lead.id,
+          origem: 'atendente',
         },
       })
       if (error) throw error
