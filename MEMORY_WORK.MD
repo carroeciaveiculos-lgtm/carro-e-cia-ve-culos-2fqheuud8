@@ -9,7 +9,71 @@ precisar reler o histórico inteiro de conversas. Diferente do
 pra ser mantido em dia de verdade. Detalhe técnico por integração continua
 nos arquivos `docs/*.md` — aqui é só o resumo de estado + pendências.
 
-Última atualização: 2026-09-15 (sessão 22, continuação 7 — templates de WhatsApp aprovados pela Meta agora usáveis e criáveis direto do chat; auditoria do Ads CLI da Meta, decisão de não adotar).
+Última atualização: 2026-09-17 (sessão 23 — Clara desliga sozinha quando atendente assume por texto, PWA instalável no /admin, botão "assumir conversa").
+
+## Sessão 23 (17/09/2026) — Clara desliga ao assumir conversa por texto + PWA no /admin + botão "assumir conversa"
+
+**2 commits prontos na branch `claude/ola-q0f1m1`, push ainda não confirmado** — a
+permissão de `git push` foi negada repetidamente neste ambiente de execução
+(não é falha de rede, é bloqueio de permissão da sessão). **Pendência real:
+confirmar que o push aconteceu** (a Adriana ia rodar manualmente ou destravar
+a permissão) antes de considerar qualquer coisa desta sessão "no ar" — nada
+foi testado ao vivo em produção ainda.
+
+- **Commit `54c0fbd`** — `send-whatsapp` ganhou parâmetro `origem`
+  (`'atendente' | 'clara' | 'sistema'`) que quem chama declara. Corrigiu bug
+  real achado no caminho: a function gravava `sender:'human'` no
+  `conversation_history` pra **todo** envio, sem checar quem mandou — a
+  foto/vídeo que a própria Clara manda (`ai-sdr`, `enviar_midia_veiculo`) e
+  a mensagem automática de boas-vindas do `ml-webhook` (lead do Mercado
+  Livre) ficavam com o rótulo errado no histórico. 4 pontos de chamada
+  corrigidos: `ConversationPanel.tsx` e `LeadManagementPanel.tsx` →
+  `atendente`; `ai-sdr` → `clara`; `ml-webhook` (2 lugares) → `sistema`.
+  **Regra de negócio (decisão da Adriana)**: só resposta de **texto livre**
+  do atendente desliga `leads.ai_enabled` — foto, documento (proposta em
+  PDF) e template avulsos **não** desligam. Toast no painel avisa no
+  momento em que isso acontece (`ia_desligada_agora` na resposta da
+  function), além do toggle que já existia em `LeadManagementPanel.tsx` e já
+  reflete via realtime (`Conversas.tsx` já tinha subscription em `leads`).
+- **Commit `7950339`** — duas coisas:
+  1. **`/admin` instalável como PWA** (ícone + tela cheia, celular e
+     desktop), sem afetar o site público. Achado técnico: o projeto serve
+     site + admin + hub do mesmo `index.html`, então manifest/service worker
+     não podem ficar fixos nele — `AdminLayout.tsx` injeta
+     `<link rel="manifest">` + metas `apple-mobile-web-app-*` +
+     registro do SW só enquanto está montado, removendo tudo ao sair do
+     admin. `public/admin-manifest.json` (`scope`/`start_url` = `/admin`) +
+     `public/admin-sw.js` (vazio de propósito, só fetch pass-through, sem
+     cache de dado — decisão consciente, CRM precisa de dado sempre ao
+     vivo). Ícone gerado via Cloudflare Image Resizing em cima da
+     `logo-oficial.png` já no R2 (`fit=contain,background=white`, 192/512px)
+     — **a Adriana conferiu os dois links gerados e aprovou visualmente**
+     (17/09). **Ainda falta o teste real**: abrir `/admin` no Chrome
+     desktop/Android depois do push e confirmar que "Instalar app" aparece
+     só ali, nunca no site público.
+  2. **Botão "Assumir conversa"** no `ConversationPanel.tsx` (ícone
+     `UserCheck`, ao lado de Templates) — preenche a caixa de texto com
+     `Olá, eu sou o/a {nome} e darei continuidade ao seu atendimento, como
+     posso ajudar?`. Nome vem automático de `usuarios.nome` de quem está
+     logado (decisão da Adriana: sem seletor manual — cada atendente já tem
+     login próprio, sem risco de mandar em nome errado). Frase com "o/a"
+     genérico em vez de duas variantes por gênero (decisão da Adriana).
+     Envio é texto livre normal, então já aciona o desligamento da Clara do
+     commit anterior sozinho, sem código extra.
+- **Achado sobre ferramenta, não sobre o projeto**: nesta sessão o `git
+  push` foi negado 3x seguidas pela permissão do ambiente de execução
+  (Claude Code na nuvem) — diferente de negação do usuário, é bloqueio de
+  política da sessão. Não fica claro ainda se é specific desta sessão ou
+  recorrente; se acontecer de novo, vale perguntar à Adriana se existe uma
+  config de permissão pra ajustar.
+- **Pendência de documentação, ainda não escrita**: `/admin/conversas` já
+  aparece em `docs/manual-operacional-contexto.md` (status 🟡, parcial) —
+  o botão "assumir conversa" e o desligamento automático da Clara são
+  fluxo novo o suficiente pra merecer atualização do artigo, mas decidi
+  **não escrever ainda** porque a skill `manual-operacional` exige
+  confirmar o fluxo real no painel antes de documentar, e nada disso foi
+  testado ao vivo (push ainda pendente). Retomar isso assim que o teste ao
+  vivo confirmar que tudo funciona como esperado.
 
 ## Sessão 22 (continuação 7, 15/09/2026) — Templates de WhatsApp no chat (usar + criar) + auditoria do Ads CLI
 
