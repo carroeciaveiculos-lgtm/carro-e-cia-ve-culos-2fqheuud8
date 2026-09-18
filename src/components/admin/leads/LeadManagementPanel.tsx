@@ -108,6 +108,7 @@ export function LeadManagementPanel({
             filename: `Proposta_${linkedVeiculo.modelo.replace(/\s+/g, '_')}.pdf`,
             text: `Olá ${lead.nome}, segue a proposta do ${linkedVeiculo.modelo}!`,
             leadId: lead.id,
+            origem: 'atendente',
           },
         })
         toast({ title: 'Proposta enviada por WhatsApp!' })

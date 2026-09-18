@@ -266,13 +266,13 @@ async function executeFunction(name: string, args: any, leadId: string): Promise
     let enviados = 0
     for (const url of fotos) {
       const res = await supabase.functions.invoke('send-whatsapp', {
-        body: { action: 'image', to: lead.telefone, documentUrl: url, leadId, text: `${veiculo.marca} ${veiculo.modelo}` },
+        body: { action: 'image', to: lead.telefone, documentUrl: url, leadId, text: `${veiculo.marca} ${veiculo.modelo}`, origem: 'clara' },
       })
       if (!res.error) enviados++
     }
     for (const url of videos) {
       const res = await supabase.functions.invoke('send-whatsapp', {
-        body: { action: 'video', to: lead.telefone, documentUrl: url, leadId },
+        body: { action: 'video', to: lead.telefone, documentUrl: url, leadId, origem: 'clara' },
       })
       if (!res.error) enviados++
     }

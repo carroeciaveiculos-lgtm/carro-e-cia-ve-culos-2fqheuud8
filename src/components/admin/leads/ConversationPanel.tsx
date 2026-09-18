@@ -22,6 +22,7 @@ import {
   RefreshCw,
   ArrowLeft,
   Plus,
+  UserCheck,
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { cn } from '@/lib/utils'
@@ -75,6 +76,7 @@ export function ConversationPanel({ lead, onBack, onLeadUpdated }: ConversationP
   const [salvandoTemplate, setSalvandoTemplate] = useState(false)
   const [followupDate, setFollowupDate] = useState<Date | undefined>(new Date())
   const [enviandoImagem, setEnviandoImagem] = useState(false)
+  const [nomeAtendente, setNomeAtendente] = useState('')
 
   useEffect(() => {
     if (lead?.id) {
@@ -82,6 +84,20 @@ export function ConversationPanel({ lead, onBack, onLeadUpdated }: ConversationP
       marcarComoLida(lead.id)
     }
   }, [lead?.id])
+
+  // Nome de quem está logado, pra preencher a frase padrão de "assumir
+  // conversa" (17/09/2026) — sempre da conta de quem já está autenticado,
+  // nunca um seletor manual (cada atendente tem login próprio, sem risco de
+  // mandar em nome de outra pessoa).
+  useEffect(() => {
+    if (!user) return
+    supabase
+      .from('usuarios')
+      .select('nome')
+      .eq('id', user.id)
+      .single()
+      .then(({ data }) => setNomeAtendente(data?.nome || ''))
+  }, [user])
 
   useEffect(() => {
     if (!lead?.id) return
@@ -252,6 +268,7 @@ export function ConversationPanel({ lead, onBack, onLeadUpdated }: ConversationP
           components,
           text: textoFinal,
           leadId: lead.id,
+          origem: 'atendente',
         },
       })
       if (error) throw error
@@ -301,9 +318,21 @@ export function ConversationPanel({ lead, onBack, onLeadUpdated }: ConversationP
           toast({ title: 'Número inválido', variant: 'destructive' })
           return
         }
-        await supabase.functions.invoke('send-whatsapp', {
-          body: { action: 'text', to: cleanPhone, text: message, leadId: lead.id },
+        const { data } = await supabase.functions.invoke('send-whatsapp', {
+          body: {
+            action: 'text',
+            to: cleanPhone,
+            text: message,
+            leadId: lead.id,
+            origem: 'atendente',
+          },
         })
+        if (data?.ia_desligada_agora) {
+          toast({
+            title: 'Clara desligada pra este lead',
+            description: 'Você assumiu a conversa por texto — ela não responde mais sozinha aqui.',
+          })
+        }
       } else {
         await supabase
           .from('conversation_history')
@@ -343,6 +372,7 @@ export function ConversationPanel({ lead, onBack, onLeadUpdated }: ConversationP
           documentUrl: publicUrl,
           text: '',
           leadId: lead.id,
+          origem: 'atendente',
         },
       })
       if (error) throw error
@@ -581,6 +611,20 @@ export function ConversationPanel({ lead, onBack, onLeadUpdated }: ConversationP
               </div>
             </PopoverContent>
           </Popover>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 text-slate-500 hover:text-blue-600 hover:bg-blue-50"
+            title="Assumir conversa"
+            disabled={!nomeAtendente}
+            onClick={() =>
+              setMessage(
+                `Olá, eu sou o/a ${nomeAtendente} e darei continuidade ao seu atendimento, como posso ajudar?`,
+              )
+            }
+          >
+            <UserCheck className="w-4 h-4" />
+          </Button>
           <Button
             variant="ghost"
             size="icon"

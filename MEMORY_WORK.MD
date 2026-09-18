@@ -9,20 +9,20 @@ precisar reler o histórico inteiro de conversas. Diferente do
 pra ser mantido em dia de verdade. Detalhe técnico por integração continua
 nos arquivos `docs/*.md` — aqui é só o resumo de estado + pendências.
 
-Última atualização: 2026-09-18 (sessão 23 continuação — bundle da PWA aplicado localmente (não pushado ainda), bug real de feedback de envio achado no chat do CRM, investigação de WABA/conta de anúncios travada por permissão, corrigida no meio da sessão).
+Última atualização: 2026-09-18 (sessão 23 continuação — bundle da PWA aplicado e **mesclado em `main`**, bug real de feedback de envio achado no chat do CRM, investigação de WABA/conta de anúncios concluída).
 
 ## Sessão 23 (continuação, 18/09/2026) — bundle aplicado, bug real de envio no CRM achado (não corrigido), WABA em investigação (travada por permissão, corrigida)
 
-**1. Bundle da sessão "Olá" aplicado no clone local — ainda NÃO pushado.**
-A sessão "Olá" mandou um `git bundle` (`C:\Users\adria\Downloads\3-commits-pendentes.bundle`) com os 3 commits presos (ver seção "Sessão 23" abaixo). Corrigi uma informação errada que ela tinha passado: `origin/claude/ola-q0f1m1` **não existe** no GitHub (confirmado via `git ls-remote --heads origin` — só existe `main` lá). Apliquei assim:
+**1. Bundle da sessão "Olá" aplicado no clone local, publicado e mesclado em `main`.**
+A sessão "Olá" mandou um `git bundle` (`C:\Users\adria\Downloads\3-commits-pendentes.bundle`) com os 3 commits presos (ver seção "Sessão 23" abaixo). Corrigi uma informação errada que ela tinha passado: `origin/claude/ola-q0f1m1` **não existia** no GitHub (confirmado via `git ls-remote --heads origin` — só existia `main` lá, antes desta sessão). Apliquei assim:
 - `git stash` (guardou 8 linhas não commitadas que já existiam em `MEMORY_WORK.MD`, de origem não identificada, devolvidas depois com `git stash pop` — não era trabalho meu nem desta sessão).
 - `git fetch <bundle> claude/ola-q0f1m1:claude/ola-q0f1m1-sandbox` + `git branch -m ... claude/ola-q0f1m1` (renomeado direto, sem precisar de merge, já que a branch bruta do bundle já nasce no commit certo).
-- Resultado: branch local `claude/ola-q0f1m1` existe agora com os 3 commits (`54c0fbd`, `7950339`, `c0bd952`) em cima de `9918398`. **`git push origin claude/ola-q0f1m1` ainda não foi feito** — precisa autorização separada da Adriana quando ela quiser publicar.
+- Branch local `claude/ola-q0f1m1` criada com os 3 commits (`54c0fbd`, `7950339`, `c0bd952`) em cima de `9918398`. **Autorizada e publicada** (`git push -u origin claude/ola-q0f1m1`), depois **autorizada e mesclada em `main`** (`git merge`, 1 conflito em `MEMORY_WORK.MD` — o próprio arquivo, entre a versão registrada aqui e a que a sessão "Olá" tinha deixado na branch — resolvido mantendo o histórico atualizado e preservando o detalhe técnico dos commits como anexo, ver final desta seção).
 - Um dos 3 commits (`54c0fbd`) é **relevante pro bug reportado nesta sessão** — ver item 2.
 
 **2. Bug reportado pela Adriana: mandou mensagem pro Arthur Tutu no chat do CRM, Clara não desligou e mensagem não chegou de verdade** (ela confirmou depois, apesar dos logs — ver abaixo).
 
-- **Causa do "Clara não desligou": confirmada.** A lógica de desligar a IA quando o atendente responde por texto **nunca existiu em produção** — é exatamente o commit `54c0fbd` (do bundle acima, item 1), nunca publicado. `send-whatsapp/index.ts` em produção não tem parâmetro `origem` nem grava `ai_enabled: false`. Não corrigido ainda (a branch existe local, não pushada, não mesclada em `main`, não deployada).
+- **Causa do "Clara não desligou": confirmada.** A lógica de desligar a IA quando o atendente responde por texto **nunca existiu em produção** — é exatamente o commit `54c0fbd` (do bundle acima, item 1). **Agora mesclado em `main` localmente** (`git merge`, autorizado pela Adriana) — falta só o `git push origin main` pra ir pro ar de verdade (autorização separada, ainda não pedida).
 - **Bug real achado, independente, ainda não corrigido**: `ConversationPanel.tsx`, função `sendMessage()` (produção/`main`), chama `supabase.functions.invoke('send-whatsapp', ...)` **sem checar o `error` de retorno nem mostrar toast de sucesso**. Se a Meta rejeitar o envio, ninguém vê aviso nenhum — o campo só limpa como se tivesse dado certo. Achado por leitura de código, ainda não implementado o fix.
 - **Contradição real, NÃO resolvida**: os logs de produção (`function_edge_logs`, `function_logs`, webhook da própria Meta) mostram que a mensagem pro Arthur Tutu foi **enviada duas vezes** (20:14:52 e 20:14:53, quase junto — parece duplo envio/clique) e a Meta confirmou `sent` e depois `delivered` nas duas, via webhook de status. Mesmo assim, a **Adriana confirmou que a mensagem não chegou de verdade**. Isso não bate com o que os logs mostram — não investigado a fundo ainda (pode ser: número errado no cadastro do lead apesar do `delivered`, mensagem duplicada mascarando um comportamento diferente, ou outra causa não identificada). **Próximo passo da próxima sessão**: aprofundar essa contradição antes de declarar o bug fechado — meu diagnóstico até agora está incompleto porque o dado real (Adriana dizendo que não chegou) não bate com o dado técnico (Meta dizendo que entregou).
 - `whatsappDisplay` (pergunta inicial da Adriana) **esclarecido, não é bug de matching**: é só um campo cosmético em `src/lib/brand.ts` (texto formatado pro rodapé/página de contato), já correto (`5534997384177` / `(34) 99738-4177`). Não existe nenhuma lógica de comparação usando esse campo no projeto inteiro (busquei em `brand.ts`, `ContactsConfigPanel.tsx`, `Footer.tsx`, `Contato.tsx`, `whatsapp.ts`, `receive-leads`, `send-whatsapp`). A pergunta dela migrou pra confirmar o WABA/conta de anúncios (item 3) — não ficou claro se o pedido original do "whatsappDisplay" ainda está pendente ou se foi substituído por isso. **Perguntar à Adriana se ainda quer alguma alteração aí, ou se já era sobre o WABA desde o início.**
@@ -57,10 +57,9 @@ A sessão "Olá" mandou um `git bundle` (`C:\Users\adria\Downloads\3-commits-pen
 
 **4. Estado do Git ao fechar esta sessão:**
 - Branch atual: `main`.
-- `main` local segue 1 commit à frente do `origin/main` (`5816555`, de antes desta sessão) — não pushado, assunto separado, não mexido aqui.
-- Nova branch local `claude/ola-q0f1m1` (3 commits, não pushada) — ver item 1.
-- `supabase/functions/diag-temp-waba-info/` e a entrada em `config.toml` existem no working tree, **não commitados** (é código de diagnóstico temporário, pra apagar, não pra commitar).
-- Nada foi commitado nesta sessão.
+- `origin/main` já recebeu o commit de documentação desta sessão (`7eedb72`, autorizado e pushado).
+- Branch `claude/ola-q0f1m1` publicada (`git push -u origin`, autorizado) e **mesclada em `main` localmente** (`git merge`, autorizado, 1 conflito em `MEMORY_WORK.MD` resolvido). **`git push origin main` do merge ainda não foi feito** — autorização separada, pendente.
+- `supabase/functions/diag-temp-waba-info/` já foi apagada (produção e local) e a entrada em `config.toml` removida — nada disso ficou pendente.
 
 ## Sessão 23 (17/09/2026, desktop) — 3 commits de PWA presos numa sessão cloud ("Olá")
 
@@ -93,6 +92,63 @@ publicar o que já existe em outro lugar):
   Isso inicia a sessão aqui mesmo, no clone real do desktop, e permite
   comandar pelo celular via Controle Remoto — os commits caem direto
   neste repositório, sem sandbox separado nem branch sem upstream.
+
+**Detalhe técnico dos 2 commits de código, preservado do merge (escrito originalmente pela sessão "Olá", 17/09/2026 — a parte sobre push travado/pendência de teste foi removida daqui porque já está resolvida e documentada acima, no item 1 e 2 da sessão 23 continuação):**
+
+- **Commit `54c0fbd`** — `send-whatsapp` ganhou parâmetro `origem`
+  (`'atendente' | 'clara' | 'sistema'`) que quem chama declara. Corrigiu bug
+  real achado no caminho: a function gravava `sender:'human'` no
+  `conversation_history` pra **todo** envio, sem checar quem mandou — a
+  foto/vídeo que a própria Clara manda (`ai-sdr`, `enviar_midia_veiculo`) e
+  a mensagem automática de boas-vindas do `ml-webhook` (lead do Mercado
+  Livre) ficavam com o rótulo errado no histórico. 4 pontos de chamada
+  corrigidos: `ConversationPanel.tsx` e `LeadManagementPanel.tsx` →
+  `atendente`; `ai-sdr` → `clara`; `ml-webhook` (2 lugares) → `sistema`.
+  **Regra de negócio (decisão da Adriana)**: só resposta de **texto livre**
+  do atendente desliga `leads.ai_enabled` — foto, documento (proposta em
+  PDF) e template avulsos **não** desligam. Toast no painel avisa no
+  momento em que isso acontece (`ia_desligada_agora` na resposta da
+  function), além do toggle que já existia em `LeadManagementPanel.tsx` e já
+  reflete via realtime (`Conversas.tsx` já tinha subscription em `leads`).
+- **Commit `7950339`** — duas coisas:
+  1. **`/admin` instalável como PWA** (ícone + tela cheia, celular e
+     desktop), sem afetar o site público. Achado técnico: o projeto serve
+     site + admin + hub do mesmo `index.html`, então manifest/service worker
+     não podem ficar fixos nele — `AdminLayout.tsx` injeta
+     `<link rel="manifest">` + metas `apple-mobile-web-app-*` +
+     registro do SW só enquanto está montado, removendo tudo ao sair do
+     admin. `public/admin-manifest.json` (`scope`/`start_url` = `/admin`) +
+     `public/admin-sw.js` (vazio de propósito, só fetch pass-through, sem
+     cache de dado — decisão consciente, CRM precisa de dado sempre ao
+     vivo). Ícone gerado via Cloudflare Image Resizing em cima da
+     `logo-oficial.png` já no R2 (`fit=contain,background=white`, 192/512px)
+     — **a Adriana conferiu os dois links gerados e aprovou visualmente**
+     (17/09). **Ainda falta o teste real**: abrir `/admin` no Chrome
+     desktop/Android depois do `git push origin main` (ainda pendente,
+     autorização separada) e confirmar que "Instalar app" aparece só ali,
+     nunca no site público.
+  2. **Botão "Assumir conversa"** no `ConversationPanel.tsx` (ícone
+     `UserCheck`, ao lado de Templates) — preenche a caixa de texto com
+     `Olá, eu sou o/a {nome} e darei continuidade ao seu atendimento, como
+     posso ajudar?`. Nome vem automático de `usuarios.nome` de quem está
+     logado (decisão da Adriana: sem seletor manual — cada atendente já tem
+     login próprio, sem risco de mandar em nome errado). Frase com "o/a"
+     genérico em vez de duas variantes por gênero (decisão da Adriana).
+     Envio é texto livre normal, então já aciona o desligamento da Clara do
+     commit anterior sozinho, sem código extra.
+- **Achado sobre ferramenta, não sobre o projeto**: nesta sessão o `git
+  push` foi negado 3x seguidas pela permissão do ambiente de execução
+  (Claude Code na nuvem) — diferente de negação do usuário, é bloqueio de
+  política da sessão. Não fica claro ainda se é specific desta sessão ou
+  recorrente; se acontecer de novo, vale perguntar à Adriana se existe uma
+  config de permissão pra ajustar.
+- **Pendência de documentação, ainda não escrita**: `/admin/conversas` já
+  aparece em `docs/manual-operacional-contexto.md` (status 🟡, parcial) —
+  o botão "assumir conversa" e o desligamento automático da Clara são
+  fluxo novo o suficiente pra merecer atualização do artigo (regra
+  permanente da Adriana, ver `manual-operacional-atualizado` na memória).
+  Ainda não escrita — falta confirmar o fluxo ao vivo no painel depois do
+  `git push origin main`. Retomar assim que isso acontecer.
 
 ## Sessão 22 (continuação 7, 15/09/2026) — Templates de WhatsApp no chat (usar + criar) + auditoria do Ads CLI
 
