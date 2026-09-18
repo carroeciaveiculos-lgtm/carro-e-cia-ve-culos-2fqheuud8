@@ -22,7 +22,7 @@ A sessão "Olá" mandou um `git bundle` (`C:\Users\adria\Downloads\3-commits-pen
 
 **2. Bug reportado pela Adriana: mandou mensagem pro Arthur Tutu no chat do CRM, Clara não desligou e mensagem não chegou de verdade** (ela confirmou depois, apesar dos logs — ver abaixo).
 
-- **Causa do "Clara não desligou": confirmada.** A lógica de desligar a IA quando o atendente responde por texto **nunca existiu em produção** — é exatamente o commit `54c0fbd` (do bundle acima, item 1). **Agora mesclado em `main` localmente** (`git merge`, autorizado pela Adriana) — falta só o `git push origin main` pra ir pro ar de verdade (autorização separada, ainda não pedida).
+- **Causa do "Clara não desligou": confirmada.** A lógica de desligar a IA quando o atendente responde por texto **nunca existiu em produção** — é exatamente o commit `54c0fbd` (do bundle acima, item 1). **Mesclado em `main` e publicado** (`git merge` + `git push origin main`, ambos autorizados). **Falta testar ao vivo**: mandar mensagem de texto livre como atendente e confirmar que a Clara desliga sozinha de verdade.
 - **Bug real achado, independente, ainda não corrigido**: `ConversationPanel.tsx`, função `sendMessage()` (produção/`main`), chama `supabase.functions.invoke('send-whatsapp', ...)` **sem checar o `error` de retorno nem mostrar toast de sucesso**. Se a Meta rejeitar o envio, ninguém vê aviso nenhum — o campo só limpa como se tivesse dado certo. Achado por leitura de código, ainda não implementado o fix.
 - **Contradição real, NÃO resolvida**: os logs de produção (`function_edge_logs`, `function_logs`, webhook da própria Meta) mostram que a mensagem pro Arthur Tutu foi **enviada duas vezes** (20:14:52 e 20:14:53, quase junto — parece duplo envio/clique) e a Meta confirmou `sent` e depois `delivered` nas duas, via webhook de status. Mesmo assim, a **Adriana confirmou que a mensagem não chegou de verdade**. Isso não bate com o que os logs mostram — não investigado a fundo ainda (pode ser: número errado no cadastro do lead apesar do `delivered`, mensagem duplicada mascarando um comportamento diferente, ou outra causa não identificada). **Próximo passo da próxima sessão**: aprofundar essa contradição antes de declarar o bug fechado — meu diagnóstico até agora está incompleto porque o dado real (Adriana dizendo que não chegou) não bate com o dado técnico (Meta dizendo que entregou).
 - `whatsappDisplay` (pergunta inicial da Adriana) **esclarecido, não é bug de matching**: é só um campo cosmético em `src/lib/brand.ts` (texto formatado pro rodapé/página de contato), já correto (`5534997384177` / `(34) 99738-4177`). Não existe nenhuma lógica de comparação usando esse campo no projeto inteiro (busquei em `brand.ts`, `ContactsConfigPanel.tsx`, `Footer.tsx`, `Contato.tsx`, `whatsapp.ts`, `receive-leads`, `send-whatsapp`). A pergunta dela migrou pra confirmar o WABA/conta de anúncios (item 3) — não ficou claro se o pedido original do "whatsappDisplay" ainda está pendente ou se foi substituído por isso. **Perguntar à Adriana se ainda quer alguma alteração aí, ou se já era sobre o WABA desde o início.**
@@ -58,7 +58,7 @@ A sessão "Olá" mandou um `git bundle` (`C:\Users\adria\Downloads\3-commits-pen
 **4. Estado do Git ao fechar esta sessão:**
 - Branch atual: `main`.
 - `origin/main` já recebeu o commit de documentação desta sessão (`7eedb72`, autorizado e pushado).
-- Branch `claude/ola-q0f1m1` publicada (`git push -u origin`, autorizado) e **mesclada em `main` localmente** (`git merge`, autorizado, 1 conflito em `MEMORY_WORK.MD` resolvido). **`git push origin main` do merge ainda não foi feito** — autorização separada, pendente.
+- Branch `claude/ola-q0f1m1` publicada (`git push -u origin`, autorizado), **mesclada em `main`** (`git merge`, autorizado, 1 conflito em `MEMORY_WORK.MD` resolvido) **e publicada** (`git push origin main`, autorizado). Clara desliga sozinha e PWA no `/admin` estão no ar.
 - `supabase/functions/diag-temp-waba-info/` já foi apagada (produção e local) e a entrada em `config.toml` removida — nada disso ficou pendente.
 
 ## Sessão 23 (17/09/2026, desktop) — 3 commits de PWA presos numa sessão cloud ("Olá")
@@ -123,10 +123,9 @@ publicar o que já existe em outro lugar):
      vivo). Ícone gerado via Cloudflare Image Resizing em cima da
      `logo-oficial.png` já no R2 (`fit=contain,background=white`, 192/512px)
      — **a Adriana conferiu os dois links gerados e aprovou visualmente**
-     (17/09). **Ainda falta o teste real**: abrir `/admin` no Chrome
-     desktop/Android depois do `git push origin main` (ainda pendente,
-     autorização separada) e confirmar que "Instalar app" aparece só ali,
-     nunca no site público.
+     (17/09). Publicado em `main` em 18/09. **Ainda falta o teste real**:
+     abrir `/admin` no Chrome desktop/Android e confirmar que "Instalar
+     app" aparece só ali, nunca no site público.
   2. **Botão "Assumir conversa"** no `ConversationPanel.tsx` (ícone
      `UserCheck`, ao lado de Templates) — preenche a caixa de texto com
      `Olá, eu sou o/a {nome} e darei continuidade ao seu atendimento, como
@@ -147,8 +146,8 @@ publicar o que já existe em outro lugar):
   o botão "assumir conversa" e o desligamento automático da Clara são
   fluxo novo o suficiente pra merecer atualização do artigo (regra
   permanente da Adriana, ver `manual-operacional-atualizado` na memória).
-  Ainda não escrita — falta confirmar o fluxo ao vivo no painel depois do
-  `git push origin main`. Retomar assim que isso acontecer.
+  Ainda não escrita — já está publicado em `main`, falta confirmar o
+  fluxo ao vivo no painel antes de escrever o artigo.
 
 ## Sessão 22 (continuação 7, 15/09/2026) — Templates de WhatsApp no chat (usar + criar) + auditoria do Ads CLI
 
