@@ -391,7 +391,7 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
       if (vehicleId) {
         supabase
           .from('veiculos')
-          .select('*')
+          .select('*, alterado_por_usuario:usuarios!alterado_por(nome)')
           .eq('id', vehicleId)
           .single()
           .then(({ data }) => {
@@ -1463,6 +1463,12 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
             <Car className="w-6 h-6 text-blue-600" />{' '}
             {vehicleId ? 'EDITAR VEÍCULO' : 'CADASTRAR VEÍCULO'}
           </DialogTitle>
+          {vehicleId && formData.alterado_em && (
+            <p className="text-xs text-gray-500">
+              Última alteração: {formData.alterado_por_usuario?.nome || 'sistema/automação'} em{' '}
+              {new Date(formData.alterado_em).toLocaleString('pt-BR')}
+            </p>
+          )}
         </DialogHeader>
 
         <Tabs
