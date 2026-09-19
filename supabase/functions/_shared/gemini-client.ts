@@ -153,6 +153,16 @@ export const CRM_FUNCTIONS = [
             'Use quando o cliente pedir seguro, consórcio, financiamento ou consignação durante uma conversa que já está rolando (lead já existente) — funciona igual a criar um lead novo desses tipos: dispara aviso automático pro parceiro responsável e ENCERRA sua participação nessa conversa (você para de responder esse lead, igual a solicitar_atendimento_humano). Só use quando o cliente já demonstrou interesse real em ser atendido sobre esse assunto, não por curiosidade genérica (ex: "vocês fazem financiamento?" sozinho não conta).',
           enum: ['seguro_auto', 'consorcio', 'financiamento', 'consignacao'],
         },
+        notas_para_equipe: {
+          type: 'STRING',
+          description:
+            'Anote aqui informações importantes que o time humano precisa saber e que não têm campo próprio: dados de simulação de seguro/consórcio que o cliente informou (nascimento, tipo de seguro, valor do bem, parcela, prazo, lance...), ou uma objeção real do cliente (ex: "achou o preço alto", "vai comparar com outra loja"). Seja objetiva, uma frase ou lista curta. Isso fica salvo no cadastro do lead pra quem for atender depois — não aparece pro cliente.',
+        },
+        motivo_perda: {
+          type: 'STRING',
+          description:
+            'Quando o status virar (ou já estiver) "perdido", descreva em poucas palavras o motivo real que o cliente deu (ex: "achou caro, vai comparar com outra loja", "desistiu de comprar agora"). Não invente — só preencha se o cliente disse algo que explique a perda.',
+        },
       },
       required: ['lead_id'],
     },

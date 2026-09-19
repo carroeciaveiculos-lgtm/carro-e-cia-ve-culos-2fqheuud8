@@ -43,6 +43,25 @@ async function contarConvitesVisita(leadId: string): Promise<number> {
   return (data || []).filter((m: any) => PADRAO_CONVITE_VISITA.test(m.message_text || '')).length
 }
 
+// 19/09/2026 (achado em auditoria: lead Lázaro cobrou retorno 5x em 4 dias
+// sem a Clara escalar mais rápido -- a regra de "2 tentativas sem resolver"
+// do prompt só cobre repetição do MESMO assunto técnico, não frustração
+// explícita do cliente). Sinal a mais pro modelo escalar mais rápido, mesmo
+// padrão do avisoConvite -- não bloqueia nada sozinho, só avisa.
+const PADRAO_FRUSTRACAO =
+  /j[áa] pedi|ningu[ée]m (me )?respond|cansad[ao] de esperar|h[áa] dias? esperando|sem retorno|p[ée]ssimo atendimento|quero (cancelar|desistir)/i
+
+async function detectarFrustracao(leadId: string): Promise<boolean> {
+  const { data } = await supabase
+    .from('conversation_history')
+    .select('message_text')
+    .eq('lead_id', leadId)
+    .eq('sender', 'client')
+    .order('created_at', { ascending: false })
+    .limit(5)
+  return (data || []).some((m: any) => PADRAO_FRUSTRACAO.test(m.message_text || ''))
+}
+
 async function getSystemPrompt(leadId?: string, veiculoInteresse?: string | null) {
   // Fonte única (19/09/2026, plano "prompt único e seguro"): antes havia um
   // fallback pra social_configuracoes.ai_system_prompt, campo órfão marcado
@@ -116,11 +135,18 @@ async function getSystemPrompt(leadId?: string, veiculoInteresse?: string | null
     ? `\nEste lead já demonstrou interesse no veículo "${veiculoInteresse}" (veio de um anúncio ou já foi indicado antes). Se ainda não citou esse veículo nesta conversa, mencione-o na sua resposta (ver seção "Lead de anúncio Meta/Google Ads" do fluxo) — não pergunte "qual veículo você procura", você já sabe.`
     : ''
 
+  // Achado em auditoria (ver comentário em detectarFrustracao) — sinal a
+  // mais pro modelo priorizar resolver ou escalar mais rápido.
+  const possivelFrustracao = leadId ? await detectarFrustracao(leadId) : false
+  const avisoFrustracao = possivelFrustracao
+    ? `\nATENÇÃO: o cliente demonstrou sinais de frustração ou impaciência nas últimas mensagens (ex: reclamou de falta de retorno, disse que já pediu isso antes). Priorize resolver o que ele está pedindo agora; se não conseguir de primeira, chame solicitar_atendimento_humano sem insistir mais — não deixe esse cliente esperando de novo.`
+    : ''
+
   return `${basePrompt}${memoryContext}
 Data e hora atuais (horário de Brasília): ${agoraBR}. Use isso pra calcular datas relativas como "amanhã", "sexta-feira" etc — nunca invente uma data sem se basear nisso. Ao chamar agendar_visita, sempre mande data_hora em ISO 8601 com o fuso de Brasília (-03:00).
 ${waNumber ? `O número oficial de WhatsApp da loja é: ${waNumber}. Se for necessário enviar um link direto, use https://wa.me/${waNumber}` : ''}
 Ferramentas disponíveis: use consultar_estoque pra verificar veículos disponíveis antes de falar sobre eles; use agendar_visita quando o cliente confirmar dia e horário de visita/avaliação; use salvar_email_lead assim que o cliente informar um e-mail em qualquer momento da conversa, mesmo que já tenha lead criado; use enviar_midia_veiculo quando fizer sentido mandar foto ou vídeo de um veículo específico já consultado (chame no máximo 1 vez por veículo por resposta — nunca repita se o cliente só reforçar o mesmo pedido em seguida); use solicitar_atendimento_humano quando o lead estiver qualificado e pronto pra avançar, ou pedir explicitamente para falar com uma pessoa; use atualizar_estagio_lead pra refletir o andamento da conversa no funil, reavaliar a temperatura (frio/morno/quente) sempre que o interesse do lead mudar, e SEMPRE que identificar qual veículo (marca/modelo/ano) o cliente quer — mesmo que ele já tenha mencionado isso logo na primeira mensagem (ex: veio de um anúncio de um carro específico) — chame com veiculo_interesse assim que confirmar qual é, e de novo se o cliente trocar de interesse no meio da conversa. Depois que o cliente já demonstrou interesse num veículo específico, chame atualizar_estagio_lead de novo com forma_pagamento (à vista, financiamento, ou troca — com carro de valor menor ou maior que o veículo de interesse) assim que ele mencionar como pretende pagar, e veiculo_troca_descricao se ele descrever o carro que vai dar de entrada. Ao chamar criar_lead_crm, escolha o tipo com cuidado — se o cliente disser que quer seguro do carro, consórcio, financiamento ou consignação, use tipo seguro_auto/consorcio/financiamento/consignacao: isso encaminha automaticamente o lead pro responsável (Gabriel pra seguro, equipe de consórcio, Roberto Junior pra financiamento e consignação), então avise o cliente que alguém vai entrar em contato em breve. Se o lead já existir (a conversa já está rolando, não é um cadastro novo) e o cliente pedir um desses assuntos, use atualizar_estagio_lead com tipo_interesse_especial em vez de criar_lead_crm — dispara o mesmo aviso automático e encerra sua participação nesse atendimento.
-REGRA CRÍTICA: nunca diga "agendado", "confirmado" ou "marcado" sem ANTES ter chamado a função correspondente (ex: agendar_visita) na mesma resposta — se a data/horário ainda não estiver 100% definida, pergunte de novo em vez de dar a confirmação por feita.${avisoConvite}${notaVeiculoAnuncio}`
+REGRA CRÍTICA: nunca diga "agendado", "confirmado" ou "marcado" sem ANTES ter chamado a função correspondente (ex: agendar_visita) na mesma resposta — se a data/horário ainda não estiver 100% definida, pergunte de novo em vez de dar a confirmação por feita.${avisoConvite}${notaVeiculoAnuncio}${avisoFrustracao}`
 }
 
 // Execução de verdade das funções que o Gemini decide chamar — corrigido em
@@ -227,6 +253,31 @@ async function executeFunction(name: string, args: any, leadId: string): Promise
     }
     if (args.veiculo_troca_descricao !== undefined && args.veiculo_troca_descricao !== '') {
       update.trade_in_car = args.veiculo_troca_descricao
+    }
+
+    // 19/09/2026 -- captura de dados/objeções que não têm campo estruturado
+    // próprio (achado: simulação de seguro/consórcio e objeções do cliente
+    // eram perdidas, sem lugar pra registrar). Usa notas_internas (não
+    // aparece no resumo do card Kanban, diferente de observacoes) e
+    // acrescenta com carimbo de data/hora, sem apagar notas anteriores.
+    if (args.notas_para_equipe !== undefined && args.notas_para_equipe !== '') {
+      const { data: leadAtualNotas } = await supabase
+        .from('leads')
+        .select('notas_internas')
+        .eq('id', leadId)
+        .maybeSingle()
+      const carimbo = new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })
+      const notaFormatada = `[${carimbo} - Clara] ${args.notas_para_equipe}`
+      update.notas_internas = leadAtualNotas?.notas_internas
+        ? `${leadAtualNotas.notas_internas}\n${notaFormatada}`
+        : notaFormatada
+    }
+
+    // 19/09/2026 -- leads.motivo_perda já existia no banco (usado hoje só
+    // manualmente pelo time via a tela), mas a Clara não tinha como
+    // preencher quando ela mesma via o cliente desistir durante a conversa.
+    if (args.motivo_perda !== undefined && args.motivo_perda !== '') {
+      update.motivo_perda = args.motivo_perda
     }
 
     // 19/09/2026 -- extensão do handoff automático (achado real: Lázaro/HB20X
