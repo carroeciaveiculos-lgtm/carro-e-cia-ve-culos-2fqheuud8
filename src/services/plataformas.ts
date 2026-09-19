@@ -174,37 +174,46 @@ export async function fetchVeiculosForPortais(
   return { vehicles: (data || []) as VeiculoSync[], total: count || 0 }
 }
 
+// Achado 19/09/2026: dois bugs juntos nesta function.
+// 1) `estoque_publicacoes` guarda várias linhas por veículo+plataforma de
+//    propósito (histórico de tentativas, não 1 linha por estado atual —
+//    decisão da Adriana). Contar linha por linha (como era antes) infla os
+//    números: um veículo com uma tentativa de erro antiga E uma publicação
+//    recente contava nos dois contadores ao mesmo tempo.
+// 2) Os status usados no filtro (`published`, `ativo`, `pending`,
+//    `agendado`) **nunca são escritos de verdade** em `estoque_publicacoes`
+//    — os valores reais são `publicado`, `despublicado`, `error`,
+//    `pending_create`/`pending_update`/`pending_close` (conferido com
+//    `select status, count(*) ... group by status`). O contador "ativos" e
+//    "pendentes" provavelmente sempre voltou 0, independente do bug 1.
+// Corrigido: busca todas as linhas da plataforma, fica só com a mais
+// recente de cada veículo, e conta com os status reais.
 export async function fetchDashboard(slug: string): Promise<PlataformaDashboard> {
-  const { count: ativos } = await supabase
+  const { data: todasLinhas } = await supabase
     .from('estoque_publicacoes')
-    .select('*', { count: 'exact', head: true })
-    .eq('platform', slug)
-    .in('status', ['published', 'ativo'])
-
-  const { count: erros } = await supabase
-    .from('estoque_publicacoes')
-    .select('*', { count: 'exact', head: true })
-    .eq('platform', slug)
-    .in('status', ['error', 'erro'])
-
-  const { count: pendentes } = await supabase
-    .from('estoque_publicacoes')
-    .select('*', { count: 'exact', head: true })
-    .eq('platform', slug)
-    .in('status', ['pending', 'agendado'])
-
-  const { data: lastSync } = await supabase
-    .from('estoque_publicacoes')
-    .select('publicado_em, erro_msg, updated_at')
+    .select('veiculo_id, status, publicado_em, erro_msg, updated_at')
     .eq('platform', slug)
     .order('updated_at', { ascending: false })
-    .limit(1)
-    .maybeSingle()
+
+  const maisRecentePorVeiculo = new Map<string, (typeof todasLinhas)[number]>()
+  for (const linha of todasLinhas || []) {
+    if (!maisRecentePorVeiculo.has(linha.veiculo_id)) {
+      maisRecentePorVeiculo.set(linha.veiculo_id, linha)
+    }
+  }
+  const linhasAtuais = [...maisRecentePorVeiculo.values()]
+
+  const ativos = linhasAtuais.filter((l) => l.status === 'publicado').length
+  const erros = linhasAtuais.filter((l) => ['error', 'erro'].includes(l.status || '')).length
+  const pendentes = linhasAtuais.filter((l) =>
+    ['pending_create', 'pending_update', 'pending_close'].includes(l.status || ''),
+  ).length
+  const lastSync = (todasLinhas || [])[0]
 
   return {
-    ativos: ativos || 0,
-    erros: erros || 0,
-    pendentes: pendentes || 0,
+    ativos,
+    erros,
+    pendentes,
     ultima_sincronizacao: lastSync?.publicado_em || lastSync?.updated_at || null,
     ultimo_erro: lastSync?.erro_msg || null,
     status_conexao: 'connected',

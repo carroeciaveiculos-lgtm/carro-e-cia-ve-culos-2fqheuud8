@@ -21,9 +21,22 @@ export function ConversionMonitor() {
 
   useEffect(() => {
     const load = async () => {
-      const { data: pubs } = await supabase
+      const { data: pubsRaw } = await supabase
         .from('estoque_publicacoes')
-        .select('platform, veiculo_id, veiculos(ad_types, ml_listing_type, status, preco_venda)')
+        .select('platform, veiculo_id, updated_at, veiculos(ad_types, ml_listing_type, status, preco_venda)')
+        .order('updated_at', { ascending: false })
+
+      // Achado 19/09/2026: estoque_publicacoes acumula uma linha por
+      // tentativa (histórico, proposital) — sem isso, um veículo com 3
+      // linhas pra mesma plataforma contava 3x nos números de lead/venda.
+      // Fica só com a linha mais recente de cada veículo+plataforma.
+      const vistos = new Set<string>()
+      const pubs = (pubsRaw || []).filter((p) => {
+        const chave = `${p.veiculo_id}|${p.platform}`
+        if (vistos.has(chave)) return false
+        vistos.add(chave)
+        return true
+      })
 
       const { data: leads } = await supabase
         .from('leads')

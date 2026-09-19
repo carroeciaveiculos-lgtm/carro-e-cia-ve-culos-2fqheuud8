@@ -65,11 +65,18 @@ export function RelatorioEstoque() {
       const ids = (veicsData || []).map((v) => v.id)
       if (ids.length > 0) {
         const [{ data: pubsData }, { data: mlData }] = await Promise.all([
+          // Achado 19/09/2026: estoque_publicacoes acumula uma linha por
+          // tentativa (histórico, proposital — não 1 por estado atual).
+          // Filtrar só por status='publicado' aqui pegava QUALQUER linha
+          // já publicada um dia, mesmo que uma tentativa mais recente
+          // tenha dado erro ou despublicado depois — mostrava "Publicado"
+          // pra veículo que não está mais no ar. Busca tudo, ordena por
+          // mais recente, e olha só a última linha de cada veículo+plataforma.
           supabase
             .from('estoque_publicacoes')
-            .select('veiculo_id, platform, status')
+            .select('veiculo_id, platform, status, updated_at')
             .in('veiculo_id', ids)
-            .in('status', STATUS_PUBLICADO_PORTAIS),
+            .order('updated_at', { ascending: false }),
           supabase
             .from('ml_listings')
             .select('veiculo_id, status')
@@ -77,11 +84,21 @@ export function RelatorioEstoque() {
             .in('status', STATUS_PUBLICADO_ML),
         ])
 
+        const maisRecentePorVeiculoPlataforma = new Map<string, string>()
+        for (const p of pubsData || []) {
+          const chave = `${p.veiculo_id}|${p.platform}`
+          if (!maisRecentePorVeiculoPlataforma.has(chave)) {
+            maisRecentePorVeiculoPlataforma.set(chave, p.status || '')
+          }
+        }
+
         const map: Record<string, string[]> = {}
-        ;(pubsData || []).forEach((p) => {
-          if (!map[p.veiculo_id]) map[p.veiculo_id] = []
-          map[p.veiculo_id].push(p.platform)
-        })
+        for (const [chave, status] of maisRecentePorVeiculoPlataforma) {
+          if (!STATUS_PUBLICADO_PORTAIS.includes(status)) continue
+          const [veiculoId, platform] = chave.split('|')
+          if (!map[veiculoId]) map[veiculoId] = []
+          map[veiculoId].push(platform)
+        }
         ;(mlData || []).forEach((p) => {
           if (!map[p.veiculo_id]) map[p.veiculo_id] = []
           map[p.veiculo_id].push('mercadolivre')
