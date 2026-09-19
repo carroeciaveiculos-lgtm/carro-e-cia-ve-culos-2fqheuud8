@@ -109,7 +109,7 @@ async function getSystemPrompt(leadId?: string) {
   return `${basePrompt}${memoryContext}
 Data e hora atuais (horário de Brasília): ${agoraBR}. Use isso pra calcular datas relativas como "amanhã", "sexta-feira" etc — nunca invente uma data sem se basear nisso. Ao chamar agendar_visita, sempre mande data_hora em ISO 8601 com o fuso de Brasília (-03:00).
 ${waNumber ? `O número oficial de WhatsApp da loja é: ${waNumber}. Se for necessário enviar um link direto, use https://wa.me/${waNumber}` : ''}
-Ferramentas disponíveis: use consultar_estoque pra verificar veículos disponíveis antes de falar sobre eles; use agendar_visita quando o cliente confirmar dia e horário de visita/avaliação; use salvar_email_lead assim que o cliente informar um e-mail em qualquer momento da conversa, mesmo que já tenha lead criado; use enviar_midia_veiculo quando fizer sentido mandar foto ou vídeo de um veículo específico já consultado (chame no máximo 1 vez por veículo por resposta — nunca repita se o cliente só reforçar o mesmo pedido em seguida); use solicitar_atendimento_humano quando o lead estiver qualificado e pronto pra avançar, ou pedir explicitamente para falar com uma pessoa; use atualizar_estagio_lead pra refletir o andamento da conversa no funil, reavaliar a temperatura (frio/morno/quente) sempre que o interesse do lead mudar, e SEMPRE que identificar qual veículo (marca/modelo/ano) o cliente quer — mesmo que ele já tenha mencionado isso logo na primeira mensagem (ex: veio de um anúncio de um carro específico) — chame com veiculo_interesse assim que confirmar qual é, e de novo se o cliente trocar de interesse no meio da conversa. Depois que o cliente já demonstrou interesse num veículo específico, chame atualizar_estagio_lead de novo com forma_pagamento (à vista, financiamento, ou troca — com carro de valor menor ou maior que o veículo de interesse) assim que ele mencionar como pretende pagar, e veiculo_troca_descricao se ele descrever o carro que vai dar de entrada. Ao chamar criar_lead_crm, escolha o tipo com cuidado — se o cliente disser que quer seguro do carro ou consórcio, use tipo seguro_auto/consorcio: isso encaminha automaticamente o lead pro responsável (Gabriel pra seguro, a própria loja pra consórcio), então avise o cliente que alguém vai entrar em contato em breve.
+Ferramentas disponíveis: use consultar_estoque pra verificar veículos disponíveis antes de falar sobre eles; use agendar_visita quando o cliente confirmar dia e horário de visita/avaliação; use salvar_email_lead assim que o cliente informar um e-mail em qualquer momento da conversa, mesmo que já tenha lead criado; use enviar_midia_veiculo quando fizer sentido mandar foto ou vídeo de um veículo específico já consultado (chame no máximo 1 vez por veículo por resposta — nunca repita se o cliente só reforçar o mesmo pedido em seguida); use solicitar_atendimento_humano quando o lead estiver qualificado e pronto pra avançar, ou pedir explicitamente para falar com uma pessoa; use atualizar_estagio_lead pra refletir o andamento da conversa no funil, reavaliar a temperatura (frio/morno/quente) sempre que o interesse do lead mudar, e SEMPRE que identificar qual veículo (marca/modelo/ano) o cliente quer — mesmo que ele já tenha mencionado isso logo na primeira mensagem (ex: veio de um anúncio de um carro específico) — chame com veiculo_interesse assim que confirmar qual é, e de novo se o cliente trocar de interesse no meio da conversa. Depois que o cliente já demonstrou interesse num veículo específico, chame atualizar_estagio_lead de novo com forma_pagamento (à vista, financiamento, ou troca — com carro de valor menor ou maior que o veículo de interesse) assim que ele mencionar como pretende pagar, e veiculo_troca_descricao se ele descrever o carro que vai dar de entrada. Ao chamar criar_lead_crm, escolha o tipo com cuidado — se o cliente disser que quer seguro do carro, consórcio, financiamento ou consignação, use tipo seguro_auto/consorcio/financiamento/consignacao: isso encaminha automaticamente o lead pro responsável (Gabriel pra seguro, equipe de consórcio, Roberto Junior pra financiamento e consignação), então avise o cliente que alguém vai entrar em contato em breve. Se o lead já existir (a conversa já está rolando, não é um cadastro novo) e o cliente pedir um desses assuntos, use atualizar_estagio_lead com tipo_interesse_especial em vez de criar_lead_crm — dispara o mesmo aviso automático e encerra sua participação nesse atendimento.
 REGRA CRÍTICA: nunca diga "agendado", "confirmado" ou "marcado" sem ANTES ter chamado a função correspondente (ex: agendar_visita) na mesma resposta — se a data/horário ainda não estiver 100% definida, pergunte de novo em vez de dar a confirmação por feita.${avisoConvite}`
 }
 
@@ -218,14 +218,44 @@ async function executeFunction(name: string, args: any, leadId: string): Promise
     if (args.veiculo_troca_descricao !== undefined && args.veiculo_troca_descricao !== '') {
       update.trade_in_car = args.veiculo_troca_descricao
     }
-    if (Object.keys(update).length === 0)
+
+    // 19/09/2026 -- extensão do handoff automático (achado real: Lázaro/HB20X
+    // pediu financiamento numa conversa que já existia, e nada disparou porque
+    // o handoff só existia dentro de criar_lead_crm, ou seja, só pra lead NOVO
+    // -- na prática a maioria das conversas da Clara é com lead que já existe).
+    const tiposEspeciaisPermitidos = ['seguro_auto', 'consorcio', 'financiamento', 'consignacao']
+    if (
+      args.tipo_interesse_especial !== undefined &&
+      !tiposEspeciaisPermitidos.includes(args.tipo_interesse_especial)
+    ) {
+      return { error: `tipo_interesse_especial inválido: ${args.tipo_interesse_especial}` }
+    }
+
+    if (Object.keys(update).length === 0 && !args.tipo_interesse_especial)
       return {
-        error: 'informe status, temperatura, veiculo_interesse, forma_pagamento e/ou veiculo_troca_descricao',
+        error:
+          'informe status, temperatura, veiculo_interesse, forma_pagamento, veiculo_troca_descricao e/ou tipo_interesse_especial',
       }
 
-    const { error } = await supabase.from('leads').update(update).eq('id', leadId)
-    if (error) return { error: error.message }
-    return { ok: true, ...update }
+    if (Object.keys(update).length > 0) {
+      const { error } = await supabase.from('leads').update(update).eq('id', leadId)
+      if (error) return { error: error.message }
+    }
+
+    if (args.tipo_interesse_especial) {
+      const { data: leadCompleto } = await supabase
+        .from('leads')
+        .select('id, nome, telefone, email')
+        .eq('id', leadId)
+        .maybeSingle()
+      if (leadCompleto) await encaminharParaParceiro(leadCompleto, args.tipo_interesse_especial)
+    }
+
+    return {
+      ok: true,
+      ...update,
+      ...(args.tipo_interesse_especial ? { tipo_interesse_especial: args.tipo_interesse_especial } : {}),
+    }
   }
 
   if (name === 'solicitar_atendimento_humano') {
@@ -298,7 +328,10 @@ async function executeFunction(name: string, args: any, leadId: string): Promise
       .single()
     if (error) return { error: error.message }
     if (email) await registrarEmailNoBrevo(data.id, email, args.nome, args.telefone)
-    if (args.tipo === 'seguro_auto' || args.tipo === 'consorcio') {
+    // financiamento e consignacao adicionados em 19/09/2026 -- antes eram tipos
+    // válidos aceitos pelo CRM mas não disparavam nenhum aviso pro parceiro,
+    // então a Clara prometia "vou encaminhar" sem nada acontecer de verdade.
+    if (['seguro_auto', 'consorcio', 'financiamento', 'consignacao'].includes(args.tipo)) {
       await encaminharParaParceiro(data, args.tipo)
     }
     return { lead: data }
@@ -359,6 +392,10 @@ async function registrarEmailNoBrevo(
 const PARCEIROS_ENCAMINHAMENTO: Record<string, { nome: string; telefone: string; assunto: string }> = {
   seguro_auto: { nome: 'Gabriel', telefone: '5534992000300', assunto: 'Seguro Auto' },
   consorcio: { nome: 'Equipe Consórcio', telefone: '5534998037651', assunto: 'Consórcio' },
+  // Roberto Junior (Vendas) — mesmo contato do rodapé do site (src/lib/brand.ts),
+  // confirmado pela Adriana em 19/09/2026 pra receber financiamento e consignação.
+  financiamento: { nome: 'Roberto Junior', telefone: '5534992893615', assunto: 'Financiamento' },
+  consignacao: { nome: 'Roberto Junior', telefone: '5534992893615', assunto: 'Consignação' },
 }
 
 async function encaminharParaParceiro(lead: any, tipo: string) {

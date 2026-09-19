@@ -147,6 +147,12 @@ export const CRM_FUNCTIONS = [
           description:
             'Se o cliente mencionou um carro pra dar de entrada/troca, descreva o que ele ja disse (marca, modelo, ano, quilometragem aproximada — so o que ele informou, sem inventar). Ex: "Jeep Compass Limited Diesel 2018, uso particular". Preencha junto com forma_pagamento quando for troca_valor_menor ou troca_valor_maior.',
         },
+        tipo_interesse_especial: {
+          type: 'STRING',
+          description:
+            'Use quando o cliente pedir seguro, consórcio, financiamento ou consignação durante uma conversa que já está rolando (lead já existente) — funciona igual a criar um lead novo desses tipos: dispara aviso automático pro parceiro responsável e ENCERRA sua participação nessa conversa (você para de responder esse lead, igual a solicitar_atendimento_humano). Só use quando o cliente já demonstrou interesse real em ser atendido sobre esse assunto, não por curiosidade genérica (ex: "vocês fazem financiamento?" sozinho não conta).',
+          enum: ['seguro_auto', 'consorcio', 'financiamento', 'consignacao'],
+        },
       },
       required: ['lead_id'],
     },
