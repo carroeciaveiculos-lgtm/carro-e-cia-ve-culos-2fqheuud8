@@ -39,6 +39,7 @@ import {
   EyeOff,
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
+import { usePermissoes } from '@/hooks/use-permissoes'
 import { despublicarDeTodasPlataformas } from '@/services/plataformas'
 import VehicleFormModal from './VehicleFormModal'
 import { VehicleQuickViewModal } from '@/components/admin/VehicleQuickViewModal'
@@ -54,6 +55,7 @@ const STATUS_MAP: Record<string, string> = {
 }
 
 export default function AdminEstoque() {
+  const { nivel } = usePermissoes()
   const [searchParams, setSearchParams] = useSearchParams()
   const [vehicles, setVehicles] = useState<any[]>([])
   const [search, setSearch] = useState('')
@@ -629,15 +631,17 @@ export default function AdminEstoque() {
                           <Power className="w-4 h-4" />
                         </Button>
                       )}
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleDelete(v.id)}
-                        className="text-red-600 hover:bg-red-50"
-                        title="Excluir Veículo"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
+                      {nivel === 'admin_master' && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleDelete(v.id)}
+                          className="text-red-600 hover:bg-red-50"
+                          title="Excluir Veículo"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      )}
                     </div>
                   </TableCell>
                 </TableRow>

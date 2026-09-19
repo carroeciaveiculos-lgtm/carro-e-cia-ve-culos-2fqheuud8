@@ -9,7 +9,7 @@ precisar reler o histórico inteiro de conversas. Diferente do
 pra ser mantido em dia de verdade. Detalhe técnico por integração continua
 nos arquivos `docs/*.md` — aqui é só o resumo de estado + pendências.
 
-Última atualização: 2026-09-19 (sessão 25 — corrigido: ícones do manifest PWA do `/admin`, empate de marca e paginação no NaPista, card de sincronização travado em "Erro", linhas duplicadas em `estoque_publicacoes`; Jaguar F-Pace e Chery Tiggo 8 publicados de verdade em NaPista/Webmotors/Mercado Livre; novo `docs/ferramentas-claude-mcp.md`).
+Última atualização: 2026-09-19 (sessão 25 — corrigido: ícones do manifest PWA do `/admin`, empate de marca e paginação no NaPista, card de sincronização travado em "Erro", 3 telas que não pegavam a linha mais recente de `estoque_publicacoes` (dashboard, relatório, monitor de conversão), botão excluir veículo restrito a `admin_master`; Jaguar F-Pace e Chery Tiggo 8 publicados de verdade em NaPista/Webmotors/Mercado Livre; novo `docs/ferramentas-claude-mcp.md`).
 
 ## Sessão 25 (19/09/2026) — pendências de portal resolvidas de ponta a ponta, 2 bugs sistêmicos achados e corrigidos
 
@@ -32,10 +32,17 @@ nos arquivos `docs/*.md` — aqui é só o resumo de estado + pendências.
    - **Jaguar F-Pace** (`c0c2b087-0efd-426e-9b04-22fd584b386d`): publicado em NaPista, Webmotors (Vip - M) e Mercado Livre.
    - **Chery Tiggo 8** (`8b9f57fd-fc2f-483d-9397-991600da9a43`): publicado em NaPista, Webmotors e Mercado Livre.
 
-7. **Novo documento**: `docs/ferramentas-claude-mcp.md` — referência de quais ferramentas MCP/API eu tenho pra esse projeto (conector Supabase read-only x write, como chamar Edge Function via SQL, quando precisa do navegador de verdade, timeout de 5s do `net.http_post`, gotchas do `deploy_edge_function`). Apontado no índice do `CLAUDE.md`.
+7. **Novo documento**: `docs/ferramentas-claude-mcp.md` — referência de quais ferramentas MCP/API eu tenho pra esse projeto (conector Supabase read-only x write, como chamar Edge Function via SQL, quando precisa do navegador de verdade, timeout de 5s do `net.http_post`, gotchas do `deploy_edge_function`, checar `verify_jwt` antes de tentar). Apontado no índice do `CLAUDE.md`.
 
-**Em aberto, não corrigido nesta sessão**:
-- `estoque_publicacoes` continua sem constraint única em (veiculo_id, platform) — linhas duplicadas continuam se acumulando a cada sincronização (o código faz "busca 1, se achar atualiza, senão insere", e quando já existem duplicatas o `.maybeSingle()` provavelmente falha e cai no insert, piorando). O fix desta sessão contorna na leitura, não resolve a causa. Precisaria de migration (constraint + limpeza das duplicatas existentes) — decisão maior, não tomada sem falar com a Adriana antes.
+8. **`estoque_publicacoes` com linhas duplicadas — decisão da Adriana: é proposital** (histórico de tentativas, não 1 linha por estado atual — confirma o que uma sessão anterior, 14/09/2026, já tinha registrado em `despublicar-veiculo/index.ts`). Não fiz migration nem constraint. Em vez disso, auditei todo lugar que lê a tabela e achei **3 outras telas** com o mesmo erro de pegar "qualquer linha" em vez de "a mais recente", corrigidas:
+   - `fetchDashboard` (`plataformas.ts`) — contadores de "ativos/erros/pendentes" contavam linha por linha (inflava número). Bônus: os status filtrados (`published`/`ativo`/`pending`/`agendado`) nunca foram escritos de verdade na tabela — os reais são `publicado`/`error`/`pending_create`/`pending_update`/`pending_close`. Corrigido os dois.
+   - `RelatorioEstoque.tsx` — marcava "publicado" se o veículo JÁ teve uma linha publicada algum dia, mesmo com tentativa mais recente em erro/despublicada.
+   - `ConversionMonitor.tsx` — contava lead/venda por linha, não por veículo (um carro com 3 linhas contava 3x). Confirmado ao vivo: "Vendidos" caiu de 30 pra 14 (número real) depois do fix.
+   - **Não mexido** (correto como está, é histórico de propósito): `ErrorHistoryPanel.tsx` mostra toda tentativa de erro em ordem cronológica — é um log, não um status atual.
+
+9. **Falso alarme, causa real identificada — aba de navegador com código antigo em cache.** A Adriana reportou os cards do Jaguar (NaPista/Webmotors) ainda em "Erro" depois do fix do item 5. Reconferi ao vivo em produção (não local) e os cards já mostravam "Publicado" corretamente. Confirmei também na API real da Webmotors (`wm-catalog-fetch`, `catalogo: estoque_atual`) que o anúncio (`CodigoAnuncio 79831140`) está lá de verdade, `CodigoRetorno 500` (sucesso). Pedi pra ela dar Ctrl+Shift+R na aba — resolveu. **Causa**: like SPA, o JS já carregado na aba não se atualiza sozinho depois de um deploy; só recarregamento completo baixa o bundle novo. **Padrão a aplicar sempre que reportarem um bug de UI logo depois de eu ter publicado um fix**: perguntar/checar se a aba foi recarregada de verdade antes de investigar mais fundo.
+
+10. **Botão "Excluir Veículo" (`Estoque.tsx`) restrito a `admin_master`** — pedido da Adriana, 19/09/2026: só ela pode usar. Implementado com `usePermissoes()` (`nivel === 'admin_master'`), mesmo padrão já usado em `Ajuda.tsx` pra restringir edição de conteúdo. **Limitação real, não resolvida**: é só esconder o botão na tela — a policy de RLS em `veiculos` pra `DELETE` está com `qual: true` (**qualquer usuário autenticado pode excluir via API direta hoje**, mesmo sem o botão). Pra restringir de verdade, precisaria de policy nova — não fiz sem perguntar (é migration em produção, regra do `CLAUDE.md`).
 
 ## Sessão 23 (continuação, 18/09/2026) — bundle aplicado, bug real de envio no CRM achado (não corrigido), WABA em investigação (travada por permissão, corrigida)
 
