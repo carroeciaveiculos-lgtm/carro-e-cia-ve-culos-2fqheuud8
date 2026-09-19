@@ -43,7 +43,7 @@ async function contarConvitesVisita(leadId: string): Promise<number> {
   return (data || []).filter((m: any) => PADRAO_CONVITE_VISITA.test(m.message_text || '')).length
 }
 
-async function getSystemPrompt(leadId?: string) {
+async function getSystemPrompt(leadId?: string, veiculoInteresse?: string | null) {
   // Fonte única (19/09/2026, plano "prompt único e seguro"): antes havia um
   // fallback pra social_configuracoes.ai_system_prompt, campo órfão marcado
   // como "(Legado)" na tela de Configurações — nunca mais deve influenciar a
@@ -106,11 +106,21 @@ async function getSystemPrompt(leadId?: string) {
       ? `\nATENÇÃO: você já convidou esse cliente pra visitar a loja/fazer test-drive ${convitesJaFeitos}x nesta conversa. NÃO convide de novo, a não ser que o próprio cliente pergunte sobre visitar ou já tenha topado. Continue a conversa normalmente sem repetir o convite.`
       : ''
 
+  // 19/09/2026 (achado em auditoria: veiculo_interesse é gravado certinho
+  // pro canal clique-pra-WhatsApp em receive-leads, mas continue_conversation
+  // nunca lia essa coluna nem passava pro prompt -- a saudação personalizada
+  // da seção "Lead de anúncio" só funcionava pra leads de formulário
+  // (init_conversation), nunca pra clique-pra-WhatsApp). Só um fato a mais
+  // pro modelo decidir como/quando usar, igual avisoConvite.
+  const notaVeiculoAnuncio = veiculoInteresse
+    ? `\nEste lead já demonstrou interesse no veículo "${veiculoInteresse}" (veio de um anúncio ou já foi indicado antes). Se ainda não citou esse veículo nesta conversa, mencione-o na sua resposta (ver seção "Lead de anúncio Meta/Google Ads" do fluxo) — não pergunte "qual veículo você procura", você já sabe.`
+    : ''
+
   return `${basePrompt}${memoryContext}
 Data e hora atuais (horário de Brasília): ${agoraBR}. Use isso pra calcular datas relativas como "amanhã", "sexta-feira" etc — nunca invente uma data sem se basear nisso. Ao chamar agendar_visita, sempre mande data_hora em ISO 8601 com o fuso de Brasília (-03:00).
 ${waNumber ? `O número oficial de WhatsApp da loja é: ${waNumber}. Se for necessário enviar um link direto, use https://wa.me/${waNumber}` : ''}
 Ferramentas disponíveis: use consultar_estoque pra verificar veículos disponíveis antes de falar sobre eles; use agendar_visita quando o cliente confirmar dia e horário de visita/avaliação; use salvar_email_lead assim que o cliente informar um e-mail em qualquer momento da conversa, mesmo que já tenha lead criado; use enviar_midia_veiculo quando fizer sentido mandar foto ou vídeo de um veículo específico já consultado (chame no máximo 1 vez por veículo por resposta — nunca repita se o cliente só reforçar o mesmo pedido em seguida); use solicitar_atendimento_humano quando o lead estiver qualificado e pronto pra avançar, ou pedir explicitamente para falar com uma pessoa; use atualizar_estagio_lead pra refletir o andamento da conversa no funil, reavaliar a temperatura (frio/morno/quente) sempre que o interesse do lead mudar, e SEMPRE que identificar qual veículo (marca/modelo/ano) o cliente quer — mesmo que ele já tenha mencionado isso logo na primeira mensagem (ex: veio de um anúncio de um carro específico) — chame com veiculo_interesse assim que confirmar qual é, e de novo se o cliente trocar de interesse no meio da conversa. Depois que o cliente já demonstrou interesse num veículo específico, chame atualizar_estagio_lead de novo com forma_pagamento (à vista, financiamento, ou troca — com carro de valor menor ou maior que o veículo de interesse) assim que ele mencionar como pretende pagar, e veiculo_troca_descricao se ele descrever o carro que vai dar de entrada. Ao chamar criar_lead_crm, escolha o tipo com cuidado — se o cliente disser que quer seguro do carro, consórcio, financiamento ou consignação, use tipo seguro_auto/consorcio/financiamento/consignacao: isso encaminha automaticamente o lead pro responsável (Gabriel pra seguro, equipe de consórcio, Roberto Junior pra financiamento e consignação), então avise o cliente que alguém vai entrar em contato em breve. Se o lead já existir (a conversa já está rolando, não é um cadastro novo) e o cliente pedir um desses assuntos, use atualizar_estagio_lead com tipo_interesse_especial em vez de criar_lead_crm — dispara o mesmo aviso automático e encerra sua participação nesse atendimento.
-REGRA CRÍTICA: nunca diga "agendado", "confirmado" ou "marcado" sem ANTES ter chamado a função correspondente (ex: agendar_visita) na mesma resposta — se a data/horário ainda não estiver 100% definida, pergunte de novo em vez de dar a confirmação por feita.${avisoConvite}`
+REGRA CRÍTICA: nunca diga "agendado", "confirmado" ou "marcado" sem ANTES ter chamado a função correspondente (ex: agendar_visita) na mesma resposta — se a data/horário ainda não estiver 100% definida, pergunte de novo em vez de dar a confirmação por feita.${avisoConvite}${notaVeiculoAnuncio}`
 }
 
 // Execução de verdade das funções que o Gemini decide chamar — corrigido em
@@ -575,8 +585,9 @@ async function runGemini(
   history: Array<{ role: 'user' | 'model'; text: string }>,
   novaMensagem: string,
   leadId: string,
+  veiculoInteresse?: string | null,
 ) {
-  const systemPrompt = await getSystemPrompt(leadId)
+  const systemPrompt = await getSystemPrompt(leadId, veiculoInteresse)
   const todosResultados: Array<{ name: string; result: any }> = []
   let contextoAtual = novaMensagem
   let historicoAtual = history
@@ -724,7 +735,7 @@ Deno.serve(async (req) => {
 
       const { data: lead } = await supabase
         .from('leads')
-        .select('id, nome, telefone, ai_enabled')
+        .select('id, nome, telefone, ai_enabled, veiculo_interesse')
         .eq('id', lead_id)
         .maybeSingle()
       if (!lead) {
@@ -785,7 +796,7 @@ Deno.serve(async (req) => {
             text: h.message_text,
           }))
 
-        const aiRes = await runGemini(history, mensagem, lead.id)
+        const aiRes = await runGemini(history, mensagem, lead.id, lead.veiculo_interesse)
 
         await supabase
           .from('conversation_history')

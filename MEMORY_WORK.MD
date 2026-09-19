@@ -60,6 +60,8 @@ nos arquivos `docs/*.md` — aqui é só o resumo de estado + pendências.
    - Commitado (`git`) — falta o `push` (perguntar separado, como sempre).
    - **Não fiz**: a parte maior do item 4 (agrupar mensagens em rajada antes de mandar pro Gemini, mudança de arquitetura) — só o reforço de prompt.
 
+7. **Item 3 corrigido: veículo do anúncio agora chega pro prompt no canal clique-pra-WhatsApp** (v171) — `receive-leads` já gravava `leads.veiculo_interesse` certinho pra esse canal, mas `continue_conversation` (`ai-sdr/index.ts`) nunca lia essa coluna nem passava pro prompt. Corrigido: `getSystemPrompt`/`runGemini` ganharam parâmetro `veiculoInteresse`, e o handler `continue_conversation` agora seleciona `veiculo_interesse` do lead e repassa — vira um fato dinâmico no prompt (`notaVeiculoAnuncio`, mesmo padrão do `avisoConvite`), o modelo decide se/quando citar. `init_conversation` (Lead Ads) não precisou mudar, já funcionava via `initText`.
+
 **Aprendido nesta sessão, vale repetir**: nunca colocar um telefone de parceiro novo num handoff automático sem confirmar com a pessoa antes (caso Roberto) — a autorização da Adriana pro número não é o mesmo que o parceiro saber que vai começar a receber leads automáticos.
 
 ## Sessão 25 (19/09/2026) — pendências de portal resolvidas de ponta a ponta, 2 bugs sistêmicos achados e corrigidos
