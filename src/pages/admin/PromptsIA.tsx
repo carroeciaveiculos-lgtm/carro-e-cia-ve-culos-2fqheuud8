@@ -9,6 +9,7 @@ import {
   AlertTriangle,
   Maximize2,
   BrainCircuit,
+  History,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Textarea } from '@/components/ui/textarea'
@@ -16,6 +17,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Separator } from '@/components/ui/separator'
+import { ScrollArea } from '@/components/ui/scroll-area'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
   Dialog,
@@ -29,8 +31,10 @@ import {
   fetchAIPrompts,
   updateAIPrompt,
   restoreDefaultPrompt,
+  fetchPromptHistorico,
   DEPENDENTES_ASSISTENTE_INTERNO,
   type AIPromptConfig,
+  type PromptHistoricoEntry,
 } from '@/services/ai-prompts'
 import { BrainIAPanel } from '@/components/admin/BrainIAPanel'
 
@@ -87,6 +91,10 @@ export default function PromptsIAPage() {
   const [saving, setSaving] = useState<string | null>(null)
   const [restoring, setRestoring] = useState<string | null>(null)
   const [clarModalOpen, setClaraModalOpen] = useState(false)
+  const [historicoSlug, setHistoricoSlug] = useState<string | null>(null)
+  const [historico, setHistorico] = useState<PromptHistoricoEntry[]>([])
+  const [loadingHistorico, setLoadingHistorico] = useState(false)
+  const [restaurandoVersao, setRestaurandoVersao] = useState<string | null>(null)
 
   const loadPrompts = useCallback(async () => {
     setLoading(true)
@@ -140,6 +148,36 @@ export default function PromptsIAPage() {
       toast.error(`Erro ao restaurar: ${err?.message}`)
     } finally {
       setRestoring(null)
+    }
+  }
+
+  const handleOpenHistorico = async (slug: string) => {
+    setHistoricoSlug(slug)
+    setLoadingHistorico(true)
+    try {
+      const data = await fetchPromptHistorico(slug)
+      setHistorico(data)
+    } catch (err: any) {
+      toast.error(`Erro ao carregar histórico: ${err?.message}`)
+    } finally {
+      setLoadingHistorico(false)
+    }
+  }
+
+  const handleRestoreVersao = async (slug: string, entry: PromptHistoricoEntry) => {
+    setRestaurandoVersao(entry.id)
+    try {
+      await updateAIPrompt(slug, entry.prompt_text_anterior)
+      setEditing((prev) => ({ ...prev, [slug]: entry.prompt_text_anterior }))
+      setPrompts((prev) =>
+        prev.map((p) => (p.slug === slug ? { ...p, prompt_text: entry.prompt_text_anterior } : p)),
+      )
+      toast.success('Versão anterior restaurada!')
+      setHistoricoSlug(null)
+    } catch (err: any) {
+      toast.error(`Erro ao restaurar versão: ${err?.message}`)
+    } finally {
+      setRestaurandoVersao(null)
     }
   }
 
@@ -207,10 +245,16 @@ export default function PromptsIAPage() {
               <span className="text-xs text-muted-foreground">
                 {(editing[prompt.slug] || '').length} caracteres no total
               </span>
-              <Button variant="outline" size="sm" onClick={() => setClaraModalOpen(true)}>
-                <Maximize2 className="h-3.5 w-3.5 mr-1.5" />
-                Abrir editor completo
-              </Button>
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" onClick={() => handleOpenHistorico(prompt.slug)}>
+                  <History className="h-3.5 w-3.5 mr-1.5" />
+                  Ver histórico
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => setClaraModalOpen(true)}>
+                  <Maximize2 className="h-3.5 w-3.5 mr-1.5" />
+                  Abrir editor completo
+                </Button>
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -289,6 +333,10 @@ export default function PromptsIAPage() {
               {(editing[prompt.slug] || '').length} caracteres
             </span>
             <div className="flex gap-2">
+              <Button variant="outline" size="sm" onClick={() => handleOpenHistorico(prompt.slug)}>
+                <History className="h-3.5 w-3.5 mr-1.5" />
+                Ver histórico
+              </Button>
               <Button
                 variant="outline"
                 size="sm"
@@ -409,6 +457,14 @@ export default function PromptsIAPage() {
           <DialogFooter>
             <Button
               variant="outline"
+              onClick={() => claraPrompt && handleOpenHistorico(claraPrompt.slug)}
+              disabled={!claraPrompt}
+            >
+              <History className="h-3.5 w-3.5 mr-1.5" />
+              Ver histórico
+            </Button>
+            <Button
+              variant="outline"
               onClick={() => claraPrompt && handleRestore(claraPrompt.slug)}
               disabled={!claraPrompt || restoring === claraPrompt.slug}
             >
@@ -435,6 +491,63 @@ export default function PromptsIAPage() {
               Salvar
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!historicoSlug} onOpenChange={(open) => !open && setHistoricoSlug(null)}>
+        <DialogContent className="max-w-2xl max-h-[80vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle>Histórico de versões</DialogTitle>
+            <DialogDescription>
+              Últimas 20 versões salvas dessa regra. Restaurar uma versão aqui salva ela como a
+              atual (e também vira uma nova entrada no histórico, então dá pra desfazer de novo se
+              precisar).
+            </DialogDescription>
+          </DialogHeader>
+          {loadingHistorico ? (
+            <div className="space-y-2">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <Skeleton key={i} className="h-16 w-full" />
+              ))}
+            </div>
+          ) : historico.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              Nenhuma edição registrada ainda para esta regra.
+            </p>
+          ) : (
+            <ScrollArea className="flex-1 max-h-[55vh]">
+              <div className="space-y-3 pr-3">
+                {historico.map((entry) => (
+                  <div key={entry.id} className="border rounded-lg p-3">
+                    <div className="flex items-center justify-between gap-2 mb-2">
+                      <span className="text-xs text-muted-foreground">
+                        {new Date(entry.alterado_em).toLocaleString('pt-BR')}
+                      </span>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={restaurandoVersao === entry.id}
+                        onClick={() =>
+                          historicoSlug && handleRestoreVersao(historicoSlug, entry)
+                        }
+                      >
+                        {restaurandoVersao === entry.id ? (
+                          <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+                        ) : (
+                          <RotateCcw className="h-3.5 w-3.5 mr-1.5" />
+                        )}
+                        Restaurar esta versão
+                      </Button>
+                    </div>
+                    <p className="text-xs text-muted-foreground font-mono whitespace-pre-wrap max-h-24 overflow-hidden">
+                      {entry.prompt_text_anterior.slice(0, 300)}
+                      {entry.prompt_text_anterior.length > 300 ? '...' : ''}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </ScrollArea>
+          )}
         </DialogContent>
       </Dialog>
     </div>

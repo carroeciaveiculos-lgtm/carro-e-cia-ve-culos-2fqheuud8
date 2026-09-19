@@ -14,6 +14,14 @@ export interface AIPromptConfig {
   rodape_fixo: string | null
 }
 
+export interface PromptHistoricoEntry {
+  id: string
+  slug: string
+  prompt_text_anterior: string
+  alterado_por: string | null
+  alterado_em: string
+}
+
 // Slugs que hoje leem 'ai_assistant' como base quando não têm regra
 // própria configurada (gerar-conteudo/index.ts, customPrompt fallback).
 // Lista mantida manualmente -- se um botão novo passar a depender do
@@ -50,4 +58,19 @@ export async function restoreDefaultPrompt(slug: string): Promise<void> {
     .update({ prompt_text: data.default_prompt, updated_at: new Date().toISOString() })
     .eq('slug', slug)
   if (error) throw error
+}
+
+// Lista as versões anteriores gravadas automaticamente pelo gatilho
+// registrar_historico_ai_prompt (19/09/2026) -- usada pela tela pra montar
+// o painel "Ver histórico" e permitir restaurar uma versão específica sem
+// precisar pedir ajuda pra alguém mexer direto no banco.
+export async function fetchPromptHistorico(slug: string): Promise<PromptHistoricoEntry[]> {
+  const { data, error } = await supabase
+    .from('ai_prompts_historico')
+    .select('*')
+    .eq('slug', slug)
+    .order('alterado_em', { ascending: false })
+    .limit(20)
+  if (error) throw error
+  return (data || []) as PromptHistoricoEntry[]
 }

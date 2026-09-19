@@ -44,20 +44,18 @@ async function contarConvitesVisita(leadId: string): Promise<number> {
 }
 
 async function getSystemPrompt(leadId?: string) {
-  const { data } = await supabase
-    .from('social_configuracoes')
-    .select('ai_system_prompt, whatsapp_number')
-    .maybeSingle()
-
+  // Fonte única (19/09/2026, plano "prompt único e seguro"): antes havia um
+  // fallback pra social_configuracoes.ai_system_prompt, campo órfão marcado
+  // como "(Legado)" na tela de Configurações — nunca mais deve influenciar a
+  // Clara, mesmo que alguém preencha ele por engano lá. O único fallback que
+  // resta é o texto mínimo abaixo, só pro caso raro de a linha sdr_whatsapp
+  // sumir do banco.
   const { data: promptConfig } = await supabase
     .from('ai_prompts_config')
     .select('prompt_text')
     .eq('slug', 'sdr_whatsapp')
     .maybeSingle()
-  const basePrompt =
-    promptConfig?.prompt_text ||
-    data?.ai_system_prompt ||
-    'Você é a Clara, SDR digital da Carro e Cia Motors.'
+  const basePrompt = promptConfig?.prompt_text || 'Você é a Clara, SDR digital da Carro e Cia Motors.'
   // Fixo (14/08/2026, regra da Adriana): antes lia whatsapp_number do
   // social_configuracoes, que guarda o celular pessoal dela (usado pros
   // alertas internos de agendamento/relatório) — a Clara estava se
