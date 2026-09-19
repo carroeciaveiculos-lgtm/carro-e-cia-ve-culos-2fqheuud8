@@ -9,7 +9,33 @@ precisar reler o histórico inteiro de conversas. Diferente do
 pra ser mantido em dia de verdade. Detalhe técnico por integração continua
 nos arquivos `docs/*.md` — aqui é só o resumo de estado + pendências.
 
-Última atualização: 2026-09-18 (sessão 23 continuação — bundle da PWA aplicado e **mesclado em `main`**, bug real de feedback de envio achado no chat do CRM, investigação de WABA/conta de anúncios concluída).
+Última atualização: 2026-09-19 (sessão 25 — corrigido: ícones do manifest PWA do `/admin`, empate de marca e paginação no NaPista, card de sincronização travado em "Erro", linhas duplicadas em `estoque_publicacoes`; Jaguar F-Pace e Chery Tiggo 8 publicados de verdade em NaPista/Webmotors/Mercado Livre; novo `docs/ferramentas-claude-mcp.md`).
+
+## Sessão 25 (19/09/2026) — pendências de portal resolvidas de ponta a ponta, 2 bugs sistêmicos achados e corrigidos
+
+**Contexto**: começou como "por que o Jaguar/Tiggo 8 não publicam no NaPista" e virou uma sequência de causas raiz reais, cada uma corrigida e testada ao vivo (não só lida no código).
+
+1. **Ícone do manifest PWA do `/admin` não-quadrado** (`public/admin-manifest.json`) — Cloudflare Images com `fit=contain` encolhe a logo mantendo proporção, não preenche até o tamanho quadrado declarado (ícone "192x192" era na real 192x50). Chrome exige ícone quadrado pra oferecer o botão de instalar. Trocado pra `fit=pad`. Commitado e publicado.
+
+2. **NaPista: marca empatada escolhia a errada** (`napista-mapear-veiculo/index.ts`) — "CHERY" e "CAOA CHERY" batem score 1 (empate) pro texto de marca "Caoa Chery/Chery" do nosso cadastro; o código pegava `marcaMatches[0]` sem olhar empate, ordem não é garantida. O Tiggo 8 só existe cadastrado sob "CHERY" — se caísse em "CAOA CHERY", ficava preso pra sempre. Corrigido testando o modelo em todas as marcas empatadas (mesmo padrão já usado pra modelo empatado na etapa de versão, casos Hilux/Volvo XC60 de sessões anteriores). Publicado (v29), testado ao vivo.
+
+3. **NaPista: paginação do catálogo cortava resultados** (`napista-sync-catalogo/index.ts`) — `/models` sem `?size=` vinha truncado (Chery: 13 de 16 modelos reais, faltava justo o Tiggo 8). Todo `napistaFetch` de lista agora força `size=100`. Publicado — **1 solavanco no deploy**: v22 quebrou o boot da function (erro de bundle/cache do próprio `deploy_edge_function`, corrigido reordenando o arquivo e publicando de novo, v23 ficou boa — ver `docs/ferramentas-claude-mcp.md`).
+
+4. **Webmotors do Jaguar travado**: faltava `codigo_modalidade_wm` em `wm_mapeamento_veiculos` (nunca tinha sido definido). Setado pra "Super Acelerador Vip - M" (a Adriana confirmou qual das duas modalidades "VIP" do catálogo real é a certa — a tela só mostra uma opção genérica "VIP", mas por baixo existem duas linhas diferentes em `wm_modalidades`).
+
+5. **Card de sincronização (`Portais.tsx`) preso em "Erro" mesmo depois de sincronizar com sucesso** — dois bugs juntos, achados testando ao vivo no navegador:
+   - `handleSync` nunca buscava `estoque_publicacoes` de novo depois de sincronizar — corrigido com `finally` chamando `fetchPublicacoes` pro veículo.
+   - `estoque_publicacoes` **acumula linhas antigas** por veículo+plataforma (não atualiza no lugar) — a tela pegava a primeira linha que achasse, não a mais recente. Corrigido em `portais-sync.ts` (`fetchPublicacoes`), ordenando por `updated_at desc` e descartando duplicatas na leitura. **Causa raiz não corrigida** (item em aberto abaixo).
+   - Confirmado ao vivo: Jaguar publicado de verdade no NaPista e na Webmotors durante o teste (autorizado pela Adriana), card atualizou sozinho sem recarregar a página.
+
+6. **Resultado final, confirmado via `estoque_publicacoes`/`sync_log` (não pelos ícones da tela)**:
+   - **Jaguar F-Pace** (`c0c2b087-0efd-426e-9b04-22fd584b386d`): publicado em NaPista, Webmotors (Vip - M) e Mercado Livre.
+   - **Chery Tiggo 8** (`8b9f57fd-fc2f-483d-9397-991600da9a43`): publicado em NaPista, Webmotors e Mercado Livre.
+
+7. **Novo documento**: `docs/ferramentas-claude-mcp.md` — referência de quais ferramentas MCP/API eu tenho pra esse projeto (conector Supabase read-only x write, como chamar Edge Function via SQL, quando precisa do navegador de verdade, timeout de 5s do `net.http_post`, gotchas do `deploy_edge_function`). Apontado no índice do `CLAUDE.md`.
+
+**Em aberto, não corrigido nesta sessão**:
+- `estoque_publicacoes` continua sem constraint única em (veiculo_id, platform) — linhas duplicadas continuam se acumulando a cada sincronização (o código faz "busca 1, se achar atualiza, senão insere", e quando já existem duplicatas o `.maybeSingle()` provavelmente falha e cai no insert, piorando). O fix desta sessão contorna na leitura, não resolve a causa. Precisaria de migration (constraint + limpeza das duplicatas existentes) — decisão maior, não tomada sem falar com a Adriana antes.
 
 ## Sessão 23 (continuação, 18/09/2026) — bundle aplicado, bug real de envio no CRM achado (não corrigido), WABA em investigação (travada por permissão, corrigida)
 

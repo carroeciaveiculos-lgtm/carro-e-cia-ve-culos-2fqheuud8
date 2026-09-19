@@ -154,6 +154,9 @@ falhou; ao descobrir algo novo, acrescente lá com data e fonte.
   regras e becos sem saída de reparo de histórico
 - `docs/sessoes-cloud-git-push.md` — por que commits de sessão cloud/celular
   ficam presos sem upstream, como identificar e como resolver
+- `docs/ferramentas-claude-mcp.md` — conectores MCP do Supabase (read-only x
+  write), como chamar Edge Function direto do SQL, quando precisa do
+  navegador, timeout do `net.http_post`, gotchas de `deploy_edge_function`
 
 ## Migrations
 
