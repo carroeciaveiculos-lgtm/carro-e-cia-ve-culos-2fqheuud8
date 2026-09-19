@@ -31,8 +31,17 @@ Project ref: `htpcqdbhktmvppfemnad`.
 
 ## Chamar Edge Function direto do SQL (sem passar pelo frontend)
 
-Padrão pra testar/disparar uma function sem esperar a tela: `net.http_post`
-dentro de `execute_sql` (conector com write, ver acima).
+**Antes de tentar, confira `verify_jwt` da function** — não descubra pelo
+erro. `get_edge_function` (MCP) ou `docs/edge-functions-rules.md` dizem: se
+for `true`, `net.http_post` **sempre** vai falhar com
+`UNAUTHORIZED_NO_AUTH_HEADER`, não importa o header que eu mande — pule
+direto pra seção do navegador, abaixo. Achado 19/09/2026: tentei `wm-sync`
+via SQL sem checar antes, recebi o erro, só aí percebi — devia ter olhado
+primeiro.
+
+Se for `false`, o padrão pra testar/disparar uma function sem esperar a
+tela é `net.http_post` dentro de `execute_sql` (conector com write, ver
+acima).
 
 ```sql
 select net.http_post(
