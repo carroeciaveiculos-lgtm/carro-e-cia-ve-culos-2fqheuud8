@@ -9,7 +9,58 @@ precisar reler o histórico inteiro de conversas. Diferente do
 pra ser mantido em dia de verdade. Detalhe técnico por integração continua
 nos arquivos `docs/*.md` — aqui é só o resumo de estado + pendências.
 
-Última atualização: 2026-09-19 (sessão 25 — corrigido: ícones do manifest PWA do `/admin`, empate de marca e paginação no NaPista, card de sincronização travado em "Erro", 3 telas que não pegavam a linha mais recente de `estoque_publicacoes` (dashboard, relatório, monitor de conversão), botão excluir veículo restrito a `admin_master`; Jaguar F-Pace e Chery Tiggo 8 publicados de verdade em NaPista/Webmotors/Mercado Livre; novo `docs/ferramentas-claude-mcp.md`).
+Última atualização: 2026-09-19 (sessão 26 — Clara com prompt único e seguro no banco (histórico de versões + restaurar), auditoria de 10 conversas reais achou 4 problemas, novo prompt da Adriana implantado verbatim, financiamento/consignação com encaminhamento automático real (lead novo e existente) pro Roberto Junior).
+
+## Sessão 26 (19/09/2026) — Clara: prompt único e seguro, auditoria de 10 conversas reais, handoff automático de financiamento/consignação
+
+**Contexto**: pedido da Adriana pra unificar o prompt da Clara (só um lugar real, editável por ela, sem risco de quebrar nada), auditar problemas reais nas últimas conversas, e depois implantar um prompt novo e mais completo que ela mesma escreveu — verificando tarefa por tarefa se já existe integração real no sistema.
+
+1. **Prompt único e seguro** — diagnóstico achou 5 "prompts" concorrentes pra Clara: `prompt_text` real, `default_prompt` quebrado (stub de 121 caracteres), `social_configuracoes.ai_system_prompt` órfão (fallback esquecido, tinha o celular pessoal da Adriana), fallback hardcoded no código, e `docs/clara-prompt.md` desatualizado. Corrigido:
+   - Migration `20260919140000_ai_prompts_historico.sql`: tabela `ai_prompts_historico` + gatilho (`registrar_historico_ai_prompt`, `before update`) que grava a versão anterior de `prompt_text` toda vez que muda de verdade; `default_prompt` do `sdr_whatsapp` consertado (virou cópia do texto real, não mais um stub).
+   - Migration `20260919140100_ai_prompts_config_rls_escrita.sql`: escrita na tabela restrita a `admin_master`/setor "Desenvolvedor e TI" (leitura continua livre — confirmado que as 9 functions que leem essa tabela só fazem `select`, nenhuma escreve, então apertar só a escrita foi seguro).
+   - `/admin/prompts-ia`: painel novo "Ver histórico" + "Restaurar esta versão" em cada card (inclusive o da Clara) — **testado ao vivo ponta a ponta**: editar → salvar → aparece no histórico com data/hora → restaurar → vira uma nova entrada (dá pra desfazer de novo).
+   - `ai-sdr/index.ts`: removido o fallback órfão pra `social_configuracoes.ai_system_prompt` — o campo continua existindo e editável em Configurações (rotulado "Legado"), só não influencia mais a Clara.
+   - `docs/clara-prompt.md`: virou cópia de leitura com aviso no topo ("fonte real é o banco, não editar aqui"), notas de changelog removidas do meio do texto.
+
+2. **Auditoria das últimas 10 conversas reais da Clara** (leads + `conversation_history` + `logs_integracao`/`logs_ia`) — 4 problemas distintos achados, com evidência real (2 conversas não tinham nada de errado, não forcei defeito):
+   - **Mensagem vazia** enviada ao cliente quando o veículo pedido não existe no estoque (Luiz Octávio, "pajero full 2 portas") — `MAX_RODADAS_FUNCOES` esgota sem checar se a resposta final veio vazia. **Não corrigido ainda.**
+   - **"Vou encaminhar pro financiamento" sem nenhuma ação real por trás** (Lázaro/HB20X — deu CPF/nascimento/CNH, cobrou 5x em 4 dias, venda perdida confirmada: "fiquei quase uma semana esperando, ninguém me falou nada"). **Corrigido nesta sessão**, ver item 4.
+   - **Mesma foto reenviada 5+ vezes** na mesma conversa, até fora de contexto (mesmo lead Lázaro, perguntou sobre status e recebeu fotos de novo). **Não corrigido** — a regra existe só no texto do prompt, sem garantia técnica no código.
+   - **Regra de "responder pergunta direta primeiro" falha com mensagens em rajada** — cliente (Ricardo/SW4) mandou 2 perguntas em mensagens separadas, 12s de intervalo; Clara ignorou as duas na primeira resposta. **Não corrigido.**
+
+3. **Novo prompt da Clara (escrito pela Adriana, 19/09/2026) implantado verbatim** — 34.615 caracteres, texto exato dela, sem nenhuma alteração. Antes de implantar, auditoria tarefa-por-tarefa confirmou: página `/trabalhe-conosco` existe e envia currículo real pro RH via Resend; `re-engagement-cron` (que faria o follow-up 24h/48h/7d da seção 13) existe mas está **pausado desde 24/08/2026** (`REENGAJAMENTO_PAUSADO = true` — template de WhatsApp nunca foi aprovado pela Meta) e a lógica de prazos dele nem bate com a pedida no prompt novo; veículo de anúncio Meta/Google Ads pré-preenchido (seção 8.1.1) funciona só parcialmente — Lead Ads (formulário) sim, clique-pra-WhatsApp direto não popula `veiculo_interesse`; coluna `tipo` de `leads` é texto livre no banco (sem enum/constraint), aceita qualquer valor sem precisar de migration; nenhuma das 6 métricas da seção "Indicadores de Sucesso" (16) existe hoje em nenhum relatório.
+
+4. **Financiamento e consignação: encaminhamento automático implementado de verdade** (fechava o problema #2 do item 2 acima):
+   - `PARCEIROS_ENCAMINHAMENTO` (`ai-sdr/index.ts`) ganhou `financiamento`/`consignacao` → Roberto Junior (`5534992893615`, mesmo contato do rodapé do site em `src/lib/brand.ts`, confirmado pela Adriana).
+   - `criar_lead_crm`: os 4 tipos (seguro_auto/consorcio/financiamento/consignacao) já disparam handoff automático — antes só 2 (seguro/consórcio).
+   - **Extensão nova**: campo `tipo_interesse_especial` em `atualizar_estagio_lead` (e em `CRM_FUNCTIONS`, `_shared/gemini-client.ts`), pra cobrir o caso mais comum na prática — lead que **já existe** (a maioria das conversas reais da Clara), não um cadastro novo. Antes o handoff só existia dentro de `criar_lead_crm` (lead novo), então o caso real do Lázaro provavelmente continuaria quebrado sem essa extensão.
+   - Deploy em produção (`ai-sdr` v168 e v169), commitado (`aedd49f`, `ef45840`) e pushado.
+   - **Pendente real, não fechado**: não testei ao vivo ainda (dispararia WhatsApp de verdade pro Roberto) — combinado com a Adriana deixar isso pra depois dela confirmar com ele que pode começar a receber esses avisos automáticos.
+
+5. **Pendências consolidadas da Clara** (auditoria tarefa-por-tarefa do prompt novo, o que falta pra tudo funcionar de verdade):
+
+   **Ajustes pequenos, ainda não feitos:**
+   - Mensagem vazia quando estoque não acha o veículo (item 2) — checar `aiRes.text` vazio antes de enviar/salvar, usar o fallback que o próprio prompt já define.
+   - Prevenção técnica de mídia/texto duplicado (item 2) — hoje só existe como instrução de prompt, sem checagem real no código antes de reenviar.
+   - Veículo de anúncio não populado no canal clique-pra-WhatsApp (item 3) — ajustar `receive-leads`.
+   - Regra de prioridade falhando com mensagens em rajada (item 2) — reforçar no prompt + (mudança maior) agrupar mensagens que chegam em poucos segundos antes de mandar pro Gemini.
+
+   **Implementações novas, ainda não feitas:**
+   - Captura estruturada de dados de seguro/consórcio (nascimento, tipo de seguro, valor do bem, parcela, prazo — seções 10.9/10.10 do prompt novo) — plano de baixo custo: gravar em `observacoes` por ora, sem migration; só criar coluna se precisar de relatório/filtro depois.
+   - Registro de objeção do cliente no CRM (seção 11) — mesmo caminho de baixo custo, `observacoes`.
+   - Follow-up automatizado 24h/48h/7 dias (seção 13) — `re-engagement-cron` existe mas está pausado com lógica diferente da pedida; projeto à parte, depende de reaprovar template de WhatsApp junto à Meta.
+   - Dashboard de indicadores de sucesso (seção 16) — nenhuma das 6 métricas existe; é relatório novo, não é ajuste de prompt.
+   - "Setor no CRM" mencionado em várias seções do prompt — não existe coluna; recomendação registrada: não criar, usar `tipo` (texto livre) que já cobre a mesma necessidade.
+   - "Candidato a vaga" separado de lead comercial (seção 10.8) — já funciona na prática (`tipo` aceita qualquer valor sem migration), só falta confirmar isso em uso real.
+
+6. **3 primeiros itens da lista de pendências corrigidos e implantados** (v170):
+   - Mensagem vazia quando o estoque não acha o veículo — `textoOuFallback()` em `runGemini` (`ai-sdr/index.ts`), usa a mesma frase que o prompt já pede ("Deixe-me verificar com nosso estoque em tempo real...") sempre que a resposta final do modelo vier vazia.
+   - Mídia duplicada — `enviar_midia_veiculo` agora grava um marcador interno (`sender='internal_note'`, `message_text='midia_enviada:{veiculo_id}'` em `conversation_history` — nunca aparece pro modelo, já é filtrado) e checa esse marcador antes de reenviar; se já mandou, devolve aviso pro modelo em vez de mandar de novo.
+   - Regra de prioridade com mensagens em rajada — reforço de uma frase no `prompt_text` (seção "Entendendo a necessidade", via `UPDATE ... SET prompt_text = replace(...)`, sem reenviar o texto inteiro): "Isso vale mesmo se o cliente mandar as perguntas em mensagens separadas, em sequência rápida — releia todas as mensagens recentes dele antes de responder". Histórico gravou a versão anterior automaticamente (34.615 → 34.822 caracteres).
+   - Commitado (`git`) — falta o `push` (perguntar separado, como sempre).
+   - **Não fiz**: a parte maior do item 4 (agrupar mensagens em rajada antes de mandar pro Gemini, mudança de arquitetura) — só o reforço de prompt.
+
+**Aprendido nesta sessão, vale repetir**: nunca colocar um telefone de parceiro novo num handoff automático sem confirmar com a pessoa antes (caso Roberto) — a autorização da Adriana pro número não é o mesmo que o parceiro saber que vai começar a receber leads automáticos.
 
 ## Sessão 25 (19/09/2026) — pendências de portal resolvidas de ponta a ponta, 2 bugs sistêmicos achados e corrigidos
 

@@ -275,6 +275,31 @@ async function executeFunction(name: string, args: any, leadId: string): Promise
 
   if (name === 'enviar_midia_veiculo') {
     if (!args.veiculo_id) return { error: 'veiculo_id obrigatório' }
+
+    // 19/09/2026 (achado em auditoria de conversas reais: mesma foto do
+    // HB20X reenviada 5+ vezes na mesma conversa, até fora de contexto). A
+    // regra "não repita" só existia como instrução de prompt, sem garantia
+    // técnica. Marca um registro interno (sender='internal_note' -- nunca
+    // aparece pro modelo no histórico da conversa, ver filtro em
+    // continue_conversation) toda vez que envia com sucesso, e checa aqui
+    // antes de mandar de novo.
+    const marcadorMidia = `midia_enviada:${args.veiculo_id}`
+    const { data: jaEnviado } = await supabase
+      .from('conversation_history')
+      .select('id')
+      .eq('lead_id', leadId)
+      .eq('sender', 'internal_note')
+      .eq('message_text', marcadorMidia)
+      .limit(1)
+      .maybeSingle()
+    if (jaEnviado) {
+      return {
+        ja_enviado: true,
+        aviso:
+          'Mídia desse veículo já foi enviada nesta conversa. NÃO envie de novo — avise o cliente que já mandou antes e ofereça outra informação ou próximo passo.',
+      }
+    }
+
     const { data: veiculo, error } = await supabase
       .from('veiculos')
       .select('marca, modelo, fotos, videos, placa')
@@ -303,6 +328,11 @@ async function executeFunction(name: string, args: any, leadId: string): Promise
         body: { action: 'video', to: lead.telefone, documentUrl: url, leadId, origem: 'clara' },
       })
       if (!res.error) enviados++
+    }
+    if (enviados > 0) {
+      await supabase
+        .from('conversation_history')
+        .insert({ lead_id: leadId, sender: 'internal_note', message_text: marcadorMidia })
     }
     return { enviados, total: fotos.length + videos.length }
   }
@@ -527,6 +557,20 @@ async function alertarSePossivelConfirmacaoSemAcao(
     )
 }
 
+// 19/09/2026 (achado em auditoria de conversas reais, lead Luiz Octávio
+// perguntando por uma marca que a loja não vende): quando o modelo esgota as
+// rodadas de function-calling sem conseguir responder de verdade, a resposta
+// final às vezes vem vazia — e isso ia direto pro cliente como mensagem em
+// branco. Fallback usa a mesma frase que o próprio prompt já pede pra esse
+// cenário (seção "Acesso ao estoque").
+const MENSAGEM_FALLBACK_ESTOQUE = 'Deixe-me verificar com nosso estoque em tempo real e já te retorno! 🚗'
+
+function textoOuFallback(texto: string): string {
+  if (texto && texto.trim()) return texto
+  console.error('Resposta da Clara veio vazia, usando fallback de estoque.')
+  return MENSAGEM_FALLBACK_ESTOQUE
+}
+
 async function runGemini(
   history: Array<{ role: 'user' | 'model'; text: string }>,
   novaMensagem: string,
@@ -547,7 +591,7 @@ async function runGemini(
 
     if (result.functionCalls.length === 0) {
       await alertarSePossivelConfirmacaoSemAcao(result.text, todosResultados, leadId)
-      return { text: result.text, functionResults: todosResultados }
+      return { text: textoOuFallback(result.text), functionResults: todosResultados }
     }
 
     const rodadaResultados = await Promise.all(
@@ -569,7 +613,7 @@ async function runGemini(
     history: historicoAtual,
   })
   await alertarSePossivelConfirmacaoSemAcao(followUp.text, todosResultados, leadId)
-  return { text: followUp.text, functionResults: todosResultados }
+  return { text: textoOuFallback(followUp.text), functionResults: todosResultados }
 }
 
 // enviarComoAudio (26/08/2026, pedido da Adriana): a Clara só responde por
