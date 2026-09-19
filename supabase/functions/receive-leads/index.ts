@@ -201,6 +201,33 @@ Deno.serve(async (req: Request) => {
                     getField('vehicle') || getField('interesse') || getField('produto') || ''
                   const cleanTelefone = leadTelefoneRaw.replace(/\D/g, '')
 
+                  // 19/09/2026 (achado: se o formulário do anúncio tiver
+                  // pergunta customizada além das 4 conhecidas -- ex: "melhor
+                  // horário pra contato", "cidade", "forma de pagamento" --
+                  // a Meta manda esse dado de verdade em field_data, mas só
+                  // lemos os 4 nomes fixos acima, o resto era descartado em
+                  // silêncio. Guarda o que sobrar em notas_internas, pra não
+                  // perder informação que o cliente já respondeu no anúncio.
+                  const CAMPOS_JA_LIDOS = [
+                    'full_name',
+                    'name',
+                    'phone_number',
+                    'phone',
+                    'email',
+                    'vehicle',
+                    'interesse',
+                    'produto',
+                  ]
+                  const camposExtras = fieldData.filter(
+                    (f: any) => !CAMPOS_JA_LIDOS.includes(f.name),
+                  )
+                  const notasCamposExtras =
+                    camposExtras.length > 0
+                      ? `[Lead Ads — outras respostas do formulário]\n${camposExtras
+                          .map((f: any) => `${f.name}: ${(f.values || []).join(', ')}`)
+                          .join('\n')}`
+                      : null
+
                   const { data: existingLeads } = await supabase
                     .from('leads')
                     .select('id')
@@ -223,6 +250,7 @@ Deno.serve(async (req: Request) => {
                         status: 'novo',
                         temperatura: 'quente',
                         campanha: 'facebook_lead_ads',
+                        notas_internas: notasCamposExtras,
                       })
                       .select()
                       .single()
@@ -397,6 +425,14 @@ Deno.serve(async (req: Request) => {
                   mensagemParaClara = transcricao
                     ? transcricao
                     : '[o cliente enviou um áudio, mas não consegui entender o que foi dito]'
+                } else if (msg.type === 'interactive' && msg.interactive?.button_reply) {
+                  // 19/09/2026 — resposta a um botão de resposta rápida
+                  // (enviar_opcoes_rapidas, ai-sdr). Trata o título do botão
+                  // como se o cliente tivesse digitado ele mesmo — não
+                  // precisa de lógica nova na Clara pra entender.
+                  const tituloBotao = msg.interactive.button_reply.title || ''
+                  messageTextBruto = tituloBotao
+                  mensagemParaClara = tituloBotao
                 } else if (msg.type && msg.type !== 'text') {
                   // Outros tipos (vídeo, documento, figurinha, localização...)
                   // ainda não têm tratamento dedicado, mas não podem mais

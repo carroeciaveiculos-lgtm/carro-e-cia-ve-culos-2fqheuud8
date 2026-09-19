@@ -181,6 +181,24 @@ export const CRM_FUNCTIONS = [
     },
   },
   {
+    name: 'enviar_opcoes_rapidas',
+    description:
+      'Envia uma pergunta com até 3 botões de resposta rápida pro cliente tocar em vez de digitar. Use quando fizer sentido oferecer escolhas curtas e objetivas (ex: "manhã ou tarde?", "visita ou mais fotos primeiro?"). Cada opção precisa caber em até 20 caracteres (limite do WhatsApp) — se não conseguir resumir nisso, não use esta função, pergunte em texto normal.',
+    parameters: {
+      type: 'OBJECT',
+      properties: {
+        lead_id: { type: 'STRING' },
+        texto: { type: 'STRING', description: 'A pergunta ou contexto que aparece acima dos botões' },
+        opcoes: {
+          type: 'ARRAY',
+          items: { type: 'STRING' },
+          description: 'De 2 a 3 opções curtas (máximo 20 caracteres cada) pro cliente escolher tocando',
+        },
+      },
+      required: ['lead_id', 'texto', 'opcoes'],
+    },
+  },
+  {
     name: 'enviar_midia_veiculo',
     description:
       'Enviar fotos e/ou video de um veiculo do estoque pelo WhatsApp para o lead. IMPORTANTE: só chame esta funcao DEPOIS de ja ter o veiculo_id real, devolvido por uma chamada anterior de consultar_estoque nesta mesma conversa — nunca invente ou suponha um veiculo_id. Se ainda nao consultou o estoque, chame consultar_estoque primeiro e espere o resultado antes de enviar midia.',

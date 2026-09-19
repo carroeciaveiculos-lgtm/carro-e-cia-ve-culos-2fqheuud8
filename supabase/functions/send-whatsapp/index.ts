@@ -25,7 +25,7 @@ Deno.serve(async (req) => {
 
   try {
     const payload = await req.json()
-    const { action, to, templateName, components, documentUrl, filename, text, leadId } = payload
+    const { action, to, templateName, components, documentUrl, filename, text, leadId, buttons } = payload
     // origem declara quem está chamando esta function, pra gravar o sender
     // certo no histórico e decidir se desliga a Clara pro lead (ver abaixo).
     // Default 'sistema' é a opção mais segura pra chamada antiga sem esse
@@ -84,6 +84,34 @@ Deno.serve(async (req) => {
         link: documentUrl,
         caption: text || '',
       }
+    } else if (action === 'buttons') {
+      // 19/09/2026 — botões de resposta rápida (até 3, título de até 20
+      // caracteres cada, limite do próprio WhatsApp). A resposta do cliente
+      // chega como mensagem tipo 'interactive'/button_reply — tratada em
+      // receive-leads/index.ts como se fosse texto normal (o título do
+      // botão vira a mensagem), pra não precisar de lógica nova na Clara.
+      body.type = 'interactive'
+      body.interactive = {
+        type: 'button',
+        body: { text: text || '' },
+        action: {
+          buttons: (Array.isArray(buttons) ? buttons : []).slice(0, 3).map((label: string, i: number) => ({
+            type: 'reply',
+            reply: { id: `opt_${i}`, title: String(label).slice(0, 20) },
+          })),
+        },
+      }
+    } else if (action === 'location') {
+      // 19/09/2026 — pin de localização real, em vez de só endereço em
+      // texto. Genérico (recebe lat/long por parâmetro) -- nenhuma
+      // coordenada fixa aqui, pra nunca mandar pin errado sem confirmação.
+      body.type = 'location'
+      body.location = {
+        latitude: payload.latitude,
+        longitude: payload.longitude,
+        name: payload.locationName || '',
+        address: payload.locationAddress || '',
+      }
     } else {
       body.type = 'text'
       body.text = { body: text }
@@ -115,6 +143,16 @@ Deno.serve(async (req) => {
       // pra foto recebida do cliente, pra ConversationPanel.tsx renderizar
       // os dois lados da conversa igual.
       if (action === 'image') msgText = `[IMAGEM]${documentUrl}${text ? '\n' + text : ''}`
+      // 19/09/2026 — mesmo espírito: grava as opções junto do texto, pra
+      // quem olhar o histórico depois entender que era uma pergunta com
+      // botões, não texto solto.
+      if (action === 'buttons') {
+        const opcoes = Array.isArray(buttons) ? buttons.join(' | ') : ''
+        msgText = `${text || ''}${opcoes ? `\n[Opções: ${opcoes}]` : ''}`
+      }
+      if (action === 'location') {
+        msgText = `[Localização enviada]${payload.locationName ? ` ${payload.locationName}` : ''}`
+      }
 
       // Achado 17/09/2026: antes desta correção, todo envio por aqui gravava
       // sender:'human' sem checar quem chamou — a foto/vídeo de veículo que
@@ -131,7 +169,9 @@ Deno.serve(async (req) => {
       // conversa, desliga a Clara pra esse lead. Foto/documento/template
       // avulsos do mesmo atendente NÃO desligam (decisão da Adriana,
       // 17/09/2026) — só resposta de texto conta.
-      const ehTextoLivre = !['template', 'document', 'image', 'video'].includes(action)
+      const ehTextoLivre = !['template', 'document', 'image', 'video', 'buttons', 'location'].includes(
+        action,
+      )
       if (origem === 'atendente' && ehTextoLivre) {
         const { error: aiOffError } = await supabase
           .from('leads')
