@@ -184,6 +184,50 @@ async function executeFunction(name: string, args: any, leadId: string): Promise
     if (isNaN(dataParsed.getTime()) || dataParsed.getTime() < Date.now() - 60 * 60 * 1000) {
       return { error: `data_hora inválida ou no passado: ${dataHora}. Confirme a data certa com o cliente e tente de novo.` }
     }
+
+    // 19/09/2026 (capacidade real confirmada pela Adriana: até 6 visitas por
+    // dia, no máximo 3 pela manhã e 3 à tarde). Antes a Clara agendava sem
+    // checar se o período já estava cheio, podendo empilhar clientes na
+    // mesma janela. Brasil não tem mais horário de verão desde 2019, então
+    // -03:00 é fixo o ano todo -- não precisa de lib de timezone.
+    const OFFSET_BRASILIA_MS = 3 * 60 * 60 * 1000
+    const dataLocal = new Date(dataParsed.getTime() - OFFSET_BRASILIA_MS)
+    const periodo = dataLocal.getUTCHours() < 12 ? 'manha' : 'tarde'
+    const inicioPeriodoLocal = Date.UTC(
+      dataLocal.getUTCFullYear(),
+      dataLocal.getUTCMonth(),
+      dataLocal.getUTCDate(),
+      periodo === 'manha' ? 0 : 12,
+      0,
+      0,
+      0,
+    )
+    const fimPeriodoLocal = Date.UTC(
+      dataLocal.getUTCFullYear(),
+      dataLocal.getUTCMonth(),
+      dataLocal.getUTCDate(),
+      periodo === 'manha' ? 11 : 23,
+      59,
+      59,
+      999,
+    )
+    const inicioPeriodoUTC = new Date(inicioPeriodoLocal + OFFSET_BRASILIA_MS).toISOString()
+    const fimPeriodoUTC = new Date(fimPeriodoLocal + OFFSET_BRASILIA_MS).toISOString()
+
+    const LIMITE_POR_PERIODO = 3
+    const { count: agendadosNoPeriodo } = await supabase
+      .from('agendamentos_visita')
+      .select('id', { count: 'exact', head: true })
+      .eq('status', 'agendado')
+      .gte('data_hora', inicioPeriodoUTC)
+      .lte('data_hora', fimPeriodoUTC)
+
+    if ((agendadosNoPeriodo || 0) >= LIMITE_POR_PERIODO) {
+      return {
+        error: `Já temos ${LIMITE_POR_PERIODO} visitas confirmadas na ${periodo === 'manha' ? 'manhã' : 'tarde'} desse dia — a loja não comporta mais nesse período. Ofereça outro período (${periodo === 'manha' ? 'tarde' : 'manhã'}) ou outro dia pro cliente.`,
+      }
+    }
+
     const { data, error } = await supabase
       .from('agendamentos_visita')
       .insert({
