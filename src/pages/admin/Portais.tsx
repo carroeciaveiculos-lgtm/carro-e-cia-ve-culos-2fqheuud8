@@ -20,7 +20,7 @@ import {
 } from '@/services/plataformas'
 import { getTiersForPlatform } from '@/lib/platform-tiers'
 import { fetchPublicacoes } from '@/services/portais-sync'
-import { syncVehicleToPlatform, batchSyncVehicles } from '@/services/sync-plataforma'
+import { syncVehicleToPlatform } from '@/services/sync-plataforma'
 import { triggerWMSync } from '@/services/wm-sync'
 import { supabase } from '@/lib/supabase/client'
 import { useAuth } from '@/hooks/use-auth'
@@ -51,10 +51,14 @@ const SLUG_MAP: Record<string, keyof VeiculoSync> = {
   napista: 'publicado_napista',
 }
 
-// OLX, iCarros e Napista não têm edge function nem fila de sincronização real
-// ainda (12/08/2026, ver relatório) — só marcam uma flag interna. Não incluir
-// aqui até existir integração de verdade.
-const PLATAFORMAS_COM_SYNC_REAL = ['webmotors', 'mercadolivre']
+// OLX e iCarros não têm edge function nem fila de sincronização real ainda
+// (12/08/2026, ver relatório) — só marcam uma flag interna. NaPista ganhou
+// sync real em 14/08/2026 (napista-sync) — tirado da lista de "sem sync"
+// nessa data, mas essa constante ficou esquecida sem o slug até 19/09/2026
+// (achado ao lado do bug do botão "Sincronizar Selecionados" abaixo, que
+// tinha o mesmo tipo de esquecimento: só rodava mercadolivre). Não incluir
+// OLX/iCarros aqui até existir integração de verdade.
+const PLATAFORMAS_COM_SYNC_REAL = ['webmotors', 'mercadolivre', 'napista']
 
 export default function Portais() {
   const { toast } = useToast()
@@ -67,6 +71,9 @@ export default function Portais() {
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(true)
   const [syncing, setSyncing] = useState(false)
+  const [syncProgress, setSyncProgress] = useState<{ current: number; total: number; label: string } | null>(
+    null,
+  )
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [sortBy, setSortBy] = useState('marca_modelo')
   const [preflightOpen, setPreflightOpen] = useState(false)
@@ -194,19 +201,58 @@ export default function Portais() {
 
     try {
       const ids = [...selectedIds]
-      const result = await batchSyncVehicles(ids, 'mercadolivre')
+      // Achado 19/09/2026 (pedido da Adriana): "Sincronizar Selecionados" só
+      // rodava Mercado Livre — batchSyncVehicles mandava 'mercadolivre' fixo,
+      // e a function no servidor (sync-plataforma) recusa qualquer outra
+      // plataforma. Agora roda todas as PLATAFORMAS_COM_SYNC_REAL pra cada
+      // veículo selecionado, reaproveitando o mesmo caminho do botão
+      // individual de cada card (executarSyncPlataforma).
+      //
+      // Achado testando ao vivo: `vehicles` é só a lista carregada pro filtro
+      // atual da tela — se a Adriana trocar a busca/filtro depois de marcar
+      // um veículo (fluxo normal: marca um, busca outro, marca de novo), o
+      // veículo já selecionado some de `vehicles` e o nome caía pro ID cru
+      // (UUID) no progresso e no modal de falha. Busca o nome de todos os
+      // selecionados direto no banco antes de começar, independente do que
+      // estiver carregado na tela naquele momento.
+      const { data: nomesSelecionados } = await supabase
+        .from('veiculos')
+        .select('id, marca, modelo')
+        .in('id', ids)
+      const nomePorId = new Map(
+        (nomesSelecionados || []).map((v) => [v.id, `${v.marca} ${v.modelo}`]),
+      )
 
-      const failures: SyncFailure[] = result.results
-        .map((r, i) => {
-          const v = vehicles.find((v) => v.id === ids[i])
-          return {
-            vehicleId: ids[i],
-            vehicleName: v ? `${v.marca} ${v.modelo}` : ids[i],
-            error: r.success ? '' : r.message,
+      const failures: SyncFailure[] = []
+      let successCount = 0
+      let failCount = 0
+      const totalPasso = ids.length * PLATAFORMAS_COM_SYNC_REAL.length
+      let passoAtual = 0
+
+      for (const id of ids) {
+        const nomeVeiculo = nomePorId.get(id) || id
+        for (const slug of PLATAFORMAS_COM_SYNC_REAL) {
+          const nomePlataforma = plataformas.find((p) => p.slug === slug)?.nome || slug
+          passoAtual++
+          setSyncProgress({
+            current: passoAtual,
+            total: totalPasso,
+            label: `${nomeVeiculo} — ${nomePlataforma}`,
+          })
+          const result = await executarSyncPlataforma(slug, id, true)
+          if (result.success) {
+            successCount++
+          } else {
+            failCount++
+            failures.push({
+              vehicleId: id,
+              vehicleName: `${nomeVeiculo} — ${nomePlataforma}`,
+              error: result.message,
+            })
           }
-        })
-        .filter((f) => f.error)
-
+          await new Promise((r) => setTimeout(r, 2000))
+        }
+      }
       if (failures.length > 0) {
         setSyncFailures(failures)
         setFailureModalOpen(true)
@@ -214,7 +260,7 @@ export default function Portais() {
 
       toast({
         title: 'Sincronização concluída',
-        description: `${result.successCount} sucesso, ${result.failCount} falha(s)`,
+        description: `${successCount} sucesso, ${failCount} falha(s) em ${PLATAFORMAS_COM_SYNC_REAL.length} plataformas`,
       })
       setSelectedIds(new Set())
       loadVeiculos()
@@ -226,6 +272,7 @@ export default function Portais() {
       })
     } finally {
       setSyncing(false)
+      setSyncProgress(null)
     }
   }
 
@@ -427,6 +474,7 @@ export default function Portais() {
         activePortalFilter={activePortalFilter}
         onPortalFilter={setActivePortalFilter}
         syncing={syncing}
+        syncProgress={syncProgress}
       />
 
       {mlErrors.length > 0 && (

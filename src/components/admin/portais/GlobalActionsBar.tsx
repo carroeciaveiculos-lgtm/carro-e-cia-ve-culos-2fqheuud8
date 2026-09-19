@@ -15,6 +15,7 @@ interface Props {
   activePortalFilter: string | null
   onPortalFilter: (slug: string | null) => void
   syncing: boolean
+  syncProgress?: { current: number; total: number; label: string } | null
 }
 
 export function GlobalActionsBar({
@@ -28,6 +29,7 @@ export function GlobalActionsBar({
   activePortalFilter,
   onPortalFilter,
   syncing,
+  syncProgress,
 }: Props) {
   return (
     <div className="bg-white rounded-lg border p-3 space-y-3">
@@ -62,19 +64,28 @@ export function GlobalActionsBar({
           </label>
         </div>
 
-        <Button
-          size="sm"
-          onClick={onBulkSync}
-          disabled={selectedCount === 0 || syncing}
-          className="h-8 bg-[#0D47A1] hover:bg-[#0B3E8F]"
-        >
-          {syncing ? (
-            <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
-          ) : (
-            <Zap className="w-3.5 h-3.5 mr-1.5" />
+        <div className="flex flex-col gap-0.5">
+          <Button
+            size="sm"
+            onClick={onBulkSync}
+            disabled={selectedCount === 0 || syncing}
+            className="h-8 bg-[#0D47A1] hover:bg-[#0B3E8F]"
+          >
+            {syncing ? (
+              <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+            ) : (
+              <Zap className="w-3.5 h-3.5 mr-1.5" />
+            )}
+            {syncing && syncProgress
+              ? `Sincronizando ${syncProgress.current}/${syncProgress.total}`
+              : 'Sincronizar Selecionados'}
+          </Button>
+          {syncing && syncProgress && (
+            <span className="text-[10px] text-gray-500 max-w-[220px] truncate">
+              {syncProgress.label}
+            </span>
           )}
-          Sincronizar Selecionados
-        </Button>
+        </div>
 
         <Button
           variant="outline"

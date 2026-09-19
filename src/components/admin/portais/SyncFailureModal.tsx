@@ -34,7 +34,8 @@ export function SyncFailureModal({ open, onOpenChange, failures }: Props) {
         <ScrollArea className="max-h-[400px]">
           <div className="space-y-3">
             <p className="text-sm text-muted-foreground">
-              {failures.length} veículo(s) falharam durante a sincronização:
+              {failures.length} tentativa(s) de sincronização falharam (um veículo pode
+              aparecer mais de uma vez, uma por plataforma):
             </p>
             {failures.map((f) => (
               <div key={f.vehicleId} className="border rounded-lg p-3 bg-red-50">
