@@ -210,7 +210,7 @@ Deno.serve(async (req: Request) => {
     const { data: marcaMatches } = await supabase.rpc('match_napista_marca', {
       texto_busca: veiculo.marca || '',
     })
-    const melhorMarca = marcaMatches?.[0]
+    let melhorMarca = marcaMatches?.[0]
     const confiancaMarca = melhorMarca?.score ?? 0
 
     if (!melhorMarca || confiancaMarca < LIMIAR_CONFIANCA) {
@@ -249,11 +249,41 @@ Deno.serve(async (req: Request) => {
       if (modeloAlias) modeloMatches = [{ id: modeloAlias.id, nome: modeloAlias.nome, score: 1 }]
     }
     if (!modeloMatches) {
-      const { data } = await supabase.rpc('match_napista_modelo', {
-        texto_busca: textoModeloCompleto,
-        p_marca_id: melhorMarca.id,
-      })
-      modeloMatches = data
+      // Achado 18/09/2026 (caso real: Chery Tiggo 8): a marca também pode
+      // empatar no catálogo NaPista — "CHERY" e "CAOA CHERY" bateram score 1
+      // pro nosso texto "Caoa Chery/Chery", e pegar marcaMatches[0] é
+      // arbitrário (a ordem do empate não é garantida). O Tiggo 8 só existe
+      // cadastrado sob "CHERY"; se a marca escolhida tivesse sido "CAOA
+      // CHERY", o veículo ficaria preso em revisão pra sempre mesmo com o
+      // modelo certo existindo no catálogo. Mesma ideia já usada abaixo pra
+      // modelo empatado na etapa de versão: testa TODAS as marcas empatadas
+      // no topo e fica com a que realmente achar o modelo.
+      const marcasEmpatadas = (marcaMatches || []).filter((m: any) => m.score === confiancaMarca)
+      if (marcasEmpatadas.length > 1) {
+        let melhorResultadoMarca: { marca: any; modeloMatches: any[] | null } = {
+          marca: melhorMarca,
+          modeloMatches: null,
+        }
+        for (const marcaCandidata of marcasEmpatadas) {
+          const { data } = await supabase.rpc('match_napista_modelo', {
+            texto_busca: textoModeloCompleto,
+            p_marca_id: marcaCandidata.id,
+          })
+          const scoreAtual = data?.[0]?.score ?? 0
+          const scoreMelhorAtual = melhorResultadoMarca.modeloMatches?.[0]?.score ?? -1
+          if (scoreAtual > scoreMelhorAtual) {
+            melhorResultadoMarca = { marca: marcaCandidata, modeloMatches: data }
+          }
+        }
+        melhorMarca = melhorResultadoMarca.marca
+        modeloMatches = melhorResultadoMarca.modeloMatches
+      } else {
+        const { data } = await supabase.rpc('match_napista_modelo', {
+          texto_busca: textoModeloCompleto,
+          p_marca_id: melhorMarca.id,
+        })
+        modeloMatches = data
+      }
     }
     let melhorModelo = modeloMatches?.[0]
     const confiancaModelo = melhorModelo?.score ?? 0

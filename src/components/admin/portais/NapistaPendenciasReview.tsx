@@ -7,6 +7,7 @@ import {
   fetchNapistaPendencias,
   confirmarMapeamentoNapista,
   remapearVeiculoNapista,
+  sincronizarCatalogoMarcaNapista,
   motivoPendenciaNapista,
   type NapistaPendencia,
 } from '@/services/plataformas'
@@ -74,6 +75,22 @@ export function NapistaPendenciasReview() {
         variant: res.success ? 'default' : 'destructive',
       })
       if (res.success) await load()
+    } finally {
+      setActingFor(veiculoId, false)
+    }
+  }
+
+  const handleSincronizarCatalogo = async (veiculoId: string, marcaId: string) => {
+    setActingFor(veiculoId, true)
+    try {
+      const res = await sincronizarCatalogoMarcaNapista(marcaId)
+      if (!res.success) {
+        toast({ title: 'Erro ao sincronizar catálogo', description: res.error, variant: 'destructive' })
+        return
+      }
+      toast({ title: `Catálogo atualizado (${res.total ?? 0} modelo(s)) — tentando mapear de novo...` })
+      await remapearVeiculoNapista(veiculoId)
+      await load()
     } finally {
       setActingFor(veiculoId, false)
     }
@@ -179,6 +196,36 @@ export function NapistaPendenciasReview() {
                     <span className="text-[10px] text-gray-400">{Math.round((c.score || 0) * 100)}%</span>
                   </Button>
                 ))}
+              </div>
+            )}
+
+            {/* Achado 18/09/2026 (caso real: Jaguar F-Pace e Chery Tiggo 8):
+                modelo sem candidato nenhum quase sempre é o catálogo local
+                (napista_modelos) nunca ter sido sincronizado pra essa marca
+                — marca nova no estoque. "Remapear" sozinho não resolve
+                porque só olha o cache local; por isso o botão aqui chama a
+                sincronização de verdade com a API do NaPista antes. Se depois
+                disso continuar sem candidato, é porque a marca não tem esse
+                modelo cadastrado no catálogo deles mesmo (caso do Tiggo 8). */}
+            {motivo === 'modelo' && p.candidatos_modelo.length === 0 && (
+              <div className="mt-2 space-y-1.5">
+                <p className="text-[10px] text-amber-700">
+                  Catálogo local do NaPista pode estar desatualizado pra essa marca. Sincronize e tente de novo.
+                </p>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="w-full h-7 text-xs"
+                  disabled={isActing || !p.napista_marca_id}
+                  onClick={() => handleSincronizarCatalogo(p.veiculo_id, p.napista_marca_id!)}
+                >
+                  {isActing ? (
+                    <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                  ) : (
+                    <RefreshCw className="w-3 h-3 mr-1" />
+                  )}
+                  Sincronizar catálogo da marca
+                </Button>
               </div>
             )}
 

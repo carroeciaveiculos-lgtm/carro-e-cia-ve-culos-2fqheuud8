@@ -11,6 +11,13 @@ const BASE = 'https://api.napista.com.br/seller-inventory-api'
 // de marcas — diz "/catalog/{category}/make", o real é "/catalog/makes/{category}",
 // plural e ordem trocada). Ver docs/integracao-napista.md, seção "Becos sem saída".
 //
+// Achado real 18/09/2026 (caso Chery Tiggo 8): a API do NaPista pagina as
+// listas de catálogo (makes/models/versions) e ignorava isso — sem parâmetro
+// de tamanho de página, "/models" da Chery devolvia só 13 dos 16 modelos
+// reais (faltava justo o Tiggo 8). Testado ao vivo: mesma chamada com
+// `?size=100` devolve os 16. Todo napistaFetch de lista agora força isso.
+const TAMANHO_PAGINA = 100
+
 // Retry (18/08/2026): achado real — numa sincronização de produção, KIA e
 // VOLKSWAGEN ficaram sem nenhum modelo cacheado (`napista_modelos` vazio pra
 // essas marcas), mesmo a marca tendo sido identificada certa. Testando a
@@ -54,7 +61,7 @@ Deno.serve(async (req: Request) => {
     })
 
     if (action === 'sync_marcas') {
-      const data = await napistaFetch('/catalog/makes/CAR', token)
+      const data = await napistaFetch(`/catalog/makes/CAR?size=${TAMANHO_PAGINA}`, token)
       const marcas = (data.items || []).filter((m: any) => m.id)
       let salvos = 0
       for (const m of marcas) {
@@ -74,7 +81,10 @@ Deno.serve(async (req: Request) => {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
-      const data = await napistaFetch(`/catalog/CAR/make/${encodeURIComponent(marcaId)}/models`, token)
+      const data = await napistaFetch(
+        `/catalog/CAR/make/${encodeURIComponent(marcaId)}/models?size=${TAMANHO_PAGINA}`,
+        token,
+      )
       const modelos = (data.items || []).filter((m: any) => m.id)
       let salvos = 0
       for (const m of modelos) {
@@ -106,7 +116,7 @@ Deno.serve(async (req: Request) => {
       // anúncio rejeita com "versionId invalid for the informed modelYear".
       const yearParam = modelYear ? `&modelYear=${encodeURIComponent(modelYear)}` : ''
       const data = await napistaFetch(
-        `/catalog/versions/CAR?modelId=${encodeURIComponent(modeloId)}${yearParam}`,
+        `/catalog/versions/CAR?modelId=${encodeURIComponent(modeloId)}${yearParam}&size=${TAMANHO_PAGINA}`,
         token,
       )
       const versoes = (data.items || []).filter((v: any) => v.id)
@@ -153,7 +163,7 @@ Deno.serve(async (req: Request) => {
     // inteiro do NaPista (centenas de marcas). Reduz drasticamente as
     // chamadas necessárias comparado a sincronizar tudo.
     if (action === 'sync_para_estoque') {
-      const marcasData = await napistaFetch('/catalog/makes/CAR', token)
+      const marcasData = await napistaFetch(`/catalog/makes/CAR?size=${TAMANHO_PAGINA}`, token)
       const marcasNapista: { id: string; name: string }[] = (marcasData.items || []).filter(
         (m: any) => m.id,
       )
@@ -198,7 +208,7 @@ Deno.serve(async (req: Request) => {
         }
         try {
           const modelosData = await napistaFetch(
-            `/catalog/CAR/make/${encodeURIComponent(marcaNapista.id)}/models`,
+            `/catalog/CAR/make/${encodeURIComponent(marcaNapista.id)}/models?size=${TAMANHO_PAGINA}`,
             token,
           )
           const modelosNapista: { id: string; name: string }[] = (modelosData.items || []).filter(
@@ -242,7 +252,7 @@ Deno.serve(async (req: Request) => {
           let totalVersoes = 0
           for (const modeloNapista of modelosCandidatos) {
             const versoesData = await napistaFetch(
-              `/catalog/versions/CAR?modelId=${encodeURIComponent(modeloNapista.id)}${yearParam}`,
+              `/catalog/versions/CAR?modelId=${encodeURIComponent(modeloNapista.id)}${yearParam}&size=${TAMANHO_PAGINA}`,
               token,
             )
             const versoes: { id: string; name: string }[] = (versoesData.items || []).filter(

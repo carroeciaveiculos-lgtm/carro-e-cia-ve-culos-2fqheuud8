@@ -9,9 +9,22 @@ export async function fetchPublicacoes(
     .from('estoque_publicacoes')
     .select('id, veiculo_id, platform, status, erro_msg, publicado_em, updated_at, url_publicacao')
     .in('veiculo_id', veiculoIds)
+    .order('updated_at', { ascending: false })
   if (error || !data) return {}
+  // Achado 19/09/2026 (caso real: Jaguar F-Pace): estoque_publicacoes não
+  // garante uma linha só por veículo+plataforma — sincronizações antigas
+  // (erro) ficam acumuladas junto com a mais recente (sucesso). O card lia
+  // a primeira linha que encontrasse pra cada plataforma, sem olhar pra
+  // data, então podia continuar mostrando um erro de dias atrás mesmo
+  // depois de uma sincronização nova ter dado certo. Ordenado por
+  // updated_at desc acima, então a primeira ocorrência de cada combinação
+  // veiculo+plataforma já é a mais recente — descarta o resto.
+  const vistos = new Set<string>()
   const map: Record<string, PublicacaoStatus[]> = {}
   for (const pub of data as unknown as PublicacaoStatus[]) {
+    const chave = `${pub.veiculo_id}|${pub.platform}`
+    if (vistos.has(chave)) continue
+    vistos.add(chave)
     if (!map[pub.veiculo_id]) map[pub.veiculo_id] = []
     map[pub.veiculo_id].push(pub)
   }

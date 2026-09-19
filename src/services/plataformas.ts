@@ -524,6 +524,24 @@ export async function confirmarMapeamentoNapista(
   return data
 }
 
+// Achado 18/09/2026 (caso real: Jaguar F-Pace e Chery Tiggo 8): quando o
+// veículo trava em "modelo" sem nenhum candidato, o motivo quase sempre é
+// napista_modelos não ter nenhum modelo cacheado pra essa marca ainda (marca
+// nova no estoque, catálogo local desatualizado) — nada a ver com o cadastro
+// do veículo. "Remapear" sozinho não resolve, porque busca só no cache local.
+// Essa function busca os modelos de verdade na API do NaPista pra essa marca
+// e atualiza o cache antes de tentar de novo.
+export async function sincronizarCatalogoMarcaNapista(
+  marcaId: string,
+): Promise<{ success: boolean; total?: number; error?: string }> {
+  const { data, error } = await supabase.functions.invoke('napista-sync-catalogo', {
+    body: { action: 'sync_modelos', marca_id: marcaId },
+  })
+  if (error) return { success: false, error: error.message }
+  if (data?.error) return { success: false, error: data.error }
+  return { success: true, total: data?.total }
+}
+
 export async function remapearVeiculoNapista(
   veiculoId: string,
 ): Promise<{ success: boolean; status?: string; motivo?: string; error?: string }> {

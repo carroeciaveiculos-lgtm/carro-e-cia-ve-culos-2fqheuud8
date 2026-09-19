@@ -251,7 +251,33 @@ export default function Portais() {
       .eq('platform', platform)
   }
 
+  // Achado 18/09/2026: o card de status (PortalCard, badge "Erro"/"Publicado")
+  // lê de veiculo.publicacoes, que é só um retrato tirado uma vez em
+  // loadVeiculos() — handleSync nunca buscava esse dado de novo depois de
+  // sincronizar. O status real no banco (estoque_publicacoes) já tinha
+  // atualizado certinho, mas o card continuava mostrando "Erro" até a
+  // página inteira ser recarregada, mesmo depois de remapear e sincronizar
+  // com sucesso de verdade na plataforma.
+  const refreshPublicacaoVeiculo = async (veiculoId: string) => {
+    const pubMap = await fetchPublicacoes([veiculoId])
+    setVehicles((prev) =>
+      prev.map((v) => (v.id !== veiculoId ? v : { ...v, publicacoes: pubMap[veiculoId] || [] })),
+    )
+  }
+
   const handleSync = async (
+    slug: string,
+    veiculoId: string,
+    publicar: boolean,
+  ): Promise<{ success: boolean; message: string }> => {
+    try {
+      return await executarSyncPlataforma(slug, veiculoId, publicar)
+    } finally {
+      await refreshPublicacaoVeiculo(veiculoId)
+    }
+  }
+
+  const executarSyncPlataforma = async (
     slug: string,
     veiculoId: string,
     publicar: boolean,
