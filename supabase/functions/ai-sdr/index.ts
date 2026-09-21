@@ -145,7 +145,7 @@ async function getSystemPrompt(leadId?: string, veiculoInteresse?: string | null
   return `${basePrompt}${memoryContext}
 Data e hora atuais (horário de Brasília): ${agoraBR}. Use isso pra calcular datas relativas como "amanhã", "sexta-feira" etc — nunca invente uma data sem se basear nisso. Ao chamar agendar_visita, sempre mande data_hora em ISO 8601 com o fuso de Brasília (-03:00).
 ${waNumber ? `O número oficial de WhatsApp da loja é: ${waNumber}. Se for necessário enviar um link direto, use https://wa.me/${waNumber}` : ''}
-Ferramentas disponíveis: use consultar_estoque pra verificar veículos disponíveis antes de falar sobre eles; use agendar_visita quando o cliente confirmar dia e horário de visita/avaliação; use salvar_email_lead assim que o cliente informar um e-mail em qualquer momento da conversa, mesmo que já tenha lead criado; use enviar_midia_veiculo quando fizer sentido mandar foto ou vídeo de um veículo específico já consultado (chame no máximo 1 vez por veículo por resposta — nunca repita se o cliente só reforçar o mesmo pedido em seguida); use enviar_opcoes_rapidas quando fizer sentido oferecer 2-3 escolhas curtas pro cliente tocar em vez de digitar (ex: "manhã ou tarde?"), só quando cada opção couber em até 20 caracteres; use solicitar_atendimento_humano quando o lead estiver qualificado e pronto pra avançar, ou pedir explicitamente para falar com uma pessoa; use atualizar_estagio_lead pra refletir o andamento da conversa no funil, reavaliar a temperatura (frio/morno/quente) sempre que o interesse do lead mudar, e SEMPRE que identificar qual veículo (marca/modelo/ano) o cliente quer — mesmo que ele já tenha mencionado isso logo na primeira mensagem (ex: veio de um anúncio de um carro específico) — chame com veiculo_interesse assim que confirmar qual é, e de novo se o cliente trocar de interesse no meio da conversa. Depois que o cliente já demonstrou interesse num veículo específico, chame atualizar_estagio_lead de novo com forma_pagamento (à vista, financiamento, ou troca — com carro de valor menor ou maior que o veículo de interesse) assim que ele mencionar como pretende pagar, e veiculo_troca_descricao se ele descrever o carro que vai dar de entrada. Ao chamar criar_lead_crm, escolha o tipo com cuidado — se o cliente disser que quer seguro do carro, consórcio, financiamento ou consignação, use tipo seguro_auto/consorcio/financiamento/consignacao: isso encaminha automaticamente o lead pro responsável (Gabriel pra seguro, equipe de consórcio, Roberto Junior pra financiamento e consignação), então avise o cliente que alguém vai entrar em contato em breve. Se o lead já existir (a conversa já está rolando, não é um cadastro novo) e o cliente pedir um desses assuntos, use atualizar_estagio_lead com tipo_interesse_especial em vez de criar_lead_crm — dispara o mesmo aviso automático e encerra sua participação nesse atendimento.
+Ferramentas disponíveis: use consultar_estoque pra verificar veículos disponíveis antes de falar sobre eles; use agendar_visita quando o cliente confirmar dia e horário de visita/avaliação; use salvar_email_lead assim que o cliente informar um e-mail em qualquer momento da conversa, mesmo que já tenha lead criado; use enviar_midia_veiculo quando fizer sentido mandar foto ou vídeo de um veículo específico já consultado (chame no máximo 1 vez por veículo por resposta — nunca repita se o cliente só reforçar o mesmo pedido em seguida); use enviar_opcoes_rapidas quando fizer sentido oferecer 2-3 escolhas curtas pro cliente tocar em vez de digitar (ex: "manhã ou tarde?"), só quando cada opção couber em até 20 caracteres; use enviar_localizacao_loja quando o cliente perguntar o endereço ou como chegar até a loja; use solicitar_atendimento_humano quando o lead estiver qualificado e pronto pra avançar, ou pedir explicitamente para falar com uma pessoa; use atualizar_estagio_lead pra refletir o andamento da conversa no funil, reavaliar a temperatura (frio/morno/quente) sempre que o interesse do lead mudar, e SEMPRE que identificar qual veículo (marca/modelo/ano) o cliente quer — mesmo que ele já tenha mencionado isso logo na primeira mensagem (ex: veio de um anúncio de um carro específico) — chame com veiculo_interesse assim que confirmar qual é, e de novo se o cliente trocar de interesse no meio da conversa. Depois que o cliente já demonstrou interesse num veículo específico, chame atualizar_estagio_lead de novo com forma_pagamento (à vista, financiamento, ou troca — com carro de valor menor ou maior que o veículo de interesse) assim que ele mencionar como pretende pagar, e veiculo_troca_descricao se ele descrever o carro que vai dar de entrada. Ao chamar criar_lead_crm, escolha o tipo com cuidado — se o cliente disser que quer seguro do carro, consórcio, financiamento ou consignação, use tipo seguro_auto/consorcio/financiamento/consignacao: isso encaminha automaticamente o lead pro responsável (Gabriel pra seguro, equipe de consórcio, Roberto Junior pra financiamento e consignação), então avise o cliente que alguém vai entrar em contato em breve. Se o lead já existir (a conversa já está rolando, não é um cadastro novo) e o cliente pedir um desses assuntos, use atualizar_estagio_lead com tipo_interesse_especial em vez de criar_lead_crm — dispara o mesmo aviso automático e encerra sua participação nesse atendimento.
 REGRA CRÍTICA: nunca diga "agendado", "confirmado" ou "marcado" sem ANTES ter chamado a função correspondente (ex: agendar_visita) na mesma resposta — se a data/horário ainda não estiver 100% definida, pergunte de novo em vez de dar a confirmação por feita.${avisoConvite}${notaVeiculoAnuncio}${avisoFrustracao}`
 }
 
@@ -397,6 +397,32 @@ async function executeFunction(name: string, args: any, leadId: string): Promise
       body: { action: 'buttons', to: lead.telefone, text: texto, buttons: opcoes, leadId, origem: 'clara' },
     })
     if (res.error) return { error: res.error.message || 'Falha ao enviar botões' }
+    return { enviado: true }
+  }
+
+  if (name === 'enviar_localizacao_loja') {
+    const { data: lead } = await supabase.from('leads').select('telefone').eq('id', leadId).maybeSingle()
+    if (!lead?.telefone) return { error: 'Lead sem telefone' }
+
+    // Coordenada achada em 19/09/2026 no embed do Google Maps do próprio site
+    // (src/components/home/TestimonialsAndLocation.tsx) — o link já traz o
+    // Place ID da "Carro & Cia Veículos" (não é um centro de mapa genérico),
+    // e bate com o endereço público em src/pages/Contato.tsx. Fixo aqui,
+    // igual ao padrão já usado pra ADRIANA_PHONE/PARCEIROS_ENCAMINHAMENTO —
+    // é a localização física da loja, não muda sem reforma/mudança de sede.
+    const res = await supabase.functions.invoke('send-whatsapp', {
+      body: {
+        action: 'location',
+        to: lead.telefone,
+        leadId,
+        origem: 'clara',
+        latitude: -19.76810008669527,
+        longitude: -47.93268868461794,
+        locationName: 'Carro e Cia Motors',
+        locationAddress: 'Av. Guilherme Ferreira, 1119 - São Benedito, Uberaba - MG',
+      },
+    })
+    if (res.error) return { error: res.error.message || 'Falha ao enviar localização' }
     return { enviado: true }
   }
 

@@ -62,7 +62,7 @@ Deno.serve(async (req) => {
               to: lead.telefone.replace(/\D/g, ''),
               type: 'template',
               template: {
-                name: 'agendamento_reagendar',
+                name: 'visita_reagendar',
                 language: { code: 'pt_BR' },
                 components: [
                   { type: 'body', parameters: [{ type: 'text', text: lead.nome || 'Cliente' }] },

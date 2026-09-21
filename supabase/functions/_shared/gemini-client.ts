@@ -199,6 +199,18 @@ export const CRM_FUNCTIONS = [
     },
   },
   {
+    name: 'enviar_localizacao_loja',
+    description:
+      'Envia o pin de localização real da loja no mapa do WhatsApp (endereço e coordenada fixos). Use quando o cliente perguntar o endereço, onde fica a loja, ou como chegar.',
+    parameters: {
+      type: 'OBJECT',
+      properties: {
+        lead_id: { type: 'STRING' },
+      },
+      required: ['lead_id'],
+    },
+  },
+  {
     name: 'enviar_midia_veiculo',
     description:
       'Enviar fotos e/ou video de um veiculo do estoque pelo WhatsApp para o lead. IMPORTANTE: só chame esta funcao DEPOIS de ja ter o veiculo_id real, devolvido por uma chamada anterior de consultar_estoque nesta mesma conversa — nunca invente ou suponha um veiculo_id. Se ainda nao consultou o estoque, chame consultar_estoque primeiro e espere o resultado antes de enviar midia.',
