@@ -19,16 +19,16 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
     )
 
-    // PAUSADO em 24/08/2026 (achado real, confirmado via logs_integracao): o
-    // template 'reengajamento_frio' usado abaixo NUNCA existiu de verdade na
-    // conta aprovada da Meta — toda tentativa falhava com erro 132001
-    // ("template name does not exist"), silenciosamente, desde sempre. Dois
-    // templates novos (reengajamento_quente, reengajamento_pos_visita) já
-    // foram submetidos pra aprovação da Meta (24/08/2026, status PENDING).
-    // Reative trocando REENGAJAMENTO_PAUSADO pra false E trocando o nome do
-    // template no corpo da função pelo nome aprovado de verdade, assim que a
-    // Meta aprovar.
-    const REENGAJAMENTO_PAUSADO = true
+    // Reativado em 21/09/2026: o achado de 24/08 (template nunca existiu de
+    // verdade na conta aprovada) foi confirmado de novo — os 3 nomes
+    // mencionados no comentário antigo (reengajamento_frio/quente/
+    // pos_visita) nunca chegaram a ser submetidos de fato, apesar do
+    // comentário dizer "PENDING". Submetido agora pra valer:
+    // 'reengajamento_frio' (categoria Marketing, ainda PENDING no momento
+    // desse deploy — Marketing demora mais que Utility pra revisar). O cron
+    // já pode rodar; até a Meta aprovar, o envio falha em silêncio e cai no
+    // catch/log abaixo, sem quebrar nada.
+    const REENGAJAMENTO_PAUSADO = false
     if (REENGAJAMENTO_PAUSADO) {
       return new Response(
         JSON.stringify({
