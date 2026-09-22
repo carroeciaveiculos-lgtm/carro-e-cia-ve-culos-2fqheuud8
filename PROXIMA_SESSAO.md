@@ -6,10 +6,30 @@ Copie e cole como primeira mensagem numa sessão nova do Claude Code.
 Projeto: Carro e Cia Veículos (revenda). Pasta de trabalho:
 C:\Projeto\Revenda Carro e Cia\carro-e-cia-ve-culos-2fqheuud8
 
-Continuando de uma sessão anterior (18/09/2026, sessão 23 continuação —
-bundle da PWA aplicado localmente, bug real achado no chat do CRM, WABA em
-investigação). Leia primeiro MEMORY_WORK.MD, seção "Sessão 23 (continuação,
-18/09/2026)", pro resumo completo. Destaques, nesta ordem de prioridade:
+Continuando de uma sessão anterior (22/09/2026, sessão 27 — cadência de
+reengajamento completa, auditoria de status de lead, catálogo do estoque
+integrado ao WhatsApp, bug real de salvar veículo corrigido, BMW QUW5H72
+publicado em Webmotors+NaPista). Leia primeiro MEMORY_WORK.MD, seção "Sessão
+27 (22/09/2026)", pro resumo completo. Tudo dessa sessão foi fechado e
+confirmado pela Adriana ("tá tudo certo") — não tem bloqueio nem pendência
+urgente. Só de olho, se vier à tona:
+
+1. **`gerar-conteudo-social` às vezes deixa a IA escrever um preâmbulo**
+   ("Aqui está um post persuasivo...") antes do texto de verdade, tanto no
+   botão manual "Gerar com IA" quanto no post orgânico diário automático
+   (`post-organico-diario-cron`, novo, roda 8h BRT). Pré-existente, não
+   corrigido ainda — só ajustar o prompt dessa function se incomodar na
+   prática.
+2. **Lembrete permanente pra toda sessão neste projeto**: `git push` NÃO
+   publica o front-end sozinho — sempre `npm run build` + `npx wrangler
+   deploy` depois de mexer em `src/**`, como pedido de autorização separado
+   (deploy em produção). Isso já estava documentado errado neste mesmo
+   arquivo até 22/09 (dizia "automático") e causou um bug real ficar em
+   produção por horas — ver seção "Deploy — como funciona" abaixo, já
+   corrigida.
+
+**Carregado de sessões mais antigas (18/09 e anteriores) — não confirmado se
+ainda vale, checar antes de agir:**
 
 1. **Confirme que a permissão pegou**: eu tentava rodar
    `mcp__supabase__execute_sql` com `net.http_post` e era barrado pelo
@@ -539,13 +559,10 @@ Clara rodando 3 semanas em produção sem incidente). Não reabrir esses 5.
    estoque, km/revisão/IPVA do anúncio real não batem com o cadastro
    atual, mapeamento sem código salvo. Precisa a Adriana autorizar
    remapear + forçar resync pra esse veículo específico.
-2. **Reativar `re-engagement-cron` quando a Meta aprovar os templates
-   novos** (`reengajamento_quente`/`reengajamento_pos_visita`, PENDING
-   desde 24/08) — **reconfirmado ainda pausado em 15/09**. Quando aprovar:
-   trocar `REENGAJAMENTO_PAUSADO` pra `false` em
-   `supabase/functions/re-engagement-cron/index.ts` e trocar o nome do
-   template hardcoded (`reengajamento_frio`, que não existe) pelo nome
-   aprovado de verdade.
+2. **[RESOLVIDO 22/09/2026]** `re-engagement-cron` reativado
+   (`REENGAJAMENTO_PAUSADO = false`) com o template `reengajamento_frio`
+   (Marketing) aprovado de verdade pela Meta — ver MEMORY_WORK.MD sessão 27.
+   Não reabrir.
 3. **WhatsApp — publicação de post ainda não implementada**: **(a) e (b)
    resolvidas em 15/09** — 3 templates de negócio aprovados existem de
    verdade, e `sync-whatsapp-templates` já sincroniza (usado também pelo
@@ -660,11 +677,24 @@ Clara rodando 3 semanas em produção sem incidente). Não reabrir esses 5.
   escrever o artigo que faltar relacionado à mudança.
 
 ## Deploy — como funciona
-- **Frontend**: automático via Cloudflare Workers Builds a cada push
-  pro `main`. Não rodar `wrangler deploy` manual por rotina.
-- **Edge Functions**: **não é automático** — precisa `supabase
-  functions deploy <nome>` manual depois do push. Toda function tocada
-  numa sessão precisa desse passo antes de considerar a mudança "no ar".
+- **Frontend**: CORRIGIDO 22/09/2026 — a nota antiga aqui ("automático via
+  Cloudflare Workers Builds") estava ERRADA e causou um bug real ficar em
+  produção por horas (fix commitado/pushado, mas o site continuou dando o
+  mesmo erro pra Adriana). **`git push` NÃO publica o front-end.** Sempre
+  rodar `npm run build` + `npx wrangler deploy` (raiz do repo) depois de
+  qualquer mudança em `src/**`, como pedido de autorização separado (é
+  deploy em produção). Primeira tentativa de `wrangler deploy` às vezes
+  falha com erro transiente da Cloudflare (`code: 10013`) — repetir resolve.
+  Depois de publicar, pedir pra Adriana dar refresh completo (Ctrl+F5) —
+  ela pode estar com a aba antiga já carregada em memória.
+- **Edge Functions**: **não é automático** — mas nesta sessão o deploy foi
+  feito direto via `mcp__claude_ai_Supabase__deploy_edge_function` (MCP com
+  escrita), sem precisar de `supabase functions deploy` no terminal. Toda
+  function tocada numa sessão precisa desse passo antes de considerar a
+  mudança "no ar". Se a function usa `_shared/*.ts`, tem que mandar cada
+  arquivo importado também no array `files` do deploy (nome relativo
+  batendo com o import, ex.: `_shared/cors.ts`) — senão dá erro de "Module
+  not found" no bundle.
 
 ## Segurança — não esquecer
 - **Achado 12/09/2026**: a ferramenta `execute_sql` (MCP Supabase) roda em
