@@ -9,7 +9,7 @@ precisar reler o histórico inteiro de conversas. Diferente do
 pra ser mantido em dia de verdade. Detalhe técnico por integração continua
 nos arquivos `docs/*.md` — aqui é só o resumo de estado + pendências.
 
-Última atualização: 2026-09-22 (sessão 27 — B3/re-engagement/follow-up-2h reativados, auditoria de status de lead com 3 correções, tokens Meta checados/corrigidos, catálogo de estoque no WhatsApp funcionando de ponta a ponta, bug real de salvar veículo corrigido, Clara manda card do catálogo, post orgânico diário automatizado).
+Última atualização: 2026-09-22 (sessão 27 — B3/re-engagement/follow-up-2h reativados, auditoria de status de lead com 3 correções, tokens Meta checados/corrigidos, catálogo de estoque no WhatsApp funcionando de ponta a ponta, bug real de salvar veículo corrigido, Clara manda card do catálogo, post orgânico diário automatizado, mensagens de erro em português, BMW QUW5H72 publicado em Webmotors+NaPista após achar causa raiz real).
 
 ## Sessão 27 (22/09/2026) — cadência de reengajamento completa, auditoria de status de lead, catálogo do estoque integrado ao WhatsApp
 
@@ -34,6 +34,12 @@ Concluído depois (mesmo dia): `enviar_produto_catalogo` implementada e deployad
 **Bug real achado e corrigido: salvar veículo existente dava erro (qualquer edição, não só preço).** Causa: commit de 19/09/2026 ("registra quem alterou cada veículo") adicionou um `select('*, alterado_por_usuario:usuarios!alterado_por(nome)')` no carregamento do formulário (`VehicleFormModal.tsx`) só pra exibir "Última alteração por X" — mas esse campo extra (objeto de join, não é coluna de `veiculos`) ficava no `formData` e voltava dentro do payload do `.update()`, e o PostgREST rejeitava com 400 (coluna inexistente). Rodou quebrado por 3 dias sem ninguém perceber até a Adriana tentar editar um preço. Corrigido com `delete payload.alterado_por_usuario` antes do save (mesmo padrão dos outros campos computados já removidos ali). Checado: não existe o mesmo problema em outros formulários (só 2 telas de relatório fazem join parecido, e essas não salvam de volta).
 
 **Achado, não corrigido (fora do escopo pedido):** `gerar-conteudo-social` (usada tanto no botão manual "Gerar com IA" quanto agora no post diário automático) às vezes deixa a IA escrever um preâmbulo tipo "Aqui está um post persuasivo..." antes do texto de verdade, em vez de só a legenda. Pré-existente, não introduzido agora — vale ajustar o prompt dessa function numa sessão futura se incomodar na prática.
+
+**Cache de deploy do site — achado no meio da sessão**: um fix já commitado/pushado continuou reproduzindo em produção porque `git push` não publica o front-end sozinho aqui — precisa de `npm run build` + `npx wrangler deploy` manual (detalhe completo na memória pessoal, `infra-carroecia-supabase-cloudflare`). Depois de publicar de verdade, era só cache do navegador da Adriana — refresh completo resolveu.
+
+**Regra nova da Adriana: erro de sistema nunca em inglês.** Criado `src/lib/friendly-error.ts` (`mensagemErroAmigavel`), plugado por enquanto só no salvar de veículo — aplicar em outras telas conforme for mexendo nelas.
+
+**BMW QUW5H72 não publicava em Webmotors nem NaPista — causa raiz real, não bug de código**: o campo `versao` do veículo tinha `"...ActiveFlex..."` (versão flex da BMW) enquanto o carro é a gasolina — texto errado no cadastro que contaminava o matcher automático dos dois portais ao mesmo tempo (Webmotors escolhia uma versão Flex incompatível com o ano 2019; NaPista batia com o modelo errado "Série 2 Active Tourer" por causa da palavra "Active"). Corrigido o texto, confirmado manualmente o modelo/versão certo nos dois (`wm-confirmar-mapeamento`/`napista-confirmar-mapeamento`) e publicado de verdade: Webmotors `CodigoAnuncio 80034656` (20 fotos), NaPista `offerId a3670244-...` (10 fotos) — confirmado via `sync_log`. Detalhe técnico completo + passo a passo de diagnóstico pra próxima vez isso acontecer: `docs/webmotors-integracao.md`, seção "Achado real (22/09/2026)". Deployei uma function descartável (`test-napista-versoes-temp`) pra consultar a API do NaPista direto — **pendente: apagar no painel do Supabase**, mesma situação de sempre (sem ferramenta minha pra isso).
 
 ## Sessão 26 (19/09/2026) — Clara: prompt único e seguro, auditoria de 10 conversas reais, handoff automático de financiamento/consignação
 

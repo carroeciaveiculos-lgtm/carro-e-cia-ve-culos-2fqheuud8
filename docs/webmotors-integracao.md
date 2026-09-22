@@ -807,3 +807,43 @@ Teste do `ObterVersao` sem publicar nada (`POST` com a anon key):
 /functions/v1/wm-catalog-fetch
 {"catalogo":"versao","codigo_modelo":"730","data_inicio":"2010-01-01","data_fim":"<hoje>"}
 ```
+
+## Achado real (22/09/2026): texto de "versão" errado no cadastro engana o matcher e derruba os dois portais junto
+
+**Caso**: BMW 120iA (placa `QUW5H72`) não publicava nem na Webmotors nem no
+NaPista. Causa raiz: o campo `versao` do veículo tinha `"...ActiveFlex..."`
+(uma versão FLEX da BMW) enquanto `combustivel = 'Gasolina'` — texto
+desatualizado/errado no cadastro, não um bug de código. A palavra
+"ActiveFlex" contaminou o trigram-match dos dois lados ao mesmo tempo:
+- **Webmotors**: escolheu `CodigoVersao` de uma versão Flex que não existe
+  combinada com `AnoDoModelo=2019` → `CodigoRetorno 43|41,43|37` ("Marca -
+  Modelo - Versão - Ano Modelo Inconsistentes" + "Ano do modelo inválido").
+- **NaPista**: a palavra "Active" bateu com o modelo errado "Série 2 Active
+  Tourer" em vez de "Série 1" (confiança de só 32%, foi pra revisão).
+
+**Como diagnosticar de novo**: `confianca_versao`/`confianca_modelo` baixa
+(perto do limiar 0.35) em `wm_mapeamento_veiculos`/`napista_mapeamento_veiculos`
+é sinal de alerta — olhar `candidatos_versao`/`candidatos_modelo` pra ver se o
+1º colocado faz sentido de verdade com o carro (combustível, câmbio, portas),
+não só aceitar por estar acima do limiar. Se o texto de `versao` do veículo
+tiver uma palavra que não bate com os outros campos dele (aqui: "ActiveFlex"
+vs combustível "Gasolina"), o texto é o problema, não o catálogo.
+
+**Fluxo de correção manual (sem esperar o matcher automático acertar sozinho)**:
+1. Corrigir `veiculos.versao` (o texto errado).
+2. Reprocessar (`wm-mapear-veiculo`/`napista-mapear-veiculo` com `force:true`)
+   — só pra atualizar os candidatos, pode continuar em `revisao_necessaria`
+   se a confiança ficar perto do limiar mesmo com o texto certo.
+3. Olhar `candidatos_versao`/`candidatos_modelo` e confirmar manualmente o
+   certo via `wm-confirmar-mapeamento` / `napista-confirmar-mapeamento`.
+4. **NaPista tem uma etapa a mais que a Webmotors**: confirmar só o modelo
+   não basta, precisa do `napista_version_id` também (senão `napista-sync`
+   falha com `HTTP 400 versionId Must Not Be Null`). Não tem candidato de
+   versão pronto quando o modelo foi confirmado manualmente (o
+   `napista-mapear-veiculo` só busca versão depois de já ter acertado o
+   modelo sozinho) — buscar direto na API: `GET
+   /catalog/versions/CAR?modelId=<ID>&modelYear=<ano>` com o token do
+   `getValidNapistaToken`.
+5. Disparar `wm-sync`/`napista-sync` com `{"veiculo_id": "..."}` e conferir
+   o resultado em `sync_log` (nunca confiar em `publicado_webmotors`/
+   `publicado_napista`, ver [[napista-webmotors-flags-vs-sync-log]]).
