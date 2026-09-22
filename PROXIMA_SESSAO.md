@@ -9,24 +9,45 @@ C:\Projeto\Revenda Carro e Cia\carro-e-cia-ve-culos-2fqheuud8
 Continuando de uma sessão anterior (22/09/2026, sessão 27 — cadência de
 reengajamento completa, auditoria de status de lead, catálogo do estoque
 integrado ao WhatsApp, bug real de salvar veículo corrigido, BMW QUW5H72
-publicado em Webmotors+NaPista). Leia primeiro MEMORY_WORK.MD, seção "Sessão
-27 (22/09/2026)", pro resumo completo. Tudo dessa sessão foi fechado e
-confirmado pela Adriana ("tá tudo certo") — não tem bloqueio nem pendência
-urgente. Só de olho, se vier à tona:
+publicado em Webmotors+NaPista, mapa completo das contas Meta registrado em
+memória, causa raiz do `carroecia_mensagens` achada). Leia primeiro
+MEMORY_WORK.MD, seção "Sessão 27 (22/09/2026)", pro resumo completo, e
+`meta-contas-arquitetura.md` (memória pessoal, fora do repositório) antes de
+qualquer pedido sobre Meta Ads/WhatsApp/catálogo/pixel — evita reconstruir o
+mapa do zero. Pendências reais desta vez (pausadas a pedido da Adriana, não
+esquecidas):
 
-1. **`gerar-conteudo-social` às vezes deixa a IA escrever um preâmbulo**
+1. **Corrigir o `page_id` do `carroecia_mensagens`** — ela pediu pra olhar
+   junto no Gerenciador de Eventos (business.facebook.com/events_manager)
+   antes de eu mexer sozinho. Detalhe técnico completo em
+   `meta-contas-arquitetura.md`, seção "Em aberto".
+2. **Confirmar (não assumir) se 13 leads foram classificados errado**
+   (`origem=facebook_ads`/`instagram_ads` sem `ctwa_clid`) — hipótese é que
+   vieram de clique em post orgânico, não anúncio pago. Antes de corrigir
+   qualquer coisa, olhar o payload bruto em `meta_webhook_logs` de pelo
+   menos 1 desses leads pra confirmar de verdade (não foi feito ainda).
+   Mesma seção da memória.
+3. **Apagar a function `test-capi-mensagens-temp`** no painel do Supabase
+   (descartável, usada na investigação acima) — só a Adriana consegue, sem
+   ferramenta minha pra isso.
+4. **`gerar-conteudo-social` às vezes deixa a IA escrever um preâmbulo**
    ("Aqui está um post persuasivo...") antes do texto de verdade, tanto no
    botão manual "Gerar com IA" quanto no post orgânico diário automático
    (`post-organico-diario-cron`, novo, roda 8h BRT). Pré-existente, não
    corrigido ainda — só ajustar o prompt dessa function se incomodar na
    prática.
-2. **Lembrete permanente pra toda sessão neste projeto**: `git push` NÃO
+5. **Lembrete permanente pra toda sessão neste projeto**: `git push` NÃO
    publica o front-end sozinho — sempre `npm run build` + `npx wrangler
    deploy` depois de mexer em `src/**`, como pedido de autorização separado
    (deploy em produção). Isso já estava documentado errado neste mesmo
    arquivo até 22/09 (dizia "automático") e causou um bug real ficar em
    produção por horas — ver seção "Deploy — como funciona" abaixo, já
    corrigida.
+6. **Regra permanente confirmada pela Adriana (22/09)**: existe uma agência
+   externa cuidando de métricas/criativos da conta de anúncio `act_515820120462587`
+   — nunca mexer em Pixel/dataset que possa ser dela sem confirmar antes.
+   Ver `meta-contas-arquitetura.md` pra saber o que é nosso e o que
+   provavelmente é da agência.
 
 **Carregado de sessões mais antigas (18/09 e anteriores) — não confirmado se
 ainda vale, checar antes de agir:**
