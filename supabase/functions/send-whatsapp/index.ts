@@ -25,7 +25,7 @@ Deno.serve(async (req) => {
 
   try {
     const payload = await req.json()
-    const { action, to, templateName, components, documentUrl, filename, text, leadId, buttons } = payload
+    const { action, to, templateName, components, documentUrl, filename, text, leadId, buttons, catalogId, productRetailerId } = payload
     // origem declara quem está chamando esta function, pra gravar o sender
     // certo no histórico e decidir se desliga a Clara pro lead (ver abaixo).
     // Default 'sistema' é a opção mais segura pra chamada antiga sem esse
@@ -101,6 +101,21 @@ Deno.serve(async (req) => {
           })),
         },
       }
+    } else if (action === 'product') {
+      // 22/09/2026 — card nativo de produto do catálogo do WhatsApp (Clara,
+      // tool enviar_produto_catalogo). catalogId/productRetailerId vêm do
+      // catálogo "Carro e Cia - WhatsApp" (vertical commerce) já vinculado à
+      // WABA; productRetailerId = veiculos.id (mesmo valor usado como "id"
+      // no feed gerado por public-inventory-feed?formato=commerce).
+      body.type = 'interactive'
+      body.interactive = {
+        type: 'product',
+        body: { text: text || '' },
+        action: {
+          catalog_id: catalogId,
+          product_retailer_id: productRetailerId,
+        },
+      }
     } else if (action === 'location') {
       // 19/09/2026 — pin de localização real, em vez de só endereço em
       // texto. Genérico (recebe lat/long por parâmetro) -- nenhuma
@@ -143,6 +158,7 @@ Deno.serve(async (req) => {
       // pra foto recebida do cliente, pra ConversationPanel.tsx renderizar
       // os dois lados da conversa igual.
       if (action === 'image') msgText = `[IMAGEM]${documentUrl}${text ? '\n' + text : ''}`
+      if (action === 'product') msgText = `[Card do catálogo enviado] ${text || ''}`
       // 19/09/2026 — mesmo espírito: grava as opções junto do texto, pra
       // quem olhar o histórico depois entender que era uma pergunta com
       // botões, não texto solto.
@@ -169,7 +185,7 @@ Deno.serve(async (req) => {
       // conversa, desliga a Clara pra esse lead. Foto/documento/template
       // avulsos do mesmo atendente NÃO desligam (decisão da Adriana,
       // 17/09/2026) — só resposta de texto conta.
-      const ehTextoLivre = !['template', 'document', 'image', 'video', 'buttons', 'location'].includes(
+      const ehTextoLivre = !['template', 'document', 'image', 'video', 'buttons', 'location', 'product'].includes(
         action,
       )
       if (origem === 'atendente' && ehTextoLivre) {

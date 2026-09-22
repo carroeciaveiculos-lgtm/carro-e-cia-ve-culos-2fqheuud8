@@ -24,6 +24,12 @@ const waPhoneId =
 // atendimento pra humano).
 const ADRIANA_PHONE = '5534984080220'
 
+// Catálogo "Carro e Cia - WhatsApp" (vertical commerce, exigida pelo
+// WhatsApp — o catálogo de anúncios é vertical vehicles e não pode ser
+// vinculado à WABA). Vinculado em 22/09/2026, retailer_id de cada produto =
+// veiculos.id (feed gerado por public-inventory-feed?formato=commerce).
+const CATALOGO_WHATSAPP_ID = '1640044274302776'
+
 // Achado 24/08/2026, pedido da Adriana: o prompt já pedia "convide pra
 // visita só uma vez, não insista" desde sempre, mas numa conversa real a
 // Clara convidou 4 vezes na mesma conversa — pedir educadamente em texto
@@ -501,6 +507,60 @@ async function executeFunction(name: string, args: any, leadId: string): Promise
         .insert({ lead_id: leadId, sender: 'internal_note', message_text: marcadorMidia })
     }
     return { enviados, total: fotos.length + videos.length }
+  }
+
+  if (name === 'enviar_produto_catalogo') {
+    if (!args.veiculo_id) return { error: 'veiculo_id obrigatório' }
+
+    // Mesmo padrão anti-repetição de enviar_midia_veiculo — evita mandar o
+    // card do catálogo de novo pro mesmo veículo na mesma conversa.
+    const marcadorCatalogo = `catalogo_enviado:${args.veiculo_id}`
+    const { data: jaEnviado } = await supabase
+      .from('conversation_history')
+      .select('id')
+      .eq('lead_id', leadId)
+      .eq('sender', 'internal_note')
+      .eq('message_text', marcadorCatalogo)
+      .limit(1)
+      .maybeSingle()
+    if (jaEnviado) {
+      return {
+        ja_enviado: true,
+        aviso:
+          'Card desse veículo já foi enviado nesta conversa. NÃO envie de novo — avise o cliente que já mandou antes.',
+      }
+    }
+
+    const { data: veiculo, error } = await supabase
+      .from('veiculos')
+      .select('marca, modelo, status, exibir_no_site')
+      .eq('id', args.veiculo_id)
+      .maybeSingle()
+    if (error || !veiculo) return { error: error?.message || 'Veículo não encontrado' }
+    if (veiculo.status !== 'disponivel' || !veiculo.exibir_no_site) {
+      return { error: 'Esse veículo não está disponível no catálogo (vendido, reservado ou oculto).' }
+    }
+
+    const { data: lead } = await supabase.from('leads').select('telefone').eq('id', leadId).maybeSingle()
+    if (!lead?.telefone) return { error: 'Lead sem telefone' }
+
+    const res = await supabase.functions.invoke('send-whatsapp', {
+      body: {
+        action: 'product',
+        to: lead.telefone,
+        leadId,
+        origem: 'clara',
+        catalogId: CATALOGO_WHATSAPP_ID,
+        productRetailerId: args.veiculo_id,
+        text: `${veiculo.marca} ${veiculo.modelo}`,
+      },
+    })
+    if (res.error) return { error: res.error.message || 'Falha ao enviar produto do catálogo' }
+
+    await supabase
+      .from('conversation_history')
+      .insert({ lead_id: leadId, sender: 'internal_note', message_text: marcadorCatalogo })
+    return { enviado: true }
   }
 
   if (name === 'criar_lead_crm') {

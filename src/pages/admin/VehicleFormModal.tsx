@@ -812,6 +812,12 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
       delete payload.ano_fab
       delete payload.preco_fipe
       delete payload.historico_fipe
+      // 22/09/2026: alterado_por_usuario vem do join de exibição (linha do
+      // useEffect que carrega o veículo) e não é coluna de "veiculos" -- ao
+      // mandar de volta no update, o PostgREST rejeitava com 400 (achado real:
+      // toda edição de veículo existente vinha falhando desde 19/09/2026,
+      // quando esse join foi adicionado).
+      delete payload.alterado_por_usuario
       if (!payload.id) delete payload.id
       const { data, error } = payload.id
         ? await supabase.from('veiculos').update(payload).eq('id', payload.id).select()

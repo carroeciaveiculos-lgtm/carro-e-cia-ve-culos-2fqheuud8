@@ -224,6 +224,19 @@ export const CRM_FUNCTIONS = [
       required: ['lead_id', 'veiculo_id'],
     },
   },
+  {
+    name: 'enviar_produto_catalogo',
+    description:
+      'Envia o card oficial de produto do catálogo do WhatsApp pro veículo (foto, nome e preço direto do catálogo, com botão nativo de "Ver detalhes"). Use como alternativa a enviar_midia_veiculo quando quiser mostrar preço e ficha junto da foto num único card, em vez de fotos soltas. IMPORTANTE: só chame com um veiculo_id real, devolvido por consultar_estoque nesta mesma conversa — nunca invente. Não chame de novo pro mesmo veiculo_id se já enviou nesta conversa.',
+    parameters: {
+      type: 'OBJECT',
+      properties: {
+        lead_id: { type: 'STRING' },
+        veiculo_id: { type: 'STRING', description: 'UUID real, obtido de consultar_estoque' },
+      },
+      required: ['lead_id', 'veiculo_id'],
+    },
+  },
 ]
 
 // Achado em auditoria (13/08/2026, captura real de conversa com cliente):
