@@ -9,7 +9,25 @@ precisar reler o histórico inteiro de conversas. Diferente do
 pra ser mantido em dia de verdade. Detalhe técnico por integração continua
 nos arquivos `docs/*.md` — aqui é só o resumo de estado + pendências.
 
-Última atualização: 2026-09-19 (sessão 26 — Clara com prompt único e seguro no banco (histórico de versões + restaurar), auditoria de 10 conversas reais achou 4 problemas, novo prompt da Adriana implantado verbatim, financiamento/consignação com encaminhamento automático real (lead novo e existente) pro Roberto Junior).
+Última atualização: 2026-09-22 (sessão 27 — B3/re-engagement/follow-up-2h reativados, auditoria de status de lead com 3 correções, tokens Meta checados/corrigidos, catálogo de estoque no WhatsApp funcionando de ponta a ponta).
+
+## Sessão 27 (22/09/2026) — cadência de reengajamento completa, auditoria de status de lead, catálogo do estoque integrado ao WhatsApp
+
+**Cadência de reengajamento (B3 + T+2h + frio/morno-quente):**
+- Template `agendamento_reagendar` rejeitado pela Meta (categoria travada 3 semanas) → renomeado pra `visita_reagendar`, aprovado, `agendamento-no-show-cron` atualizado (v21).
+- `follow-up-2h-cron` criado do zero: 3 tentativas em texto livre (2h/4h/6h) + decisiva com botões "Continuar"/"Não, obrigado" na 3ª, depois template aprovado (`retomar_conversa`) se passar de 24h. Rastreio via marcador em `conversation_history` (sem migration nova pra isso). Bug achado e corrigido antes do deploy: lead já parado há +24h tentava texto livre em vez de ir direto pro template — corrigido checando o tempo decorrido antes do contador de tentativas.
+- `re-engagement-cron` reativado (`REENGAJAMENTO_PAUSADO = false`, v95) — template `reengajamento_frio` (Marketing) aprovado de verdade dessa vez (achado de 24/08 dizia que nunca tinha sido submetido).
+
+**Auditoria de status real dos leads (pedido: "atualiza o status real na tela de leads"):**
+Causa raiz dupla achada: (1) `agendamentos_visita` nunca fecha o passo de confirmação de horário — Clara não usa `enviar_opcoes_rapidas` com horários concretos; (2) 73 de 75 leads "perdido" não tinham `motivo_perda` — Clara estava marcando perdido toda vez que travava tecnicamente (link que não abre, mídia que não abre), não só quando o cliente desistia de verdade (caso real: lead "Maria🥰"). 3 correções implantadas em `ai-sdr/index.ts` + prompt (`ai_prompts_config`, slug `sdr_whatsapp`): `motivo_perda` obrigatório pra marcar perdido; instrução de usar `enviar_opcoes_rapidas` com horário concreto ao confirmar agendamento; instrução de chamar `solicitar_atendimento_humano` em vez de desistir/perdido quando o problema é técnico.
+
+**Tokens Meta (checados antes de mexer, por pedido da Adriana):**
+`META_PAGE_ACCESS_TOKEN` estava com permissão `publish_actions` depreciada (causa dos 6/9 posts falhando em `publicar-social`) → trocado por token de System User (`carroecia_bot`) permanente. `WHATSAPP_TOKEN` e `META_ADS_TOKEN` conferidos via `debug_token`: **já eram** `SYSTEM_USER` permanentes (`expires_at: 0`) — a "faxina" geral de trocar todos os tokens acabou não sendo necessária, só o da página.
+
+**Catálogo de estoque integrado ao WhatsApp (funcionando):**
+Catálogo `vehicles` existente (`Carro e Cia Motors`, 776725003388779) não pode ser vinculado à WABA — Meta exige vertical `commerce` pra WhatsApp (erro `UNSUPPORTED_PRODUCT_CATALOG_TYPE`, cross-vertical não suportado). Criado catálogo novo `Carro e Cia - WhatsApp` (commerce, `1640044274302776`), vinculado à WABA (`1530053735172401`) com sucesso. Feed reaproveita `public-inventory-feed` (mesma function do catálogo de anúncios) com um segundo formato de saída via `?formato=commerce` (schema padrão de produto: id/title/description/availability/condition/price/link/image_link/brand) — o formato `vehicles` original continua intacto pro catálogo de anúncios. **26/26 veículos importados com sucesso** (0 inválidos) depois da correção. Checado antes: política de Comércio da Meta não proíbe veículo usado no catálogo do WhatsApp (só restringe peça/acessório avulso). Investigado e descartado: um 3º catálogo "WhatsApp Product Catalog" (573459484725077) visto na tela — é objeto legado inacessível via API (erro mesmo com "Acesso total" na UI, Gerenciador de Comércio dá página de erro) — não é o catálogo certo, ignorar.
+
+Pendente: (1) criar a tool `enviar_produto_catalogo` pra Clara mandar card nativo de produto no WhatsApp (usa `catalog_id` + `retailer_id`=id do veículo, já confirmado que bate 1:1 com a tabela `veiculos`); (2) posts orgânicos diários na página (Adriana decidiu: gerar como Rascunho pra aprovação manual, não publicar sozinho); (3) apagar a function `test-token-temp` (Supabase, descartável, sem tool de delete disponível pro agente).
 
 ## Sessão 26 (19/09/2026) — Clara: prompt único e seguro, auditoria de 10 conversas reais, handoff automático de financiamento/consignação
 

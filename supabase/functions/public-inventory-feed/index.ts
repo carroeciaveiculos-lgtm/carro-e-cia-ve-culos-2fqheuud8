@@ -21,6 +21,12 @@ Deno.serve(async (req) => {
   try {
     const url = new URL(req.url)
     const filename = url.searchParams.get('file') || 'feed.csv'
+    // formato=commerce: catálogo tipo "commerce" (exigido pelo WhatsApp pra
+    // vincular a uma WABA — o tipo "vehicles" não pode ser vinculado, ver
+    // erro UNSUPPORTED_PRODUCT_CATALOG_TYPE). Usa o schema padrão de produto
+    // da Meta (id/title/description/availability/condition/price/link/
+    // image_link/brand) em vez do schema específico de veículos.
+    const formatoCommerce = url.searchParams.get('formato') === 'commerce'
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? ''
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
@@ -36,26 +42,28 @@ Deno.serve(async (req) => {
     if (error) throw error
 
     // Cabeçalhos corrigidos seguindo o padrão estrito do Meta CSV
-    const headers = [
-      'vehicle_id',
-      'title',
-      'description',
-      'make',
-      'model',
-      'year',
-      'mileage.value',
-      'mileage.unit',
-      'price',
-      'url',
-      'image[0].url', // Formato correto de cabeçalho do Meta
-      'address',
-      'state_of_vehicle',
-      'body_style',
-      'exterior_color',
-      'transmission',
-      'fuel_type',
-      'availability',
-    ]
+    const headers = formatoCommerce
+      ? ['id', 'title', 'description', 'availability', 'condition', 'price', 'link', 'image_link', 'brand']
+      : [
+          'vehicle_id',
+          'title',
+          'description',
+          'make',
+          'model',
+          'year',
+          'mileage.value',
+          'mileage.unit',
+          'price',
+          'url',
+          'image[0].url', // Formato correto de cabeçalho do Meta
+          'address',
+          'state_of_vehicle',
+          'body_style',
+          'exterior_color',
+          'transmission',
+          'fuel_type',
+          'availability',
+        ]
 
     const escapeCsv = (field: any) => {
       if (field === null || field === undefined) return ''
@@ -169,26 +177,38 @@ Deno.serve(async (req) => {
           .replace(/\s+/g, ' ')
           .trim()
 
-        const rowData = [
-          v.id, // vehicle_id
-          title, // title
-          description, // description
-          v.marca, // make
-          `${v.modelo} ${v.versao || ''}`.trim(), // model
-          ano, // year
-          kmValue, // mileage.value (numérico puro)
-          'KM', // mileage.unit (texto fixo em maiúsculo)
-          price, // price
-          link, // url
-          imageLink, // image[0].url (Convertida via proxy gratuito para JPEG)
-          addressStr, // address
-          condition, // state_of_vehicle
-          bodyStyleMap[v.categoria] || 'other', // body_style
-          v.cor || '', // exterior_color
-          transmissionMap[v.cambio] || 'other', // transmission
-          fuelMap[v.combustivel] || 'other', // fuel_type
-          'available', // availability
-        ]
+        const rowData = formatoCommerce
+          ? [
+              v.id, // id
+              title, // title
+              description, // description
+              'in stock', // availability (valor exigido pelo schema commerce, diferente de "available")
+              condition, // condition (new/used)
+              price, // price
+              link, // link
+              imageLink, // image_link
+              v.marca, // brand
+            ]
+          : [
+              v.id, // vehicle_id
+              title, // title
+              description, // description
+              v.marca, // make
+              `${v.modelo} ${v.versao || ''}`.trim(), // model
+              ano, // year
+              kmValue, // mileage.value (numérico puro)
+              'KM', // mileage.unit (texto fixo em maiúsculo)
+              price, // price
+              link, // url
+              imageLink, // image[0].url (Convertida via proxy gratuito para JPEG)
+              addressStr, // address
+              condition, // state_of_vehicle
+              bodyStyleMap[v.categoria] || 'other', // body_style
+              v.cor || '', // exterior_color
+              transmissionMap[v.cambio] || 'other', // transmission
+              fuelMap[v.combustivel] || 'other', // fuel_type
+              'available', // availability
+            ]
 
         return rowData.map(escapeCsv).join(',')
       })
