@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { mensagemErroAmigavel } from '@/lib/friendly-error'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import {
   AlertDialog,
@@ -870,9 +871,13 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
       if (shouldClose) onClose()
       return savedId
     } catch (err: any) {
+      // 22/09/2026, regra da Adriana: nenhuma mensagem de erro pode chegar em
+      // inglês pro usuário -- o driver do Supabase/PostgREST devolve erro cru
+      // (ex.: "Could not find the 'x' column..."). Traduz os casos conhecidos
+      // e cai num texto genérico em vez de vazar a mensagem original.
       toast({
         title: 'Erro ao salvar',
-        description: err.message || 'Falha ao salvar o veículo',
+        description: mensagemErroAmigavel(err),
         variant: 'destructive',
       })
       return null
