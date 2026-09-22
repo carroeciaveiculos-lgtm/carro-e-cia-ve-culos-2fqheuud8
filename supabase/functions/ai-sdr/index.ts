@@ -264,6 +264,19 @@ async function executeFunction(name: string, args: any, leadId: string): Promise
 
     if (args.status !== undefined) {
       if (!statusPermitidos.includes(args.status)) return { error: `status inválido: ${args.status}` }
+      // 22/09/2026 (achado em auditoria: 73 de 75 leads marcados "perdido"
+      // não tinham motivo registrado — incluindo casos onde o cliente
+      // seguia claramente interessado, mas a própria Clara não conseguia
+      // resolver algo tecnicamente, ex: link de vídeo que não abre, e
+      // marcava perdido por conta própria). Trava real no código, não só
+      // pedido no prompt — força justificar antes de fechar o lead como
+      // perdido.
+      if (args.status === 'perdido' && (!args.motivo_perda || !args.motivo_perda.trim())) {
+        return {
+          error:
+            'Pra marcar como perdido, informe também motivo_perda explicando por quê. Só marque perdido quando o cliente realmente demonstrar que não quer mais continuar — não marque só porque você não conseguiu resolver algo tecnicamente (ex: link que não abre, mídia que não consegue ver); nesses casos, chame solicitar_atendimento_humano em vez disso.',
+        }
+      }
       update.status = args.status
     }
     if (args.temperatura !== undefined) {
