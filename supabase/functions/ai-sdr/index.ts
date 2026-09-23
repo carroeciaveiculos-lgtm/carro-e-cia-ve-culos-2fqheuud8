@@ -159,6 +159,24 @@ REGRA CRÍTICA: nunca diga "agendado", "confirmado" ou "marcado" sem ANTES ter c
 // 12/08/2026 (padrão copiado de supabase/functions/ai-agents/index.ts, que já
 // fazia isso certo). Antes, `functionCalls` do Gemini eram sempre descartados
 // aqui: a Clara "decidia" agendar visita, mas nada era salvo.
+
+// Achado 22-23/09/2026 (Adriana, auditoria de origem dos leads de setembro):
+// criar_lead_crm confiava cegamente no telefone que a IA extraiu do texto da
+// conversa (args.telefone) mesmo quando essa chamada acontece DENTRO de uma
+// conversa que já tem lead — casos reais: "nao_informado" (Márcio) e um
+// número sem o DDI 55 (Lazaro, mesmo incidente do comentário logo abaixo, em
+// "Lázaro/HB20X"). Isso não é só sujeira de dado: encaminharParaParceiro manda
+// um link `wa.me/{telefone}` de volta pro cliente, então telefone quebrado
+// vira link quebrado na mão do cliente. Só pega o caso claramente inválido
+// (vazio/placeholder/poucos dígitos) — não tenta "adivinhar" um número que já
+// parece um telefone plausível, pra não sobrescrever um contato realmente
+// diferente que o cliente esteja indicando (ex: indicação de um conhecido).
+function telefoneUsavel(tel: unknown): tel is string {
+  if (typeof tel !== 'string') return false
+  const digitos = tel.replace(/\D/g, '')
+  return digitos.length >= 10 && digitos.length <= 13
+}
+
 async function executeFunction(name: string, args: any, leadId: string): Promise<any> {
   if (name === 'consultar_estoque') {
     // CRÍTICO (achado em teste ao vivo, 12/08/2026): era `select('*')`, que
@@ -409,6 +427,27 @@ async function executeFunction(name: string, args: any, leadId: string): Promise
       }
     }
 
+    // Achado 23/09/2026 (pedido da Adriana, mesmo padrão anti-repetição já
+    // usado em enviar_midia_veiculo/enviar_produto_catalogo): sem essa trava,
+    // nada impede a Clara de mandar a mesma pergunta de botões duas vezes na
+    // mesma conversa. Marcador pela própria pergunta (texto normalizado) —
+    // cada pergunta diferente ainda pode ser enviada normalmente.
+    const marcadorOpcoes = `opcoes_enviadas:${texto.toLowerCase()}`
+    const { data: opcoesJaEnviadas } = await supabase
+      .from('conversation_history')
+      .select('id')
+      .eq('lead_id', leadId)
+      .eq('sender', 'internal_note')
+      .eq('message_text', marcadorOpcoes)
+      .limit(1)
+      .maybeSingle()
+    if (opcoesJaEnviadas) {
+      return {
+        ja_enviado: true,
+        aviso: 'Essa mesma pergunta com botões já foi enviada nesta conversa. NÃO envie de novo — responda em texto normal.',
+      }
+    }
+
     const { data: lead } = await supabase.from('leads').select('telefone').eq('id', leadId).maybeSingle()
     if (!lead?.telefone) return { error: 'Lead sem telefone' }
 
@@ -416,10 +455,32 @@ async function executeFunction(name: string, args: any, leadId: string): Promise
       body: { action: 'buttons', to: lead.telefone, text: texto, buttons: opcoes, leadId, origem: 'clara' },
     })
     if (res.error) return { error: res.error.message || 'Falha ao enviar botões' }
+    await supabase
+      .from('conversation_history')
+      .insert({ lead_id: leadId, sender: 'internal_note', message_text: marcadorOpcoes })
     return { enviado: true }
   }
 
   if (name === 'enviar_localizacao_loja') {
+    // Achado 23/09/2026 (pedido da Adriana): mesma trava anti-repetição —
+    // a localização da loja é sempre o mesmo conteúdo, então um marcador fixo
+    // (sem variável) basta pra cobrir a conversa inteira.
+    const marcadorLocalizacao = 'localizacao_enviada'
+    const { data: localizacaoJaEnviada } = await supabase
+      .from('conversation_history')
+      .select('id')
+      .eq('lead_id', leadId)
+      .eq('sender', 'internal_note')
+      .eq('message_text', marcadorLocalizacao)
+      .limit(1)
+      .maybeSingle()
+    if (localizacaoJaEnviada) {
+      return {
+        ja_enviado: true,
+        aviso: 'A localização da loja já foi enviada nesta conversa. NÃO envie de novo — se o cliente perguntar o endereço de novo, responda em texto normal.',
+      }
+    }
+
     const { data: lead } = await supabase.from('leads').select('telefone').eq('id', leadId).maybeSingle()
     if (!lead?.telefone) return { error: 'Lead sem telefone' }
 
@@ -442,6 +503,9 @@ async function executeFunction(name: string, args: any, leadId: string): Promise
       },
     })
     if (res.error) return { error: res.error.message || 'Falha ao enviar localização' }
+    await supabase
+      .from('conversation_history')
+      .insert({ lead_id: leadId, sender: 'internal_note', message_text: marcadorLocalizacao })
     return { enviado: true }
   }
 
@@ -565,6 +629,19 @@ async function executeFunction(name: string, args: any, leadId: string): Promise
 
   if (name === 'criar_lead_crm') {
     const email = (args.email || '').trim() || null
+    // Achado 22-23/09/2026: se o telefone vindo da IA não é usável, cai pro
+    // telefone do lead da conversa atual (leadId) — ver telefoneUsavel acima.
+    let telefoneFinal = args.telefone
+    if (!telefoneUsavel(args.telefone)) {
+      const { data: leadAtual } = await supabase
+        .from('leads')
+        .select('telefone')
+        .eq('id', leadId)
+        .maybeSingle()
+      if (leadAtual?.telefone && telefoneUsavel(leadAtual.telefone)) {
+        telefoneFinal = leadAtual.telefone
+      }
+    }
     // Achado em diagnostico (14/08/2026): leads.tipo e NOT NULL sem default,
     // e esse insert nunca preenchia — toda chamada de criar_lead_crm falhava
     // (violava a constraint), silenciosamente pro cliente (Clara so via o
@@ -573,7 +650,7 @@ async function executeFunction(name: string, args: any, leadId: string): Promise
       .from('leads')
       .insert({
         nome: args.nome,
-        telefone: args.telefone,
+        telefone: telefoneFinal,
         email,
         veiculo_interesse: args.veiculo_interesse || null,
         origem: 'clara',
@@ -583,7 +660,7 @@ async function executeFunction(name: string, args: any, leadId: string): Promise
       .select()
       .single()
     if (error) return { error: error.message }
-    if (email) await registrarEmailNoBrevo(data.id, email, args.nome, args.telefone)
+    if (email) await registrarEmailNoBrevo(data.id, email, args.nome, telefoneFinal)
     // financiamento e consignacao adicionados em 19/09/2026 -- antes eram tipos
     // válidos aceitos pelo CRM mas não disparavam nenhum aviso pro parceiro,
     // então a Clara prometia "vou encaminhar" sem nada acontecer de verdade.

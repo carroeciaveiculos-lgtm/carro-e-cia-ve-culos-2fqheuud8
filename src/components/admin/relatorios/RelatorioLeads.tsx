@@ -36,10 +36,17 @@ export function RelatorioLeads() {
       const dateLimit = new Date()
       dateLimit.setDate(dateLimit.getDate() - parseInt(periodo))
 
+      // Achado 23/09/2026 (Adriana): origem='clara' é um ticket de
+      // encaminhamento pra parceiro (seguro/consórcio/financiamento/
+      // consignação) que a própria IA cria dentro de uma conversa que já
+      // existe — nunca vira venda, então contava como "lead novo" e diluía
+      // a conversão geral (fechados / total) sem representar oportunidade
+      // real. Ver docs/leads-e-sdr.md.
       let query = supabase
         .from('leads')
         .select('*, responsavel:usuarios(id, nome)')
         .gte('created_at', dateLimit.toISOString())
+        .neq('origem', 'clara')
 
       if (vendedorFilter !== 'todos') {
         query = query.eq('responsavel_id', vendedorFilter)

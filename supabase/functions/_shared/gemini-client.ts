@@ -60,7 +60,13 @@ export const CRM_FUNCTIONS = [
   },
   {
     name: 'criar_lead_crm',
-    description: 'Criar um novo lead no CRM',
+    // Reforçado 23/09/2026 (achado real: leads Márcio e Lazaro criados com
+    // telefone quebrado porque a Clara chamou isto em vez de
+    // atualizar_estagio_lead pro proprio lead da conversa). Guarda de codigo
+    // equivalente ja existe em ai-sdr/index.ts (telefoneUsavel), isto aqui e
+    // so pra reduzir a IA escolher a ferramenta errada, nao substitui a guarda.
+    description:
+      'Criar um novo lead no CRM para um contato REALMENTE NOVO — alguem que ainda nao e o lead desta conversa (nome e telefone informados agora pela primeira vez, ex: uma indicacao de conhecido). IMPORTANTE: se o pedido de seguro_auto, consorcio, financiamento ou consignacao e do PROPRIO cliente com quem voce ja esta conversando (o lead desta conversa ja existe), NAO use esta funcao — use atualizar_estagio_lead com tipo_interesse_especial em vez disso, que reaproveita o telefone e o historico ja confirmados desta conversa em vez de criar um cadastro duplicado.',
     parameters: {
       type: 'OBJECT',
       properties: {
