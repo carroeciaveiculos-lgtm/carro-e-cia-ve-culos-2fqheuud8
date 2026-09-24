@@ -40,11 +40,16 @@ const PADRAO_CONVITE_VISITA =
   /passar aqui|vir aqui na loja|dar um pulo aqui|test-?drive|conhecer (?:ele|ela) de perto|ver (?:ele|ela) de perto|agendar (?:uma )?visita/i
 
 async function contarConvitesVisita(leadId: string): Promise<number> {
+  // Achado 23/09/2026 (Adriana): sem order(), a ordem dos 50 registros não é
+  // garantida pelo banco — numa conversa longa (ex: 100+ mensagens), podia
+  // contar convites de qualquer subconjunto, não necessariamente os mais
+  // recentes. ascending: false pega os 50 últimos de fato.
   const { data } = await supabase
     .from('conversation_history')
     .select('message_text')
     .eq('lead_id', leadId)
     .eq('sender', 'bot')
+    .order('created_at', { ascending: false })
     .limit(50)
   return (data || []).filter((m: any) => PADRAO_CONVITE_VISITA.test(m.message_text || '')).length
 }
@@ -736,12 +741,18 @@ async function encaminharParaParceiro(lead: any, tipo: string) {
     const parceiro = PARCEIROS_ENCAMINHAMENTO[tipo]
     if (!parceiro) return
 
-    const { data: historico } = await supabase
+    // Achado 23/09/2026 (Adriana): ascending:true + limit(30) pegava as 30
+    // mensagens mais ANTIGAS, não as mais recentes — numa conversa longa, o
+    // parceiro humano (Roberto/Gabriel) recebia um resumo sem o contexto
+    // atual que motivou o encaminhamento. Busca as 30 últimas (descending) e
+    // reverte em JS pra manter a ordem cronológica no texto do resumo.
+    const { data: historicoDesc } = await supabase
       .from('conversation_history')
       .select('sender, message_text')
       .eq('lead_id', lead.id)
-      .order('created_at', { ascending: true })
+      .order('created_at', { ascending: false })
       .limit(30)
+    const historico = (historicoDesc || []).reverse()
 
     const resumoConversa = (historico || [])
       .map((m: any) => `${m.sender === 'bot' ? 'Clara' : 'Cliente'}: ${m.message_text}`)
@@ -1075,12 +1086,20 @@ Deno.serve(async (req) => {
       }
 
       try {
-        const { data: historico } = await supabase
+        // Achado 23/09/2026 (Adriana, caso real: lead com 106 mensagens
+        // trocadas): ascending:true + limit(30) buscava as 30 mensagens
+        // mais ANTIGAS, não as mais recentes — em qualquer conversa com
+        // mais de 30 trocas, a Clara respondia sempre com base só no
+        // começo da conversa, sem nunca ver nada depois disso. Busca as 30
+        // últimas (descending) e reverte em JS pra manter a ordem
+        // cronológica que o Gemini espera no histórico.
+        const { data: historicoDesc } = await supabase
           .from('conversation_history')
           .select('sender, message_text, created_at')
           .eq('lead_id', lead_id)
-          .order('created_at', { ascending: true })
+          .order('created_at', { ascending: false })
           .limit(30)
+        const historico = (historicoDesc || []).reverse()
 
         const history = (historico || [])
           .filter((h: any) => h.message_text && h.sender !== 'internal_note')
