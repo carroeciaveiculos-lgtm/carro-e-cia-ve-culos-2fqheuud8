@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "n=$(git log origin/main..HEAD --oneline 2>/dev/null | wc -l | tr -d ' '); if [ \"$n\" -gt 0 ]; then printf '{\"systemMessage\": \"Aviso: %s commit(s) local(is) aguardando git push neste projeto.\"}' \"$n\"; fi",
+            "timeout": 15,
+            "statusMessage": "Conferindo commits pendentes de push..."
+          }
+        ]
+      }
+    ]
+  }
+}
