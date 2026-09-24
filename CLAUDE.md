@@ -335,3 +335,39 @@ específico aqui, menos eu erro:
 - **Publicação em portais**: existe aprovação manual antes de subir anúncio?
 - **O que eu nunca devo mexer sem te perguntar?** (ex.: migrations em produção,
   credenciais de portal, disparo de WhatsApp real)
+- [Idioma pt-BR](language-pt-br.md) — responder sempre em português brasileiro.
+- [Autorizar antes de implantar](autorizar-antes-de-implantar.md) — explicar o quê/porquê/antes/depois e pedir OK antes de qualquer mudança.
+- [Estilo conservador](estilo-conservador.md) — na dúvida, escolher o caminho seguro e recuperável; nunca arriscar perda.
+- [Perfil da Adriana](adriana-perfil.md) — não é dev experiente; explicar com exemplo concreto e sem jargão.
+- [Auth via API key](auth-via-api-key.md) — DESATUALIZADO (23/08): achado indício de assinatura Claude.ai; confirmar com /status antes de usar.
+- [Projetos ativos 2026](projetos-ativos-2026.md) — revenda (rodar de `C:\Projeto\Revenda Carro e Cia\...`), corretora de seguros, blog de nutrição.
+- [Contas GitHub e SSH](github-contas-e-ssh.md) — 3 contas (uma por empresa), apelidos SSH e e-mail por repositório.
+- [Org Empresas-do-Grupo-Adriana](github-org-empresas-grupo-adriana.md) — org vazia, 3 owners; repos ficam na conta pessoal.
+- [Infra Carro e Cia](infra-carroecia-supabase-cloudflare.md) — Supabase/Workers; site só publica com `wrangler deploy` manual, push não basta.
+- [Conector Meta Ads MCP](meta-ads-mcp-conector.md) — token expira em 1-2h; rodar `claude mcp list` pra reconferir status a cada sessão, não assumir.
+- [Conector Resend MCP](resend-mcp-conector.md) — envia e-mails de candidatos a vagas para rh@carroeciamotors.com.br e futuras automações.
+- [Conector Google Ads MCP](google-ads-mcp-conector.md) — caseiro, só na pasta carroecia-api-google-ads; CONNECTION_CLOSED pode ser 3 causas, rodar script direto pra ver qual.
+- [Autocrítica antes de propor](autocritica-antes-de-propor.md) — rodar "o que um especialista atacaria" por conta própria antes de propor mudança em produção.
+- [Commit e push juntos](commit-e-push-juntos.md) — ao pedir autorização de commit, já perguntar push na mesma mensagem (deploy automático depende disso).
+- [Manter sistema limpo](manter-sistema-limpo.md) — apagar function/arquivo temporário assim que usar, e sinalizar sujeira pré-existente encontrada pelo caminho.
+- [Manual operacional atualizado](manual-operacional-atualizado.md) — Carro e Cia: toda função nova/ajustada no painel ganha artigo na Central de Ajuda, sempre.
+- [Lista de progresso no rodapé](lista-rodape-progresso.md) — em tarefa de vários passos, terminar a resposta com feito (riscado) x pendente.
+- [Cards de veículo: tamanho + sem corte](prioriza-consistencia-visual-cards.md) — card do mesmo tamanho, foto centralizada, espaço mínimo nas laterais, sem corte nem zoom.
+- [Manter memória atualizada](manter-memoria-atualizada.md) — atualizar MEMORY_WORK/memória a cada ajuste, não só ao fechar sessão.
+- [Sistema local sincronizado](sistema-local-sincronizado.md) — manter local alinhado com Supabase/GitHub/Cloudflare e avisar quando sincronizado.
+- [Preencher PROXIMA_SESSAO ao fechar](preencher-proxima-sessao-ao-fechar.md) — relatar estado, feito e planejado no arquivo de continuidade da sessão.
+- [Enviar localhost antes de testar](enviar-localhost-antes-teste.md) — projeto revenda: mandar link localhost:8080 pra ela testar antes de commit/push.
+- [Escopo só Projeto Site Carro e Cia](escopo-so-projeto-site-carro-e-cia.md) — nunca investigar outros projetos Supabase da conta (existe 2ª org com CRM/MyFinance.Ai).
+- [Conferir match rate do Pixel](pixel-match-rate-conferir.md) — follow-up pontual: checar daqui uns dias se subiu do zero após fix de 19/08/2026.
+- [Resumo+teste+próximo passo](resumo-teste-proximo-passo.md) — fechar cada ação com resumo do testado/funcionando, próximo passo, e memória do projeto em dia.
+- [Meta Ads: API, não MCP](meta-ads-mcp-vs-api.md) — contas reais da Carro e Cia sem MCP liberado ainda; usar META_ADS_TOKEN via API direta até a Meta liberar.
+- [Flags de publicação não confiáveis](napista-webmotors-flags-vs-sync-log.md) — nunca usar publicado_napista/webmotors/ml como fonte de verdade, sempre sync_log.
+- [Status real, não memória](status-real-nao-memoria.md) — testes/implementação devem sempre ler o status real da API da plataforma, nunca confiar no nosso banco/cache.
+- [Página única de regras de IA](regras-ia-pagina-unica-ai-prompts-config.md) — `/admin/prompts-ia` edita regra por botão via `ai_prompts_config`; checar slug antes de mexer em código de function.
+- [Listar repositórios ao iniciar sessão](listar-repositorios-inicio-sessao.md) — no início de toda sessão, listar pastas de `C:\Projeto` e perguntar qual repositório é o foco do chat.
+- [Supabase MCP oficial, pendente de checar](supabase-mcp-oficial-pendente.md) — Adriana adicionou servidor mcp.supabase.com em 18/09/2026; checar na próxima sessão se resolve o role read-only.
+- [Erros sempre em português](erros-sempre-em-portugues.md) — nunca mostrar erro cru do driver/banco em inglês; usar `mensagemErroAmigavel` (revenda).
+- [Arquitetura de contas Meta](meta-contas-arquitetura.md) — 3 Business Managers (cuidado, 2 se chamam "Carro e Cia"), páginas/anúncios/catálogos/WABA/pixels mapeados.
+- [Prompt da Clara só com autorizo](clara-prompt-somente-com-autorizo.md) — nunca alterar ai_prompts_config sem "autorizo" específico da Adriana, sempre registrado.
+- [Registro de dados]
+Sempre ao fazer commit de qualquer ajuste solicitado, registrar no arquivo memory-work.md cada ajuste ou alteração feita na sessão deve ser registrado e os dados que ficarem pendentes na sessão registre no arquivo proxima-sessao.md, ler ambos os arquivos sempre no inicio de uma sessão.
