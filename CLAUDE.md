@@ -369,5 +369,3 @@ específico aqui, menos eu erro:
 - [Erros sempre em português](erros-sempre-em-portugues.md) — nunca mostrar erro cru do driver/banco em inglês; usar `mensagemErroAmigavel` (revenda).
 - [Arquitetura de contas Meta](meta-contas-arquitetura.md) — 3 Business Managers (cuidado, 2 se chamam "Carro e Cia"), páginas/anúncios/catálogos/WABA/pixels mapeados.
 - [Prompt da Clara só com autorizo](clara-prompt-somente-com-autorizo.md) — nunca alterar ai_prompts_config sem "autorizo" específico da Adriana, sempre registrado.
-- [Registro de dados]
-Sempre ao fazer commit de qualquer ajuste solicitado, registrar no arquivo memory-work.md cada ajuste ou alteração feita na sessão deve ser registrado e os dados que ficarem pendentes na sessão registre no arquivo proxima-sessao.md, ler ambos os arquivos sempre no inicio de uma sessão.
