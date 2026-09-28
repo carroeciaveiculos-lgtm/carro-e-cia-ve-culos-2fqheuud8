@@ -83,17 +83,81 @@ de `db push` — vale uma sessão dedicada só pra isso um dia.
   clicar em "Sincronizar Drive" na edição do veículo agora que a causa foi
   corrigida, e reprocessar o ML depois.
 
+**[CONCLUÍDO 28/09/2026] Commit, push e deploy publicados.** Commit
+`fdc0d0a` no `origin/main`. Front-end publicado via `npx wrangler deploy`
+(rodado pela própria Adriana, comando bloqueado pro Claude Code pelo
+classificador "Production Deploy" mesmo com sandbox desativado — não é
+bug, é intencional, ver `docs/...` se quiser registrar). Confirmado no ar:
+`https://carro-e-cia-ve-culos-2fqheuud8.lgacomerciodeveiculos.workers.dev`,
+Version ID `f4b13f61-fc7b-443b-b026-961ba512b9c9`. Lembrar a Adriana de dar
+Ctrl+F5 se ela já estava com o painel aberto.
+
+**[CONCLUÍDO 28/09/2026] Artigo "Desfazer Venda" na Central de Ajuda** —
+salvo em `ajuda_conteudos` (id `45cce234-8d45-4832-b995-2df313be60c3`),
+setor Estoque/Portais. Checklist `docs/manual-operacional-contexto.md`
+atualizado.
+
+**[CONCLUÍDO 28/09/2026] Achado real durante a investigação do botão
+"Sync Drive" (pedido dela, vídeo do H6 não carregou)**: o botão do
+`VehicleFormModal.tsx` só chama `sync-google-drive` (fotos) — nunca chamou
+`sync-drive-videos` (vídeo), nem hoje nem em nenhum commit da história do
+repo. O texto na tela ("Sync Drive, que já traz vídeos separadamente das
+fotos") e `docs/google-drive-integracao.md` descrevem um fluxo que nunca
+foi ligado de verdade — só testado direto na function em 04/09, nunca via
+o botão. Confirmado nos logs (chamada de 17:06 UTC bateu só em
+`sync-google-drive`) e no banco (H6 com 20 fotos, `videos: []`).
+**[CORRIGIDO 28/09/2026]** `handleSyncGoogleDrive` (`VehicleFormModal.tsx`)
+agora chama `sync-drive-videos` também, depois de sincronizar as fotos,
+sem deixar erro de vídeo (ex.: veículo sem pasta de vídeo no Drive, caso
+comum, resposta 404 "Pasta não encontrada") esconder o sucesso das fotos.
+Toast final soma fotos+vídeos sincronizados. Lint e build limpos.
+**Testado de verdade** (não só lido): não consegui clicar até a aba "Fotos
+e Mídia" no navegador — achado novo, ver bug abaixo — então testei os 2
+requests exatamente como o botão faz (mesmo token de sessão, mesma URL,
+mesmo body `{placa}}`), direto via `fetch` no console do navegador logado:
+`sync-google-drive` pro SGI9C15 (H6) devolveu 200 com 0 fotos novas (já
+tinha as 20); `sync-drive-videos` pro mesmo SGI9C15 devolveu 404 "Pasta
+não encontrada" (H6 não tem pasta de vídeo no Drive — confirma que esse
+veículo é o caso "sem vídeo", não um bug); `sync-drive-videos` pro
+RFV1E55 (que já tem 1 vídeo salvo) devolveu 200 com `totalVideosSynced: 0`
+(dedup funcionando). Os dois formatos de resposta (sucesso e "não
+encontrada") batem exatamente com o que o código novo trata.
+
+**Achado novo, ampliando o bug de crash das abas do Estoque (sessão 28,
+item acima)**: o mesmo crash (`NotFoundError: removeChild`) também
+acontece dentro do PRÓPRIO modal de editar veículo, ao trocar pra aba
+"Fotos e Mídia" — não é só nas abas da listagem (Ativos/Vendidos/
+Rascunhos). Testado com clique de mouse real E com evento disparado via
+JS (`dispatchEvent` de pointerdown/mousedown/pointerup/mouseup/click,
+`data-state` confirmado como `active` antes do crash) — os dois travam a
+página igual. Não é causado pelo fix desta sessão (reproduz em qualquer
+veículo, sem relação com `sync-google-drive`/`sync-drive-videos`). Achado
+mais sério do que a nota anterior sugeria — vale investigar a fundo numa
+sessão futura, provavelmente algo genérico no Radix Tabs deste projeto
+(duas instâncias diferentes de Tabs com o mesmo bug).
+
+**[CONCLUÍDO 28/09/2026] Crons de sync de portal (wm-sync/napista-sync/
+ml-sync) de 30 pra 10 minutos** — pedido direto da Adriana. Verificado
+antes: nenhum rate limit documentado em nenhuma das 3 plataformas (nem no
+código, nem nos docs técnicos); volume real baixo (~27 veículos ativos,
+cada cron processa até 50 pendentes por rodada, raramente perto disso).
+Migration `20260928173702_ajusta_frequencia_sync_portais_10min.sql`
+aplicada via MCP (`cron.alter_job`), conferida em `cron.job` — os 3 jobs
+já estão `*/10 * * * *`.
+
 **Pendente:**
-1. Artigo da Central de Ajuda sobre o fluxo "Desfazer Venda" — não escrito
-   ainda nesta sessão, combinado que entra depois.
-2. Nada commitado/pushado ainda — build e lint limpos, testado, falta só
-   autorização (separada, por regra) pra commit+push.
-3. **[RESOLVIDO 28/09/2026]** Sincronizar as fotos do H6 do Drive (causa raiz
-   corrigida, ver item 5) e reprocessar publicação no Mercado Livre — ação
+1. **[RESOLVIDO 28/09/2026]** Sincronizar as fotos do H6 do Drive (causa raiz
+   corrigida, ver item 4) e reprocessar publicação no Mercado Livre — ação
    da Adriana, botão "Sincronizar Drive" na edição do veículo.
-4. Investigar o crash de clique nas abas do Estoque (achado acima) — só se
-   ela confirmar que acontece no navegador dela também.
-5. **Investigação do erro "veículo não encontrado" no Sync Drive do H6 —
+2. **Commit/push/deploy do fix do "Sync Drive"** (código pronto, lint/build
+   limpos, testado via fetch direto — ver achado acima) — ainda não subiu,
+   falta autorização.
+3. Investigar o crash de clique nas abas (achado ampliado acima: também
+   acontece dentro do modal de editar veículo, não só na listagem do
+   Estoque) — não bloqueia produção (o botão real ainda funciona lá,
+   quem trava é só o clique na aba dentro do formulário), mas atrapalha
+   testar coisas nessa área. Prioridade pra investigar a fundo.
+4. **Investigação do erro "veículo não encontrado" no Sync Drive do H6 —
    RESOLVIDA (28/09/2026)**: a pasta e as 19 fotos estavam certas no Drive
    (confirmado via function de diagnóstico temporária, já apagada). Causa
    raiz real: existiam **dois cadastros com a mesma placa SGI9C15** (um
@@ -108,7 +172,7 @@ de `db push` — vale uma sessão dedicada só pra isso um dia.
    qualquer duplicata de placa dali pra frente, testado ao vivo (insert de
    teste com placa em minúsculo/hífen foi rejeitado corretamente). Não
    reinvestigar esse achado — se aparecer de novo, é caso novo.
-6. **Plano de prevenção da dívida de migrations pedido pela Adriana
+5. **Plano de prevenção da dívida de migrations pedido pela Adriana
    (28/09/2026)**: ela quer uma regra permanente, válida pra TODOS os
    projetos dela (atuais e futuros), pra `apply_migration` via MCP parar de
    descasar do arquivo local. Plano proposto (aguardando "autorizo" pra

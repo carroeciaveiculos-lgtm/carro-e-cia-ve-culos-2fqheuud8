@@ -518,37 +518,81 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
       return
     }
     setIsSyncingDrive(true)
+    const placa = formData.placa.toUpperCase().replace(/[^A-Z0-9]/g, '')
+    let syncedPhotos = 0
+    let syncedVideos = 0
+
     try {
       const { data, error } = await supabase.functions.invoke('sync-google-drive', {
-        body: { placa: formData.placa.toUpperCase().replace(/[^A-Z0-9]/g, '') },
+        body: { placa },
       })
       if (error) throw error
-      if (data?.success !== false) {
-        const synced = data?.totalPhotosSynced || 0
-        if (synced > 0 && formData.id) {
-          const { data: updated } = await supabase
-            .from('veiculos')
-            .select('fotos')
-            .eq('id', formData.id)
-            .single()
-          if (updated?.fotos) {
-            setFormData((p: any) => ({ ...p, fotos: updated.fotos }))
-          }
+      if (data?.success === false) throw new Error(data?.error || 'Falha na sincronização')
+      syncedPhotos = data?.totalPhotosSynced || 0
+      if (syncedPhotos > 0) {
+        const { data: updated } = await supabase
+          .from('veiculos')
+          .select('fotos')
+          .eq('id', formData.id)
+          .single()
+        if (updated?.fotos) {
+          setFormData((p: any) => ({ ...p, fotos: updated.fotos }))
         }
-        toast({
-          title:
-            synced > 0
-              ? `Sincronização concluída: ${synced} fotos`
-              : 'Nenhuma foto nova encontrada',
-        })
-      } else {
-        throw new Error(data?.error || 'Falha na sincronização')
       }
     } catch (err: any) {
-      toast({ title: 'Erro na sincronização', description: err.message, variant: 'destructive' })
+      setIsSyncingDrive(false)
+      toast({ title: 'Erro na sincronização de fotos', description: err.message, variant: 'destructive' })
+      return
+    }
+
+    // Vídeo é uma pasta raiz separada no Drive (docs/google-drive-integracao.md) --
+    // nem todo veículo tem pasta de vídeo, então "não encontrada" não é erro,
+    // é o caso comum. Nunca deixa um problema aqui esconder que as fotos já
+    // sincronizaram com sucesso.
+    try {
+      const { data: videoData, error: videoError } = await supabase.functions.invoke(
+        'sync-drive-videos',
+        { body: { placa } },
+      )
+      if (videoError) throw videoError
+      if (videoData?.success === false) throw new Error(videoData?.error || 'Falha na sincronização de vídeo')
+      syncedVideos = videoData?.totalVideosSynced || 0
+      if (syncedVideos > 0) {
+        const { data: updatedVideo } = await supabase
+          .from('veiculos')
+          .select('videos')
+          .eq('id', formData.id)
+          .single()
+        if (updatedVideo?.videos) {
+          setFormData((p: any) => ({ ...p, videos: updatedVideo.videos }))
+        }
+      }
+    } catch (err: any) {
+      let videoErrorMsg = err?.message || ''
+      if (err?.context && typeof err.context.json === 'function') {
+        try {
+          const body = await err.context.json()
+          videoErrorMsg = body?.error || videoErrorMsg
+        } catch {
+          // corpo do erro não veio em JSON -- mantém a mensagem já capturada acima
+        }
+      }
+      if (!/não encontrada/i.test(videoErrorMsg)) {
+        console.warn('Sync de vídeo do Drive não concluído:', videoErrorMsg)
+      }
     } finally {
       setIsSyncingDrive(false)
     }
+
+    const partes: string[] = []
+    if (syncedPhotos > 0) partes.push(`${syncedPhotos} fotos`)
+    if (syncedVideos > 0) partes.push(`${syncedVideos} vídeos`)
+    toast({
+      title:
+        partes.length > 0
+          ? `Sincronização concluída: ${partes.join(' + ')}`
+          : 'Nenhuma foto ou vídeo novo encontrado',
+    })
   }
 
   useEffect(() => {
