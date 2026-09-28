@@ -12,6 +12,31 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.5"
   }
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
       access_log: {
@@ -76,6 +101,63 @@ export type Database = {
           plataforma?: string
           status?: string | null
           usuario_id?: string | null
+        }
+        Relationships: []
+      }
+      ads_solicitacoes_ajuste: {
+        Row: {
+          campanha_id: string
+          campanha_nome: string | null
+          decidido_em: string | null
+          decidido_por: string | null
+          descricao: string | null
+          erro: string | null
+          id: string
+          origem: string
+          plataforma: string
+          resultado_api: Json | null
+          solicitado_em: string
+          solicitado_por: string | null
+          status: string
+          tipo_ajuste: string
+          valor_atual: Json | null
+          valor_novo: Json
+        }
+        Insert: {
+          campanha_id: string
+          campanha_nome?: string | null
+          decidido_em?: string | null
+          decidido_por?: string | null
+          descricao?: string | null
+          erro?: string | null
+          id?: string
+          origem?: string
+          plataforma: string
+          resultado_api?: Json | null
+          solicitado_em?: string
+          solicitado_por?: string | null
+          status?: string
+          tipo_ajuste: string
+          valor_atual?: Json | null
+          valor_novo: Json
+        }
+        Update: {
+          campanha_id?: string
+          campanha_nome?: string | null
+          decidido_em?: string | null
+          decidido_por?: string | null
+          descricao?: string | null
+          erro?: string | null
+          id?: string
+          origem?: string
+          plataforma?: string
+          resultado_api?: Json | null
+          solicitado_em?: string
+          solicitado_por?: string | null
+          status?: string
+          tipo_ajuste?: string
+          valor_atual?: Json | null
+          valor_novo?: Json
         }
         Relationships: []
       }
@@ -224,33 +306,77 @@ export type Database = {
       }
       ai_prompts_config: {
         Row: {
+          api_provider: string | null
           default_prompt: string
           description: string | null
+          formato_resposta: string | null
           id: string
           name: string
+          onde_fica: string | null
           prompt_text: string
+          rodape_fixo: string | null
           slug: string
           updated_at: string | null
         }
         Insert: {
+          api_provider?: string | null
           default_prompt: string
           description?: string | null
+          formato_resposta?: string | null
           id?: string
           name: string
+          onde_fica?: string | null
           prompt_text: string
+          rodape_fixo?: string | null
           slug: string
           updated_at?: string | null
         }
         Update: {
+          api_provider?: string | null
           default_prompt?: string
           description?: string | null
+          formato_resposta?: string | null
           id?: string
           name?: string
+          onde_fica?: string | null
           prompt_text?: string
+          rodape_fixo?: string | null
           slug?: string
           updated_at?: string | null
         }
         Relationships: []
+      }
+      ai_prompts_historico: {
+        Row: {
+          alterado_em: string
+          alterado_por: string | null
+          id: string
+          prompt_text_anterior: string
+          slug: string
+        }
+        Insert: {
+          alterado_em?: string
+          alterado_por?: string | null
+          id?: string
+          prompt_text_anterior: string
+          slug: string
+        }
+        Update: {
+          alterado_em?: string
+          alterado_por?: string | null
+          id?: string
+          prompt_text_anterior?: string
+          slug?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_prompts_historico_alterado_por_fkey"
+            columns: ["alterado_por"]
+            isOneToOne: false
+            referencedRelation: "usuarios"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       ajuda_conteudos: {
         Row: {
@@ -259,6 +385,7 @@ export type Database = {
           como_utilizar: string | null
           created_at: string | null
           dependencias: string | null
+          grupo: string | null
           id: string
           is_faq: boolean | null
           o_que_e: string | null
@@ -274,6 +401,7 @@ export type Database = {
           como_utilizar?: string | null
           created_at?: string | null
           dependencias?: string | null
+          grupo?: string | null
           id?: string
           is_faq?: boolean | null
           o_que_e?: string | null
@@ -289,6 +417,7 @@ export type Database = {
           como_utilizar?: string | null
           created_at?: string | null
           dependencias?: string | null
+          grupo?: string | null
           id?: string
           is_faq?: boolean | null
           o_que_e?: string | null
@@ -734,6 +863,106 @@ export type Database = {
           },
         ]
       }
+      avaliacoes_veiculo: {
+        Row: {
+          agendamento_id: string | null
+          ano_fabricacao: number | null
+          ano_modelo: number | null
+          avaliador_id: string | null
+          cambio: string | null
+          combustivel: string | null
+          cor: string | null
+          created_at: string
+          destino: string
+          estado_conservacao: string | null
+          fotos: string[] | null
+          id: string
+          itens_opcionais: string[] | null
+          lead_id: string
+          marca: string
+          modelo: string
+          observacao_debito: string | null
+          observacoes: string | null
+          placa: string | null
+          quilometragem: number | null
+          tem_debito_multa_sinistro: boolean
+          updated_at: string
+          valor_proposto: number | null
+        }
+        Insert: {
+          agendamento_id?: string | null
+          ano_fabricacao?: number | null
+          ano_modelo?: number | null
+          avaliador_id?: string | null
+          cambio?: string | null
+          combustivel?: string | null
+          cor?: string | null
+          created_at?: string
+          destino?: string
+          estado_conservacao?: string | null
+          fotos?: string[] | null
+          id?: string
+          itens_opcionais?: string[] | null
+          lead_id: string
+          marca: string
+          modelo: string
+          observacao_debito?: string | null
+          observacoes?: string | null
+          placa?: string | null
+          quilometragem?: number | null
+          tem_debito_multa_sinistro?: boolean
+          updated_at?: string
+          valor_proposto?: number | null
+        }
+        Update: {
+          agendamento_id?: string | null
+          ano_fabricacao?: number | null
+          ano_modelo?: number | null
+          avaliador_id?: string | null
+          cambio?: string | null
+          combustivel?: string | null
+          cor?: string | null
+          created_at?: string
+          destino?: string
+          estado_conservacao?: string | null
+          fotos?: string[] | null
+          id?: string
+          itens_opcionais?: string[] | null
+          lead_id?: string
+          marca?: string
+          modelo?: string
+          observacao_debito?: string | null
+          observacoes?: string | null
+          placa?: string | null
+          quilometragem?: number | null
+          tem_debito_multa_sinistro?: boolean
+          updated_at?: string
+          valor_proposto?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "avaliacoes_veiculo_agendamento_id_fkey"
+            columns: ["agendamento_id"]
+            isOneToOne: false
+            referencedRelation: "agendamentos_visita"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "avaliacoes_veiculo_avaliador_id_fkey"
+            columns: ["avaliador_id"]
+            isOneToOne: false
+            referencedRelation: "usuarios"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "avaliacoes_veiculo_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       block_templates: {
         Row: {
           categoria: string
@@ -1168,6 +1397,7 @@ export type Database = {
           proprietario_email: string | null
           proprietario_nome: string | null
           proprietario_telefone: string | null
+          tipo_documento: string
           updated_at: string | null
           veiculo_id: string | null
         }
@@ -1185,6 +1415,7 @@ export type Database = {
           proprietario_email?: string | null
           proprietario_nome?: string | null
           proprietario_telefone?: string | null
+          tipo_documento?: string
           updated_at?: string | null
           veiculo_id?: string | null
         }
@@ -1202,6 +1433,7 @@ export type Database = {
           proprietario_email?: string | null
           proprietario_nome?: string | null
           proprietario_telefone?: string | null
+          tipo_documento?: string
           updated_at?: string | null
           veiculo_id?: string | null
         }
@@ -1363,6 +1595,52 @@ export type Database = {
             columns: ["conversa_id"]
             isOneToOne: false
             referencedRelation: "crm_conversas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      desistencias_venda: {
+        Row: {
+          criado_em: string
+          criado_por: string | null
+          id: string
+          motivo: string
+          veiculo_id: string
+        }
+        Insert: {
+          criado_em?: string
+          criado_por?: string | null
+          id?: string
+          motivo: string
+          veiculo_id: string
+        }
+        Update: {
+          criado_em?: string
+          criado_por?: string | null
+          id?: string
+          motivo?: string
+          veiculo_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "desistencias_venda_criado_por_fkey"
+            columns: ["criado_por"]
+            isOneToOne: false
+            referencedRelation: "usuarios"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "desistencias_venda_veiculo_id_fkey"
+            columns: ["veiculo_id"]
+            isOneToOne: false
+            referencedRelation: "pendencias_publicacao"
+            referencedColumns: ["veiculo_id"]
+          },
+          {
+            foreignKeyName: "desistencias_venda_veiculo_id_fkey"
+            columns: ["veiculo_id"]
+            isOneToOne: false
+            referencedRelation: "veiculos"
             referencedColumns: ["id"]
           },
         ]
@@ -1712,6 +1990,39 @@ export type Database = {
           nome?: string
           updated_at?: string | null
           valor_fipe?: number | null
+        }
+        Relationships: []
+      }
+      fipe_auditoria_modelo_versao_runs: {
+        Row: {
+          candidatos: Json
+          erro: string | null
+          executado_em: string
+          id: string
+          marcas_auditadas: number
+          marcas_sem_correspondencia_fipe: Json
+          modelos_auditados: number
+          status: string
+        }
+        Insert: {
+          candidatos?: Json
+          erro?: string | null
+          executado_em?: string
+          id?: string
+          marcas_auditadas?: number
+          marcas_sem_correspondencia_fipe?: Json
+          modelos_auditados?: number
+          status?: string
+        }
+        Update: {
+          candidatos?: Json
+          erro?: string | null
+          executado_em?: string
+          id?: string
+          marcas_auditadas?: number
+          marcas_sem_correspondencia_fipe?: Json
+          modelos_auditados?: number
+          status?: string
         }
         Relationships: []
       }
@@ -2174,6 +2485,7 @@ export type Database = {
       leads: {
         Row: {
           ai_enabled: boolean | null
+          ai_processing_started_at: string | null
           ai_score: number | null
           ai_summary: string | null
           anuncio_thumbnail_url: string | null
@@ -2188,6 +2500,7 @@ export type Database = {
           cpf: string | null
           created_at: string | null
           cta_type: string | null
+          ctwa_clid: string | null
           email: string | null
           external_lead_id: string | null
           faixa_preco: string | null
@@ -2195,6 +2508,7 @@ export type Database = {
           gclid: string | null
           google_ads_customer_id: string | null
           id: string
+          motivo_perda: string | null
           nome: string
           notas_internas: string | null
           observacoes: string | null
@@ -2222,6 +2536,7 @@ export type Database = {
         }
         Insert: {
           ai_enabled?: boolean | null
+          ai_processing_started_at?: string | null
           ai_score?: number | null
           ai_summary?: string | null
           anuncio_thumbnail_url?: string | null
@@ -2236,6 +2551,7 @@ export type Database = {
           cpf?: string | null
           created_at?: string | null
           cta_type?: string | null
+          ctwa_clid?: string | null
           email?: string | null
           external_lead_id?: string | null
           faixa_preco?: string | null
@@ -2243,6 +2559,7 @@ export type Database = {
           gclid?: string | null
           google_ads_customer_id?: string | null
           id?: string
+          motivo_perda?: string | null
           nome: string
           notas_internas?: string | null
           observacoes?: string | null
@@ -2270,6 +2587,7 @@ export type Database = {
         }
         Update: {
           ai_enabled?: boolean | null
+          ai_processing_started_at?: string | null
           ai_score?: number | null
           ai_summary?: string | null
           anuncio_thumbnail_url?: string | null
@@ -2284,6 +2602,7 @@ export type Database = {
           cpf?: string | null
           created_at?: string | null
           cta_type?: string | null
+          ctwa_clid?: string | null
           email?: string | null
           external_lead_id?: string | null
           faixa_preco?: string | null
@@ -2291,6 +2610,7 @@ export type Database = {
           gclid?: string | null
           google_ads_customer_id?: string | null
           id?: string
+          motivo_perda?: string | null
           nome?: string
           notas_internas?: string | null
           observacoes?: string | null
@@ -2339,6 +2659,51 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      linkedin_integracao: {
+        Row: {
+          access_token: string | null
+          author_nome: string | null
+          author_urn: string | null
+          created_at: string
+          expires_at: string | null
+          id: string
+          oauth_state: string | null
+          refresh_token: string | null
+          refresh_token_expires_at: string | null
+          status: string
+          ultimo_erro: string | null
+          updated_at: string
+        }
+        Insert: {
+          access_token?: string | null
+          author_nome?: string | null
+          author_urn?: string | null
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          oauth_state?: string | null
+          refresh_token?: string | null
+          refresh_token_expires_at?: string | null
+          status?: string
+          ultimo_erro?: string | null
+          updated_at?: string
+        }
+        Update: {
+          access_token?: string | null
+          author_nome?: string | null
+          author_urn?: string | null
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          oauth_state?: string | null
+          refresh_token?: string | null
+          refresh_token_expires_at?: string | null
+          status?: string
+          ultimo_erro?: string | null
+          updated_at?: string
+        }
+        Relationships: []
       }
       listing_preferences: {
         Row: {
@@ -2822,6 +3187,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      modelo_versao_excecoes: {
+        Row: {
+          created_at: string | null
+          id: string
+          termo: string
+          tipo: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          termo: string
+          tipo: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          termo?: string
+          tipo?: string
+        }
+        Relationships: []
+      }
+      motivos_perda_personalizados: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          id: string
+          nome: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          id?: string
+          nome: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          id?: string
+          nome?: string
+        }
+        Relationships: []
       }
       napista_atributos: {
         Row: {
@@ -3963,9 +4370,12 @@ export type Database = {
           ad_types: Json | null
           adaptado_deficientes: string | null
           alienado: string | null
+          alterado_em: string | null
+          alterado_por: string | null
           ano_fabricacao: number | null
           ano_modelo: number | null
           blindado: string | null
+          busca_normalizada: string | null
           cambio: string | null
           caracteristicas: Json | null
           categoria: string | null
@@ -3979,6 +4389,7 @@ export type Database = {
           combustivel_sintetico: string | null
           cor: string | null
           created_at: string | null
+          data_venda: string | null
           descricao: string | null
           destaque: boolean | null
           diferenciais: Json | null
@@ -4071,9 +4482,12 @@ export type Database = {
           ad_types?: Json | null
           adaptado_deficientes?: string | null
           alienado?: string | null
+          alterado_em?: string | null
+          alterado_por?: string | null
           ano_fabricacao?: number | null
           ano_modelo?: number | null
           blindado?: string | null
+          busca_normalizada?: string | null
           cambio?: string | null
           caracteristicas?: Json | null
           categoria?: string | null
@@ -4087,6 +4501,7 @@ export type Database = {
           combustivel_sintetico?: string | null
           cor?: string | null
           created_at?: string | null
+          data_venda?: string | null
           descricao?: string | null
           destaque?: boolean | null
           diferenciais?: Json | null
@@ -4179,9 +4594,12 @@ export type Database = {
           ad_types?: Json | null
           adaptado_deficientes?: string | null
           alienado?: string | null
+          alterado_em?: string | null
+          alterado_por?: string | null
           ano_fabricacao?: number | null
           ano_modelo?: number | null
           blindado?: string | null
+          busca_normalizada?: string | null
           cambio?: string | null
           caracteristicas?: Json | null
           categoria?: string | null
@@ -4195,6 +4613,7 @@ export type Database = {
           combustivel_sintetico?: string | null
           cor?: string | null
           created_at?: string | null
+          data_venda?: string | null
           descricao?: string | null
           destaque?: boolean | null
           diferenciais?: Json | null
@@ -4285,6 +4704,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "veiculos_alterado_por_fkey"
+            columns: ["alterado_por"]
+            isOneToOne: false
+            referencedRelation: "usuarios"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "veiculos_responsavel_id_fkey"
             columns: ["responsavel_id"]
             isOneToOne: false
@@ -4315,6 +4741,7 @@ export type Database = {
           renavam: string | null
           updated_at: string
           url_fipe: string | null
+          versao: string | null
         }
         Insert: {
           ano_fab?: string | null
@@ -4337,6 +4764,7 @@ export type Database = {
           renavam?: string | null
           updated_at?: string
           url_fipe?: string | null
+          versao?: string | null
         }
         Update: {
           ano_fab?: string | null
@@ -4359,6 +4787,61 @@ export type Database = {
           renavam?: string | null
           updated_at?: string
           url_fipe?: string | null
+          versao?: string | null
+        }
+        Relationships: []
+      }
+      veiculos_modelo_versao_backup_fase4: {
+        Row: {
+          backed_up_at: string | null
+          modelo_original: string | null
+          placa: string | null
+          veiculo_id: string
+          versao_original: string | null
+        }
+        Insert: {
+          backed_up_at?: string | null
+          modelo_original?: string | null
+          placa?: string | null
+          veiculo_id: string
+          versao_original?: string | null
+        }
+        Update: {
+          backed_up_at?: string | null
+          modelo_original?: string | null
+          placa?: string | null
+          veiculo_id?: string
+          versao_original?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "veiculos_modelo_versao_backup_fase4_veiculo_id_fkey"
+            columns: ["veiculo_id"]
+            isOneToOne: true
+            referencedRelation: "pendencias_publicacao"
+            referencedColumns: ["veiculo_id"]
+          },
+          {
+            foreignKeyName: "veiculos_modelo_versao_backup_fase4_veiculo_id_fkey"
+            columns: ["veiculo_id"]
+            isOneToOne: true
+            referencedRelation: "veiculos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      whatsapp_mensagens_processadas: {
+        Row: {
+          created_at: string | null
+          wamid: string
+        }
+        Insert: {
+          created_at?: string | null
+          wamid: string
+        }
+        Update: {
+          created_at?: string | null
+          wamid?: string
         }
         Relationships: []
       }
@@ -4490,6 +4973,7 @@ export type Database = {
       }
       wm_mapeamento_veiculos: {
         Row: {
+          ano_modelo_override_wm: number | null
           candidatos_modelo: Json | null
           candidatos_versao: Json | null
           codigo_anuncio_wm: string | null
@@ -4513,6 +4997,7 @@ export type Database = {
           veiculo_id: string | null
         }
         Insert: {
+          ano_modelo_override_wm?: number | null
           candidatos_modelo?: Json | null
           candidatos_versao?: Json | null
           codigo_anuncio_wm?: string | null
@@ -4536,6 +5021,7 @@ export type Database = {
           veiculo_id?: string | null
         }
         Update: {
+          ano_modelo_override_wm?: number | null
           candidatos_modelo?: Json | null
           candidatos_versao?: Json | null
           codigo_anuncio_wm?: string | null
@@ -4868,6 +5354,13 @@ export type Database = {
     }
     Functions: {
       auto_retry_stuck_ml_listings: { Args: never; Returns: undefined }
+      cortar_modelo_versao: {
+        Args: { texto_modelo: string }
+        Returns: {
+          modelo: string
+          versao: string
+        }[]
+      }
       get_internal_service_secret: { Args: never; Returns: string }
       get_or_create_conversa: {
         Args: {
@@ -4882,6 +5375,13 @@ export type Database = {
       get_platform_sync_dashboard: {
         Args: { p_platform: string }
         Returns: Json
+      }
+      get_veiculos_publicados_plataforma: {
+        Args: { p_platform: string }
+        Returns: {
+          tier: string
+          veiculo_id: string
+        }[]
       }
       get_wm_dashboard: { Args: { p_loja_id?: string }; Returns: Json }
       increment_page_view: { Args: { p_slug: string }; Returns: undefined }
@@ -4925,6 +5425,7 @@ export type Database = {
       show_trgm: { Args: { "": string }; Returns: string[] }
       slugify: { Args: { input_text: string }; Returns: string }
       unaccent: { Args: { "": string }; Returns: string }
+      usuario_em_setor: { Args: { nome_setor: string }; Returns: boolean }
       usuario_tem_nivel: { Args: { niveis: string[] }; Returns: boolean }
     }
     Enums: {
@@ -4944,12 +5445,12 @@ export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -4973,11 +5474,11 @@ export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -4998,11 +5499,11 @@ export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -5023,11 +5524,11 @@ export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
     | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -5040,11 +5541,11 @@ export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
     | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
+    : never) = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -5054,6 +5555,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {},
   },

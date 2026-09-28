@@ -37,6 +37,7 @@ import {
   Trash2,
   Send,
   EyeOff,
+  RotateCcw,
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { usePermissoes } from '@/hooks/use-permissoes'
@@ -221,11 +222,88 @@ export default function AdminEstoque() {
   }
 
   const handleAtivar = async (id: string) => {
-    const { error } = await supabase.from('veiculos').update({ status: 'disponivel' }).eq('id', id)
+    // exibir_no_site precisa voltar pra true aqui também -- achado ao
+    // planejar o Desfazer Venda: esse botão tinha o mesmo bug (mudava status
+    // mas nunca religava a visibilidade, então o veículo "ativado" podia
+    // continuar invisível no site sem ninguém notar).
+    const { error } = await supabase
+      .from('veiculos')
+      .update({ status: 'disponivel', exibir_no_site: true })
+      .eq('id', id)
     if (error) toast({ title: 'Erro ao ativar veículo', variant: 'destructive' })
     else {
       toast({ title: 'Veículo ativado com sucesso!' })
       loadVehicles()
+    }
+  }
+
+  const handleDesfazerVenda = async (veiculo: any) => {
+    const { permitido, diasUteisPassados } = prazoDesfazerVenda(veiculo.data_venda)
+    if (!permitido) {
+      toast({
+        title: 'Prazo de desistência já venceu',
+        description: `Já passaram ${diasUteisPassados} dias úteis desde a venda (prazo legal é 7).`,
+        variant: 'destructive',
+      })
+      return
+    }
+    const motivo = window.prompt('Motivo da desistência (obrigatório):')
+    if (!motivo || !motivo.trim()) {
+      if (motivo !== null) toast({ title: 'Motivo é obrigatório, operação cancelada' })
+      return
+    }
+    if (
+      !confirm(
+        'Confirmar que o cliente desistiu da compra? O veículo volta pro estoque ativo e uma publicação nova será pedida nos portais (Webmotors/NaPista/Mercado Livre), com link diferente do anúncio anterior.',
+      )
+    )
+      return
+
+    try {
+      const { error: erroVeiculo } = await supabase
+        .from('veiculos')
+        .update({ status: 'disponivel', exibir_no_site: true })
+        .eq('id', veiculo.id)
+      if (erroVeiculo) throw erroVeiculo
+
+      const { error: erroMotivo } = await supabase
+        .from('desistencias_venda')
+        .insert({ veiculo_id: veiculo.id, motivo: motivo.trim() })
+      if (erroMotivo) throw erroMotivo
+
+      // O anúncio antigo foi excluído de vez nos 3 portais quando o veículo
+      // foi vendido (confirmado com os especialistas de cada integração) --
+      // não existe "reabrir", só pedir um anúncio novo, do jeito que o
+      // gatilho de cadastro novo já faz.
+      if (veiculo.elegivel_portais !== false) {
+        await supabase
+          .from('estoque_publicacoes')
+          .insert({ veiculo_id: veiculo.id, platform: 'webmotors', status: 'pending_create' })
+        await supabase
+          .from('estoque_publicacoes')
+          .insert({ veiculo_id: veiculo.id, platform: 'napista', status: 'pending_create' })
+
+        const { data: mlExistente } = await supabase
+          .from('ml_listings')
+          .select('id')
+          .eq('veiculo_id', veiculo.id)
+          .maybeSingle()
+        if (mlExistente) {
+          await supabase
+            .from('ml_listings')
+            .update({ status: 'pending_create', ml_item_id: null, ml_listing_url: null, last_synced_at: null })
+            .eq('id', mlExistente.id)
+        } else {
+          await supabase
+            .from('ml_listings')
+            .insert({ veiculo_id: veiculo.id, status: 'pending_create' })
+        }
+      }
+
+      toast({ title: 'Venda desfeita', description: 'Veículo voltou pro estoque ativo.' })
+      loadVehicles()
+    } catch (err: any) {
+      toast({ title: 'Erro ao desfazer venda', description: err.message, variant: 'destructive' })
     }
   }
 
@@ -305,6 +383,30 @@ export default function AdminEstoque() {
   const diasEmEstoque = (dateString: string) => {
     if (!dateString) return 0
     return Math.floor((new Date().getTime() - new Date(dateString).getTime()) / (1000 * 3600 * 24))
+  }
+
+  // Conta só dias úteis (seg-sex) entre a venda e agora -- não desconta
+  // feriado nacional, só fim de semana. Prazo legal do CDC é 7 dias úteis.
+  const diasUteisEntre = (inicio: Date, fim: Date) => {
+    let dias = 0
+    const cursor = new Date(inicio)
+    cursor.setHours(0, 0, 0, 0)
+    const limite = new Date(fim)
+    limite.setHours(0, 0, 0, 0)
+    while (cursor < limite) {
+      cursor.setDate(cursor.getDate() + 1)
+      const diaSemana = cursor.getDay()
+      if (diaSemana !== 0 && diaSemana !== 6) dias++
+    }
+    return dias
+  }
+
+  // data_venda nula = venda registrada antes desse campo existir -- não dá
+  // pra checar prazo, então libera o botão em vez de bloquear por engano.
+  const prazoDesfazerVenda = (dataVenda: string | null) => {
+    if (!dataVenda) return { permitido: true, diasUteisPassados: null as number | null }
+    const diasUteisPassados = diasUteisEntre(new Date(dataVenda), new Date())
+    return { permitido: diasUteisPassados <= 7, diasUteisPassados }
   }
 
   const getStatusBadge = (status: string) => {
@@ -620,6 +722,27 @@ export default function AdminEstoque() {
                           <Send className="w-4 h-4" />
                         </Button>
                       )}
+                      {activeTab === 'vendidos' &&
+                        (() => {
+                          const { permitido, diasUteisPassados } = prazoDesfazerVenda(v.data_venda)
+                          const titulo = !v.data_venda
+                            ? 'Desfazer Venda (venda antiga, sem data registrada)'
+                            : permitido
+                              ? `Desfazer Venda (${diasUteisPassados}/7 dias úteis)`
+                              : `Prazo de 7 dias úteis já venceu (${diasUteisPassados} dias úteis)`
+                          return (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleDesfazerVenda(v)}
+                              disabled={!permitido}
+                              className="text-amber-600 hover:bg-amber-50 disabled:opacity-30"
+                              title={titulo}
+                            >
+                              <RotateCcw className="w-4 h-4" />
+                            </Button>
+                          )
+                        })()}
                       {activeTab === 'devolvidos' && (
                         <Button
                           variant="ghost"

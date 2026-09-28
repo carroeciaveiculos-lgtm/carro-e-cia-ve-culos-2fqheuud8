@@ -6,7 +6,8 @@ não de `~/.local/bin` ou qualquer outra. Achado em 16/08/2026: sessões
 abertas do lugar errado acumulam regra de permissão
 (`.claude/settings.local.json`) e registram conector MCP (Supabase, Resend,
 Meta Ads) na pasta errada — um projeto inteiro de configuração ficou preso
-em `~/.local/bin` sem ninguém notar.
+em `~/.local/bin` sem ninguém notar. Inicie suasessão lendo os arquivos: MEMORY_WORK.md e 
+PROXIMA_SESSÃO.md
 
 Revenda de veículos. Um único app React serve três coisas: o **site público**
 (estoque, blog, landing pages), o **CRM/admin** (`/admin/*`) e o **hub interno**
@@ -353,9 +354,9 @@ específico aqui, menos eu erro:
 - [Manual operacional atualizado](manual-operacional-atualizado.md) — Carro e Cia: toda função nova/ajustada no painel ganha artigo na Central de Ajuda, sempre.
 - [Lista de progresso no rodapé](lista-rodape-progresso.md) — em tarefa de vários passos, terminar a resposta com feito (riscado) x pendente.
 - [Cards de veículo: tamanho + sem corte](prioriza-consistencia-visual-cards.md) — card do mesmo tamanho, foto centralizada, espaço mínimo nas laterais, sem corte nem zoom.
-- [Manter memória atualizada](manter-memoria-atualizada.md) — atualizar MEMORY_WORK/memória a cada ajuste, não só ao fechar sessão.
+- [Manter memória atualizada](manter-memoria-atualizada.md) — atualizar MEMORY_WORK.md/memória a cada ajuste, não só ao fechar sessão.
 - [Sistema local sincronizado](sistema-local-sincronizado.md) — manter local alinhado com Supabase/GitHub/Cloudflare e avisar quando sincronizado.
-- [Preencher PROXIMA_SESSAO ao fechar](preencher-proxima-sessao-ao-fechar.md) — relatar estado, feito e planejado no arquivo de continuidade da sessão.
+- [Preencher PROXIMA_SESSAO ao fechar](preencher-proxima-sessao-ao-fechar.md) — relatar estado, feito, planejado e pendencias no arquivo de continuidade da sessão.
 - [Enviar localhost antes de testar](enviar-localhost-antes-teste.md) — projeto revenda: mandar link localhost:8080 pra ela testar antes de commit/push.
 - [Escopo só Projeto Site Carro e Cia](escopo-so-projeto-site-carro-e-cia.md) — nunca investigar outros projetos Supabase da conta (existe 2ª org com CRM/MyFinance.Ai).
 - [Conferir match rate do Pixel](pixel-match-rate-conferir.md) — follow-up pontual: checar daqui uns dias se subiu do zero após fix de 19/08/2026.

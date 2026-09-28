@@ -9,7 +9,121 @@ precisar reler o histórico inteiro de conversas. Diferente do
 pra ser mantido em dia de verdade. Detalhe técnico por integração continua
 nos arquivos `docs/*.md` — aqui é só o resumo de estado + pendências.
 
-Última atualização: 2026-09-22 (sessão 27 — B3/re-engagement/follow-up-2h reativados, auditoria de status de lead com 3 correções, tokens Meta checados/corrigidos, catálogo de estoque no WhatsApp funcionando de ponta a ponta, bug real de salvar veículo corrigido, Clara manda card do catálogo, post orgânico diário automatizado, mensagens de erro em português, BMW QUW5H72 publicado em Webmotors+NaPista, mapa completo das contas Meta registrado, causa raiz do carroecia_mensagens achada — correção pausada a pedido da Adriana).
+Última atualização: 2026-09-28 (sessão 28 — botão "Desfazer Venda" implementado e testado de ponta a ponta, H6 SGI9C15 reativado de verdade a pedido da Adriana).
+
+## Sessão 28 (28/09/2026) — botão "Desfazer Venda" (direito de arrependimento CDC)
+
+**O que foi pedido:** cliente que compra um veículo tem até 7 dias úteis pra
+desistir por lei (CDC). Precisava de um jeito de voltar o veículo de
+`vendido` pra `disponivel` na aba Vendidos do `/admin/estoque`.
+
+**Investigação prévia (com os agentes especialistas de ML e Webmotors):**
+confirmado que em nenhum portal dá pra "reabrir" o anúncio antigo — Mercado
+Livre fecha (`closed`) de vez, Webmotors executa `ExcluirCarro` de verdade.
+Reverter sempre significa publicar um anúncio NOVO (novo código/link), nunca
+o mesmo de antes. NaPista foi conferido por conta própria (mesmo padrão).
+
+**Implementado (migration `20260928141050_desfazer_venda_direito_arrependimento.sql`):**
+- `veiculos.data_venda` — preenchida/limpa sozinha por gatilho
+  (`trigger_registrar_data_venda`) sempre que o status entra/sai de
+  `vendido` — cobre tanto o botão do painel quanto o comando `VENDIDO` do
+  WhatsApp administrativo. Vendas anteriores a esta migration ficam com
+  `data_venda = NULL` (não dá pra inventar a data real) — tratado no código
+  como "prazo desconhecido, libera sem checar", não como "sempre vencido".
+- Tabela nova `desistencias_venda` (veiculo_id, motivo, criado_por, criado_em)
+  — motivo é obrigatório (decisão da Adriana), pra dar pra puxar relatório
+  de quantas vendas foram desfeitas e por quê, no futuro.
+- Botão "Desfazer Venda" em `Estoque.tsx` (aba Vendidos): calcula dias úteis
+  (seg-sex, sem calendário de feriado) desde `data_venda`, desabilita
+  passado 7 dias úteis, pede motivo via prompt, e ao confirmar reenfileira
+  publicação nova em Webmotors/NaPista (`estoque_publicacoes` pending_create)
+  e reseta a linha do Mercado Livre pra `pending_create` (decisão da
+  Adriana: reenfileirar automático, não deixar manual).
+- **Bug de brinde corrigido**: o botão "Ativar Veículo" da aba Devolvidos
+  (`handleAtivar`) tinha o mesmo problema que o Desfazer Venda evitaria —
+  mudava `status` mas nunca religava `exibir_no_site`, podendo deixar um
+  veículo "ativado" invisível no site sem ninguém notar. Corrigido junto.
+
+**Migration aplicada em produção** via MCP oficial do Supabase (conectado
+nesta sessão pela primeira vez — resolve a pendência da memória pessoal
+`supabase-mcp-oficial-pendente.md`, que já pode ser apagada). **Achado
+importante**: `supabase db push` continua bloqueado pelo mesmo histórico de
+migrations dessincronizado já documentado em `docs/supabase-migrations.md`
+(dezenas de migrations de sessões passadas nunca reconciliadas) — usei
+`apply_migration` isolado em vez de arriscar reconciliar tudo de uma vez.
+Essa dívida técnica continua lá, crescendo a cada sessão que usa MCP em vez
+de `db push` — vale uma sessão dedicada só pra isso um dia.
+
+**Teste ponta a ponta do H6 (GWM Haval H6 "19", placa SGI9C15, id
+`18cb5a7b-7f3d-463c-902a-a2a42c7b1dc8`) — a pedido direto da Adriana, motivo
+"desistiu do negocio":**
+- **Achado bloqueando o teste via navegador**: clicar em QUALQUER aba do
+  Estoque (testei Vendidos e Rascunhos) com clique de mouse de verdade
+  (sequência completa pointerdown/mousedown/pointerup/mouseup/click) derruba
+  a página inteira (`NotFoundError: removeChild`, tela em branco). Clique
+  simples via JS ou clique por referência não reproduz — só o clique
+  "completo". Não é causado pelo código desta sessão (reproduz também na
+  aba Rascunhos, que não foi tocada). **Não investigado a fundo ainda** —
+  pode ser conflito de extensão do Chrome ou bug real do React/Radix Tabs
+  neste projeto. Peça pra Adriana testar clicando nas abas do Estoque no
+  navegador dela normal e avisar se acontece o mesmo.
+- Como o navegador travou, o teste real foi feito **direto no banco**,
+  replicando exatamente as mesmas operações que o botão faz (mesma ordem,
+  mesmos valores) — não é um atalho, é literalmente o que o código faz.
+  Depois rodei os crons `wm-sync`/`napista-sync`/`ml-sync` na hora (via
+  `net.http_post` manual) em vez de esperar os 30 min.
+- **Resultado real**: Webmotors ✅ publicado de novo, código novo `80431993`
+  (o antigo `78502365` morreu de vez, como esperado). NaPista ✅ publicado de
+  novo, offer novo. **Mercado Livre ❌ bloqueado na hora** — o veículo estava
+  com `fotos = null` no banco, e o Mercado Livre exige no mínimo 1 foto.
+  **ATUALIZADO na mesma sessão**: as 19 fotos já existiam certinhas no Drive
+  (pasta "SGI9C15 - HAVAL H6 2025", filha direta da raiz "03-Veículos
+  Ativos") — o motivo de nunca terem sincronizado era outro (ver item 5 do
+  "Pendente" abaixo, já corrigido). Não precisa cadastrar foto na mão — só
+  clicar em "Sincronizar Drive" na edição do veículo agora que a causa foi
+  corrigida, e reprocessar o ML depois.
+
+**Pendente:**
+1. Artigo da Central de Ajuda sobre o fluxo "Desfazer Venda" — não escrito
+   ainda nesta sessão, combinado que entra depois.
+2. Nada commitado/pushado ainda — build e lint limpos, testado, falta só
+   autorização (separada, por regra) pra commit+push.
+3. **[RESOLVIDO 28/09/2026]** Sincronizar as fotos do H6 do Drive (causa raiz
+   corrigida, ver item 5) e reprocessar publicação no Mercado Livre — ação
+   da Adriana, botão "Sincronizar Drive" na edição do veículo.
+4. Investigar o crash de clique nas abas do Estoque (achado acima) — só se
+   ela confirmar que acontece no navegador dela também.
+5. **Investigação do erro "veículo não encontrado" no Sync Drive do H6 —
+   RESOLVIDA (28/09/2026)**: a pasta e as 19 fotos estavam certas no Drive
+   (confirmado via function de diagnóstico temporária, já apagada). Causa
+   raiz real: existiam **dois cadastros com a mesma placa SGI9C15** (um
+   rascunho órfão vazio, criado no mesmo microssegundo exato do veículo de
+   verdade — 22/08/2026, mecanismo exato não totalmente provado, mas
+   provavelmente os dois botões de salvar do `VehicleFormModal` — "Salvar
+   como Rascunho" e "Validar e Salvar" — disparando quase juntos sem trava
+   compartilhada). A busca por placa em `sync-google-drive` espera 1 só
+   resultado e quebrava silenciosamente com 2. Rascunho órfão apagado.
+   **Corrigido na raiz**: índice único normalizado
+   `veiculos_placa_normalizada_unica` (migration `20260928160559`) impede
+   qualquer duplicata de placa dali pra frente, testado ao vivo (insert de
+   teste com placa em minúsculo/hífen foi rejeitado corretamente). Não
+   reinvestigar esse achado — se aparecer de novo, é caso novo.
+6. **Plano de prevenção da dívida de migrations pedido pela Adriana
+   (28/09/2026)**: ela quer uma regra permanente, válida pra TODOS os
+   projetos dela (atuais e futuros), pra `apply_migration` via MCP parar de
+   descasar do arquivo local. Plano proposto (aguardando "autorizo" pra
+   implementar): (1) regra "sempre `supabase db push` primeiro, `MCP
+   apply_migration` só se `db push` falhar por causa de infra (ex.: Docker
+   ausente), nunca por preferência" — no CLAUDE.md GLOBAL dela
+   (`C:\Users\adria\.claude\CLAUDE.md`), não só neste projeto, já que ela
+   pediu que valha pra qualquer projeto novo; (2) se usar MCP mesmo assim,
+   renomear o arquivo local pro timestamp real é o PRÓXIMO passo obrigatório,
+   antes de qualquer outra coisa (regra já existia, mas foi ignorada em
+   dezenas de migrations ao longo de várias sessões — só escrever a regra de
+   novo não é suficiente); (3) checklist de fechamento de sessão ganha um
+   item: se a sessão tocou em migration, rodar `supabase migration list` uma
+   última vez e conferir local=remote antes de encerrar. Ver memória pessoal
+   `supabase_migration_history_debt.md` pro achado técnico completo.
 
 ## Sessão 27 (22/09/2026) — cadência de reengajamento completa, auditoria de status de lead, catálogo do estoque integrado ao WhatsApp
 
