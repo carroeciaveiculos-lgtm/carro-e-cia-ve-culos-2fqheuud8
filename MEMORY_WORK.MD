@@ -1,5 +1,48 @@
 # Memória de trabalho — Carro e Cia
 
+## Pedido novo (28/09/2026) — Gerador de criativos de anúncio (Meta/Google Ads)
+
+Adriana quer um ambiente pra criar imagens de anúncio (criativos) a partir
+das fotos já cadastradas de um veículo, pra usar em campanhas do Meta Ads e
+Google Ads. Escopo descrito por ela:
+
+- Ela escolhe quais fotos do veículo usar como base.
+- Sistema oferece **4 modelos/templates padrão** de composição (a definir
+  juntos — ainda não especificado quais).
+- Ou gera as 4 opções direto, ou pergunta antes qual das 4 ela quer gerar
+  (ela topa os dois jeitos, não decidiu qual prefere ainda).
+- Depois de gerada, precisa poder **salvar a imagem no computador** dela
+  (download).
+
+**Investigação feita (28/09/2026), antes de propor qualquer coisa:**
+- A aba "Marketing IA" do cadastro de veículo (`VehicleFormModal.tsx`,
+  `handleGerarAdKit`) hoje faz **só uma coisa**: chama `gerar-conteudo-social`
+  e mostra um texto (legenda pronta), sem nenhuma imagem envolvida. Não tem
+  nada de seleção de foto, template visual ou composição — é 100% texto.
+- `ImageEditorModal.tsx` (aba "Fotos & Mídia") edita **uma foto por vez**
+  (girar, otimizar com IA) — não compõe várias fotos num layout de anúncio.
+- **Conclusão: não existe hoje nada parecido com o que ela pediu — é feature
+  nova de verdade**, não um ajuste em cima do que já existe. A aba
+  "Marketing IA" é candidata natural pra abrigar isso, mas o conteúdo dela
+  precisa ser praticamente reconstruído, não só estendido.
+- Ponto técnico que conecta com padrão já existente: a tela **Regras de IA**
+  (`/admin/prompts-ia`, tabela `ai_prompts_config`) já é usada hoje pra
+  guardar prompt editável de geração de imagem (caso: imagem de vaga,
+  `gerar-imagem-vaga`, `gpt-image-2`, 2 opções pra escolher — mesmo padrão
+  dos "4 modelos" que ela quer). Os 4 prompts dos templates encaixariam
+  naturalmente como linhas novas ali, em vez de craveiro em código, seguindo
+  o padrão já estabelecido nas Fases 1-3 da unificação de regras de IA
+  (27-28/08/2026).
+
+**Não iniciado ainda** — só investigação e registro. Próximo passo é
+sessão dedicada pra definir com ela: os 4 modelos de template (o que cada
+um mostra — preço, km, selo "novidade", logo, etc.), se a composição é
+feita por IA generativa (tipo gpt-image-2 recebendo as fotos como
+referência) ou por um layout fixo com posições definidas (mais previsível,
+menos "alucinação" de texto/número errado — risco real com IA generativa
+pra colocar preço/km certo numa imagem), e onde entra o botão de download.
+
+
 Projeto: Carro e Cia Veículos (revenda). Pasta de trabalho:
 `C:\Projeto\Revenda Carro e Cia\carro-e-cia-ve-culos-2fqheuud8`
 
@@ -10,6 +53,34 @@ pra ser mantido em dia de verdade. Detalhe técnico por integração continua
 nos arquivos `docs/*.md` — aqui é só o resumo de estado + pendências.
 
 Última atualização: 2026-09-28 (sessão 28 — botão "Desfazer Venda" implementado e testado de ponta a ponta, H6 SGI9C15 reativado de verdade a pedido da Adriana).
+
+## CI/CD automatizado (28/09/2026)
+
+Deploy de front-end e de Edge Functions agora rodam sozinhos via GitHub
+Actions, a pedido da Adriana ("garantir que tudo seja automático assim que
+eu autorizar o push"):
+
+- `.github/workflows/deploy.yml` — front-end, todo push no `main`
+  (lint + build + `wrangler deploy`). **Testado ao vivo, rodou com
+  sucesso** (`gh run view`, run `36480084738`) — publicou de verdade o fix
+  do "Sync Drive" que estava esperando deploy manual. Precisou de 2
+  tentativas: a 1ª falhou porque a ação detectava `pnpm` (pelo
+  `pnpm-lock.yaml` residual, que já foi removido nessa mesma correção) em
+  vez de `bun` — corrigido apagando o lockfile + fixando
+  `packageManager: bun` explícito na config da action, não só confiando em
+  detecção automática por lockfile.
+- `.github/workflows/deploy-functions.yml` — Edge Functions, só quando o
+  push mexe em `supabase/functions/**`. Detecta quais pastas de function
+  mudaram e deploya só elas (ou todas, se `_shared/` mudou). **Ainda não
+  testado ao vivo** — nenhum push desta sessão mexeu em `supabase/functions/**`
+  depois de criado. Testar no próximo commit que tocar function.
+  **Limitação sabida**: mudança só em `supabase/config.toml` (ex.: trocar
+  `verify_jwt`) não dispara esse workflow — continua manual.
+- Secrets salvos no GitHub pela Adriana: `CLOUDFLARE_API_TOKEN`,
+  `CLOUDFLARE_ACCOUNT_ID`, `SUPABASE_ACCESS_TOKEN`.
+- `CLAUDE.md` atualizado (seção "Git e deploy") pra parar de descrever
+  deploy como manual — checar isso primeiro se algo parecer não ter
+  publicado sozinho.
 
 ## Sessão 28 (28/09/2026) — botão "Desfazer Venda" (direito de arrependimento CDC)
 

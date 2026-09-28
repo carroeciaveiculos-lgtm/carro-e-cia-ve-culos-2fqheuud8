@@ -198,23 +198,38 @@ antes de mexer em histórico de migration ou cron. Resumo:
 
 - Remote: `carroeciaveiculos-lgtm/carro-e-cia-ve-culos-2fqheuud8`, branch `main`
 - Mensagens de commit em português, prefixo `fix:` / `chore:` / `feat:`
-- Deploy do front: **manual, sempre** — `git push` sozinho **não** publica
-  nada. Depois de mexer em `src/**`, rodar `bun run build` + `npx wrangler
-  deploy` (raiz do repo). Corrigido em 28/09/2026: a nota anterior aqui
-  dizia "automático via Cloudflare Workers Builds", confirmado em
-  16/08/2026 — mas essa integração não existe mais (ou nunca existiu do
-  jeito descrito): `wrangler.jsonc` não tem nenhuma configuração de
-  build/Git integration, achado de 22/09/2026 já mostrava isso na prática
-  (fix commitado/pushado que continuou com o mesmo bug até o deploy manual
-  rodar), e reconfirmado de novo em 28/09/2026 no mesmo padrão. Deploy é
-  pedido de autorização separado (é implantação em produção) — o Claude
-  Code também é bloqueado de rodar `wrangler deploy` sozinho por política
-  de segurança ("Production Deploy"), então quem roda esse comando é
-  sempre a Adriana (`! npx wrangler deploy` numa sessão, ou direto no
-  terminal dela).
-- Deploy de function: `supabase functions deploy <nome>`, ou a ferramenta
-  MCP com escrita (`deploy_edge_function`) — também manual, function por
-  function tocada na sessão.
+- **Deploy do front: automático de verdade desde 28/09/2026** — via GitHub
+  Actions (`.github/workflows/deploy.yml`), não mais Cloudflare Workers
+  Builds (essa integração nunca existia de fato, ver histórico abaixo).
+  Todo push no `main` que mexe em qualquer arquivo roda `bun run lint` +
+  `bun run build` + `npx wrangler deploy` sozinho, usando os secrets
+  `CLOUDFLARE_API_TOKEN`/`CLOUDFLARE_ACCOUNT_ID` do repositório no GitHub.
+  Se o lint ou o build falharem, o deploy nem roda — nada quebrado vai pro
+  ar. **`git push` volta a valer como "publicou" de verdade** — só que
+  agora é rastreável (rodar `gh run list`/`gh run view` pra conferir o
+  resultado), diferente da promessa antiga que nunca foi checada.
+  Histórico: a nota aqui já disse "automático via Cloudflare Workers
+  Builds" (confirmado 16/08/2026) — nunca existiu de fato
+  (`wrangler.jsonc` não tinha nenhuma config de Git integration, achados
+  de 22/09 e 28/09/2026 confirmaram push sem publicar nada). Corrigido pra
+  "manual, sempre" em 28/09/2026, e horas depois trocado de novo pra esse
+  workflow — não repetir o erro de assumir automático sem ver um
+  `gh run view` de sucesso confirmando.
+- **Deploy de function: automático para código, desde 28/09/2026** — via
+  GitHub Actions (`.github/workflows/deploy-functions.yml`), disparado só
+  quando o push mexe em algo dentro de `supabase/functions/**`. Detecta
+  quais pastas de function mudaram (`git diff` contra o commit anterior) e
+  faz `supabase functions deploy <nome>` só delas; se algo em
+  `supabase/functions/_shared/` mudar, faz deploy de **todas** as
+  functions (não dá pra saber com segurança quem depende de qual arquivo
+  compartilhado). Usa o secret `SUPABASE_ACCESS_TOKEN`.
+  **Limitação conhecida, não coberta por esse workflow**: mudar só o
+  `verify_jwt` de uma function em `supabase/config.toml`, sem tocar no
+  código dela, **não** dispara redeploy automático — o workflow só olha
+  `supabase/functions/**`, não `supabase/config.toml`. Continua precisando
+  de `supabase functions deploy <nome>` manual (ou a ferramenta MCP
+  `deploy_edge_function`) nesse caso específico, seguindo o checklist do
+  skill `nova-edge-function`.
 - **Commitar ao final de cada sessão de trabalho relevante** — não deixar
   acumular por dias. Já aconteceu duas vezes (sessão 5: 39 arquivos parados
   desde 14/08; sessão 6: 61 arquivos parados no mesmo dia). `MEMORY_WORK.MD`
