@@ -198,14 +198,23 @@ antes de mexer em histórico de migration ou cron. Resumo:
 
 - Remote: `carroeciaveiculos-lgtm/carro-e-cia-ve-culos-2fqheuud8`, branch `main`
 - Mensagens de commit em português, prefixo `fix:` / `chore:` / `feat:`
-- Deploy do front: **automático** via Cloudflare Workers Builds — dispara
-  sozinho a cada push pro `main` (build `bun run build`, deploy
-  `npx wrangler deploy`, confirmado em 16/08/2026 direto na API do
-  Cloudflare, `wrangler.jsonc` define o resto). **Não rodar `wrangler
-  deploy` manual como rotina** — só em emergência (hotfix antes do build
-  automático terminar). Rodar manual por hábito já causou o site ficar no
-  ar antes do commit correspondente (sessão 5, ver `MEMORY_WORK.MD`).
-- Deploy de function: `supabase functions deploy <nome>`
+- Deploy do front: **manual, sempre** — `git push` sozinho **não** publica
+  nada. Depois de mexer em `src/**`, rodar `bun run build` + `npx wrangler
+  deploy` (raiz do repo). Corrigido em 28/09/2026: a nota anterior aqui
+  dizia "automático via Cloudflare Workers Builds", confirmado em
+  16/08/2026 — mas essa integração não existe mais (ou nunca existiu do
+  jeito descrito): `wrangler.jsonc` não tem nenhuma configuração de
+  build/Git integration, achado de 22/09/2026 já mostrava isso na prática
+  (fix commitado/pushado que continuou com o mesmo bug até o deploy manual
+  rodar), e reconfirmado de novo em 28/09/2026 no mesmo padrão. Deploy é
+  pedido de autorização separado (é implantação em produção) — o Claude
+  Code também é bloqueado de rodar `wrangler deploy` sozinho por política
+  de segurança ("Production Deploy"), então quem roda esse comando é
+  sempre a Adriana (`! npx wrangler deploy` numa sessão, ou direto no
+  terminal dela).
+- Deploy de function: `supabase functions deploy <nome>`, ou a ferramenta
+  MCP com escrita (`deploy_edge_function`) — também manual, function por
+  function tocada na sessão.
 - **Commitar ao final de cada sessão de trabalho relevante** — não deixar
   acumular por dias. Já aconteceu duas vezes (sessão 5: 39 arquivos parados
   desde 14/08; sessão 6: 61 arquivos parados no mesmo dia). `MEMORY_WORK.MD`

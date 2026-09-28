@@ -123,18 +123,30 @@ RFV1E55 (que já tem 1 vídeo salvo) devolveu 200 com `totalVideosSynced: 0`
 (dedup funcionando). Os dois formatos de resposta (sucesso e "não
 encontrada") batem exatamente com o que o código novo trata.
 
-**Achado novo, ampliando o bug de crash das abas do Estoque (sessão 28,
-item acima)**: o mesmo crash (`NotFoundError: removeChild`) também
-acontece dentro do PRÓPRIO modal de editar veículo, ao trocar pra aba
-"Fotos e Mídia" — não é só nas abas da listagem (Ativos/Vendidos/
-Rascunhos). Testado com clique de mouse real E com evento disparado via
-JS (`dispatchEvent` de pointerdown/mousedown/pointerup/mouseup/click,
-`data-state` confirmado como `active` antes do crash) — os dois travam a
-página igual. Não é causado pelo fix desta sessão (reproduz em qualquer
-veículo, sem relação com `sync-google-drive`/`sync-drive-videos`). Achado
-mais sério do que a nota anterior sugeria — vale investigar a fundo numa
-sessão futura, provavelmente algo genérico no Radix Tabs deste projeto
-(duas instâncias diferentes de Tabs com o mesmo bug).
+**[CORRIGIDO/REBAIXADO 28/09/2026] Crash de clique nas abas — provavelmente
+NÃO é bug real de produção, é artefato da automação de navegador.** Tinha
+registrado que o crash (`NotFoundError: removeChild`) também acontecia
+dentro do modal de editar veículo, ao trocar pra aba "Fotos e Mídia" —
+reproduzi tanto com clique de mouse real quanto com evento disparado via
+JS, através da extensão Claude in Chrome. **A Adriana testou ao vivo, no
+navegador normal dela — especificamente a troca de aba dentro do modal de
+editar veículo, "Geral & Valores" pra "Fotos e Mídia" — e não apareceu.**
+Ou seja: os "dois métodos"
+diferentes que eu tinha testado (clique real e clique via JS) não são de
+fato independentes — os dois passaram pela mesma extensão de automação,
+que pode estar interferindo na árvore do React de um jeito que um clique
+humano normal não reproduz. Rebaixado de "investigar a fundo" pra "não é
+prioridade" — mas não risque de vez: só ficou confirmado que não acontece
+no fluxo normal dela; não foi isolado se é 100% a extensão ou se existe
+alguma condição específica (aba do navegador, timing) que ainda não bateu.
+Se aparecer de novo — pra ela, sem ser eu testando — aí sim investigar.
+**[CONFIRMADO 28/09/2026] O crash original nas abas da listagem do
+Estoque** (Ativos/Vendidos/Rascunhos/Devolvidos, achado durante o teste do
+"Desfazer Venda" mais cedo nesta mesma sessão) **também foi testado por
+ela e não reproduziu.** Os dois crashes (listagem e modal de edição) são
+confirmadamente artefato da extensão Claude in Chrome usada pra automação
+nesta sessão, não bugs reais do site — item encerrado, não reabrir sem
+relato real de alguém usando o painel normalmente.
 
 **[CONCLUÍDO 28/09/2026] Crons de sync de portal (wm-sync/napista-sync/
 ml-sync) de 30 pra 10 minutos** — pedido direto da Adriana. Verificado
@@ -149,14 +161,12 @@ já estão `*/10 * * * *`.
 1. **[RESOLVIDO 28/09/2026]** Sincronizar as fotos do H6 do Drive (causa raiz
    corrigida, ver item 4) e reprocessar publicação no Mercado Livre — ação
    da Adriana, botão "Sincronizar Drive" na edição do veículo.
-2. **Commit/push/deploy do fix do "Sync Drive"** (código pronto, lint/build
-   limpos, testado via fetch direto — ver achado acima) — ainda não subiu,
-   falta autorização.
-3. Investigar o crash de clique nas abas (achado ampliado acima: também
-   acontece dentro do modal de editar veículo, não só na listagem do
-   Estoque) — não bloqueia produção (o botão real ainda funciona lá,
-   quem trava é só o clique na aba dentro do formulário), mas atrapalha
-   testar coisas nessa área. Prioridade pra investigar a fundo.
+2. **[RESOLVIDO 28/09/2026]** Commit/push do fix do "Sync Drive" — feito
+   (commit `749e8c6`), falta só a Adriana rodar o deploy manual de sempre.
+3. **[ENCERRADO 28/09/2026]** Crash de clique nas abas — confirmado pela
+   Adriana que não reproduz no uso normal (nem listagem, nem modal de
+   edição), só na minha automação de navegador (achado acima). Não
+   reabrir sem relato real de alguém usando o painel.
 4. **Investigação do erro "veículo não encontrado" no Sync Drive do H6 —
    RESOLVIDA (28/09/2026)**: a pasta e as 19 fotos estavam certas no Drive
    (confirmado via function de diagnóstico temporária, já apagada). Causa
