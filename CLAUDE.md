@@ -6,7 +6,7 @@ não de `~/.local/bin` ou qualquer outra. Achado em 16/08/2026: sessões
 abertas do lugar errado acumulam regra de permissão
 (`.claude/settings.local.json`) e registram conector MCP (Supabase, Resend,
 Meta Ads) na pasta errada — um projeto inteiro de configuração ficou preso
-em `~/.local/bin` sem ninguém notar. Inicie suasessão lendo os arquivos: MEMORY_WORK.md e 
+em `~/.local/bin` sem ninguém notar. Inicie suasessão lendo os arquivos: MEMORY_WORK.md e
 PROXIMA_SESSÃO.md
 
 Revenda de veículos. Um único app React serve três coisas: o **site público**
@@ -131,14 +131,14 @@ Configuração de CORS do bucket em `docs/R2_CORS_CONFIGURATION.md`.
 
 ## Integrações externas
 
-| Plataforma | Onde |
-|---|---|
-| Mercado Livre | `functions/ml-*`, `_shared/ml-*`, `lib/ml-*` |
-| Webmotors | `functions/wm-*`, `_shared/wm-soap.ts` (SOAP) — **leia `docs/webmotors-integracao.md` antes de mexer** |
-| WhatsApp / Meta | `functions/whatsapp-webhook`, `send-whatsapp`, `_shared/whatsapp-*` |
-| Autentique (assinatura) | `enviar-para-assinatura`, `webhook-autentique` |
-| Google Drive (fotos/vídeos) | `sync-google-drive`, `sync-drive-videos` |
-| IA (Gemini) | `_shared/gemini-client.ts`, `gerar-conteudo`, `ai-sdr` |
+| Plataforma                  | Onde                                                                                                   |
+| --------------------------- | ------------------------------------------------------------------------------------------------------ |
+| Mercado Livre               | `functions/ml-*`, `_shared/ml-*`, `lib/ml-*`                                                           |
+| Webmotors                   | `functions/wm-*`, `_shared/wm-soap.ts` (SOAP) — **leia `docs/webmotors-integracao.md` antes de mexer** |
+| WhatsApp / Meta             | `functions/whatsapp-webhook`, `send-whatsapp`, `_shared/whatsapp-*`                                    |
+| Autentique (assinatura)     | `enviar-para-assinatura`, `webhook-autentique`                                                         |
+| Google Drive (fotos/vídeos) | `sync-google-drive`, `sync-drive-videos`                                                               |
+| IA (Gemini)                 | `_shared/gemini-client.ts`, `gerar-conteudo`, `ai-sdr`                                                 |
 
 Existem agentes especializados em `.claude/agents/` para Mercado Livre e Webmotors —
 use-os antes de mexer nessas integrações.
@@ -298,7 +298,6 @@ específico aqui, menos eu erro:
   ou só muda status?
 - ~~**Preço**~~ **RESPONDIDO em 10/08/2026.** Decimal com 2 casas (`numeric`), não
   centavos. Dois campos, com donos bem diferentes:
-
   - `preco_venda` é o **"Por"** — o valor que o cliente paga. Definido por quem
     cadastra o veículo em `src/pages/admin/VehicleFormModal.tsx`, e usado em todo
     o resto (site, card, página do veículo, documentos, Mercado Livre).
@@ -311,9 +310,9 @@ específico aqui, menos eu erro:
   dão `22|78` e **bloqueiam** a publicação (`CodigoAnuncio` volta 0). Ela também
   valida o "De" contra a FIPE (código `105`), então não dá para simplesmente
   inflar o valor. Ver `docs/webmotors-integracao.md`.
+
 - **Números de WhatsApp/telefone — atualizado em 19/08/2026.** Cinco números,
   papéis fixos, não intercambiáveis:
-
   - `5534997384177` (Clara) — atendimento geral do site: chat, CTAs, botões de
     veículo, campanhas, landing pages, conteúdo gerado por IA. É o padrão em
     `src/lib/whatsapp.ts` (`getWhatsAppLink`) — não hardcode outro número num
@@ -356,6 +355,7 @@ específico aqui, menos eu erro:
   Números individuais da equipe no rodapé (Luiz, Roberto etc.) são à parte,
   não seguem essa hierarquia. Briefing do agente `web-designer-senior.md`
   mantido em sincronia com o número da Clara.
+
 - **Leads**: o que nunca pode faltar num lead? Qual o SLA/fluxo depois que entra?
 - **Publicação em portais**: existe aprovação manual antes de subir anúncio?
 - **O que eu nunca devo mexer sem te perguntar?** (ex.: migrations em produção,

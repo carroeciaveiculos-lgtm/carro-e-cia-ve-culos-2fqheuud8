@@ -34,13 +34,83 @@ Google Ads. Escopo descrito por ela:
   o padrão já estabelecido nas Fases 1-3 da unificação de regras de IA
   (27-28/08/2026).
 
-**Não iniciado ainda** — só investigação e registro. Próximo passo é
-sessão dedicada pra definir com ela: os 4 modelos de template (o que cada
-um mostra — preço, km, selo "novidade", logo, etc.), se a composição é
-feita por IA generativa (tipo gpt-image-2 recebendo as fotos como
-referência) ou por um layout fixo com posições definidas (mais previsível,
-menos "alucinação" de texto/número errado — risco real com IA generativa
-pra colocar preço/km certo numa imagem), e onde entra o botão de download.
+**[IMPLEMENTADO 28/09/2026, pendente 1 passo dela] Decisões fechadas com a
+Adriana via plan mode**: motor híbrido (preço/km/logo/texto sempre por
+código, IA só trata a foto), fluxo escolhe-modelo-antes (4 prévias grátis
+por canvas, só a escolhida gasta IA), e persistência dupla (baixa E salva
+no sistema, pensando em uso futuro dentro de `/admin/anuncios`). Plano
+completo ficou salvo em `C:\Users\adria\.claude\plans\harmonic-bouncing-papert.md`.
+
+**Construído nesta sessão:**
+- Migration `20260928211141_veiculo_criativos_anuncio.sql` — tabela
+  `veiculo_criativos` (RLS igual `veiculos`: qualquer autenticado, `FOR ALL
+  USING (true)` — não o padrão mais restrito de `ajuda_conteudos` que o
+  plano cogitou, porque este é um sub-ativo de veículo, não conteúdo
+  institucional) + 4 linhas novas em `ai_prompts_config`
+  (`criativo_preco_destaque`, `criativo_ficha_tecnica`,
+  `criativo_oportunidade`, `criativo_convite_cta` — aparecem sozinhas em
+  `/admin/prompts-ia`, sem mexer na tela).
+- Edge Function `gerar-criativo-anuncio` — trata só a foto (OpenAI
+  `images/edits`, `gpt-image-2`, mesmo padrão do `gerar-imagem-vaga`).
+  Duas travas de segurança: nunca lê preço/km do payload (busca direto de
+  `veiculos` pelo `veiculo_id`), e valida que a `foto_url` pertence mesmo
+  àquele veículo antes de gastar a chave da OpenAI. `verify_jwt = true`
+  no `config.toml`.
+- Front-end: aba "Marketing IA" (`VehicleFormModal.tsx`) reconstruída —
+  grid de seleção de foto, 4 templates desenhados em `<canvas>`
+  (`TEMPLATES_CRIATIVO`, client-side, sem custo) com preço/km reais já
+  encaixados nas prévias, geração final chamando a function acima,
+  download (`downloadBlob`, já usa `file-saver` — lib já instalada) e
+  salvar no sistema (`uploadToR2` + insert em `veiculo_criativos`) +
+  galeria dos criativos salvos do veículo. O "Gerar Kit Redes Sociais"
+  antigo continua intacto, só embaixo.
+- Template "Oportunidade" tem uma trava própria: só afirma "abaixo da
+  FIPE" se `preco_venda` for de fato pelo menos 5% menor que a referência
+  FIPE (`preco_revenda`/`valor_fipe`) — achado no caminho: desde 12/08 o
+  campo "De" é preenchido automaticamente igual à FIPE (não é mais editado
+  à mão), então usar isso como "tinha desconto" sem checar seria uma
+  alegação falsa em alguns casos. Cai num selo genérico "Oportunidade" se
+  não for verdade.
+- `bun run lint` (0 erros) e `bun run build` limpos. `tsc --noEmit` mostra
+  erros nas linhas que usam `veiculo_criativos` — **esperado**, os types
+  gerados (`src/lib/supabase/types.ts`) não conhecem a tabela até a
+  migration rodar de verdade e os types serem regerados; não é bug de
+  código.
+
+**[RESOLVIDO 28/09/2026] Migration aplicada pela Adriana** — `apply_migration`
+via MCP foi bloqueado pelo classificador ("Modify Shared Resources", mesma
+família do `wrangler deploy`); ela rodou o SQL direto no SQL Editor do
+Supabase. **Achado no caminho**: copiar SQL longo de dentro do terminal
+(chat do Claude Code) pra colar em outro lugar corrompe o texto — sumiu
+pedaço de string no meio da linha, 2x seguidas, com erros de sintaxe
+enganosos. **Causa real, não é bug do SQL**: o terminal quebra/renderiza
+linha longa, e o "copiar" pega a renderização visual, não o texto puro.
+**Solução que funcionou**: gravar o SQL num arquivo `.sql` de verdade no
+projeto e ela abrir com Bloco de Notas pra copiar de lá — nunca mais
+mandar SQL longo direto pelo chat pra copiar. Tabela `veiculo_criativos`
+e as 4 linhas de `ai_prompts_config` confirmadas no banco.
+Achado extra: `ai_prompts_config` tem `default_prompt` NOT NULL (não
+documentado antes) — sempre preencher junto com `prompt_text` em inserts
+futuros nessa tabela.
+
+Types regenerados (`mcp__supabase__generate_typescript_types`) e
+aplicados em `src/lib/supabase/types.ts` — `tsc` limpo agora.
+**Quase-incidente durante isso, corrigido**: rodei `bun run format`
+sem escopo pra formatar só o `types.ts` recém-copiado, e o `oxfmt`
+reformatou os quase 470 arquivos do repo inteiro (mudança de line
+ending, CRLF→LF, aparentemente por drift de versão do formatador —
+não investigado a fundo). Revertido tudo exceto os arquivos reais desta
+sessão antes de qualquer commit. **Lição**: `bun run format` sem passar
+o caminho do arquivo formata o projeto inteiro — sempre passar o arquivo
+específico (`npx oxfmt caminho/do/arquivo.ts`) quando só um arquivo
+precisa, nunca rodar o comando genérico "de hábito".
+
+`bun run lint` (0 erros) e `bun run build` limpos, com o revert já
+aplicado. Commit/push ainda não feito — próximo passo natural.
+
+**Fora de escopo desta v1** (registrado no plano, não esquecer): 1 foto
+por criativo (sem colagem), só formato 1080x1080, e ainda não tem botão
+pra usar o criativo salvo direto de dentro do `/admin/anuncios`.
 
 
 Projeto: Carro e Cia Veículos (revenda). Pasta de trabalho:

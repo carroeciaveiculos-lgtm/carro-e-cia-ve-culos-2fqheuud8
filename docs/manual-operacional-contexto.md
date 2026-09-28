@@ -15,77 +15,90 @@ sobre uma página sem antes confirmar como ela funciona de verdade — coisa
 muda rápido nesse sistema.
 
 ## Legenda de complexidade
+
 🟢 baixa · 🟡 média · 🔴 alta (mais sub-fluxos, vale quebrar em mais de um artigo)
 
 ---
 
 ## Vendas
-| Página | O que faz | Sub-fluxos a documentar | Complex. | Manual |
-|---|---|---|---|---|
-| `/admin/crm` (Leads) | Kanban/lista de leads em tempo real, conversa, vínculo com veículo, proposta em PDF, simulação de financiamento | Mudar estágio (kanban), abrir conversa, vincular veículo, gerar proposta | 🔴 | — |
-| `/admin/conversas` | Chat dedicado — abas IA x Atendimento Humano | Buscar conversa, alternar IA/humano, responder | 🟡 | — |
-| `/admin/agendamentos` | Visitas/avaliações marcadas pela Clara (IA) ou pela equipe | Marcar Compareceu/Cancelado/Não compareceu | 🟢 | — |
-| `/admin/avaliacao` | Avaliação de veículo de cliente (compra/troca/consignação), gera proposta em PDF, marca consignação ou compra | Nova avaliação (agendamento/avulsa), gerar PDF, marcar destino | 🟡 | ✅ "Avaliar Veículo de Cliente" |
 
-*(Reconstruída do zero em 17/08/2026, substituindo a tela anterior que era só fachada — ver seção "Backlog" no fim deste doc.)*
+| Página                | O que faz                                                                                                       | Sub-fluxos a documentar                                                  | Complex. | Manual                          |
+| --------------------- | --------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ | -------- | ------------------------------- |
+| `/admin/crm` (Leads)  | Kanban/lista de leads em tempo real, conversa, vínculo com veículo, proposta em PDF, simulação de financiamento | Mudar estágio (kanban), abrir conversa, vincular veículo, gerar proposta | 🔴       | —                               |
+| `/admin/conversas`    | Chat dedicado — abas IA x Atendimento Humano                                                                    | Buscar conversa, alternar IA/humano, responder                           | 🟡       | —                               |
+| `/admin/agendamentos` | Visitas/avaliações marcadas pela Clara (IA) ou pela equipe                                                      | Marcar Compareceu/Cancelado/Não compareceu                               | 🟢       | —                               |
+| `/admin/avaliacao`    | Avaliação de veículo de cliente (compra/troca/consignação), gera proposta em PDF, marca consignação ou compra   | Nova avaliação (agendamento/avulsa), gerar PDF, marcar destino           | 🟡       | ✅ "Avaliar Veículo de Cliente" |
+
+_(Reconstruída do zero em 17/08/2026, substituindo a tela anterior que era só fachada — ver seção "Backlog" no fim deste doc.)_
 
 ## Consignação
-| Página | O que faz | Sub-fluxos a documentar | Complex. | Manual |
-|---|---|---|---|---|
-| `/admin/administrativo` (parcial) | Emite/lista contratos de consignação | Emitir contrato de consignação | 🟡 | — |
+
+| Página                            | O que faz                            | Sub-fluxos a documentar        | Complex. | Manual |
+| --------------------------------- | ------------------------------------ | ------------------------------ | -------- | ------ |
+| `/admin/administrativo` (parcial) | Emite/lista contratos de consignação | Emitir contrato de consignação | 🟡       | —      |
 
 ## Consórcio
+
 Sem página dedicada hoje — atendimento acontece fora do sistema (WhatsApp/presencial). Nada a documentar até existir uma tela.
 
 ## Seguros
+
 Sem página dedicada hoje — mesma situação do Consórcio.
 
 ## Financiamentos
-| Página | O que faz | Sub-fluxos a documentar | Complex. | Manual |
-|---|---|---|---|---|
-| `/admin/financiamento` | Simulador de financiamento (PMT), puxa lead/veículo pela URL, salva em `simulacoes` | Calcular parcela, salvar simulação | 🟡 | — |
+
+| Página                 | O que faz                                                                           | Sub-fluxos a documentar            | Complex. | Manual |
+| ---------------------- | ----------------------------------------------------------------------------------- | ---------------------------------- | -------- | ------ |
+| `/admin/financiamento` | Simulador de financiamento (PMT), puxa lead/veículo pela URL, salva em `simulacoes` | Calcular parcela, salvar simulação | 🟡       | —      |
 
 ## Financeiro/Administrativo
-| Página | O que faz | Sub-fluxos a documentar | Complex. | Manual |
-|---|---|---|---|---|
-| `/admin/administrativo` | Central de documentos: `documentos` + `notas_fiscais` + `contratos_consignacao` juntos | Upload de doc de veículo, emitir NF, buscar/filtrar, baixar/imprimir | 🔴 | — |
-| `/admin/modelos-documentos` | Editor de templates com marcadores `{{...}}` + preview | Editar template, pré-visualizar, salvar | 🟡 | — |
+
+| Página                      | O que faz                                                                              | Sub-fluxos a documentar                                              | Complex. | Manual |
+| --------------------------- | -------------------------------------------------------------------------------------- | -------------------------------------------------------------------- | -------- | ------ |
+| `/admin/administrativo`     | Central de documentos: `documentos` + `notas_fiscais` + `contratos_consignacao` juntos | Upload de doc de veículo, emitir NF, buscar/filtrar, baixar/imprimir | 🔴       | —      |
+| `/admin/modelos-documentos` | Editor de templates com marcadores `{{...}}` + preview                                 | Editar template, pré-visualizar, salvar                              | 🟡       | —      |
 
 ## Estoque/Portais
-| Página | O que faz | Sub-fluxos a documentar | Complex. | Manual |
-|---|---|---|---|---|
-| `/admin/estoque` | CRUD completo de veículo | Cadastrar, editar, marcar vendido, devolver, gerar QR, revisar com IA, compartilhar | 🔴 | ✅ "Desfazer Venda (Direito de Arrependimento)" (só o sub-fluxo de desistência; cadastrar/editar/devolver/QR/IA ainda faltam) |
-| `/admin/portais` | Sync Webmotors/Mercado Livre/NaPista (reais — NaPista testado de ponta a ponta em 17/08/2026, mas ainda aponta pra API de **desenvolvimento** da NaPista, não produção). **Confirmado em 17/08/2026: OLX e iCarros continuam só com a flag `publicado_olx`/`publicado_icarros`, sem nenhuma chamada de API real por trás — zero linhas em `estoque_publicacoes` pra essas duas em toda a história do sistema.** | Publicar/despublicar em massa, preflight, dry-run, ver erros, monitor de conversão | 🔴 | — |
+
+| Página           | O que faz                                                                                                                                                                                                                                                                                                                                                                                                       | Sub-fluxos a documentar                                                             | Complex. | Manual                                                                                                                        |
+| ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- | -------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `/admin/estoque` | CRUD completo de veículo                                                                                                                                                                                                                                                                                                                                                                                        | Cadastrar, editar, marcar vendido, devolver, gerar QR, revisar com IA, compartilhar | 🔴       | ✅ "Desfazer Venda (Direito de Arrependimento)" (só o sub-fluxo de desistência; cadastrar/editar/devolver/QR/IA ainda faltam) |
+| `/admin/portais` | Sync Webmotors/Mercado Livre/NaPista (reais — NaPista testado de ponta a ponta em 17/08/2026, mas ainda aponta pra API de **desenvolvimento** da NaPista, não produção). **Confirmado em 17/08/2026: OLX e iCarros continuam só com a flag `publicado_olx`/`publicado_icarros`, sem nenhuma chamada de API real por trás — zero linhas em `estoque_publicacoes` pra essas duas em toda a história do sistema.** | Publicar/despublicar em massa, preflight, dry-run, ver erros, monitor de conversão  | 🔴       | —                                                                                                                             |
 
 ## Marketing
-| Página | O que faz | Sub-fluxos a documentar | Complex. | Manual |
-|---|---|---|---|---|
-| `/admin/marketing` | Aba social (agendar post) + WhatsApp + Analytics. *(Aba "Automações de E-mail" era mock, removida em 17/08/2026 — ver Backlog)* | Agendar post, gerar texto com IA, ver analytics | 🟡 | — |
-| `/admin/anuncios` | Gestão Google/Meta Ads — chat com agente IA, campanhas, gerador de copy | Conversar com agente de ads, ver campanhas, gerar copy | 🔴 | — |
-| `/admin/central-social` | 4 abas: Publicações, Aprovações, Comentários, Ideias com IA | Publicar, aprovar post, responder comentário, gerar ideia | 🔴 | — |
-| `/admin/conteudo` | CMS: páginas, blog, landing pages, keywords, hashtags, comentários | Criar/editar página ou artigo, gerenciar keywords/hashtags, moderar comentário | 🔴 | — |
-| `/admin/design` | Banners do site + depoimentos de cliente | Criar/editar/ativar banner, criar/aprovar depoimento | 🟢 | — |
+
+| Página                  | O que faz                                                                                                                       | Sub-fluxos a documentar                                                        | Complex. | Manual |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ | -------- | ------ |
+| `/admin/marketing`      | Aba social (agendar post) + WhatsApp + Analytics. _(Aba "Automações de E-mail" era mock, removida em 17/08/2026 — ver Backlog)_ | Agendar post, gerar texto com IA, ver analytics                                | 🟡       | —      |
+| `/admin/anuncios`       | Gestão Google/Meta Ads — chat com agente IA, campanhas, gerador de copy                                                         | Conversar com agente de ads, ver campanhas, gerar copy                         | 🔴       | —      |
+| `/admin/central-social` | 4 abas: Publicações, Aprovações, Comentários, Ideias com IA                                                                     | Publicar, aprovar post, responder comentário, gerar ideia                      | 🔴       | —      |
+| `/admin/conteudo`       | CMS: páginas, blog, landing pages, keywords, hashtags, comentários                                                              | Criar/editar página ou artigo, gerenciar keywords/hashtags, moderar comentário | 🔴       | —      |
+| `/admin/design`         | Banners do site + depoimentos de cliente                                                                                        | Criar/editar/ativar banner, criar/aprovar depoimento                           | 🟢       | —      |
 
 ## Desenvolvedor e TI
-| Página | O que faz | Sub-fluxos a documentar | Complex. | Manual |
-|---|---|---|---|---|
-| `/admin/configuracoes` | Contatos (dados reais da marca), Loja & SEO (endereço/horário/logo), Brain IA (base de conhecimento + teste), Prompts IA legado, Integrações sociais. *("Scripts & Tracking" era mock, removida em 17/08/2026 e não volta como tela — ver Backlog)* | Editar contatos da marca, editar dados da loja, adicionar conhecimento à Brain IA, testar prompt | 🔴 | ✅ "Editar Dados da Loja (Endereço, Horário e Logo)" (só aba Loja & SEO — restante segue sem artigo) |
-| `/admin/autonomia` | Liga/desliga automações do sistema + diretrizes + logs | Ativar/desativar automação, editar diretriz ativa | 🟡 | — |
-| `/admin/prompts-ia` | Editor dos prompts de sistema (Clara, Brain IA, etc.) | Editar prompt, restaurar padrão | 🟢 | — |
-| `/admin/usuarios` (+ Criar/Editar) | Gestão de conta, nível e setor | Criar usuário, editar permissões | — | ✅ "Criar Usuário no Painel" |
-| `/admin/auditoria` | 3 abas de log: acesso, uso de IA, integrações (só leitura) | Consultar log | 🟢 | — |
-| `/admin/logs` | Logs de webhook Meta + integrações de portal | Consultar log, ver payload bruto | 🟢 | — |
+
+| Página                             | O que faz                                                                                                                                                                                                                                           | Sub-fluxos a documentar                                                                          | Complex. | Manual                                                                                               |
+| ---------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ | -------- | ---------------------------------------------------------------------------------------------------- |
+| `/admin/configuracoes`             | Contatos (dados reais da marca), Loja & SEO (endereço/horário/logo), Brain IA (base de conhecimento + teste), Prompts IA legado, Integrações sociais. _("Scripts & Tracking" era mock, removida em 17/08/2026 e não volta como tela — ver Backlog)_ | Editar contatos da marca, editar dados da loja, adicionar conhecimento à Brain IA, testar prompt | 🔴       | ✅ "Editar Dados da Loja (Endereço, Horário e Logo)" (só aba Loja & SEO — restante segue sem artigo) |
+| `/admin/autonomia`                 | Liga/desliga automações do sistema + diretrizes + logs                                                                                                                                                                                              | Ativar/desativar automação, editar diretriz ativa                                                | 🟡       | —                                                                                                    |
+| `/admin/prompts-ia`                | Editor dos prompts de sistema (Clara, Brain IA, etc.)                                                                                                                                                                                               | Editar prompt, restaurar padrão                                                                  | 🟢       | —                                                                                                    |
+| `/admin/usuarios` (+ Criar/Editar) | Gestão de conta, nível e setor                                                                                                                                                                                                                      | Criar usuário, editar permissões                                                                 | —        | ✅ "Criar Usuário no Painel"                                                                         |
+| `/admin/auditoria`                 | 3 abas de log: acesso, uso de IA, integrações (só leitura)                                                                                                                                                                                          | Consultar log                                                                                    | 🟢       | —                                                                                                    |
+| `/admin/logs`                      | Logs de webhook Meta + integrações de portal                                                                                                                                                                                                        | Consultar log, ver payload bruto                                                                 | 🟢       | —                                                                                                    |
 
 ## Institucional
-| Página | O que faz | Sub-fluxos a documentar | Complex. | Manual |
-|---|---|---|---|---|
-| `/admin/relatorios` (ROI) | Gráficos de lead/conversão por vendedor | Filtrar por período/vendedor | 🟢 | — |
-| `/admin/vagas` | Vagas + candidaturas + geração de imagem por IA + publicação nas redes | Criar vaga, gerar imagem, postar nas redes | 🟡 | — |
+
+| Página                    | O que faz                                                              | Sub-fluxos a documentar                    | Complex. | Manual |
+| ------------------------- | ---------------------------------------------------------------------- | ------------------------------------------ | -------- | ------ |
+| `/admin/relatorios` (ROI) | Gráficos de lead/conversão por vendedor                                | Filtrar por período/vendedor               | 🟢       | —      |
+| `/admin/vagas`            | Vagas + candidaturas + geração de imagem por IA + publicação nas redes | Criar vaga, gerar imagem, postar nas redes | 🟡       | —      |
 
 ## Treinamentos
+
 Sem página dedicada hoje.
 
 ## Uso geral (sem setor específico)
+
 `/admin` (Dashboard), `/admin/ajuda` (Central de Ajuda), `/admin/login`,
 `/admin/redefinir-senha` — acessíveis por qualquer pessoa logada, sem
 exigir setor.
@@ -218,7 +231,7 @@ direto (o plano inicial previa uma edge function nova, mas descobri que o
 - **Achado corrigido no caminho — seletor de modalidade mentia**: o
   campo "Modalidade" do card mostrava `veiculos.ad_types` (preferência
   nunca lida pelo `wm-sync`) com fallback pro primeiro tier da lista,
-  *"Super Acelerador VIP"* — então um veículo publicado como "Anúncio
+  _"Super Acelerador VIP"_ — então um veículo publicado como "Anúncio
   Básico" de verdade aparecia como VIP na tela. Agora mostra a modalidade
   REAL (`wm_mapeamento_veiculos.codigo_modalidade_wm`, o que o `wm-sync`
   de fato usa) e, ao trocar no seletor, atualiza esse campo real (não só
