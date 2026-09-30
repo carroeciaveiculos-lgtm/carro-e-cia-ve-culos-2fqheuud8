@@ -26,11 +26,7 @@ export interface PromptHistoricoEntry {
 // própria configurada (gerar-conteudo/index.ts, customPrompt fallback).
 // Lista mantida manualmente -- se um botão novo passar a depender do
 // Assistente Interno, atualizar aqui também.
-export const DEPENDENTES_ASSISTENTE_INTERNO = [
-  'seo_copilot',
-  'seo_optimizer',
-  'seo_heading_draft',
-]
+export const DEPENDENTES_ASSISTENTE_INTERNO = ['seo_copilot', 'seo_optimizer', 'seo_heading_draft']
 
 export async function fetchAIPrompts(): Promise<AIPromptConfig[]> {
   const { data, error } = await supabase.from('ai_prompts_config').select('*').order('name')
@@ -42,6 +38,16 @@ export async function updateAIPrompt(slug: string, promptText: string): Promise<
   const { error } = await supabase
     .from('ai_prompts_config')
     .update({ prompt_text: promptText, updated_at: new Date().toISOString() })
+    .eq('slug', slug)
+  if (error) throw error
+}
+
+// Texto fixo colado no fim da resposta (e, na Webmotors, usado sozinho como
+// descrição do anúncio). Mexe só em rodape_fixo -- nunca em prompt_text.
+export async function updateRodapeFixo(slug: string, texto: string): Promise<void> {
+  const { error } = await supabase
+    .from('ai_prompts_config')
+    .update({ rodape_fixo: texto, updated_at: new Date().toISOString() })
     .eq('slug', slug)
   if (error) throw error
 }

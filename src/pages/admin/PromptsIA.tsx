@@ -30,6 +30,7 @@ import {
 import {
   fetchAIPrompts,
   updateAIPrompt,
+  updateRodapeFixo,
   restoreDefaultPrompt,
   fetchPromptHistorico,
   DEPENDENTES_ASSISTENTE_INTERNO,
@@ -50,7 +51,10 @@ function ApiBadge({ provider }: { provider: AIPromptConfig['api_provider'] }) {
   }
   if (provider === 'openai') {
     return (
-      <Badge variant="outline" className="text-xs bg-emerald-50 text-emerald-700 border-emerald-300">
+      <Badge
+        variant="outline"
+        className="text-xs bg-emerald-50 text-emerald-700 border-emerald-300"
+      >
         API: OpenAI
       </Badge>
     )
@@ -60,7 +64,10 @@ function ApiBadge({ provider }: { provider: AIPromptConfig['api_provider'] }) {
 
 function OndeFica({ texto }: { texto: string | null }) {
   if (!texto) return null
-  const partes = texto.split('|').map((p) => p.trim()).filter(Boolean)
+  const partes = texto
+    .split('|')
+    .map((p) => p.trim())
+    .filter(Boolean)
   if (partes.length <= 1) {
     return (
       <CardDescription className="text-xs mt-1 flex items-start gap-1.5">
@@ -80,6 +87,71 @@ function OndeFica({ texto }: { texto: string | null }) {
           <li key={i}>{parte}</li>
         ))}
       </ul>
+    </div>
+  )
+}
+
+// A Webmotors some com a descrição inteira acima de 500 caracteres, mesmo
+// respondendo sucesso (docs/webmotors-integracao.md). O mesmo texto também
+// é usado nas outras plataformas, por isso o limite vale pra regra toda.
+const LIMITE_RODAPE_WEBMOTORS = 500
+const SLUG_RODAPE_WEBMOTORS = 'vehicle_description'
+
+function RodapeFixoEditor({
+  prompt,
+  onSaved,
+}: {
+  prompt: AIPromptConfig
+  onSaved: (slug: string, texto: string) => void
+}) {
+  const original = prompt.rodape_fixo || ''
+  const [texto, setTexto] = useState(original)
+  const [salvando, setSalvando] = useState(false)
+  const limite = prompt.slug === SLUG_RODAPE_WEBMOTORS ? LIMITE_RODAPE_WEBMOTORS : null
+  const acimaDoLimite = limite !== null && texto.length > limite
+  const vazio = texto.trim().length === 0
+  const alterado = texto !== original
+
+  const salvar = async () => {
+    setSalvando(true)
+    try {
+      await updateRodapeFixo(prompt.slug, texto)
+      onSaved(prompt.slug, texto)
+      toast.success('Texto fixo atualizado! Anúncios já publicados só mudam no próximo reenvio.')
+    } catch (err: any) {
+      toast.error(`Erro ao salvar texto fixo: ${err?.message}`)
+    } finally {
+      setSalvando(false)
+    }
+  }
+
+  return (
+    <div>
+      <label className="text-xs font-medium text-muted-foreground mb-1 block">
+        Texto fixo colado no final
+        {limite !== null && ' (na Webmotors é a descrição inteira do anúncio)'}
+      </label>
+      <Textarea
+        value={texto}
+        onChange={(e) => setTexto(e.target.value)}
+        className="min-h-[120px] text-xs"
+      />
+      <div className="flex items-center justify-between mt-2">
+        <span
+          className={`text-xs ${acimaDoLimite ? 'text-destructive font-semibold' : 'text-muted-foreground'}`}
+        >
+          {texto.length}
+          {limite !== null && ` / ${limite}`} caracteres
+          {acimaDoLimite && ' — acima do limite da Webmotors'}
+        </span>
+        <Button
+          size="sm"
+          onClick={salvar}
+          disabled={salvando || !alterado || acimaDoLimite || vazio}
+        >
+          {salvando ? 'Salvando...' : 'Salvar texto fixo'}
+        </Button>
+      </div>
     </div>
   )
 }
@@ -233,8 +305,7 @@ export default function PromptsIAPage() {
               <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
               <span>
                 Usado pela Clara para responder clientes reais no WhatsApp agora mesmo. Editar
-                errado pode mudar como ela atende de verdade — abra o editor completo com
-                cuidado.
+                errado pode mudar como ela atende de verdade — abra o editor completo com cuidado.
               </span>
             </div>
             <div className="rounded-md border bg-muted/40 p-3 text-xs text-muted-foreground font-mono max-h-24 overflow-hidden relative">
@@ -246,7 +317,11 @@ export default function PromptsIAPage() {
                 {(editing[prompt.slug] || '').length} caracteres no total
               </span>
               <div className="flex gap-2">
-                <Button variant="outline" size="sm" onClick={() => handleOpenHistorico(prompt.slug)}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleOpenHistorico(prompt.slug)}
+                >
                   <History className="h-3.5 w-3.5 mr-1.5" />
                   Ver histórico
                 </Button>
@@ -269,7 +344,10 @@ export default function PromptsIAPage() {
               <CardTitle className="text-base flex items-center gap-2">
                 {prompt.name}
                 {opts?.semUso && (
-                  <Badge variant="outline" className="text-xs bg-gray-100 text-gray-600 border-gray-300">
+                  <Badge
+                    variant="outline"
+                    className="text-xs bg-gray-100 text-gray-600 border-gray-300"
+                  >
                     Sem uso hoje
                   </Badge>
                 )}
@@ -287,8 +365,8 @@ export default function PromptsIAPage() {
                 <div className="mt-1.5 flex items-start gap-1.5 text-xs text-amber-700">
                   <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
                   <span>
-                    Esse texto também é a base usada por: {nomesDependentesAssistente} (quando
-                    esses botões não têm regra própria).
+                    Esse texto também é a base usada por: {nomesDependentesAssistente} (quando esses
+                    botões não têm regra própria).
                   </span>
                 </div>
               )}
@@ -319,14 +397,14 @@ export default function PromptsIAPage() {
             </div>
           )}
           {prompt.rodape_fixo && (
-            <div>
-              <label className="text-xs font-medium text-muted-foreground mb-1 block">
-                Texto fixo colado no final (protegido, não editável aqui)
-              </label>
-              <div className="rounded-md border bg-muted/40 p-3 text-xs text-muted-foreground font-mono whitespace-pre-wrap">
-                {prompt.rodape_fixo}
-              </div>
-            </div>
+            <RodapeFixoEditor
+              prompt={prompt}
+              onSaved={(slug, texto) =>
+                setPrompts((prev) =>
+                  prev.map((p) => (p.slug === slug ? { ...p, rodape_fixo: texto } : p)),
+                )
+              }
+            />
           )}
           <div className="flex items-center justify-between">
             <span className="text-xs text-muted-foreground">
@@ -378,8 +456,8 @@ export default function PromptsIAPage() {
         </h1>
         <p className="text-muted-foreground text-sm mt-1">
           Cada botão "Gerar com IA" do sistema tem sua própria regra aqui — edite e salve
-          individualmente. A API usada (Gemini ou OpenAI) é fixa por tipo de conteúdo e não pode
-          ser trocada nesta tela.
+          individualmente. A API usada (Gemini ou OpenAI) é fixa por tipo de conteúdo e não pode ser
+          trocada nesta tela.
         </p>
       </div>
 
@@ -412,9 +490,8 @@ export default function PromptsIAPage() {
                       Sem uso hoje
                     </h2>
                     <p className="text-xs text-muted-foreground mb-4">
-                      Esses cards existem no banco, mas nenhum código do sistema lê essa regra
-                      hoje — editar aqui não muda nenhum comportamento real até serem
-                      reconectados.
+                      Esses cards existem no banco, mas nenhum código do sistema lê essa regra hoje
+                      — editar aqui não muda nenhum comportamento real até serem reconectados.
                     </p>
                     <div className="space-y-4">
                       {semUso.map((p) => renderCard(p, { semUso: true }))}
@@ -527,9 +604,7 @@ export default function PromptsIAPage() {
                         size="sm"
                         variant="outline"
                         disabled={restaurandoVersao === entry.id}
-                        onClick={() =>
-                          historicoSlug && handleRestoreVersao(historicoSlug, entry)
-                        }
+                        onClick={() => historicoSlug && handleRestoreVersao(historicoSlug, entry)}
                       >
                         {restaurandoVersao === entry.id ? (
                           <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
