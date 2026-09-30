@@ -6,6 +6,54 @@ Copie e cole como primeira mensagem numa sessão nova do Claude Code.
 Projeto: Carro e Cia Veículos (revenda). Pasta de trabalho:
 C:\Projeto\Revenda Carro e Cia\carro-e-cia-ve-culos-2fqheuud8
 
+Continuando de uma sessão anterior (28/09/2026, sessão 28, fim do dia —
+muita coisa fechada: botão "Desfazer Venda" publicado e testado; CI/CD
+automático criado do zero (front-end e Edge Functions publicam sozinhos a
+cada push no main, os dois testados com sucesso real, ver
+`.github/workflows/`); bug real achado e corrigido no botão "Sync Drive"
+(não sincronizava vídeo, só foto); crons de sync de portal de 30 pra 10
+minutos; e o pedido novo da Adriana — Gerador de Criativos de Anúncio pra
+Meta/Google Ads — implementado, migration aplicada, e publicado em
+produção). Leia primeiro MEMORY_WORK.MD, seção "[FECHAMENTO DA SESSÃO
+28/09/2026]" (bem no topo do arquivo), pro resumo completo e a lista real
+de pendências. Destaques:
+
+1. **Ação dela, prioridade real**: o Gerador de Criativos está no ar mas
+   **ninguém clicou na tela de verdade ainda** — testei só o back-end
+   direto por chamada. Primeiro passo desta sessão: pedir pra ela (ou
+   testar sozinho, se tiver navegador disponível) abrir um veículo com
+   foto, ir na aba "Marketing IA", e rodar o fluxo completo (escolher
+   foto -> ver os 4 modelos -> gerar -> baixar/salvar). Se achar bug,
+   corrigir antes de considerar fechado.
+2. **Minha pendência, não dela**: escrever o artigo da Central de Ajuda
+   do "Gerador de Criativos" (regra do projeto — toda função nova ganha
+   artigo, isso deveria ter entrado junto com a implementação e não
+   entrou). Usar a skill `manual-operacional`. Depois, atualizar a linha
+   `/admin/estoque` em `docs/manual-operacional-contexto.md`.
+3. **CI/CD novo — regra permanente daqui pra frente**: `git push` no
+   `main` agora publica sozinho (front-end sempre; Edge Functions só se
+   o push mexeu em `supabase/functions/**`). Checar `CLAUDE.md`, seção
+   "Git e deploy", antes de assumir que precisa rodar `wrangler deploy`
+   ou `supabase functions deploy` manual — normalmente não precisa mais.
+   Exceção sabida: mudar só `verify_jwt` em `supabase/config.toml` sem
+   tocar no código da function não dispara o deploy automático.
+4. **Achado de infra, não resolvido, baixa prioridade**: o `settings.json`
+   pessoal da Adriana (`C:\Users\adria\.claude\settings.json`) tem um
+   perfil `autoMode.environment` desatualizado, com "trusted repo"
+   apontando pra `~/.local/bin` em vez deste projeto. Não confirmado se
+   isso causa os bloqueios do classificador de segurança (contra-exemplo
+   achado na própria sessão), mas vale ela corrigir por higiene se
+   quiser — eu não consigo editar esse arquivo (self-modification).
+5. **Migrations via MCP continuam sendo bloqueadas** pelo classificador
+   de segurança do Claude Code ("Modify Shared Resources") — mesmo já
+   tendo funcionado antes na mesma sessão. Não perder tempo tentando de
+   novo pela mesma via; o caminho que funcionou foi gravar o SQL num
+   arquivo `.sql` no projeto e pedir pra ela colar no SQL Editor do
+   Supabase abrindo o arquivo com Bloco de Notas (nunca copiar SQL longo
+   direto do terminal — quebra o texto, achado real desta sessão).
+
+---
+
 Continuando de uma sessão anterior (22/09/2026, sessão 27 — cadência de
 reengajamento completa, auditoria de status de lead, catálogo do estoque
 integrado ao WhatsApp, bug real de salvar veículo corrigido, BMW QUW5H72

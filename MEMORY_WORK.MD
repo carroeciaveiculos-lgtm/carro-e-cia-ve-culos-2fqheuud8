@@ -1,5 +1,20 @@
 # Memória de trabalho — Carro e Cia
 
+## [30/09/2026] Texto fixo da Webmotors agora editável na tela
+
+`/admin/prompts-ia` — o bloco "Texto fixo colado no final" (`ai_prompts_config.rodape_fixo`)
+deixou de ser só leitura: virou campo com contador e botão "Salvar texto fixo".
+Na regra `vehicle_description` o limite é 500 caracteres (a Webmotors some com
+a descrição inteira acima disso) e não deixa salvar vazio (vazio faria o `wm-sync`
+cair no texto fallback do código sem ninguém perceber). **Anúncios já publicados só
+mudam no próximo reenvio pra Webmotors** (ação separada, precisa OK da Adriana).
+O histórico automático (`ai_prompts_historico`) guarda só `prompt_text`, não o
+`rodape_fixo` — mudança desse texto não tem "desfazer" pela tela.
+Pendente: artigo da Central de Ajuda sobre isso (regra do projeto).
+Também commitados nesta leva: Financiamento confere erro do insert e não regride
+status do lead; campo "Vendedor Responsável" no painel do lead; Ajuda reordenada.
+Checagem: `tsc -p tsconfig.app.json` tem 75 erros antigos, iguais antes e depois.
+
 ## Pedido novo (28/09/2026) — Gerador de criativos de anúncio (Meta/Google Ads)
 
 Adriana quer um ambiente pra criar imagens de anúncio (criativos) a partir
@@ -112,6 +127,40 @@ aplicado. Commit/push ainda não feito — próximo passo natural.
 por criativo (sem colagem), só formato 1080x1080, e ainda não tem botão
 pra usar o criativo salvo direto de dentro do `/admin/anuncios`.
 
+**[FECHAMENTO DA SESSÃO 28/09/2026] Publicado e confirmado no ar**: commit
+`c0b62e5`, os dois deploys automáticos rodaram com sucesso (front e a
+function `gerar-criativo-anuncio`, `ACTIVE` versão 1 — primeiro teste real
+do workflow `deploy-functions.yml`, confirmou que ele empacota sozinho os
+arquivos de `_shared/` sem precisar listar nada à mão, diferente da
+ferramenta MCP de deploy).
+
+**Pendente de verdade, não fechar sem isso:**
+1. **Artigo da Central de Ajuda do "Gerador de Criativos" — não escrito.**
+   Pela regra do projeto (`CLAUDE.md`, "Manual Operacional"), isso deveria
+   ter entrado junto com a implementação, não depois — falha minha, sinalizada
+   à Adriana no fechamento. Fazer na próxima sessão (ou nesta, se ela pedir),
+   usando a skill `manual-operacional`.
+2. **Ninguém clicou na tela nova de verdade ainda.** Testei o back-end
+   (function `gerar-criativo-anuncio`, banco) direto por chamada, mas o
+   fluxo completo na aba "Marketing IA" (escolher foto -> ver os 4
+   modelos em canvas -> gerar -> baixar/salvar) nunca foi clicado por
+   ninguém, nem por mim (o crash de automação documentado acima bloqueou
+   o teste visual da aba de fotos, e por extensão eu não voltei a tentar
+   clicar nesta aba nova depois de confirmado que era só a extensão).
+   Testar ao vivo antes de considerar 100% pronto.
+3. `docs/manual-operacional-contexto.md` — linha do `/admin/estoque` ainda
+   não menciona o sub-fluxo "Gerador de Criativos" (só vai fazer sentido
+   marcar quando o artigo do item 1 existir).
+4. Fora do projeto: o `settings.json` da Adriana tem um perfil de
+   `autoMode.environment` desatualizado apontando "trusted repo" pra
+   `~/.local/bin` (achado nesta sessão, investigando o bloqueio do
+   `apply_migration`) — não é causa raiz confirmada de nada (ver
+   contra-argumento na conversa), mas vale ela corrigir o texto por
+   higiene, se quiser. Não é algo que eu consiga mexer (self-modification).
+5. Rascunho de feedback sobre o classificador de segurança do Claude Code
+   ficou salvo localmente (`SendFeedback`) — só é enviado se ela rodar
+   `/feedback` e aprovar.
+
 
 Projeto: Carro e Cia Veículos (revenda). Pasta de trabalho:
 `C:\Projeto\Revenda Carro e Cia\carro-e-cia-ve-culos-2fqheuud8`
@@ -122,7 +171,12 @@ precisar reler o histórico inteiro de conversas. Diferente do
 pra ser mantido em dia de verdade. Detalhe técnico por integração continua
 nos arquivos `docs/*.md` — aqui é só o resumo de estado + pendências.
 
-Última atualização: 2026-09-28 (sessão 28 — botão "Desfazer Venda" implementado e testado de ponta a ponta, H6 SGI9C15 reativado de verdade a pedido da Adriana).
+Última atualização: 2026-09-28 (sessão 28, fim — botão "Desfazer Venda"
+publicado, CI/CD automático pro front e pras Edge Functions criado e
+testado de ponta a ponta, "Sync Drive" corrigido pra sincronizar vídeo,
+crons de portal de 30 pra 10 min, e Gerador de Criativos de Anúncio
+implementado e publicado — falta artigo de ajuda e teste ao vivo na tela,
+ver "Pendente de verdade" logo acima).
 
 ## CI/CD automatizado (28/09/2026)
 
