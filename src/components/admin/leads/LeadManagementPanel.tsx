@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import {
   CheckCircle2,
@@ -55,6 +56,20 @@ export function LeadManagementPanel({
   const [veiculosBusca, setVeiculosBusca] = useState<any[]>([])
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false)
   const [hasSimulation, setHasSimulation] = useState(false)
+  const [vendedores, setVendedores] = useState<{ id: string; nome: string }[]>([])
+
+  // Lista de quem pode ser responsável pelo lead. Antes não havia nenhum
+  // jeito de preencher leads.responsavel_id (0 de 117 leads tinham dono em
+  // 28/09/2026), o que deixava o ROI por vendedor e o aviso ao responsável
+  // sem efeito.
+  useEffect(() => {
+    supabase
+      .from('usuarios')
+      .select('id, nome')
+      .eq('ativo', true)
+      .order('nome')
+      .then(({ data }) => setVendedores(data || []))
+  }, [])
 
   const linkedVeiculo = lead?.veiculo_id ? veiculosMap[lead.veiculo_id] : null
 
@@ -172,6 +187,28 @@ export function LeadManagementPanel({
           />
         </div>
 
+        <div className="bg-white p-3 rounded-xl border shadow-sm mb-4">
+          <Label className="text-xs font-bold text-slate-500 uppercase block mb-2">
+            Vendedor Responsável
+          </Label>
+          <Select
+            value={lead.responsavel_id || 'nenhum'}
+            onValueChange={(v) => onFieldUpdate('responsavel_id', v === 'nenhum' ? null : v)}
+          >
+            <SelectTrigger className="h-8 text-sm">
+              <SelectValue placeholder="Escolha um vendedor" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="nenhum">Sem responsável</SelectItem>
+              {vendedores.map((v) => (
+                <SelectItem key={v.id} value={v.id}>
+                  {v.nome}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
         {/* AI Qualification Widget */}
         <div className="bg-gradient-to-br from-slate-900 to-slate-800 p-4 rounded-xl shadow-md mb-4 text-white relative overflow-hidden">
           <div className="absolute top-0 right-0 p-2 opacity-20">
@@ -229,7 +266,7 @@ export function LeadManagementPanel({
             <div className="flex-1 min-w-0">
               <p className="text-[11px] text-slate-300 line-clamp-2 leading-tight">
                 {lead.ai_summary ||
-                  'O assistente está analisando as intenções de compra do cliente em tempo real.'}
+                  'Nota calculada pelo sistema: veículo de interesse, mensagens trocadas, e-mail, visita agendada e origem em anúncio.'}
               </p>
             </div>
           </div>

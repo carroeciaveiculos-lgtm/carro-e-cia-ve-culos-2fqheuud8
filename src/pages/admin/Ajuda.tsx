@@ -158,12 +158,6 @@ export default function Ajuda() {
             <p className="text-sm leading-relaxed">{item.o_que_e}</p>
           </div>
         )}
-        {item.dependencias && (
-          <div>
-            <strong className="block text-slate-800 mb-1">Dependências e Vínculos:</strong>
-            <p className="text-sm leading-relaxed">{item.dependencias}</p>
-          </div>
-        )}
         {item.para_que_serve && (
           <div>
             <strong className="block text-slate-800 mb-1">Para que serve:</strong>
@@ -172,10 +166,14 @@ export default function Ajuda() {
         )}
         {item.caminho && (
           <div>
-            <strong className="block text-slate-800 mb-1">Onde está (caminho):</strong>
-            <Badge variant="secondary" className="font-mono text-xs">
-              {item.caminho}
-            </Badge>
+            <strong className="block text-slate-800 mb-1">Onde fica:</strong>
+            <p className="text-sm leading-relaxed">{item.caminho}</p>
+          </div>
+        )}
+        {item.como_utilizar && (
+          <div className="bg-slate-50 p-4 rounded-md border mt-2">
+            <strong className="block text-slate-800 mb-2">Como usar (passo a passo):</strong>
+            <div className="text-sm leading-relaxed whitespace-pre-wrap">{item.como_utilizar}</div>
           </div>
         )}
         {item.quando_utilizar && (
@@ -184,10 +182,10 @@ export default function Ajuda() {
             <p className="text-sm leading-relaxed">{item.quando_utilizar}</p>
           </div>
         )}
-        {item.como_utilizar && (
-          <div className="bg-slate-50 p-4 rounded-md border mt-2">
-            <strong className="block text-slate-800 mb-2">Como utilizar (Passo a passo):</strong>
-            <div className="text-sm leading-relaxed whitespace-pre-wrap">{item.como_utilizar}</div>
+        {item.dependencias && (
+          <div>
+            <strong className="block text-slate-800 mb-1">Antes de começar:</strong>
+            <p className="text-sm leading-relaxed">{item.dependencias}</p>
           </div>
         )}
       </AccordionContent>
