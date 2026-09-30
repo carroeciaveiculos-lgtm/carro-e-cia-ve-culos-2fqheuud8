@@ -13,6 +13,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { useToast } from '@/hooks/use-toast'
+import { mensagemErroAmigavel } from '@/lib/friendly-error'
 import { Calculator, Save, FileText, Car } from 'lucide-react'
 
 export default function Financiamento() {
@@ -79,7 +80,10 @@ export default function Financiamento() {
     }
     setLoading(true)
     try {
-      await supabase.from('simulacoes').insert({
+      // O Supabase não lança exceção quando o banco recusa: devolve { error }.
+      // Antes o insert não era conferido e a tela mostrava "salva com sucesso"
+      // mesmo sem gravar nada.
+      const { error } = await supabase.from('simulacoes').insert({
         cliente_nome: lead.nome,
         cliente_telefone: lead.telefone,
         cliente_cpf: lead.cpf,
@@ -91,15 +95,33 @@ export default function Financiamento() {
         status: 'Pendente',
         veiculo_id: veiculo?.id,
       })
+      if (error) throw error
 
-      // Update lead if it was just financing and now we did it
-      if (lead.payment_method?.toLowerCase().includes('financiamento')) {
-        await supabase.from('leads').update({ status: 'em_contato' }).eq('id', lead.id)
+      // Só avança quem ainda é "novo" — antes empurrava de volta pra em_contato
+      // qualquer lead (ex.: já em visita/fechado) que pedisse uma simulação.
+      let statusFalhou = false
+      if (lead.status === 'novo' && lead.payment_method?.toLowerCase().includes('financiamento')) {
+        const { error: statusError } = await supabase
+          .from('leads')
+          .update({ status: 'em_contato' })
+          .eq('id', lead.id)
+        statusFalhou = !!statusError
       }
 
       toast({ title: 'Simulação salva com sucesso!' })
+      if (statusFalhou) {
+        toast({
+          title: 'Simulação salva, mas o status do lead não foi atualizado',
+          description: 'Mova o lead de etapa manualmente no CRM.',
+          variant: 'destructive',
+        })
+      }
     } catch (err: any) {
-      toast({ title: 'Erro', description: err.message, variant: 'destructive' })
+      toast({
+        title: 'Erro ao salvar simulação',
+        description: mensagemErroAmigavel(err),
+        variant: 'destructive',
+      })
     } finally {
       setLoading(false)
     }
