@@ -41,6 +41,13 @@ import { ImageEditorModal } from '@/components/admin/ImageEditorModal'
 import { DocumentPreviewDialog } from '@/components/admin/DocumentPreviewDialog'
 import { getFipeHistoryFromDB } from '@/services/fipe'
 import {
+  fetchFraseFinal,
+  FRASE_FINAL_PADRAO,
+  LIMITE_DESCRICAO_GERAL,
+  LIMITE_DESCRICAO_WEBMOTORS,
+} from '@/services/ai-prompts'
+import { notasParaIA } from '@/lib/notas-para-ia'
+import {
   confirmarMapeamentoNapista,
   remapearVeiculoNapista,
   motivoPendenciaNapista,
@@ -1674,7 +1681,15 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
   const [loadingAdKit, setLoadingAdKit] = useState(false)
   const [loadingDescricao, setLoadingDescricao] = useState(false)
   const [aiTone, setAiTone] = useState('Persuasivo')
+  const [fraseFinal, setFraseFinal] = useState(FRASE_FINAL_PADRAO)
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({})
+
+  // Frase que fecha o anúncio de todas as plataformas (editável em Regras de IA).
+  useEffect(() => {
+    fetchFraseFinal()
+      .then(setFraseFinal)
+      .catch(() => {})
+  }, [])
 
   // Gerador de criativos de anúncio (Meta/Google Ads) -- pedido 28/09/2026.
   // Motor híbrido: os templates abaixo desenham preço/km/logo/texto por
@@ -1710,27 +1725,58 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
       const diferenciaisText = Array.isArray(formData.diferenciais)
         ? formData.diferenciais.join(', ')
         : ''
-      const tema = `${formData.marca} ${formData.modelo} ${formData.versao || ''} - Ano Fab: ${formData.ano_fabricacao || 'N/A'}, Ano Mod: ${formData.ano_modelo || 'N/A'}. Cor: ${formData.cor}. Quilometragem: ${formData.quilometragem} km. Combustível: ${formData.combustivel}. Câmbio: ${formData.cambio}. Portas: ${formData.portas || 'N/A'}. Preço: R$ ${formData.preco_venda || 'N/A'}. Diferenciais e opcionais: ${diferenciaisText || 'Nenhum'}. ${primeiraFoto ? `Foto de referência: ${primeiraFoto}` : ''}`
-      const { data, error } = await supabase.functions.invoke('gerar-conteudo', {
-        body: {
-          tema,
-          palavraChave: `${formData.marca} ${formData.modelo} seminovo uberaba`,
-          tom: aiTone,
-          is_vehicle_description: true,
-        },
-      })
-      if (error) throw error
-      if (data?.success && data?.data?.texto_html) {
+      // "Notas / Destaques (para IA)" (veiculos.notas_internas) antes nunca
+      // chegava na IA: o tema só levava os campos estruturados. Achado
+      // 30/09/2026 -- 24 dos 25 veículos ativos têm nota preenchida.
+      const destaques = notasParaIA(formData.notas_internas)
+      const tema = `${formData.marca} ${formData.modelo} ${formData.versao || ''} - Ano Fab: ${formData.ano_fabricacao || 'N/A'}, Ano Mod: ${formData.ano_modelo || 'N/A'}. Cor: ${formData.cor}. Quilometragem: ${formData.quilometragem} km. Combustível: ${formData.combustivel}. Câmbio: ${formData.cambio}. Portas: ${formData.portas || 'N/A'}. Preço: R$ ${formData.preco_venda || 'N/A'}. Diferenciais e opcionais: ${diferenciaisText || 'Nenhum'}. ${destaques ? `DESTAQUES DO VENDEDOR (prioridade máxima, use no texto; nunca cite preço, telefone nem nomes de pessoas): ${destaques}.` : ''} ${primeiraFoto ? `Foto de referência: ${primeiraFoto}` : ''}`
+      const chamar = (flag: 'is_vehicle_description' | 'is_webmotors_description') =>
+        supabase.functions.invoke('gerar-conteudo', {
+          body: {
+            tema,
+            palavraChave: `${formData.marca} ${formData.modelo} seminovo uberaba`,
+            tom: aiTone,
+            [flag]: true,
+          },
+        })
+      // Um clique gera os dois textos, em paralelo; se um falhar, o outro
+      // ainda aparece.
+      const [rGeral, rWm] = await Promise.allSettled([
+        chamar('is_vehicle_description'),
+        chamar('is_webmotors_description'),
+      ])
+      const extrairTexto = (r: PromiseSettledResult<any>): string | null => {
+        if (r.status !== 'fulfilled' || r.value.error) return null
+        const html = r.value.data?.success ? r.value.data?.data?.texto_html : null
+        if (!html) return null
         const tempDiv = document.createElement('div')
-        tempDiv.innerHTML = data.data.texto_html
-        const plainText = tempDiv.textContent || tempDiv.innerText || ''
-        const cleanedText = sanitizeAiText(plainText)
-        setFormData((p: any) => ({
-          ...p,
-          descricao: cleanedText.substring(0, 1600),
-          requires_review: true,
-        }))
-        toast({ title: 'Descrição gerada com IA! Marque para revisão.' })
+        tempDiv.innerHTML = html
+        return sanitizeAiText(tempDiv.textContent || tempDiv.innerText || '')
+      }
+      const textoGeral = extrairTexto(rGeral)
+      const textoWm = extrairTexto(rWm)
+      if (!textoGeral && !textoWm) throw new Error('nenhum texto gerado')
+      setFormData((p: any) => ({
+        ...p,
+        ...(textoGeral ? { descricao: textoGeral } : {}),
+        ...(textoWm
+          ? {
+              descricao_webmotors: textoWm.substring(
+                0,
+                LIMITE_DESCRICAO_WEBMOTORS - fraseFinal.length - 1,
+              ),
+            }
+          : {}),
+        requires_review: true,
+      }))
+      if (textoGeral && textoWm) {
+        toast({ title: 'Descrições geradas com IA! Marque para revisão.' })
+      } else {
+        toast({
+          title: `Só a descrição ${textoGeral ? 'geral' : 'da Webmotors'} foi gerada`,
+          description: `A descrição ${textoGeral ? 'da Webmotors' : 'geral'} falhou — clique em "Gerar com IA" de novo.`,
+          variant: 'destructive',
+        })
       }
     } catch {
       toast({ title: 'Erro ao gerar descrição', variant: 'destructive' })
@@ -2384,7 +2430,7 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
                   </div>
                   <div>
                     <div className="flex items-center justify-between mb-1">
-                      <Label>Observações / Descrição</Label>
+                      <Label>Descrições do anúncio (geral e Webmotors)</Label>
                       <div className="flex items-center gap-2">
                         <Select value={aiTone} onValueChange={setAiTone}>
                           <SelectTrigger className="h-7 w-36 text-xs">
@@ -2411,11 +2457,60 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
                         </Button>
                       </div>
                     </div>
-                    <Textarea
-                      value={formData.descricao || ''}
-                      onChange={(e) => setFormData({ ...formData, descricao: e.target.value })}
-                      className="h-32"
-                    />
+                    {(() => {
+                      const tamanhoGeral = (formData.descricao || '').length
+                      const corpoWm = (formData.descricao_webmotors || '').trim()
+                      // A frase final é colada pelo sistema no envio; conta no limite.
+                      const usadoWm = corpoWm ? corpoWm.length + 1 + fraseFinal.length : 0
+                      return (
+                        <div className="grid gap-3 md:grid-cols-2">
+                          <div>
+                            <p className="text-xs font-medium text-slate-600 mb-1">
+                              Descrição geral (site, Mercado Livre e NaPista)
+                            </p>
+                            <Textarea
+                              value={formData.descricao || ''}
+                              onChange={(e) =>
+                                setFormData({ ...formData, descricao: e.target.value })
+                              }
+                              className="h-40"
+                            />
+                            <p
+                              className={`text-xs mt-1 ${tamanhoGeral > LIMITE_DESCRICAO_GERAL ? 'text-red-600 font-semibold' : 'text-slate-500'}`}
+                            >
+                              {tamanhoGeral} / {LIMITE_DESCRICAO_GERAL} caracteres
+                              {tamanhoGeral > LIMITE_DESCRICAO_GERAL &&
+                                ' — será encurtada ao enviar para Mercado Livre e NaPista'}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-xs font-medium text-slate-600 mb-1">
+                              Descrição Webmotors (máx. {LIMITE_DESCRICAO_WEBMOTORS} com a frase
+                              final)
+                            </p>
+                            <Textarea
+                              value={formData.descricao_webmotors || ''}
+                              onChange={(e) =>
+                                setFormData({ ...formData, descricao_webmotors: e.target.value })
+                              }
+                              className="h-28"
+                              placeholder="Vazio = a Webmotors usa o parágrafo institucional padrão da loja."
+                            />
+                            <p className="text-xs mt-1 text-slate-500 italic border-l-2 pl-2">
+                              {fraseFinal}
+                            </p>
+                            <p
+                              className={`text-xs mt-1 ${usadoWm > LIMITE_DESCRICAO_WEBMOTORS ? 'text-red-600 font-semibold' : 'text-slate-500'}`}
+                            >
+                              {usadoWm} / {LIMITE_DESCRICAO_WEBMOTORS} caracteres (com a frase
+                              final)
+                              {usadoWm > LIMITE_DESCRICAO_WEBMOTORS &&
+                                ' — acima do limite da Webmotors; será encurtada no envio'}
+                            </p>
+                          </div>
+                        </div>
+                      )
+                    })()}
                   </div>
                 </div>
               </div>

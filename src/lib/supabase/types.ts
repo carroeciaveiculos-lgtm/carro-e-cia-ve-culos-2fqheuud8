@@ -4405,6 +4405,7 @@ export type Database = {
           created_at: string | null
           data_venda: string | null
           descricao: string | null
+          descricao_webmotors: string | null
           destaque: boolean | null
           diferenciais: Json | null
           direcao: string | null
@@ -4517,6 +4518,7 @@ export type Database = {
           created_at?: string | null
           data_venda?: string | null
           descricao?: string | null
+          descricao_webmotors?: string | null
           destaque?: boolean | null
           diferenciais?: Json | null
           direcao?: string | null
@@ -4629,6 +4631,7 @@ export type Database = {
           created_at?: string | null
           data_venda?: string | null
           descricao?: string | null
+          descricao_webmotors?: string | null
           destaque?: boolean | null
           diferenciais?: Json | null
           direcao?: string | null

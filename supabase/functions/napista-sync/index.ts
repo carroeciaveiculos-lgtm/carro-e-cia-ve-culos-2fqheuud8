@@ -2,14 +2,24 @@ import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from 'jsr:@supabase/supabase-js@2'
 import { corsHeaders } from '../_shared/cors.ts'
 import { getValidNapistaToken } from '../_shared/napista-client.ts'
+import {
+  LIMITE_DESCRICAO_PORTAIS,
+  buscarFraseFinal,
+  montarDescricao,
+} from '../_shared/descricao-anuncio.ts'
 
 // Produção desde 18/08/2026 — ver docs/integracao-napista.md.
 const BASE = 'https://api.napista.com.br/seller-inventory-api'
 
-function buildOfferPayload(veiculo: any, mapeamento: any) {
+function buildOfferPayload(veiculo: any, mapeamento: any, fraseFinal: string) {
   return {
     versionId: mapeamento.napista_version_id,
-    description: veiculo.descricao || `${veiculo.marca} ${veiculo.modelo}`,
+    // Até 800 caracteres, sempre terminando na frase fixa (30/09/2026).
+    description: montarDescricao(
+      veiculo.descricao || `${veiculo.marca} ${veiculo.modelo}`,
+      LIMITE_DESCRICAO_PORTAIS,
+      fraseFinal,
+    ),
     modelYear: Number(veiculo.ano_modelo) || Number(veiculo.ano_fabricacao),
     manufacturedYear: Number(veiculo.ano_fabricacao) || Number(veiculo.ano_modelo),
     mileage: Math.round(Number(veiculo.quilometragem) || 0),
@@ -178,7 +188,7 @@ Deno.serve(async (req: Request) => {
         continue
       }
 
-      const payload = buildOfferPayload(veiculo, mapeamento)
+      const payload = buildOfferPayload(veiculo, mapeamento, await buscarFraseFinal(supabase))
       const fotosVeiculo: string[] = Array.isArray(veiculo.fotos) ? veiculo.fotos : []
 
       try {

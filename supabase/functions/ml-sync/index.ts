@@ -2,6 +2,11 @@ import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from 'jsr:@supabase/supabase-js@2'
 import { corsHeaders } from '../_shared/cors.ts'
 import {
+  LIMITE_DESCRICAO_PORTAIS,
+  buscarFraseFinal,
+  montarDescricao,
+} from '../_shared/descricao-anuncio.ts'
+import {
   getValidMLToken,
   buildMLItemPayload,
   buildMLUpdatePayload,
@@ -498,7 +503,11 @@ async function handleUpdate(
 
   if (veiculo.descricao && veiculo.descricao.length > 0) {
     try {
-      const filteredDesc = filtrarDescricao(veiculo.descricao)
+      const filteredDesc = montarDescricao(
+        filtrarDescricao(veiculo.descricao),
+        LIMITE_DESCRICAO_PORTAIS,
+        await buscarFraseFinal(supabase),
+      )
       await fetchWithBackoff(
         `https://api.mercadolibre.com/items/${listing.ml_item_id}/description`,
         {

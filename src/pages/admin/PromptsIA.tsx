@@ -31,6 +31,7 @@ import {
   fetchAIPrompts,
   updateAIPrompt,
   updateRodapeFixo,
+  SLUG_FRASE_FINAL,
   restoreDefaultPrompt,
   fetchPromptHistorico,
   DEPENDENTES_ASSISTENTE_INTERNO,
@@ -91,11 +92,12 @@ function OndeFica({ texto }: { texto: string | null }) {
   )
 }
 
-// A Webmotors some com a descrição inteira acima de 500 caracteres, mesmo
-// respondendo sucesso (docs/webmotors-integracao.md). O mesmo texto também
-// é usado nas outras plataformas, por isso o limite vale pra regra toda.
-const LIMITE_RODAPE_WEBMOTORS = 500
-const SLUG_RODAPE_WEBMOTORS = 'vehicle_description'
+// A frase final fecha o anúncio de TODAS as plataformas. Na Webmotors a
+// descrição inteira (texto do carro + frase) tem no máximo 500 caracteres
+// (acima disso a página pública esconde tudo, mesmo com a API respondendo
+// sucesso -- docs/webmotors-integracao.md). Limito a frase a 200 pra sempre
+// sobrar pelo menos 300 caracteres pro texto do carro.
+const LIMITE_FRASE_FINAL = 200
 
 function RodapeFixoEditor({
   prompt,
@@ -107,7 +109,8 @@ function RodapeFixoEditor({
   const original = prompt.rodape_fixo || ''
   const [texto, setTexto] = useState(original)
   const [salvando, setSalvando] = useState(false)
-  const limite = prompt.slug === SLUG_RODAPE_WEBMOTORS ? LIMITE_RODAPE_WEBMOTORS : null
+  const ehFraseFinal = prompt.slug === SLUG_FRASE_FINAL
+  const limite = ehFraseFinal ? LIMITE_FRASE_FINAL : null
   const acimaDoLimite = limite !== null && texto.length > limite
   const vazio = texto.trim().length === 0
   const alterado = texto !== original
@@ -128,8 +131,9 @@ function RodapeFixoEditor({
   return (
     <div>
       <label className="text-xs font-medium text-muted-foreground mb-1 block">
-        Texto fixo colado no final
-        {limite !== null && ' (na Webmotors é a descrição inteira do anúncio)'}
+        {ehFraseFinal
+          ? 'Frase final (vai no fim do anúncio de TODAS as plataformas: Webmotors, Mercado Livre e NaPista)'
+          : 'Texto fixo colado no final'}
       </label>
       <Textarea
         value={texto}
@@ -142,7 +146,7 @@ function RodapeFixoEditor({
         >
           {texto.length}
           {limite !== null && ` / ${limite}`} caracteres
-          {acimaDoLimite && ' — acima do limite da Webmotors'}
+          {acimaDoLimite && ' — frase longa demais, sobraria pouco espaço pro texto do carro'}
         </span>
         <Button
           size="sm"

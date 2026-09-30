@@ -2,6 +2,11 @@ import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from 'jsr:@supabase/supabase-js@2'
 import { corsHeaders } from '../_shared/cors.ts'
 import {
+  LIMITE_DESCRICAO_PORTAIS,
+  buscarFraseFinal,
+  montarDescricao,
+} from '../_shared/descricao-anuncio.ts'
+import {
   getValidMLToken,
   buildMLItemPayload,
   buildMLUpdatePayload,
@@ -288,7 +293,11 @@ async function handlePublish(
   // a descricao gerada por IA nunca chegava no anuncio real por aqui.
   if (veiculo.descricao && veiculo.descricao.length > 0) {
     try {
-      const filteredDesc = filtrarDescricao(veiculo.descricao)
+      const filteredDesc = montarDescricao(
+        filtrarDescricao(veiculo.descricao),
+        LIMITE_DESCRICAO_PORTAIS,
+        await buscarFraseFinal(supabase),
+      )
       const descRes = await fetchWithBackoff(`https://api.mercadolibre.com/items/${mlData.id}/description`, {
         method: 'PUT',
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },

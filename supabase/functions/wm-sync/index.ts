@@ -1,6 +1,12 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from 'jsr:@supabase/supabase-js@2'
 import {
+  LIMITE_DESCRICAO_WEBMOTORS,
+  PARAGRAFO_INSTITUCIONAL_LEGADO,
+  buscarFraseFinal,
+  montarDescricao,
+} from '../_shared/descricao-anuncio.ts'
+import {
   buildAuthXML,
   buildIncluirCarroXML,
   buildAlterarCarroXML,
@@ -302,14 +308,16 @@ Deno.serve(async (req: Request) => {
     // editar pela tela um dia. Fallback fixo abaixo so pra nao deixar TODOS
     // os anuncios sem observacao de uma vez se essa linha do banco sumir ou
     // vier vazia (achado da autocritica pedida por ela, 03/09/2026).
-    const OBSERVACAO_WM_FALLBACK =
-      'Há mais de 25 anos no mercado, a Carro & Cia Veículos trabalha com 0 km e seminovos com laudo cautelar aprovado, qualidade e procedência garantidas. Atendimento personalizado, preço justo, pronta entrega, melhor avaliação na troca, financiamento em até 60 vezes com aprovação imediata, seguro auto e consórcios. Consulte nossos vendedores sobre versões, modelos, pintura e frete. Reservamo-nos o direito de corrigir eventuais erros de digitação; valores sujeitos a alteração sem aviso prévio.'
-    const { data: rodapeRow } = await supabase
-      .from('ai_prompts_config')
-      .select('rodape_fixo')
-      .eq('slug', 'vehicle_description')
-      .maybeSingle()
-    const observacaoPadraoWM = rodapeRow?.rodape_fixo || OBSERVACAO_WM_FALLBACK
+    //
+    // ATUALIZADO 30/09/2026 (pedido da Adriana): cada veiculo pode ter a sua
+    // propria "Descricao Webmotors" (veiculos.descricao_webmotors, ate 500
+    // caracteres contando a frase final, que e colada aqui por codigo). Sem
+    // texto proprio, continua valendo o paragrafo institucional acima -- nunca
+    // sai anuncio sem observacao. O paragrafo agora mora so no codigo
+    // (_shared/descricao-anuncio.ts); a linha vehicle_description do banco
+    // deixou de guardar ele.
+    const fraseFinal = await buscarFraseFinal(supabase)
+    const observacaoPadraoWM = PARAGRAFO_INSTITUCIONAL_LEGADO
 
     const results: any[] = []
     for (const pub of pendingPubs) {
@@ -330,7 +338,13 @@ Deno.serve(async (req: Request) => {
       // Sobrescreve so a descricao (Observacao do XML) com o paragrafo fixo
       // -- todo o resto do veiculo (marca, modelo, cor etc.) continua o dado
       // real, usado normalmente no resto do fluxo abaixo.
-      const veiculo = { ...veiculoReal, descricao: observacaoPadraoWM }
+      const corpoWM = (veiculoReal.descricao_webmotors || '').trim()
+      const veiculo = {
+        ...veiculoReal,
+        descricao: corpoWM
+          ? montarDescricao(corpoWM, LIMITE_DESCRICAO_WEBMOTORS, fraseFinal, ' ')
+          : observacaoPadraoWM,
+      }
 
       const { data: mapeamento } = await supabase
         .from('wm_mapeamento_veiculos')

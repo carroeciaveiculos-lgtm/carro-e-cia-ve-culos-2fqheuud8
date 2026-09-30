@@ -2,6 +2,14 @@ import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from 'jsr:@supabase/supabase-js@2'
 import { validateSeoContent } from '../_shared/seo-validator.ts'
 import { buildSeoAgentPrompt } from '../_shared/seo-prompt.ts'
+import {
+  FRASE_FINAL_PADRAO,
+  LIMITE_DESCRICAO_PORTAIS,
+  LIMITE_DESCRICAO_WEBMOTORS,
+  SLUG_FRASE_FINAL,
+  cortarCorpo,
+  montarDescricao,
+} from '../_shared/descricao-anuncio.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -42,6 +50,7 @@ Deno.serve(async (req) => {
       is_seo_agent,
       agenda_id,
       is_vehicle_description,
+      is_webmotors_description,
     } = await req.json()
 
     const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY')
@@ -110,22 +119,27 @@ Deno.serve(async (req) => {
       'vehicle_description',
       'Foque no estilo, apelo visual, diferenciais exclusivos e desempenho do veículo.',
     )
-    const rodapeFixoVeiculo = promptsData?.find(
-      (p: any) => p.slug === 'vehicle_description',
-    )?.rodape_fixo
+    const sysPromptWebmotors = getPromptText(
+      SLUG_FRASE_FINAL,
+      'Escreva uma descrição curta e direta do veículo para a Webmotors. NÃO mencione serviços da concessionária, financiamento, contato, preço ou frases como "nossa loja" ou "entre em contato".',
+    )
+    // Frase fixa do fim do anuncio (30/09/2026): e a MESMA em todas as
+    // plataformas e mora na linha SLUG_FRASE_FINAL (coluna rodape_fixo), que
+    // ela edita em /admin/prompts-ia. Antes o rodape era o paragrafo
+    // institucional de 492 caracteres da linha vehicle_description.
+    const fraseFinal =
+      promptsData?.find((p: any) => p.slug === SLUG_FRASE_FINAL)?.rodape_fixo?.trim() ||
+      FRASE_FINAL_PADRAO
 
-    // Decisao da Adriana (03/09/2026): texto da IA + rodape fixo nunca
-    // passam de 900 caracteres juntos, pra NaPista/Mercado Livre/OLX/site
-    // (a Webmotors nao usa mais esse texto -- passou a usar so o rodape
-    // fixo puro, ajuste feito em wm-sync/index.ts). Calculado a partir do
-    // tamanho REAL do rodape hoje, nao fixo "na unha" -- se ela editar o
-    // rodape pela tela um dia, esse orcamento se recalcula sozinho. Piso de
-    // 150 caracteres pra IA nunca ficar espremida a quase nada, caso o
-    // rodape cresca muito no futuro.
-    const LIMITE_TOTAL_DESCRICAO_VEICULO = 900
-    const LIMITE_TEXTO_IA_VEICULO = Math.max(
-      150,
-      LIMITE_TOTAL_DESCRICAO_VEICULO - (rodapeFixoVeiculo?.length || 0) - 2,
+    // Limites (decisao da Adriana, 30/09/2026): descricao geral (site,
+    // Mercado Livre, NaPista) ate 800 caracteres contando a frase final; a da
+    // Webmotors ate 500. O orcamento do texto da IA e calculado a partir do
+    // tamanho REAL da frase -- se ela editar a frase, recalcula sozinho. Piso
+    // de 150 pra IA nunca ficar espremida a quase nada.
+    const LIMITE_TEXTO_IA_VEICULO = Math.max(150, LIMITE_DESCRICAO_PORTAIS - fraseFinal.length - 2)
+    const LIMITE_TEXTO_IA_WEBMOTORS = Math.max(
+      100,
+      LIMITE_DESCRICAO_WEBMOTORS - fraseFinal.length - 1,
     )
 
     const customPrompt = socialConfig?.ai_system_prompt || sysPromptGeneral
@@ -220,7 +234,27 @@ Responda APENAS com um objeto JSON válido, sem formatação markdown:
   "palavras_chave_secundarias": ["keyword 3", "keyword 4"],
   "conteudo_html": "<h2>...</h2><p>...</p><h3>...</h3><p>...</p>"
 }`
-          : is_vehicle_description
+          : is_webmotors_description
+            ? `${basePrompt}
+${sysPromptWebmotors}
+
+Dados reais do veículo: ${tema}
+
+Tom: ${tom || 'Persuasivo'}.
+
+REGRAS DE FORMATAÇÃO (IMPORTANTE):
+- Texto puro, sem markdown, sem tags HTML, sem títulos ou marcadores.
+- Máximo de ${LIMITE_TEXTO_IA_WEBMOTORS} caracteres no total (limite rígido — conte antes de responder). É curto de propósito: seja direto, sem enrolação.
+- Um único parágrafo.
+- Se os dados trouxerem "DESTAQUES DO VENDEDOR", leia e use esses destaques com prioridade, antes de qualquer outro detalhe.
+- Nunca cite preço, telefone, links nem nomes de pessoas. Não escreva frase de direitos, erros de digitação ou valores sujeitos a alteração: essa frase é acrescentada depois.
+
+SAÍDA OBRIGATÓRIA (JSON VÁLIDO):
+Responda APENAS com um objeto JSON válido, sem formatação markdown:
+{
+  "texto_html": "texto curto do veículo, pronto para uso direto, até ${LIMITE_TEXTO_IA_WEBMOTORS} caracteres"
+}`
+            : is_vehicle_description
             ? `${basePrompt}
 ${sysPromptVehicleDescription}
 
@@ -229,6 +263,7 @@ Dados reais do veículo: ${tema}
 Tom: ${tom || 'Persuasivo'}.
 
 REGRAS DE FORMATAÇÃO (IMPORTANTE):
+- Se os dados trouxerem "DESTAQUES DO VENDEDOR", leia e use esses destaques com prioridade, antes de qualquer outro detalhe (eles valem mais que as restrições acima, exceto contato, preço e nomes de pessoas, que nunca entram).
 - Texto puro, sem markdown, sem tags HTML, sem títulos ou marcadores.
 - Máximo de ${LIMITE_TEXTO_IA_VEICULO} caracteres no total (limite rígido — conte antes de responder).
 - Parágrafo único ou no máximo 2 parágrafos curtos.
@@ -518,14 +553,17 @@ Responda APENAS com um objeto JSON válido, sem formatação markdown:
     // pedido à IA — garante o texto legal exato, sem risco de paráfrase.
     // A parte da IA é truncada em espaço (nunca no meio de uma palavra)
     // antes de colar o rodapé, pra nunca cortar o texto fixo no meio.
-    if (is_vehicle_description) {
-      let textoCarro = resultJson.texto_html || ''
-      if (textoCarro.length > LIMITE_TEXTO_IA_VEICULO) {
-        textoCarro = textoCarro.slice(0, LIMITE_TEXTO_IA_VEICULO).replace(/\s+\S*$/, '') + '...'
-      }
-      resultJson.texto_html = rodapeFixoVeiculo
-        ? `${textoCarro}\n\n${rodapeFixoVeiculo}`
-        : textoCarro
+    if (is_webmotors_description) {
+      // Devolve só o texto do carro, já dentro do orçamento; a frase final
+      // vem à parte e é colada no envio (wm-sync) e mostrada na tela.
+      resultJson.texto_html = cortarCorpo(resultJson.texto_html || '', LIMITE_TEXTO_IA_WEBMOTORS)
+      resultJson.frase_final = fraseFinal
+    } else if (is_vehicle_description) {
+      resultJson.texto_html = montarDescricao(
+        resultJson.texto_html || '',
+        LIMITE_DESCRICAO_PORTAIS,
+        fraseFinal,
+      )
     }
 
     // SEO Agent: Save to blog_posts, validate, and notify manager via WhatsApp

@@ -28,6 +28,24 @@ export interface PromptHistoricoEntry {
 // Assistente Interno, atualizar aqui também.
 export const DEPENDENTES_ASSISTENTE_INTERNO = ['seo_copilot', 'seo_optimizer', 'seo_heading_draft']
 
+// Frase que fecha o anúncio de TODAS as plataformas. Mora em
+// ai_prompts_config (coluna rodape_fixo desta regra); a constante é só reserva.
+// Mesmo valor de supabase/functions/_shared/descricao-anuncio.ts.
+export const SLUG_FRASE_FINAL = 'vehicle_description_webmotors'
+export const FRASE_FINAL_PADRAO =
+  'Reservamo-nos o direito de corrigir eventuais erros de digitação; valores sujeitos a alteração sem aviso prévio.'
+export const LIMITE_DESCRICAO_GERAL = 800
+export const LIMITE_DESCRICAO_WEBMOTORS = 500
+
+export async function fetchFraseFinal(): Promise<string> {
+  const { data } = await supabase
+    .from('ai_prompts_config')
+    .select('rodape_fixo')
+    .eq('slug', SLUG_FRASE_FINAL)
+    .maybeSingle()
+  return data?.rodape_fixo?.trim() || FRASE_FINAL_PADRAO
+}
+
 export async function fetchAIPrompts(): Promise<AIPromptConfig[]> {
   const { data, error } = await supabase.from('ai_prompts_config').select('*').order('name')
   if (error) throw error

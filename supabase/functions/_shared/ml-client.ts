@@ -1,4 +1,9 @@
 import { createClient } from 'jsr:@supabase/supabase-js@2'
+import {
+  FRASE_FINAL_PADRAO,
+  LIMITE_DESCRICAO_PORTAIS,
+  montarDescricao,
+} from './descricao-anuncio.ts'
 
 type SupabaseClient = ReturnType<typeof createClient>
 
@@ -475,7 +480,15 @@ export function buildMLItemPayload(
     pictures: fotos.map((url: string) => ({ source: url })),
     attributes,
     location: buildLocation(v, cityId),
-    description: { plain_text: v.descricao || `${v.marca} ${v.modelo}` },
+    // Frase padrão aqui porque esta função é pura (sem banco); logo depois da
+    // criação o sync reenvia a descrição com a frase atual do banco.
+    description: {
+      plain_text: montarDescricao(
+        v.descricao || `${v.marca} ${v.modelo}`,
+        LIMITE_DESCRICAO_PORTAIS,
+        FRASE_FINAL_PADRAO,
+      ),
+    },
   }
 }
 

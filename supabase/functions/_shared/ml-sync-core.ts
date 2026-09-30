@@ -11,6 +11,11 @@ import { validateImagesForML } from '../_shared/image-validation.ts'
 import { getCityId, checkAvailableListingTypes } from '../_shared/ml-cache.ts'
 import { fetchAndStorePerformance } from '../_shared/ml-performance.ts'
 import { validatePayload, filtrarDescricao } from '../_shared/validate-payload.ts'
+import {
+  LIMITE_DESCRICAO_PORTAIS,
+  buscarFraseFinal,
+  montarDescricao,
+} from '../_shared/descricao-anuncio.ts'
 
 type SupabaseClient = ReturnType<typeof createClient>
 
@@ -165,7 +170,11 @@ export async function syncVehicleToML(
     // -- confirmado ao vivo com o Honda Fit LX (PUQ3A75).
     if (veiculo.descricao && veiculo.descricao.length > 0) {
       try {
-        const filteredDesc = filtrarDescricao(veiculo.descricao)
+        const filteredDesc = montarDescricao(
+          filtrarDescricao(veiculo.descricao),
+          LIMITE_DESCRICAO_PORTAIS,
+          await buscarFraseFinal(supabase),
+        )
         await fetchWithBackoff(`https://api.mercadolibre.com/items/${mlData.id}/description`, {
           method: 'PUT',
           headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
