@@ -703,6 +703,29 @@ extração sem esse problema, a comparação real deu zero diferenças.
   Confirmado ao vivo: descrição de 1144 caracteres em um anúncio real não
   aparecia **nenhuma linha** na página pública, mesmo com `CodigoRetorno`
   de sucesso.
+- **ATUALIZAÇÃO 30/09/2026 — a decisão de 03/09 abaixo virou só texto de
+  reserva.** Cada veículo pode ter a sua `veiculos.descricao_webmotors`
+  (campo "Descrição Webmotors" no cadastro, ao lado da descrição geral).
+  O `wm-sync` monta `descricao_webmotors + " " + frase final` com no máximo
+  500 caracteres (`_shared/descricao-anuncio.ts`, `montarDescricao`); se o
+  veículo não tem texto próprio, continua indo o parágrafo institucional de
+  492 caracteres, agora guardado só no código (`PARAGRAFO_INSTITUCIONAL_LEGADO`;
+  a linha `vehicle_description` do banco teve o `rodape_fixo` zerado). A
+  **frase final** ("Reservamo-nos o direito de corrigir eventuais erros de
+  digitação; valores sujeitos a alteração sem aviso prévio.", 112 caracteres)
+  mora em `ai_prompts_config.rodape_fixo` da regra
+  `vehicle_description_webmotors`, editável em `/admin/prompts-ia`, e fecha o
+  anúncio de TODAS as plataformas: Webmotors (500), Mercado Livre e NaPista
+  (800, cortando o texto do carro e nunca a frase). Sobram 387 caracteres
+  pro texto do carro na Webmotors e 686 nas outras. O botão "Gerar com IA"
+  gera os dois textos com duas chamadas paralelas ao `gerar-conteudo`
+  (`is_vehicle_description` e `is_webmotors_description`). O gatilho
+  `trigger_wm_sync_on_veiculo_change` passou a reagir à mudança de
+  `descricao_webmotors`: salvar o campo reenvia o anúncio em até 10 min.
+  Migration: `20260930180000_descricao_webmotors_e_frase_final.sql`.
+  **Beco sem saída evitado:** o teto de 800 não cabe com o parágrafo de 492
+  (sobrariam 306 caracteres pro carro) — por isso o parágrafo saiu dos
+  anúncios de Mercado Livre e NaPista (decisão B da Adriana, 30/09/2026).
 - **Decisão da Adriana (03/09/2026): a Webmotors passa a usar sempre o
   mesmo parágrafo institucional fixo, igual pra todo veículo, em vez de um
   texto individual por carro.** Simplifica o problema do limite de 500

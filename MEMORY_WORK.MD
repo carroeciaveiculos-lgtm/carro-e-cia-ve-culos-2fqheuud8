@@ -1,5 +1,30 @@
 # Memória de trabalho — Carro e Cia
 
+## [30/09/2026, tarde] Descrição Webmotors (500) + limite 800 + frase final + Notas pra IA — CÓDIGO PRONTO, NADA APLICADO
+
+Implementado e testado só localmente (lint 0 erros, build ok, `tsc` 75 erros
+antigos iguais antes/depois, `montarDescricao` testada em 6 casos com bun).
+**Nada commitado, nenhuma migration aplicada, nada publicado.**
+- Migration `20260930180000_descricao_webmotors_e_frase_final.sql` (coluna
+  `veiculos.descricao_webmotors`, regra nova `vehicle_description_webmotors`
+  com a frase no `rodape_fixo`, zera `rodape_fixo` de `vehicle_description`,
+  gatilho WM atualizado, artigo da Central de Ajuda). Precisa a Adriana colar
+  no SQL Editor (MCP é barrado; abrir o arquivo no Bloco de Notas, não copiar
+  do terminal) **ANTES** do push — o front novo grava a coluna nova.
+- Função compartilhada `_shared/descricao-anuncio.ts`: limite 800 (ML, NaPista),
+  500 (Webmotors), frase final sempre no fim, parágrafo institucional antigo
+  removido das descrições. Aplicada em `wm-sync`, `ml-sync`, `ml-sync-core`,
+  `sync-plataforma`, `ml-client`, `napista-sync`, `gerar-conteudo`.
+  **Mexer em `_shared/` faz o deploy automático publicar as 56 functions.**
+- **Causa raiz das Notas / Destaques ignoradas:** `handleGerarDescricao` nunca
+  mandava `notas_internas` no `tema`. Corrigido (+ filtro `notasParaIA` tira
+  linhas "ML Performance Score…", que `ml-performance.ts` escreve no mesmo campo).
+- Depois do push: testar "Gerar com IA" em 1 veículo, conferir tamanhos, e só
+  então (pedido separado) gerar em lote e reenviar aos portais. 13 dos 25
+  veículos ativos têm descrição acima de 800 (serão cortados no próximo envio).
+- Pendente: marcar a linha `/admin/estoque` em `docs/manual-operacional-contexto.md`
+  quando o artigo estiver no banco; artigo do Gerador de Criativos segue pendente.
+
 ## [30/09/2026] Texto fixo da Webmotors agora editável na tela
 
 `/admin/prompts-ia` — o bloco "Texto fixo colado no final" (`ai_prompts_config.rodape_fixo`)
