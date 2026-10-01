@@ -11,6 +11,59 @@ const corsHeaders = {
 
 const delay = (ms: number) => new Promise((res) => setTimeout(res, ms))
 
+// Achado 30/09/2026: o META_PAGE_ACCESS_TOKEN virou token de USUÁRIO DO SISTEMA
+// ("carroecia_bot", tipo SYSTEM_USER — válido, sem expiração, com
+// pages_manage_posts). Com ele direto, POST /{page}/photos devolve "(#200)
+// publish_actions not available" e NENHUM post orgânico saía no Facebook (último
+// sucesso: 17/09). O Facebook exige o token DA PÁGINA pra publicar; o do sistema
+// consegue gerar esse token (confirmado ao vivo: tipo PAGE, sem expiração).
+// Se a troca falhar, cai no token original — nunca pior que antes.
+async function obterTokenDePagina(pageId: string, token: string): Promise<string> {
+  try {
+    const r = await fetch(
+      `https://graph.facebook.com/v20.0/${pageId}?fields=access_token&access_token=${encodeURIComponent(token)}`,
+    )
+    const j = await r.json()
+    if (r.ok && j?.access_token) return j.access_token
+    console.error('Não foi possível obter o token da página:', j?.error?.message)
+  } catch (e: any) {
+    console.error('Erro ao obter o token da página:', e?.message)
+  }
+  return token
+}
+
+// Traduz o erro cru das redes pra uma frase que a equipe entende na tela de
+// aprovação (gravada em social_posts.erro_msg).
+function mensagemErroAmigavel(errorLog: Record<string, any>): string {
+  const nomes: Record<string, string> = {
+    facebook: 'Facebook',
+    instagram: 'Instagram',
+    linkedin: 'LinkedIn',
+  }
+  const partes: string[] = []
+  for (const rede of Object.keys(errorLog)) {
+    const raw = errorLog[rede]
+    const code = raw?.error?.code
+    const sub = raw?.error?.error_subcode
+    const msg: string =
+      raw?.error?.message ||
+      raw?.message ||
+      (typeof raw?.error === 'string' ? raw.error : '') ||
+      (typeof raw === 'string' ? raw : '') ||
+      JSON.stringify(raw ?? {}).slice(0, 160)
+    let texto = msg
+    if (/publish_actions/i.test(msg)) {
+      texto = 'a rede recusou o token de acesso da página (sem permissão de publicar) — avise o TI'
+    } else if (code === 190) {
+      texto = 'o token de acesso expirou ou foi invalidado — avise o TI'
+    } else if (sub === 2207027 || code === 9007) {
+      texto = 'a mídia ainda não estava pronta no Instagram — tente de novo em alguns minutos'
+    }
+    partes.push(`${nomes[rede] || rede}: ${texto.slice(0, 220)}`)
+  }
+  return partes.join(' | ') || 'Falha desconhecida ao publicar'
+}
+
 // Função para garantir que fotos .webp do Supabase sejam servidas em .jpeg para o Meta aceitar
 function sanitizeImage(url: string): string {
   if (url.includes('supabase.co/storage/v1/object/public/')) {
@@ -84,6 +137,7 @@ Deno.serve(async (req: Request) => {
     if (error) throw error
 
     let processed = 0
+    let fbToken: string | null = null
 
     for (const post of posts || []) {
       let redes = typeof post.redes === 'string' ? JSON.parse(post.redes) : post.redes
@@ -123,14 +177,15 @@ Deno.serve(async (req: Request) => {
         console.error(`Post ${post.id}: Facebook Stories solicitado, mas não implementado.`)
       } else if (redes.facebook && pageId && token) {
         console.log(`Iniciando publicação do post ${post.id} no Facebook...`)
+        if (!fbToken) fbToken = await obterTokenDePagina(pageId, token)
         let fbUrl = `https://graph.facebook.com/v20.0/${pageId}/feed`
-        let payload: any = { access_token: token, message: post.texto }
+        let payload: any = { access_token: fbToken, message: post.texto }
 
         // Se houver imagem, publica como foto, senão como post comum de texto
         if (imageUrlSanitized) {
           fbUrl = `https://graph.facebook.com/v20.0/${pageId}/photos`
           payload = {
-            access_token: token,
+            access_token: fbToken,
             url: imageUrlSanitized,
             message: post.texto,
           }
@@ -308,7 +363,30 @@ Deno.serve(async (req: Request) => {
 
       const newStatus = isTotalSuccess ? 'Publicado' : 'Erro'
 
-      await supabase.from('social_posts').update({ status: newStatus }).eq('id', post.id)
+      // Rede pedida que falhou sem registrar motivo (ex.: página/token não
+      // configurados, Instagram sem imagem) ganha uma explicação mesmo assim.
+      if (requestedFb && !fbSuccess && !errorLog.facebook) {
+        errorLog.facebook = { error: 'Facebook não configurado (página ou token ausente).' }
+      }
+      if (requestedIg && !igSuccess && !errorLog.instagram) {
+        errorLog.instagram = {
+          error: imageUrlSanitized
+            ? 'Instagram não configurado (conta ou token ausente).'
+            : 'O Instagram só publica com imagem ou vídeo — este post não tem.',
+        }
+      }
+
+      // Grava o resultado NO POST pra tela de aprovação mostrar de verdade o
+      // que aconteceu (antes o erro só ia pra logs_integracao e o post sumia
+      // da lista sem aviso).
+      await supabase
+        .from('social_posts')
+        .update({
+          status: newStatus,
+          erro_msg: isTotalSuccess ? null : mensagemErroAmigavel(errorLog),
+          publicado_em: isTotalSuccess ? new Date().toISOString() : null,
+        })
+        .eq('id', post.id)
 
       // Achado em teste ao vivo (20/08/2026, pedido da Adriana): antes só
       // gravava detalhe quando dava erro — quando dava certo, o ID que o

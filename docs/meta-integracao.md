@@ -91,3 +91,23 @@ veiculos.status → 'Vendido' (trigger de banco, ver migration
   `META_PIXEL_ID`, `META_ADS_TOKEN`, `FACEBOOK_PAGE_ID`,
   `INSTAGRAM_BUSINESS_ID`) estão de fato configuradas hoje — fora do
   escopo desta sessão (só documentar).
+
+## Publicação orgânica no Facebook — token de página (30/09/2026)
+
+- **Sintoma:** posts orgânicos aprovados viravam `Erro` e sumiam da tela de aprovação; o
+  log (`logs_integracao`, portal `meta_social`) mostrava `(#200) The permission(s)
+  publish_actions are not available. It has been deprecated.` Último sucesso: 17/09.
+- **Causa raiz (confirmada ao vivo com function temporária, já apagada):** o secret
+  `META_PAGE_ACCESS_TOKEN` hoje é token de **usuário do sistema** (`carroecia_bot`, tipo
+  `SYSTEM_USER`, válido, sem expiração, com `pages_manage_posts` e
+  `instagram_content_publish`). Postar em `/{page}/photos` direto com ele dá o erro
+  acima: o Facebook exige o token **da página**.
+- **Correção:** `publicar-social` troca o token na hora, `GET /{page-id}?fields=access_token`
+  (o token do sistema consegue gerar o da página: tipo `PAGE`, sem expiração). Se a troca
+  falhar, cai no token original. Instagram segue com o token do sistema. Testado ao vivo:
+  post de 23/09 publicado em 30/09 21:45 (`1419304271478565_1989938458990257`).
+- **Beco sem saída:** não adianta renovar/regerar o token achando que ele "expirou" —
+  `debug_token` mostrou válido e sem expiração; o problema era o TIPO do token.
+- `social_posts` ganhou `erro_msg` (motivo em português) e `publicado_em`; a tela
+  Aprovações (`SocialApprovalDashboard`) mostra Agendado/Erro/Publicado e se atualiza a
+  cada 30 s.

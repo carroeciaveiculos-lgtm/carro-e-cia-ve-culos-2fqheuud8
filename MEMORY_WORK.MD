@@ -1,5 +1,22 @@
 # Memória de trabalho — Carro e Cia
 
+## [30/09/2026, noite] Aprovação de posts orgânicos: Facebook recusava publicar — CORRIGIDO
+
+- Queixa da Adriana: aprovava os posts automáticos e eles não sumiam nem avisavam
+  "publicado". Dois problemas: (1) tela escondia o estado real (Agendado continuava na
+  lista, Erro sumia sem aviso — **aprovar não publica, só agenda; o cron
+  `publicar-social-cron-job` roda a cada 15 min**); (2) o Facebook recusava tudo com
+  `publish_actions deprecated` porque `META_PAGE_ACCESS_TOKEN` é token de usuário do
+  sistema (SYSTEM_USER), não de página. Detalhe e beco sem saída em `docs/meta-integracao.md`.
+- **No ar:** `publicar-social` v97 (troca pro token de página, grava `erro_msg`/`publicado_em`),
+  migration `20261001003649_social_posts_erro_msg_publicado_em.sql` (aplicada pelo MCP —
+  **`apply_migration` funcionou hoje**), artigo "Aprovar os posts orgânicos automáticos"
+  no banco. Post de 23/09 publicado de verdade em 21:45.
+- **NÃO no ar ainda:** a tela nova (`SocialApprovalDashboard.tsx`) — depende de commit+push.
+- Os posts de 29/09 e 30/09 continuam em `Erro` (falharam antes do conserto); ficam
+  visíveis na tela nova com "Tentar de novo". Não reenfileirei sozinho: é publicação
+  pública, decisão da Adriana.
+
 ## [30/09/2026, fechamento] Descrição Webmotors (500) + limite 800 + frase final + Notas pra IA — NO AR
 
 **Publicado:** commits `0ec9395` e `c9453a2` no `origin/main`; site publicado pelo

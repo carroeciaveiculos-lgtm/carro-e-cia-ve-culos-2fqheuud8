@@ -4071,6 +4071,8 @@ export type Database = {
           content_type: string | null
           criado_em: string | null
           data_agendamento: string | null
+          erro_msg: string | null
+          publicado_em: string | null
           id: string
           imagem: string | null
           redes: Json
@@ -4082,6 +4084,8 @@ export type Database = {
           content_type?: string | null
           criado_em?: string | null
           data_agendamento?: string | null
+          erro_msg?: string | null
+          publicado_em?: string | null
           id?: string
           imagem?: string | null
           redes: Json
@@ -4093,6 +4097,8 @@ export type Database = {
           content_type?: string | null
           criado_em?: string | null
           data_agendamento?: string | null
+          erro_msg?: string | null
+          publicado_em?: string | null
           id?: string
           imagem?: string | null
           redes?: Json
