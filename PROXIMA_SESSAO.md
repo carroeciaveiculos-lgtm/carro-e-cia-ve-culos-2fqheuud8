@@ -6,6 +6,54 @@ Copie e cole como primeira mensagem numa sessão nova do Claude Code.
 Projeto: Carro e Cia Veículos (revenda). Pasta de trabalho:
 C:\Projeto\Revenda Carro e Cia\carro-e-cia-ve-culos-2fqheuud8
 
+Continuando de uma sessão anterior (30/09 a 01/10/2026, sessão 29, encerrada de madrugada).
+Leia primeiro MEMORY_WORK.MD, seções "[01/10/2026] Conteúdo" e "[30/09/2026, madrugada]". Estado: tudo
+commitado e publicado até o commit `fcec2d0` (Gerador de Criativos refeito, aprovação de posts
+orgânicos corrigida, descrição Webmotors, 16 artigos de ajuda). O que ficou ABERTO, em ordem:
+
+1. **Conteúdo -> blog (BLOQUEADO, precisa da Adriana).** O editor de /admin/conteudo grava em
+   `articles` e o blog público lê `blog_posts`: publicar no painel não coloca nada no site.
+   Correção pronta em `supabase/migrations/20261001020000_conteudo_artigos_gravam_em_blog_posts.sql`
+   (gatilho espelha `articles` em `blog_posts`; apagar no painel só despublica; traz os 5 posts do
+   blog para o editor SEM mexer nos que estão no ar). **O classificador do Claude Code barrou o
+   `apply_migration`** — não tentar de novo por outro caminho. Ela roda o SQL no SQL Editor do
+   Supabase (abrir o arquivo no Bloco de Notas) ou libera a permissão. Depois de aplicado: (a) testar
+   num bloco `DO` com `RAISE EXCEPTION` no fim (rollback; insere artigo 'Publicado', confere
+   `blog_posts.published`, tenta slug duplicado); (b) renomear o arquivo local pro timestamp real;
+   (c) escrever os artigos de ajuda de Conteúdo (criar/publicar artigo, Keywords e Hashtags,
+   Comentários do blog) e marcar a linha `/admin/conteudo` do checklist.
+2. **Testes que só a Adriana consegue (login):** Gerador de Criativos (foto -> formato -> modelo ->
+   Gerar com IA -> Baixar / Salvar / Criar post orgânico); aba Aprovações (aprovar e ver o aviso de
+   publicado); seletor "Vendedor Responsável" num lead (a lista pode vir vazia se a regra de acesso de
+   `usuarios` restringir); "Gerar com IA" no Honda Fit `PUQ3A75` (2 textos, Notas/Destaques usadas);
+   abrir alguns dos 16 artigos novos da Central de Ajuda (foram escritos pelo código, nenhum fluxo clicado).
+3. **Decisões dela:** (a) Ideias com IA: "Usar essa ideia" cria rascunho Instagram+Facebook sem imagem ->
+   Instagram falha e o post inteiro vira Erro mesmo com o Facebook publicado (Tentar de novo duplicaria);
+   proposta: rascunho só Facebook ou exigir imagem. (b) Apagar as 4 regras de IA antigas dos criativos
+   (`criativo_preco_destaque`, `_ficha_tecnica`, `_oportunidade`, `_convite_cta`, sem uso)? (c) Os posts
+   orgânicos de 29/09 e 30/09 estão em Erro (falharam antes do conserto do token): "Tentar de novo"
+   publica de verdade no Facebook — ela decide. (d) Geração em lote do texto Webmotors nos 25 veículos
+   ativos + reenvio aos portais (13 têm descrição >800 e serão cortados no próximo envio).
+4. **Defeitos achados e NÃO corrigidos** (detalhe em MEMORY_WORK "[30/09/2026, madrugada]"): botão
+   "Editar Rascunho" sem onClick; WhatsApp selecionável na Central Social mas ignorado; comentários do
+   Instagram usam rotas do Facebook; Gestão de Anúncios (métricas sempre "-", orçamento Meta possivelmente
+   em centavos, qualquer usuário logado aprova a fila, "Tom de Voz" com opções erradas); CRM (gravações
+   que ignoram erro, `updateLeadField` em `Leads.tsx`, sem botão Novo Lead); Estoque ("Marcar como Vendido"
+   não despublica e não registra data/comprador; "Publicar Veículo" sem validação); Portais (OLX/iCarros só
+   marcam flag e dizem "Publicado com sucesso").
+5. **Logos:** o arquivo `logo carro e cia para fundo preto.png` tem o quadriculado GRAVADO nos pixels (0%
+   transparente); o gerador remove por código (testado, limpo). Melhor a Adriana reexportar com
+   transparência real (aí passa `false` em `prepararLogo`). As logos estão no Supabase Storage legado:
+   copiar para o R2 (`logos-e-imagens/marca/`).
+6. **Confirmado nesta sessão:** deploy automático das Edge Functions voltou a funcionar com o token novo do
+   GitHub (push de 01/10 passou). `mcp__supabase__apply_migration` funcionou para a migration das colunas de
+   `social_posts`, mas foi barrado na de Conteúdo — o classificador decide caso a caso, não é regra fixa.
+7. Regra de ouro das sessões longas: `bun build ... --outfile=/dev/null` cria arquivo `nul` no Windows (usar
+   `>/dev/null`); `bun run format` só com arquivo específico; o shell mantém `cd` entre chamadas (sempre
+   caminho absoluto).
+
+---
+
 Continuando de uma sessão anterior (30/09/2026, sessão 29 — Descrição
 Webmotors separada da geral, limite de 800 nos portais, frase final única,
 Notas/Destaques chegando na IA, tudo no ar). Leia primeiro MEMORY_WORK.MD,

@@ -1,5 +1,23 @@
 # Memória de trabalho — Carro e Cia
 
+## [01/10/2026] Conteúdo -> blog: correção PRONTA, NÃO aplicada (bloqueada pelo classificador)
+
+Pedido da Adriana: "corrija o Conteúdo para gravar em blog_posts". Escolhi NÃO trocar o editor para
+`blog_posts` (tem 19 colunas; `articles` tem 46 — SEO, FAQ, og_*, histórico em `article_versions` — e
+tudo isso se perderia). Solução: gatilho `sync_article_para_blog_post_trg` em `articles` (INSERT/UPDATE/
+DELETE) espelha em `blog_posts`: `published = (status_publicacao = 'Publicado')`, `read_time` calculado
+(~200 palavras/min) se vazio, `author` cai em `autor_convidado` > nome do usuário > "Carro e Cia
+Veículos", DELETE só despublica (mantém o post e os comentários). A mesma migration traz os 5 posts do
+blog para `articles` (mesmo id, ANTES de criar o gatilho, pra não reescrever os posts no ar).
+Arquivo: `supabase/migrations/20261001020000_conteudo_artigos_gravam_em_blog_posts.sql`.
+**O `apply_migration` foi negado pelo classificador do Claude Code ("dangerous", sem explicação)** — por
+regra não repeti por outro caminho (execute_sql, CLI, em pedaços). Fica pra Adriana: rodar no SQL Editor
+ou liberar. Limitações conhecidas mesmo depois de aplicada: slug repetido entre `articles` e `blog_posts`
+faz o salvar falhar com erro de chave duplicada; o modo `is_seo_agent` do `gerar-conteudo` grava direto em
+`blog_posts` (sem passar por `articles`) e esses rascunhos não aparecem no editor — nenhuma tela usa esse
+modo hoje; `visualizacoes` do painel não é atualizado pelo blog público; Páginas e Landing Pages seguem
+desligadas do site (só a home é lida de `pages`; `landing_pages` sem rota pública).
+
 ## [30/09/2026, madrugada] Gerador de Criativos refeito + 16 artigos de ajuda + achados graves
 
 **Gerador de Criativos (Estoque > aba Marketing IA)** — refeito: `src/lib/criativo-anuncio.ts`
