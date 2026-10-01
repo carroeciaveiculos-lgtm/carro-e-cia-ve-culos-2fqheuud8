@@ -130,7 +130,11 @@ O formato deve estar pronto para copiar e colar no ${targetPlatform}.`
     const data = await response.json()
     const text = data.candidates?.[0]?.content?.parts?.[0]?.text || 'Erro ao gerar conteúdo.'
 
-    return new Response(JSON.stringify({ success: true, text }), {
+    // `data` repete o texto de propósito: as telas (Publicações > Gerar com IA, Kit
+    // de Redes Sociais do veículo, Compartilhar e o post orgânico do Gerador de
+    // Criativos) leem `data.data`, enquanto a resposta só trazia `text` — o texto
+    // chegava vazio. Achado em 30/09/2026.
+    return new Response(JSON.stringify({ success: true, text, data: text }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
   } catch (error: any) {

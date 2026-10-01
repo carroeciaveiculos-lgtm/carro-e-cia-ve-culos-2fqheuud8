@@ -9,7 +9,12 @@ import { corsHeaders } from '../_shared/cors.ts'
 // IA, pra nunca sair um número errado num anúncio pago. Ver plano
 // completo na sessão que criou isso.
 
+// 30/09/2026 (pedido da Adriana): os 4 modelos viraram 2 — fundo escuro e fundo
+// claro. Os 4 slugs antigos continuam aceitos só pra não quebrar quem estiver
+// com a tela antiga aberta; o front novo só manda os dois primeiros.
 const TEMPLATE_SLUGS = [
+  'criativo_fundo_escuro',
+  'criativo_fundo_claro',
   'criativo_preco_destaque',
   'criativo_ficha_tecnica',
   'criativo_oportunidade',
