@@ -1,5 +1,53 @@
 # Memória de trabalho — Carro e Cia
 
+## [30/09/2026, madrugada] Gerador de Criativos refeito + 16 artigos de ajuda + achados graves
+
+**Gerador de Criativos (Estoque > aba Marketing IA)** — refeito: `src/lib/criativo-anuncio.ts`
+(desenho puro, testado no navegador com fotos reais) + `src/components/admin/estoque/CriativoAnuncioPanel.tsx`.
+1 a 4 fotos (a 1ª é a principal; só ela passa pela IA), formato Feed 1080x1350 ou Stories 1080x1920,
+2 modelos com a logo certa de cada fundo (arquivos enviados pela Adriana ao Supabase Storage,
+bucket `logos-e-imagens`): fundo claro usa `logo carro e cia.png` (340x90, transparente de verdade);
+fundo escuro usa `logo carro e cia para fundo preto.png` (1536x864) — **esse arquivo NÃO tem
+transparência: o quadriculado do editor foi salvo nos pixels (0% transparente)**. O gerador remove o
+quadriculado por código (`prepararLogo(img, true)` em `criativo-anuncio.ts`: cinzas 190-228 viram
+transparentes, branco das letras e vermelho ficam) e corta as margens; testado no navegador, sem
+mancha. Um PNG transparente de verdade é melhor: basta trocar a URL e passar `false`. As logos vão
+no tamanho original (só recorte de margem e proporção), 360px de largura no cabeçalho. Antes disso
+testei também uma logo vertical 150x150 com fundo branco (`LOGO VERTICAL.png`), já sem uso. Baixar / Salvar no sistema / Criar post orgânico (vai como Rascunho para Aprovações, em JPEG
+porque o Instagram não aceita PNG). Causa do erro ao clicar na foto: miniatura carregada sem CORS e
+depois a mesma URL com CORS reaproveita a cópia sem permissão — reproduzido no navegador; correção
+`crossOrigin="anonymous"` nas miniaturas + nova tentativa com `?cors=`. Function `gerar-criativo-anuncio`
+v2 aceita `criativo_fundo_escuro/claro`; 2 regras novas em `ai_prompts_config`. **As 4 regras antigas
+(`criativo_preco_destaque` etc.) seguem no banco sem uso — apagar é decisão da Adriana.**
+Commitado e publicado em 01/10/2026. `gerar-conteudo-social` agora devolve `{success,text,data}`
+(telas liam `data.data` e o texto chegava vazio: Publicações > Gerar com IA, Kit de Redes do veículo,
+Compartilhar). Publicado à mão (v nova).
+
+**Artigos da Central de Ajuda aplicados pelo MCP (`execute_sql`, 39 no total):** Marketing 5 (anúncios x3,
+Publicações, Comentários), Portais 2, Estoque 6, CRM 3 (Gerenciador de Leads reescrito + 2 novos).
+Escritos a partir de relatórios de agentes que leram o código — **nenhum fluxo foi clicado logado**.
+
+**ACHADOS GRAVES (não corrigidos, decisão da Adriana):**
+1. **/admin/conteudo não alimenta o site**: o editor de artigos grava em `articles` (1 linha) e o blog
+   público lê só `blog_posts` (5); sem gatilho/sync entre eles. Páginas: só a home ("/") é lida de `pages`;
+   LPs (`landing_pages`, 0 linhas) não têm rota pública. Por isso NÃO escrevi artigo de Conteúdo.
+2. **Central Social > Ideias com IA**: "Usar essa ideia" cria rascunho com Instagram+Facebook SEM imagem;
+   o Instagram falha ("só publica com imagem") e o post inteiro vira `Erro` mesmo com o Facebook tendo
+   publicado — "Tentar de novo" republicaria no Facebook (duplicata). Sem artigo.
+3. Botão "Editar Rascunho" (Publicações) não tem `onClick`; WhatsApp é selecionável mas ignorado (post
+   só-WhatsApp vira "Publicado" sem enviar nada); comentários do Instagram usam rotas do Facebook e a
+   tela mostra sucesso sem checar erro.
+4. Gestão de Anúncios: colunas de métricas sempre "-"; `daily_budget` da Meta possivelmente exibido em
+   centavos; "Tom de Voz" lista opções de produto; **qualquer usuário logado aprova pedidos da fila**.
+5. CRM: várias gravações ignoram erro (arrastar, vendedor, Clara, venda fechada, follow-up, excluir,
+   proposta) e a tela atualiza antes; não há botão "Novo Lead".
+6. Estoque: "Marcar como Vendido" só troca status (sem data/comprador/valor) e não despublica dos portais;
+   "Publicar Veículo" (Rascunhos) não valida nada; `AssinaturaDialog` importado e nunca renderizado.
+7. Portais: OLX/iCarros só marcam flag e mostram "Publicado com sucesso" (fachada, o rodapé admite);
+   texto do painel NaPista diz que publicação "ainda não existe" (desatualizado).
+**Logos no Supabase Storage (legado), não no R2** — se o bucket legado for limpo, os criativos perdem a
+logo (o desenho segue, só sem a imagem). Ideal copiar as duas para o R2 (`logos-e-imagens/marca/`).
+
 ## [30/09/2026, noite] Aprovação de posts orgânicos: Facebook recusava publicar — CORRIGIDO
 
 - Queixa da Adriana: aprovava os posts automáticos e eles não sumiam nem avisavam
