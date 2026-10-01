@@ -1,29 +1,45 @@
 # Memória de trabalho — Carro e Cia
 
-## [30/09/2026, tarde] Descrição Webmotors (500) + limite 800 + frase final + Notas pra IA — CÓDIGO PRONTO, NADA APLICADO
+## [30/09/2026, fechamento] Descrição Webmotors (500) + limite 800 + frase final + Notas pra IA — NO AR
 
-Implementado e testado só localmente (lint 0 erros, build ok, `tsc` 75 erros
-antigos iguais antes/depois, `montarDescricao` testada em 6 casos com bun).
-**Nada commitado, nenhuma migration aplicada, nada publicado.**
-- Migration `20260930180000_descricao_webmotors_e_frase_final.sql` (coluna
-  `veiculos.descricao_webmotors`, regra nova `vehicle_description_webmotors`
-  com a frase no `rodape_fixo`, zera `rodape_fixo` de `vehicle_description`,
-  gatilho WM atualizado, artigo da Central de Ajuda). Precisa a Adriana colar
-  no SQL Editor (MCP é barrado; abrir o arquivo no Bloco de Notas, não copiar
-  do terminal) **ANTES** do push — o front novo grava a coluna nova.
-- Função compartilhada `_shared/descricao-anuncio.ts`: limite 800 (ML, NaPista),
-  500 (Webmotors), frase final sempre no fim, parágrafo institucional antigo
-  removido das descrições. Aplicada em `wm-sync`, `ml-sync`, `ml-sync-core`,
-  `sync-plataforma`, `ml-client`, `napista-sync`, `gerar-conteudo`.
-  **Mexer em `_shared/` faz o deploy automático publicar as 56 functions.**
-- **Causa raiz das Notas / Destaques ignoradas:** `handleGerarDescricao` nunca
-  mandava `notas_internas` no `tema`. Corrigido (+ filtro `notasParaIA` tira
-  linhas "ML Performance Score…", que `ml-performance.ts` escreve no mesmo campo).
-- Depois do push: testar "Gerar com IA" em 1 veículo, conferir tamanhos, e só
-  então (pedido separado) gerar em lote e reenviar aos portais. 13 dos 25
-  veículos ativos têm descrição acima de 800 (serão cortados no próximo envio).
-- Pendente: marcar a linha `/admin/estoque` em `docs/manual-operacional-contexto.md`
-  quando o artigo estiver no banco; artigo do Gerador de Criativos segue pendente.
+**Publicado:** commits `0ec9395` e `c9453a2` no `origin/main`; site publicado pelo
+GitHub Actions; migration `20260930180000_descricao_webmotors_e_frase_final.sql`
+aplicada pela Adriana no SQL Editor e conferida no banco (coluna, regra nova com
+a frase de 112 caracteres, `rodape_fixo` de `vehicle_description` zerado, gatilho
+WM com a coluna nova, artigo da Ajuda).
+- **Deploy das functions foi MANUAL:** o GitHub Actions falhou em todas com
+  `401 Unauthorized` (token `SUPABASE_ACCESS_TOKEN` expirado/recusado). Adriana gerou
+  token novo e salvou no GitHub (**ainda não testado num push real**). Publiquei à mão,
+  com `supabase functions deploy <nome> --project-ref htpcqdbhktmvppfemnad --use-api`
+  (CLI local logada), só as 6 que dependem dos `_shared` alterados: `gerar-conteudo`
+  v160, `wm-sync` v137, `ml-sync` v52, `napista-sync` v28, `sync-plataforma` v55,
+  `sync-estoque` v181. Janela de inconsistência (front novo x functions antigas) durou
+  das ~19h08 às 19h29.
+- Regras vigentes: Mercado Livre e NaPista até **800** caracteres, Webmotors até **500**,
+  todas terminando na frase fixa (`ai_prompts_config`, slug `vehicle_description_webmotors`,
+  coluna `rodape_fixo`, editável em `/admin/prompts-ia`). O parágrafo institucional de
+  492 caracteres saiu do banco e mora só em `_shared/descricao-anuncio.ts`
+  (`PARAGRAFO_INSTITUCIONAL_LEGADO`), usado como texto da Webmotors p/ veículo sem
+  `descricao_webmotors`. Gatilhos de ML, NaPista e WM já reagem a mudança de descrição
+  (WM também a `descricao_webmotors`); crons a cada 10 min.
+- **Notas / Destaques (para IA):** causa raiz era `handleGerarDescricao` nunca mandar
+  `notas_internas` no `tema`. Corrigido. `notasParaIA` filtra linhas "ML Performance
+  Score…" (`ml-performance.ts` escreve no mesmo campo).
+- **Artigos da Central de Ajuda:** "Descrição do veículo: geral e Webmotors" já no banco.
+  Escritos em `supabase/migrations/20260930230000_artigos_ajuda_criativos_vendedor_frase.sql`
+  (Gerador de Criativos, Vendedor Responsável, Frase final) — **Adriana precisa rodar esse
+  SQL** (Bloco de Notas, não copiar do terminal); `WHERE NOT EXISTS`, pode rodar de novo.
+- **Pendências:** (1) Adriana testar "Gerar com IA" no Honda Fit `PUQ3A75` (sem sessão,
+  não consigo) e conferir o primeiro envio real na fila `estoque_publicacoes`; (2) geração
+  em lote dos textos Webmotors nos 25 veículos ativos + reenvio aos portais (pedido
+  separado; 13 dos 25 têm descrição >800 e serão cortados no próximo envio); (3) confirmar
+  deploy automático no próximo push que mexa em `supabase/functions/**`; (4) `updateLeadField`
+  em `Leads.tsx` ignora `error` do update (mesmo padrão do bug do Financiamento; o seletor
+  de vendedor não avisa se falhar) — não corrigido; (5) testar o seletor "Vendedor
+  Responsável" logado (RLS de `usuarios` pode deixar a lista vazia).
+- **Lições:** `bun build --outfile=/dev/null` no Windows cria um arquivo `nul` — apaguei
+  (`supabase/functions/nul`), usar `>/dev/null` em vez de `--outfile`. O shell manteve o
+  `cd` entre chamadas: sempre `cd` com caminho absoluto antes de comandos no repo.
 
 ## [30/09/2026] Texto fixo da Webmotors agora editável na tela
 

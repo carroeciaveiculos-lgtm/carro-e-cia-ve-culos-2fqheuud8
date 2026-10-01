@@ -6,6 +6,32 @@ Copie e cole como primeira mensagem numa sessão nova do Claude Code.
 Projeto: Carro e Cia Veículos (revenda). Pasta de trabalho:
 C:\Projeto\Revenda Carro e Cia\carro-e-cia-ve-culos-2fqheuud8
 
+Continuando de uma sessão anterior (30/09/2026, sessão 29 — Descrição
+Webmotors separada da geral, limite de 800 nos portais, frase final única,
+Notas/Destaques chegando na IA, tudo no ar). Leia primeiro MEMORY_WORK.MD,
+seção "[30/09/2026, fechamento]". O que precisa de ação da Adriana:
+
+1. **Rodar no SQL Editor do Supabase o arquivo
+   `supabase/migrations/20260930230000_artigos_ajuda_criativos_vendedor_frase.sql`**
+   (abrir no Bloco de Notas) — cria 3 artigos da Central de Ajuda. Antes de fazer
+   qualquer outra coisa, conferir no banco se os 3 títulos existem em
+   `ajuda_conteudos` (o "Descrição do veículo: geral e Webmotors" já existe).
+2. **Testar na tela** (eu não tenho login): abrir o Honda Fit `PUQ3A75`, aba Geral &
+   Valores, "Gerar com IA" — conferir 2 textos (geral ≤800, Webmotors ≤500 com a frase
+   em cinza), destaques das notas no texto. Testar também o seletor "Vendedor
+   Responsável" num lead e a aba "Marketing IA" (Gerador de Criativos, nunca clicado).
+3. Depois do teste: pedido separado para gerar os textos Webmotors em lote (25
+   veículos ativos) e reenviar aos portais.
+
+Do meu lado: confirmar que o deploy automático das Edge Functions voltou a
+funcionar (token novo no GitHub, nunca exercitado) no próximo push que mexa em
+`supabase/functions/**` — se der 401 de novo, publicar à mão com
+`supabase functions deploy <nome> --project-ref htpcqdbhktmvppfemnad --use-api`
+(CLI local está logada). Corrigir também `updateLeadField` em `Leads.tsx`, que
+ignora o `error` do update.
+
+---
+
 Continuando de uma sessão anterior (28/09/2026, sessão 28, fim do dia —
 muita coisa fechada: botão "Desfazer Venda" publicado e testado; CI/CD
 automático criado do zero (front-end e Edge Functions publicam sozinhos a
