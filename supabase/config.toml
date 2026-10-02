@@ -121,6 +121,14 @@ verify_jwt = false
 [functions.napista-catalogo-trigger]
 verify_jwt = true
 
+# Telas de mapeamento do admin (browser autenticado) — declaradas em 01/10/2026,
+# estavam sem entrada (default true por omissão, o mesmo valor).
+[functions.napista-mapear-veiculo]
+verify_jwt = true
+
+[functions.napista-confirmar-mapeamento]
+verify_jwt = true
+
 [functions.ml-sync]
 verify_jwt = false
 

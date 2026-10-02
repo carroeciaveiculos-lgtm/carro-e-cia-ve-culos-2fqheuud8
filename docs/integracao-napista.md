@@ -408,6 +408,28 @@ ainda, mas relevante pro futuro (Clara/CRM podem precisar receber isso).
 
 ## Becos sem saída
 
+- **Chamar `napista-sync-catalogo` direto do navegador sempre dá 401** (achado
+  01/10/2026, caso Nissan Frontier). A function só aceita `x-internal-secret`
+  (`isInternalRequestAuthorized`) e o secret nunca pode ir pro front. O botão
+  "Sincronizar catálogo da marca" da aba NaPista usava esse caminho e **nunca
+  funcionou** desde 18/09/2026. Correção: quem baixa os modelos da marca agora é
+  o próprio `napista-mapear-veiculo` (roda no servidor, service role), em
+  `garantirModelosDaMarca` — baixa sozinho quando `napista_modelos` da marca está
+  vazio, ou quando o painel manda `sincronizar_catalogo: true`. Marca nova no
+  estoque (Nissan tinha 0 modelos em cache; última sync geral 18/09) travava o
+  veículo com "Modelo ... sem correspondência confiável" porque o match
+  comparava com lista vazia. Ao ver esse erro, conferir primeiro
+  `select count(*) from napista_modelos where marca_id = '<MARCA>'`.
+- **A API de modelos da NaPista devolve ids REPETIDOS** (achado 01/10/2026: Nissan,
+  26 itens → 25 ids únicos). `upsert` em lote com chave repetida falha inteiro
+  ("ON CONFLICT DO UPDATE command cannot affect row a second time") e, se o erro
+  não for lido, parece "catálogo vazio". Sempre deduplicar por `id` antes de gravar
+  (feito em `garantirModelosDaMarca`) e **nunca ignorar o `error` do upsert**.
+  Possível mesmo risco em `napista_versoes` (`buscarMelhorVersaoParaModelo`, upsert
+  em lote por `id`) — não investigado.
+- **Erro de mapeamento ao publicar agora abre o diálogo
+  `MapeamentoCatalogoDialog`** (Portais, Falhas na Sincronização e Revisão de
+  Pendências) — não depender mais da aba NaPista nem do cadastro do veículo.
 - **`GET /catalog/{category}/make` (como a doc descreve) devolve 404.** O
   path real é `GET /catalog/makes/{category}` — plural "makes", categoria
   no fim, não no meio. Conferido direto na API em 14/08/2026 (`curl` com

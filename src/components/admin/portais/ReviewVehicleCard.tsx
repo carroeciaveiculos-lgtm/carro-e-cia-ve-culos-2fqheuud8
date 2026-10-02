@@ -1,8 +1,9 @@
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
-import { AlertCircle, RefreshCw, ImageOff } from 'lucide-react'
+import { AlertCircle, RefreshCw, ImageOff, Wrench } from 'lucide-react'
 import { getImageUrl } from '@/lib/image-utils'
+import { isErroMapeamento, isPlataformaMapeavel } from '@/lib/mapeamento-catalogo'
 import type { ReviewVehicle } from '@/services/portal-review'
 
 // Rótulo de plataforma pro erro — reprocessar precisa saber qual, já que um
@@ -18,10 +19,18 @@ const PLATFORM_LABELS: Record<string, string> = {
 interface Props {
   veiculo: ReviewVehicle
   onResync: (veiculoId: string, platform: string) => void
+  // Erro de mapeamento de catálogo (Webmotors/NaPista): "Reprocessar" só
+  // repetiria o mesmo erro, então o botão abre o diálogo que resolve na hora.
+  onResolverMapeamento?: (veiculoId: string, platform: string) => void
   resyncingPlatforms: Record<string, boolean>
 }
 
-export function ReviewVehicleCard({ veiculo, onResync, resyncingPlatforms }: Props) {
+export function ReviewVehicleCard({
+  veiculo,
+  onResync,
+  onResolverMapeamento,
+  resyncingPlatforms,
+}: Props) {
   const allErrors = [
     ...veiculo.syncErrors.map((e) => ({ source: 'Sync', platform: e.platform, ...e })),
     ...veiculo.publicacaoErrors.map((e) => ({ source: 'Portal', platform: e.platform, ...e })),
@@ -85,20 +94,32 @@ export function ReviewVehicleCard({ veiculo, onResync, resyncingPlatforms }: Pro
                     {err.source}
                   </Badge>
                   <span className="text-xs font-medium text-gray-700">{err.translatedMessage}</span>
-                  {err.platform && (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="h-6 text-[10px] px-2 ml-auto"
-                      disabled={resyncingPlatforms[err.platform]}
-                      onClick={() => onResync(veiculo.id, err.platform as string)}
-                    >
-                      <RefreshCw
-                        className={`w-3 h-3 mr-1 ${resyncingPlatforms[err.platform] ? 'animate-spin' : ''}`}
-                      />
-                      Reprocessar
-                    </Button>
-                  )}
+                  {err.platform &&
+                    (onResolverMapeamento &&
+                    isPlataformaMapeavel(err.platform) &&
+                    isErroMapeamento((err as any).mensagem || (err as any).erro_msg) ? (
+                      <Button
+                        size="sm"
+                        className="h-6 text-[10px] px-2 ml-auto"
+                        onClick={() => onResolverMapeamento(veiculo.id, err.platform as string)}
+                      >
+                        <Wrench className="w-3 h-3 mr-1" />
+                        Resolver mapeamento
+                      </Button>
+                    ) : (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-6 text-[10px] px-2 ml-auto"
+                        disabled={resyncingPlatforms[err.platform]}
+                        onClick={() => onResync(veiculo.id, err.platform as string)}
+                      >
+                        <RefreshCw
+                          className={`w-3 h-3 mr-1 ${resyncingPlatforms[err.platform] ? 'animate-spin' : ''}`}
+                        />
+                        Reprocessar
+                      </Button>
+                    ))}
                 </div>
                 <p className="text-[10px] text-gray-500 mt-0.5">Ação: {err.translatedAction}</p>
                 {err.metadata?.invalid_images && (

@@ -47,11 +47,10 @@ import {
 } from '@/services/ai-prompts'
 import { notasParaIA } from '@/lib/notas-para-ia'
 import { CriativoAnuncioPanel } from '@/components/admin/estoque/CriativoAnuncioPanel'
-import {
-  confirmarMapeamentoNapista,
-  remapearVeiculoNapista,
-  motivoPendenciaNapista,
-} from '@/services/plataformas'
+import { MapeamentoCatalogoDialog } from '@/components/admin/portais/MapeamentoCatalogoDialog'
+import type { PlataformaMapeavel } from '@/lib/mapeamento-catalogo'
+import { CORES_PADRAO, normalizarCor } from '@/lib/cor-veiculo'
+import { checarAtributosPortais } from '@/services/catalogos-portais'
 import { montarTituloMLPreview } from '@/lib/ml-title'
 import {
   checkDiamondQuota,
@@ -175,28 +174,20 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
   const { toast } = useToast()
   const [loading, setLoading] = useState(false)
   const [activeTab, setActiveTab] = useState('geral')
-  // Diálogo único de mapeamento de catálogo — uma seção por plataforma que
-  // precisar de revisão (pode ser só Webmotors, só NaPista, ou as duas ao
-  // mesmo tempo). Antes o NaPista só mostrava um toast mandando conferir
-  // numa tela separada (/admin/portais); agora resolve aqui mesmo, igual já
-  // funcionava pra Webmotors.
-  const [mapeamentoDialog, setMapeamentoDialog] = useState<{
+  // Fila de confirmação de mapeamento de catálogo depois de salvar (uma
+  // plataforma por vez, ver MapeamentoCatalogoDialog em modo "confirmar").
+  // `liberar`: veículo novo/rascunho — só vira "disponivel" depois do mapeamento
+  // (a confirmação é obrigatória e o formulário não fecha antes).
+  const [filaMapeamento, setFilaMapeamento] = useState<{
     veiculoId: string
-    wm?: {
-      motivo: string
-      erroMsg: string | null
-      candidatosModelo: { codigo_wm: string; nome_wm: string; score: number }[]
-      candidatosVersao: { codigo_wm: string; nome_wm: string; score: number }[]
-    }
-    napista?: {
-      motivo: string
-      erroMsg: string | null
-      candidatosModelo: { id: string; nome: string; score: number }[]
-      candidatosVersao: { id: string; nome: string; score: number }[]
-    }
+    plataformas: PlataformaMapeavel[]
+    liberar: boolean
   } | null>(null)
+  // Veículo gravado como rascunho nesta sessão do formulário: se o salvar for
+  // refeito (ex.: depois de "Voltar e corrigir"), continua como rascunho até o
+  // mapeamento fechar — senão o segundo clique o liberaria sem mapear.
+  const rascunhoDestaSessao = useRef(false)
   const [loadingWmMapeamento, setLoadingWmMapeamento] = useState(false)
-  const [loadingNapistaMapeamento, setLoadingNapistaMapeamento] = useState(false)
   const [loadingPlaca, setLoadingPlaca] = useState(false)
   const [leadsCount, setLeadsCount] = useState(0)
   const [despesas, setDespesas] = useState<any[]>([])
@@ -651,11 +642,15 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
       // não pra outros (não é bug, é a própria API) — regra: popula se
       // vier, senão mantém o que já estava digitado (não apaga com vazio)
       // e avisa que precisa preencher à mão.
-      const corVeioDaApi = !!data.data.cor
+      // Cor sempre no padrão (Preto/Branco, nunca Preta/Branca): a API devolve
+      // "BRANCA", "PRATA"... — normaliza na entrada; cor que não reconhecemos
+      // não entra, a pessoa escolhe na lista.
+      const corPadraoApi = normalizarCor(data.data.cor)
+      const corVeioDaApi = !!corPadraoApi
       setFormData((p: any) => ({
         ...p,
         ...data.data,
-        cor: corVeioDaApi ? data.data.cor : p.cor,
+        cor: corPadraoApi || normalizarCor(p.cor) || '',
         ano_fabricacao: data.data.ano_fab || p.ano_fabricacao,
         valor_fipe: data.data.preco_fipe || p.valor_fipe,
         info_personalizadas: {
@@ -774,7 +769,8 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
     // inválido 'Carro' passava direto e só quebrava na sincronização.
     if (!formData.categoria) missing.push({ field: 'categoria', label: 'Categoria' })
     if (!formData.ano_fabricacao) missing.push({ field: 'ano_fabricacao', label: 'Ano' })
-    if (!formData.cor) missing.push({ field: 'cor', label: 'Cor' })
+    // Cor tem que estar na lista padrão (masculino: Preto, Branco...).
+    if (!normalizarCor(formData.cor)) missing.push({ field: 'cor', label: 'Cor (escolha na lista)' })
     if (!formData.combustivel) missing.push({ field: 'combustivel', label: 'Combustível' })
     if (!formData.quilometragem) missing.push({ field: 'quilometragem', label: 'KM' })
     if (!formData.preco_venda) missing.push({ field: 'preco_venda', label: 'Preço' })
@@ -960,8 +956,27 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
       return
     }
 
+    // Pré-checagem ANTES de gravar nada: cor, câmbio e combustível precisam
+    // existir nos catálogos da Webmotors e da NaPista, senão a publicação
+    // travaria depois com "sem mapeamento de catálogo" (01/10/2026).
+    const corPadrao = normalizarCor(formData.cor)
+    const problemasCatalogo = await checarAtributosPortais({
+      cor: corPadrao,
+      cambio: formData.cambio,
+      combustivel: formData.combustivel,
+    })
+    if (problemasCatalogo.length > 0) {
+      toast({
+        title: 'Ajuste antes de salvar',
+        description: problemasCatalogo.join(' · '),
+        variant: 'destructive',
+      })
+      setActiveTab('geral')
+      return
+    }
+
     let valorFipeAtual = Number(formData.valor_fipe) || 0
-    const overrides: Record<string, any> = { requires_review: false }
+    const overrides: Record<string, any> = { requires_review: false, cor: corPadrao }
 
     // Busca a FIPE automaticamente pela placa se faltar — sem FIPE não dá pra
     // validar a faixa de 65%-135% do "Por", nem preencher o "De" (que agora é
@@ -1009,8 +1024,15 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
       }
     }
 
-    const savedId = await save('disponivel', false, overrides)
+    // Veículo novo (ou ainda rascunho): grava como RASCUNHO, confirma o
+    // mapeamento nas plataformas e só então libera ("disponivel"). Assim nunca
+    // existe veículo no ar sem mapeamento. Veículo já existente não muda de
+    // status aqui.
+    const liberarDepois =
+      !formData.id || formData.status === 'rascunho' || rascunhoDestaSessao.current
+    const savedId = await save(liberarDepois ? 'rascunho' : 'disponivel', false, overrides)
     if (!savedId) return
+    if (liberarDepois) rascunhoDestaSessao.current = true
 
     if (!valorFipeAtual) {
       toast({
@@ -1020,252 +1042,94 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
       })
     }
 
-    // Roda o mapeamento de catálogo nas duas plataformas antes de decidir se
-    // fecha o formulário — junta o que cada uma achar num diálogo só (uma
-    // seção por plataforma que precisar de revisão), em vez de cada bloco
-    // decidir sozinho se fecha a tela.
-    let precisaRevisao = false
-
+    // Mapeamento de catálogo (Webmotors e NaPista): roda o automático e depois
+    // abre a etapa "Confirmar veículo na plataforma" pra cada uma que ainda
+    // não foi confirmada por uma pessoa (confirmado_manualmente) — mapeamento
+    // errado e silencioso publica o veículo trocado (01/10/2026).
     setLoadingWmMapeamento(true)
     try {
-      const { data: mapData, error: mapError } = await supabase.functions.invoke(
-        'wm-mapear-veiculo',
-        { body: { veiculo_id: savedId } },
-      )
-      if (mapError) throw mapError
-      if (mapData?.status === 'revisao_necessaria') {
-        precisaRevisao = true
-        const { data: mapeamento } = await supabase
-          .from('wm_mapeamento_veiculos')
-          .select('erro_msg, candidatos_modelo, candidatos_versao')
-          .eq('veiculo_id', savedId)
-          .maybeSingle()
-        setMapeamentoDialog((prev) => ({
-          veiculoId: savedId,
-          napista: prev?.veiculoId === savedId ? prev.napista : undefined,
-          wm: {
-            motivo: mapData.motivo || 'desconhecido',
-            erroMsg: mapeamento?.erro_msg || null,
-            candidatosModelo: mapeamento?.candidatos_modelo || [],
-            candidatosVersao: mapeamento?.candidatos_versao || [],
-          },
-        }))
-      }
+      await Promise.all([
+        supabase.functions.invoke('wm-mapear-veiculo', { body: { veiculo_id: savedId } }),
+        supabase.functions.invoke('napista-mapear-veiculo', { body: { veiculo_id: savedId } }),
+      ])
     } catch (err: any) {
       toast({
-        title: 'Veículo salvo, mas não foi possível checar o mapeamento Webmotors agora',
-        description: err.message,
-      })
-    } finally {
-      setLoadingWmMapeamento(false)
-    }
-
-    // Achado 25/08/2026 (pedido da Adriana, caso real: um Hilux ficou dias
-    // sem publicar no NaPista porque o mapeamento de catálogo nunca foi
-    // disparado — a Webmotors já roda automático aqui em cima, o NaPista
-    // dependia de alguém clicar "Remapear" na tela de Pendências depois).
-    // Mesmo padrão da Webmotors: roda na hora de salvar, sem esperar uma
-    // tentativa de publicação falhar pra descobrir.
-    // Achado 27/08/2026 (relato real da Adriana): até aqui, quando precisava
-    // de revisão, só mostrava um toast mandando conferir em Portais → aba
-    // NaPista — resolvia só o Webmotors na hora, o NaPista sempre exigia
-    // navegar pra outra tela. Agora entra na mesma seção do diálogo de
-    // mapeamento, resolve os dois sem sair do cadastro.
-    try {
-      const { data: napistaMapData } = await supabase.functions.invoke('napista-mapear-veiculo', {
-        body: { veiculo_id: savedId },
-      })
-      if (napistaMapData?.status === 'revisao_necessaria') {
-        precisaRevisao = true
-        const { data: napistaMapeamento } = await supabase
-          .from('napista_mapeamento_veiculos')
-          .select(
-            'erro_msg, napista_marca_id, napista_modelo_id, napista_version_id, candidatos_modelo, candidatos_versao',
-          )
-          .eq('veiculo_id', savedId)
-          .maybeSingle()
-        if (napistaMapeamento) {
-          const motivo = motivoPendenciaNapista({
-            veiculo_id: savedId,
-            marca: '',
-            modelo: '',
-            versao: null,
-            fotos: null,
-            napista_marca_id: napistaMapeamento.napista_marca_id,
-            napista_modelo_id: napistaMapeamento.napista_modelo_id,
-            napista_version_id: napistaMapeamento.napista_version_id,
-            erro_msg: napistaMapeamento.erro_msg,
-            candidatos_modelo: napistaMapeamento.candidatos_modelo || [],
-            candidatos_versao: napistaMapeamento.candidatos_versao || [],
-          })
-          setMapeamentoDialog((prev) => ({
-            veiculoId: savedId,
-            wm: prev?.veiculoId === savedId ? prev.wm : undefined,
-            napista: {
-              motivo,
-              erroMsg: napistaMapeamento.erro_msg,
-              candidatosModelo: napistaMapeamento.candidatos_modelo || [],
-              candidatosVersao: napistaMapeamento.candidatos_versao || [],
-            },
-          }))
-        }
-      }
-    } catch (napistaErr: any) {
-      console.debug('Falha ao checar mapeamento NaPista (não bloqueia o salvamento):', napistaErr)
-    }
-
-    if (!precisaRevisao) {
-      toast({ title: 'Veículo validado e liberado para sincronização com as plataformas!' })
-      onClose()
-    }
-  }
-
-  // Some só com a seção confirmada; fecha o formulário inteiro quando as duas
-  // (Webmotors e NaPista) já tiverem sido resolvidas.
-  const resolverSecaoMapeamento = (plataforma: 'wm' | 'napista') => {
-    setMapeamentoDialog((prev) => {
-      if (!prev) return null
-      const next = { ...prev, [plataforma]: undefined }
-      if (!next.wm && !next.napista) {
-        onClose()
-        return null
-      }
-      return next
-    })
-  }
-
-  // "Fechar" manual — só dispensa a seção, nunca fecha o formulário (a
-  // pessoa pode querer continuar editando e resolver o mapeamento depois).
-  const dispensarSecaoMapeamento = (plataforma: 'wm' | 'napista') => {
-    setMapeamentoDialog((prev) => {
-      if (!prev) return null
-      const next = { ...prev, [plataforma]: undefined }
-      return next.wm || next.napista ? next : null
-    })
-  }
-
-  const handleConfirmarMapeamento = async (codigoModeloWm?: string, codigoVersaoWm?: string) => {
-    if (!mapeamentoDialog?.wm) return
-    setLoadingWmMapeamento(true)
-    try {
-      const { data, error } = await supabase.functions.invoke('wm-confirmar-mapeamento', {
-        body: {
-          veiculo_id: mapeamentoDialog.veiculoId,
-          codigo_modelo_wm: codigoModeloWm,
-          codigo_versao_wm: codigoVersaoWm,
-        },
-      })
-      if (error) throw error
-      if (data?.status === 'revisao_necessaria') {
-        toast({
-          title: 'Modelo/versão confirmados, mas ainda falta cor/câmbio/combustível',
-          description: data.erro_msg || 'Cadastre o valor equivalente no catálogo Webmotors.',
-          variant: 'destructive',
-        })
-      } else {
-        toast({ title: 'Webmotors confirmado! Veículo liberado para sincronização.' })
-      }
-      resolverSecaoMapeamento('wm')
-    } catch (err: any) {
-      toast({
-        title: 'Erro ao confirmar mapeamento',
+        title: 'Veículo salvo, mas não foi possível checar o mapeamento agora',
         description: err.message,
         variant: 'destructive',
       })
     } finally {
       setLoadingWmMapeamento(false)
     }
-  }
 
-  // NaPista funciona em 2 passos, diferente da Webmotors: confirmar o
-  // Modelo não já resolve a Versão (o catálogo deles depende do modelo
-  // escolhido) — precisa remapear de novo pra buscar os candidatos de
-  // versão certos. Mesmo padrão já usado em `NapistaPendenciasReview.tsx`.
-  const handleEscolherModeloNapista = async (napistaModeloId: string) => {
-    if (!mapeamentoDialog?.napista) return
-    setLoadingNapistaMapeamento(true)
-    try {
-      const res = await confirmarMapeamentoNapista(
-        mapeamentoDialog.veiculoId,
-        napistaModeloId,
-        undefined,
-      )
-      if (!res.success) {
-        toast({
-          title: 'Erro ao confirmar modelo NaPista',
-          description: res.error,
-          variant: 'destructive',
-        })
-        return
-      }
-      const remapRes = await remapearVeiculoNapista(mapeamentoDialog.veiculoId)
-      if (remapRes.status === 'mapeado') {
-        toast({ title: 'NaPista confirmado! Veículo liberado para sincronização.' })
-        resolverSecaoMapeamento('napista')
-        return
-      }
-      const { data: napistaMapeamento } = await supabase
+    const [{ data: wmMap }, { data: napistaMap }] = await Promise.all([
+      supabase
+        .from('wm_mapeamento_veiculos')
+        .select('confirmado_manualmente')
+        .eq('veiculo_id', savedId)
+        .maybeSingle(),
+      supabase
         .from('napista_mapeamento_veiculos')
-        .select(
-          'erro_msg, napista_marca_id, napista_modelo_id, napista_version_id, candidatos_modelo, candidatos_versao',
-        )
-        .eq('veiculo_id', mapeamentoDialog.veiculoId)
-        .maybeSingle()
-      if (napistaMapeamento) {
-        const motivo = motivoPendenciaNapista({
-          veiculo_id: mapeamentoDialog.veiculoId,
-          marca: '',
-          modelo: '',
-          versao: null,
-          fotos: null,
-          napista_marca_id: napistaMapeamento.napista_marca_id,
-          napista_modelo_id: napistaMapeamento.napista_modelo_id,
-          napista_version_id: napistaMapeamento.napista_version_id,
-          erro_msg: napistaMapeamento.erro_msg,
-          candidatos_modelo: napistaMapeamento.candidatos_modelo || [],
-          candidatos_versao: napistaMapeamento.candidatos_versao || [],
-        })
-        setMapeamentoDialog((prev) =>
-          prev
-            ? {
-                ...prev,
-                napista: {
-                  motivo,
-                  erroMsg: napistaMapeamento.erro_msg,
-                  candidatosModelo: napistaMapeamento.candidatos_modelo || [],
-                  candidatosVersao: napistaMapeamento.candidatos_versao || [],
-                },
-              }
-            : prev,
-        )
-      }
-    } finally {
-      setLoadingNapistaMapeamento(false)
+        .select('confirmado_manualmente')
+        .eq('veiculo_id', savedId)
+        .maybeSingle(),
+    ])
+    const pendentes: PlataformaMapeavel[] = []
+    if (!wmMap?.confirmado_manualmente) pendentes.push('webmotors')
+    if (!napistaMap?.confirmado_manualmente) pendentes.push('napista')
+
+    if (pendentes.length === 0) {
+      await finalizarCadastro(savedId, liberarDepois)
+      return
     }
+    setFilaMapeamento({ veiculoId: savedId, plataformas: pendentes, liberar: liberarDepois })
   }
 
-  const handleEscolherVersaoNapista = async (napistaVersionId: string) => {
-    if (!mapeamentoDialog?.napista) return
-    setLoadingNapistaMapeamento(true)
-    try {
-      const res = await confirmarMapeamentoNapista(
-        mapeamentoDialog.veiculoId,
-        undefined,
-        napistaVersionId,
-      )
-      if (res.success) {
-        toast({ title: 'NaPista confirmado! Veículo liberado para sincronização.' })
-        resolverSecaoMapeamento('napista')
-      } else {
+  // Última etapa do "Validar e Salvar": se o veículo estava como rascunho,
+  // libera agora (mapeamento já confirmado) e fecha o formulário.
+  const finalizarCadastro = async (id: string, liberar: boolean) => {
+    if (liberar) {
+      const { error } = await supabase.from('veiculos').update({ status: 'disponivel' }).eq('id', id)
+      if (error) {
         toast({
-          title: 'Erro ao confirmar versão NaPista',
-          description: res.error,
+          title: 'Mapeamento confirmado, mas não consegui liberar o veículo',
+          description: mensagemErroAmigavel(error),
           variant: 'destructive',
         })
+        return
       }
-    } finally {
-      setLoadingNapistaMapeamento(false)
+      rascunhoDestaSessao.current = false
+      setFormData((p: any) => ({ ...p, status: 'disponivel' }))
+      onSuccess()
     }
+    toast({ title: 'Veículo validado e liberado para sincronização com as plataformas!' })
+    onClose()
+  }
+
+  // Avança a fila de confirmação (Webmotors -> NaPista). "Está certo", "Pular"
+  // (só em veículo já existente) e "Seguir sem a plataforma" avançam do mesmo
+  // jeito; quando acaba, finaliza o cadastro.
+  const avancarFilaMapeamento = () => {
+    if (!filaMapeamento) return
+    const restantes = filaMapeamento.plataformas.slice(1)
+    if (restantes.length > 0) {
+      setFilaMapeamento({ ...filaMapeamento, plataformas: restantes })
+      return
+    }
+    const { veiculoId, liberar } = filaMapeamento
+    setFilaMapeamento(null)
+    finalizarCadastro(veiculoId, liberar)
+  }
+
+  // "Voltar e corrigir o cadastro" (confirmação obrigatória): fecha a fila, o
+  // formulário continua aberto e o veículo fica como rascunho.
+  const voltarECorrigirCadastro = () => {
+    setFilaMapeamento(null)
+    toast({
+      title: 'Veículo salvo como rascunho',
+      description:
+        'Corrija o cadastro e clique em "Validar e Salvar" de novo para concluir o mapeamento.',
+    })
   }
 
   const toggleArray = (field: string, val: string) =>
@@ -1736,10 +1600,23 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
                     </div>
                     <div>
                       <Label>Cor</Label>
-                      <Input
-                        value={formData.cor || ''}
-                        onChange={(e) => setFormData({ ...formData, cor: e.target.value })}
-                      />
+                      {/* Lista fechada, sempre no masculino (Preto, Branco...) — texto
+                          livre gerava 10 grafias pra 7 cores. */}
+                      <Select
+                        value={normalizarCor(formData.cor) || ''}
+                        onValueChange={(v) => setFormData({ ...formData, cor: v })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {CORES_PADRAO.map((c) => (
+                            <SelectItem key={c} value={c}>
+                              {c}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
                     <div>
                       <Label>Combustível</Label>
@@ -3109,164 +2986,22 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
           </div>
         </Tabs>
 
-        {/* Mapeamento de catálogo: uma seção por plataforma que precisar de
-            revisão — Webmotors e NaPista resolvidos aqui mesmo, sem sair do
-            cadastro (achado 27/08/2026: antes o NaPista só mandava conferir
-            numa tela separada). */}
-        <Dialog
-          open={!!mapeamentoDialog}
-          onOpenChange={(open) => !open && setMapeamentoDialog(null)}
-        >
-          <DialogContent className="max-w-lg">
-            <DialogHeader>
-              <DialogTitle>Confirmar mapeamento de catálogo</DialogTitle>
-            </DialogHeader>
-            {mapeamentoDialog && (
-              <div className="space-y-5">
-                {mapeamentoDialog.wm && (
-                  <div className="space-y-3 pb-4 border-b">
-                    <h4 className="text-sm font-bold text-gray-800">Webmotors</h4>
-                    <p className="text-sm text-gray-600">
-                      {mapeamentoDialog.wm.erroMsg ||
-                        'Não foi possível casar automaticamente com o catálogo da Webmotors.'}
-                    </p>
-                    {mapeamentoDialog.wm.motivo === 'modelo' &&
-                      mapeamentoDialog.wm.candidatosModelo.length > 0 && (
-                        <div className="space-y-2">
-                          <Label>Escolha o modelo correto:</Label>
-                          {mapeamentoDialog.wm.candidatosModelo.map((c) => (
-                            <Button
-                              key={c.codigo_wm}
-                              variant="outline"
-                              className="w-full justify-between"
-                              disabled={loadingWmMapeamento}
-                              onClick={() => handleConfirmarMapeamento(c.codigo_wm, undefined)}
-                            >
-                              <span>{c.nome_wm}</span>
-                              <span className="text-xs text-gray-400">
-                                {Math.round((c.score || 0) * 100)}%
-                              </span>
-                            </Button>
-                          ))}
-                        </div>
-                      )}
-                    {mapeamentoDialog.wm.motivo === 'versao' &&
-                      mapeamentoDialog.wm.candidatosVersao.length > 0 && (
-                        <div className="space-y-2">
-                          <Label>Escolha a versão correta:</Label>
-                          {mapeamentoDialog.wm.candidatosVersao.map((c) => (
-                            <Button
-                              key={c.codigo_wm}
-                              variant="outline"
-                              className="w-full justify-between"
-                              disabled={loadingWmMapeamento}
-                              onClick={() => handleConfirmarMapeamento(undefined, c.codigo_wm)}
-                            >
-                              <span>{c.nome_wm}</span>
-                              <span className="text-xs text-gray-400">
-                                {Math.round((c.score || 0) * 100)}%
-                              </span>
-                            </Button>
-                          ))}
-                        </div>
-                      )}
-                    {(mapeamentoDialog.wm.motivo === 'marca' ||
-                      mapeamentoDialog.wm.motivo === 'catalogo_wm') && (
-                      <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded p-2">
-                        Esse caso não tem escolha automática — ajuste o cadastro (marca, cor, câmbio
-                        ou combustível) pra bater com o catálogo da Webmotors, ou peça pra cadastrar
-                        o termo equivalente.
-                      </p>
-                    )}
-                    <div className="flex justify-end">
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => dispensarSecaoMapeamento('wm')}
-                      >
-                        Fechar (resolve depois em Portais)
-                      </Button>
-                    </div>
-                  </div>
-                )}
-
-                {mapeamentoDialog.napista && (
-                  <div className="space-y-3">
-                    <h4 className="text-sm font-bold text-gray-800">NaPista</h4>
-                    <p className="text-sm text-gray-600">
-                      {mapeamentoDialog.napista.erroMsg ||
-                        'Não foi possível casar automaticamente com o catálogo do NaPista.'}
-                    </p>
-                    {mapeamentoDialog.napista.motivo === 'modelo' &&
-                      mapeamentoDialog.napista.candidatosModelo.length > 0 && (
-                        <div className="space-y-2">
-                          <Label>Escolha o modelo correto:</Label>
-                          {mapeamentoDialog.napista.candidatosModelo.map((c) => (
-                            <Button
-                              key={c.id}
-                              variant="outline"
-                              className="w-full justify-between"
-                              disabled={loadingNapistaMapeamento}
-                              onClick={() => handleEscolherModeloNapista(c.id)}
-                            >
-                              <span>{c.nome}</span>
-                              <span className="text-xs text-gray-400">
-                                {Math.round((c.score || 0) * 100)}%
-                              </span>
-                            </Button>
-                          ))}
-                        </div>
-                      )}
-                    {mapeamentoDialog.napista.motivo === 'versao' &&
-                      mapeamentoDialog.napista.candidatosVersao.length > 0 && (
-                        <div className="space-y-2">
-                          <Label>Escolha a versão correta:</Label>
-                          {mapeamentoDialog.napista.candidatosVersao.map((c) => (
-                            <Button
-                              key={c.id}
-                              variant="outline"
-                              className="w-full justify-between"
-                              disabled={loadingNapistaMapeamento}
-                              onClick={() => handleEscolherVersaoNapista(c.id)}
-                            >
-                              <span>{c.nome}</span>
-                              <span className="text-xs text-gray-400">
-                                {Math.round((c.score || 0) * 100)}%
-                              </span>
-                            </Button>
-                          ))}
-                        </div>
-                      )}
-                    {mapeamentoDialog.napista.motivo === 'versao' &&
-                      mapeamentoDialog.napista.candidatosVersao.length === 0 && (
-                        <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded p-2">
-                          O catálogo do NaPista não tem nenhuma versão cadastrada pra esse modelo —
-                          não há nada pra escolher aqui até eles atualizarem o catálogo deles. Esse
-                          veículo fica de fora do NaPista por enquanto.
-                        </p>
-                      )}
-                    {(mapeamentoDialog.napista.motivo === 'marca' ||
-                      mapeamentoDialog.napista.motivo === 'catalogo_napista') && (
-                      <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded p-2">
-                        Sem escolha automática pra esse caso — ajuste o cadastro (marca, cor, câmbio
-                        ou combustível) pra bater com o catálogo do NaPista.
-                      </p>
-                    )}
-                    <div className="flex justify-end">
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => dispensarSecaoMapeamento('napista')}
-                      >
-                        Fechar (resolve depois em Portais)
-                      </Button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-          </DialogContent>
-        </Dialog>
+        {/* Confirmação do veículo no catálogo de cada plataforma (Webmotors e
+            NaPista), logo depois de salvar — o sistema mostra o que mapeou
+            sozinho pra conferir ("Está certo") ou trocar, e já resolve o que
+            não casou. Pedido da Adriana, 01/10/2026: mapeamento errado e
+            silencioso publicava o veículo trocado (caso Nissan Frontier). */}
+        <MapeamentoCatalogoDialog
+          modo="confirmar"
+          obrigatorio={filaMapeamento?.liberar ?? false}
+          onVoltarCorrigir={voltarECorrigirCadastro}
+          onSeguirSemPlataforma={avancarFilaMapeamento}
+          veiculoId={filaMapeamento?.veiculoId ?? null}
+          plataforma={filaMapeamento?.plataformas[0] ?? null}
+          nomeVeiculo={[formData.marca, formData.modelo].filter(Boolean).join(' ')}
+          onClose={avancarFilaMapeamento}
+          onResolvido={avancarFilaMapeamento}
+        />
 
         {/* MEDIA CENTER DIALOG */}
         <Dialog open={isMediaCenterOpen} onOpenChange={setIsMediaCenterOpen}>

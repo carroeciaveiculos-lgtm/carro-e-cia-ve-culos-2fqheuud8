@@ -28,6 +28,12 @@ import { VehicleAccordion } from '@/components/admin/portais/VehicleAccordion'
 import { GlobalActionsBar } from '@/components/admin/portais/GlobalActionsBar'
 import { ErrorHistoryPanel } from '@/components/admin/portais/ErrorHistoryPanel'
 import { SyncFailureModal } from '@/components/admin/portais/SyncFailureModal'
+import { MapeamentoCatalogoDialog } from '@/components/admin/portais/MapeamentoCatalogoDialog'
+import {
+  isErroMapeamento,
+  isPlataformaMapeavel,
+  type PlataformaMapeavel,
+} from '@/lib/mapeamento-catalogo'
 import type { SyncFailure } from '@/components/admin/portais/SyncFailureModal'
 import { ConversionMonitor } from '@/components/admin/portais/ConversionMonitor'
 import { PlatformSyncPanel } from '@/components/admin/portais/PlatformSyncPanel'
@@ -99,6 +105,13 @@ export default function Portais() {
   const preflightProceedRef = useRef<(() => void) | null>(null)
   const [syncFailures, setSyncFailures] = useState<SyncFailure[]>([])
   const [failureModalOpen, setFailureModalOpen] = useState(false)
+  // Veículo/plataforma cujo erro de mapeamento está sendo resolvido na tela
+  // (MapeamentoCatalogoDialog) — aberto na hora em que a publicação falha.
+  const [mapeamentoAlvo, setMapeamentoAlvo] = useState<{
+    veiculoId: string
+    plataforma: PlataformaMapeavel
+    nome: string
+  } | null>(null)
 
   useEffect(() => {
     fetchPlataformas()
@@ -248,6 +261,8 @@ export default function Portais() {
               vehicleId: id,
               vehicleName: `${nomeVeiculo} — ${nomePlataforma}`,
               error: result.message,
+              platform: isPlataformaMapeavel(slug) ? slug : undefined,
+              precisaMapeamento: isPlataformaMapeavel(slug) && isErroMapeamento(result.message),
             })
           }
           await new Promise((r) => setTimeout(r, 2000))
@@ -318,7 +333,47 @@ export default function Portais() {
     publicar: boolean,
   ): Promise<{ success: boolean; message: string }> => {
     try {
-      return await executarSyncPlataforma(slug, veiculoId, publicar)
+      const result = await executarSyncPlataforma(slug, veiculoId, publicar)
+      // Erro de mapeamento de catálogo não é fim de linha: abre o diálogo que
+      // resolve ali mesmo e reenvia sozinho (pedido da Adriana, 01/10/2026).
+      if (
+        !result.success &&
+        publicar &&
+        isPlataformaMapeavel(slug) &&
+        isErroMapeamento(result.message)
+      ) {
+        const v = vehicles.find((x) => x.id === veiculoId)
+        setMapeamentoAlvo({
+          veiculoId,
+          plataforma: slug,
+          nome: v ? `${v.marca} ${v.modelo}` : 'Veículo',
+        })
+      }
+      return result
+    } finally {
+      await refreshPublicacaoVeiculo(veiculoId)
+    }
+  }
+
+  // Mapeamento resolvido no diálogo -> reenvia o veículo pra plataforma na
+  // hora, tira a falha da lista e atualiza o card.
+  const reenviarAposMapeamento = async (veiculoId: string, plataforma: PlataformaMapeavel) => {
+    setMapeamentoAlvo(null)
+    const nomePlataforma = plataformas.find((p) => p.slug === plataforma)?.nome || plataforma
+    try {
+      const result = await executarSyncPlataforma(plataforma, veiculoId, true)
+      if (result.success) {
+        toast({ title: `Publicado na ${nomePlataforma}!`, description: result.message })
+        setSyncFailures((prev) =>
+          prev.filter((f) => !(f.vehicleId === veiculoId && f.platform === plataforma)),
+        )
+      } else {
+        toast({
+          title: `Mapeado, mas o envio para a ${nomePlataforma} falhou`,
+          description: result.message,
+          variant: 'destructive',
+        })
+      }
     } finally {
       await refreshPublicacaoVeiculo(veiculoId)
     }
@@ -786,6 +841,21 @@ export default function Portais() {
         open={failureModalOpen}
         onOpenChange={setFailureModalOpen}
         failures={syncFailures}
+        onResolverMapeamento={(f) =>
+          setMapeamentoAlvo({
+            veiculoId: f.vehicleId,
+            plataforma: f.platform as PlataformaMapeavel,
+            nome: f.vehicleName,
+          })
+        }
+      />
+
+      <MapeamentoCatalogoDialog
+        veiculoId={mapeamentoAlvo?.veiculoId ?? null}
+        plataforma={mapeamentoAlvo?.plataforma ?? null}
+        nomeVeiculo={mapeamentoAlvo?.nome}
+        onClose={() => setMapeamentoAlvo(null)}
+        onResolvido={reenviarAposMapeamento}
       />
     </div>
   )

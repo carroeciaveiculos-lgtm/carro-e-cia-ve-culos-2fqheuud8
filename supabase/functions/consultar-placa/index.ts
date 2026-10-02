@@ -1,5 +1,6 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from 'jsr:@supabase/supabase-js@2'
+import { normalizarCor } from '../_shared/cor-veiculo.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -53,6 +54,8 @@ Deno.serve(async (req) => {
             .eq('placa', cleanPlaca)
         }
       }
+      // Cache antigo guarda a cor como veio da API ("BRANCA"): normaliza na saída.
+      cacheData.cor = normalizarCor(cacheData.cor) ?? cacheData.cor
       return new Response(JSON.stringify({ success: true, data: cacheData, cached: true }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
@@ -123,7 +126,7 @@ Deno.serve(async (req) => {
         ano_modelo: anoMod.toString(),
         combustivel: hash % 2 === 0 ? 'Flex' : 'Gasolina',
         combustivel_sintetico: hash % 2 === 0 ? 'Álcool/Gasolina' : 'Gasolina',
-        cor: hash % 3 === 0 ? 'Prata' : hash % 2 === 0 ? 'Preta' : 'Branca',
+        cor: hash % 3 === 0 ? 'Prata' : hash % 2 === 0 ? 'Preto' : 'Branco',
         preco_fipe: precoMock,
         mes_referencia: 'Mês Atual',
         codigo_fipe: '001' + (hash % 999).toString().padStart(4, '0') + '-1',
@@ -210,7 +213,9 @@ Deno.serve(async (req) => {
         // quando não vier, pra quem consome saber diferenciar "sem dado" de
         // "veio vazio de propósito" e não sobrescrever um valor já digitado
         // à mão.
-        cor: veiculoData?.cor || null,
+        // Sempre no padrão (Preto/Branco): cor que não reconhecemos vira null
+        // e a pessoa escolhe na lista do formulário.
+        cor: normalizarCor(veiculoData?.cor) || null,
         preco_fipe: veiculoData?.valor || veiculoData?.preco_fipe || veiculoData?.fipe?.valor || 0,
         mes_referencia: veiculoData?.mesReferencia || '',
         codigo_fipe:

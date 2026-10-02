@@ -92,8 +92,13 @@ export interface FiltrosPortais {
 // PortalTierSelector). Pra filtrar por ela sem trazer o catálogo inteiro,
 // resolve o código real via wm_modalidades (mesmo casamento por texto que
 // updateModalidadeWebmotors já usa) e busca os veiculo_id que batem.
-async function resolverVeiculoIdsPorModalidadeWebmotors(tierLabel: string): Promise<string[] | null> {
-  const termoBusca = tierLabel.replace(/^Anúncio\s+/i, '').replace(/\s+VIP$/i, '').trim()
+async function resolverVeiculoIdsPorModalidadeWebmotors(
+  tierLabel: string,
+): Promise<string[] | null> {
+  const termoBusca = tierLabel
+    .replace(/^Anúncio\s+/i, '')
+    .replace(/\s+VIP$/i, '')
+    .trim()
   const { data: modalidade } = await supabase
     .from('wm_modalidades')
     .select('codigo_wm')
@@ -401,7 +406,9 @@ export interface NapistaPendencia {
 // Infere em qual etapa o auto-match parou (marca/modelo/versão/catálogo de
 // atributos) a partir de quais ids já foram preenchidos — não guarda um
 // campo "motivo" à parte, os próprios ids já contam a história.
-export function motivoPendenciaNapista(p: NapistaPendencia): 'marca' | 'modelo' | 'versao' | 'catalogo_napista' {
+export function motivoPendenciaNapista(
+  p: NapistaPendencia,
+): 'marca' | 'modelo' | 'versao' | 'catalogo_napista' {
   if (!p.napista_marca_id) return 'marca'
   if (!p.napista_modelo_id) return 'modelo'
   if (!p.napista_version_id) return 'versao'
@@ -433,7 +440,11 @@ export async function triggerNapistaSync(veiculoId?: string): Promise<NapistaSyn
     return {
       success: false,
       processed: data?.processed ?? 0,
-      error: falhas.map((r) => r.error).filter(Boolean).join(' | ') || 'Falha ao sincronizar com a NaPista',
+      error:
+        falhas
+          .map((r) => r.error)
+          .filter(Boolean)
+          .join(' | ') || 'Falha ao sincronizar com a NaPista',
     }
   }
   return { success: true, processed: data?.processed ?? 0 }
@@ -478,8 +489,14 @@ export async function fetchModalidadeReal(
 // tabela fixa de código por tier — se a Adriana contratar uma modalidade
 // nova, ela precisa aparecer em wm_modalidades antes (via ObterModalidade,
 // já roda a cada wm-sync) pra virar uma opção válida aqui.
-export async function updateModalidadeWebmotors(veiculoId: string, tierLabel: string): Promise<void> {
-  const termoBusca = tierLabel.replace(/^Anúncio\s+/i, '').replace(/\s+VIP$/i, '').trim()
+export async function updateModalidadeWebmotors(
+  veiculoId: string,
+  tierLabel: string,
+): Promise<void> {
+  const termoBusca = tierLabel
+    .replace(/^Anúncio\s+/i, '')
+    .replace(/\s+VIP$/i, '')
+    .trim()
   const { data: modalidade, error: findError } = await supabase
     .from('wm_modalidades')
     .select('codigo_wm')
@@ -527,39 +544,37 @@ export async function confirmarMapeamentoNapista(
   napistaVersionId?: string,
 ): Promise<{ success: boolean; error?: string }> {
   const { data, error } = await supabase.functions.invoke('napista-confirmar-mapeamento', {
-    body: { veiculo_id: veiculoId, napista_modelo_id: napistaModeloId, napista_version_id: napistaVersionId },
+    body: {
+      veiculo_id: veiculoId,
+      napista_modelo_id: napistaModeloId,
+      napista_version_id: napistaVersionId,
+    },
   })
   if (error) return { success: false, error: error.message }
   return data
 }
 
-// Achado 18/09/2026 (caso real: Jaguar F-Pace e Chery Tiggo 8): quando o
-// veículo trava em "modelo" sem nenhum candidato, o motivo quase sempre é
-// napista_modelos não ter nenhum modelo cacheado pra essa marca ainda (marca
-// nova no estoque, catálogo local desatualizado) — nada a ver com o cadastro
-// do veículo. "Remapear" sozinho não resolve, porque busca só no cache local.
-// Essa function busca os modelos de verdade na API do NaPista pra essa marca
-// e atualiza o cache antes de tentar de novo.
-export async function sincronizarCatalogoMarcaNapista(
-  marcaId: string,
-): Promise<{ success: boolean; total?: number; error?: string }> {
-  const { data, error } = await supabase.functions.invoke('napista-sync-catalogo', {
-    body: { action: 'sync_modelos', marca_id: marcaId },
-  })
-  if (error) return { success: false, error: error.message }
-  if (data?.error) return { success: false, error: data.error }
-  return { success: true, total: data?.total }
-}
-
+// Achado 01/10/2026 (caso real: Nissan Frontier): a antiga
+// `sincronizarCatalogoMarcaNapista` chamava `napista-sync-catalogo` direto do
+// navegador, mas essa function só aceita `x-internal-secret` — o botão sempre
+// recebia 401 e nunca sincronizou nada. Agora quem baixa os modelos da marca
+// é o próprio `napista-mapear-veiculo` (roda no servidor), pedido por
+// `sincronizarCatalogo: true`; mesmo sem o flag, ele já baixa sozinho quando o
+// catálogo local da marca está vazio.
 export async function remapearVeiculoNapista(
   veiculoId: string,
+  opcoes?: { sincronizarCatalogo?: boolean },
 ): Promise<{ success: boolean; status?: string; motivo?: string; error?: string }> {
   // force:true (26/08/2026) -- clique explícito em "Remapear" deve sempre
   // rodar de novo, mesmo que já esteja "mapeado" -- diferente da chamada
   // automática no salvar do formulário, que agora pula veículo já mapeado
   // pra não derrubar confirmação manual sem querer.
   const { data, error } = await supabase.functions.invoke('napista-mapear-veiculo', {
-    body: { veiculo_id: veiculoId, force: true },
+    body: {
+      veiculo_id: veiculoId,
+      force: true,
+      sincronizar_catalogo: opcoes?.sincronizarCatalogo ?? false,
+    },
   })
   if (error) return { success: false, error: error.message }
   return data

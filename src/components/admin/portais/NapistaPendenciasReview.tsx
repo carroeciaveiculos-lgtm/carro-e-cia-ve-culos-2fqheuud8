@@ -7,7 +7,6 @@ import {
   fetchNapistaPendencias,
   confirmarMapeamentoNapista,
   remapearVeiculoNapista,
-  sincronizarCatalogoMarcaNapista,
   motivoPendenciaNapista,
   type NapistaPendencia,
 } from '@/services/plataformas'
@@ -36,7 +35,11 @@ export function NapistaPendenciasReview() {
       const data = await fetchNapistaPendencias()
       setPendencias(data)
     } catch (err: any) {
-      toast({ title: 'Erro ao carregar pendências', description: err.message, variant: 'destructive' })
+      toast({
+        title: 'Erro ao carregar pendências',
+        description: err.message,
+        variant: 'destructive',
+      })
     } finally {
       setLoading(false)
     }
@@ -80,16 +83,24 @@ export function NapistaPendenciasReview() {
     }
   }
 
-  const handleSincronizarCatalogo = async (veiculoId: string, marcaId: string) => {
+  const handleSincronizarCatalogo = async (veiculoId: string) => {
     setActingFor(veiculoId, true)
     try {
-      const res = await sincronizarCatalogoMarcaNapista(marcaId)
+      const res = await remapearVeiculoNapista(veiculoId, { sincronizarCatalogo: true })
       if (!res.success) {
-        toast({ title: 'Erro ao sincronizar catálogo', description: res.error, variant: 'destructive' })
+        toast({
+          title: 'Erro ao sincronizar catálogo',
+          description: res.error,
+          variant: 'destructive',
+        })
         return
       }
-      toast({ title: `Catálogo atualizado (${res.total ?? 0} modelo(s)) — tentando mapear de novo...` })
-      await remapearVeiculoNapista(veiculoId)
+      toast({
+        title:
+          res.status === 'mapeado'
+            ? 'Catálogo atualizado e veículo mapeado!'
+            : 'Catálogo atualizado — confira as opções abaixo.',
+      })
       await load()
     } finally {
       setActingFor(veiculoId, false)
@@ -147,7 +158,11 @@ export function NapistaPendenciasReview() {
           <div key={p.veiculo_id} className="border border-amber-200 bg-amber-50/40 rounded-lg p-3">
             <div className="flex items-start gap-2.5">
               {foto && (
-                <img src={foto} alt="" className="w-14 h-11 object-cover rounded shrink-0 bg-muted" />
+                <img
+                  src={foto}
+                  alt=""
+                  className="w-14 h-11 object-cover rounded shrink-0 bg-muted"
+                />
               )}
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium truncate">
@@ -174,7 +189,9 @@ export function NapistaPendenciasReview() {
                     onClick={() => handleEscolherModelo(p.veiculo_id, c.id)}
                   >
                     <span>{c.nome}</span>
-                    <span className="text-[10px] text-gray-400">{Math.round((c.score || 0) * 100)}%</span>
+                    <span className="text-[10px] text-gray-400">
+                      {Math.round((c.score || 0) * 100)}%
+                    </span>
                   </Button>
                 ))}
               </div>
@@ -193,7 +210,9 @@ export function NapistaPendenciasReview() {
                     onClick={() => handleEscolherVersao(p.veiculo_id, c.id)}
                   >
                     <span>{c.nome}</span>
-                    <span className="text-[10px] text-gray-400">{Math.round((c.score || 0) * 100)}%</span>
+                    <span className="text-[10px] text-gray-400">
+                      {Math.round((c.score || 0) * 100)}%
+                    </span>
                   </Button>
                 ))}
               </div>
@@ -210,14 +229,15 @@ export function NapistaPendenciasReview() {
             {motivo === 'modelo' && p.candidatos_modelo.length === 0 && (
               <div className="mt-2 space-y-1.5">
                 <p className="text-[10px] text-amber-700">
-                  Catálogo local do NaPista pode estar desatualizado pra essa marca. Sincronize e tente de novo.
+                  Catálogo local do NaPista pode estar desatualizado pra essa marca. Sincronize e
+                  tente de novo.
                 </p>
                 <Button
                   size="sm"
                   variant="outline"
                   className="w-full h-7 text-xs"
                   disabled={isActing || !p.napista_marca_id}
-                  onClick={() => handleSincronizarCatalogo(p.veiculo_id, p.napista_marca_id!)}
+                  onClick={() => handleSincronizarCatalogo(p.veiculo_id)}
                 >
                   {isActing ? (
                     <Loader2 className="w-3 h-3 mr-1 animate-spin" />
@@ -236,10 +256,9 @@ export function NapistaPendenciasReview() {
                 opção de mapear tinha sumido. */}
             {motivo === 'versao' && p.candidatos_versao.length === 0 && (
               <p className="text-[10px] text-amber-700 mt-2">
-                O catálogo do NaPista não tem nenhuma versão cadastrada pra
-                esse modelo — não há nada pra escolher aqui até eles
-                atualizarem o catálogo deles. Esse veículo fica de fora do
-                NaPista por enquanto.
+                O catálogo do NaPista não tem nenhuma versão cadastrada pra esse modelo — não há
+                nada pra escolher aqui até eles atualizarem o catálogo deles. Esse veículo fica de
+                fora do NaPista por enquanto.
               </p>
             )}
 

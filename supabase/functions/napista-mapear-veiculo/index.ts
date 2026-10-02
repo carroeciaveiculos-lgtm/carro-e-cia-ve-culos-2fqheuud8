@@ -137,6 +137,74 @@ async function buscarMelhorVersaoParaModelo(
   return { versoesComScore, usouFallbackAno }
 }
 
+// Achado 01/10/2026 (caso real: Nissan Frontier): marca nova no estoque tem
+// `napista_modelos` vazio — o catálogo é baixado marca por marca e ninguém
+// tinha rodado isso pra Nissan. O mapeamento comparava o texto do veículo
+// com uma lista vazia (nota 0 em tudo) e o veículo travava sem saída. O botão
+// do painel que deveria sincronizar chamava `napista-sync-catalogo` direto do
+// navegador, que só aceita `x-internal-secret` — sempre dava 401. Aqui o
+// download roda no servidor (service role), então não expõe segredo nenhum.
+// Baixa quando o cache da marca está vazio, ou quando o painel pede
+// explicitamente (`sincronizar_catalogo`, caso de catálogo defasado).
+async function garantirModelosDaMarca(
+  supabase: any,
+  marcaId: string,
+  forcar: boolean,
+): Promise<{ baixou: boolean; total: number; erro?: string }> {
+  if (!forcar) {
+    const { count } = await supabase
+      .from('napista_modelos')
+      .select('id', { count: 'exact', head: true })
+      .eq('marca_id', marcaId)
+    if ((count ?? 0) > 0) return { baixou: false, total: count ?? 0 }
+  }
+
+  const { token, error: tokenErro } = await getValidNapistaToken(supabase)
+  if (!token) return { baixou: false, total: 0, erro: tokenErro || 'Sem token da NaPista' }
+
+  // size=100: a API pagina listas de catálogo (ver napista-sync-catalogo).
+  const res = await fetch(
+    `${BASE}/catalog/CAR/make/${encodeURIComponent(marcaId)}/models?size=100`,
+    { headers: { Authorization: `Bearer ${token}` } },
+  )
+  // Não engolir o erro (01/10/2026): sem isso, "NaPista falhou" e "NaPista não
+  // tem esse modelo" ficavam iguais na tela.
+  if (!res.ok) {
+    const corpo = (await res.text()).slice(0, 200)
+    return { baixou: false, total: 0, erro: `NaPista respondeu ${res.status}: ${corpo}` }
+  }
+
+  const data = await res.json()
+  // A NaPista pode devolver o mesmo id mais de uma vez (achado 01/10/2026: 26
+  // modelos da Nissan com ids repetidos) — upsert em lote com chave repetida
+  // falha inteiro ("cannot affect row a second time"). Deduplica por id.
+  const porId = new Map<string, any>()
+  for (const m of data.items || []) {
+    if (m.id && !porId.has(m.id)) {
+      porId.set(m.id, {
+        marca_id: marcaId,
+        id: m.id,
+        nome: m.name,
+        atualizado_em: new Date().toISOString(),
+      })
+    }
+  }
+  const modelos = [...porId.values()]
+  if (modelos.length > 0) {
+    const { error: upErro } = await supabase
+      .from('napista_modelos')
+      .upsert(modelos, { onConflict: 'marca_id,id' })
+    if (upErro) {
+      return {
+        baixou: true,
+        total: 0,
+        erro: `A NaPista devolveu ${modelos.length} modelo(s), mas não consegui gravar: ${upErro.message}`,
+      }
+    }
+  }
+  return { baixou: true, total: modelos.length }
+}
+
 async function salvarPendencia(supabase: any, veiculoId: string, campos: Record<string, any>) {
   const { data: existing } = await supabase
     .from('napista_mapeamento_veiculos')
@@ -172,7 +240,7 @@ Deno.serve(async (req: Request) => {
   )
 
   try {
-    const { veiculo_id, force } = await req.json()
+    const { veiculo_id, force, sincronizar_catalogo } = await req.json()
     if (!veiculo_id) throw new Error('veiculo_id obrigatorio')
 
     // Achado real 26/08/2026 (Fit LX): "Validar e Salvar" chama esta function
@@ -220,6 +288,17 @@ Deno.serve(async (req: Request) => {
         confianca_marca: confiancaMarca,
       })
       return responder({ success: true, status: 'revisao_necessaria', motivo: 'marca' })
+    }
+
+    // Garante que o catálogo local de modelos existe pra marca (e pras marcas
+    // que empataram no topo) antes de comparar — ver garantirModelosDaMarca.
+    const marcasParaGarantir = (marcaMatches || []).filter((m: any) => m.score === confiancaMarca)
+    let falhaCatalogo: string | null = null
+    for (const m of marcasParaGarantir.length > 0 ? marcasParaGarantir : [melhorMarca]) {
+      const r = await garantirModelosDaMarca(supabase, m.id, !!sincronizar_catalogo)
+      if (r.erro) falhaCatalogo = r.erro
+      else if (r.baixou && r.total === 0)
+        falhaCatalogo = `A NaPista não devolveu nenhum modelo para a marca ${m.id} (catálogo vazio do lado deles).`
     }
 
     // 2) MODELO - trigram match contra napista_modelos filtrado pela marca.
@@ -297,7 +376,7 @@ Deno.serve(async (req: Request) => {
     if (!melhorModelo || confiancaModelo < LIMIAR_CONFIANCA) {
       await salvarPendencia(supabase, veiculo_id, {
         status_sincronizacao: 'revisao_necessaria',
-        erro_msg: `Modelo "${textoModeloCompleto}" sem correspondência confiável`,
+        erro_msg: `Modelo "${textoModeloCompleto}" sem correspondência confiável${falhaCatalogo ? ` — ${falhaCatalogo}` : ''}`,
         napista_marca_id: melhorMarca.id,
         confianca_marca: confiancaMarca,
         confianca_modelo: confiancaModelo,

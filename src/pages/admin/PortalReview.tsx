@@ -4,6 +4,8 @@ import { Button } from '@/components/ui/button'
 import { Loader2, ArrowLeft, RefreshCw } from 'lucide-react'
 import { fetchReviewVehicles, manualResync, type ReviewVehicle } from '@/services/portal-review'
 import { ReviewVehicleCard } from '@/components/admin/portais/ReviewVehicleCard'
+import { MapeamentoCatalogoDialog } from '@/components/admin/portais/MapeamentoCatalogoDialog'
+import { isPlataformaMapeavel, type PlataformaMapeavel } from '@/lib/mapeamento-catalogo'
 import { useToast } from '@/hooks/use-toast'
 
 export default function PortalReview() {
@@ -13,6 +15,11 @@ export default function PortalReview() {
   // Chave "veiculoId-platform" — um veículo pode estar reprocessando mais de
   // uma plataforma ao mesmo tempo.
   const [resyncing, setResyncing] = useState<Record<string, boolean>>({})
+  const [mapeamentoAlvo, setMapeamentoAlvo] = useState<{
+    veiculoId: string
+    plataforma: PlataformaMapeavel
+    nome: string
+  } | null>(null)
 
   const loadVehicles = useCallback(async () => {
     setLoading(true)
@@ -102,12 +109,31 @@ export default function PortalReview() {
                 key={v.id}
                 veiculo={v}
                 onResync={handleResync}
+                onResolverMapeamento={(veiculoId, platform) => {
+                  if (!isPlataformaMapeavel(platform)) return
+                  setMapeamentoAlvo({
+                    veiculoId,
+                    plataforma: platform,
+                    nome: `${v.marca} ${v.modelo}`,
+                  })
+                }}
                 resyncingPlatforms={resyncingPlatforms}
               />
             )
           })}
         </div>
       )}
+
+      <MapeamentoCatalogoDialog
+        veiculoId={mapeamentoAlvo?.veiculoId ?? null}
+        plataforma={mapeamentoAlvo?.plataforma ?? null}
+        nomeVeiculo={mapeamentoAlvo?.nome}
+        onClose={() => setMapeamentoAlvo(null)}
+        onResolvido={(veiculoId, plataforma) => {
+          setMapeamentoAlvo(null)
+          handleResync(veiculoId, plataforma)
+        }}
+      />
     </div>
   )
 }
