@@ -1,6 +1,20 @@
 # Memória de trabalho — Carro e Cia
 
-## [01/10/2026, noite] Cor padrão + conferência antes de salvar + rascunho→mapeamento→disponível (código pronto, NÃO commitado)
+## [02/10/2026] FECHAMENTO da sessão 30 — tudo no ar (commit `e360854`), cores aplicadas
+
+- Push feito (travou ~3 min esperando janela do Gerenciador de Credenciais do Git; terminou com exit 0). Deploys do
+  GitHub Actions: "Deploy producao" ✅ (21 s) e "Deploy Edge Functions" ✅ (4 min, publicou TODAS por mudança em `_shared/`).
+- **SQLs de cor aplicados pela Adriana e CONFERIDOS no banco:** Branco 21, Preto 15, Cinza 10, Prata 8, Azul 2 (nenhuma
+  grafia feminina); FDL2J11 = Preto, 0 publicações; `estoque_publicacoes` sem nenhuma linha alterada nas 6 h seguintes
+  (gatilhos de reenvio ficaram suspensos). Primeira tentativa falhou só porque ela colou meu texto explicativo junto do
+  SQL ("syntax error at or near Resultado") — nada foi executado; ao mandar SQL no chat, mandar SÓ o bloco, sem frases.
+- **Ainda NÃO rodado:** `20261001210000_artigo_ajuda_resolver_mapeamento_ao_publicar.sql` (2 artigos de ajuda). Conferir
+  com `select titulo from ajuda_conteudos where titulo like 'Resolver erro de mapeamento%'`.
+- Migrations rodadas à mão no SQL Editor (`2026100123*_cor_padrao_*`) NÃO entram no histórico de migrations do Supabase
+  — mesma dívida de `docs/supabase-migrations.md`; não rodar `db push` sem olhar isso.
+- Conta GitHub correta confirmada pela Adriana: `carroeciaveiculos-lgtm` — não trocar (memória do projeto).
+
+## [01/10/2026, noite] Cor padrão + conferência antes de salvar + rascunho→mapeamento→disponível (feito; commit `e360854`)
 
 Pedido da Adriana: mapeamento escolhido durante o cadastro, caminho livre pra publicar, cor sempre
 "Preto"/"Branco" (nunca Preta/Branca), sugerir melhorias. Feito (autorizado em bloco):
