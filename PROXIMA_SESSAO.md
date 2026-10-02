@@ -6,15 +6,25 @@ Copie e cole como primeira mensagem numa sessão nova do Claude Code.
 Projeto: Carro e Cia Veículos (revenda). Pasta de trabalho:
 C:\Projeto\Revenda Carro e Cia\carro-e-cia-ve-culos-2fqheuud8
 
-Continuando de uma sessão anterior (01 a 02/10/2026, sessão 30). Leia primeiro MEMORY_WORK.MD, seção
-"[02/10/2026] FECHAMENTO da sessão 30" e as duas abaixo dela. Estado: tudo commitado e NO AR até o commit
-`e360854` (front e Edge Functions com deploy verde). Nissan Frontier (`RNY4F77`) publicada nas 3 plataformas
-(confirmado em sync_log). Cores do banco padronizadas e conferidas. O que ficou ABERTO, em ordem:
+Continuando de uma sessão anterior (01 a 02/10/2026, sessão 30). Leia primeiro MEMORY_WORK.MD, seções
+"[02/10/2026, tarde] Auditoria: descrição do Audi..." e "[02/10/2026] FECHAMENTO da sessão 30". Estado: tudo
+commitado e NO AR até o commit `6777ffe` (front e Edge Functions com deploy verde). Nissan Frontier (`RNY4F77`)
+publicada nas 3 plataformas (confirmado em sync_log). Cores do banco padronizadas e conferidas. Artigos de ajuda
+já aplicados no banco. O que ficou ABERTO, em ordem:
 
-1. **Rodar o SQL do artigo de ajuda (precisa da Adriana):** `supabase/migrations/20261001210000_artigo_ajuda_resolver_
-   mapeamento_ao_publicar.sql` (2 artigos + nota no artigo de cadastro). Abrir no Bloco de Notas, Ctrl+A, colar no SQL
-   Editor. Idempotente. Conferir depois no banco. Ao mandar SQL pelo chat, mandar SÓ o bloco, sem frases (ela colou
-   meu texto junto e deu erro de sintaxe).
+1. **Reconferir a descrição do Audi A3 (`PQE7D92`, anúncio Webmotors `80033981`) — PRIORIDADE.** A página não mostra a
+   seção "Sobre este carro" (o GWM `80431993`, mesmo produto 2611, mostra). Enviamos certo e a Webmotors guarda o texto
+   (`LongComment`). Suspeita NÃO provada: filtro de conteúdo da Webmotors ("!!!", "Chama...", telefone, menção a
+   valores, ou a frase final). Em 02/10 14:10 UTC mandei a versão limpa ("Audi A3 Sedan Ambition 2.0 2015/2016. Laudo
+   cautelar aprovado. Vários upgrades." + frase final) e, 5 min depois, página e busca ainda mostravam o texto antigo
+   (a Webmotors demora a refletir). FAZER: abrir a URL do anúncio (doc `webmotors-integracao.md`, seção "Descrição que
+   não aparece na página" tem o script de busca `api/search/car` e a URL) e ver (a) se `LongComment` já é a versão
+   limpa e (b) se aparece "Sobre este carro". Se aparecer -> o culpado era "!!!"/"Chama..."; se o texto novo está na
+   busca mas a página segue sem seção -> testar sem a frase final só neste veículo (NÃO mudar `rodape_fixo`, afeta
+   ML/NaPista) e perguntar ao suporte da Webmotors. Decisões dela (02/10): o Audi fica com a versão limpa; texto
+   digitado à mão é LIVRE (sem filtro, vai pelo cron, só corta no limite de 500 com a frase); telefone ela não digita
+   (regra da Webmotors). Regra de IA `vehicle_description_webmotors` já tem restrições de conteúdo (só afeta o botão
+   "Gerar com IA"). Oferta pendente de resposta dela: aviso amarelo (sem bloquear) no campo quando tiver "!!!"/telefone.
 2. **Testes só dela, com login (código novo nunca foi clicado na tela):** (a) cadastrar veículo de teste -> "Validar e
    Salvar" -> janela OBRIGATÓRIA "Confirmar veículo na Webmotors/NaPista" (Está certo / Trocar / Voltar e corrigir /
    Seguir sem a plataforma); veículo novo fica rascunho até confirmar; (b) campo Cor agora é lista no masculino;
@@ -28,8 +38,13 @@ Continuando de uma sessão anterior (01 a 02/10/2026, sessão 30). Leia primeiro
 4. **Riscos conhecidos, não corrigidos:** upsert em lote de `napista_versoes` (`buscarMelhorVersaoParaModelo`) pode ter o
    mesmo problema de ids repetidos que achamos nos modelos (API NaPista devolve ids duplicados; checar o `error` do
    upsert); `VehicleFormModal` tem erros antigos de `tsc` (preço/gráfico), não são desta mudança.
-5. **Regras aprendidas (não repetir):** o classificador do Claude Code barra `apply_migration` e leitura de logs via MCP
-   ("Modify Shared Resources"/"Production Deploy") — NÃO contornar; SQL vai por arquivo e ela roda no SQL Editor.
+5. **Regras aprendidas (não repetir):** a Adriana AUTORIZOU (02/10) que eu rode SQL no Supabase sem pedir de novo. O
+   classificador do Claude Code decide caso a caso: barrou `apply_migration` do UPDATE em massa de cor e a leitura de logs
+   via MCP ("Modify Shared Resources"/"Production Deploy"), mas deixou passar artigos de ajuda, UPDATE de 1 linha e a
+   regra de IA. Tentar `apply_migration` primeiro; se barrar, NÃO contornar: gravar arquivo `.sql` e ela roda no SQL
+   Editor (mandar SÓ o bloco, sem frases — ela já colou meu texto junto e deu erro de sintaxe). Depois de aplicar via MCP,
+   espelhar o SQL em `supabase/migrations/<timestamp real>_*.sql` (pegar em `supabase_migrations.schema_migrations`).
+   Ver o que a Webmotors publica de verdade: busca pública `api/search/car` (script no doc).
    Functions `verify_jwt=true` aceitam a chave anon (pública) no Authorization — foi assim que mapeei/publiquei a
    Frontier sem login. Deploy de function: `supabase functions deploy <nome> --project-ref htpcqdbhktmvppfemnad --use-api`.
    O push pode travar ~3 min por janela do Gerenciador de Credenciais do Git (esconder atrás de outras janelas); conta
