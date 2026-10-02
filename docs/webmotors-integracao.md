@@ -695,6 +695,32 @@ extração sem esse problema, a comparação real deu zero diferenças.
   ambos confirmados com modelo XC60 certo na resposta real da Webmotors
   (`CodigoModelo 2997`), versão escolhida manualmente batendo com o nome
   real do carro (Ultimate/Ultra).
+- **Descrição que "não aparece" na página do anúncio (auditoria 02/10/2026, caso Audi A3
+  `PQE7D92`, anúncio `80033981`).** O nosso envio está certo: o XML leva `Observacao` com 247
+  caracteres, a Webmotors devolve o mesmo texto na resposta do `AlterarCarro` e o dado interno
+  dela (`LongComment`) o guarda. Mesmo assim a página de detalhe **não renderiza a seção "Sobre
+  este carro"** nesse anúncio. O **GWM H6** (`80431993`, mesmo `ProductCode 2611`, com o
+  parágrafo institucional) **mostra** a seção — logo **não é limitação de plano**. O Audi é o
+  único dos 13 anúncios com texto próprio (`descricao_webmotors`), e o único oculto. Outro
+  anúncio oculto de terceiro (Audi BH, também `2611`) tem telefone/WhatsApp e "preço
+  promocional" no texto; um que aparece (LAS MAQUINAS, `1614`) não tem. **Hipótese não provada:**
+  a Webmotors oculta observação com certo conteúdo ("!!!", convite a contato como "chama...",
+  telefone, menção a valores) e/ou a frase final "Reservamo-nos... valores sujeitos...". Teste em
+  02/10 14:10 UTC com a versão limpa ("...Vários upgrades." + frase final): reenvio aceito, mas
+  a página e a busca da Webmotors **continuaram com o texto antigo 5 min depois** (a Webmotors
+  demora a refletir; quanto, não medido) — **resultado inconclusivo, rever**. Próximo passo se a
+  versão limpa não aparecer: testar sem a frase final (exige desligar a frase só pra esse
+  veículo no código; mudar `ai_prompts_config.rodape_fixo` afetaria ML/NaPista).
+  Decisão da Adriana: o Audi fica com a versão limpa. A regra de IA
+  `vehicle_description_webmotors` ganhou restrições de conteúdo (sem "!", emojis, caixa alta,
+  telefone/WhatsApp/link, convite a contato, valores/promoção) —
+  `20261002143104_regra_ia_descricao_webmotors_texto_seguro.sql`.
+  **Como ver o que a Webmotors realmente publica** (sem login): numa aba em
+  `webmotors.com.br`, `fetch('/api/search/car?url=<url-de-listagem-codificada>&actualPage=1&
+  displayPerPage=24&order=1&showMenu=true&showCount=true&showBreadCrumb=true&testAB=false&
+  returnUrl=false')` devolve `SearchResults[]` com `UniqueId`, `ProductCode` e `LongComment`;
+  a URL do anúncio é `/comprar/<marca>/<modelo>/<versão sem ponto>/<N>-portas/<anoFab>-<anoMod>/<id>`.
+  Beco sem saída: `/api/detail/car/<id>` devolve "Missing Authentication Token".
 - **Limite real da `Observacao`: 500 caracteres, confirmado na fonte
   oficial da Webmotors** (manual `AnuncioWM.htm`, campo Observacao, "o
   texto deve possuir no máximo 500 caracteres"). A remoção desse corte em

@@ -1,5 +1,16 @@
 # Memória de trabalho — Carro e Cia
 
+## [02/10/2026, tarde] Auditoria: descrição do Audi não aparece na página da Webmotors
+
+Detalhe técnico, método e hipótese em `docs/webmotors-integracao.md` ("Descrição que não aparece na página").
+Resumo: envio correto, Webmotors guarda o texto; a página não mostra "Sobre este carro" no Audi (único com texto
+próprio), mas mostra no GWM (parágrafo institucional, mesmo produto 2611). Causa provável: filtro de conteúdo da
+Webmotors — NÃO provado. Feito (autorizado): Audi `PQE7D92` ficou com a versão limpa em `descricao_webmotors`;
+regra de IA `vehicle_description_webmotors` ganhou restrições de conteúdo; artigos de ajuda aplicados via MCP
+(`20261002132013_*`). **Pendente:** reconferir daqui a algumas horas/dia se a página do Audi passou a mostrar
+"Sobre este carro" (script no doc); se não, testar sem a frase final; perguntar ao suporte da Webmotors.
+Migrations de hoje espelhadas em arquivo: `20261002140738_*`, `20261002143104_*`. **Não commitado ainda.**
+
 ## [02/10/2026] FECHAMENTO da sessão 30 — tudo no ar (commit `e360854`), cores aplicadas
 
 - Push feito (travou ~3 min esperando janela do Gerenciador de Credenciais do Git; terminou com exit 0). Deploys do
