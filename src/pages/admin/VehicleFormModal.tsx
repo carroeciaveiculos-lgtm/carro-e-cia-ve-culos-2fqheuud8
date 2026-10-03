@@ -215,6 +215,7 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
   const [previewDoc, setPreviewDoc] = useState<any>(null)
   const [fipeHistory, setFipeHistory] = useState<any[]>([])
   const [isSyncingDrive, setIsSyncingDrive] = useState(false)
+  const [isSyncingDriveVideos, setIsSyncingDriveVideos] = useState(false)
 
   const [novaDespesa, setNovaDespesa] = useState({
     categoria: 'Mecânica',
@@ -504,6 +505,8 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [formData.fotos])
 
+  // "Sync Drive" (bloco de fotos): sincroniza SÓ fotos. Vídeo tem botão próprio no
+  // bloco "Vídeos" (handleSyncDriveVideos) — pedido da Adriana, 03/10/2026.
   const handleSyncGoogleDrive = async () => {
     if (!formData.id) {
       toast({
@@ -518,8 +521,6 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
     }
     setIsSyncingDrive(true)
     const placa = formData.placa.toUpperCase().replace(/[^A-Z0-9]/g, '')
-    let syncedPhotos = 0
-    let syncedVideos = 0
 
     try {
       const { data, error } = await supabase.functions.invoke('sync-google-drive', {
@@ -527,7 +528,7 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
       })
       if (error) throw error
       if (data?.success === false) throw new Error(data?.error || 'Falha na sincronização')
-      syncedPhotos = data?.totalPhotosSynced || 0
+      const syncedPhotos = data?.totalPhotosSynced || 0
       if (syncedPhotos > 0) {
         const { data: updated } = await supabase
           .from('veiculos')
@@ -538,29 +539,48 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
           setFormData((p: any) => ({ ...p, fotos: updated.fotos }))
         }
       }
+      toast({
+        title:
+          syncedPhotos > 0
+            ? `Sincronização concluída: ${syncedPhotos} fotos`
+            : 'Nenhuma foto nova encontrada',
+      })
     } catch (err: any) {
-      setIsSyncingDrive(false)
       toast({
         title: 'Erro na sincronização de fotos',
         description: err.message,
         variant: 'destructive',
       })
+    } finally {
+      setIsSyncingDrive(false)
+    }
+  }
+
+  // "Sincronizar vídeo" (bloco "Vídeos"): busca na pasta "02-Videos de Veiculos" do
+  // Drive a pasta que começa com a placa e importa os vídeos novos pro R2. Vídeo
+  // grande pode levar alguns minutos (o download roda no Worker da Cloudflare).
+  const handleSyncDriveVideos = async () => {
+    if (!formData.id) {
+      toast({
+        title: 'Por favor, salve o veículo primeiro antes de utilizar esta ferramenta.',
+        variant: 'destructive',
+      })
       return
     }
+    if (!formData.placa) {
+      toast({ title: 'Informe a placa do veículo primeiro', variant: 'destructive' })
+      return
+    }
+    setIsSyncingDriveVideos(true)
+    const placa = formData.placa.toUpperCase().replace(/[^A-Z0-9]/g, '')
 
-    // Vídeo é uma pasta raiz separada no Drive (docs/google-drive-integracao.md) --
-    // nem todo veículo tem pasta de vídeo, então "não encontrada" não é erro,
-    // é o caso comum. Nunca deixa um problema aqui esconder que as fotos já
-    // sincronizaram com sucesso.
     try {
-      const { data: videoData, error: videoError } = await supabase.functions.invoke(
-        'sync-drive-videos',
-        { body: { placa } },
-      )
-      if (videoError) throw videoError
-      if (videoData?.success === false)
-        throw new Error(videoData?.error || 'Falha na sincronização de vídeo')
-      syncedVideos = videoData?.totalVideosSynced || 0
+      const { data, error } = await supabase.functions.invoke('sync-drive-videos', {
+        body: { placa },
+      })
+      if (error) throw error
+      if (data?.success === false) throw new Error(data?.error || 'Falha na sincronização de vídeo')
+      const syncedVideos = data?.totalVideosSynced || 0
       if (syncedVideos > 0) {
         const { data: updatedVideo } = await supabase
           .from('veiculos')
@@ -570,33 +590,41 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
         if (updatedVideo?.videos) {
           setFormData((p: any) => ({ ...p, videos: updatedVideo.videos }))
         }
+        toast({ title: `Sincronização concluída: ${syncedVideos} vídeo(s) novo(s)` })
+      } else {
+        toast({
+          title: 'Nenhum vídeo novo encontrado',
+          description: 'Os vídeos que já estão no cadastro não são importados de novo.',
+        })
       }
     } catch (err: any) {
-      let videoErrorMsg = err?.message || ''
+      // O Worker responde 404 com { error } quando não há pasta; o corpo vem em
+      // err.context. "Pasta não encontrada" é o caso comum (nem todo veículo tem
+      // vídeo) e não é falha do sistema.
+      let msg = err?.message || ''
       if (err?.context && typeof err.context.json === 'function') {
         try {
           const body = await err.context.json()
-          videoErrorMsg = body?.error || videoErrorMsg
+          msg = body?.error || msg
         } catch {
           // corpo do erro não veio em JSON -- mantém a mensagem já capturada acima
         }
       }
-      if (!/não encontrada/i.test(videoErrorMsg)) {
-        console.warn('Sync de vídeo do Drive não concluído:', videoErrorMsg)
+      if (/não encontrada/i.test(msg)) {
+        toast({
+          title: 'Nenhuma pasta de vídeo encontrada',
+          description: `Não há pasta começando com ${placa} em "02-Videos de Veiculos" no Drive. Confira se o nome da pasta começa com a placa.`,
+        })
+      } else {
+        toast({
+          title: 'Erro na sincronização de vídeo',
+          description: msg || 'Erro desconhecido. Tente de novo; se repetir, avise o suporte.',
+          variant: 'destructive',
+        })
       }
     } finally {
-      setIsSyncingDrive(false)
+      setIsSyncingDriveVideos(false)
     }
-
-    const partes: string[] = []
-    if (syncedPhotos > 0) partes.push(`${syncedPhotos} fotos`)
-    if (syncedVideos > 0) partes.push(`${syncedVideos} vídeos`)
-    toast({
-      title:
-        partes.length > 0
-          ? `Sincronização concluída: ${partes.join(' + ')}`
-          : 'Nenhuma foto ou vídeo novo encontrado',
-    })
   }
 
   useEffect(() => {
@@ -2406,7 +2434,7 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
                       className="border-green-200 text-green-700 bg-green-50 hover:bg-green-100"
                       title={
                         formData.placa
-                          ? `Sincronizar fotos da placa ${formData.placa}`
+                          ? `Sincronizar só as fotos da placa ${formData.placa} (vídeo tem botão próprio, no bloco Vídeos)`
                           : 'Informe a placa primeiro'
                       }
                     >
@@ -2493,9 +2521,32 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
               </div>
 
               <div className="bg-white p-6 rounded-lg border shadow-sm">
-                <h3 className="font-bold flex items-center gap-2 text-slate-800 border-b pb-2 mb-4">
-                  <Camera className="w-5 h-5 text-blue-600" /> Vídeos
-                </h3>
+                <div className="flex items-center justify-between gap-2 flex-wrap border-b pb-2 mb-4">
+                  <h3 className="font-bold flex items-center gap-2 text-slate-800">
+                    <Camera className="w-5 h-5 text-blue-600" /> Vídeos
+                  </h3>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleSyncDriveVideos}
+                    disabled={isSyncingDriveVideos || !formData.placa || !formData.id}
+                    className="border-green-200 text-green-700 bg-green-50 hover:bg-green-100"
+                    title={
+                      !formData.id
+                        ? 'Salve o veículo primeiro'
+                        : formData.placa
+                          ? `Buscar o vídeo da placa ${formData.placa} em "02-Videos de Veiculos" no Drive`
+                          : 'Informe a placa primeiro'
+                    }
+                  >
+                    {isSyncingDriveVideos ? (
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    ) : (
+                      <RefreshCw className="w-4 h-4 mr-2" />
+                    )}
+                    {isSyncingDriveVideos ? 'Sincronizando vídeo...' : 'Sincronizar vídeo do Drive'}
+                  </Button>
+                </div>
                 <p className="text-xs text-slate-500 mb-3">
                   Fica separado das fotos de propósito — vídeo tem proporção e player diferentes, e
                   a página de detalhes do veículo já mostra cada vídeo no seu próprio bloco, abaixo
@@ -2536,8 +2587,8 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
                   </div>
                 ) : (
                   <div className="border-2 border-dashed rounded-xl p-6 text-center text-slate-500 bg-slate-50 text-sm">
-                    Nenhum vídeo. Use o botão "Vídeo" acima ou o Sync Drive (que já traz vídeos
-                    separadamente das fotos).
+                    Nenhum vídeo. Use o botão "Vídeo" acima ou "Sincronizar vídeo do Drive" (busca
+                    a pasta com a placa em "02-Videos de Veiculos"; pode levar alguns minutos).
                   </div>
                 )}
               </div>

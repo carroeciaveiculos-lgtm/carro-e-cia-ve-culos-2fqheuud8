@@ -1,5 +1,25 @@
 # Memória de trabalho — Carro e Cia
 
+## [03/10/2026, noite] Botão separado "Sincronizar vídeo do Drive" (pronto; commit pendente)
+
+No bloco "Vídeos" do cadastro; "Sync Drive" agora só fotos. Lint/build ok; artigo de ajuda aplicado via MCP
+(`20261003124920_*`). Worker publicado 2x (3º deploy pendente: acrescentei `detalhePastas` na resposta pra ver o que há
+na pasta do SIQ5H93). `sync-google-drive` publicado com `videosNaPasta` (só informa). Diagnóstico temporário na
+`sync-drive-videos` foi REMOVIDO e a original republicada. Achados: Edge e Worker usam contas Google diferentes;
+12 fotos órfãs no R2 no sync do Audi PQE7D92 (limite de 20 fotos barra o update, sem aviso). **Plano de postagem
+automática** (Facebook/Instagram: carrossel, vídeo, Stories) apresentado à Adriana, aguardando 5 decisões dela.
+**NADA disto commitado ainda.**
+
+## [03/10/2026] Vídeos não vinham na sincronização do Drive (ajuste pronto, Worker NÃO publicado)
+
+Detalhe em `docs/google-drive-integracao.md` ("Vídeo dentro da pasta de FOTOS"). Resumo: pipeline de vídeo está saudável
+(200 em 1,6 s), mas só olha a raiz de VÍDEOS (17 pastas, todas importadas); `sync-google-drive` só aceita `image/*`.
+As 20 placas disponíveis sem vídeo => "Pasta não encontrada". Ajuste feito: Worker (`cloudflare/sync-drive-videos-worker/
+src/index.ts`) lê as duas raízes por placa, dedup por nome de arquivo, mais extensões; `VehicleFormModal` avisa falha de
+vídeo (antes silenciosa). Lint/build ok, bundle do Worker ok. **PENDENTE:** (1) Adriana rodar o deploy do Worker (comando
+no doc; o Claude Code foi barrado); (2) testar por placa com a function (`sync-drive-videos`, chave anon) e conferir
+`veiculos.videos`; (3) front vai com o próximo push; (4) confirmar com a Adriana ONDE ela coloca os vídeos no Drive.
+
 ## [02/10/2026, tarde] Auditoria: descrição do Audi não aparece na página da Webmotors
 
 Detalhe técnico, método e hipótese em `docs/webmotors-integracao.md` ("Descrição que não aparece na página").

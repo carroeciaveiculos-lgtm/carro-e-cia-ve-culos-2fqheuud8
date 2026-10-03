@@ -4,6 +4,11 @@ import { getAccessToken, listDriveItems } from './google-drive'
 // Mesma pasta usada em supabase/functions/sync-drive-videos/index.ts — não é a
 // pasta de fotos (essa fica em sync-google-drive/index.ts, não mexer).
 const ROOT_FOLDER_ID = '1QKGIaPvoZLv-ifhxlaqzrirH38HAMRTo'
+// Pasta raiz de FOTOS (a mesma de supabase/functions/sync-google-drive/index.ts).
+// Achado 03/10/2026: vídeo colocado dentro da pasta de fotos do veículo era
+// ignorado — o sync de fotos só aceita image/* e este Worker só olhava a raiz
+// de vídeos acima. Ao sincronizar UMA placa, agora lê as duas pastas.
+const ROOT_FOLDER_FOTOS_ID = '1D6UAaVY7k_Hy1gKVmjQY-sDISchOhwEY'
 const R2_PUBLIC_BASE = 'https://imagens.carroeciamotors.com.br'
 const BATCH_SIZE = 1
 const SYNC_CONTROL_KEY = 'drive_video_offset'
@@ -142,16 +147,31 @@ export default {
       const allFolders = await listDriveItems(accessToken, ROOT_FOLDER_ID, true)
 
       let batch: typeof allFolders
+      let diagnostico: Record<string, number> = {}
+      // O que o Worker viu em cada pasta (só no modo por placa): ajuda a entender
+      // "o vídeo não veio" sem precisar de acesso ao Drive.
+      const detalhePastas: any[] = []
       let offset = payloadOffset ?? (await getOffset(env))
 
       if (payloadPlaca) {
-        const target = allFolders.find((f) => extractPlate(f.name) === payloadPlaca)
-        if (!target) {
-          return new Response(JSON.stringify({ error: `Pasta não encontrada para ${payloadPlaca}` }), {
-            status: 404,
-          })
+        // Procura a pasta do veículo nas DUAS raízes (vídeos e fotos) e lê as duas.
+        const alvos: typeof allFolders = []
+        const naRaizVideos = allFolders.find((f) => extractPlate(f.name) === payloadPlaca)
+        if (naRaizVideos) alvos.push(naRaizVideos)
+        const pastasFotos = await listDriveItems(accessToken, ROOT_FOLDER_FOTOS_ID, true)
+        const naRaizFotos = pastasFotos.find((f) => extractPlate(f.name) === payloadPlaca)
+        if (naRaizFotos) alvos.push(naRaizFotos)
+        // Quantas pastas a conta de serviço ENXERGA em cada raiz. Raiz de fotos com 0
+        // aqui = a conta do Worker não tem acesso a ela (o Drive devolve lista vazia
+        // em vez de erro quando a pasta não foi compartilhada) — achado 03/10/2026.
+        diagnostico = { pastasRaizVideos: allFolders.length, pastasRaizFotos: pastasFotos.length }
+        if (alvos.length === 0) {
+          return new Response(
+            JSON.stringify({ error: `Pasta não encontrada para ${payloadPlaca}`, ...diagnostico }),
+            { status: 404 },
+          )
         }
-        batch = [target]
+        batch = alvos
       } else {
         batch = allFolders.slice(offset, offset + BATCH_SIZE)
       }
@@ -183,15 +203,36 @@ export default {
         }
 
         let videoFiles: any[] = []
+        let todosArquivos: any[] = []
         try {
           const files = await listDriveItems(accessToken, folder.id, false)
+          todosArquivos = files
           videoFiles = files.filter(
-            (f: any) => f.mimeType?.startsWith('video/') || f.name?.toLowerCase().endsWith('.mp4'),
+            (f: any) =>
+              f.mimeType?.startsWith('video/') || /\.(mp4|mov|m4v|webm)$/i.test(f.name || ''),
           )
         } catch (e) {
           await logError(env, vehicleId, 'Drive list error', { plate, error: safeError(e) })
           processedCount++
           continue
+        }
+
+        if (payloadPlaca) {
+          let subpastas: string[] = []
+          try {
+            subpastas = (await listDriveItems(accessToken, folder.id, true)).map((f) => f.name)
+          } catch {
+            // só diagnóstico: falha aqui não atrapalha a sincronização
+          }
+          detalhePastas.push({
+            pasta: folder.name,
+            videosEncontrados: videoFiles.map((f: any) => f.name),
+            outrosArquivos: todosArquivos
+              .filter((f: any) => !videoFiles.includes(f))
+              .map((f: any) => `${f.name} (${f.mimeType})`),
+            subpastas,
+            jaImportados: existingVideos.length,
+          })
         }
 
         if (videoFiles.length === 0) {
@@ -208,7 +249,11 @@ export default {
           const storageKey = `media/${plate}_${sanitizedModel}/${fileName}`
           const publicUrl = `${R2_PUBLIC_BASE}/${storageKey}`
 
+          // Já importado? Compara a URL exata e também só o nome do arquivo: o mesmo
+          // vídeo pode estar nas duas pastas (vídeos e fotos), e o nome da pasta
+          // (que entra na chave do R2) pode diferir entre elas.
           if (existingVideos.includes(publicUrl)) continue
+          if (existingVideos.some((u) => u.endsWith(`/${fileName}`))) continue
 
           try {
             const downloadRes = await fetch(
@@ -262,6 +307,9 @@ export default {
       return new Response(
         JSON.stringify({
           success: true,
+          pastasLidas: batch.length,
+          ...diagnostico,
+          ...(detalhePastas.length > 0 ? { detalhePastas } : {}),
           totalVideosSynced: totalSynced,
           vehiclesUpdated,
           offset: newOffset,

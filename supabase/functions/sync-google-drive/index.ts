@@ -157,6 +157,7 @@ async function processVehicle(
   accessToken: string,
   folder: any,
   startTime: number,
+  diag?: { videosNaPasta: string[] },
 ): Promise<{ synced: number; updated: boolean }> {
   const plate = extractPlate(folder.name)
   if (!plate) {
@@ -191,6 +192,16 @@ async function processVehicle(
   try {
     const files = await listDriveItems(accessToken, folder.id, false)
     allImages = files.filter((f: any) => f.mimeType?.startsWith('image/'))
+    // Só informa (não baixa): vídeo dentro da pasta de FOTOS é ignorado por esta
+    // function. O botão "Sync Drive" mostra quantos há (achado 03/10/2026).
+    if (diag) {
+      diag.videosNaPasta = files
+        .filter(
+          (f: any) =>
+            f.mimeType?.startsWith('video/') || /\.(mp4|mov|m4v|webm)$/i.test(f.name || ''),
+        )
+        .map((f: any) => f.name)
+    }
   } catch (e) {
     console.error(`❌ Drive list: ${safeError(e)}`)
     return { synced: 0, updated: false }
@@ -345,11 +356,13 @@ Deno.serve(async (req: Request) => {
       }
 
       console.log(`📂 Found folder: "${matchingFolder.name}"`)
-      const result = await processVehicle(supabase, accessToken, matchingFolder, startTime)
+      const diag = { videosNaPasta: [] as string[] }
+      const result = await processVehicle(supabase, accessToken, matchingFolder, startTime, diag)
 
       const elapsed = ((Date.now() - startTime) / 1000).toFixed(1)
       const response = {
         success: true,
+        videosNaPasta: diag.videosNaPasta,
         totalPhotosSynced: result.synced,
         vehiclesUpdated: result.updated ? 1 : 0,
         placa: targetPlate,

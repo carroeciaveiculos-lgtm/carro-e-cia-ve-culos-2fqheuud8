@@ -92,6 +92,54 @@ ficam de fora de propósito: "HR-V EXL 2020 e HR-V EX 2017" (mistura 2
 veículos, nome não extrai placa válida) e "Video CONSIGNAÇÃO" (não é
 veículo do estoque).
 
+## Botão separado de vídeo (03/10/2026)
+
+Pedido da Adriana: o vídeo não vai mais junto do "Sync Drive". No cadastro do veículo (`VehicleFormModal.tsx`):
+**"Sync Drive"** (bloco de fotos) = só `sync-google-drive`; **"Sincronizar vídeo do Drive"** (bloco "Vídeos") =
+só `sync-drive-videos` (`handleSyncDriveVideos`), com mensagens próprias: "Nenhuma pasta de vídeo encontrada"
+(404 do Worker), "Nenhum vídeo novo encontrado" e erro real em vermelho. Vídeo grande pode levar minutos.
+Artigo de ajuda atualizado (`20261003124920_*`). **Caso SIQ5H93** (Haval H6 PHEV): o vídeo `VID_20260706_*.mp4`
+(135 MB, MP4 válido, toca no endereço público) já estava em `veiculos.videos` desde 04/09 — a sincronização de
+03/10 não achou nada novo; falta consultar o conteúdo da pasta (Worker novo com `detalhePastas`, ver abaixo).
+As duas funções usam **contas Google diferentes**: a Edge Function vê só a raiz de fotos (0 pastas na de vídeos)
+e o Worker vê só a de vídeos (0 na de fotos).
+
+## Vídeo dentro da pasta de FOTOS (achado 03/10/2026)
+
+Relato da Adriana: "os vídeos não estão sendo carregados durante a sincronização de fotos". Diagnóstico:
+
+- **Pipeline de vídeo saudável:** `sync-drive-videos` -> Worker respondeu 200 em 1,6 s (placa `GTN5D81`).
+  A raiz de VÍDEOS só tem 17 pastas (todas já importadas, `remaining: 16`).
+- **As 20 placas disponíveis sem vídeo no banco devolveram "Pasta não encontrada"** na raiz de vídeos — ou seja,
+  não têm pasta lá. Hipótese (não confirmada pelo conteúdo do Drive): os vídeos novos estão sendo colocados
+  **dentro da pasta de fotos do veículo**.
+- **Causa no código:** `sync-google-drive` só aceita `mimeType image/*` (`allImages = files.filter(...)`) e o
+  Worker de vídeo só lia a raiz de vídeos. Vídeo na pasta de fotos era ignorado pelos dois.
+- **Ajuste (no repositório, Worker AINDA NÃO PUBLICADO até esta anotação):** ao sincronizar uma PLACA, o Worker
+  procura a pasta nas DUAS raízes (vídeos e fotos), aceita `.mp4/.mov/.m4v/.webm`, e não reimporta o vídeo
+  que já existe (compara URL e também o nome do arquivo, porque o nome da pasta entra na chave do R2). O modo em
+  lote (offset) continua só na raiz de vídeos. O botão "Sync Drive" agora **avisa** quando o vídeo falha por outro
+  motivo que não "pasta não encontrada" (antes sumia em silêncio e a tela dizia "nenhum vídeo novo").
+- **Deploy do Worker é manual** (nunca Git integration): `npx wrangler deploy --config
+  "C:/Projeto/Revenda Carro e Cia/carro-e-cia-ve-culos-2fqheuud8/cloudflare/sync-drive-videos-worker/wrangler.toml"`.
+  O Claude Code bloqueou esse comando por permissão em 03/10/2026 — a Adriana roda com `! ` na frente.
+- **RESULTADO DOS TESTES (03/10/2026, Worker novo publicado 2x):**
+  - O Worker enxerga **17 pastas na raiz de vídeos e 0 na raiz de FOTOS** (`pastasRaizFotos: 0`), enquanto o
+    `sync-google-drive` (Edge Function) acha a pasta de fotos normalmente (ex.: `RNY4F77`). Mesmo escopo
+    (`drive.readonly`) nos dois => a **conta de serviço do Worker NÃO tem acesso à pasta de fotos** (Drive devolve
+    lista vazia, não erro, quando a pasta não está compartilhada). Pra o Worker ler a raiz de fotos: compartilhar
+    `1D6UAaVY7k_Hy1gKVmjQY-sDISchOhwEY` (Leitor) com o e-mail da conta de serviço do Worker (secret
+    `DRIVE_CLIENT_EMAIL` do Worker; o e-mail aparece na lista de compartilhamento da pasta de vídeos), OU passar o
+    token da Edge Function ao Worker (não implementado).
+  - O `sync-google-drive` agora devolve `videosNaPasta` (só informa, não baixa). **6 veículos testados
+    (RNY4F77, PQE7D92, OXK8I81, PUQ3A75, QUW5H72, TCT5A21): 0 vídeos na pasta de fotos.** A hipótese "vídeo dentro da
+    pasta de fotos" NÃO se confirmou nesses 6. As 20 disponíveis sem vídeo no banco não têm pasta na raiz de vídeos.
+    **Falta saber de qual veículo a Adriana notou a falta e onde o arquivo está no Drive** (pode estar em subpasta
+    dentro da pasta do veículo — `listDriveItems(..., false)` ignora subpastas).
+  - **Defeito antigo achado de passagem:** `sync-google-drive` da placa `PQE7D92` enviou 12 fotos ao R2 em 78 s mas
+    `veiculos.fotos` ficou com 20 (sem mudança, `updated_at` igual) — provável limite de 20 fotos
+    (`trigger_limite_fotos_veiculo`) barrando o update depois do upload: arquivos órfãos no R2 e nenhum aviso.
+
 ## Fatos confirmados
 
 | Fato | Como se sabe |
