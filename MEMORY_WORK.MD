@@ -1,6 +1,17 @@
 # Memória de trabalho — Carro e Cia
 
-## [03/10/2026, noite] Botão separado "Sincronizar vídeo do Drive" (pronto; commit pendente)
+## [03/10/2026, madrugada] Postagem automática — FASE 1 FEITA (migration aplicada; commit pendente)
+
+Detalhe e plano completo em `docs/postagem-automatica-redes.md`. Migration `20261003140709_social_posts_fila_v2_base`
+(aplicada via MCP, espelhada em arquivo): `social_posts` ganhou `midias`, `formato`, `rede`, `origem`, `ciclo`,
+`tentativas`, `post_externo_ids`; CHECKs de formato/rede/origem; índice único parcial `social_posts_auto_unico`
+(veículo+formato+rede+ciclo, só `auto_novo`/`auto_rodizio`); índice `social_posts_fila_idx`; posts existentes marcados
+com `origem`. 100% aditivo: `publicar-social`, Central Social e post orgânico NÃO mudaram. Testado com bloco que desfaz
+tudo (6 casos OK), 26 posts intactos, sem sobras. `types.ts` atualizado; lint 0 erros, build ok, sem erro de tipo novo.
+**A Adriana ainda NÃO respondeu as 5 decisões** (aprovação, texto, frequência, sem vídeo, venda) — a Fase 1 não dependia
+delas; a Fase 2 (carrossel) precisa pelo menos de "texto" e "aprovação". Pedir "autorizo" antes da Fase 2.
+
+## [03/10/2026, noite] Botão separado "Sincronizar vídeo do Drive" (no ar)
 
 No bloco "Vídeos" do cadastro; "Sync Drive" agora só fotos. Lint/build ok; artigo de ajuda aplicado via MCP
 (`20261003124920_*`). Worker publicado 2x (3º deploy pendente: acrescentei `detalhePastas` na resposta pra ver o que há

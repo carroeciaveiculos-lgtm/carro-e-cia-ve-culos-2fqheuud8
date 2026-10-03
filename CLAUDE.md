@@ -158,6 +158,11 @@ falhou; ao descobrir algo novo, acrescente lá com data e fonte.
 - `docs/ferramentas-claude-mcp.md` — conectores MCP do Supabase (read-only x
   write), como chamar Edge Function direto do SQL, quando precisa do
   navegador, timeout do `net.http_post`, gotchas de `deploy_edge_function`
+- `docs/postagem-automatica-redes.md` — plano e estado da postagem automática de
+  veículos no Facebook/Instagram (fases, modelo da fila `social_posts` v2,
+  decisões abertas, riscos)
+- `docs/google-drive-integracao.md` — fotos e vídeos do Drive (Edge Function x
+  Worker, contas Google diferentes, botão de vídeo separado)
 
 ## Migrations
 

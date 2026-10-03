@@ -4079,6 +4079,13 @@ export type Database = {
           status: string | null
           texto: string | null
           veiculo_id: string | null
+          midias: Json
+          formato: string | null
+          rede: string | null
+          origem: string | null
+          ciclo: number
+          tentativas: number
+          post_externo_ids: Json
         }
         Insert: {
           content_type?: string | null
@@ -4092,6 +4099,13 @@ export type Database = {
           status?: string | null
           texto?: string | null
           veiculo_id?: string | null
+          midias?: Json
+          formato?: string | null
+          rede?: string | null
+          origem?: string | null
+          ciclo?: number
+          tentativas?: number
+          post_externo_ids?: Json
         }
         Update: {
           content_type?: string | null
@@ -4105,6 +4119,13 @@ export type Database = {
           status?: string | null
           texto?: string | null
           veiculo_id?: string | null
+          midias?: Json
+          formato?: string | null
+          rede?: string | null
+          origem?: string | null
+          ciclo?: number
+          tentativas?: number
+          post_externo_ids?: Json
         }
         Relationships: [
           {
