@@ -104,6 +104,12 @@ Artigo de ajuda atualizado (`20261003124920_*`). **Caso SIQ5H93** (Haval H6 PHEV
 As duas funções usam **contas Google diferentes**: a Edge Function vê só a raiz de fotos (0 pastas na de vídeos)
 e o Worker vê só a de vídeos (0 na de fotos).
 
+**CONCLUSÃO do caso (03/10/2026, Worker com `detalhePastas` no ar, versão `bfe15732`):** a pasta
+`SIQ5H93 HAVAL H6 PHEV 2024` tem exatamente 1 vídeo (`VID_20260706_112209_657_bsl.mp4`), já importado, sem outros
+arquivos nem subpastas. Percorri as **17 pastas** da raiz de vídeos (modo `offset` 0..16): **0 vídeos novos em todas** —
+tudo que está na raiz de vídeos já está em `veiculos.videos`. **A sincronização de vídeo não tem defeito.** Veículo sem
+vídeo no cadastro = não há pasta dele em "02-Videos de Veiculos" (20 disponíveis sem pasta no momento do teste).
+
 ## Vídeo dentro da pasta de FOTOS (achado 03/10/2026)
 
 Relato da Adriana: "os vídeos não estão sendo carregados durante a sincronização de fotos". Diagnóstico:

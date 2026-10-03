@@ -6,11 +6,32 @@ Copie e cole como primeira mensagem numa sessão nova do Claude Code.
 Projeto: Carro e Cia Veículos (revenda). Pasta de trabalho:
 C:\Projeto\Revenda Carro e Cia\carro-e-cia-ve-culos-2fqheuud8
 
-Continuando de uma sessão anterior (01 a 02/10/2026, sessão 30). Leia primeiro MEMORY_WORK.MD, seções
-"[02/10/2026, tarde] Auditoria: descrição do Audi..." e "[02/10/2026] FECHAMENTO da sessão 30". Estado: tudo
-commitado e NO AR até o commit `6777ffe` (front e Edge Functions com deploy verde). Nissan Frontier (`RNY4F77`)
-publicada nas 3 plataformas (confirmado em sync_log). Cores do banco padronizadas e conferidas. Artigos de ajuda
-já aplicados no banco. O que ficou ABERTO, em ordem:
+Continuando de uma sessão anterior (01 a 03/10/2026, sessão 30). Leia primeiro MEMORY_WORK.MD, seções
+"[03/10/2026, noite] Botão separado...", "[02/10/2026, tarde] Auditoria: descrição do Audi..." e "[02/10/2026]
+FECHAMENTO da sessão 30". Estado: tudo commitado e NO AR até o commit `339051a` (+ um commit de docs logo depois;
+front e Edge Functions com deploy verde). Nissan Frontier (`RNY4F77`) publicada nas 3 plataformas (confirmado em
+sync_log). Cores do banco padronizadas. Artigos de ajuda aplicados. Worker de vídeo (Cloudflare, deploy MANUAL pela
+Adriana com `! npx wrangler deploy --config "<caminho completo>/cloudflare/sync-drive-videos-worker/wrangler.toml"`; o
+Claude Code é barrado nesse comando) está na versão `bfe15732`. O que ficou ABERTO, em ordem:
+
+0. **SINCRONIZAÇÃO DE VÍDEO DO DRIVE — RESOLVIDA, sem defeito (03/10).** O pedido "vídeos não carregam no sync de fotos"
+   foi tratado: botão próprio "Sincronizar vídeo do Drive" no bloco "Vídeos" do cadastro (no ar); "Sync Drive" agora só
+   fotos; erro de vídeo aparece em vermelho. Caso SIQ5H93: pasta tem 1 vídeo, já importado. Percorri as 17 pastas da raiz
+   "02-Videos de Veiculos": 0 vídeos novos — tudo que está lá já está em `veiculos.videos`. Veículo sem vídeo = sem pasta
+   lá (20 disponíveis sem pasta). Só 7 de 27 disponíveis têm vídeo. Edge Function e Worker usam contas Google
+   DIFERENTES (Edge só vê a raiz de fotos; Worker só a de vídeos). Detalhe em `docs/google-drive-integracao.md`.
+   PENDENTE dela: dizer a placa de um veículo cujo vídeo ela subiu e não veio, se existir (conferir nome da pasta
+   começando com a placa). Defeito antigo NÃO corrigido: sync de fotos manda fotos ao R2 mas o limite de 20 fotos
+   barra o update (Audi PQE7D92: 12 órfãs no R2, sem aviso).
+0b. **PLANO DE POSTAGEM AUTOMÁTICA (Facebook/Instagram) — apresentado, aguardando 5 decisões da Adriana** (aprovação
+   automática x manual; texto = descrição geral resumida?; frequência do estoque; veículo sem vídeo posta só carrossel;
+   parar ao vender). Inventário: `publicar-social` (cron 15 min; IG foto/Reels/Stories ok; falta carrossel, várias fotos
+   no FB, vídeo no feed FB e Facebook Stories), `post-organico-diario-cron` (1 post/dia, só FB, 1 foto, Rascunho — 8
+   rascunhos parados esperando aprovação = gargalo), `social_posts` (1 coluna `imagem`), token SYSTEM_USER ok. Fases:
+   1) fila v2 (`midias`, `formato`, unicidade veículo+formato+rede); 2) carrossel IG+FB; 3) vídeo (Reels/FB) e Stories;
+   4) orquestrador (gatilho de veículo novo disponível+mapeado+fotos, cron de rodízio); 5) painel e alertas. Riscos:
+   formato dos vídeos (9:16, H.264), permissão do Facebook Stories não confirmada, link não clicável no IG. Pedir o
+   "autorizo" por fase antes de começar.
 
 1. **Reconferir a descrição do Audi A3 (`PQE7D92`, anúncio Webmotors `80033981`) — PRIORIDADE.** A página não mostra a
    seção "Sobre este carro" (o GWM `80431993`, mesmo produto 2611, mostra). Enviamos certo e a Webmotors guarda o texto
