@@ -18,8 +18,24 @@ jobs:
       - name: Lint
         run: bun run lint
 
+      # Incidente 04/10/2026: o .env está no .gitignore, então o build do GitHub saía SEM o
+      # endereço e a chave do Supabase e o site publicado abria em tela branca
+      # ("supabaseUrl is required"). Os dois valores abaixo são PÚBLICOS (a mesma chave
+      # anon já vai dentro do JavaScript do site para qualquer visitante) — não são segredos.
       - name: Build
         run: bun run build
+        env:
+          VITE_SUPABASE_URL: https://htpcqdbhktmvppfemnad.supabase.co
+          VITE_SUPABASE_PUBLISHABLE_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh0cGNxZGJoa3RtdnBwZmVtbmFkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU5MzA0MzMsImV4cCI6MjA5MTUwNjQzM30.6Yu_iOYb7gs2wXrBc60fHCt3Nud1-PRK17SamqzJj2k
+
+      # Trava: se o build não trouxe a URL do Supabase, NÃO publica (melhor falhar o deploy
+      # do que colocar no ar um site em tela branca).
+      - name: Conferir que o build trouxe a URL do Supabase
+        run: |
+          if ! grep -rqF "htpcqdbhktmvppfemnad.supabase.co" dist/assets; then
+            echo "ERRO: o build não contém a URL do Supabase. Deploy cancelado."
+            exit 1
+          fi
 
       - name: Deploy no Cloudflare Workers
         uses: cloudflare/wrangler-action@v3
