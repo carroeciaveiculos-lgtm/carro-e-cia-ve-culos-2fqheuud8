@@ -1,5 +1,16 @@
 # Memória de trabalho — Carro e Cia
 
+## [04/10/2026] Postagem automática — FASE 2 CONSTRUÍDA (carrossel); publicação real aguarda a Adriana
+
+Detalhe em `docs/postagem-automatica-redes.md` ("Fase 2"). No ar: `montar-post-veiculo` (novo), `publicar-social` (ramo
+`processarCarrossel`, fluxo antigo intacto), `_shared/legenda-social.ts` (legenda fixa aprovada), `_shared/meta-publicar.ts`,
+`_shared/foto-jpeg.ts`; migration `social_posts_publicando_em`. Rascunhos da Frontier criados (IG `b90522e2…`, FB
+`52c8869d…`, 10 fotos 4:3). Trava de duplicidade testada ao vivo. **NADA publicado nas redes ainda.** Achados: o rascunho
+antigo do orgânico diário tem preâmbulo da IA ("Aqui está o post perfeito...") — não aprovar; GWM tem "Passagem por
+leilão" (legenda avisa); Audi com "Tração 4x4" no cadastro (conferir). **Pendente:** Adriana aprovar o post real da
+Frontier (mudar status `Rascunho`→`Agendado`; cron publica em até 15 min) e conferir IG/FB; rota
+`/estoque/{slug}` do link do Facebook; **commit/push da Fase 2 ainda NÃO feito** (functions já publicadas pela CLI).
+
 ## [03/10/2026, madrugada] Postagem automática — FASE 1 FEITA (migration aplicada; commit pendente)
 
 Detalhe e plano completo em `docs/postagem-automatica-redes.md`. Migration `20261003140709_social_posts_fila_v2_base`

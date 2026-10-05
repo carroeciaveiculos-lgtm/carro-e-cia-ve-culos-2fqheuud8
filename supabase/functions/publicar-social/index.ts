@@ -1,6 +1,11 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from 'jsr:@supabase/supabase-js@2'
 import { isInternalRequestAuthorized, unauthorizedResponse } from '../_shared/internal-auth.ts'
+import {
+  publicarCarrosselInstagram,
+  publicarFotosFacebook,
+  type ResultadoMeta,
+} from '../_shared/meta-publicar.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -107,6 +112,106 @@ async function waitForInstagramMediaReady(
   return false
 }
 
+// ─── CARROSSEL / MÚLTIPLAS FOTOS (Fase 2 da postagem automática, 03/10/2026) ───
+// Caminho SEPARADO do código antigo: só entra aqui post com formato = 'feed_carrossel' (criado
+// por montar-post-veiculo, uma linha por rede). Posts manuais, orgânicos e Stories seguem
+// exatamente pelo fluxo de sempre, mais abaixo.
+//
+// Antes de falar com a Meta o post é TRAVADO (status 'Publicando'): se o cron de 15 min rodar
+// de novo enquanto o Instagram ainda processa as fotos, o segundo cron não pega o mesmo post.
+// Falha volta pra 'Agendado' (tenta de novo no próximo ciclo) até MAX_TENTATIVAS; depois vira
+// 'Erro' com a mensagem em português.
+const MAX_TENTATIVAS = 3
+
+async function processarCarrossel(
+  supabase: any,
+  post: any,
+  ctx: {
+    token?: string
+    pageId?: string
+    igId?: string
+    tokenDaPagina: () => Promise<string>
+  },
+): Promise<void> {
+  const tentativas = (post.tentativas ?? 0) + 1
+  const { data: travado } = await supabase
+    .from('social_posts')
+    .update({
+      status: 'Publicando',
+      publicando_em: new Date().toISOString(),
+      tentativas,
+    })
+    .eq('id', post.id)
+    .eq('status', 'Agendado')
+    .select('id')
+  if (!travado || travado.length === 0) return // outro processo já pegou este post
+
+  const urls: string[] = Array.isArray(post.midias) ? post.midias : []
+  const rede: string = post.rede
+  let resultado: ResultadoMeta = { ok: false, erro: { error: `Rede não suportada: ${rede}` } }
+
+  try {
+    if (rede === 'instagram') {
+      resultado =
+        ctx.igId && ctx.token
+          ? await publicarCarrosselInstagram({
+              igId: ctx.igId,
+              token: ctx.token,
+              urls,
+              legenda: post.texto ?? '',
+            })
+          : { ok: false, erro: { error: 'Instagram não configurado (conta ou token ausente).' } }
+    } else if (rede === 'facebook') {
+      resultado =
+        ctx.pageId && ctx.token
+          ? await publicarFotosFacebook({
+              pageId: ctx.pageId,
+              token: await ctx.tokenDaPagina(),
+              urls,
+              mensagem: post.texto ?? '',
+            })
+          : { ok: false, erro: { error: 'Facebook não configurado (página ou token ausente).' } }
+    }
+  } catch (e: any) {
+    resultado = { ok: false, erro: { error: e?.message || 'Erro inesperado ao publicar' } }
+  }
+
+  if (resultado.ok) {
+    await supabase
+      .from('social_posts')
+      .update({
+        status: 'Publicado',
+        publicado_em: new Date().toISOString(),
+        erro_msg: null,
+        publicando_em: null,
+        post_externo_ids: { ...(post.post_externo_ids ?? {}), [rede]: resultado.id },
+      })
+      .eq('id', post.id)
+  } else {
+    const esgotou = tentativas >= MAX_TENTATIVAS
+    await supabase
+      .from('social_posts')
+      .update({
+        status: esgotou ? 'Erro' : 'Agendado',
+        erro_msg: mensagemErroAmigavel({ [rede]: resultado.erro }),
+        publicando_em: null,
+      })
+      .eq('id', post.id)
+  }
+
+  await supabase.from('logs_integracao').insert({
+    portal: 'meta_social',
+    status: resultado.ok ? 'Publicado' : tentativas >= MAX_TENTATIVAS ? 'Erro' : 'Reagendado',
+    payload_erro: {
+      formato: 'feed_carrossel',
+      [rede]: resultado.ok
+        ? { success: true, id: resultado.id }
+        : { success: false, error: resultado.erro, tentativa: tentativas },
+    },
+    veiculo_id: post.veiculo_id || null,
+  })
+}
+
 // Achado em auditoria (14/08/2026, pedido da Adriana): faltava o import de
 // isInternalRequestAuthorized/unauthorizedResponse — toda chamada (manual ou
 // agendada) quebrava na hora com ReferenceError, antes mesmo de tentar
@@ -127,6 +232,15 @@ Deno.serve(async (req: Request) => {
     const pageId = Deno.env.get('FACEBOOK_PAGE_ID')
     const igId = Deno.env.get('INSTAGRAM_BUSINESS_ID')
 
+    // Post de carrossel preso em 'Publicando' há mais de 30 min (a function caiu no meio)
+    // volta pra 'Agendado' e entra de novo na fila. Só mexe nos de formato novo.
+    await supabase
+      .from('social_posts')
+      .update({ status: 'Agendado', publicando_em: null })
+      .eq('status', 'Publicando')
+      .not('formato', 'is', null)
+      .lt('publicando_em', new Date(Date.now() - 30 * 60 * 1000).toISOString())
+
     // Carregar posts agendados que já passaram do horário de publicação
     const { data: posts, error } = await supabase
       .from('social_posts')
@@ -140,6 +254,21 @@ Deno.serve(async (req: Request) => {
     let fbToken: string | null = null
 
     for (const post of posts || []) {
+      // Carrossel (formato novo): caminho próprio, não passa pelo fluxo antigo abaixo.
+      if (post.formato === 'feed_carrossel') {
+        await processarCarrossel(supabase, post, {
+          token,
+          pageId,
+          igId,
+          tokenDaPagina: async () => {
+            if (!fbToken) fbToken = await obterTokenDePagina(pageId!, token!)
+            return fbToken
+          },
+        })
+        processed++
+        continue
+      }
+
       let redes = typeof post.redes === 'string' ? JSON.parse(post.redes) : post.redes
       // Achado em teste ao vivo (20/08/2026): "Ideias com IA" salva `redes`
       // como lista (['facebook','instagram']) em vez do formato objeto

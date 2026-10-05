@@ -37,7 +37,7 @@ Instagram.
 | Fase | O quê | Estado |
 |---|---|---|
 | **1 — Base** | Fila `social_posts` v2 (colunas novas, validações, trava de duplicidade) | **FEITA em 03/10/2026** (migration `20261003140709_social_posts_fila_v2_base`) |
-| 2 — Carrossel | Carrossel IG (contêineres filhos + pai) e várias fotos no FB | pendente |
+| 2 — Carrossel | Carrossel IG (contêineres filhos + pai) e várias fotos no FB | **CONSTRUÍDA e no ar em 03-04/10/2026; rascunhos da Frontier criados; publicação real PENDENTE da aprovação da Adriana** (ver "Fase 2") |
 | 3 — Vídeo e Stories | Reels/vídeo no FB; Stories foto e vídeo nos dois (FB Stories exige endpoint próprio e permissão a confirmar) | pendente — depende do formato dos vídeos |
 | 4 — Automação | Gatilho de veículo novo (disponível + mapeamento confirmado + fotos) e cron de rodízio, com limites e pausa por venda | pendente |
 | 5 — Painel | Fila, falhas, Pausar / Tentar de novo / Postar agora, alerta no WhatsApp | pendente |
@@ -66,6 +66,38 @@ não foram alterados.
   26 posts existentes intactos (contagem e status iguais).
 - Status hoje: `Rascunho`, `Agendado`, `Publicado`, `Erro`. A Fase 2 deve acrescentar `Publicando` (trava contra o
   cron de 15 min publicar duas vezes um vídeo que ainda está processando).
+
+## Fase 2 — carrossel (construída)
+
+- **Legenda por modelo fixo, sem IA** (`_shared/legenda-social.ts`, função pura, aprovada pela Adriana em
+  03/10/2026): título, ficha (anos • cor • combustível • câmbio • km), preço, Destaques (opcionais, prioridade
+  teto solar/couro/4x4/câmera/GPS, até 8), Acompanha (itens seguros de `caracteristicas`), frase "laudo cautelar
+  aprovado e procedência garantida" para TODOS os veículos (decisão dela), aviso "Atenção: veículo com passagem por
+  leilão" quando o cadastro tiver leilão (informar leilão é obrigação), WhatsApp da Clara (`wa.me/5534997384177`),
+  endereço, frase final (`rodape_fixo`) e hashtags: marca, modelo, categoria, #uberaba + #consignacao #veiculo
+  #carro #carroecia #automovel #webmotors #icarros #olx #mercadolivre #napista. No Facebook entra também o link
+  `carroeciamotors.com.br/estoque/{slug}` (**a rota por slug ainda precisa ser conferida no teste real**).
+  Itens com leilão/sinistro/alienado/batido etc. NUNCA entram em Destaques/Acompanha (`ITEM_PROIBIDO`).
+  Bug achado no teste e corrigido: `numeric` do banco vem como "149897.00" — tratar o ponto como milhar dava
+  R$ 14.989.700.
+- **`montar-post-veiculo`** (Edge Function, `verify_jwt = true`): cria os posts na fila, uma linha por rede
+  (`formato = feed_carrossel`, `origem = auto_novo|auto_rodizio`), por padrão como **Rascunho**. Até 10 fotos JPG,
+  na ordem do cadastro (capa primeiro); descarta foto com proporção fora de 4:5–1,91:1 (`_shared/foto-jpeg.ts`;
+  vertical 3:4 derrubaria o carrossel do Instagram); mínimo 2 fotos; só veículo `disponivel`. A trava
+  `social_posts_auto_unico` devolve "já existe um post automático igual" (testado).
+- **`publicar-social`**: ramo SEPARADO `processarCarrossel` para `formato = feed_carrossel` (o fluxo antigo — manual,
+  orgânico, Stories — não foi tocado). Trava o post em `Publicando` (+ `publicando_em`) antes de falar com a Meta;
+  falha volta pra `Agendado` até 3 tentativas, depois `Erro` com mensagem em português; `Publicando` há mais de
+  30 min volta pra `Agendado`. IDs da Meta em `post_externo_ids`. Chamadas da Meta em `_shared/meta-publicar.ts`:
+  Instagram = contêiner filho por foto (`is_carousel_item`) → pai `media_type=CAROUSEL` → `media_publish`
+  (espera `FINISHED` em cada etapa); Facebook = `/photos` com `published=false` por foto → `/feed` com
+  `attached_media`. Parênteses dos nomes de arquivo ("...(1).jpg") são codificados (`%28/%29`) ao enviar.
+- **Verificado em 03-04/10/2026:** Frontier (`RNY4F77`) — 10 fotos JPEG 4:3 (2,7–5,9 MB, limite do IG é 8 MB),
+  endereços abrem com parênteses codificados. Migration `social_posts_publicando_em` aplicada.
+- **Achado:** o rascunho ANTIGO do orgânico diário (`origem = organico_diario`) traz o preâmbulo da IA
+  ("Aqui está o post perfeito e otimizado para o Facebook, pronto para copiar e colar!") — NÃO aprovar; o orgânico
+  atual será substituído pelo sistema novo na Fase 4.
+- **Falta:** aprovar os rascunhos da Frontier e conferir os 2 posts reais (IG e FB) nas páginas públicas.
 
 ## Riscos e pré-requisitos
 

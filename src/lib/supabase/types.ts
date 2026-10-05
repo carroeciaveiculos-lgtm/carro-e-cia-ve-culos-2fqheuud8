@@ -4086,6 +4086,7 @@ export type Database = {
           ciclo: number
           tentativas: number
           post_externo_ids: Json
+          publicando_em: string | null
         }
         Insert: {
           content_type?: string | null
@@ -4106,6 +4107,7 @@ export type Database = {
           ciclo?: number
           tentativas?: number
           post_externo_ids?: Json
+          publicando_em?: string | null
         }
         Update: {
           content_type?: string | null
@@ -4126,6 +4128,7 @@ export type Database = {
           ciclo?: number
           tentativas?: number
           post_externo_ids?: Json
+          publicando_em?: string | null
         }
         Relationships: [
           {

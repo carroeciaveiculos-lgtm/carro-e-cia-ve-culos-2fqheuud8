@@ -105,6 +105,7 @@ Isso quebra sincronizações de estoque, automações de leads, disparos de What
 | `wm-mapear-veiculo`       | Tela de mapeamento do admin                                                                                                                              |
 | `wm-confirmar-mapeamento` | Tela de pendências do admin                                                                                                                              |
 | `napista-mapear-veiculo`  | Mapeamento de catálogo NaPista, chamada pelo admin (diálogo de mapeamento e cadastro do veículo); baixa sozinha os modelos da marca quando o catálogo local está vazio (01/10/2026) |
+| `montar-post-veiculo` | Monta o carrossel de um veículo na fila de redes sociais (`social_posts`); só cria Rascunho por padrão; chamada pelo painel/automação autenticados (03/10/2026) |
 | `napista-confirmar-mapeamento` | Confirma modelo/versão NaPista escolhidos no diálogo de mapeamento do admin (declarada em 01/10/2026) |
 | `wm-catalog-fetch`        | Consulta de catálogo a partir do admin                                                                                                                   |
 | `gerar-vaga-ia`           | Gera título/descrição de vaga via IA, tela `/admin/vagas`                                                                                                |

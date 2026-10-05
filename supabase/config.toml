@@ -231,3 +231,8 @@ verify_jwt = false
 
 [functions.fipe-auditoria-modelo-versao]
 verify_jwt = false
+
+# Monta os posts (carrossel) de um veículo na fila de redes sociais — Fase 2 da postagem
+# automática (03/10/2026). Chamada pelo painel/automação autenticados; só cria RASCUNHO por padrão.
+[functions.montar-post-veiculo]
+verify_jwt = true
