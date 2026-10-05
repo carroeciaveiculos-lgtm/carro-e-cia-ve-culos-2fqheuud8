@@ -43,3 +43,26 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           packageManager: bun
+
+      # Teste PÓS-DEPLOY (incidente de 04/10/2026): "deploy verde" só prova que os arquivos foram
+      # enviados, não que o site abre. Aqui o Chrome do próprio GitHub abre o site PUBLICADO e confere
+      # que o aplicativo desenhou algo. Falha o job (e o GitHub avisa por e-mail) se o #root ficar
+      # vazio ou se aparecer a mensagem de emergência do index.html ("Estamos com um problema
+      # temporário"). Tenta 4 vezes, esperando a Cloudflare propagar a versão nova.
+      - name: Conferir que o site publicado abre (anti tela branca)
+        run: |
+          for tentativa in 1 2 3 4; do
+            sleep 20
+            google-chrome --headless=new --no-sandbox --disable-gpu --virtual-time-budget=15000 \
+              --dump-dom https://www.carroeciamotors.com.br/ > dom.html 2>/dev/null || true
+            tamanho=$(wc -c < dom.html)
+            if [ "$tamanho" -gt 20000 ] \
+              && ! grep -q '<div id="root"></div>' dom.html \
+              && ! grep -q 'Estamos com um problema temporário' dom.html; then
+              echo "OK: o site publicado renderizou (${tamanho} bytes)."
+              exit 0
+            fi
+            echo "Tentativa ${tentativa}: o site ainda não renderizou (${tamanho} bytes)."
+          done
+          echo "ERRO: o site publicado NÃO renderiza (tela branca). Confira o deploy agora."
+          exit 1

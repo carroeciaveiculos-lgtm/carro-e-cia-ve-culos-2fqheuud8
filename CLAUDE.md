@@ -209,10 +209,29 @@ antes de mexer em histórico de migration ou cron. Resumo:
   Todo push no `main` que mexe em qualquer arquivo roda `bun run lint` +
   `bun run build` + `npx wrangler deploy` sozinho, usando os secrets
   `CLOUDFLARE_API_TOKEN`/`CLOUDFLARE_ACCOUNT_ID` do repositório no GitHub.
-  Se o lint ou o build falharem, o deploy nem roda — nada quebrado vai pro
-  ar. **`git push` volta a valer como "publicou" de verdade** — só que
-  agora é rastreável (rodar `gh run list`/`gh run view` pra conferir o
-  resultado), diferente da promessa antiga que nunca foi checada.
+  Se o lint, o build ou a trava de configuração falharem, o deploy nem roda.
+  **`git push` volta a valer como "publicou" de verdade** — só que agora é
+  rastreável (rodar `gh run list`/`gh run view` pra conferir o resultado),
+  diferente da promessa antiga que nunca foi checada.
+
+  **ATENÇÃO — variáveis `VITE_*` (incidente de 04/10/2026, site em tela
+  branca de 28/09 a 04/10).** O `.env` está no `.gitignore`, então o build do
+  GitHub **não o tem**: tudo que o front lê de `import.meta.env.VITE_*` precisa
+  estar no passo `Build` do `deploy.yml` (hoje `VITE_SUPABASE_URL` e
+  `VITE_SUPABASE_PUBLISHABLE_KEY`, valores PÚBLICOS; `VITE_WHATSAPP_PHONE` e
+  `VITE_SITE_URL` têm valor padrão no código). Variável `VITE_` nova = acrescentar
+  lá, senão o GitHub constrói sem ela e o site quebra ao abrir
+  (`supabaseUrl is required`, `#root` vazio). O workflow tem 3 proteções, **não
+  remover**: (1) trava que cancela o deploy se o build não trouxer a URL do
+  Supabase; (2) teste PÓS-deploy que abre o site publicado num Chrome e falha o
+  job se o `#root` ficar vazio; (3) o `index.html` mostra uma mensagem com botão
+  "Recarregar" se o app não montar em 8 s (em vez de tela branca).
+  **"Deploy verde" não é "site no ar"**: depois de deploy do front, abrir
+  `www.carroeciamotors.com.br`, `/estoque` e `/admin/login` e conferir que
+  renderizam. O `.env` NÃO deve ser lido nem movido pelo Claude Code (regra de
+  permissão); o deploy manual de emergência é
+  `npx wrangler deploy --config "<caminho completo>/wrangler.jsonc"` rodado
+  pela Adriana com `!` (o Claude Code é barrado nesse comando).
   Histórico: a nota aqui já disse "automático via Cloudflare Workers
   Builds" (confirmado 16/08/2026) — nunca existiu de fato
   (`wrangler.jsonc` não tinha nenhuma config de Git integration, achados

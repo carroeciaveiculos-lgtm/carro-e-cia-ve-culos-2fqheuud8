@@ -133,6 +133,28 @@
     /></noscript>
     <!-- End Meta Pixel (noscript) -->
     <div id="root"></div>
+    <!-- Rede de segurança contra TELA BRANCA (incidente de 04/10/2026: o site foi publicado sem a
+         configuração do Supabase, o aplicativo quebrou ao abrir e o visitante via só branco).
+         Script independente do aplicativo: se em 8 segundos o #root continuar vazio, mostra uma
+         mensagem com botão de recarregar e registra o problema no console. Se o aplicativo montar
+         depois disso, o React simplesmente substitui a mensagem. -->
+    <script>
+      window.setTimeout(function () {
+        var raiz = document.getElementById("root");
+        if (!raiz || raiz.childElementCount > 0) return;
+        console.error(
+          "[Carro e Cia] O aplicativo não carregou em 8 segundos (tela branca evitada). " +
+            "Causa provável: erro ao iniciar (ex.: configuração do Supabase ausente no build).",
+        );
+        raiz.innerHTML =
+          '<div style="font-family:system-ui,sans-serif;max-width:420px;margin:15vh auto;padding:24px;text-align:center;color:#1a1a1a">' +
+          '<h1 style="font-size:20px;margin:0 0 12px">Estamos com um problema temporário</h1>' +
+          '<p style="margin:0 0 20px;line-height:1.5">Não conseguimos carregar a página agora. Tente novamente em instantes ou fale com a gente pelo WhatsApp.</p>' +
+          '<button onclick="location.reload()" style="background:#c40000;color:#fff;border:0;border-radius:6px;padding:10px 18px;font-size:15px;cursor:pointer">Recarregar a página</button>' +
+          '<p style="margin:20px 0 0;font-size:14px"><a href="https://wa.me/5534997384177" style="color:#c40000">Chamar no WhatsApp</a></p>' +
+          "</div>";
+      }, 8000);
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
