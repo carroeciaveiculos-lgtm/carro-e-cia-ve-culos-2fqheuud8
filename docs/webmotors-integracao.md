@@ -896,3 +896,42 @@ vs combustível "Gasolina"), o texto é o problema, não o catálogo.
 5. Disparar `wm-sync`/`napista-sync` com `{"veiculo_id": "..."}` e conferir
    o resultado em `sync_log` (nunca confiar em `publicado_webmotors`/
    `publicado_napista`, ver [[napista-webmotors-flags-vs-sync-log]]).
+
+## Achado real (05/10/2026): ix35 bloqueado por `codigo_modalidade_wm` vazio — confirmação manual nunca gravava a modalidade
+
+**Caso:** Hyundai ix35 PBB9J82 publicou no Mercado Livre e na NaPista (17:39/17:40) mas **todas** as tentativas na Webmotors falharam com
+"Código(s) de catálogo Webmotors ausente(s) em wm_mapeamento_veiculos: codigo_modalidade_wm. Publicação bloqueada…" (guard do `wm-sync`, correto: sem isso o XML iria com "null").
+
+**Causa raiz (código, não catálogo):** só o ramo 100% automático do `wm-mapear-veiculo` gravava `codigo_modalidade_wm`. Os 4 ramos de **revisão** (marca/modelo/versão/catálogo) e a function `wm-confirmar-mapeamento`
+NÃO gravavam. O ix35 caiu na revisão (confiança da versão 0,31 < limiar 0,35) e foi confirmado à mão → `status 'mapeado'` com modalidade vazia. A correção de 20/08/2026 (Honda City TCQ0B23) cobriu cor/câmbio/combustível e deixou a
+modalidade de fora — mesma classe de bug, campo diferente. Por que os outros ~40 confirmados à mão têm 6351: NÃO provado (provável: seletor de plano `PortalTierSelector`/`updateModalidadeWebmotors`, que faz `UPDATE` e é no-op silencioso se a linha ainda não existe, ou ajuste manual).
+A function publicada era IDÊNTICA à do repositório (conferido com `get_edge_function`, versão 46).
+
+**Correção de dado (05/10/2026):** `UPDATE wm_mapeamento_veiculos SET codigo_modalidade_wm='6351'` por `id` no ix35 e na RAM Rampage GTN5D81 (também sem modalidade, em revisão). Seguro: o gatilho `wm_sync_on_modalidade_change` só age se o veículo
+já tem anúncio com `post_id` na Webmotors (ix35 não tinha: último registro `error`, `post_id` nulo); conferido que não criou fila `pending_modalidade`.
+
+**Correção de código:** novo `_shared/wm-modalidade.ts` (`obterCodigoModalidadeBasico`, `comModalidade`). `wm-mapear-veiculo` (`salvarPendencia`, vale para TODOS os ramos) e `wm-confirmar-mapeamento` completam a modalidade padrão
+("Anúncio Básico", lida de `wm_modalidades`, reserva 6351) quando o mapeamento ainda não tem uma; modalidade já escolhida (ex.: Vip 6914) nunca é sobrescrita. Testado com banco simulado (9 casos).
+
+**Diagnóstico rápido para este erro:**
+```sql
+-- mapeados sem modalidade (deve ser 0)
+select v.placa, m.status_sincronizacao from wm_mapeamento_veiculos m join veiculos v on v.id=m.veiculo_id
+where m.codigo_modalidade_wm is null and v.status='disponivel';
+-- tentativas na Webmotors (sync_log usa plataforma_id; junte com plataformas)
+select s.created_at, s.status, left(s.mensagem,200) from sync_log s join plataformas p on p.id=s.plataforma_id
+where s.veiculo_id = '<id>' and p.nome='Webmotors' order by s.created_at desc limit 10;
+```
+
+**Becos sem saída:** não confiar em `publicado_webmotors` (estava `true` para o ix35, que nunca publicou lá); `sync_log` não tem coluna `plataforma` (é `plataforma_id`) nem `created_at` em `wm_mapeamento_veiculos` com o mesmo significado de "mapeado em".
+**Pendente:** `updateModalidadeWebmotors` (src/services/plataformas.ts) faz `UPDATE` sem checar se a linha existe (no-op silencioso quando o seletor é usado antes do mapeamento).
+
+### Seguimento (05/10/2026): ix35 PBB9J82 — `43|41,43|37` era versão inválida para o ano; resolvido por catálogo ao vivo
+
+Depois de corrigir a modalidade, a Webmotors passou a RECEBER o anúncio e a recusar com `43|41,43|37`. O XML estava certo exceto `CodigoVersao 346376` ("2.0 16V FLEX 4P AUTOMÁTICO", confiança 0,31, herdada do ix35 2013 MWV1232) com `AnoDoModelo 2018`.
+**Prova:** `ObterVersao` do modelo 3130 (via `wm-catalog-fetch`, `verify_jwt=false`, chamada por `curl` com `{"catalogo":"versao","codigo_modelo":"3130","data_inicio":"2010-01-01","data_fim":"<hoje>"}`; 17 versões, voltou completo desta vez) mostra que `346376` só vale para **2016**.
+Para flex automático 2018 valem: `347051` "2.0 MPFI GL…" (2017–2022), `347050` "2.0 MPFI…" (2017–2021), `345463` "GLS…" (2015–2018, 2021). Mapeamento trocado para `347051` (carro é "GL"). Modalidade do ix35 posta em `6914` (Super Acelerador Vip - M) por decisão da Adriana, porque o Básico (6351) estava 18/18.
+**Lições:** (1) a lista de anos válidos por versão vem no `<Versao>` do `ObterVersao` e o nosso cache `wm_versoes` não a guarda — por isso nenhum filtro de ano é possível hoje (3ª ocorrência: BMW 120iA, Haval H6, ix35); (2) a "confirmação manual" aceita a versão sem mostrar o ano; (3) o `curl` direto em `wm-catalog-fetch` funcionou (`verify_jwt=false`, sem checar quem chama).
+**Pendente/risco:** ix35 MWV1232 (ano 2013, ainda em `346376`, sem anúncio na Webmotors) quebraria igual — versão correta provável `344308` ("2.0 MPI 4X2 16V FLEX 4P AUTOMÁTICO", 2012–2014); NÃO alterado. Modalidades em `wm_modalidades`: 6351 "Anúncio Básico" (a Webmotors/Adriana chama de Plano Básico), 6914 "Super Acelerador Vip - M", 39702 "Super Acelerador Vip Store".
+
+**RESULTADO (05/10/2026 18:17):** depois de trocar versão (347051) e modalidade (6914), o "Reprocessar" da linha Webmotors em `/admin/portais/revisao` (reprocessa SÓ a Webmotors; "Sincronizar Selecionados" roda ML+NaPista+Webmotors e o "Sync Rápido" é só filtro) publicou o ix35: `IncluirCarro` → `CodigoAnuncio 80822077`, `sync_log create success`. Conferido por `ObterEstoqueAtual` (via `wm-catalog-fetch`, `catalogo:"estoque_atual"`, 20 anúncios no total): placa PBB9J82, modalidade 6914, versão 347051, ano 2018. Cockpit (cockpit.com.br/inventory) não carregou no navegador automatizado (3 falhas) — conferir lá a olho, inclusive as 20 fotos. Becos: no card do veículo em erro a Webmotors só mostra "Despublicar" (sem retentar); `mcp__claude_ai_Supabase__*` dá "sem permissão" (outra conta).

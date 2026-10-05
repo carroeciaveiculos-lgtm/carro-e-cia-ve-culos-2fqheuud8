@@ -1,6 +1,7 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from 'jsr:@supabase/supabase-js@2'
 import { matchCatalogoExato } from '../_shared/wm-catalogo-match.ts'
+import { comModalidade } from '../_shared/wm-modalidade.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -26,7 +27,7 @@ Deno.serve(async (req: Request) => {
 
     const { data: mapeamento } = await supabase
       .from('wm_mapeamento_veiculos')
-      .select('id, codigo_marca_wm')
+      .select('id, codigo_marca_wm, codigo_modalidade_wm')
       .eq('veiculo_id', veiculo_id)
       .maybeSingle()
 
@@ -75,7 +76,12 @@ Deno.serve(async (req: Request) => {
       updateFields.erro_msg = null
     }
 
-    await supabase.from('wm_mapeamento_veiculos').update(updateFields).eq('id', mapeamento.id)
+    // Corrigido em 05/10/2026: a confirmação manual nunca gravava a modalidade (plano do anúncio). Veículo
+    // que passou pela revisão ficava 'mapeado' mas o guard do wm-sync bloqueava a publicação por faltar
+    // codigo_modalidade_wm (caso real: ix35 PBB9J82). Completa com a modalidade padrão se ainda não houver
+    // uma; modalidade já escolhida (ex.: Vip) é preservada.
+    const camposFinais = await comModalidade(supabase, mapeamento, updateFields)
+    await supabase.from('wm_mapeamento_veiculos').update(camposFinais).eq('id', mapeamento.id)
 
     // Se não houver mais nenhuma pendência (Webmotors ou outras plataformas futuras),
     // libera o veiculo da fila de revisão.

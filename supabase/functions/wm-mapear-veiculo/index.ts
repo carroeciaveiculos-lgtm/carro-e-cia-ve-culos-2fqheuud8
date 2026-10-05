@@ -2,6 +2,7 @@ import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from 'jsr:@supabase/supabase-js@2'
 import { buildAuthXML, callSOAP, type WMCredentials } from '../_shared/wm-soap.ts'
 import { matchCatalogoExato } from '../_shared/wm-catalogo-match.ts'
+import { comModalidade, obterCodigoModalidadeBasico } from '../_shared/wm-modalidade.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -12,21 +13,8 @@ const corsHeaders = {
 
 const WM_ESTOQUE_NAMESPACE = 'www.webmotors.com.br/wsEstoqueRevendedorWebMotors'
 
-// Corrigido em 13/08/2026: o código de "Anúncio Básico" mudou de 2943
-// (conta genérica de homologação) para 6351 (conta de produção real) — essa
-// constante ficou parada no valor antigo depois da troca de ambiente, e todo
-// veículo mapeado por aqui teria caído no mesmo erro "modalidade inválida
-// para o Revendedor" já corrigido em outros lugares. Busca ao vivo em
-// wm_modalidades em vez de fixar de novo, com o valor de produção como
-// fallback caso a tabela ainda não tenha sido populada.
-async function obterCodigoModalidadeBasico(supabase: any): Promise<string> {
-  const { data } = await supabase
-    .from('wm_modalidades')
-    .select('codigo_wm')
-    .eq('descricao', 'Anúncio Básico')
-    .maybeSingle()
-  return data?.codigo_wm || '6351'
-}
+// Modalidade (plano) padrão: ver _shared/wm-modalidade.ts. Antes só o caminho 100% automático gravava
+// a modalidade; os ramos de revisão não, e o veículo travava depois da confirmação manual.
 
 // Limiar de confianca (0 a 1). Abaixo disso, vai para revisao humana.
 // Ponto de partida razoavel para trigram similarity em nomes curtos de veiculo;
@@ -300,14 +288,18 @@ function similaridade(a: string, b: string): number {
 async function salvarPendencia(supabase: any, veiculo_id: string, campos: Record<string, any>) {
   const { data: existing } = await supabase
     .from('wm_mapeamento_veiculos')
-    .select('id')
+    .select('id, codigo_modalidade_wm')
     .eq('veiculo_id', veiculo_id)
     .maybeSingle()
 
+  // Todo mapeamento (inclusive os que vão para revisão) precisa de modalidade, senão o wm-sync bloqueia
+  // a publicação depois da confirmação manual. Quem já tem uma (ex.: Vip) não é sobrescrito.
+  const campos2 = await comModalidade(supabase, existing, campos)
+
   if (existing) {
-    await supabase.from('wm_mapeamento_veiculos').update(campos).eq('id', existing.id)
+    await supabase.from('wm_mapeamento_veiculos').update(campos2).eq('id', existing.id)
   } else {
-    await supabase.from('wm_mapeamento_veiculos').insert({ veiculo_id, ...campos })
+    await supabase.from('wm_mapeamento_veiculos').insert({ veiculo_id, ...campos2 })
   }
 
   if (campos.status_sincronizacao === 'revisao_necessaria') {
