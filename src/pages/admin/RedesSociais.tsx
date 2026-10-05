@@ -55,10 +55,16 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
+import { AcoesPostSocial } from '@/components/admin/marketing/AcoesPostSocial'
+import { FORMATO_ROTULO, midiasDoPost, redesDoPost } from '@/services/social-posts'
 
 interface SocialPost {
   id: string
-  redes: Record<string, boolean>
+  // objeto {facebook:true} (posts antigos) OU lista ["instagram"] (posts novos) — use redesDoPost()
+  redes: any
+  rede?: string | null
+  midias?: any
+  formato?: string | null
   texto: string
   imagem: string | null
   data_agendamento: string
@@ -141,7 +147,11 @@ export default function RedesSociais({ embedded = false }: { embedded?: boolean 
       if (error) throw error
       if (data?.authUrl) window.open(data.authUrl, '_blank', 'noopener,noreferrer')
     } catch (e: any) {
-      toast({ title: 'Erro ao gerar link do LinkedIn', description: e.message, variant: 'destructive' })
+      toast({
+        title: 'Erro ao gerar link do LinkedIn',
+        description: e.message,
+        variant: 'destructive',
+      })
     } finally {
       setConectandoLinkedin(false)
     }
@@ -304,16 +314,6 @@ export default function RedesSociais({ embedded = false }: { embedded?: boolean 
     setLoading(false)
   }
 
-  const handleDeletePost = async (id: string) => {
-    if (!confirm('Deseja excluir este post?')) return
-    const { error } = await supabase.from('social_posts').delete().eq('id', id)
-    if (!error) {
-      toast({ title: 'Post excluído' })
-      setIsSidebarOpen(false)
-      fetchPosts()
-    }
-  }
-
   const toggleRede = (rede: string) => {
     setFormRedes((prev) => ({ ...prev, [rede]: !prev[rede] }))
   }
@@ -370,8 +370,8 @@ export default function RedesSociais({ embedded = false }: { embedded?: boolean 
         {linkedinStatus && linkedinStatus.status !== 'conectado' && (
           <div className="px-4 py-2 border-b bg-blue-50 flex items-center justify-between gap-3 text-sm">
             <span className="text-blue-900">
-              LinkedIn ainda não conectado — clique e autorize com a conta que vai assinar os
-              posts (publica em nome dessa pessoa, não como página da empresa).
+              LinkedIn ainda não conectado — clique e autorize com a conta que vai assinar os posts
+              (publica em nome dessa pessoa, não como página da empresa).
             </span>
             <Button
               size="sm"
@@ -408,6 +408,7 @@ export default function RedesSociais({ embedded = false }: { embedded?: boolean 
               <SelectContent>
                 <SelectItem value="todos">Todos</SelectItem>
                 <SelectItem value="Agendado">Agendado</SelectItem>
+                <SelectItem value="Publicando">Publicando</SelectItem>
                 <SelectItem value="Publicado">Publicado</SelectItem>
                 <SelectItem value="Rascunho">Rascunho</SelectItem>
                 <SelectItem value="Erro">Erro</SelectItem>
@@ -468,9 +469,7 @@ export default function RedesSociais({ embedded = false }: { embedded?: boolean 
                       </div>
                       <div className="flex flex-col gap-1">
                         {dayPosts.map((post) => {
-                          const activeRedes = Object.keys(post.redes || {}).filter(
-                            (k) => post.redes[k],
-                          )
+                          const activeRedes = redesDoPost(post)
                           const mainRede = activeRedes[0] || 'instagram'
 
                           return (
@@ -520,7 +519,8 @@ export default function RedesSociais({ embedded = false }: { embedded?: boolean 
                     </TableRow>
                   ) : (
                     filteredPosts.map((post) => {
-                      const activeRedes = Object.keys(post.redes || {}).filter((k) => post.redes[k])
+                      const activeRedes = redesDoPost(post)
+                      const nFotos = midiasDoPost(post).length
 
                       return (
                         <TableRow
@@ -548,11 +548,14 @@ export default function RedesSociais({ embedded = false }: { embedded?: boolean 
                               ))}
                             </div>
                           </TableCell>
-                          <TableCell
-                            className="max-w-[300px] truncate text-slate-700"
-                            title={post.texto}
-                          >
-                            {post.texto}
+                          <TableCell className="max-w-[300px] text-slate-700" title={post.texto}>
+                            <div className="truncate">{post.texto}</div>
+                            {post.formato && (
+                              <span className="text-[11px] text-slate-500">
+                                {FORMATO_ROTULO[post.formato] ?? post.formato}
+                                {nFotos > 1 ? ` · ${nFotos} fotos` : ''}
+                              </span>
+                            )}
                           </TableCell>
                           <TableCell>
                             <Badge
@@ -570,13 +573,16 @@ export default function RedesSociais({ embedded = false }: { embedded?: boolean 
                             </Badge>
                           </TableCell>
                           <TableCell className="text-right">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={(e) => handlePostClick(post, e)}
-                            >
-                              Detalhes
-                            </Button>
+                            <div className="flex flex-wrap items-center justify-end gap-1.5">
+                              <AcoesPostSocial post={post} aoMudar={fetchPosts} />
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={(e) => handlePostClick(post, e)}
+                              >
+                                Detalhes
+                              </Button>
+                            </div>
                           </TableCell>
                         </TableRow>
                       )
@@ -600,19 +606,14 @@ export default function RedesSociais({ embedded = false }: { embedded?: boolean 
           </div>
           <div className="p-4 flex-1 overflow-y-auto">
             <div className="flex gap-2 mb-6">
-              {Object.keys(selectedPost.redes || {})
-                .filter((k) => selectedPost.redes[k])
-                .map((r) => (
-                  <div
-                    key={r}
-                    className={cn(
-                      'p-2 rounded-full shadow-sm',
-                      NETWORK_COLORS[r] || 'bg-slate-500',
-                    )}
-                  >
-                    {NETWORK_ICONS[r]}
-                  </div>
-                ))}
+              {redesDoPost(selectedPost).map((r) => (
+                <div
+                  key={r}
+                  className={cn('p-2 rounded-full shadow-sm', NETWORK_COLORS[r] || 'bg-slate-500')}
+                >
+                  {NETWORK_ICONS[r]}
+                </div>
+              ))}
             </div>
 
             <div className="mb-4 bg-slate-50 p-3 rounded-lg border">
@@ -650,7 +651,26 @@ export default function RedesSociais({ embedded = false }: { embedded?: boolean 
               </div>
             </div>
 
-            {selectedPost.imagem && (
+            {midiasDoPost(selectedPost).length > 1 && (
+              <div className="mb-4">
+                <Label className="text-slate-500 text-xs uppercase block mb-2">
+                  {FORMATO_ROTULO[selectedPost.formato ?? ''] ?? 'Mídias'} ·{' '}
+                  {midiasDoPost(selectedPost).length} fotos
+                </Label>
+                <div className="grid grid-cols-3 gap-2">
+                  {midiasDoPost(selectedPost).map((url, i) => (
+                    <img
+                      key={`${url}-${i}`}
+                      src={url}
+                      alt={`Foto ${i + 1}`}
+                      className="rounded-md w-full aspect-square object-cover border"
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {selectedPost.imagem && midiasDoPost(selectedPost).length <= 1 && (
               <div className="mb-4">
                 <Label className="text-slate-500 text-xs uppercase block mb-2">Mídia Anexada</Label>
                 {selectedPost.imagem.match(/\.(mp4|mov|webm)$/i) ? (
@@ -670,17 +690,17 @@ export default function RedesSociais({ embedded = false }: { embedded?: boolean 
               </div>
             )}
           </div>
-          <div className="p-4 border-t flex flex-col gap-2 bg-slate-50">
-            <Button variant="outline" className="w-full justify-start h-9 bg-white">
-              Editar Rascunho
-            </Button>
-            <Button
-              variant="destructive"
-              className="w-full justify-start h-9"
-              onClick={() => handleDeletePost(selectedPost.id)}
-            >
-              Excluir Definitivamente
-            </Button>
+          <div className="p-4 border-t bg-slate-50">
+            {/* Antes: "Editar Rascunho" não fazia nada (sem ação ligada) e "Excluir Definitivamente"
+                usava confirm() do navegador. Agora o mesmo conjunto de botões da tabela. */}
+            <AcoesPostSocial
+              post={selectedPost}
+              layout="coluna"
+              aoMudar={() => {
+                setIsSidebarOpen(false)
+                fetchPosts()
+              }}
+            />
           </div>
         </div>
       )}

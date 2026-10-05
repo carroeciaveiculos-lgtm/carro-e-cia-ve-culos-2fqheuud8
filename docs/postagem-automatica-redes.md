@@ -128,3 +128,19 @@ fotos"), todas as fotos (`midias`, ou `imagem` nos posts antigos) e a legenda. A
 - Excluir/Publicar novamente usam `AlertDialog` (não o `confirm()` do navegador).
 - Beco sem saída: não há "Publicar agora" imediato — `publicar-social` só aceita o segredo interno, então o front não
   consegue chamá-la; o cron de 15 min publica. Se for preciso, criar uma function proxy autenticada.
+
+### Correção (04/10/2026, mesmo dia): botões também na TABELA de Publicações
+
+A Adriana não via os botões: a Central Social abre na aba **Publicações** (`RedesSociais.tsx`, tabela com coluna
+"Ações" que só tinha "Detalhes" e um painel lateral com botão "Editar Rascunho" **sem ação ligada**), e os botões tinham
+sido feitos só na aba **Aprovações** (cartões). Agora:
+- `src/services/social-posts.ts` concentra as ações (`agendarPost`, `excluirPost`, `duplicarPostPublicado`,
+  `salvarEdicaoPost`) e os helpers (`redesDoPost`, `midiasDoPost`); **as duas telas usam o mesmo módulo**.
+- `AcoesPostSocial.tsx` (botões por estado + janelas de confirmação e de edição) fica em cada linha da tabela e no
+  painel lateral (`layout="coluna"`); `stopPropagation` evita abrir o painel ao clicar num botão.
+- **Defeito corrigido:** `RedesSociais.tsx` lia `redes` com `Object.keys(...)`, que só serve para objeto; posts novos
+  gravam lista (`["instagram"]`) e ficavam sem ícone de rede. Agora usa `redesDoPost()` (calendário, tabela e painel).
+- Filtro de status ganhou "Publicando"; coluna Conteúdo mostra "Carrossel · N fotos"; painel lateral mostra todas as fotos.
+- Teste: renderização do componente nos 6 estados confirmou a matriz de botões (Rascunho/Aprovado: Aprovar, Editar,
+  Excluir; Agendado: Editar, Excluir; Publicando: aviso; Erro: Publicar novamente, Editar, Excluir; Publicado: Publicar
+  novamente, Excluir). Clique real na tela NÃO testado (sem login).

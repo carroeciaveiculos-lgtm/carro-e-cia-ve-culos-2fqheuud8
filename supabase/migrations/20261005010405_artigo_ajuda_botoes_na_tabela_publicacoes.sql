@@ -1,0 +1,6 @@
+-- Nota no artigo "Criar e agendar uma publicação nas redes (Central de Redes Sociais)": botões de ação em cada linha da tabela de Publicações (04/10/2026).
+-- Não repete se rodar de novo (a condição olha se a nota já está lá).
+UPDATE public.ajuda_conteudos
+SET como_utilizar = como_utilizar || E'\n\nAtualização de 04/10/2026 — botões de ação em cada post (visão em lista):\n- Na visão em lista da aba "Publicações", cada linha tem, na coluna "Ações", os botões conforme o estado do post: "Aprovar" (Rascunho), "Publicar novamente" (Erro ou Publicado), "Editar" (Rascunho, Agendado e Erro) e "Excluir". Os mesmos botões aparecem no painel "Detalhes do Post", que abre ao clicar na linha.\n- "Editar" abre uma janela para mudar a legenda, a data e a hora e, no carrossel, tirar fotos (mínimo 2). "Excluir" pede confirmação; num post já publicado ele só sai da lista e a publicação continua nas redes. "Publicar novamente" num post já publicado cria um post novo igual (a tela avisa que o conteúdo aparecerá duas vezes).\n- Posts de carrossel mostram o formato ("Carrossel · 10 fotos") e todas as fotos no painel de detalhes. O ícone da rede (Instagram/Facebook) agora aparece também nos posts automáticos.'
+WHERE titulo = 'Criar e agendar uma publicação nas redes (Central de Redes Sociais)'
+  AND como_utilizar NOT LIKE '%Atualização de 04/10/2026%';

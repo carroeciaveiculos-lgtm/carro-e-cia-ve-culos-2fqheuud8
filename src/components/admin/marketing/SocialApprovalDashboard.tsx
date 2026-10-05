@@ -31,6 +31,17 @@ import {
   X,
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
+import {
+  FORMATO_ROTULO,
+  MIN_FOTOS_CARROSSEL,
+  agendarPost,
+  duplicarPostPublicado,
+  excluirPost,
+  midiasDoPost,
+  paraCampoData,
+  redesDoPost,
+  salvarEdicaoPost,
+} from '@/services/social-posts'
 
 // Aprovar NÃO publica: só muda o post pra 'Agendado'. Quem publica é o cron
 // publicar-social-cron-job, a cada 15 minutos, e só depois do horário do post.
@@ -55,42 +66,7 @@ const ORDEM_STATUS: Record<string, number> = {
 }
 const DIAS_ERRO = 7
 const HORAS_PUBLICADO = 48
-const MIN_FOTOS_CARROSSEL = 2
-
-const FORMATO_ROTULO: Record<string, string> = {
-  feed_carrossel: 'Carrossel',
-  feed_foto: 'Foto no feed',
-  feed_video: 'Vídeo no feed',
-  story_foto: 'Story (foto)',
-  story_video: 'Story (vídeo)',
-}
-
 type Confirmacao = { tipo: 'excluir' | 'republicar'; post: any } | null
-
-// "2026-10-04T09:00" (horário local do navegador) <-> ISO (UTC) do banco
-const paraCampoData = (iso: string | null) => {
-  if (!iso) return ''
-  const d = new Date(iso)
-  const local = new Date(d.getTime() - d.getTimezoneOffset() * 60_000)
-  return local.toISOString().slice(0, 16)
-}
-const doCampoData = (valor: string) => (valor ? new Date(valor).toISOString() : null)
-
-// Redes do post: linhas novas têm a coluna `rede`; as antigas guardam em `redes`
-// (lista ["facebook"] ou objeto {facebook:true}).
-const redesDoPost = (post: any): string[] => {
-  if (post.rede) return [post.rede]
-  const r = post.redes
-  if (Array.isArray(r)) return r
-  if (r && typeof r === 'object') return Object.keys(r).filter((k) => r[k])
-  return []
-}
-
-// Fotos do post: o carrossel novo usa `midias`; os posts antigos, só `imagem`.
-const midiasDoPost = (post: any): string[] => {
-  if (Array.isArray(post.midias) && post.midias.length > 0) return post.midias
-  return post.imagem ? [post.imagem] : []
-}
 
 export function SocialApprovalDashboard() {
   const [posts, setPosts] = useState<any[]>([])
@@ -165,19 +141,15 @@ export function SocialApprovalDashboard() {
     return () => clearInterval(t)
   }, [temEmFila])
 
-  // Aprovar e "tentar de novo" são a mesma operação: põe na fila de publicação e zera
-  // as tentativas (sem zerar, um carrossel que já falhou 3 vezes ganharia só 1 chance).
+  // Aprovar e "tentar de novo" são a mesma operação (ver agendarPost em services/social-posts.ts).
   const agendar = async (id: string, aviso: string) => {
     setOcupadoId(id)
-    const { error } = await supabase
-      .from('social_posts')
-      .update({ status: 'Agendado', erro_msg: null, tentativas: 0, publicando_em: null })
-      .eq('id', id)
+    const { erro } = await agendarPost(id)
     setOcupadoId(null)
-    if (error) {
+    if (erro) {
       toast({
         title: 'Não foi possível aprovar o post',
-        description: error.message,
+        description: erro,
         variant: 'destructive',
       })
       return
@@ -201,12 +173,12 @@ export function SocialApprovalDashboard() {
 
   const excluir = async (post: any) => {
     setOcupadoId(post.id)
-    const { error } = await supabase.from('social_posts').delete().eq('id', post.id)
+    const { erro } = await excluirPost(post.id)
     setOcupadoId(null)
-    if (error) {
+    if (erro) {
       toast({
         title: 'Não foi possível excluir o post',
-        description: error.message,
+        description: erro,
         variant: 'destructive',
       })
       return
@@ -220,29 +192,15 @@ export function SocialApprovalDashboard() {
     fetchPosts(true)
   }
 
-  // "Publicar novamente" um post já publicado = criar um post NOVO igual, na fila. O
-  // original fica como está. Entra como origem 'manual' (a trava contra repetição só
-  // vale para os automáticos) e vai direto pra fila de publicação.
+  // "Publicar novamente" um post já publicado = criar um post NOVO igual, na fila.
   const republicar = async (post: any) => {
     setOcupadoId(post.id)
-    const { error } = await supabase.from('social_posts').insert({
-      redes: post.redes,
-      texto: post.texto,
-      imagem: post.imagem,
-      midias: post.midias ?? [],
-      veiculo_id: post.veiculo_id,
-      content_type: post.content_type,
-      formato: post.formato,
-      rede: post.rede,
-      origem: 'manual',
-      status: 'Agendado',
-      data_agendamento: new Date().toISOString(),
-    })
+    const { erro } = await duplicarPostPublicado(post)
     setOcupadoId(null)
-    if (error) {
+    if (erro) {
       toast({
         title: 'Não foi possível publicar novamente',
-        description: error.message,
+        description: erro,
         variant: 'destructive',
       })
       return
@@ -269,33 +227,17 @@ export function SocialApprovalDashboard() {
   }
 
   const handleSaveEdit = async (post: any) => {
-    if (!editText.trim()) {
-      toast({ title: 'O texto do post não pode ficar vazio', variant: 'destructive' })
-      return
-    }
-    const ehCarrossel = post.formato === 'feed_carrossel'
-    if (ehCarrossel && editMidias.length < MIN_FOTOS_CARROSSEL) {
-      toast({
-        title: `O carrossel precisa de pelo menos ${MIN_FOTOS_CARROSSEL} fotos`,
-        variant: 'destructive',
-      })
-      return
-    }
-    const campos: { texto: string; data_agendamento?: string; midias?: string[]; imagem?: string } =
-      { texto: editText }
-    const novaData = doCampoData(editData)
-    if (novaData) campos.data_agendamento = novaData
-    if (editMidias.length > 0 && (ehCarrossel || (post.midias ?? []).length > 0)) {
-      campos.midias = editMidias
-      campos.imagem = editMidias[0]
-    }
     setOcupadoId(post.id)
-    const { error } = await supabase.from('social_posts').update(campos).eq('id', post.id)
+    const { erro } = await salvarEdicaoPost(post, {
+      texto: editText,
+      dataLocal: editData,
+      midias: editMidias,
+    })
     setOcupadoId(null)
-    if (error) {
+    if (erro) {
       toast({
         title: 'Não foi possível salvar as alterações',
-        description: error.message,
+        description: erro,
         variant: 'destructive',
       })
       return
