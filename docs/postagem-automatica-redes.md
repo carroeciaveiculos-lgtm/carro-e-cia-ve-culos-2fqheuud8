@@ -144,3 +144,71 @@ sido feitos só na aba **Aprovações** (cartões). Agora:
 - Teste: renderização do componente nos 6 estados confirmou a matriz de botões (Rascunho/Aprovado: Aprovar, Editar,
   Excluir; Agendado: Editar, Excluir; Publicando: aviso; Erro: Publicar novamente, Editar, Excluir; Publicado: Publicar
   novamente, Excluir). Clique real na tela NÃO testado (sem login).
+
+### 04/10/2026 — contato pelo post orgânico e comentários
+
+- **Não existe botão CTA em post orgânico do feed** (só em anúncio). Facebook: link `https://wa.me/...` no texto é clicável.
+  Instagram: link na legenda NÃO é clicável. A legenda agora diz "Fale com a gente pelo WhatsApp: https://wa.me/..." no
+  Facebook e "Chame no direct ou toque no link da nossa bio" no Instagram (`_shared/legenda-social.ts`). **A conferir:** se o link
+  da bio do Instagram leva ao WhatsApp da Clara.
+- **Comentários públicos** (`social_comments`, aba "Comentários"): chegam pelo webhook `receive-leads` (campo `feed` no Facebook,
+  `comments` no Instagram). `_shared/comentario-social.ts`: `extrairComentario` (formato de cada rede; ignora o comentário da própria
+  página), `comentarioDemonstraInteresse` (valor, preço, troca, km, onde, quero...; testado com os 40 comentários reais, 28/28 casos)
+  e `avisarComentarioInteressado` (WhatsApp para `social_configuracoes.whatsapp_number`). Comentário com interesse cria lead
+  (`origem` = `comentario_facebook`/`comentario_instagram`, sem duplicar por autor) e avisa. Reenvio do mesmo evento não duplica.
+- **Correção do próprio dia:** a 1ª versão deste texto dizia que o Instagram "só envia DM" e que faltava inscrever `comments` na Meta.
+  ERRADO (olhei só 10 dias de `meta_webhook_logs`). Em 30 dias: 122 eventos `comments` do Instagram (72 comentários distintos,
+  25/06 a 23/09, 20 da própria loja; vários em ANÚNCIOS, com `media.media_product_type = AD` e o mesmo comentário repetido por `ad_id`).
+  O app JÁ está inscrito; o código é que descartava (exigia `value.item === 'comment'`, formato só do Facebook). Lição: conferir janela
+  de 30+ dias antes de concluir que um evento "não chega".
+- Limite conhecido: o aviso é texto livre via WhatsApp Cloud API (mesmo caminho do relatório diário) e só chega dentro da janela
+  de 24 h; o lead no CRM é criado de qualquer forma.
+
+### 04/10/2026 — mensagens diretas (direct do Instagram / Messenger): causa raiz e conserto
+
+> **SUPERADO no mesmo dia pela seção "Central de Mensagens" (abaixo):** DM e comentário **não criam mais lead** (o CRM de leads da Clara é só de WhatsApp,
+> decisão da Adriana). As causas raiz abaixo continuam válidas; o "conserto" que criava lead `instagram_dm`/`comentario_*` foi substituído.
+
+- **Duas causas** de nunca ter existido lead de DM (0 em 120 dias; 59 eventos `messaging` do Instagram em 30 dias):
+  1. O `receive-leads` só percorria `entry[].changes[]`; a Meta entrega DM em `entry[].messaging[]`. O ramo de DM nunca era alcançado.
+  2. Esse ramo fazia `insert` em `leads` **sem `tipo`** (NOT NULL, sem default) e engolia o erro. Mesmo se alcançado, falharia calado.
+- **Conserto:** `_shared/mensagem-direta.ts` (`extrairMensagensDiretas`) converte `entry.messaging` para o formato `{field:'messages', value:{sender,message}}`
+  que o ramo antigo espera. Ignora eco (`is_echo`, resposta da equipe pelo app), leitura, reação, mensagem da própria página e mensagem apagada;
+  anexo vira "[enviou: foto]", resposta a story vira "[Respondeu ao story]". O insert agora leva `tipo: 'compra'`, nome do perfil (melhor esforço, via
+  `META_PAGE_ACCESS_TOKEN`) e erro registrado em `lead_errors`. Cada DM recebida avisa a dona por WhatsApp (`avisarMensagemDireta`).
+- **A Clara NÃO responde Instagram/Messenger** (verificado: nenhuma function envia por essas redes). Fica para depois (exige API de envio + permissão).
+- **Messenger do Facebook:** 0 eventos `messaging` da página em 30 dias (só `feed`). Pode ser página não inscrita em `messages` OU ninguém escreveu. A conferir na Meta.
+- **Legenda do Instagram sem convite ao direct/bio** até o direct ser atendido e a bio apontar para o WhatsApp da Clara (hoje é `5534999484285`).
+- **Sujeira pré-existente achada (não corrigida):** o idioma `.catch(() => {})` em `supabase.from(...).insert(...)` aparece em `receive-leads` (linhas ~675, 773 e
+  no `catch` final ~850). O builder do Supabase não tem `.catch`: se a gravação em `lead_errors` rodar, dá `TypeError` dentro do tratamento de erro.
+  Tipos: `deno check` roda via `bunx deno check --no-lock --node-modules-dir=none <arquivo>` (ainda acusa 5 erros antigos no `receive-leads` e vários em `_shared/whatsapp-*`).
+- **Teste em produção (04/10/2026, após deploy só do `receive-leads`):** eventos falsos (ids `TESTE_*`) por POST: DM nova criou 1 lead `instagram_dm`
+  (tipo `compra`) + conversa; eco e leitura foram ignorados; 2ª DM do mesmo cliente anexou na mesma conversa (sem lead duplicado, anexo virou "[enviou: foto]");
+  comentário do Instagram com "valor" criou 1 comentário + 1 lead `comentario_instagram`; reenvio do mesmo comentário não duplicou; `lead_errors` vazio.
+  Dados de teste apagados por id. O recebimento do aviso no WhatsApp da dona NÃO é visível pelo banco (confirmação só com ela).
+- **ATENÇÃO (segurança, achado no teste):** o `receive-leads` não valida a assinatura `X-Hub-Signature-256` da Meta nos POSTs; qualquer pessoa que conheça a URL
+  pode injetar eventos falsos (criar lead, disparar aviso por WhatsApp). Corrigir exige o App Secret da Meta como secret da function. Pendente.
+
+### 04/10/2026 — Central de Mensagens (decisão: fora do CRM da Clara) e assinatura da Meta
+
+**Decisão da Adriana:** mensagens (direct do Instagram, Messenger) e comentários dos posts são geridos na **Central de Redes Sociais**, separados do CRM de
+leads da Clara, que serve **só para o WhatsApp** (anúncios orgânicos por WhatsApp no futuro). Nenhum fluxo de rede social cria lead.
+
+- **Tabelas:** `social_conversas` (única por `plataforma`+`contato_id`; `ultima_do_cliente_em` = base da janela de 24 h; `nao_lidas`; `status` aberta/resolvida) e
+  `social_mensagens` (`direcao` entrada/saida; `origem` cliente/equipe_app/painel; única por `mid`, o que também absorve o "eco" das respostas enviadas pelo painel).
+  `social_comments.demonstra_interesse` (selo). RLS: equipe autenticada (mesmo padrão de `social_comments`); a function do webhook usa a chave de serviço.
+- **Webhook (`receive-leads`):** `entry.messaging` → `_shared/mensagem-direta.ts` (entrada de cliente OU **eco** = resposta digitada pela equipe no app, contato = destinatário)
+  → `_shared/social-inbox.ts` grava conversa+mensagem (dedup por `mid`) e avisa a dona por WhatsApp só na mensagem NOVA do cliente. O ramo antigo que criava lead de DM foi removido.
+- **Responder pelo painel:** Edge Function `social-mensagens` (`verify_jwt = true` + confere o usuário logado dentro, porque a chave anon também passa no verify_jwt).
+  Bloqueia fora da janela de 24 h (409), envia por `POST /{FACEBOOK_PAGE_ID}/messages` (não `me`: o token é de usuário do sistema), traduz erros da Meta e grava a resposta.
+  **NÃO testada contra a Meta** (enviaria mensagem a cliente real): o primeiro envio de verdade valida permissão/endpoint. Para Instagram o corpo é `{recipient:{id}, message:{text}}`; Messenger acrescenta `messaging_type: RESPONSE`.
+- **UI:** aba **Mensagens** (selo de não lidas, atualiza a cada 20 s, aviso da janela) e aba **Comentários** (selo "Interesse de compra", filtro, sem "Converter em Lead").
+  Corrigido: a aba Comentários não mandava `platform` ao `social-actions` (curtir/responder comentário do **Instagram** ia pelo caminho do Facebook) e mostrava "Curtido!" mesmo com erro da Meta.
+- **Histórico importado** (migration `central_mensagens_importar_historico`, só insere): 19 conversas / 123 mensagens (19 de clientes, 104 respostas da equipe — uma conversa tem 57,
+  provável automação/fluxo de anúncio), 68 comentários do Instagram, 35 comentários com interesse (total), 1 conversa não lida.
+- **Assinatura da Meta (`X-Hub-Signature-256`)** em `_shared/meta-assinatura.ts` (HMAC-SHA256 sobre o corpo BRUTO, comparação em tempo constante, segredo `META_APP_SECRET` — já existia).
+  Rollout em 2 etapas por segurança: **etapa 1a = `log`** (padrão do código; grava `meta_webhook_logs.assinatura_ok/assinatura_motivo` e NÃO bloqueia) → conferir em tráfego real que os eventos
+  verdadeiros dão `ok` (atenção: o app do WhatsApp pode ter outro App Secret) → **etapa 1b = `enforce`** (403 sem assinatura válida; secret `META_WEBHOOK_SIGNATURE_MODE=enforce` ou trocar o padrão no código).
+  Também removido o token de verificação padrão que estava escrito no código (`META_VERIFY_TOKEN` agora é obrigatório para a verificação GET).
+  Consulta de conferência: `select assinatura_ok, assinatura_motivo, platform, count(*) from meta_webhook_logs where created_at > now() - interval '1 day' group by 1,2,3;`
+- **Beco sem saída (testes):** simulador de banco em memória precisa de `then` no builder para `await insert()` sem `.select()`; sem isso a gravação "some" no teste (defeito do teste, não do código).

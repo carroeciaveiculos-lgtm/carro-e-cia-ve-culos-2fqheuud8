@@ -1,10 +1,12 @@
-import { useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Share2, CheckCircle2, MessageCircle, Sparkles } from 'lucide-react'
+import { Share2, CheckCircle2, MessageCircle, MessagesSquare, Sparkles } from 'lucide-react'
 import RedesSociais from './RedesSociais'
 import SocialComments from './SocialComments'
 import { SocialApprovalDashboard } from '@/components/admin/marketing/SocialApprovalDashboard'
 import { IdeiasSociais } from '@/components/admin/marketing/IdeiasSociais'
+import { SocialMensagens } from '@/components/admin/marketing/SocialMensagens'
+import { contarNaoLidas } from '@/services/social-inbox'
 
 // Central de Redes Sociais (14/08/2026, pedido da Adriana) — unifica 3 telas
 // que já existiam espalhadas em itens de menu diferentes (Redes Sociais,
@@ -14,6 +16,16 @@ import { IdeiasSociais } from '@/components/admin/marketing/IdeiasSociais'
 // própria.
 export default function CentralSocial() {
   const [tab, setTab] = useState('publicacoes')
+  // Mensagens de clientes (direct do Instagram / Messenger) ainda sem resposta: selo na aba
+  const [naoLidas, setNaoLidas] = useState(0)
+  const atualizarNaoLidas = useCallback(() => {
+    contarNaoLidas().then(setNaoLidas)
+  }, [])
+  useEffect(() => {
+    atualizarNaoLidas()
+    const t = setInterval(atualizarNaoLidas, 30_000)
+    return () => clearInterval(t)
+  }, [atualizarNaoLidas])
 
   return (
     <div className="p-6 bg-slate-50 min-h-[calc(100vh-64px)] flex flex-col">
@@ -23,7 +35,7 @@ export default function CentralSocial() {
           Central de Redes Sociais
         </h1>
         <p className="text-sm text-slate-500 mt-1">
-          Publicações, aprovações, comentários e ideias de conteúdo — tudo num só lugar.
+          Publicações, aprovações, mensagens, comentários e ideias de conteúdo — tudo num só lugar.
         </p>
       </div>
 
@@ -40,6 +52,17 @@ export default function CentralSocial() {
             className="py-2.5 px-4 data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700"
           >
             <CheckCircle2 className="w-4 h-4 mr-2" /> Aprovações
+          </TabsTrigger>
+          <TabsTrigger
+            value="mensagens"
+            className="py-2.5 px-4 data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700"
+          >
+            <MessagesSquare className="w-4 h-4 mr-2" /> Mensagens
+            {naoLidas > 0 && (
+              <span className="ml-2 rounded-full bg-red-600 text-white text-[11px] leading-none px-1.5 py-1">
+                {naoLidas}
+              </span>
+            )}
           </TabsTrigger>
           <TabsTrigger
             value="comentarios"
@@ -63,6 +86,9 @@ export default function CentralSocial() {
         </TabsContent>
         <TabsContent value="aprovacoes" className="mt-4 overflow-y-auto">
           <SocialApprovalDashboard />
+        </TabsContent>
+        <TabsContent value="mensagens" className="mt-4">
+          <SocialMensagens aoMudarNaoLidas={atualizarNaoLidas} />
         </TabsContent>
         <TabsContent value="comentarios" className="mt-4 overflow-y-auto">
           <SocialComments embedded />

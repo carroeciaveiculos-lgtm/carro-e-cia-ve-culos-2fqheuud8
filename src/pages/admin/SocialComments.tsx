@@ -3,11 +3,12 @@ import { supabase } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useToast } from '@/hooks/use-toast'
-import { MessageCircle, ThumbsUp, UserPlus, Facebook, Instagram } from 'lucide-react'
+import { MessageCircle, ThumbsUp, Facebook, Instagram, Flame } from 'lucide-react'
 
 export default function SocialComments({ embedded = false }: { embedded?: boolean } = {}) {
   const [comments, setComments] = useState<any[]>([])
   const [replyText, setReplyText] = useState<Record<string, string>>({})
+  const [soInteresse, setSoInteresse] = useState(false)
   const { toast } = useToast()
 
   useEffect(() => {
@@ -22,39 +23,30 @@ export default function SocialComments({ embedded = false }: { embedded?: boolea
     if (data) setComments(data)
   }
 
-  const handleAction = async (commentId: string, action: string, message?: string) => {
+  // Passa a REDE do comentário: sem ela o social-actions trata tudo como Facebook, e a resposta/curtida
+  // de um comentário do Instagram ia para o endereço errado. Também mostra o erro da Meta de verdade
+  // (antes dizia "Curtido!" mesmo quando a Meta recusava).
+  const handleAction = async (comment: any, action: string, message?: string) => {
     try {
-      await supabase.functions.invoke('social-actions', {
-        body: { action, commentId, message },
+      const { data, error } = await supabase.functions.invoke('social-actions', {
+        body: { action, commentId: comment.comment_id, message, platform: comment.platform },
       })
+      if (error || data?.error) {
+        throw new Error(data?.error || 'A Meta recusou a ação. Tente de novo em instantes.')
+      }
       if (action === 'reply') {
         await supabase
           .from('social_comments')
           .update({ is_replied: true })
-          .eq('comment_id', commentId)
+          .eq('comment_id', comment.comment_id)
         toast({ title: 'Resposta enviada!' })
+        setReplyText((prev) => ({ ...prev, [comment.comment_id]: '' }))
         fetchComments()
       } else {
         toast({ title: 'Curtido!' })
       }
     } catch (e: any) {
-      toast({ title: 'Erro', description: e.message, variant: 'destructive' })
-    }
-  }
-
-  const handleCreateLead = async (comment: any) => {
-    try {
-      await supabase.from('leads').insert({
-        nome: comment.from_name,
-        origem: comment.platform === 'instagram' ? 'comentario_instagram' : 'comentario_facebook',
-        source: comment.platform,
-        status: 'novo',
-        tipo: 'compra',
-        external_lead_id: comment.from_id,
-      })
-      toast({ title: 'Lead criado com sucesso!' })
-    } catch (e: any) {
-      toast({ title: 'Erro ao criar lead', description: e.message, variant: 'destructive' })
+      toast({ title: 'Não foi possível concluir', description: e.message, variant: 'destructive' })
     }
   }
 
@@ -65,8 +57,22 @@ export default function SocialComments({ embedded = false }: { embedded?: boolea
           <MessageCircle className="w-6 h-6 text-blue-600" /> Interações Sociais (Comentários)
         </h1>
       )}
+      <div className="flex items-center gap-2 mb-4 max-w-4xl">
+        <Button
+          size="sm"
+          variant={soInteresse ? 'default' : 'outline'}
+          className="h-8 text-xs"
+          onClick={() => setSoInteresse((v) => !v)}
+        >
+          <Flame className="w-3 h-3 mr-1" /> Só com interesse de compra
+        </Button>
+        <span className="text-xs text-slate-500">
+          {comments.filter((c) => c.demonstra_interesse).length} de {comments.length} comentários
+          pedem preço ou mostram interesse
+        </span>
+      </div>
       <div className="grid gap-4 max-w-4xl">
-        {comments.map((c) => (
+        {(soInteresse ? comments.filter((c) => c.demonstra_interesse) : comments).map((c) => (
           <div key={c.id} className="bg-white p-4 rounded-xl shadow-sm border">
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
@@ -80,14 +86,11 @@ export default function SocialComments({ embedded = false }: { embedded?: boolea
                   {new Date(c.created_at).toLocaleString()}
                 </span>
               </div>
-              <Button
-                size="sm"
-                variant="outline"
-                className="h-7 text-xs"
-                onClick={() => handleCreateLead(c)}
-              >
-                <UserPlus className="w-3 h-3 mr-1" /> Converter em Lead
-              </Button>
+              {c.demonstra_interesse && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-orange-100 text-orange-700 text-[11px] font-semibold px-2 py-1">
+                  <Flame className="w-3 h-3" /> Interesse de compra
+                </span>
+              )}
             </div>
             <p className="text-sm text-slate-700 mb-4 bg-slate-50 p-3 rounded-lg border">
               {c.message}
@@ -97,7 +100,7 @@ export default function SocialComments({ embedded = false }: { embedded?: boolea
                 size="sm"
                 variant="ghost"
                 className="h-8 text-blue-600"
-                onClick={() => handleAction(c.comment_id, 'like')}
+                onClick={() => handleAction(c, 'like')}
               >
                 <ThumbsUp className="w-4 h-4 mr-1" /> Curtir
               </Button>
@@ -112,7 +115,7 @@ export default function SocialComments({ embedded = false }: { embedded?: boolea
                   <Button
                     size="sm"
                     className="h-8"
-                    onClick={() => handleAction(c.comment_id, 'reply', replyText[c.comment_id])}
+                    onClick={() => handleAction(c, 'reply', replyText[c.comment_id])}
                   >
                     Responder
                   </Button>

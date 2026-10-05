@@ -5,6 +5,15 @@ import { encontrarLeadAtivo, anexarNotaContato, normalizarTelefone } from '../_s
 import { processWhatsAppCommand, isAuthorizedPhone } from '../_shared/whatsapp-commands.ts'
 import { recalcularAiScore } from '../_shared/lead-score.ts'
 import { enviarEventoMensagem } from '../_shared/meta-messaging-capi.ts'
+import {
+  avisarComentarioInteressado,
+  avisarMensagemDireta,
+  comentarioDemonstraInteresse,
+  extrairComentario,
+} from '../_shared/comentario-social.ts'
+import { extrairMensagensDiretas } from '../_shared/mensagem-direta.ts'
+import { registrarMensagemSocial } from '../_shared/social-inbox.ts'
+import { assinaturaMetaValidaComVarios } from '../_shared/meta-assinatura.ts'
 import { baixarETranscreverAudioWhatsApp } from '../_shared/audio-transcricao.ts'
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3'
 
@@ -13,7 +22,20 @@ const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''
 const supabase = createClient(supabaseUrl, supabaseKey)
 
 // Meta Webhook Verification Token
-const VERIFY_TOKEN = Deno.env.get('META_VERIFY_TOKEN') || 'carro_e_cia_verify_123'
+// Sem valor padrão no código (o antigo era público no repositório). Se o secret faltar, a verificação
+// de inscrição do webhook é recusada em vez de aceitar um token conhecido.
+const VERIFY_TOKEN = Deno.env.get('META_VERIFY_TOKEN')
+// Conferência da assinatura da Meta nos POSTs. META_WEBHOOK_SIGNATURE_MODE:
+//   (vazio) ou 'log'     → só registra o resultado em meta_webhook_logs, não bloqueia;
+//   'enforce'            → recusa com 403 TODO evento sem assinatura válida;
+//   'page,instagram'     → recusa só os tipos (campo `object`) listados — o resto segue em 'log'.
+// Só passa para bloqueio de um tipo depois de provar, em tráfego real, que os eventos verdadeiros
+// dele passam (ver docs/postagem-automatica-redes.md). Segredos aceitos: META_APP_SECRET e, se
+// existirem, META_APP_SECRET_WHATSAPP / META_APP_SECRET_2 (apps diferentes postam neste webhook).
+const MODO_ASSINATURA = (Deno.env.get('META_WEBHOOK_SIGNATURE_MODE') || 'log').toLowerCase()
+const bloqueiaTipo = (objeto: string): boolean =>
+  MODO_ASSINATURA === 'enforce' ||
+  MODO_ASSINATURA.split(',').map((t) => t.trim()).includes(objeto)
 const WHATSAPP_PHONE_NUMBER_ID = Deno.env.get('WHATSAPP_PHONE_NUMBER_ID') || '1231947963330780'
 const WHATSAPP_WABA_ID = Deno.env.get('WHATSAPP_WABA_ID') || '1530053735172401'
 
@@ -117,7 +139,7 @@ Deno.serve(async (req: Request) => {
     const token = url.searchParams.get('hub.verify_token')
     const challenge = url.searchParams.get('hub.challenge')
 
-    if (mode === 'subscribe' && token === VERIFY_TOKEN) {
+    if (mode === 'subscribe' && VERIFY_TOKEN && token === VERIFY_TOKEN) {
       console.log('Webhook verified successfully!')
       return new Response(challenge, { status: 200 })
     } else {
@@ -126,7 +148,45 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    const payload = await req.json()
+    // Corpo bruto: a assinatura da Meta é calculada sobre os bytes exatos, antes de qualquer JSON.parse.
+    const corpoBruto = await req.text()
+    const payload = JSON.parse(corpoBruto)
+
+    // Só eventos no formato da Meta (têm `object`) são assinados. O formulário do site (sem `object`)
+    // segue o caminho de sempre, abaixo.
+    let assinatura: { ok: boolean; motivo: string } = { ok: true, motivo: 'nao_aplicavel' }
+    if (payload?.object) {
+      const r = await assinaturaMetaValidaComVarios(
+        corpoBruto,
+        req.headers.get('x-hub-signature-256'),
+        [
+          Deno.env.get('META_APP_SECRET'),
+          Deno.env.get('META_APP_SECRET_WHATSAPP'),
+          Deno.env.get('META_APP_SECRET_2'),
+        ],
+      )
+      // 'ok_segredo_2' = bateu com o 2º segredo da lista (sem expor o valor)
+      assinatura = {
+        ok: r.ok,
+        motivo: r.ok && (r.segredoIndice ?? 0) > 0 ? `ok_segredo_${(r.segredoIndice ?? 0) + 1}` : r.motivo,
+      }
+      if (!assinatura.ok && bloqueiaTipo(String(payload.object))) {
+        console.warn('Webhook recusado: assinatura inválida (' + assinatura.motivo + ')')
+        // Não guarda o conteúdo (pode ser lixo ou ataque); só o registro de que foi recusado.
+        await supabase.from('meta_webhook_logs').insert({
+          platform: 'desconhecida',
+          event_type: String(payload.object).slice(0, 60),
+          payload: { recusado: true, bytes: corpoBruto.length },
+          processed: false,
+          assinatura_ok: false,
+          assinatura_motivo: assinatura.motivo,
+        })
+        return new Response(JSON.stringify({ error: 'Assinatura inválida' }), {
+          status: 403,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+    }
     console.log('Received webhook payload:', JSON.stringify(payload))
 
     const platform =
@@ -141,6 +201,8 @@ Deno.serve(async (req: Request) => {
       event_type: payload.object,
       payload,
       processed: true,
+      assinatura_ok: payload?.object ? assinatura.ok : null,
+      assinatura_motivo: payload?.object ? assinatura.motivo : null,
     })
 
     if (
@@ -153,23 +215,53 @@ Deno.serve(async (req: Request) => {
       for (const entry of entries) {
         const changes = entry.changes || []
 
+        // Direct do Instagram / Messenger (vem em entry.messaging): vai para a Central de Redes Sociais
+        // (aba Mensagens), SEM criar lead — o CRM de leads da Clara é só de WhatsApp.
+        for (const dm of extrairMensagensDiretas(payload.object, entry)) {
+          const r = await registrarMensagemSocial(supabase, dm)
+          // Só a mensagem NOVA do cliente avisa a dona (reenvio e resposta da equipe não avisam).
+          if (r.nova && dm.direcao === 'entrada') {
+            await avisarMensagemDireta(supabase, dm.plataforma, r.nome || 'Cliente', dm.texto)
+          }
+        }
+
         for (const change of changes) {
           const field = change.field
           const value = change.value
 
           // 1. Handle Public Comments / Feed -> Moderador Dashboard
           if (field === 'feed' || field === 'comments') {
-            if (value.item === 'comment' && value.verb !== 'remove') {
-              await supabase.from('social_comments').insert({
-                post_id: value.post_id || '',
-                comment_id: value.comment_id || '',
-                from_id: value.from?.id || '',
-                from_name: value.from?.name || 'Unknown',
-                message: value.message || '',
-                platform: platform,
-                is_replied: false,
-              })
-              console.log('Public comment logged to social_comments.')
+            // Formatos diferentes por rede e filtro dos nossos próprios comentários: ver
+            // _shared/comentario-social.ts (04/10/2026).
+            const comentario = extrairComentario(platform, field, value, entry.id)
+            if (comentario) {
+              // A Meta reenvia o mesmo evento às vezes: não duplicar nem avisar duas vezes.
+              const { data: jaExiste } = comentario.commentId
+                ? await supabase
+                    .from('social_comments')
+                    .select('id')
+                    .eq('comment_id', comentario.commentId)
+                    .limit(1)
+                    .maybeSingle()
+                : { data: null }
+              if (!jaExiste) {
+                const interesse = comentarioDemonstraInteresse(comentario.message)
+                await supabase.from('social_comments').insert({
+                  demonstra_interesse: interesse,
+                  post_id: comentario.postId,
+                  comment_id: comentario.commentId,
+                  from_id: comentario.fromId,
+                  from_name: comentario.fromName,
+                  message: comentario.message,
+                  platform: comentario.platform,
+                  is_replied: false,
+                })
+                console.log('Public comment logged to social_comments.')
+
+                // Comentário NÃO vira lead (CRM da Clara é só de WhatsApp): fica na aba Comentários da
+                // Central Social, com selo de interesse, e a dona recebe o aviso.
+                if (interesse) await avisarComentarioInteressado(supabase, comentario)
+              }
             }
             continue // Skip lead generation for public comments
           }
@@ -636,65 +728,6 @@ Deno.serve(async (req: Request) => {
                       console.error('Erro ao chamar ai-sdr:', e)
                     }
                   }
-                }
-              }
-            } else {
-              const senderId = value.sender?.id
-              const messageText = value.message?.text
-
-              if (senderId && messageText) {
-                const { data: leads } = await supabase
-                  .from('leads')
-                  .select('id')
-                  .eq('external_lead_id', senderId)
-                  .limit(1)
-
-                let leadId = leads?.[0]?.id
-
-                if (!leadId) {
-                  // Padronização de vocabulário (19/08/2026): DM direto no
-                  // Instagram/Messenger é distinto de comentário público
-                  // virado lead manualmente (ver SocialComments.tsx) e de
-                  // clique-para-WhatsApp de anúncio — cada um com seu valor
-                  // próprio de origem, não o nome cru da plataforma.
-                  const { data: newLead } = await supabase
-                    .from('leads')
-                    .insert({
-                      nome: `Lead ${platform}`,
-                      external_lead_id: senderId,
-                      origem: platform === 'instagram' ? 'instagram_dm' : 'facebook_dm',
-                      source: platform,
-                      status: 'novo',
-                    })
-                    .select()
-                    .single()
-                  leadId = newLead?.id
-                }
-
-                if (leadId) {
-                  // Mesmo problema do ramo WhatsApp acima: 'Lead' viola a trava
-                  // de conversation_history.sender — nunca gravava nada.
-                  const { error: chError } = await supabase.from('conversation_history').insert({
-                    lead_id: leadId,
-                    sender: 'client',
-                    message_text: messageText,
-                  })
-                  if (chError) {
-                    console.error('Erro ao salvar mensagem do cliente (Instagram):', chError)
-                    await supabase
-                      .from('lead_errors')
-                      .insert({
-                        lead_data: { source: 'receive-leads', lead_id: leadId, timestamp: new Date().toISOString() },
-                        error_message: `Falha ao salvar conversation_history (instagram): ${chError.message}`,
-                      })
-                      .catch(() => {})
-                  }
-                  // Achado 19/08/2026: DM de Instagram/Messenger não passa
-                  // pela Clara (ai-sdr), então nunca recalculava ai_score —
-                  // ver _shared/lead-score.ts.
-                  await recalcularAiScore(supabase, leadId).catch((e) =>
-                    console.error('Erro ao recalcular ai_score (instagram):', e),
-                  )
                 }
               }
             }

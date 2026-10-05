@@ -221,7 +221,17 @@ export function montarLegendaSocial(v: VeiculoLegenda, op: OpcoesLegenda): strin
         (temLeilao ? '\nAtenção: veículo com passagem por leilão.' : ''),
     )
 
-    partes.push(`\n💬 Chame no WhatsApp: wa.me/${wa}`)
+    // Post orgânico não tem botão de contato (só anúncio tem). Facebook: o link https é
+    // clicável. Instagram: link na legenda NÃO é clicável, então aponta para o direct e a bio
+    // (decisão de 04/10/2026, a Adriana achou "wa.me/..." estranho no texto).
+    //
+    // Instagram: SEM convite de contato por enquanto (04/10/2026). O direct ainda não tem resposta
+    // automática e o WhatsApp da bio não é o da Clara; convidar o cliente para lá o mandaria para um
+    // canal sem atendimento. Trocar para CONVITE_DIRECT_INSTAGRAM quando o direct estiver atendido
+    // e a bio apontar para o número certo.
+    if (op.rede !== 'instagram') {
+      partes.push(`\n💬 Quer saber mais? Fale com a gente pelo WhatsApp:\nhttps://wa.me/${wa}`)
+    }
     if (op.rede === 'facebook' && v.slug) {
       partes.push(`🔗 Todas as fotos e detalhes: ${site}/estoque/${texto(v.slug)}`)
     }

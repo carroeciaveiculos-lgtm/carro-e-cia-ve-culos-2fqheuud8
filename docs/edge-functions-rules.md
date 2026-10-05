@@ -76,6 +76,7 @@ Isso quebra sincronizações de estoque, automações de leads, disparos de What
 | `gerar-conteudo-social`         | Server-to-Server        | Geração de conteúdo para redes sociais                                     |
 | `publicar-social`               | Server-to-Server        | Publicação em redes sociais                                                |
 | `social-actions`                | Server-to-Server        | Ações de redes sociais                                                     |
+| `social-mensagens`              | Browser autenticado     | Responde conversas da Central de Mensagens (Instagram/Messenger); confere o usuário dentro |
 | `content-workflow-notification` | Server-to-Server        | Notificação de workflow de conteúdo                                        |
 | `ai-assistant`                  | Server-to-Server        | Assistente de IA                                                           |
 | `ai-agents`                     | Server-to-Server        | Agentes de IA                                                              |

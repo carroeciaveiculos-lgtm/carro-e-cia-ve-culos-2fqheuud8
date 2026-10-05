@@ -73,6 +73,11 @@ verify_jwt = false
 [functions.social-actions]
 verify_jwt = true
 
+# Responde conversas da Central de Mensagens (Instagram/Messenger). Só o painel, com usuário logado;
+# a function confere o usuário dentro (a chave anon também passa no verify_jwt).
+[functions.social-mensagens]
+verify_jwt = true
+
 [functions.consultar-cpf]
 verify_jwt = true
 
