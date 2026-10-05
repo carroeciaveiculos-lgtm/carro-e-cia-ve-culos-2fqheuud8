@@ -233,3 +233,6 @@ leads da Clara, que serve **só para o WhatsApp** (anúncios orgânicos por What
 - **Segurança (05/10/2026):** `montar-post-veiculo` aceitava a chave pública (anon) mesmo com `verify_jwt = true` (conseguia criar rascunhos). Agora só aceita a **chave de serviço** (esteira/cron) ou **usuário logado**;
   anon → 401 (testado em produção). Padrão a repetir em toda function chamada pelo painel: conferir o usuário dentro (`auth.getUser`), já que a chave anon também passa no `verify_jwt`.
 - **Teste em produção (05/10/2026):** `montar-post-veiculo` na Frontier (só Facebook, rascunho já existente) verificou as 20 fotos (9 limpas / 11 marcadas, igual à contagem independente), populou o cache e não criou nem alterou post.
+- **Assinatura da Meta — 05/10/2026:** além do WhatsApp, um evento REAL de Facebook (`page`) também deu `diferente` com `META_APP_SECRET`. Hipóteses: valor guardado com quebra de linha/aspas, ou secret de outro app.
+  A conferência agora também tenta o valor sem espaços/quebra de linha/aspas (`meta-assinatura.ts`, testada). Segue em modo `log`; **o bloqueio NÃO foi ligado**. Se continuar `diferente` depois disso, o `META_APP_SECRET`
+  guardado não é o App Secret do app que envia (conferir em Meta for Developers → app → Configurações → Básico, e regravar com `! supabase secrets set META_APP_SECRET=<valor> --project-ref htpcqdbhktmvppfemnad`).

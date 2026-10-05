@@ -62,9 +62,17 @@ export async function assinaturaMetaValidaComVarios(
   if (validos.length === 0) return { ok: false, motivo: 'sem_segredo', segredoIndice: null }
   let ultimo: ResultadoAssinatura = { ok: false, motivo: 'diferente' }
   for (let i = 0; i < validos.length; i++) {
-    const r = await assinaturaMetaValida(corpoBruto, cabecalho, validos[i])
-    if (r.ok) return { ...r, segredoIndice: i }
-    ultimo = r
+    // Defeitos comuns ao guardar um secret: quebra de linha/espaço no fim (echo, copiar e colar) ou aspas
+    // em volta. Tenta o valor como está e as versões limpas; o App Secret real é só letras e números.
+    const cru = validos[i]
+    const candidatos = Array.from(
+      new Set([cru, cru.trim(), cru.trim().replace(/^["']+|["']+$/g, '')]),
+    ).filter((c) => c.length > 0)
+    for (const candidato of candidatos) {
+      const r = await assinaturaMetaValida(corpoBruto, cabecalho, candidato)
+      if (r.ok) return { ...r, segredoIndice: i }
+      ultimo = r
+    }
   }
   return { ...ultimo, segredoIndice: null }
 }
