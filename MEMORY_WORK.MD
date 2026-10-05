@@ -1,5 +1,32 @@
 # Memória de trabalho — Carro e Cia
 
+## [04/10/2026, noite] SESSÃO 31 — Central de Mensagens, assinatura da Meta, botões das Publicações, tela branca (tudo NO AR, commit `52910ee`)
+
+**No ar e verificado (site `/estoque` e `/admin/login` renderizam; deploys do site e das functions verdes):**
+- **Tela branca (28/09→04/10):** build do GitHub saía sem `VITE_SUPABASE_*`. Corrigido + 3 proteções (trava no build, teste pós-deploy, mensagem de emergência). Regra: "deploy verde ≠ no ar".
+- **Postagem automática Fase 2** (carrossel IG + várias fotos FB) e **botões Aprovar/Editar/Excluir/Publicar novamente** na tabela de Publicações e no painel de Aprovações
+  (`services/social-posts.ts`, `AcoesPostSocial.tsx`). A Adriana testou os botões: OK.
+- **Central de Mensagens** (decisão dela: mensagens e comentários ficam na Central de Redes Sociais, **fora do CRM da Clara, que é só WhatsApp; nenhum fluxo de rede social cria lead**):
+  tabelas `social_conversas`/`social_mensagens`, aba **Mensagens** (responder pelo painel via Edge Function `social-mensagens`, janela de 24 h), aba **Comentários** com selo
+  "Interesse de compra"; histórico importado (19 conversas, 123 mensagens, 68 comentários IG). Detalhes e becos sem saída em `docs/postagem-automatica-redes.md`.
+- **Causas de nunca ter existido lead/mensagem de DM:** (1) `receive-leads` só lia `entry.changes`, DM vem em `entry.messaging`; (2) o insert antigo do lead não levava `tipo` (NOT NULL). Comentários do Instagram também eram descartados (formato diferente do Facebook).
+- Legenda: Facebook com link `https://wa.me/...` limpo; Instagram **sem** convite ao direct/bio até o direct ter atendimento e a bio apontar para a Clara.
+
+**ABERTO (em ordem):**
+1. **Assinatura da Meta no webhook está em modo `log` (NÃO bloqueia).** Eventos reais de **WhatsApp deram `diferente`** com `META_APP_SECRET` → o app do WhatsApp deve ter OUTRO App Secret.
+   Ação da Adriana: pegar a "Chave secreta do aplicativo" do app que tem o produto WhatsApp (Meta for Developers) e rodar ela mesma
+   `! supabase secrets set META_APP_SECRET_WHATSAPP=<valor> --project-ref htpcqdbhktmvppfemnad` (NUNCA colar o valor no chat). Depois conferir:
+   `select platform, event_type, assinatura_ok, assinatura_motivo, count(*) from meta_webhook_logs where assinatura_ok is not null group by 1,2,3,4;`
+   Quando `page`, `instagram` e `whatsapp_business_account` mostrarem `ok`/`ok_segredo_N` em eventos REAIS, ligar o bloqueio (ela já autorizou):
+   `supabase secrets set META_WEBHOOK_SIGNATURE_MODE=enforce` (ou por tipo: `page,instagram`). **Não ligar antes da prova** (derrubaria WhatsApp/Clara). Sem eventos reais de FB/IG desde o deploy (domingo à noite).
+   Risco enquanto isso: qualquer um que saiba a URL ainda consegue injetar eventos (inclusive "WhatsApp" que aciona a Clara).
+2. **Testar na tela com login:** abas Mensagens e Comentários. O **primeiro envio real** pela Meta (função `social-mensagens`) valida permissão/endpoint (`POST /{FACEBOOK_PAGE_ID}/messages`); NUNCA testado contra a Meta.
+3. A conversa com 57 mensagens e as 104 respostas "da equipe" no direct: de onde vêm (automação/fluxo de anúncio)? Evitar duas automações respondendo.
+4. Bio do Instagram: o link de WhatsApp aponta para `5534999484285`, não para a Clara (`5534997384177`) — decisão dela. Botão "Enviar mensagem" na página do Facebook (ela configura). Conferir na Meta se o Messenger da página está inscrito em `messages` (0 eventos em 30 dias).
+5. Aviso por WhatsApp (DM/comentário) é texto livre: só chega dentro da janela de 24 h; perguntei se os 3 avisos de teste chegaram — sem resposta ainda.
+6. Defeito latente pré-existente: `.catch(() => {})` em `supabase.from().insert()` no `receive-leads` (~linhas 681 e 772 e no `catch` final) — o builder não tem `.catch`.
+7. Fase 3 da postagem (vídeo e Stories); decisão do post real da Frontier (rascunhos IG `b90522e2…`, FB `52c8869d…`); Clara responder Instagram/Messenger (fase futura); campanhas (0 leads novos desde 24/09).
+
 ## [04/10/2026] Postagem automática — FASE 2 CONSTRUÍDA (carrossel); publicação real aguarda a Adriana
 
 Detalhe em `docs/postagem-automatica-redes.md` ("Fase 2"). No ar: `montar-post-veiculo` (novo), `publicar-social` (ramo

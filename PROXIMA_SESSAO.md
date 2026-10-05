@@ -1,5 +1,34 @@
 # Prompt pra próxima sessão
 
+## Sessão 31 → 32 (04/10/2026) — prompt atual
+
+Copie e cole como primeira mensagem numa sessão nova do Claude Code.
+
+```
+Projeto: Carro e Cia Veículos (revenda). Pasta de trabalho:
+C:\Projeto\Revenda Carro e Cia\carro-e-cia-ve-culos-2fqheuud8
+
+Continuando da sessão 31 (04/10/2026). Leia primeiro MEMORY_WORK.MD, seção "[04/10/2026, noite] SESSÃO 31". Estado: tudo commitado e NO AR
+(commit `52910ee`; deploys do site e das functions verdes; site conferido). Feito: Central de Mensagens (Instagram/Messenger) e Comentários na
+Central de Redes Sociais, FORA do CRM da Clara (que é só WhatsApp); botões das Publicações; Fase 2 da postagem; tela branca corrigida.
+
+O que ficou ABERTO, em ordem:
+1. ASSINATURA DA META no webhook `receive-leads` está em modo `log` (não bloqueia). Eventos reais de WhatsApp deram "diferente" com META_APP_SECRET
+   (outro app). A Adriana precisa rodar ela mesma `! supabase secrets set META_APP_SECRET_WHATSAPP=<valor> --project-ref htpcqdbhktmvppfemnad`
+   (nunca no chat). Depois eu confiro `meta_webhook_logs.assinatura_ok` em eventos REAIS (page, instagram, whatsapp) e ligo o bloqueio
+   (`META_WEBHOOK_SIGNATURE_MODE=enforce`, ou por tipo `page,instagram`) — ela JÁ autorizou ligar. Não ligar sem a prova.
+2. Testar as abas Mensagens e Comentários com login; o primeiro envio real pela Meta (`social-mensagens`) nunca foi testado.
+3. De onde vêm as ~104 respostas "da equipe" no direct (uma conversa tem 57)? Bio do Instagram aponta p/ 5534999484285 (não é a Clara).
+   Messenger da página: 0 eventos em 30 dias (conferir inscrição em `messages`).
+4. Menores: `.catch` latente no receive-leads, Fase 3 (vídeo/Stories), post real da Frontier, Clara no Instagram/Messenger, campanhas sem lead desde 24/09.
+Regras dela: pedir autorização com blocos de ações (deploy e git push à parte); testar TUDO antes de dizer que funciona e dizer o que não testei;
+resposta em português do Brasil; terminar com lista feito/pendente.
+```
+
+---
+
+## Prompt da sessão anterior (30) — histórico
+
 Copie e cole como primeira mensagem numa sessão nova do Claude Code.
 
 ```
