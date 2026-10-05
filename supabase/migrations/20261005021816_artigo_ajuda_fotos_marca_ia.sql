@@ -1,0 +1,13 @@
+-- Artigo novo: aba "Fotos" da Central de Redes Sociais (fotos com marca de IA do Galaxy AI). 04/10/2026. Não duplica se rodar de novo.
+INSERT INTO public.ajuda_conteudos (titulo, setor_id, categoria, caminho, o_que_e, para_que_serve, quando_utilizar, como_utilizar, dependencias)
+SELECT
+  'Fotos com marca de IA: conferir e reenviar as originais (Central de Redes Sociais)',
+  '42cc009b-1f94-4bf1-bd2e-8b486f4c11fa'::uuid,
+  'Marketing',
+  'Menu lateral → Marketing → Central de Redes Sociais (/admin/central-social), aba "Fotos"',
+  'Lista, por veículo ativo, quantas fotos do cadastro foram editadas por IA no celular Samsung (Galaxy AI, recurso "Photo assist") e por isso trazem a marca d''água "Conteúdo gerado por IA" dentro da imagem.',
+  'Garantir que os carrosséis das redes sociais usem só fotos sem a marca e saber quais fotos reenviar. A marca NÃO é removida: a foto foi de fato editada por IA e esconder isso num anúncio de veículo engana o comprador.',
+  'Antes de aprovar posts em lote, depois de reenviar fotos ao Drive e sincronizar o veículo, ou quando um carrossel for recusado por "menos de 6 fotos sem marca de IA".',
+  E'1. Abra a Central de Redes Sociais e clique em "Fotos".\n2. Na primeira vez (e sempre que entrarem fotos novas), clique em "Verificar fotos novas". A tela mostra o andamento (por exemplo 12/29) e leva alguns minutos.\n3. Cada linha mostra o veículo, quantas fotos estão limpas e quantas têm marca, e a situação: "Apto para carrossel" (6 ou mais fotos limpas), "Precisa de fotos novas" (menos de 6) ou "Não verificado". Os que precisam de atenção aparecem primeiro; o botão "Só os com problema" esconde os aptos.\n4. Clique numa linha para ver as fotos com marca (bordas laranja) e os nomes dos arquivos.\n5. Para resolver: no celular, reenvie ao Drive as fotos ORIGINAIS (sem edição por IA; o Galaxy guarda a original ao lado da editada) e, no cadastro do veículo, use "Sync Drive". Depois volte aqui e clique em "Reverificar tudo".\n6. Dica: nas próximas fotos, desligue o "Photo assist" ao editar. A foto sem edição já é boa para anúncio.\nLimites: a verificação lê os metadados da foto. Uma foto editada por IA e depois reenviada por WhatsApp perde os metadados e mantém a marca d''água, então pode aparecer como limpa; confira de olho. As fotos marcadas continuam no site e nos portais até serem trocadas.',
+  'Setor Marketing; fotos do veículo sincronizadas (cadastro do veículo). A verificação só lê as fotos, não altera o cadastro.'
+WHERE NOT EXISTS (SELECT 1 FROM public.ajuda_conteudos WHERE titulo = 'Fotos com marca de IA: conferir e reenviar as originais (Central de Redes Sociais)');

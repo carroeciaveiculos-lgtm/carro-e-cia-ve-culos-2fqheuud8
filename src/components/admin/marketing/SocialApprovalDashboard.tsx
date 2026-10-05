@@ -302,6 +302,22 @@ export function SocialApprovalDashboard() {
                         ? `${FORMATO_ROTULO[post.formato] ?? post.formato}${midias.length > 1 ? ` · ${midias.length} fotos` : ''}`
                         : post.content_type}
                     </Badge>
+                    {post.formato === 'feed_carrossel' &&
+                      typeof post.fotos_marcadas_ia === 'number' && (
+                        <Badge
+                          variant="outline"
+                          className={
+                            post.fotos_marcadas_ia > 0
+                              ? 'text-xs border-amber-400 text-amber-700 bg-amber-50'
+                              : 'text-xs border-green-400 text-green-700 bg-green-50'
+                          }
+                          title="Fotos editadas por IA (Galaxy AI) trazem a marca d'água 'Conteúdo gerado por IA'"
+                        >
+                          {post.fotos_marcadas_ia > 0
+                            ? `${post.fotos_marcadas_ia} foto(s) com marca de IA`
+                            : 'Fotos sem marca de IA'}
+                        </Badge>
+                      )}
                     {post.veiculos && (
                       <span className="text-xs text-purple-600 font-medium">
                         {post.veiculos.marca} {post.veiculos.modelo}

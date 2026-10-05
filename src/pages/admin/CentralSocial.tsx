@@ -1,11 +1,19 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Share2, CheckCircle2, MessageCircle, MessagesSquare, Sparkles } from 'lucide-react'
+import {
+  Share2,
+  CheckCircle2,
+  ImageOff,
+  MessageCircle,
+  MessagesSquare,
+  Sparkles,
+} from 'lucide-react'
 import RedesSociais from './RedesSociais'
 import SocialComments from './SocialComments'
 import { SocialApprovalDashboard } from '@/components/admin/marketing/SocialApprovalDashboard'
 import { IdeiasSociais } from '@/components/admin/marketing/IdeiasSociais'
 import { SocialMensagens } from '@/components/admin/marketing/SocialMensagens'
+import { FotosMarcaIA } from '@/components/admin/marketing/FotosMarcaIA'
 import { contarNaoLidas } from '@/services/social-inbox'
 
 // Central de Redes Sociais (14/08/2026, pedido da Adriana) — unifica 3 telas
@@ -71,6 +79,12 @@ export default function CentralSocial() {
             <MessageCircle className="w-4 h-4 mr-2" /> Comentários
           </TabsTrigger>
           <TabsTrigger
+            value="fotos"
+            className="py-2.5 px-4 data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700"
+          >
+            <ImageOff className="w-4 h-4 mr-2" /> Fotos
+          </TabsTrigger>
+          <TabsTrigger
             value="ideias"
             className="py-2.5 px-4 data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700"
           >
@@ -92,6 +106,9 @@ export default function CentralSocial() {
         </TabsContent>
         <TabsContent value="comentarios" className="mt-4 overflow-y-auto">
           <SocialComments embedded />
+        </TabsContent>
+        <TabsContent value="fotos" className="mt-4 overflow-y-auto">
+          <FotosMarcaIA />
         </TabsContent>
         <TabsContent value="ideias" className="mt-4 overflow-y-auto">
           <IdeiasSociais />

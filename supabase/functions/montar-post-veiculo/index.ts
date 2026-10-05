@@ -4,6 +4,7 @@ import { corsHeaders } from '../_shared/cors.ts'
 import { buscarFraseFinal } from '../_shared/descricao-anuncio.ts'
 import { montarLegendaSocial } from '../_shared/legenda-social.ts'
 import { proporcaoAceitaPeloInstagram } from '../_shared/foto-jpeg.ts'
+import { MIN_FOTOS_LIMPAS, classificarFotos } from '../_shared/foto-marca-ia.ts'
 
 // Monta os posts de redes sociais de um veículo e grava na fila (social_posts) — Fase 2 da
 // postagem automática (03/10/2026; docs/postagem-automatica-redes.md).
@@ -14,7 +15,12 @@ import { proporcaoAceitaPeloInstagram } from '../_shared/foto-jpeg.ts'
 // veículo de ganhar dois posts automáticos iguais (formato + rede + ciclo).
 //
 // Corpo: { veiculo_id, redes?: ['instagram','facebook'], origem?: 'auto_novo'|'auto_rodizio',
-//          ciclo?: number, status?: 'Rascunho'|'Agendado', data_agendamento?: string }
+//          ciclo?: number, status?: 'Rascunho'|'Agendado', data_agendamento?: string,
+//          permitir_fotos_marcadas?: boolean }
+//
+// Fotos com marca de IA (Galaxy AI / "Photo assist", 04/10/2026): por padrão o carrossel usa SÓ fotos
+// sem a marca (ver _shared/foto-marca-ia.ts). Com menos de 6 fotos limpas o post não é criado.
+// `permitir_fotos_marcadas: true` volta ao comportamento antigo (as 10 primeiras, marcadas ou não).
 
 const MAX_FOTOS_CARROSSEL = 10
 const REDES_VALIDAS = ['instagram', 'facebook']
@@ -30,24 +36,56 @@ function resposta(corpo: Record<string, unknown>, status = 200) {
 // 03/10/2026, 574 de 574), mas filtra por segurança contra um arquivo diferente no meio. Também
 // tira as fotos com proporção que o Instagram recusa (vertical 3:4 etc., fora de 4:5 a 1,91:1):
 // uma foto assim derrubaria o carrossel inteiro. Mantém a ordem do cadastro (capa primeiro).
-async function fotosParaCarrossel(fotos: unknown): Promise<string[]> {
-  if (!Array.isArray(fotos)) return []
+type EscolhaFotos = { fotos: string[]; limpas: number; marcadas: number; indeterminadas: number }
+
+// deno-lint-ignore no-explicit-any
+async function fotosParaCarrossel(
+  supabase: any,
+  veiculoId: string,
+  fotos: unknown,
+  permitirMarcadas: boolean,
+): Promise<EscolhaFotos> {
+  if (!Array.isArray(fotos)) return { fotos: [], limpas: 0, marcadas: 0, indeterminadas: 0 }
   const jpegs = fotos.filter(
     (u): u is string => typeof u === 'string' && /^https:\/\/.+\.jpe?g(\?.*)?$/i.test(u),
   )
+  // Verifica as fotos do cadastro (no máximo 24) quanto à marca de IA; o resultado fica em cache.
+  const marca = await classificarFotos(supabase, veiculoId, jpegs.slice(0, 24))
+  const limpas = jpegs.filter((u) => marca[u] === false).length
+  const marcadas = jpegs.filter((u) => marca[u] === true).length
+  const indeterminadas = jpegs.filter((u) => marca[u] === null).length
+
+  // Só entram as limpas (a menos que se permita as marcadas). Foto não verificada fica de fora.
+  const candidatas = permitirMarcadas ? jpegs : jpegs.filter((u) => marca[u] === false)
   const aceitas: string[] = []
-  // olha só as primeiras 14 pra não gastar leitura à toa; sobram até 4 de reserva
-  for (const url of jpegs.slice(0, MAX_FOTOS_CARROSSEL + 4)) {
+  // olha só as primeiras 14 candidatas pra não gastar leitura à toa; sobram até 4 de reserva
+  for (const url of candidatas.slice(0, MAX_FOTOS_CARROSSEL + 4)) {
     if (await proporcaoAceitaPeloInstagram(url)) aceitas.push(url)
     if (aceitas.length === MAX_FOTOS_CARROSSEL) break
   }
-  return aceitas
+  return { fotos: aceitas, limpas, marcadas, indeterminadas }
 }
 
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
 
   try {
+    // verify_jwt=true também deixa passar a chave PÚBLICA (anon), que qualquer visitante do site tem.
+    // Aqui só entra quem for a própria plataforma (chave de serviço: esteira/cron) ou um usuário logado
+    // no painel (achado em 05/10/2026: a chave anon conseguia criar rascunhos).
+    const jwt = (req.headers.get('Authorization') || '').replace(/^Bearer\s+/i, '')
+    const ehServico = !!jwt && jwt === Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+    if (!ehServico) {
+      const verificador = createClient(
+        Deno.env.get('SUPABASE_URL')!,
+        Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+      )
+      const { data: u, error: erroAuth } = await verificador.auth.getUser(jwt)
+      if (erroAuth || !u?.user) {
+        return resposta({ success: false, error: 'Sessão expirada. Entre no painel de novo.' }, 401)
+      }
+    }
+
     const body = await req.json().catch(() => ({}))
     const veiculoId: string | undefined = body.veiculo_id
     if (!veiculoId) return resposta({ success: false, error: 'veiculo_id obrigatório' }, 400)
@@ -87,13 +125,33 @@ Deno.serve(async (req: Request) => {
       )
     }
 
-    const fotos = await fotosParaCarrossel(veiculo.fotos)
+    const permitirMarcadas = body.permitir_fotos_marcadas === true
+    const escolha = await fotosParaCarrossel(supabase, veiculo.id, veiculo.fotos, permitirMarcadas)
+    const fotos = escolha.fotos
+    if (!permitirMarcadas && escolha.limpas < MIN_FOTOS_LIMPAS) {
+      return resposta(
+        {
+          success: false,
+          codigo: 'fotos_limpas_insuficientes',
+          error: `Só ${escolha.limpas} foto(s) sem marca de IA no cadastro (mínimo ${MIN_FOTOS_LIMPAS}). Reenvie as fotos originais, sem edição por IA, e sincronize de novo.`,
+          fotos_limpas: escolha.limpas,
+          fotos_marcadas: escolha.marcadas,
+          fotos_nao_verificadas: escolha.indeterminadas,
+        },
+        422,
+      )
+    }
     if (fotos.length < 2) {
       return resposta(
         { success: false, error: 'O carrossel precisa de pelo menos 2 fotos em JPG no cadastro' },
         422,
       )
     }
+
+    // quantas das fotos ESCOLHIDAS têm marca de IA (0 quando só entram as limpas)
+    const marcadasNoPost = permitirMarcadas
+      ? (await classificarFotos(supabase, veiculo.id, fotos).then((m) => fotos.filter((u) => m[u] === true).length))
+      : 0
 
     const fraseFinal = await buscarFraseFinal(supabase)
     const resultados: Record<string, unknown> = {}
@@ -117,6 +175,7 @@ Deno.serve(async (req: Request) => {
           origem,
           ciclo,
           status,
+          fotos_marcadas_ia: marcadasNoPost,
           data_agendamento: body.data_agendamento || new Date().toISOString(),
         })
         .select('id')

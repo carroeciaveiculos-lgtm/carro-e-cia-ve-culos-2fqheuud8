@@ -212,3 +212,24 @@ leads da Clara, que serve **só para o WhatsApp** (anúncios orgânicos por What
   Também removido o token de verificação padrão que estava escrito no código (`META_VERIFY_TOKEN` agora é obrigatório para a verificação GET).
   Consulta de conferência: `select assinatura_ok, assinatura_motivo, platform, count(*) from meta_webhook_logs where created_at > now() - interval '1 day' group by 1,2,3;`
 - **Beco sem saída (testes):** simulador de banco em memória precisa de `then` no builder para `await insert()` sem `.select()`; sem isso a gravação "some" no teste (defeito do teste, não do código).
+
+### 04/10/2026 — Fotos com marca de IA (Galaxy AI): decisão, inventário e regra do carrossel
+
+- **O que é:** o "Photo assist" do **Galaxy AI (Samsung, ex.: Galaxy S23 Ultra)** grava nas fotos editadas (1) uma **marca d'água visível "Conteúdo gerado por IA"**
+  no canto inferior esquerdo, **nos próprios pixels** (confirmado abrindo o arquivo de 4000×3000 fora do Instagram), e (2) **Credenciais de Conteúdo (C2PA)** nos metadados,
+  com `softwareAgent = "Photo assist"` e `digitalSourceType = compositeWithTrainedAlgorithmicMedia`. **Não é rótulo do Instagram** (a 1ª explicação, "Google/Pixel + rótulo da Meta", estava errada).
+- **Decisão da Adriana (04/10/2026):** aceitar o selo no post da Frontier já publicado; **nunca remover/esconder a marca** (cortar, retocar ou apagar metadados). A foto foi de fato editada por IA; esconder
+  isso em anúncio de veículo engana o comprador (CDC art. 37) e contraria as regras da Meta. Caminho: usar fotos sem a marca ou reenviar as **originais** (o Galaxy guarda a original ao lado da editada) e desligar o Photo assist.
+- **Inventário (04/10/2026, detecção por C2PA):** 29 veículos ativos, 554 fotos, **235 (42%) marcadas**; 11 veículos com 10+ fotos limpas, 15 com 8-9, 3 com 6 (Hilux SW4 `QXH1J94`, Tiggo `RTP2G79`, Volvo XC60 `SYI6C55`); nenhum com todas marcadas.
+  Na Frontier as 9 limpas são só **interior/painel** — as de fora (com a placa trocada) foram as editadas. Essas mesmas fotos alimentam site e portais (não conferi se a marca d'água aparece lá).
+- **Limite da detecção:** só metadados. Foto editada e depois reenviada por WhatsApp perde o C2PA e mantém a marca d'água → aparece como "limpa". Detectar a marca d'água visível exigiria OCR/visão (não feito).
+- **Regra do carrossel (`montar-post-veiculo`):** por padrão usa **só fotos limpas** (verificadas por `_shared/foto-marca-ia.ts`, com cache em `veiculo_fotos_ia`); **menos de 6 limpas = não cria o post** (422, código
+  `fotos_limpas_insuficientes`); `permitir_fotos_marcadas: true` volta ao antigo. `social_posts.fotos_marcadas_ia` guarda a contagem (selo verde/âmbar no cartão de Aprovações).
+- **Aba "Fotos"** da Central (`FotosMarcaIA.tsx`, function `auditar-fotos-ia`, `verify_jwt=true` + confere o usuário dentro): relatório por veículo, "Verificar fotos novas" / "Reverificar tudo". O cache começa VAZIO: depois do deploy, clicar em "Verificar fotos novas".
+- **Rascunho do Facebook da Frontier** (`52c8869d`) foi refeito com as 9 fotos limpas (capa agora é foto de interior; o post do Instagram já publicado tem 8 fotos marcadas e segue como está).
+- **Ordem da esteira de aprovação (decisão da Adriana, 04/10/2026):** veículos **mais recentes no estoque primeiro**, e para cada veículo o **carrossel e depois o vídeo**. Demais decisões do plano da esteira
+  (orgânico x pago, IG+FB juntos, ritmo/horários, vídeos arriscados) ainda abertas. Vídeos do estoque: 7, todos 9:16 (39-71 s); 6 em HEVC; Hilux `RUG8F56` 246 MB/4K sem faststart; Rampage `GTN5D81` 478×850.
+- **Beco sem saída:** o Cloudflare do R2 devolve 403 para o User-Agent padrão do Python/urllib (usar `User-Agent: Mozilla/5.0`); Deno/bun/curl passam.
+- **Segurança (05/10/2026):** `montar-post-veiculo` aceitava a chave pública (anon) mesmo com `verify_jwt = true` (conseguia criar rascunhos). Agora só aceita a **chave de serviço** (esteira/cron) ou **usuário logado**;
+  anon → 401 (testado em produção). Padrão a repetir em toda function chamada pelo painel: conferir o usuário dentro (`auth.getUser`), já que a chave anon também passa no `verify_jwt`.
+- **Teste em produção (05/10/2026):** `montar-post-veiculo` na Frontier (só Facebook, rascunho já existente) verificou as 20 fotos (9 limpas / 11 marcadas, igual à contagem independente), populou o cache e não criou nem alterou post.

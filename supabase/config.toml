@@ -78,6 +78,10 @@ verify_jwt = true
 [functions.social-mensagens]
 verify_jwt = true
 
+# Verifica fotos com marca de IA (aba Fotos da Central). Só o painel, com usuário logado; confere o usuário dentro.
+[functions.auditar-fotos-ia]
+verify_jwt = true
+
 [functions.consultar-cpf]
 verify_jwt = true
 
