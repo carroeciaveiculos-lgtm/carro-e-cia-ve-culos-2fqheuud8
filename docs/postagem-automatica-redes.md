@@ -113,3 +113,18 @@ não foram alterados.
 - Não colocar `UNIQUE (veiculo_id, formato, rede)` sem `ciclo`: impediria repostar o veículo meses depois no rodízio.
 - Não usar a coluna `redes` (jsonb, lista OU objeto conforme quem gravou) como chave de unicidade: por isso a coluna
   `rede` (uma por linha) nos posts automáticos.
+
+## Painel de aprovação — botões de ação (04/10/2026, pedido da Adriana)
+
+`SocialApprovalDashboard.tsx` (Central Social, aba "Aprovações"). Cada cartão mostra rede, formato ("Carrossel · N
+fotos"), todas as fotos (`midias`, ou `imagem` nos posts antigos) e a legenda. Ações por estado:
+- **Rascunho/Aprovado:** Editar, **Aprovar** (→ `Agendado`), **Excluir**.
+- **Agendado:** Editar, Excluir. **Publicando:** sem botões (post travado pelo publicador; antes sumia da lista).
+- **Erro:** Editar, **Publicar novamente** (→ `Agendado`, zera `tentativas` e `publicando_em`; sem zerar, um carrossel que
+  já falhou 3 vezes ganharia 1 chance só), Excluir.
+- **Publicado:** **Publicar novamente** = cria um post NOVO igual (`origem = manual`, `Agendado`, agora; confirmação avisa
+  que o conteúdo aparece duas vezes) e **Excluir** = remove só da lista (**não apaga o post do Instagram/Facebook**).
+- **Editar** muda legenda, data/hora e, no carrossel, tira fotos (mínimo 2; atualiza `midias` e `imagem`).
+- Excluir/Publicar novamente usam `AlertDialog` (não o `confirm()` do navegador).
+- Beco sem saída: não há "Publicar agora" imediato — `publicar-social` só aceita o segredo interno, então o front não
+  consegue chamá-la; o cron de 15 min publica. Se for preciso, criar uma function proxy autenticada.

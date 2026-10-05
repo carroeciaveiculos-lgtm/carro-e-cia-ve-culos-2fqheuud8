@@ -3,17 +3,32 @@ import { supabase } from '@/lib/supabase/client'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
+import {
   Check,
-  X,
+  Trash2,
   Edit2,
   Clock,
   Save,
   Loader2,
   AlertTriangle,
   RefreshCw,
+  Repeat,
   CheckCircle2,
+  Facebook,
+  Instagram,
+  X,
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 
@@ -23,22 +38,69 @@ import { useToast } from '@/hooks/use-toast'
 // explicação, o aviso dizia só "aprovado e agendado", e quem falhava virava
 // 'Erro' e sumia da lista sem nenhum aviso. Agora a tela mostra o estado real,
 // atualiza sozinha e avisa quando o resultado chega.
+//
+// 04/10/2026 (pedido da Adriana): botões de ação em todos os estados —
+// Aprovar, Editar (texto, horário e fotos do carrossel), Excluir e Publicar
+// novamente — e visualização do carrossel (todas as fotos) com a rede e o
+// formato de cada post. Estado 'Publicando' (post travado pelo publicador) agora
+// aparece na lista em vez de sumir enquanto a Meta processa.
 const ATUALIZACAO_MS = 30_000
 const ORDEM_STATUS: Record<string, number> = {
   Erro: 0,
-  Agendado: 1,
-  Rascunho: 2,
-  Aprovado: 3,
-  Publicado: 4,
+  Publicando: 1,
+  Agendado: 2,
+  Rascunho: 3,
+  Aprovado: 4,
+  Publicado: 5,
 }
 const DIAS_ERRO = 7
 const HORAS_PUBLICADO = 48
+const MIN_FOTOS_CARROSSEL = 2
+
+const FORMATO_ROTULO: Record<string, string> = {
+  feed_carrossel: 'Carrossel',
+  feed_foto: 'Foto no feed',
+  feed_video: 'Vídeo no feed',
+  story_foto: 'Story (foto)',
+  story_video: 'Story (vídeo)',
+}
+
+type Confirmacao = { tipo: 'excluir' | 'republicar'; post: any } | null
+
+// "2026-10-04T09:00" (horário local do navegador) <-> ISO (UTC) do banco
+const paraCampoData = (iso: string | null) => {
+  if (!iso) return ''
+  const d = new Date(iso)
+  const local = new Date(d.getTime() - d.getTimezoneOffset() * 60_000)
+  return local.toISOString().slice(0, 16)
+}
+const doCampoData = (valor: string) => (valor ? new Date(valor).toISOString() : null)
+
+// Redes do post: linhas novas têm a coluna `rede`; as antigas guardam em `redes`
+// (lista ["facebook"] ou objeto {facebook:true}).
+const redesDoPost = (post: any): string[] => {
+  if (post.rede) return [post.rede]
+  const r = post.redes
+  if (Array.isArray(r)) return r
+  if (r && typeof r === 'object') return Object.keys(r).filter((k) => r[k])
+  return []
+}
+
+// Fotos do post: o carrossel novo usa `midias`; os posts antigos, só `imagem`.
+const midiasDoPost = (post: any): string[] => {
+  if (Array.isArray(post.midias) && post.midias.length > 0) return post.midias
+  return post.imagem ? [post.imagem] : []
+}
 
 export function SocialApprovalDashboard() {
   const [posts, setPosts] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editText, setEditText] = useState('')
+  const [editData, setEditData] = useState('')
+  const [editMidias, setEditMidias] = useState<string[]>([])
+  const [confirmacao, setConfirmacao] = useState<Confirmacao>(null)
+  const [ocupadoId, setOcupadoId] = useState<string | null>(null)
   const statusAnterior = useRef<Record<string, string>>({})
   const { toast } = useToast()
 
@@ -47,7 +109,7 @@ export function SocialApprovalDashboard() {
     const { data, error } = await supabase
       .from('social_posts')
       .select('*, veiculos(marca, modelo)')
-      .in('status', ['Rascunho', 'Agendado', 'Aprovado', 'Erro', 'Publicado'])
+      .in('status', ['Rascunho', 'Agendado', 'Publicando', 'Aprovado', 'Erro', 'Publicado'])
       .order('data_agendamento', { ascending: false })
     if (error) {
       if (!silencioso) toast({ title: 'Erro ao carregar os posts', variant: 'destructive' })
@@ -75,9 +137,10 @@ export function SocialApprovalDashboard() {
     // Avisa quando um post que estava aguardando publicação teve resultado.
     for (const p of visiveis) {
       const antes = statusAnterior.current[p.id]
-      if (antes === 'Agendado' && p.status === 'Publicado') {
+      const esperava = antes === 'Agendado' || antes === 'Publicando'
+      if (esperava && p.status === 'Publicado') {
         toast({ title: 'Post publicado com sucesso nas redes!' })
-      } else if (antes === 'Agendado' && p.status === 'Erro') {
+      } else if (esperava && p.status === 'Erro') {
         toast({
           title: 'Não foi possível publicar o post',
           description: p.erro_msg || 'Veja o motivo no cartão do post.',
@@ -95,18 +158,22 @@ export function SocialApprovalDashboard() {
   }, [])
 
   // Enquanto houver post esperando publicação, confere o resultado sozinho.
-  const temAgendado = posts.some((p) => p.status === 'Agendado')
+  const temEmFila = posts.some((p) => p.status === 'Agendado' || p.status === 'Publicando')
   useEffect(() => {
-    if (!temAgendado) return
+    if (!temEmFila) return
     const t = setInterval(() => fetchPosts(true), ATUALIZACAO_MS)
     return () => clearInterval(t)
-  }, [temAgendado])
+  }, [temEmFila])
 
+  // Aprovar e "tentar de novo" são a mesma operação: põe na fila de publicação e zera
+  // as tentativas (sem zerar, um carrossel que já falhou 3 vezes ganharia só 1 chance).
   const agendar = async (id: string, aviso: string) => {
+    setOcupadoId(id)
     const { error } = await supabase
       .from('social_posts')
-      .update({ status: 'Agendado', erro_msg: null })
+      .update({ status: 'Agendado', erro_msg: null, tentativas: 0, publicando_em: null })
       .eq('id', id)
+    setOcupadoId(null)
     if (error) {
       toast({
         title: 'Não foi possível aprovar o post',
@@ -132,33 +199,109 @@ export function SocialApprovalDashboard() {
   const handleRetry = (id: string) =>
     agendar(id, 'Nova tentativa agendada. Avisamos aqui quando o resultado chegar.')
 
-  const handleReject = async (id: string) => {
-    if (!confirm('Rejeitar este post?')) return
-    const { error } = await supabase.from('social_posts').delete().eq('id', id)
+  const excluir = async (post: any) => {
+    setOcupadoId(post.id)
+    const { error } = await supabase.from('social_posts').delete().eq('id', post.id)
+    setOcupadoId(null)
     if (error) {
       toast({
-        title: 'Não foi possível rejeitar o post',
+        title: 'Não foi possível excluir o post',
         description: error.message,
         variant: 'destructive',
       })
       return
     }
-    toast({ title: 'Post rejeitado' })
+    toast({
+      title:
+        post.status === 'Publicado'
+          ? 'Removido da lista. A publicação continua no Instagram/Facebook.'
+          : 'Post excluído',
+    })
     fetchPosts(true)
   }
 
-  const handleSaveEdit = async (id: string) => {
-    const { error } = await supabase.from('social_posts').update({ texto: editText }).eq('id', id)
+  // "Publicar novamente" um post já publicado = criar um post NOVO igual, na fila. O
+  // original fica como está. Entra como origem 'manual' (a trava contra repetição só
+  // vale para os automáticos) e vai direto pra fila de publicação.
+  const republicar = async (post: any) => {
+    setOcupadoId(post.id)
+    const { error } = await supabase.from('social_posts').insert({
+      redes: post.redes,
+      texto: post.texto,
+      imagem: post.imagem,
+      midias: post.midias ?? [],
+      veiculo_id: post.veiculo_id,
+      content_type: post.content_type,
+      formato: post.formato,
+      rede: post.rede,
+      origem: 'manual',
+      status: 'Agendado',
+      data_agendamento: new Date().toISOString(),
+    })
+    setOcupadoId(null)
     if (error) {
       toast({
-        title: 'Não foi possível salvar o texto',
+        title: 'Não foi possível publicar novamente',
+        description: error.message,
+        variant: 'destructive',
+      })
+      return
+    }
+    toast({
+      title: 'Nova publicação na fila! Ela sai em até 15 minutos e avisamos aqui.',
+    })
+    fetchPosts(true)
+  }
+
+  const confirmar = async () => {
+    const c = confirmacao
+    setConfirmacao(null)
+    if (!c) return
+    if (c.tipo === 'excluir') await excluir(c.post)
+    else await republicar(c.post)
+  }
+
+  const iniciarEdicao = (post: any) => {
+    setEditingId(post.id)
+    setEditText(post.texto ?? '')
+    setEditData(paraCampoData(post.data_agendamento))
+    setEditMidias(midiasDoPost(post))
+  }
+
+  const handleSaveEdit = async (post: any) => {
+    if (!editText.trim()) {
+      toast({ title: 'O texto do post não pode ficar vazio', variant: 'destructive' })
+      return
+    }
+    const ehCarrossel = post.formato === 'feed_carrossel'
+    if (ehCarrossel && editMidias.length < MIN_FOTOS_CARROSSEL) {
+      toast({
+        title: `O carrossel precisa de pelo menos ${MIN_FOTOS_CARROSSEL} fotos`,
+        variant: 'destructive',
+      })
+      return
+    }
+    const campos: { texto: string; data_agendamento?: string; midias?: string[]; imagem?: string } =
+      { texto: editText }
+    const novaData = doCampoData(editData)
+    if (novaData) campos.data_agendamento = novaData
+    if (editMidias.length > 0 && (ehCarrossel || (post.midias ?? []).length > 0)) {
+      campos.midias = editMidias
+      campos.imagem = editMidias[0]
+    }
+    setOcupadoId(post.id)
+    const { error } = await supabase.from('social_posts').update(campos).eq('id', post.id)
+    setOcupadoId(null)
+    if (error) {
+      toast({
+        title: 'Não foi possível salvar as alterações',
         description: error.message,
         variant: 'destructive',
       })
       return
     }
     setEditingId(null)
-    toast({ title: 'Texto atualizado' })
+    toast({ title: 'Alterações salvas' })
     fetchPosts(true)
   }
 
@@ -166,6 +309,7 @@ export function SocialApprovalDashboard() {
     const map: Record<string, string> = {
       Rascunho: 'bg-slate-200 text-slate-700',
       Agendado: 'bg-blue-100 text-blue-700',
+      Publicando: 'bg-amber-100 text-amber-800',
       Aprovado: 'bg-green-100 text-green-700',
       Erro: 'bg-red-100 text-red-700',
       Publicado: 'bg-green-100 text-green-700',
@@ -188,117 +332,233 @@ export function SocialApprovalDashboard() {
       {posts.length === 0 ? (
         <p className="text-center text-slate-500 py-8">Nenhum post pendente de aprovação.</p>
       ) : (
-        posts.map((post) => (
-          <Card key={post.id} className="border-slate-200">
-            <CardContent className="pt-4 space-y-3">
-              <div className="flex items-center justify-between flex-wrap gap-2">
-                <div className="flex items-center gap-2">
-                  <Badge className={statusBadge(post.status)}>{post.status}</Badge>
-                  {post.content_type && (
-                    <Badge variant="outline" className="text-xs capitalize">
-                      {post.content_type}
+        posts.map((post) => {
+          const editando = editingId === post.id
+          const ocupado = ocupadoId === post.id
+          const midias = editando ? editMidias : midiasDoPost(post)
+          const ehCarrossel = post.formato === 'feed_carrossel'
+          const podeEditar = ['Rascunho', 'Agendado', 'Erro', 'Aprovado'].includes(post.status)
+          const redes = redesDoPost(post)
+          return (
+            <Card key={post.id} className="border-slate-200">
+              <CardContent className="pt-4 space-y-3">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <Badge className={statusBadge(post.status)}>{post.status}</Badge>
+                    {redes.includes('instagram') && (
+                      <Badge variant="outline" className="text-xs gap-1">
+                        <Instagram className="w-3 h-3" /> Instagram
+                      </Badge>
+                    )}
+                    {redes.includes('facebook') && (
+                      <Badge variant="outline" className="text-xs gap-1">
+                        <Facebook className="w-3 h-3" /> Facebook
+                      </Badge>
+                    )}
+                    <Badge variant="outline" className="text-xs">
+                      {post.formato
+                        ? `${FORMATO_ROTULO[post.formato] ?? post.formato}${midias.length > 1 ? ` · ${midias.length} fotos` : ''}`
+                        : post.content_type}
                     </Badge>
-                  )}
-                  {post.veiculos && (
-                    <span className="text-xs text-purple-600 font-medium">
-                      {post.veiculos.marca} {post.veiculos.modelo}
-                    </span>
-                  )}
-                </div>
-                <div className="flex items-center gap-1 text-xs text-slate-500">
-                  <Clock className="w-3 h-3" />
-                  {post.data_agendamento
-                    ? new Date(post.data_agendamento).toLocaleString('pt-BR')
-                    : 'Sem data'}
-                </div>
-              </div>
-              {post.status === 'Agendado' && (
-                <div className="flex items-center gap-2 rounded-md bg-blue-50 border border-blue-200 px-3 py-2 text-xs text-blue-800">
-                  <Loader2 className="w-3 h-3 animate-spin shrink-0" />
-                  {quandoSai(post)}
-                </div>
-              )}
-              {post.status === 'Erro' && (
-                <div className="flex items-start gap-2 rounded-md bg-red-50 border border-red-200 px-3 py-2 text-xs text-red-800">
-                  <AlertTriangle className="w-3 h-3 mt-0.5 shrink-0" />
-                  <span>
-                    <strong>Não foi publicado.</strong>{' '}
-                    {post.erro_msg || 'O motivo não foi registrado — veja Logs de Integração.'}
-                  </span>
-                </div>
-              )}
-              {post.status === 'Publicado' && (
-                <div className="flex items-center gap-2 rounded-md bg-green-50 border border-green-200 px-3 py-2 text-xs text-green-800">
-                  <CheckCircle2 className="w-3 h-3 shrink-0" />
-                  Publicado com sucesso
-                  {post.publicado_em &&
-                    ` em ${new Date(post.publicado_em).toLocaleString('pt-BR')}`}
-                </div>
-              )}
-              {post.imagem && (
-                <div className="w-full h-32 rounded-md overflow-hidden bg-slate-100">
-                  <img src={post.imagem} alt="Post" className="w-full h-full object-cover" />
-                </div>
-              )}
-              {editingId === post.id ? (
-                <div className="space-y-2">
-                  <Textarea
-                    value={editText}
-                    onChange={(e) => setEditText(e.target.value)}
-                    rows={4}
-                  />
-                  <div className="flex gap-2">
-                    <Button size="sm" onClick={() => handleSaveEdit(post.id)}>
-                      <Save className="w-3 h-3 mr-1" /> Salvar
-                    </Button>
-                    <Button size="sm" variant="outline" onClick={() => setEditingId(null)}>
-                      Cancelar
-                    </Button>
+                    {post.veiculos && (
+                      <span className="text-xs text-purple-600 font-medium">
+                        {post.veiculos.marca} {post.veiculos.modelo}
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-1 text-xs text-slate-500">
+                    <Clock className="w-3 h-3" />
+                    {post.data_agendamento
+                      ? new Date(post.data_agendamento).toLocaleString('pt-BR')
+                      : 'Sem data'}
                   </div>
                 </div>
-              ) : (
-                <p className="text-sm text-slate-700 whitespace-pre-wrap">{post.texto}</p>
-              )}
-              {editingId !== post.id && post.status !== 'Publicado' && (
-                <div className="flex gap-2 pt-2 border-t">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => {
-                      setEditingId(post.id)
-                      setEditText(post.texto)
-                    }}
-                  >
-                    <Edit2 className="w-3 h-3 mr-1" /> Editar
-                  </Button>
-                  {post.status === 'Erro' ? (
-                    <Button
-                      size="sm"
-                      className="bg-blue-600 hover:bg-blue-700"
-                      onClick={() => handleRetry(post.id)}
-                    >
-                      <RefreshCw className="w-3 h-3 mr-1" /> Tentar de novo
-                    </Button>
-                  ) : (
-                    post.status !== 'Agendado' && (
+
+                {post.status === 'Agendado' && (
+                  <div className="flex items-center gap-2 rounded-md bg-blue-50 border border-blue-200 px-3 py-2 text-xs text-blue-800">
+                    <Loader2 className="w-3 h-3 animate-spin shrink-0" />
+                    {quandoSai(post)}
+                  </div>
+                )}
+                {post.status === 'Publicando' && (
+                  <div className="flex items-center gap-2 rounded-md bg-amber-50 border border-amber-200 px-3 py-2 text-xs text-amber-800">
+                    <Loader2 className="w-3 h-3 animate-spin shrink-0" />
+                    Publicando agora nas redes — aguarde, isso pode levar alguns minutos.
+                  </div>
+                )}
+                {post.status === 'Erro' && (
+                  <div className="flex items-start gap-2 rounded-md bg-red-50 border border-red-200 px-3 py-2 text-xs text-red-800">
+                    <AlertTriangle className="w-3 h-3 mt-0.5 shrink-0" />
+                    <span>
+                      <strong>Não foi publicado.</strong>{' '}
+                      {post.erro_msg || 'O motivo não foi registrado — veja Logs de Integração.'}
+                    </span>
+                  </div>
+                )}
+                {post.status === 'Publicado' && (
+                  <div className="flex items-center gap-2 rounded-md bg-green-50 border border-green-200 px-3 py-2 text-xs text-green-800">
+                    <CheckCircle2 className="w-3 h-3 shrink-0" />
+                    Publicado com sucesso
+                    {post.publicado_em &&
+                      ` em ${new Date(post.publicado_em).toLocaleString('pt-BR')}`}
+                  </div>
+                )}
+
+                {midias.length > 0 && (
+                  <div className="flex gap-2 overflow-x-auto pb-1">
+                    {midias.map((url, i) => (
+                      <div
+                        key={`${url}-${i}`}
+                        className="relative shrink-0 w-24 h-24 rounded-md overflow-hidden bg-slate-100"
+                      >
+                        <img
+                          src={url}
+                          alt={`Foto ${i + 1}`}
+                          className="w-full h-full object-cover"
+                        />
+                        {editando && ehCarrossel && editMidias.length > MIN_FOTOS_CARROSSEL && (
+                          <button
+                            type="button"
+                            title="Tirar esta foto do carrossel"
+                            className="absolute top-1 right-1 rounded-full bg-black/70 text-white p-0.5 hover:bg-red-600"
+                            onClick={() =>
+                              setEditMidias((prev) => prev.filter((_, idx) => idx !== i))
+                            }
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {editando ? (
+                  <div className="space-y-3">
+                    <Textarea
+                      value={editText}
+                      onChange={(e) => setEditText(e.target.value)}
+                      rows={10}
+                    />
+                    <div className="space-y-1">
+                      <label className="text-xs font-medium text-slate-600">
+                        Data e hora de publicação
+                      </label>
+                      <Input
+                        type="datetime-local"
+                        value={editData}
+                        onChange={(e) => setEditData(e.target.value)}
+                        className="max-w-xs"
+                      />
+                      <p className="text-xs text-slate-500">
+                        Se a data já passou, o post sai no próximo ciclo (até 15 minutos) depois de
+                        aprovado.
+                      </p>
+                    </div>
+                    {ehCarrossel && (
+                      <p className="text-xs text-slate-500">
+                        Para tirar uma foto do carrossel, clique no X dela (mínimo{' '}
+                        {MIN_FOTOS_CARROSSEL} fotos).
+                      </p>
+                    )}
+                    <div className="flex gap-2">
+                      <Button size="sm" disabled={ocupado} onClick={() => handleSaveEdit(post)}>
+                        {ocupado ? (
+                          <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                        ) : (
+                          <Save className="w-3 h-3 mr-1" />
+                        )}
+                        Salvar
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={() => setEditingId(null)}>
+                        Cancelar
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-sm text-slate-700 whitespace-pre-wrap">{post.texto}</p>
+                )}
+
+                {!editando && post.status !== 'Publicando' && (
+                  <div className="flex gap-2 pt-2 border-t flex-wrap">
+                    {podeEditar && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={ocupado}
+                        onClick={() => iniciarEdicao(post)}
+                      >
+                        <Edit2 className="w-3 h-3 mr-1" /> Editar
+                      </Button>
+                    )}
+                    {(post.status === 'Rascunho' || post.status === 'Aprovado') && (
                       <Button
                         size="sm"
                         className="bg-green-600 hover:bg-green-700"
+                        disabled={ocupado}
                         onClick={() => handleApprove(post.id)}
                       >
                         <Check className="w-3 h-3 mr-1" /> Aprovar
                       </Button>
-                    )
-                  )}
-                  <Button size="sm" variant="destructive" onClick={() => handleReject(post.id)}>
-                    <X className="w-3 h-3 mr-1" /> Rejeitar
-                  </Button>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        ))
+                    )}
+                    {post.status === 'Erro' && (
+                      <Button
+                        size="sm"
+                        className="bg-blue-600 hover:bg-blue-700"
+                        disabled={ocupado}
+                        onClick={() => handleRetry(post.id)}
+                      >
+                        <RefreshCw className="w-3 h-3 mr-1" /> Publicar novamente
+                      </Button>
+                    )}
+                    {post.status === 'Publicado' && (
+                      <Button
+                        size="sm"
+                        className="bg-blue-600 hover:bg-blue-700"
+                        disabled={ocupado}
+                        onClick={() => setConfirmacao({ tipo: 'republicar', post })}
+                      >
+                        <Repeat className="w-3 h-3 mr-1" /> Publicar novamente
+                      </Button>
+                    )}
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      disabled={ocupado}
+                      onClick={() => setConfirmacao({ tipo: 'excluir', post })}
+                    >
+                      <Trash2 className="w-3 h-3 mr-1" /> Excluir
+                    </Button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )
+        })
       )}
+
+      <AlertDialog open={!!confirmacao} onOpenChange={(aberto) => !aberto && setConfirmacao(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {confirmacao?.tipo === 'excluir' ? 'Excluir este post?' : 'Publicar novamente?'}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {confirmacao?.tipo === 'excluir'
+                ? confirmacao.post.status === 'Publicado'
+                  ? 'O post será removido desta lista. Ele continua publicado no Instagram e no Facebook — para tirá-lo das redes, apague lá.'
+                  : 'O post será apagado da fila e não será publicado.'
+                : 'Será criado um post novo, igual a este, que vai para a fila e sai em até 15 minutos. O post original continua como está nas redes — o conteúdo aparecerá duas vezes.'}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Voltar</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmar}>
+              {confirmacao?.tipo === 'excluir' ? 'Excluir' : 'Publicar novamente'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
