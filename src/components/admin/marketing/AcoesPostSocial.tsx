@@ -23,6 +23,7 @@ import {
 } from '@/components/ui/dialog'
 import { Check, Edit2, Loader2, RefreshCw, Repeat, Save, Trash2, X } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
+import { formatarHorario } from '@/lib/horario-livre'
 import {
   MIN_FOTOS_CARROSSEL,
   agendarPost,
@@ -70,18 +71,22 @@ export function AcoesPostSocial({ post, aoMudar, layout = 'linha' }: Props) {
     toast({ title: titulo, description: erro, variant: 'destructive' })
 
   const executar = async (
-    acao: () => Promise<{ erro: string | null }>,
+    acao: () => Promise<{ erro: string | null; horario?: Date }>,
     sucesso: string,
     falhou: string,
   ) => {
     setOcupado(true)
-    const { erro } = await acao()
+    const { erro, horario } = await acao()
     setOcupado(false)
     if (erro) {
       falha(falhou, erro)
       return false
     }
-    toast({ title: sucesso })
+    toast({
+      title: horario
+        ? `${sucesso.split('!')[0]}! Sai em ${formatarHorario(horario)} (próximo horário livre).`
+        : sucesso,
+    })
     aoMudar()
     return true
   }
@@ -95,7 +100,7 @@ export function AcoesPostSocial({ post, aoMudar, layout = 'linha' }: Props) {
 
   const tentarDeNovo = () =>
     executar(
-      () => agendarPost(post.id),
+      () => agendarPost(post.id, { imediato: true }),
       'Nova tentativa na fila. Ela sai em até 15 minutos.',
       'Não foi possível publicar novamente',
     )

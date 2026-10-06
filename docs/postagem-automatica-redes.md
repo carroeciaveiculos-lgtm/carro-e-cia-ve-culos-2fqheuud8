@@ -236,3 +236,106 @@ leads da Clara, que serve **só para o WhatsApp** (anúncios orgânicos por What
 - **Assinatura da Meta — 05/10/2026:** além do WhatsApp, um evento REAL de Facebook (`page`) também deu `diferente` com `META_APP_SECRET`. Hipóteses: valor guardado com quebra de linha/aspas, ou secret de outro app.
   A conferência agora também tenta o valor sem espaços/quebra de linha/aspas (`meta-assinatura.ts`, testada). Segue em modo `log`; **o bloqueio NÃO foi ligado**. Se continuar `diferente` depois disso, o `META_APP_SECRET`
   guardado não é o App Secret do app que envia (conferir em Meta for Developers → app → Configurações → Básico, e regravar com `! supabase secrets set META_APP_SECRET=<valor> --project-ref htpcqdbhktmvppfemnad`).
+
+### 05/10/2026 — Esteira de postagens (Fase A: carrossel) — construída, NÃO publicada
+
+Decisões da Adriana ("siga com as minhas recomendações"): post **orgânico** (não anúncio pago); **Instagram + Facebook juntos** ("Aprovar os dois"); aprovado sai no **próximo horário livre**
+(10h e 18h de Brasília, 2 por dia por rede); veículos **mais recentes no estoque primeiro** (`veiculos.created_at`), carrossel e depois o vídeo do mesmo carro; só **fotos sem marca de IA**; vídeos arriscados por último.
+
+- **Tabelas** (migration `esteira_postagens_tabelas_e_fila` + `esteira_trava_execucao`): `esteira_config` (1 linha: `ativa` **false por padrão**, `posts_por_dia`, `horarios`, `trava_ate`; fora de `social_configuracoes` porque
+  aquela guarda os tokens do IG/FB) e `social_esteira` (1 item por veículo+tipo+ciclo; `ordem`, `estado` fila/em_aprovacao/concluido/pulado/bloqueado, `motivo`, `post_ids`). Carga inicial: 29 carrosséis + 7 vídeos, Frontier como concluída.
+- **Function `esteira-proximo-post`** (`verify_jwt=false`; confere `x-internal-secret` do cron OU usuário logado OU chave de serviço): sincroniza a fila (veículo novo entra na frente, vendido sai, vídeo novo ganha item), reconcilia os itens
+  em aprovação (rascunho decidido = concluído; todos apagados = pulado, nunca recria) e, **só se ativa e sem item pendente**, chama `montar-post-veiculo` (chave de serviço) para o próximo carrossel. Veículo com poucas fotos limpas vira `bloqueado`
+  (com o motivo) e a fila segue; erro inesperado não gasta o item. Trava de 2 min evita dois itens simultâneos (cron + tela). Lógica em `_shared/esteira.ts` (testada: 18 casos). Ação `pular` apaga só os RASCUNHOS do item.
+- **Horário livre** (`src/lib/horario-livre.ts`, testado: 13 casos): `agendarPost` passa a usar o próximo horário livre para posts `auto_novo`/`auto_rodizio`; "tentar de novo" e posts manuais seguem imediatos.
+- **UI:** `EsteiraPainel.tsx` no topo de Aprovações (ligar/pausar, contadores, item atual com "Aprovar os dois" e "Pular veículo", fila e bloqueados).
+- **Pendente para entrar no ar:** deploy da function + agendamento (SQL abaixo, **ainda NÃO aplicado**; ao aplicar, usar `apply_migration` e salvar o arquivo com o timestamp real) + commit/push. **Vídeo = Fase B** (Reels/FB, publicação assíncrona; 1º teste com o Compass `QUK1J80`).
+- **Colisão conhecida:** o agendamento `post-organico-diario-cron` (ativo) cria 1 rascunho/dia no Facebook com 1 foto, sem a regra de fotos limpas; pode duplicar assunto com a esteira. Decisão pendente: pausar quando a esteira estiver em uso.
+
+  SQL do agendamento da esteira (aplicar só depois do deploy da function e com autorização; conferir antes `select jobname from cron.job where jobname = 'esteira-proximo-post-cron-job'`):
+  ```sql
+  SELECT cron.schedule('esteira-proximo-post-cron-job', '*/15 * * * *', $$
+    SELECT net.http_post(
+      url := 'https://htpcqdbhktmvppfemnad.supabase.co/functions/v1/esteira-proximo-post',
+      headers := jsonb_build_object('Content-Type', 'application/json', 'x-internal-secret', coalesce(public.get_internal_service_secret(), ''))
+    );
+  $$);
+  ```
+
+### 05/10/2026 — Assinatura da Meta: teste no console + descoberta dos DOIS segredos (hipótese forte, não confirmada)
+
+- **Minha verificação está correta:** eventos REAIS do Instagram das 09:35 (antes de trocar o segredo) deram `assinatura_ok = true / ok` com o `META_APP_SECRET` ANTIGO. (Fecha a dúvida "e se o bug for meu?".)
+- **Mas** eventos de **Page** (inclusive o teste do console, 10:21) e de **WhatsApp** deram `diferente` com o segredo antigo. Hipótese: apps com o produto Instagram têm um **"segredo do app do Instagram" separado** do segredo principal
+  (Configurações do app → Básico). O antigo `META_APP_SECRET` era o do Instagram; Page e WhatsApp são assinados com o principal.
+- **Ação de 05/10 (erro meu):** a Adriana gravou o segredo principal do APP CARRO E CIA (id 1369928368361968) em `META_APP_SECRET`, **substituindo o antigo sem eu ter lido o log do Instagram antes**. O valor antigo se perdeu
+  (nunca foi lido). Efeito: só em modo `log` (nada bloqueia); mas os eventos do Instagram devem passar a dar `diferente` até o segredo do Instagram voltar. **Solução:** gravar o segredo do app do Instagram em `META_APP_SECRET_2`
+  (a conferência já aceita `META_APP_SECRET`, `META_APP_SECRET_WHATSAPP` e `META_APP_SECRET_2`).
+- **Botão "Testar" do console** (Meta for Developers → app → Casos de uso → Webhooks → produto Page → campo `feed` → Teste → Enviar para servidor): só ~1 em cada 2-3 envios chegou; o evento é o exemplo "Test Page / Example post content",
+  não cria comentário nem lead. Cada envio que chega fica em `meta_webhook_logs` (`payload::text like '%Test Page%'`).
+- **Função em memória:** trocar um secret NÃO reinicia a Edge Function já "quente"; reimplantar a function (`supabase functions deploy receive-leads ...`) força o reinício.
+- **Segurança operacional:** NUNCA colar segredo no chat; `supabase secrets set NOME=valor` **sem** os sinais `< >` (no bash eles redirecionam arquivo e o comando falha).
+- **Bloqueio de eventos falsos continua DESLIGADO** (modo `log`). Só ligar quando eventos reais de `page`, `instagram` e `whatsapp_business_account` mostrarem `ok`/`ok_segredo_N`.
+
+### 05/10/2026 — Auditoria do app Meta (APP CARRO E CIA, id 1369928368361968) feita no navegador, só leitura
+
+- **Webhooks:** Catalog, Page, Instagram e WhatsApp apontam para o mesmo `.../functions/v1/receive-leads`. Assinados (v25.0): Page = feed, messages, message_deliveries, message_reads, message_reactions, messaging_postbacks, messaging_referrals,
+  leadgen, leadgen_update, ratings, email; Instagram = comments, messages, message_reactions, messaging_postbacks, messaging_referral; WhatsApp = só `messages`. **`message_echoes` não está assinado** (Page e WhatsApp).
+- **Dois segredos:** o caso de uso "Gerenciar mensagens e conteúdo no Instagram" (API do Instagram, login do Instagram) tem um app próprio, **"APP CARRO E CIA-IG" (ID 2965065097175003)**, com **chave secreta própria** (Casos de uso → esse caso → "Configuração da API com login do
+  Instagram" → "Chave secreta do app do Instagram", atrás de "Mostrar"). A chave do app principal fica em Configurações do app → Básico. O segredo ANTIGO do `META_APP_SECRET` validava os eventos reais do Instagram (provável chave do app IG).
+- **CAUSA PROVÁVEL do Messenger mudo e de só ~19 DMs de clientes (vs 104 respostas da equipe):** TODAS as permissões estão em **"Pronto para teste" (acesso padrão)**, incluindo `pages_messaging` (157 chamadas), `instagram_manage_messages` (61),
+  `pages_manage_metadata`; a **Análise do app está "Não enviado"** (32 solicitações preparadas, nenhuma submetida) e o app está "Publicado" (ativo). Regra geral da Meta: com acesso padrão o app só recebe mensagens de quem tem FUNÇÃO no app (admin/dev/testador).
+  Não confirmado com teste de cliente real. Solução = **Análise do app** (acesso avançado) + verificação da empresa. A tela "Configuração da API do Messenger" mostra o passo 3 "Pedir permissão" de `pages_messaging` pendente.
+- A página "Carro e Cia Veículos" (id 1419304271478565) está inscrita no app com 5 campos (messages, messaging_postbacks, message_reactions, messaging_referral, comments); nenhum token de página gerado na tela (o sistema usa token de usuário do sistema).
+  Passo 2 ("Gerar tokens de acesso") da API do Instagram está incompleto. Outras páginas/apps da conta (Guia Low Carb, Km Zero) NÃO são do projeto e não foram tocadas.
+- **Operação do navegador:** havia 2 Chromes conectados à extensão; usar `list_connected_browsers`/`switch_browser` e conferir que a Adriana está vendo o mesmo. Rolar com o mouse às vezes amplia a página (usar `find` + clique por ref). O console da Meta é pesado (screenshot pode estourar tempo).
+
+### 05/10/2026 — Auditoria completa do app Meta (continuação): verificação da empresa, permissões do Instagram, checklist da API do Instagram
+
+- **Verificação da empresa: FEITA.** Portfólio `carroeciaveiculos` (id 298827564319943): "Verificação para LGA COMERCIO DE VEICULOS LTDA — verificada em 11/06/2026". Caso de uso de verificação: "o app exige acesso a permissões no Meta for Developers".
+  Dependência crítica da Análise do app já satisfeita. Central de Segurança: **2FA pendente para 1 de 8 pessoas**; há administrador secundário.
+- **Permissões do caso de uso "API do Instagram"** (todas "Pronto para teste", acesso padrão; chamadas): instagram_business_basic 44, instagram_business_manage_comments 11, instagram_business_manage_messages 31, instagram_manage_messages 61, instagram_manage_comments 30,
+  instagram_content_publish 51, instagram_manage_insights 12, instagram_basic 209. **`instagram_manage_engagement` NÃO habilitada ("Adicionar à análise do app")** → o botão "Curtir" de comentário do Instagram (social-actions) não deve funcionar.
+- **Checklist "Configuração da API com login do Instagram":** 1 permissões ✔, 2 "Gerar tokens de acesso" incompleto, 3 webhooks ✔, 4 "Configurar o login da empresa no Instagram" incompleto, 5 "Concluir a análise do app" incompleto — texto da Meta: para acessar dados ao vivo o Instagram
+  exige a análise do app, para ter ACESSO AVANÇADO às permissões do Instagram. (Confirma por escrito a causa dos DMs de clientes não chegarem.)
+- Webhooks do Instagram: o produto "Instagram" da tela geral só mostra o aviso de que a configuração do login do Instagram é aceita apenas dentro do próprio produto.
+
+### 05/10/2026 (tarde) — CORREÇÃO IMPORTANTE: a Análise do app (acesso avançado) provavelmente NÃO é necessária para este app
+
+**Erro meu:** afirmei, nas seções anteriores de hoje ("CAUSA PROVÁVEL do Messenger mudo e de só ~19 DMs de clientes: acesso padrão" e o plano de Análise do app com vídeos), que sem acesso avançado as mensagens de clientes não chegariam.
+A Adriana contestou ("para uso da própria empresa isso não é obrigatório") e estava CERTA. Verificado na documentação oficial da Meta e nos nossos dados:
+- **Docs (Messenger Platform → Overview → "Before you begin"):** App Review só se o app precisa de Advanced Access, e "não exigido se você só envia e recebe mensagens da sua PRÓPRIA página do Facebook".
+  **Docs (Instagram Platform → Overview):** acesso avançado é para contas profissionais que você NÃO possui/gerencia; "se o app só serve a sua conta profissional do Instagram ou uma que você gerencia, o acesso padrão é tudo de que precisa" (conta própria ou adicionada ao app no painel; o app pode ser reivindicado por um portfólio empresarial — o nosso é de `carroeciaveiculos`).
+  **Guia de submissão:** apps só de uso interno devem usar a finalidade "Você mesmo ou sua própria empresa".
+  (Há uma frase na doc de webhooks dizendo que, no acesso padrão, as notificações vêm de quem tem função no app; está em tensão com as duas acima e os dados abaixo decidem.)
+- **Nossos dados refutam a hipótese:** conversas do Instagram com mensagens de **~10 clientes diferentes** chegaram ao webhook ao longo de jun–out/2026 (um com 5 mensagens do cliente, outro com 4, outro com 3...), todas com o app em acesso padrão.
+  O desequilíbrio (≈22 do cliente × 104 da equipe) vem de a equipe escrever muito (uma conversa tem 54 mensagens da equipe), não de mensagens perdidas.
+- **Messenger (Facebook): zero eventos em 30 dias NÃO prova defeito** — pode simplesmente não ter havido mensagem pelo Messenger. Falta o TESTE empírico: mandar uma mensagem de uma conta comum (sem função no app) para a página e ver se chega em `meta_webhook_logs`.
+- **Decisão:** NÃO enviar o app para análise agora. Plano de vídeos/pacote de permissões/usuário revisor fica ARQUIVADO como plano B (só se o teste do Messenger com conta comum falhar).
+- **Exigências da submissão (se um dia for necessária), da doc oficial:** descrição de uso específica por permissão; vídeo de tela (1080p, interface em inglês, legendas, sem narração, cursor visível) mostrando o uso; ao menos 1 chamada de API com sucesso por permissão nos últimos 30 dias;
+  ícone 1024×1024; URL da política de privacidade; categoria correta; verificação da empresa (feita em 11/06/2026); instruções de teste com contas de teste.
+- **O que realmente falta (sem análise):** habilitar `instagram_manage_engagement` (Curtir comentário; está "Adicionar à análise do app" = não habilitada no caso de uso), assinar `message_echoes` no Page, completar "Gerar tokens de acesso" do Instagram se usarmos o login do Instagram,
+  corrigir os segredos da assinatura. Checar em Configurações do app → Básico a finalidade do app ("Você mesmo ou sua própria empresa").
+
+### 05/10/2026 (tarde) — Mudanças feitas na Meta (com autorização da Adriana, navegador "laptop") e checagem do app
+
+- **`instagram_manage_engagement` habilitada** (Casos de uso → API do Instagram → Permissões e recursos → "Adicionar à análise do app"): passou a "Pronto para teste" (acesso padrão, 0 chamadas). NÃO foi enviado nada à Meta. Habilita o botão "Curtir" de comentário do Instagram.
+- **Page → `message_echoes` assinado em v25.0** (Webhooks → produto Page; versão trocada de v26.0 para v25.0 antes de assinar, para manter a mesma versão dos demais campos assinados). Respostas da equipe no Messenger passam a chegar como `is_echo`.
+- **Configurações do app → Básico (só leitura, chave NÃO aberta):** política de privacidade, termos de serviço e instruções de exclusão de dados apontam para `https://www.carroeciamotors.com.br/politica-de-privacidade` (a página cobre LGPD, termos e exclusão); categoria "Negócio e Páginas";
+  ícone do app existe (logo "CRM"); namespace `carroecia`; domínios `carroeciamotors.com.br` e `carroeciamotors.com.br/admin/login` (o 2º é um caminho, não um domínio — estranho); e-mail de contato `atendimento.carroecia@hotmail.com` (hotmail, vale trocar por e-mail da empresa).
+  O campo "finalidade do app" NÃO apareceu em Básico (pode estar em Avançado) — não confirmado.
+- **Pendente: teste do Messenger com conta comum** (sem função no app): mandar mensagem à página "Carro e Cia Veículos" e conferir `meta_webhook_logs` (platform facebook, `entry.messaging`). Resultado decide se a Análise do app (plano B) será necessária.
+
+### 05/10/2026 (11:2x) — Teste do Messenger: mensagem de conta pessoal da Adriana NÃO chegou ao webhook
+
+- Mensagem enviada ao Messenger da página "Carro e Cia Veículos" pela conta pessoal da Adriana (provavelmente com função de administradora no app → conta COM função). Nenhum evento `messaging` do Facebook em `meta_webhook_logs` (último evento de qualquer tipo: 10:57, o teste do console).
+- **Implicação:** se uma conta COM função também não entrega, a restrição "só quem tem função" NÃO explica o silêncio do Messenger → a Análise do app (plano B) NÃO está justificada por esse sintoma. A causa é outra.
+- **Hipóteses a verificar (nesta ordem):** (1) **Handover Protocol**: o "receptor primário" das conversas da página pode ser o Page Inbox/outro app, e o nosso app só receberia pelo canal `standby` (campo `standby`/`messaging_handovers` NÃO assinados no Page);
+  (2) atraso/erro de entrega do lado da Meta (botão "Mostrar erros recentes" da API do Messenger, passo 1 — não consegui abrir); (3) mensagem em "Solicitações"/spam; (4) mensagem de administrador para a própria página tratada de forma diferente — repetir com outra conta pessoal SEM função e sem administrar a página.
+- Console da Meta: passos 1 (webhooks) e 2 (página conectada/inscrita) da API do Messenger estão ✅; o passo 3 (análise do app) pede `pages_messaging`. O console ficou instável (cliques por coordenada erraram: um levou à tela "Análise do app → solicitação atual", status continuou "Não enviado"; usar sempre `find` + ref).
+
+### 06/10/2026 — Página inscrita nos campos de mensagens (Messenger) + esteira no ar
+
+- **Causa do Messenger mudo, confirmada:** `GET /{pagina}/subscribed_apps` (token da PÁGINA, obtido de `/{pagina}?fields=access_token` com o token do usuário do sistema) mostrava o app "APP CARRO E CIA" inscrito **só em `feed` e `name`**. O token do sistema já tinha `pages_messaging`, `pages_manage_metadata`, `instagram_manage_messages`.
+- **Correção (autorizada pela Adriana, 06/10):** `POST /{pagina}/subscribed_apps` com `subscribed_fields=name,feed,messages,message_echoes,messaging_postbacks,message_reactions,messaging_referrals` → `success:true`; releitura confirmou os 7 campos. **O POST SUBSTITUI a lista do app**, por isso `name` e `feed` foram reenviados junto. `leadgen` NÃO foi incluído (não pedido). Feito por função temporária (`diag-meta-pagina`), já **apagada** (pasta, entrada do config.toml e `supabase functions delete`).
+- **Becos:** `GET /{instagram_id}/subscribed_apps` com o token do sistema dá `(#100) Tried accessing nonexisting field (subscribed_apps)` (o campo não existe nesse nó; o Instagram recebe pelo webhook da Página/app do Instagram, não por aqui). `subscribed_apps` exige token da página (o do usuário do sistema dá erro 190).
+- **Falta testar:** a Adriana mandar uma mensagem à página pelo Messenger e conferir em `meta_webhook_logs`/`social_mensagens` (e a aba Mensagens) que chegou; a assinatura ainda está em modo `log`.

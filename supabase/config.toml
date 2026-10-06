@@ -82,6 +82,11 @@ verify_jwt = true
 [functions.auditar-fotos-ia]
 verify_jwt = true
 
+# Esteira de postagens: chamada pelo agendamento (x-internal-secret, sem JWT) e pelo painel (usuário logado).
+# verify_jwt=false porque o agendamento não manda JWT; a função confere a autorização dentro.
+[functions.esteira-proximo-post]
+verify_jwt = false
+
 [functions.consultar-cpf]
 verify_jwt = true
 
@@ -245,3 +250,5 @@ verify_jwt = false
 # automática (03/10/2026). Chamada pelo painel/automação autenticados; só cria RASCUNHO por padrão.
 [functions.montar-post-veiculo]
 verify_jwt = true
+
+# TEMPORÁRIA (diagnóstico Meta, 05/10/2026) — APAGAR depois do uso

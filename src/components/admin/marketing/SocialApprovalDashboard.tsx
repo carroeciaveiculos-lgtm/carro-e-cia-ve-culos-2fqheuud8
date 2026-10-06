@@ -31,6 +31,8 @@ import {
   X,
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
+import { formatarHorario } from '@/lib/horario-livre'
+import { EsteiraPainel } from '@/components/admin/marketing/EsteiraPainel'
 import {
   FORMATO_ROTULO,
   MIN_FOTOS_CARROSSEL,
@@ -142,9 +144,9 @@ export function SocialApprovalDashboard() {
   }, [temEmFila])
 
   // Aprovar e "tentar de novo" são a mesma operação (ver agendarPost em services/social-posts.ts).
-  const agendar = async (id: string, aviso: string) => {
+  const agendar = async (id: string, aviso: string, imediato = false) => {
     setOcupadoId(id)
-    const { erro } = await agendarPost(id)
+    const { erro, horario } = await agendarPost(id, { imediato })
     setOcupadoId(null)
     if (erro) {
       toast({
@@ -154,7 +156,11 @@ export function SocialApprovalDashboard() {
       })
       return
     }
-    toast({ title: aviso })
+    toast({
+      title: horario
+        ? `Post aprovado! Sai em ${formatarHorario(horario)} (próximo horário livre).`
+        : aviso,
+    })
     // Mostra já o novo estado e deixa o resultado real vir da próxima atualização.
     statusAnterior.current[id] = 'Agendado'
     setPosts((prev) =>
@@ -169,7 +175,7 @@ export function SocialApprovalDashboard() {
     )
 
   const handleRetry = (id: string) =>
-    agendar(id, 'Nova tentativa agendada. Avisamos aqui quando o resultado chegar.')
+    agendar(id, 'Nova tentativa agendada. Avisamos aqui quando o resultado chegar.', true)
 
   const excluir = async (post: any) => {
     setOcupadoId(post.id)
@@ -271,6 +277,7 @@ export function SocialApprovalDashboard() {
 
   return (
     <div className="space-y-4">
+      <EsteiraPainel aoMudar={() => fetchPosts(true)} />
       {posts.length === 0 ? (
         <p className="text-center text-slate-500 py-8">Nenhum post pendente de aprovação.</p>
       ) : (
