@@ -3,6 +3,7 @@ import { createClient } from 'jsr:@supabase/supabase-js@2'
 import { buildAuthXML, callSOAP, type WMCredentials } from '../_shared/wm-soap.ts'
 import { matchCatalogoExato } from '../_shared/wm-catalogo-match.ts'
 import { comModalidade, obterCodigoModalidadeBasico } from '../_shared/wm-modalidade.ts'
+import { extrairVersoes, filtrarPorAno, rotuloAnos, type VersaoWM } from '../_shared/wm-versoes.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -63,7 +64,7 @@ Deno.serve(async (req: Request) => {
 
     const { data: veiculo, error: veiculoErr } = await supabase
       .from('veiculos')
-      .select('id, marca, modelo, versao, combustivel, cor, cambio')
+      .select('id, marca, modelo, versao, combustivel, cor, cambio, ano_modelo')
       .eq('id', veiculo_id)
       .single()
     if (veiculoErr || !veiculo) throw new Error('Veiculo nao encontrado')
@@ -130,22 +131,27 @@ Deno.serve(async (req: Request) => {
       return responder({ success: true, status: 'revisao_necessaria', motivo: 'modelo' })
     }
 
-    // 3) VERSAO - verifica cache; se vazio para esse modelo, busca ao vivo na Webmotors
+    // 3) VERSAO - verifica cache; se vazio (ou se nenhuma linha tem os anos válidos ainda), busca ao vivo na Webmotors
     const { data: versoesCache } = await supabase
       .from('wm_versoes')
-      .select('codigo_wm, nome_wm')
+      .select('codigo_wm, nome_wm, anos_modelo')
       .eq('codigo_modelo_wm', melhorModelo.codigo_wm)
 
-    let versoes = versoesCache || []
-    if (versoes.length === 0) {
-      const hash = await autenticar()
-      // O ObterVersao exige o intervalo de atualização além do pCodigoModelo —
-      // indicado pelo suporte da Webmotors (Gabriel, 08/2026). Até aqui essa
-      // chamada mandava só o código do modelo. A data final é calculada na hora,
-      // e não fixada no 2026-05-01 do exemplo dele, senão versões lançadas depois
-      // dessa data parariam de aparecer conforme o código envelhecesse.
-      const dataFimAtualizacao = new Date().toISOString().slice(0, 10)
-      const obterVersaoXml = `<?xml version="1.0" encoding="utf-8"?>
+    let versoes: VersaoWM[] = (versoesCache || []) as VersaoWM[]
+    // Cache antigo não tem anos_modelo (coluna criada em 06/10/2026): sem eles não dá para filtrar por ano, e a
+    // versão errada passava (ix35 2018 caiu numa versão que só vale 2016 -> 43|41,43|37).
+    const semAnos =
+      versoes.length > 0 && versoes.every((v) => !v.anos_modelo || v.anos_modelo.length === 0)
+    if (versoes.length === 0 || semAnos) {
+      try {
+        const hash = await autenticar()
+        // O ObterVersao exige o intervalo de atualização além do pCodigoModelo —
+        // indicado pelo suporte da Webmotors (Gabriel, 08/2026). Até aqui essa
+        // chamada mandava só o código do modelo. A data final é calculada na hora,
+        // e não fixada no 2026-05-01 do exemplo dele, senão versões lançadas depois
+        // dessa data parariam de aparecer conforme o código envelhecesse.
+        const dataFimAtualizacao = new Date().toISOString().slice(0, 10)
+        const obterVersaoXml = `<?xml version="1.0" encoding="utf-8"?>
 <soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
   <soap:Body>
     <ObterVersao xmlns="${WM_ESTOQUE_NAMESPACE}">
@@ -156,45 +162,85 @@ Deno.serve(async (req: Request) => {
     </ObterVersao>
   </soap:Body>
 </soap:Envelope>`
-      const versaoResult = await callSOAP(obterVersaoXml, 'ObterVersao', hash)
-      if (!versaoResult.success) {
-        throw new Error(versaoResult.error || 'Falha ao obter versões da Webmotors')
-      }
-      const xml = versaoResult.raw || ''
-      // A tag do item é <Versao>, NÃO <VersaoWM>. Verificado no XML real em
-      // 10/08/2026: 21 ocorrências de <Versao> e zero de <VersaoWM>. O sufixo
-      // WM existe nessa API (o ObterModelo devolve <ModeloWM>, e aqui mesmo há
-      // <AnoModeloWM> aninhado), mas não no item de versão — a API é
-      // inconsistente. Com 'VersaoWM' o parser não achava nada e a falha era
-      // silenciosa: wm_versoes ficava vazia e todo veículo caía em
-      // revisao_necessaria com motivo "versao", sem erro registrado.
-      const itens = parseItems(xml, 'Versao')
-      const novasVersoes = itens
-        .filter((v) => v.CodigoVersao)
-        .map((v) => ({
-          codigo_modelo_wm: melhorModelo.codigo_wm,
-          nome_crm: v.NomeVersao || `Versao_${v.CodigoVersao}`,
-          nome_wm: v.NomeVersao || null,
-          codigo_wm: v.CodigoVersao,
-        }))
-      if (novasVersoes.length > 0) {
-        await supabase.from('wm_versoes').insert(novasVersoes)
-        versoes = novasVersoes.map((v) => ({ codigo_wm: v.codigo_wm, nome_wm: v.nome_wm }))
+        const versaoResult = await callSOAP(obterVersaoXml, 'ObterVersao', hash)
+        if (!versaoResult.success) {
+          throw new Error(versaoResult.error || 'Falha ao obter versões da Webmotors')
+        }
+        // A tag do item é <Versao>, NÃO <VersaoWM> (verificado no XML real em 10/08/2026: 21 ocorrências de
+        // <Versao>, zero de <VersaoWM>). Com 'VersaoWM' o parser não achava nada e a falha era silenciosa.
+        // extrairVersoes lê também os anos válidos (<AnoModeloWM><AnoModelo>).
+        const itens = extrairVersoes(versaoResult.raw || '')
+        if (itens.length > 0) {
+          const jaTem = new Map(versoes.map((v) => [v.codigo_wm, v]))
+          const novas = itens.filter((v) => !jaTem.has(v.codigo_wm))
+          if (novas.length > 0) {
+            await supabase.from('wm_versoes').insert(
+              novas.map((v) => ({
+                codigo_modelo_wm: melhorModelo.codigo_wm,
+                nome_crm: v.nome_wm || `Versao_${v.codigo_wm}`,
+                nome_wm: v.nome_wm,
+                codigo_wm: v.codigo_wm,
+                anos_modelo: v.anos_modelo.length ? v.anos_modelo : null,
+              })),
+            )
+          }
+          for (const v of itens) {
+            if (jaTem.has(v.codigo_wm) && v.anos_modelo.length > 0) {
+              await supabase
+                .from('wm_versoes')
+                .update({ anos_modelo: v.anos_modelo })
+                .eq('codigo_wm', v.codigo_wm)
+            }
+          }
+          versoes = itens.map((v) => ({
+            codigo_wm: v.codigo_wm,
+            nome_wm: v.nome_wm,
+            anos_modelo: v.anos_modelo.length ? v.anos_modelo : null,
+          }))
+        }
+      } catch (e) {
+        // Com cache (só sem os anos) segue sem filtrar; sem cache nenhum não há como mapear: mantém o erro de antes
+        if (versoes.length === 0) throw e
       }
     }
 
+    // Só entram no match as versões que valem para o ano do veículo (ano desconhecido nunca bloqueia)
+    const { validas, descartadas } = filtrarPorAno(versoes, veiculo.ano_modelo)
+
     // Match aproximado em memoria (poucas versoes por modelo, nao precisa de SQL)
-    const versoesComScore = versoes
-      .map((v: any) => ({
-        codigo_wm: v.codigo_wm,
-        nome_wm: v.nome_wm,
-        score: similaridade(textoModeloCompleto, v.nome_wm || ''),
-      }))
-      .sort((a, b) => b.score - a.score)
+    const pontuar = (lista: VersaoWM[]) =>
+      lista
+        .map((v) => ({
+          codigo_wm: v.codigo_wm,
+          nome_wm: v.nome_wm,
+          anos_modelo: v.anos_modelo,
+          score: similaridade(textoModeloCompleto, v.nome_wm || ''),
+        }))
+        .sort((a, b) => b.score - a.score)
+    const versoesComScore = pontuar(validas)
 
     const melhorVersao = versoesComScore[0]
     const confiancaVersao = melhorVersao?.score ?? 0
-    const candidatosVersao = versoesComScore.slice(0, 3)
+    const candidatosVersao = (
+      versoesComScore.length ? versoesComScore : pontuar(descartadas)
+    ).slice(0, 3)
+
+    // Nenhuma versão do catálogo vale para o ano: revisão humana com a explicação (e não escolher à força uma errada)
+    if (!melhorVersao && descartadas.length > 0) {
+      await salvarPendencia(supabase, veiculo_id, {
+        status_sincronizacao: 'revisao_necessaria',
+        erro_msg: `Nenhuma versão do catálogo Webmotors vale para o ano ${veiculo.ano_modelo} (modelo ${melhorModelo.codigo_wm}). Anos aceitos: ${rotuloAnos(
+          [...new Set(descartadas.flatMap((v) => v.anos_modelo || []))].sort((a, b) => a - b),
+        )}.`,
+        codigo_marca_wm: melhorMarca.codigo_wm,
+        codigo_modelo_wm: melhorModelo.codigo_wm,
+        confianca_marca: confiancaMarca,
+        confianca_modelo: confiancaModelo,
+        candidatos_modelo: candidatosModelo,
+        candidatos_versao: candidatosVersao,
+      })
+      return responder({ success: true, status: 'revisao_necessaria', motivo: 'versao' })
+    }
 
     if (!melhorVersao || confiancaVersao < LIMIAR_CONFIANCA) {
       await salvarPendencia(supabase, veiculo_id, {

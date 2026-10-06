@@ -2,6 +2,7 @@ import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from 'jsr:@supabase/supabase-js@2'
 import { matchCatalogoExato } from '../_shared/wm-catalogo-match.ts'
 import { comModalidade } from '../_shared/wm-modalidade.ts'
+import { rotuloAnos, versaoValeParaAno } from '../_shared/wm-versoes.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -22,12 +23,12 @@ Deno.serve(async (req: Request) => {
   )
 
   try {
-    const { veiculo_id, codigo_modelo_wm, codigo_versao_wm } = await req.json()
+    const { veiculo_id, codigo_modelo_wm, codigo_versao_wm, forcar } = await req.json()
     if (!veiculo_id) throw new Error('veiculo_id obrigatorio')
 
     const { data: mapeamento } = await supabase
       .from('wm_mapeamento_veiculos')
-      .select('id, codigo_marca_wm, codigo_modalidade_wm')
+      .select('id, codigo_marca_wm, codigo_modalidade_wm, ano_modelo_override_wm')
       .eq('veiculo_id', veiculo_id)
       .maybeSingle()
 
@@ -43,9 +44,26 @@ Deno.serve(async (req: Request) => {
     // pros três campos antes de marcar como mapeado.
     const { data: veiculo } = await supabase
       .from('veiculos')
-      .select('cor, cambio, combustivel')
+      .select('cor, cambio, combustivel, ano_modelo')
       .eq('id', veiculo_id)
       .maybeSingle()
+
+    // Trava de 06/10/2026: a Webmotors só aceita a versão dentro dos anos que ela lista (ObterVersao). Caso real: o
+    // ix35 2018 foi confirmado na versão 346376, que só vale 2016, e todo envio voltava 43|41,43|37. Recusa só quando o
+    // ano da versão é CONHECIDO e não bate; sem a informação, ou com forcar=true, segue como antes.
+    if (codigo_versao_wm && !forcar) {
+      const { data: ver } = await supabase
+        .from('wm_versoes')
+        .select('nome_wm, anos_modelo')
+        .eq('codigo_wm', String(codigo_versao_wm))
+        .maybeSingle()
+      const ano = mapeamento.ano_modelo_override_wm ?? veiculo?.ano_modelo
+      if (ver && !versaoValeParaAno({ anos_modelo: ver.anos_modelo }, ano)) {
+        throw new Error(
+          `A versão "${ver.nome_wm}" só vale para os anos ${rotuloAnos(ver.anos_modelo)} na Webmotors, e este veículo é ${ano}. Escolha outra versão.`,
+        )
+      }
+    }
 
     const [corMatch, cambioMatch, combustivelMatch] = await Promise.all([
       matchCatalogoExato(supabase, 'wm_cores', veiculo?.cor),

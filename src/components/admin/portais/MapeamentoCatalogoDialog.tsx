@@ -24,6 +24,8 @@ interface Candidato {
   id: string
   nome: string
   score: number
+  // Anos de modelo que a Webmotors aceita para esta versão (só versões; vazio = não informado)
+  anos?: number[] | null
 }
 
 type Motivo = 'marca' | 'modelo' | 'versao' | 'catalogo'
@@ -77,7 +79,12 @@ interface Props {
 }
 
 const candidatosWm = (lista: any[] | null): Candidato[] =>
-  (lista || []).map((c) => ({ id: c.codigo_wm, nome: c.nome_wm, score: c.score || 0 }))
+  (lista || []).map((c) => ({
+    id: c.codigo_wm,
+    nome: c.nome_wm,
+    score: c.score || 0,
+    anos: c.anos_modelo ?? null,
+  }))
 
 const candidatosNapista = (lista: any[] | null): Candidato[] =>
   (lista || []).map((c) => ({ id: c.id, nome: c.nome, score: c.score || 0 }))
@@ -458,11 +465,16 @@ export function MapeamentoCatalogoDialog({
     setFase('trocar')
     const { data } = await supabase
       .from('wm_versoes')
-      .select('codigo_wm, nome_wm')
+      .select('codigo_wm, nome_wm, anos_modelo')
       .eq('codigo_modelo_wm', modeloId)
       .order('nome_wm')
       .limit(500)
-    const itens = (data || []).map((v) => ({ id: v.codigo_wm, nome: v.nome_wm, score: 0 }))
+    const itens = (data || []).map((v) => ({
+      id: v.codigo_wm,
+      nome: v.nome_wm,
+      score: 0,
+      anos: v.anos_modelo,
+    }))
     if (itens.length === 0) {
       // Sem versões no catálogo local: confirma só o modelo (comportamento antigo).
       await confirmarIds(modeloId, null)
@@ -553,7 +565,14 @@ export function MapeamentoCatalogoDialog({
           disabled={ocupado}
           onClick={() => escolher(etapa, c.id)}
         >
-          <span className="text-left">{c.nome}</span>
+          <span className="text-left">
+            {c.nome}
+            {c.anos && c.anos.length > 0 && (
+              <span className="block text-xs font-normal text-gray-500">
+                Anos aceitos: {c.anos.join(', ')}
+              </span>
+            )}
+          </span>
           <span className="text-xs text-gray-400">{Math.round(c.score * 100)}%</span>
         </Button>
       ))}
