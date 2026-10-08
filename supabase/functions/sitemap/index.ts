@@ -46,6 +46,7 @@ Deno.serve(async (req) => {
         changefreq: 'monthly',
         priority: '0.8',
       },
+      { loc: `${baseUrl}/tabela-fipe`, lastmod: now, changefreq: 'monthly', priority: '0.7' },
       { loc: `${baseUrl}/seguro-auto`, lastmod: now, changefreq: 'monthly', priority: '0.7' },
       { loc: `${baseUrl}/consorcio-auto`, lastmod: now, changefreq: 'monthly', priority: '0.7' },
       { loc: `${baseUrl}/blog`, lastmod: now, changefreq: 'daily', priority: '0.8' },

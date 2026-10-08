@@ -1,6 +1,42 @@
 # Prompt pra próxima sessão
 
-## Sessão 31 → 32 (04/10/2026) — prompt atual
+## Sessão 32 → 33 (06/10/2026) — prompt atual
+
+Copie e cole como primeira mensagem numa sessão nova do Claude Code.
+
+```
+Projeto: Carro e Cia Veículos (revenda). Pasta de trabalho:
+C:\Projeto\Revenda Carro e Cia\carro-e-cia-ve-culos-2fqheuud8
+
+Continuando da sessão 32 (05-06/10/2026). Leia primeiro MEMORY_WORK.MD, seção "[05-06/10/2026] SESSÃO 32". Estado: tudo commitado e NO AR
+(commit `3703065`; deploys do site e das functions verdes; site conferido). Feito: ix35 PBB9J82 publicado na Webmotors (anúncio 80822077, Vip - M,
+versão 347051) após corrigir modalidade e ano da versão; anos válidos por versão guardados (`wm_versoes.anos_modelo`) e usados no mapeador e na
+confirmação manual; página da Meta inscrita nos campos de mensagens (Messenger), `diag-meta-pagina` apagada; esteira de postagens no ar PAUSADA
+(cron de 15 min ativo, 36 na fila); diagnóstico do post orgânico diário (nada alterado).
+
+O que ficou ABERTO, em ordem:
+0. TABELA FIPE (08/10): página /tabela-fipe pronta e testada só local (ver MEMORY_WORK "[08/10/2026]"). Falta: Adriana testar, commit+push+deploy, aplicar migration do artigo de ajuda, conferir o site publicado.
+1. POST ORGÂNICO DIÁRIO (08:00, Facebook): abre com "Aqui está o post perfeito… copiar e colar" + `***`, hashtags da IA (não a lista de 03/10), frase
+   "Reservamo-nos…" vaza. Causa: frase FIXA no código de `gerar-conteudo-social` + regra `social_media` no texto original. Decisões da Adriana: usar o
+   molde fixo da esteira, só ajustar prompt, ou pausar `post-organico-diario-cron-job`; e se a lista de hashtags de 03/10 vale para os botões de IA.
+   CUIDADO: `social_media` também alimenta `gerar-ideias-social` — não colocar nela "responda só o texto do post / termine com hashtags".
+2. MESSENGER: pedir que ela mande uma mensagem à página e eu confiro `meta_webhook_logs`/`social_mensagens`. Assinatura segue em modo `log`
+   (pendências da sessão 31: `META_APP_SECRET_WHATSAPP`, provar com eventos reais, só então `enforce`).
+3. WEBMOTORS: Hilux RUG8F56 (mapa 346474 vs anúncio real 348548) e SW4 SSF5A83 (346612 só vale 2016–2020) com versão errada para o ano — decidir/autorizar;
+   conferir no Cockpit as 20 fotos do ix35; corrigir "câmbio manual" na observação do ix35. Básico 18/18 e Vip - M 2/2: sem vaga em nenhuma modalidade.
+4. ESTEIRA: ela liga ("Ligar esteira") e aprova o 1º item (Tiggo SYS2E92); decidir carrossel (1 só limpas / 2 misto) e Facebook da Frontier; Fase B (vídeo).
+5. Menores: token novo do usuário do sistema (`instagram_manage_engagement`), redefinir segredo principal da Meta (foi colado no chat) + 2FA, `.catch` latente
+   no `receive-leads`, `updateModalidadeWebmotors` faz UPDATE silencioso se a linha não existe.
+Ferramentas (não reinvestigar): `mcp__supabase__*` escreve (apply_migration, net.http_post com segredo interno); `mcp__claude_ai_Supabase__*` sem permissão;
+CLI `supabase db query --linked -f arquivo.sql`; `curl` em `wm-catalog-fetch` (versao/estoque_atual); "Reprocessar" só-Webmotors em `/admin/portais/revisao`
+("Sincronizar Selecionados" roda 3 plataformas); evitar `list_migrations` (enorme).
+Regras dela: pedir autorização com blocos de ações (deploy e git push à parte); testar TUDO antes de dizer que funciona e dizer o que não testei;
+resposta em português do Brasil; terminar com lista feito/pendente.
+```
+
+---
+
+## Sessão 31 → 32 (04/10/2026) — histórico
 
 Copie e cole como primeira mensagem numa sessão nova do Claude Code.
 

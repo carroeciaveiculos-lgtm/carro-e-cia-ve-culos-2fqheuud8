@@ -193,6 +193,7 @@ const FinanciamentoAuto = lazyWithRetry(() => import('./pages/FinanciamentoAuto'
 const CarrosSeminovosUberaba = lazyWithRetry(() => import('./pages/lp/CarrosSeminovosUberaba'))
 const VendaCarroRapido = lazyWithRetry(() => import('./pages/lp/VendaCarroRapido'))
 const VenderMeuCarro = lazyWithRetry(() => import('./pages/VenderMeuCarro'))
+const TabelaFipe = lazyWithRetry(() => import('./pages/TabelaFipe'))
 const BlogIndex = lazyWithRetry(() => import('./pages/blog/BlogIndex'))
 const BlogPost = lazyWithRetry(() => import('./pages/blog/BlogPost'))
 
@@ -331,6 +332,7 @@ const MainApp = () => (
       <Route path="/como-funciona-a-consignacao" element={<ComoFuncionaConsignacao />} />
       <Route path="/venda-seu-carro-rapido-uberaba" element={<VendaCarroRapido />} />
       <Route path="/vender-meu-carro" element={<VenderMeuCarro />} />
+      <Route path="/tabela-fipe" element={<TabelaFipe />} />
 
       {/* Blog */}
       <Route path="/blog" element={<BlogIndex />} />

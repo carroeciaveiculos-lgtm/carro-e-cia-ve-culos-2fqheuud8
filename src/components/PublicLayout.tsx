@@ -33,6 +33,7 @@ export default function PublicLayout() {
   const servicesDropdown = [
     { label: 'Consignação de Veículos', href: '/consignacao' },
     { label: 'Vender Meu Carro', href: '/vender-meu-carro' },
+    { label: 'Tabela FIPE', href: '/tabela-fipe' },
     { label: 'Financiamento Auto', href: '/financiamento-auto' },
     { label: 'Seguro Auto', href: '/seguro-auto' },
     { label: 'Consórcio Auto', href: '/consorcio-auto' },

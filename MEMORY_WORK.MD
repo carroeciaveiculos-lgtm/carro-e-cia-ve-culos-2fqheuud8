@@ -1,5 +1,41 @@
 # Memória de trabalho — Carro e Cia
 
+## [08/10/2026] Página pública /tabela-fipe (carros) — FEITA LOCAL, SEM COMMIT/DEPLOY
+
+Consulta marca → modelo → ano na API FIPE v2 gratuita, direto do navegador (sem tabela, sem function, sem escrita no banco). Arquivos: `src/pages/TabelaFipe.tsx`, `src/services/fipe.ts` (funções `getFipe*`), rota em `App.tsx`, item "Tabela FIPE" em "Nossos Serviços" (`PublicLayout.tsx`), URL no `functions/sitemap`, `docs/tabela-fipe.md` (limites, termos, riscos, becos sem saída), migration do artigo de ajuda `20261008150000_artigo_ajuda_tabela_fipe.sql` (NÃO aplicada no banco). Lint e build ok; testado em localhost:8080 com Amarok 2014 (R$ 84.753,00, outubro/2026, −0,50% vs setembro). Auditoria da página da Webmotors não foi possível (403 de robô). **Pendente:** Adriana testar na tela; commit/push/deploy (pedido separado, e depois abrir /tabela-fipe no site publicado); aplicar a migration do artigo; confirmar uso comercial com a fipe.api.br; avaliar lentidão da lista de modelos (VW 549) no site publicado.
+
+## [05-06/10/2026] SESSÃO 32 — ix35 na Webmotors (modalidade + ano da versão), Messenger inscrito, esteira NO AR (pausada), diagnóstico do post diário (commits `9eda0c0`, `a0b0645`, `37bbb07`, `3703065`)
+
+**No ar e verificado (deploys do site e das functions verdes; `/estoque`, home e `/admin/login` renderizam; árvore git limpa em `3703065`):**
+- **ix35 `PBB9J82` PUBLICADO na Webmotors** (anúncio `80822077`, modalidade **6914 Super Acelerador Vip - M**, versão **347051**, ano 2018; conferido por `ObterEstoqueAtual`). Duas causas em sequência:
+  1. `codigo_modalidade_wm` vazio: só o ramo 100% automático do `wm-mapear-veiculo` gravava a modalidade; revisão e `wm-confirmar-mapeamento` não. Corrigido (`_shared/wm-modalidade.ts`, `comModalidade`: preenche "Anúncio Básico" só se não houver; Vip nunca é sobrescrito). Commit `9eda0c0`.
+  2. `43|41,43|37`: versão `346376` só vale **2016**, o carro é 2018. O `ObterVersao` traz os anos válidos por versão e o sistema só comparava texto (3ª vez: BMW 120iA, H6, ix35).
+- **`AnoModelo` por versão** (commit `a0b0645`): coluna `wm_versoes.anos_modelo integer[]` (migration `20261006122416`; NULL = desconhecido, nunca bloqueia), carga ao vivo (**773 de 790** versões; modelo órfão `20891` do H6 segue vazio), parser `_shared/wm-versoes.ts` (13 testes com o XML real), mapeador só considera versões do ano do veículo (nenhuma vale → revisão com os anos aceitos), `wm-confirmar-mapeamento` recusa versão sabidamente fora do ano (`forcar:true` ignora), diálogo mostra "Anos aceitos", artigo da Central de Ajuda atualizado (`20261006134740`).
+- **Meta/Messenger:** a página estava inscrita só em `feed,name` (causa do Messenger mudo). Inscrita (autorizado) em `name,feed,messages,message_echoes,messaging_postbacks,message_reactions,messaging_referrals` (POST SUBSTITUI a lista; sem `leadgen`). Função temporária `diag-meta-pagina` APAGADA (pasta, `config.toml`, `supabase functions delete`; URL dá 404).
+- **Esteira de postagens NO AR, PAUSADA** (`37bbb07`, `3703065`): `esteira-proximo-post` implantada (respondeu `pausada`), cron `esteira-proximo-post-cron-job` (`*/15 * * * *`, migration `20261006140506`). Painel conferido na tela (aba Aprovações): 1 concluído, 36 na fila, 0 bloqueados. **Nada sai** até a Adriana clicar em "Ligar esteira" e aprovar cada item.
+
+**Achados importantes (não mudei, aguardam decisão):**
+- **Auditoria mapeamento × ano:** só 3 divergem. **RUG8F56** Hilux 2022: nosso mapa `346474` (vale 2016–2020) mas o anúncio REAL na Webmotors (`74036318`) usa `348548` → mapeamento desatualizado, um `AlterarCarro` seria recusado. **SSF5A83** Hilux SW4 2024: `346612` (2016–2020), não publicada, vai falhar ao publicar. MWV1232 ix35 2013: vendido, sem ação. Confirmado: a Webmotors NÃO aceita ano fora da lista da versão (a trava não bloqueia combinação válida).
+- **Modalidades Webmotors** (`wm_modalidades`): 6351 "Anúncio Básico" (a Adriana chama de Plano Básico) **18/18 lotado**; 6914 Vip - M agora **2/2** (ix35 ocupou a última); 39702 Vip Store 1/1. Não há vaga em nenhuma.
+- **Post orgânico diário (08:00, só Facebook, 1 foto) — diagnóstico completo, nada alterado:** usa `gerar-conteudo-social` (Gemini livre) com a regra `social_media` (texto original; histórico só tem 2 testes de 19/09) + uma frase FIXA no código ("…pronto para copiar e colar no Facebook"). Reproduzido ao vivo: abre com "Aqui está o post perfeito… Basta copiar e colar:" + `***`; traz 14 hashtags **da IA** (não a lista de 03/10); a frase "Reservamo-nos o direito…" vaza da descrição do veículo. A tabela `hashtags` (4 itens) não é lida por nenhum gerador. A legenda com hashtags de 03/10, sem abertura, é o molde fixo `_shared/legenda-social.ts`, usado só pela esteira. `social_media` também alimenta `gerar-ideias-social` (formato estruturado de 5 ideias): **não colar prompt "responda só o texto do post / termine com hashtags" nela** (degrada as ideias). O "Gerar com IA" do Novo Post não manda a rede e o código assume Instagram (teste não representa o Facebook). Colide com a esteira.
+- Anúncio do ix35 sai com "câmbio manual" na observação e o carro é automático (origem não investigada).
+
+**ABERTO (em ordem):**
+1. **Decisões da Adriana — post diário:** (a) usar o molde fixo, (b) só ajustar prompt, (c) pausar `post-organico-diario-cron-job`; correção por código proposta (regra própria separada das ideias, remover abertura e `***` por código, acrescentar a lista de hashtags de 03/10, tirar "Reservamo-nos…"); se a lista de hashtags vale também para os botões de IA.
+2. **Messenger:** a Adriana mandar uma mensagem à página e eu conferir `meta_webhook_logs`/`social_mensagens`/aba Mensagens. Assinatura segue em modo `log` (itens da sessão 31 continuam valendo: `META_APP_SECRET_WHATSAPP`, eventos reais, só então `enforce`).
+3. **Hilux RUG8F56 → `348548`** e escolher a versão da SW4 SSF5A83 (precisa de autorização; usar o catálogo ao vivo: `curl` em `wm-catalog-fetch` com `{"catalogo":"versao","codigo_modelo":"<id>"}`).
+4. **Conferir no Cockpit** o anúncio PBB9J82 (as 20 fotos): o navegador automatizado não carregou o Cockpit (3 falhas, sessão expirou).
+5. **Ligar a esteira** (Adriana) e aprovar o 1º item (Tiggo `SYS2E92`); decidir carrossel (1 só limpas / 2 misto) e o Facebook da Frontier (a/b/c). Fase B (vídeo; 1º teste Compass `QUK1J80`).
+6. Corrigir "câmbio manual" na observação do ix35; token novo do usuário do sistema para `instagram_manage_engagement` (Curtir IG); redefinir o segredo principal da Meta (foi colado no chat) e ativar 2FA; `.catch` latente no `receive-leads`; `updateModalidadeWebmotors` faz UPDATE silencioso se a linha não existe.
+
+**Ferramentas — aprendido nesta sessão (usar, não reinvestigar):**
+- `mcp__supabase__*` (oficial) hoje ESCREVE: `execute_sql`, `apply_migration` e `net.http_post` com `x-internal-secret` funcionam (resposta em `net._http_response`, pg_sleep(5) antes de ler). `mcp__claude_ai_Supabase__*` dá "sem permissão" (outra conta). `list_migrations` devolve ~15 mil tokens: use `select version,name from supabase_migrations.schema_migrations where name='…'`.
+- CLI: `supabase db query --linked -f arquivo.sql` executa SQL grande (usado na carga dos anos); `supabase functions deploy/delete … --use-api`.
+- `wm-catalog-fetch` é `verify_jwt=false` sem checagem: `curl` direto serve para `versao` (anos), `estoque_atual` (anúncios reais na Webmotors) etc.
+- Tela Portais: **"Sincronizar Selecionados" roda ML + NaPista + Webmotors**; "Sync Rápido" é só filtro; o botão que reprocessa SÓ a Webmotors está em `/admin/portais/revisao` ("Reprocessar" na linha do erro). Card em erro só tem "Despublicar".
+- Windows: scripts Python que leem `curl` precisam de `decode('utf-8','replace')` (cp1252 quebra); `deno check` acusa erro antigo em `_shared/hmac-validator.ts` (não bloqueia deploy).
+- Deploy de `_shared/` redeploya TODAS as functions (conferido: sem efeito colateral porque entradas só locais do `config.toml` não foram commitadas).
+
 ## [04/10/2026, noite] SESSÃO 31 — Central de Mensagens, assinatura da Meta, botões das Publicações, tela branca (tudo NO AR, commit `52910ee`)
 
 **No ar e verificado (site `/estoque` e `/admin/login` renderizam; deploys do site e das functions verdes):**
