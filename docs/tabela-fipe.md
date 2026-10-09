@@ -75,11 +75,27 @@ Mecanismo que guarda o valor FIPE de cada veículo **disponível**, mês a mês.
 - **Achado:** 26 dos 32 `veiculos.valor_fipe` diferiam da FIPE de outubro (ex.: F-Pace 464.684 → 444.066), ou seja,
   o valor do cadastro é uma foto antiga da consulta paga por placa.
 
-### Fase 2 (não feita — decidir e analisar impacto antes)
-Copiar o valor novo para `veiculos.valor_fipe` e `fipe_ref` (com o mês real). Antes: ler `ml-validation.ts`,
-`ml-diagnosis.ts`, `ml-sync-advanced.ts` e os gatilhos `trigger_ml_sync_veiculos` / `trigger_wm_sync_veiculos`
-(mexer em coluna do veículo pode disparar reenvio de todos os anúncios; se for o caso, suspender com
-`SET LOCAL session_replication_role='replica'` dentro de BEGIN/COMMIT).
+### Fase 2 — FEITA (09/10/2026): valor FIPE copiado para `veiculos.valor_fipe` / `fipe_ref`
+- Decisão da Adriana: só no nosso cadastro; **não** reenvia às plataformas; valor digitado à mão é sobrescrito no mês seguinte.
+- Função do banco `fipe_aplicar_valores_estoque(p_referencia, p_veiculo_id)` (SECURITY DEFINER, só service_role): copia linhas
+  `ok` do mês **mais recente** para veículos `disponivel`, só onde difere; recusa mês que não seja o mais recente; devolve jsonb
+  com o valor antigo de cada veículo (backup). A function diária a chama quando o mês fecha (`concluida`) e também nos dias
+  "sem novidade" (se algo diferir). O backup fica em `fipe_estoque_execucoes.detalhes.aplicados`.
+- Impacto verificado: gatilhos de ML/NaPista só reagem a colunas de uma lista que não inclui `valor_fipe`/`fipe_ref`; o da
+  Webmotors só reage a campos específicos; nenhuma função do banco usa os campos. O que lê `valor_fipe`: validação do Mercado
+  Livre (bloqueia se preço de venda difere >30% da FIPE — nenhum dos 32 muda de situação; maior desvio 15%, GLA200),
+  `ml-diagnosis`, `ml-sync-advanced`, `VehicleQuickViewModal`.
+- **Efeito colateral aceito:** o gatilho `registrar_alteracao_veiculo` troca `alterado_por`/`alterado_em` em qualquer UPDATE, então
+  "Última alteração" passa a mostrar "sistema/automação" nos veículos atualizados. Tentativa de evitar via
+  `session_replication_role` dentro da função **falhou** (permission denied — `20261009021259_*` fica só por histórico).
+  Alternativa NÃO feita: o gatilho ignorar uma flag `app.fipe_sync` (mexe em gatilho existente).
+- Teste ao vivo (09/10/2026): 1 veículo-piloto (F-Pace TCT5A21: 464.684 → 444.066), depois os 31 restantes pela function;
+  resultado: 0 desatualizados, 32 com `fipe_ref=outubro/2026`, **32/32 idênticos à API**, publicações 261 → 261, 0 filas
+  `pending*`, 0 filas novas; segunda chamada = `sem_novidade` (idempotente, sem novo WhatsApp). Variação média do estoque
+  ≈ −2,6% contra o cadastro antigo (de −7,0% a 0%).
+- Desfazer: `fipe_estoque_execucoes.detalhes->'aplicados'` (2 linhas: teste de 1 veículo e lote de 31) tem `valor_fipe_antigo` e
+  `fipe_ref_antigo` por veículo.
+
 ### Fase 3 (opcional)
 "FIPE de <mês>" e histórico no cadastro lendo `fipe_valores_veiculo` (hoje `getFipeHistoryFromDB` lê `fipe_anos`, que
 tem 0 linhas); aviso "preço de venda x FIPE" no estoque; migrar `fipe-auditoria-modelo-versao` e `Consignment.tsx` da v1.

@@ -79,6 +79,16 @@ class ClienteFipe {
   }
 }
 
+// Chama a funcao do banco que copia o valor FIPE do mes mais recente para o cadastro dos veiculos
+// disponiveis. Devolve cada veiculo alterado com o valor antigo (backup para desfazer).
+async function aplicarNoCadastro(supabase: any, referenciaCodigo: string): Promise<any[]> {
+  const { data, error } = await supabase.rpc('fipe_aplicar_valores_estoque', {
+    p_referencia: referenciaCodigo,
+  })
+  if (error) throw error
+  return Array.isArray(data) ? data : []
+}
+
 async function enviarWhatsApp(supabase: any, texto: string): Promise<boolean> {
   const waToken = Deno.env.get('WHATSAPP_TOKEN') || Deno.env.get('META_WHATSAPP_ACCESS_TOKEN')
   const waPhoneId = Deno.env.get('WHATSAPP_PHONE_NUMBER_ID') || Deno.env.get('META_PHONE_NUMBER_ID')
@@ -154,9 +164,31 @@ Deno.serve(async (req) => {
     )
     const pendentes = (veiculos ?? []).filter((v: any) => !resolvidos.has(v.id))
 
-    // 3) Nada a fazer: termina sem gravar
+    // 3) Nada a buscar. Ainda assim copia para o cadastro o que estiver diferente (idempotente:
+    // sem diferenca, a funcao devolve lista vazia e nada e gravado).
     if (pendentes.length === 0) {
-      return responder({ success: true, sem_novidade: true, referencia: referenciaAtual.month })
+      const aplicados = await aplicarNoCadastro(supabase, referenciaAtual.code)
+      if (aplicados.length === 0) {
+        return responder({ success: true, sem_novidade: true, referencia: referenciaAtual.month })
+      }
+      const texto = `📊 *FIPE do estoque — ${referenciaAtual.month}*\n✅ Valor FIPE atualizado no cadastro de ${aplicados.length} veículo(s).\nOs valores antigos ficam guardados em fipe_estoque_execucoes (detalhes.aplicados).`
+      const alertaEnviado = await enviarWhatsApp(supabase, texto)
+      await supabase.from('fipe_estoque_execucoes').insert({
+        referencia_codigo: referenciaAtual.code,
+        referencia_mes: referenciaAtual.month,
+        status: 'concluida',
+        chamadas_api: fipe.chamadas,
+        token_invalido: fipe.tokenInvalido,
+        alerta_enviado: alertaEnviado,
+        detalhes: { origem: 'aplicacao_no_cadastro', aplicados },
+      })
+      return responder({
+        success: true,
+        sem_novidade: true,
+        referencia: referenciaAtual.month,
+        aplicados_no_cadastro: aplicados.length,
+        alerta_enviado: alertaEnviado,
+      })
     }
 
     const { count: concluidasAntes } = await supabase
@@ -284,6 +316,10 @@ Deno.serve(async (req) => {
     }
 
     const status = estourouOrcamento ? 'parcial' : 'concluida'
+    // Mes fechado: copia os valores 'ok' para veiculos.valor_fipe/fipe_ref (so nosso cadastro;
+    // os gatilhos de ML/NaPista/Webmotors nao reagem a esses campos).
+    const aplicados =
+      status === 'concluida' ? await aplicarNoCadastro(supabase, referenciaAtual.code) : []
     const fmtVeic = (v: any) =>
       `${v.marca} ${v.modelo} ${v.ano_modelo ?? ''} (${v.placa ?? 's/ placa'})`
     const listaRevisar = revisar
@@ -303,7 +339,7 @@ Deno.serve(async (req) => {
 ${status === 'concluida' ? '✅ Processamento concluído' : '⚠️ Processamento PARCIAL (continua amanhã)'}
 Veículos processados: ${processados} · valores confirmados: ${ok} · para revisar: ${revisar.length}
 ${revisar.length > 0 ? `\n*Para revisar:*\n${listaRevisar}\n` : ''}${fipe.tokenInvalido ? '\n⚠️ O token da FIPE foi recusado (HTTP 401). Usando o modo sem token; gere uma chave nova em fipe.api.br.\n' : ''}
-Os valores ficam na tabela fipe_valores_veiculo. Nada foi alterado nos veículos.`
+${aplicados.length > 0 ? `Valor FIPE atualizado no cadastro de ${aplicados.length} veículo(s).` : 'Nenhum valor do cadastro precisou mudar.'} Os valores antigos ficam em fipe_estoque_execucoes (detalhes.aplicados).`
       alertaEnviado = await enviarWhatsApp(supabase, texto)
     }
 
@@ -320,6 +356,7 @@ Os valores ficam na tabela fipe_valores_veiculo. Nada foi alterado nos veículos
       detalhes: {
         mes_novo: mesNovo,
         revisar: revisar.map((r) => ({ placa: r.v.placa, motivo: r.motivo })),
+        aplicados,
       },
     })
 
@@ -331,6 +368,7 @@ Os valores ficam na tabela fipe_valores_veiculo. Nada foi alterado nos veículos
       processados,
       ok,
       revisar: revisar.length,
+      aplicados_no_cadastro: aplicados.length,
       chamadas_api: fipe.chamadas,
       token_invalido: fipe.tokenInvalido,
       alerta_enviado: alertaEnviado,
