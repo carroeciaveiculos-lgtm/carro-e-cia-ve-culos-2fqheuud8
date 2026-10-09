@@ -144,22 +144,39 @@ Deno.serve(async (req) => {
     // 2) Veiculos disponiveis que ainda precisam de valor neste mes
     const { data: veiculos, error: errVeic } = await supabase
       .from('veiculos')
-      .select('id, placa, marca, modelo, ano_modelo, combustivel, codigo_fipe, info_personalizadas')
+      .select(
+        'id, placa, marca, modelo, ano_modelo, combustivel, codigo_fipe, info_personalizadas, is_zero_km',
+      )
       .eq('status', 'disponivel')
     if (errVeic) throw errVeic
 
     const { data: jaTem, error: errJa } = await supabase
       .from('fipe_valores_veiculo')
-      .select('veiculo_id, situacao, consultado_em')
+      .select('veiculo_id, situacao, consultado_em, ano_codigo')
       .eq('referencia_codigo', referenciaAtual.code)
     if (errJa) throw errJa
 
+    // Valor 'ok' gravado com a condição errada (veículo virou 0 km, ou deixou de ser, depois
+    // da consulta do mês): não vale como resolvido, é recalculado já nesta rodada em vez de
+    // esperar o mês seguinte. A linha antiga é sobrescrita pelo upsert (veiculo_id + referência).
+    const veiculoPorId = new Map((veiculos ?? []).map((v: any) => [v.id, v]))
+    const reprocessadosPorCondicao = new Set<string>()
     const limiteRevisao = Date.now() - REVISAR_DE_NOVO_APOS_DIAS * 86_400_000
     const resolvidos = new Set(
       (jaTem ?? [])
-        .filter(
-          (r: any) => r.situacao === 'ok' || new Date(r.consultado_em).getTime() > limiteRevisao,
-        )
+        .filter((r: any) => {
+          const v: any = veiculoPorId.get(r.veiculo_id)
+          const divergente =
+            r.situacao === 'ok' &&
+            !!r.ano_codigo &&
+            !!v &&
+            String(r.ano_codigo).startsWith('32000-') !== (v.is_zero_km === true)
+          if (divergente) {
+            reprocessadosPorCondicao.add(r.veiculo_id)
+            return false
+          }
+          return r.situacao === 'ok' || new Date(r.consultado_em).getTime() > limiteRevisao
+        })
         .map((r: any) => r.veiculo_id),
     )
     const pendentes = (veiculos ?? []).filter((v: any) => !resolvidos.has(v.id))
@@ -226,7 +243,8 @@ Deno.serve(async (req) => {
         revisar.push({ v, motivo })
       }
 
-      if (!/^\d{6}-\d$/.test(codigo) || !v.ano_modelo) {
+      // 0 km não depende do ano do modelo: a FIPE publica uma linha própria (ano 32000).
+      if (!/^\d{6}-\d$/.test(codigo) || (!v.ano_modelo && !v.is_zero_km)) {
         marcarRevisar('sem código FIPE válido ou sem ano do modelo no cadastro')
         continue
       }
@@ -241,7 +259,14 @@ Deno.serve(async (req) => {
         marcarRevisar('código FIPE não encontrado na API')
         continue
       }
-      let candidatos = anos.filter((a) => a.name.startsWith(String(v.ano_modelo)))
+      // 0 km: a FIPE lista a linha "32000-X" (nome cru "32000 Flex"), com preço próprio,
+      // bem acima do ano-modelo (Argo Drive 1.0: R$ 91.910 contra R$ 76.367 do 2026).
+      // Usar o ano-modelo daria o preço de usado; sem a linha 32000, vai para revisão.
+      const zeroKm = v.is_zero_km === true
+      const rotuloAno = zeroKm ? '0 km' : `ano ${v.ano_modelo}`
+      let candidatos = zeroKm
+        ? anos.filter((a) => a.code.startsWith('32000-'))
+        : anos.filter((a) => a.name.startsWith(String(v.ano_modelo)))
       if (candidatos.length > 1 && v.combustivel) {
         const comb = normalizar(v.combustivel)
         const filtrados = candidatos.filter((a) => normalizar(a.name).includes(comb))
@@ -250,8 +275,8 @@ Deno.serve(async (req) => {
       if (candidatos.length !== 1) {
         marcarRevisar(
           candidatos.length === 0
-            ? `ano ${v.ano_modelo} não existe para este código na FIPE`
-            : `ano ${v.ano_modelo} ambíguo na FIPE (${candidatos.map((c) => c.name).join(' / ')})`,
+            ? `${rotuloAno} não existe para este código na FIPE`
+            : `${rotuloAno} ambíguo na FIPE (${candidatos.map((c) => c.name).join(' / ')})`,
         )
         continue
       }
@@ -332,7 +357,10 @@ Deno.serve(async (req) => {
       (mesNovo && status === 'concluida') ||
       status === 'parcial' ||
       fipe.tokenInvalido ||
-      (mesNovo && revisar.length > 0)
+      (mesNovo && revisar.length > 0) ||
+      // 0 km recalculado fora de mês novo que não achou a linha 32000: sem aviso o valor de
+      // usado ficaria no cadastro sem ninguém saber.
+      revisar.some((r) => reprocessadosPorCondicao.has(r.v.id))
     let alertaEnviado = false
     if (deveAvisar) {
       const texto = `📊 *FIPE do estoque — ${referenciaAtual.month}*

@@ -18,6 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { anoFipeLegivel, nomeAnoFipe } from '@/lib/fipe-ref'
 import { getWhatsAppLink } from '@/lib/whatsapp'
 import { trackCTAClick } from '@/lib/tracking'
 import { useBrandConfig } from '@/hooks/use-brand-config'
@@ -163,7 +164,7 @@ export default function TabelaFipe() {
   }, [resultado, anterior])
 
   const mensagemWhats = resultado
-    ? `Olá! Consultei a Tabela FIPE no site: ${resultado.brand} ${resultado.model} ${resultado.modelYear}, ${resultado.price} (${resultado.referenceMonth}). Gostaria de uma avaliação do meu carro.`
+    ? `Olá! Consultei a Tabela FIPE no site: ${resultado.brand} ${resultado.model} ${anoFipeLegivel(resultado.modelYear)},${resultado.price} (${resultado.referenceMonth}). Gostaria de uma avaliação do meu carro.`
     : 'Olá! Gostaria de uma avaliação do meu carro.'
 
   const schema = {
@@ -261,7 +262,7 @@ export default function TabelaFipe() {
                 <SelectContent>
                   {anos.map((a) => (
                     <SelectItem key={a.code} value={a.code}>
-                      {a.name}
+                      {nomeAnoFipe(a.name)}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -288,7 +289,7 @@ export default function TabelaFipe() {
               <dl className="grid grid-cols-2 gap-3 mt-4 text-sm">
                 <div>
                   <dt className="text-slate-500">Ano modelo</dt>
-                  <dd className="font-medium">{resultado.modelYear}</dd>
+                  <dd className="font-medium">{anoFipeLegivel(resultado.modelYear)}</dd>
                 </div>
                 <div>
                   <dt className="text-slate-500">Combustível</dt>

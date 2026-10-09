@@ -96,6 +96,23 @@ Mecanismo que guarda o valor FIPE de cada veículo **disponível**, mês a mês.
 - Desfazer: `fipe_estoque_execucoes.detalhes->'aplicados'` (2 linhas: teste de 1 veículo e lote de 31) tem `valor_fipe_antigo` e
   `fipe_ref_antigo` por veículo.
 
+### 0 km (10/10/2026) — linha própria "ano 32000", não é percentual
+- A FIPE v2 lista o 0 km como ano-código `32000-X` (nome cru `"32000 Flex"`, `modelYear: 32000`) com preço próprio.
+  Medido em 09/10/2026, Fiat Argo Drive 1.0 (marca 21, modelo 7965): 0 km R$ 91.910 × 2026 R$ 76.367 (+20,4%) × 2025 R$ 70.311.
+  O ágio varia por modelo e nem todo modelo tem a linha (Mobi Drive 7825 só vai até 2020) — por isso não se calcula percentual.
+- Cadastro: `veiculos.is_zero_km` + interruptor "Veículo 0 km" no `VehicleFormModal` (liga = Km 0 travado).
+- Automação `fipe-atualizar-estoque`: `is_zero_km = true` escolhe a linha `32000-*` (ignora `ano_modelo`); se o código FIPE
+  não tem essa linha, o veículo vai para `revisar` ("0 km não existe para este código na FIPE") — nunca cai no ano-modelo.
+  Virou 0 km (ou deixou de ser) DEPOIS de já ter linha `ok` no mês: a function compara `ano_codigo` gravado (`32000-*` ou não)
+  com `is_zero_km` e trata a divergência como pendente — recalcula na rodada seguinte (cron das 07h), sobrescreve a linha pelo
+  upsert (`veiculo_id,referencia_codigo`) e o RPC copia o valor novo para o cadastro. Se não achar a linha 32000, grava
+  `revisar` e AVISA por WhatsApp mesmo fora de mês novo (o valor de usado fica no cadastro até alguém resolver).
+  Só tem efeito na rodada seguinte: o interruptor do cadastro NÃO busca a FIPE na hora (botão "buscar agora" não foi feito).
+  Testado: 6 casos da regra (script) e 0 divergências hoje em 32 veículos; a function em si NÃO foi rodada.
+- Página `/tabela-fipe`: `nomeAnoFipe`/`anoFipeLegivel` (`src/lib/fipe-ref.ts`) trocam "32000" por "0 km" na lista e no resultado.
+- Fora do escopo: a consulta pela placa (`consultar-placa`, API Brasil `fipe-chassi`) não deixa escolher o ano — para 0 km o
+  valor que ela traz pode ser o de usado; `Consignment.tsx` (v1) e `fipe-auditoria-modelo-versao` ainda não tratam 32000.
+
 ### Fase 3 (opcional)
 "FIPE de <mês>" e histórico no cadastro lendo `fipe_valores_veiculo` (hoje `getFipeHistoryFromDB` lê `fipe_anos`, que
 tem 0 linhas); aviso "preço de venda x FIPE" no estoque; migrar `fipe-auditoria-modelo-versao` e `Consignment.tsx` da v1.

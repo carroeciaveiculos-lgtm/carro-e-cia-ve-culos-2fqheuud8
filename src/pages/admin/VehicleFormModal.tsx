@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { mensagemErroAmigavel } from '@/lib/friendly-error'
+import { normalizarMesFipe } from '@/lib/fipe-ref'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import {
   AlertDialog,
@@ -296,6 +297,7 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
     videos: [],
     info_personalizadas: {},
     publicado_olx: false,
+    is_zero_km: false,
     fipe_ref: 'Atual',
     versao: '',
     descricao: '',
@@ -463,6 +465,7 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
           videos: [],
           info_personalizadas: {},
           publicado_olx: false,
+          is_zero_km: false,
           fipe_ref: 'Atual',
           versao: '',
           descricao: '',
@@ -681,6 +684,9 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
         cor: corPadraoApi || normalizarCor(p.cor) || '',
         ano_fabricacao: data.data.ano_fab || p.ano_fabricacao,
         valor_fipe: data.data.preco_fipe || p.valor_fipe,
+        // O mês acompanha o valor: se a consulta trouxe valor novo, o mês é o
+        // dela (ou vazio se ela não informou) — nunca o mês do valor antigo.
+        fipe_ref: data.data.preco_fipe ? normalizarMesFipe(data.data.mes_referencia) : p.fipe_ref,
         info_personalizadas: {
           ...(p.info_personalizadas || {}),
           codigo_fipe: data.data.codigo_fipe,
@@ -800,7 +806,8 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
     // Cor tem que estar na lista padrão (masculino: Preto, Branco...).
     if (!normalizarCor(formData.cor)) missing.push({ field: 'cor', label: 'Cor (escolha na lista)' })
     if (!formData.combustivel) missing.push({ field: 'combustivel', label: 'Combustível' })
-    if (!formData.quilometragem) missing.push({ field: 'quilometragem', label: 'KM' })
+    if (!formData.is_zero_km && !formData.quilometragem)
+      missing.push({ field: 'quilometragem', label: 'KM' })
     if (!formData.preco_venda) missing.push({ field: 'preco_venda', label: 'Preço' })
     if (!formData.fotos || formData.fotos.length === 0)
       missing.push({ field: 'fotos', label: 'Fotos (mínimo 1)' })
@@ -868,6 +875,9 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
       // "De" (preco_revenda) não é mais digitado — é sempre igual ao Valor FIPE
       // (12/08/2026, pedido da Adriana). Único ponto que grava esse campo.
       sanitizedNumeric.preco_revenda = sanitizedNumeric.valor_fipe
+      // 0 km grava Km = 0 de verdade: o sanitizeNumber acima trata 0 como vazio
+      // (null) e o veículo voltaria sem quilometragem.
+      if (merged.is_zero_km) sanitizedNumeric.quilometragem = 0
       // Cilindrada não passa pelo sanitizeNumber acima (26/08/2026): esse
       // helper trata "." como separador de milhar (formato de preço em
       // real), o que trocaria "1.6" por "16". Campo numérico nativo sempre
@@ -1019,6 +1029,7 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
         if (!placaError && placaData?.success && placaData.data?.preco_fipe) {
           valorFipeAtual = Number(placaData.data.preco_fipe) || 0
           overrides.valor_fipe = placaData.data.preco_fipe
+          overrides.fipe_ref = normalizarMesFipe(placaData.data.mes_referencia)
           overrides.info_personalizadas = {
             ...(formData.info_personalizadas || {}),
             codigo_fipe: placaData.data.codigo_fipe,
@@ -1667,11 +1678,30 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
                       </Select>
                     </div>
                     <div>
-                      <Label>Km</Label>
+                      <div className="flex items-center justify-between">
+                        <Label>Km</Label>
+                        <label className="flex items-center gap-2 text-xs font-medium text-gray-700">
+                          <Switch
+                            checked={!!formData.is_zero_km}
+                            onCheckedChange={(checked) => {
+                              setFormData({
+                                ...formData,
+                                is_zero_km: checked,
+                                // Ao ligar, o Km vira 0; ao desligar, limpa o 0 pra
+                                // não salvar um usado com Km zerado por esquecimento.
+                                quilometragem: checked ? '0' : '',
+                              })
+                              setValidationErrors((prev: any) => ({ ...prev, quilometragem: '' }))
+                            }}
+                          />
+                          Veículo 0 km
+                        </label>
+                      </div>
                       <Input
                         type="number"
                         min={0}
-                        value={formData.quilometragem || ''}
+                        disabled={!!formData.is_zero_km}
+                        value={formData.is_zero_km ? '0' : formData.quilometragem || ''}
                         onChange={(e) => {
                           setFormData({ ...formData, quilometragem: e.target.value })
                           validateNumericField('quilometragem', e.target.value, {
@@ -1814,19 +1844,36 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
 
                 <div className="space-y-4">
                   <h3 className="font-bold border-b pb-2">Preços e Valores</h3>
-                  <div>
-                    <Label>Valor FIPE</Label>
-                    <CurrencyInput
-                      value={formData.valor_fipe || ''}
-                      onChange={(v) => {
-                        setFormData({ ...formData, valor_fipe: v })
-                        validateNumericField('valor_fipe', v, { min: 0 })
-                        validatePrecoVendaFipe(String(formData.preco_venda || ''), Number(v) || 0)
-                      }}
-                    />
-                    {validationErrors.valor_fipe && (
-                      <p className="text-xs text-red-500 mt-1">{validationErrors.valor_fipe}</p>
-                    )}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <Label>Valor FIPE</Label>
+                      <CurrencyInput
+                        value={formData.valor_fipe || ''}
+                        onChange={(v) => {
+                          setFormData({ ...formData, valor_fipe: v })
+                          validateNumericField('valor_fipe', v, { min: 0 })
+                          validatePrecoVendaFipe(String(formData.preco_venda || ''), Number(v) || 0)
+                        }}
+                      />
+                      {validationErrors.valor_fipe && (
+                        <p className="text-xs text-red-500 mt-1">{validationErrors.valor_fipe}</p>
+                      )}
+                    </div>
+                    <div>
+                      <Label>Mês de referência da FIPE</Label>
+                      <Input
+                        value={normalizarMesFipe(formData.fipe_ref) || 'Não informado'}
+                        disabled
+                        className={
+                          normalizarMesFipe(formData.fipe_ref)
+                            ? 'bg-gray-100 text-gray-700 capitalize'
+                            : 'bg-gray-100 text-gray-400 italic'
+                        }
+                      />
+                      <p className="text-xs text-gray-500 mt-1">
+                        Vem da automação diária ou da consulta pela placa — não é editável.
+                      </p>
+                    </div>
                   </div>
                   <div>
                     <Label>Preço de Venda (Site)</Label>

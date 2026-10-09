@@ -1,6 +1,42 @@
 # Prompt pra próxima sessão
 
-## Sessão 33 → 34 (08-09/10/2026) — prompt atual
+## Sessão 34 → 35 (09/10/2026) — prompt atual
+
+Copie e cole como primeira mensagem numa sessão nova do Claude Code.
+
+```
+Projeto: Carro e Cia Veículos (revenda). Pasta de trabalho:
+C:\Projeto\Revenda Carro e Cia\carro-e-cia-ve-culos-2fqheuud8
+
+Continuando da sessão 34 (09/10/2026). Leia primeiro MEMORY_WORK.MD, seção "SESSÃO 34", e docs/tabela-fipe.md (seção "0 km").
+Estado: há alterações NÃO COMMITADAS no disco (rode `git status`: devem ser 5 arquivos — VehicleFormModal.tsx, TabelaFipe.tsx,
+fipe-atualizar-estoque/index.ts, docs/tabela-fipe.md e src/lib/fipe-ref.ts novo). Lint e build passaram; a function e a página NÃO foram
+testadas rodando. Feito no código: campo "Mês de referência da FIPE" no cadastro, interruptor "Veículo 0 km" (is_zero_km), automação
+usando a linha FIPE 32000 para 0 km, e /tabela-fipe mostrando "0 km" no lugar de "32000".
+
+O que ficou ABERTO, em ordem:
+1. TESTE MANUAL DELA no localhost:8080 (`bun run dev`): cadastro (interruptor 0 km liga/desliga, salvar e reabrir; mês de referência no veículo
+   existente e após consulta de placa) e /tabela-fipe (Fiat → ARGO DRIVE 1.0 6V Flex → "0 km Flex", R$ 91.910 em out/2026). Depois: pedir
+   commit+push juntos; o push dispara o deploy da function e do site — conferir `gh run view` e abrir o site publicado (/, /estoque, /admin/login, /tabela-fipe).
+2. CENTRAL DE AJUDA: FEITO em 09/10 (UPDATE direto, aprovado por ela) nos artigos "Cadastrar um veículo novo no Estoque" (id 43f41717-6173-4552-8127-c990cee011ee)
+   e "Consultar a Tabela FIPE" (id 735a9d90-af92-419d-a47d-c274fc35633c), com 0 km e mês de referência; checklist marcado. Não existe migration desse texto.
+   TESTE REAL PENDENTE da correção A: marcar um veículo de teste como 0 km e disparar a function (envia WhatsApp de verdade) para ver o valor 32000 ser aplicado.
+3. GRÁFICO do histórico FIPE no cadastro: hoje NÃO segue a automação e `consultar-placa` fabrica pontos. Decidir: ler `fipe_valores_veiculo` por `veiculo_id`
+   e esconder pontos inventados (é a Fase 3).
+4. Cron das 07h: disparou em 09/10 mas sem linha nova em `fipe_estoque_execucoes` — ler código/logs da function para saber se `sem_novidade` grava linha.
+5. WhatsApps da FIPE: ela confirma se os 2 avisos chegaram no celular.
+6. Conectores Meta (`meta_social_technologies` e `whatsapp_business_tools`) funcionam; falta ela logar no que ainda não logou. Só leitura. Nunca usar a conta "Ca - Carro e Cia".
+7. Lista da sessão 32 (ainda valendo): post orgânico diário (texto com defeito), Messenger/assinatura da Meta, Webmotors Hilux RUG8F56 e SW4 SSF5A83,
+   esteira de postagens, segredo da Meta colado no chat (redefinir + 2FA).
+CUIDADO: NUNCA rodar `bun run format` sem arquivo-alvo — ele reescreve o repositório inteiro (468 arquivos em 09/10). Use `bunx oxfmt <arquivo>` e confira `git status`.
+Ferramentas (não reinvestigar): `mcp__supabase__*` escreve; CLI `supabase db query --linked -f arquivo.sql`; `supabase functions deploy <nome> --use-api`.
+Regras dela: pedir autorização com blocos de ações (commit+push juntos num pedido); testar TUDO antes de dizer que funciona e dizer o que não testei;
+abrir o site publicado depois de deploy; português do Brasil; terminar com lista feito/pendente.
+```
+
+---
+
+## Sessão 33 → 34 (08-09/10/2026) — histórico
 
 Copie e cole como primeira mensagem numa sessão nova do Claude Code.
 
