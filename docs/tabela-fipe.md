@@ -37,6 +37,8 @@ para a equipe e para clientes. Sem tabela nova, sem Edge Function, sem escrita n
 
 - Confirmar uso comercial com a fipe.api.br (e-mail) — não provado nos termos.
 - A API gratuita é de terceiros e pode mudar limite ou sair do ar.
+- Token gratuito criado em 09/10/2026 (`FIPE_API_TOKEN`, secret do Supabase). Testado: com token o limite é 1000/dia (sem token, 500); `Authorization: Bearer` e `X-Subscription-Token` funcionam; token inválido dá 401 (a function futura precisa tratar e cair para modo sem token).
+- CSP: `public/_headers` (`connect-src`) precisa listar `https://fipe.parallelum.com.br`, senão a página só mostra erro no site publicado (achado 08/10/2026; no localhost não aparece). A v1 `parallelum.com.br` (home) segue fora do CSP.
 - Migrar `fipe-auditoria-modelo-versao` e `Consignment.tsx` da v1 para a v2.
 - Motos e caminhões: só trocar `cars` por `motorcycles`/`trucks` e acrescentar um seletor.
 - SEO: o site é SPA, e robôs que não rodam JS veem a página vazia. Uma página só
