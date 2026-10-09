@@ -251,8 +251,6 @@ verify_jwt = false
 [functions.montar-post-veiculo]
 verify_jwt = true
 
-# TEMPORÁRIA (diagnóstico Meta, 05/10/2026) — APAGAR depois do uso
-
 # FIPE do estoque (Fase 1, 09/10/2026): cron diario 07h; valida x-internal-secret no codigo.
 [functions.fipe-atualizar-estoque]
 verify_jwt = false
