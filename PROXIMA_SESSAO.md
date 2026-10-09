@@ -9,15 +9,13 @@ Projeto: Carro e Cia Veículos (revenda). Pasta de trabalho:
 C:\Projeto\Revenda Carro e Cia\carro-e-cia-ve-culos-2fqheuud8
 
 Continuando da sessão 34 (09/10/2026). Leia primeiro MEMORY_WORK.MD, seção "SESSÃO 34", e docs/tabela-fipe.md (seção "0 km").
-Estado: há alterações NÃO COMMITADAS no disco (rode `git status`: devem ser 5 arquivos — VehicleFormModal.tsx, TabelaFipe.tsx,
-fipe-atualizar-estoque/index.ts, docs/tabela-fipe.md e src/lib/fipe-ref.ts novo). Lint e build passaram; a function e a página NÃO foram
-testadas rodando. Feito no código: campo "Mês de referência da FIPE" no cadastro, interruptor "Veículo 0 km" (is_zero_km), automação
+Estado: TUDO COMMITADO E NO AR (commit `127ab2a`; deploys do site e das functions verdes; site publicado conferido: home, /estoque, /admin/login e
+/tabela-fipe com Argo → "0 km Flex", R$ 91.910,00). A function `fipe-atualizar-estoque` NÃO foi rodada com um 0 km real (só a regra foi testada em script). Feito no código: campo "Mês de referência da FIPE" no cadastro, interruptor "Veículo 0 km" (is_zero_km), automação
 usando a linha FIPE 32000 para 0 km, e /tabela-fipe mostrando "0 km" no lugar de "32000".
 
 O que ficou ABERTO, em ordem:
-1. TESTE MANUAL DELA no localhost:8080 (`bun run dev`): cadastro (interruptor 0 km liga/desliga, salvar e reabrir; mês de referência no veículo
-   existente e após consulta de placa) e /tabela-fipe (Fiat → ARGO DRIVE 1.0 6V Flex → "0 km Flex", R$ 91.910 em out/2026). Depois: pedir
-   commit+push juntos; o push dispara o deploy da function e do site — conferir `gh run view` e abrir o site publicado (/, /estoque, /admin/login, /tabela-fipe).
+1. FEITO: ela testou o cadastro no localhost (interruptor 0 km e mês de referência apareceram) e eu conferi /tabela-fipe no site publicado. Falta ela
+   testar o interruptor/mês no painel PUBLICADO e a consulta pela placa (o que o campo "mês" mostra depois dela).
 2. CENTRAL DE AJUDA: FEITO em 09/10 (UPDATE direto, aprovado por ela) nos artigos "Cadastrar um veículo novo no Estoque" (id 43f41717-6173-4552-8127-c990cee011ee)
    e "Consultar a Tabela FIPE" (id 735a9d90-af92-419d-a47d-c274fc35633c), com 0 km e mês de referência; checklist marcado. Não existe migration desse texto.
    TESTE REAL PENDENTE da correção A: marcar um veículo de teste como 0 km e disparar a function (envia WhatsApp de verdade) para ver o valor 32000 ser aplicado.
