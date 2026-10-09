@@ -15,6 +15,7 @@ confirmação manual; página da Meta inscrita nos campos de mensagens (Messenge
 (cron de 15 min ativo, 36 na fila); diagnóstico do post orgânico diário (nada alterado).
 
 O que ficou ABERTO, em ordem:
+00. FIPE DO ESTOQUE (09/10): Fase 1 no ar (function + tabelas + cron 07h, 32/32 ok). Falta: commit+push, confirmar o aviso no WhatsApp, decidir Fase 2 (copiar para veiculos.valor_fipe só após ler ml-* e os gatilhos de reenvio). Ver MEMORY_WORK "[09/10/2026]" e docs/tabela-fipe.md.
 0. TABELA FIPE (08/10): página /tabela-fipe pronta e testada só local (ver MEMORY_WORK "[08/10/2026]"). Falta: Adriana testar, commit+push+deploy, aplicar migration do artigo de ajuda, conferir o site publicado.
 1. POST ORGÂNICO DIÁRIO (08:00, Facebook): abre com "Aqui está o post perfeito… copiar e colar" + `***`, hashtags da IA (não a lista de 03/10), frase
    "Reservamo-nos…" vaza. Causa: frase FIXA no código de `gerar-conteudo-social` + regra `social_media` no texto original. Decisões da Adriana: usar o
