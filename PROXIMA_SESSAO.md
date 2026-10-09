@@ -1,6 +1,38 @@
 # Prompt pra próxima sessão
 
-## Sessão 32 → 33 (06/10/2026) — prompt atual
+## Sessão 33 → 34 (08-09/10/2026) — prompt atual
+
+Copie e cole como primeira mensagem numa sessão nova do Claude Code.
+
+```
+Projeto: Carro e Cia Veículos (revenda). Pasta de trabalho:
+C:\Projeto\Revenda Carro e Cia\carro-e-cia-ve-culos-2fqheuud8
+
+Continuando da sessão 33 (08-09/10/2026). Leia primeiro MEMORY_WORK.MD, seção "[08-09/10/2026] SESSÃO 33 — FECHAMENTO", e docs/tabela-fipe.md.
+Estado: tudo commitado e NO AR (último commit de código `fb19a48`; deploys verdes). Feito: página pública /tabela-fipe (carros, API FIPE v2 direto do
+navegador, sem tabela); CSP liberou fipe.parallelum.com.br e parallelum.com.br; FIPE do estoque: function `fipe-atualizar-estoque` (cron 07h) grava
+`fipe_valores_veiculo` e copia o valor do mês para `veiculos.valor_fipe` (32/32 iguais à API, sem reenvio às plataformas); token FIPE_API_TOKEN no Supabase.
+
+O que ficou ABERTO, em ordem:
+1. TESTE MANUAL DELA: /tabela-fipe (marca→modelo→ano), seletor da home (consignação), cadastro de um veículo (valor FIPE novo, "Última alteração: sistema/automação"),
+   artigo "Consultar a Tabela FIPE" na Central de Ajuda. Confirmar se os 2 WhatsApps do aviso da FIPE chegaram (se não, trocar por template aprovado).
+2. Ver o 1º cron sozinho (07h): esperado `sem_novidade`. Conferir `fipe_estoque_execucoes`. No dia em que a FIPE publicar novembro, a function deve processar e avisar.
+3. FASE 3 (opcional): histórico no cadastro lendo `fipe_valores_veiculo` (hoje `getFipeHistoryFromDB` lê `fipe_anos`, vazia), aviso "preço x FIPE" no estoque,
+   migrar `fipe-auditoria-modelo-versao` e `Consignment.tsx` da API v1 para a v2; confirmar uso comercial com a fipe.api.br.
+4. CONECTORES META: ela precisa rodar `/mcp` e logar em `meta_social_technologies` e `whatsapp_business_tools` (registrados nesta pasta em 09/10); depois eu listo as ferramentas
+   (só leitura) antes de escrever código. Nunca usar a conta "Ca - Carro e Cia".
+5. Lista da sessão 32 (ainda valendo): post orgânico diário (texto com defeito), Messenger/assinatura da Meta, Webmotors Hilux RUG8F56 e SW4 SSF5A83 (versão errada para o ano),
+   esteira de postagens (ela liga e aprova o 1º), menores (segredo da Meta colado no chat -> redefinir + 2FA; `.catch` do receive-leads).
+Ferramentas (não reinvestigar): `mcp__supabase__*` escreve (apply_migration, execute_sql, net.http_post com `x-internal-secret := public.get_internal_service_secret()`);
+se o MCP/CLI derem 502 do Supabase, esperar e repetir; CLI `supabase db query --linked -f arquivo.sql`; `supabase functions deploy <nome> --use-api`;
+Supabase NÃO deixa função mudar session_replication_role.
+Regras dela: pedir autorização com blocos de ações (commit+push juntos num pedido, deploy à parte se for produção sensível); testar TUDO antes de dizer que funciona
+e dizer o que não testei; abrir o site publicado depois de deploy; resposta em português do Brasil; terminar com lista feito/pendente.
+```
+
+---
+
+## Sessão 32 → 33 (06/10/2026) — histórico
 
 Copie e cole como primeira mensagem numa sessão nova do Claude Code.
 
@@ -15,9 +47,6 @@ confirmação manual; página da Meta inscrita nos campos de mensagens (Messenge
 (cron de 15 min ativo, 36 na fila); diagnóstico do post orgânico diário (nada alterado).
 
 O que ficou ABERTO, em ordem:
-000. FIPE DO ESTOQUE — FASE 2 FEITA (09/10): `veiculos.valor_fipe` dos 32 atualizado (32/32 = API), sem reenvio. Falta só: Adriana testar na tela (/tabela-fipe, home, cadastro do veículo), confirmar WhatsApp, ver o 1º cron sozinho, e a Fase 3 (opcional). Ver MEMORY_WORK "[09/10/2026, madrugada]" e docs/tabela-fipe.md.
-00. FIPE DO ESTOQUE (09/10): Fase 1 no ar (function + tabelas + cron 07h, 32/32 ok). Falta: commit+push, confirmar o aviso no WhatsApp, decidir Fase 2 (copiar para veiculos.valor_fipe só após ler ml-* e os gatilhos de reenvio). Ver MEMORY_WORK "[09/10/2026]" e docs/tabela-fipe.md.
-0. TABELA FIPE (08/10): página /tabela-fipe pronta e testada só local (ver MEMORY_WORK "[08/10/2026]"). Falta: Adriana testar, commit+push+deploy, aplicar migration do artigo de ajuda, conferir o site publicado.
 1. POST ORGÂNICO DIÁRIO (08:00, Facebook): abre com "Aqui está o post perfeito… copiar e colar" + `***`, hashtags da IA (não a lista de 03/10), frase
    "Reservamo-nos…" vaza. Causa: frase FIXA no código de `gerar-conteudo-social` + regra `social_media` no texto original. Decisões da Adriana: usar o
    molde fixo da esteira, só ajustar prompt, ou pausar `post-organico-diario-cron-job`; e se a lista de hashtags de 03/10 vale para os botões de IA.
