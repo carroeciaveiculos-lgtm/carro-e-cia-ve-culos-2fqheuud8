@@ -221,18 +221,9 @@ Deno.serve(async (req) => {
         codigo_fipe:
           veiculoData?.codigoFipe || veiculoData?.fipe?.codigo || veiculoData?.codigo_fipe || '',
         url_fipe: veiculoData?.url || veiculoData?.fipe?.url || '',
-        historico_fipe: veiculoData?.historico ||
-          veiculoData?.fipe?.historico || [
-            { mes: 'Mês Atual', valor: veiculoData?.valor || veiculoData?.preco_fipe || 0 },
-            {
-              mes: 'Mês Anterior',
-              valor: (veiculoData?.valor || veiculoData?.preco_fipe || 0) * 1.01,
-            },
-            {
-              mes: '2 Meses Atrás',
-              valor: (veiculoData?.valor || veiculoData?.preco_fipe || 0) * 1.02,
-            },
-          ],
+        // Sem histórico na resposta da API, devolve vazio. Antes preenchia 3 pontos inventados
+        // (valor x 1,01 e x 1,02) que apareciam no gráfico do cadastro como se fossem FIPE real.
+        historico_fipe: veiculoData?.historico || veiculoData?.fipe?.historico || [],
         categoria: veiculoData?.categoria || 'Carro',
         categoria_sintetica:
           veiculoData?.extra?.categoria?.descricao || veiculoData?.categoria || '',

@@ -114,8 +114,15 @@ Mecanismo que guarda o valor FIPE de cada veículo **disponível**, mês a mês.
   valor que ela traz pode ser o de usado; `Consignment.tsx` (v1) e `fipe-auditoria-modelo-versao` ainda não tratam 32000.
 
 ### Fase 3 (opcional)
-"FIPE de <mês>" e histórico no cadastro lendo `fipe_valores_veiculo` (hoje `getFipeHistoryFromDB` lê `fipe_anos`, que
-tem 0 linhas); aviso "preço de venda x FIPE" no estoque; migrar `fipe-auditoria-modelo-versao` e `Consignment.tsx` da v1.
+**Feito (10/10/2026) — gráfico do histórico no cadastro:** o gráfico (aba ROI & Histórico do `VehicleFormModal`) agora junta
+duas fontes com `montarHistoricoFipe` (`src/lib/fipe-ref.ts`): (1) `info_personalizadas.historico_fipe`, que a consulta de placa
+guarda e que fica CONGELADO no dia da consulta (os 62 veículos têm ~22 meses reais, parando em ago/2026) e (2) os meses que a
+automação grava em `fipe_valores_veiculo` (lidos por `getFipeHistoricoVeiculo`, que substitui a leitura de `fipe_anos`, sempre vazia).
+Mês repetido: vale a automação. Pontos com mês que não é data ("Mês Atual") ou valor zero são descartados. Veículo 0 km ignora o
+histórico guardado (é preço de usado). `consultar-placa` deixou de inventar 3 pontos (valor ×1,01 / ×1,02) quando a API não manda histórico.
+Limite: o gráfico só ganha 1 ponto por mês novo (hoje setembro e outubro); não há preenchimento retroativo.
+**Falta:** aviso "preço de venda x FIPE" no estoque; migrar `fipe-auditoria-modelo-versao` e `Consignment.tsx` da v1 para a v2
+(confirmar uso comercial com a fipe.api.br).
 
 ### Becos sem saída / cuidados
 - MCP do Supabase e `api.supabase.com` deram 502 por alguns minutos (09/10); a CLI (`supabase db query --linked -f`)

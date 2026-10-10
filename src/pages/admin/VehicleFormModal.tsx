@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { mensagemErroAmigavel } from '@/lib/friendly-error'
-import { normalizarMesFipe } from '@/lib/fipe-ref'
+import { montarHistoricoFipe, normalizarMesFipe } from '@/lib/fipe-ref'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import {
   AlertDialog,
@@ -39,7 +39,7 @@ import { uploadToR2 } from '@/lib/r2-upload'
 import { BatchPhotoUploader } from '@/components/admin/BatchPhotoUploader'
 import { ImageEditorModal } from '@/components/admin/ImageEditorModal'
 import { DocumentPreviewDialog } from '@/components/admin/DocumentPreviewDialog'
-import { getFipeHistoryFromDB } from '@/services/fipe'
+import { getFipeHistoricoVeiculo } from '@/services/fipe'
 import {
   fetchFraseFinal,
   FRASE_FINAL_PADRAO,
@@ -630,36 +630,24 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
     }
   }
 
+  // Gráfico do histórico FIPE: junta o histórico guardado pela consulta de placa (congelado no
+  // dia da consulta) com os meses que a automação diária grava em fipe_valores_veiculo —
+  // assim ele acompanha o Valor FIPE do campo ao lado. Veículo 0 km ignora o histórico
+  // guardado: aquele é preço de usado e o 0 km tem linha própria na FIPE.
   useEffect(() => {
+    let ativo = true
     const historico = formData.info_personalizadas?.historico_fipe
-    if (Array.isArray(historico) && historico.length > 0) {
-      const formatted = historico
-        .map((item: any) => ({
-          mes: item.mes_referencia || item.mes || item.reference || '',
-          valor: Number(item.valor_fipe || item.valor || item.preco_fipe || item.price || 0),
-        }))
-        .filter((item: any) => item.mes && item.valor > 0)
-        .reverse()
-      setFipeHistory(formatted)
-    } else if (formData.info_personalizadas?.codigo_fipe) {
-      getFipeHistoryFromDB(formData.info_personalizadas.codigo_fipe).then(({ data }) => {
-        if (data && data.length > 0) {
-          setFipeHistory(
-            data
-              .map((item: any) => ({
-                mes: item.mes_referencia || '',
-                valor: Number(item.valor_fipe || 0),
-              }))
-              .filter((item: any) => item.mes && item.valor > 0),
-          )
-        } else {
-          setFipeHistory([])
-        }
+    const guardado = !formData.is_zero_km && Array.isArray(historico) ? historico : []
+    setFipeHistory(montarHistoricoFipe(guardado, []))
+    if (formData.id) {
+      getFipeHistoricoVeiculo(formData.id).then(({ data }) => {
+        if (ativo && data) setFipeHistory(montarHistoricoFipe(guardado, data))
       })
-    } else {
-      setFipeHistory([])
     }
-  }, [formData.info_personalizadas])
+    return () => {
+      ativo = false
+    }
+  }, [formData.info_personalizadas, formData.id, formData.is_zero_km])
 
   const consultarAPIPlaca = async () => {
     if (!formData.placa) return
@@ -2849,7 +2837,8 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
                     </LineChart>
                   ) : (
                     <div className="flex items-center justify-center h-full text-sm text-slate-500">
-                      Consulte a placa para carregar o histórico FIPE do veículo.
+                      Sem histórico FIPE ainda. Consulte a placa ou aguarde a atualização automática
+                      das 07h.
                     </div>
                   )}
                 </ChartContainer>

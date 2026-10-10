@@ -153,12 +153,15 @@ export const getFipePreco = (marca: string, modelo: string, ano: string, ref: st
 export const precoParaNumero = (preco: string) =>
   Number(preco.replace(/[^\d,]/g, '').replace(',', '.')) || 0
 
-export const getFipeHistoryFromDB = async (codigoFipe: string) => {
+// Valores que a automação diária (fipe-atualizar-estoque) grava por veículo e mês.
+// Substitui a leitura de fipe_anos, que nunca teve linhas.
+export const getFipeHistoricoVeiculo = async (veiculoId: string) => {
   const { data, error } = await supabase
-    .from('fipe_anos')
-    .select('mes_referencia, valor_fipe')
-    .eq('codigo_fipe', codigoFipe)
-    .order('mes_referencia', { ascending: true })
-    .limit(24)
+    .from('fipe_valores_veiculo')
+    .select('referencia_mes, referencia_codigo, valor')
+    .eq('veiculo_id', veiculoId)
+    .eq('situacao', 'ok')
+    .order('referencia_codigo', { ascending: true })
+    .limit(36)
   return { data, error }
 }
