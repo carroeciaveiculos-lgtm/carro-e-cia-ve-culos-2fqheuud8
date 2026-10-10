@@ -15,13 +15,13 @@ NADA disso foi testado rodando em produção: reserva atômica de criação de a
 O que ficou ABERTO, em ordem:
 1. TESTE REAL da reserva de criação do ML: chamar `sync-plataforma` DUAS vezes ao mesmo tempo para um veículo SEM anúncio no ML (ela escolhe qual) e conferir que nasce UM anúncio só
    (causa do Yaris duplicado em 08/10: dois "created" com 19 ms de diferença; o duplicado MLB7769296652 ela já excluiu; o certo é o MLB7769296654).
-2. DIAMANTE: o ML real tem 12 anúncios gold_premium; o cadastro tem 5. Os 7 extras (FJK7E17, FVY4J44, LSL9F31, OPZ2408, PQE7D92, PZL2G96, PZQ2F46) estão Prata no cadastro. O tipo só vai ao ML na criação.
-   Decisão dela: rebaixar no ML (testar com 1; não sei se o ML permite) ou ajustar o cadastro. O contador agora mostra 5/15 (só disponíveis, pelo cadastro).
+2. DIAMANTE: RESOLVIDO à noite (ela escolheu ajustar o cadastro): os 7 extras agora são diamante no cadastro; contador 12/15. Falta ela conferir o "12/15" na tela Portais (não abri logado).
+2b. PAJERO ETP3C11 na Webmotors: NÃO publicada. `43|33` (pacote esgotado) em 13:10 e 20:40; Cockpit (22 veículos) não a tem. Descrição já corrigida para câmbio automático. Ela diz ter 2 vagas Básico;
+   a WM discorda (consulta mostrava 20/18). Pedir que tente pelo Cockpit/Portais ou informe as vagas do Cockpit. Reenviar só com ordem dela (insert `pending_create` em estoque_publicacoes; ver MEMORY_WORK.MD).
 3. WEBMOTORS: GTN5D81 (Rampage) ativo na WM a R$ 189.897 × cadastro R$ 184.897 — ela precisa confirmar o mapeamento na tela Portais. 10 veículos com a bandeira publicado_webmotors=true mas FORA da WM (todos em erro):
    NÃO corrigir a bandeira à mão (dispara gatilho que já quase excluiu anúncio real) — ver protocolo em docs/webmotors-integracao.md.
 4. NAPISTA: não conferida na plataforma; `sync_log` mostra "create" repetido para ≥14 veículos (e 2 ofertas no Yaris em 08/10).
-5. ML: Pajero ETP3C11 parado em pending_update sem ml_item_id; Volvo 2026 MLB5179694765 (fora do sistema, já PAUSADO por ela) — ela disse "pode devolver" e eu ainda não sei o que quis dizer
-   (fechar o anúncio? marcar o Volvo 2024 SYI6C55 como devolvido? — NÃO marcar sem confirmar, é outro carro). Verificação diária de anúncios órfãos adiada.
+5. ML: Pajero ETP3C11 parado em pending_update sem ml_item_id; Volvo 2026 MLB5179694765: RESOLVIDO — ela pausou, o carro foi devolvido ao cliente; nada a fazer (Volvo 2024 SYI6C55 é outro carro, não mexer). Verificação diária de anúncios órfãos adiada.
 6. FIPE: teste real da function com um veículo 0 km; ver se o cron `sem_novidade` grava linha; confirmar os 2 WhatsApps; aviso "preço x FIPE" no estoque e migrar Consignment.tsx/fipe-auditoria da API v1 para a v2.
 7. Lista da sessão 32: post orgânico diário, Messenger, Hilux/SW4 na Webmotors, esteira, segredo da Meta (redefinir + 2FA).
 FERRAMENTAS: o banco só tem pg_net (GET/POST) — sem PUT; para ler o ML use `net.http_get` com a credencial de `ml_credentials` DENTRO do SQL (o token não aparece) e `select ... from net._http_response`.
