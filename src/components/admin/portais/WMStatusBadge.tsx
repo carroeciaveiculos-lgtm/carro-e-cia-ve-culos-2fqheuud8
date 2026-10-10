@@ -14,6 +14,7 @@ export function WMStatusBadge({ status }: Props) {
     agendado: { icon: Clock, label: 'Agendado', className: 'bg-yellow-100 text-yellow-700' },
     pending: { icon: Clock, label: 'Pendente', className: 'bg-yellow-100 text-yellow-700' },
     pending_create: { icon: Clock, label: 'Criando', className: 'bg-yellow-100 text-yellow-700' },
+    creating: { icon: Clock, label: 'Criando', className: 'bg-yellow-100 text-yellow-700' },
     pending_update: {
       icon: Clock,
       label: 'Atualizando',

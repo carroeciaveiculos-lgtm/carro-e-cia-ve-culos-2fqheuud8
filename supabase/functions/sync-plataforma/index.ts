@@ -18,6 +18,7 @@ import { validateImagesForML } from '../_shared/image-validation.ts'
 import { validatePayload, filtrarDescricao } from '../_shared/validate-payload.ts'
 import { fetchAndStorePerformance } from '../_shared/ml-performance.ts'
 import { getCityId } from '../_shared/ml-cache.ts'
+import { claimMLCreate } from '../_shared/ml-claim.ts'
 
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
@@ -232,6 +233,8 @@ async function handlePublish(
 
   let mlData: any
   let actionVerb: string
+  // Preço que o ML devolveu no PUT, se diferente do enviado (o log "sucesso" não prova que o preço mudou).
+  let avisoPreco: string | null = null
 
   try {
     if (existingListing?.ml_item_id && !listingIsStale) {
@@ -248,7 +251,20 @@ async function handlePublish(
       mlData = await updateRes.json()
       if (!updateRes.ok) throw new Error(JSON.stringify(mlData))
       actionVerb = 'updated'
+      if (Number(mlData.price) !== Number(updatePayload.price)) {
+        avisoPreco = `o Mercado Livre devolveu o preço R$ ${mlData.price} (enviado: R$ ${updatePayload.price})`
+      }
     } else {
+      // Reserva atômica ANTES do POST (09/10/2026: duas execuções simultâneas criaram dois anúncios
+      // do mesmo Yaris). Quem não conseguir reservar não cria.
+      const reserva = await claimMLCreate(supabase, veiculoId, existingListing?.ml_item_id ?? null)
+      if (!reserva.ok) {
+        const message =
+          reserva.motivo === 'ja_criado'
+            ? `Este veículo já foi publicado no Mercado Livre por outra execução (${reserva.itemId}). Nada foi duplicado.`
+            : 'Já existe uma publicação deste veículo em andamento no Mercado Livre. Aguarde 1 minuto e confira na tela Portais antes de tentar de novo.'
+        return json({ success: false, message })
+      }
       const createPayload = buildMLItemPayload(
         validVehicle,
         veiculo.ml_listing_type,
@@ -336,6 +352,16 @@ async function handlePublish(
   await supabase.from('veiculos').update({ publicado_mercadolivre: true }).eq('id', veiculoId)
 
   const successMsg = `ML item ${mlData.id} ${actionVerb} com sucesso`
+  if (avisoPreco && mlPid) {
+    await supabase.from('sync_log').insert({
+      plataforma_id: mlPid,
+      veiculo_id: veiculoId,
+      acao: 'sync',
+      status: 'warning',
+      mensagem: `ML item ${mlData.id}: ${avisoPreco}. Confira o preço no anúncio.`,
+      metadata: { preco_enviado: Number(validVehicle.preco_venda), preco_ml: mlData.price },
+    })
+  }
   if (mlPid) {
     const bodyType = getVehicleBodyType(veiculo.categoria)
     const logMetadata: Record<string, any> = bodyType?.esportivo_fallback
@@ -353,7 +379,11 @@ async function handlePublish(
 
   await fetchAndStorePerformance(supabase, token, mlData.id, veiculoId)
 
-  return json({ success: true, message: successMsg, ml_item_id: mlData.id })
+  return json({
+    success: true,
+    message: avisoPreco ? `${successMsg}, mas ${avisoPreco}. Confira o preço no anúncio.` : successMsg,
+    ml_item_id: mlData.id,
+  })
 }
 
 function json(data: any, status = 200) {

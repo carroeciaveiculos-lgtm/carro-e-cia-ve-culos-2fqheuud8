@@ -40,8 +40,33 @@ O robô automático (cron `ml-sync`) usa o mesmo código de montagem de payload
 | Em UPDATE (PUT, veículo já publicado), o ML parece ser mais tolerante — não bloqueia a sincronização toda por um atributo opcional errado (fica com o valor antigo). Em CREATE (POST, veículo novo) ele bloqueia. | 12 veículos flex já ativos continuaram sincronizando normalmente mesmo com o bug do "Flex" no ar; só o City (uma publicação nova) travou |
 | A cilindrada no cadastro (`veiculos.cilindrada`) virou campo numérico só em litros (26/08/2026) — antes era texto livre e vinha misturado (litro "1.5" ou cc direto "1598") | correção real, pedido da Adriana |
 
+## Anúncio duplicado e preço que "não atualiza" (achado 09/10/2026, Yaris RTX3J06)
+
+**Sintoma:** Adriana mudou o preço no cadastro (R$ 81.897 → 84.897) e o ML continuou mostrando 81.897, mesmo com o
+`sync_log` dizendo "updated com sucesso" e a página pública do nosso anúncio já em 84.897.
+**Causa:** o ML tinha DOIS anúncios ativos do mesmo carro (`MLB7769296652`, criado 13:04:59.686, e `MLB7769296654`, 13:04:59.710
+de 08/10). A publicação foi processada duas vezes ao mesmo tempo pelo `sync-plataforma` (log: dois "created com sucesso" com 19 ms
+de diferença; a NaPista também criou 2 ofertas e a Webmotors fez update + create no mesmo segundo). Cada execução leu "sem
+`ml_item_id`" e deu POST; o `upsert` por `veiculo_id` no fim da segunda sobrescreveu o vínculo e o `…652` virou órfão — com o preço
+antigo, que nada mais atualizava. Quem olhava o ML via o órfão.
+**Como diagnosticar (não confiar no `sync_log` nem na página pública):** ler `GET /items/{id}` na API do ML com a credencial de
+`ml_credentials`, de dentro do banco (`net.http_get` + `select net._http_response`, o token não aparece na resposta), e listar
+`GET /users/80878594/items/search` comparando com `ml_listings.ml_item_id` — anúncio ativo que o banco não conhece é órfão. Em
+08/10 havia 95 anúncios na conta e 48 fora do banco (42 em revisão de julho, 4 fechados, o duplicado e um Volvo XC60 a R$ 424.897).
+**Correção no código (10/10/2026):** `_shared/ml-claim.ts` — reserva atômica (`UPDATE ... status='creating'` condicional) ANTES de
+todo POST de criação, nos dois caminhos (`sync-plataforma` e `ml-sync`); quem não reserva não cria. Reserva vence em 5 min (e o cron
+devolve `creating` com mais de 10 min para `pending_create`). Também: o PUT devolve o anúncio, então `sync-plataforma` e `ml-sync`
+agora comparam o preço devolvido com o enviado e gravam `sync_log` com status `warning` se divergir (zero chamada extra).
+**Limites / não feito:** (1) o banco só tem `pg_net` (GET/POST), então NÃO dá para pausar/fechar anúncio (precisa de PUT) por SQL — o
+duplicado `MLB7769296652` tem que ser pausado no painel do ML ou por uma function; (2) a NaPista registra `create` repetido para
+vários veículos (≥14 com 2+ "create" em `sync_log`) — não investigado; (3) verificação diária de órfãos (função + cron +
+lista de anúncios antigos a ignorar) ficou para depois; (4) `seller_custom_field` não foi usado como chave de idempotência porque
+a busca por ele não foi testada e não se deve mandar campo não testado no POST de produção.
+
 ## Becos sem saída — não repetir
 
+- **Mandar o preço e ver "sucesso" no log não prova nada.** Conferir sempre o anúncio pela API (`GET /items/{id}`), e olhar
+  se não há outro anúncio do mesmo veículo na conta.
 - **`WebFetch` na API do Mercado Livre sempre dá 403.** A ferramenta de busca
   de página do Claude Code é bloqueada pelo ML (provavelmente por User-Agent
   ou IP de datacenter). Usar `curl -A "Mozilla/5.0" ...` via Bash funciona.

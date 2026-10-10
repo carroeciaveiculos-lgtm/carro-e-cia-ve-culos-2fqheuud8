@@ -22,6 +22,7 @@ import { validatePayload, filtrarDescricao } from '../_shared/validate-payload.t
 import { fetchAndStorePerformance } from '../_shared/ml-performance.ts'
 import { checkListingQuota } from '../_shared/ml-quota.ts'
 import { translateError } from '../_shared/error-map.ts'
+import { claimMLCreate } from '../_shared/ml-claim.ts'
 
 async function checkQuotaAndNotify(supabase: any, token: string): Promise<void> {
   try {
@@ -78,6 +79,14 @@ Deno.serve(async (req: Request) => {
 
     await supabase.rpc('auto_retry_stuck_ml_listings')
 
+    // Reserva de criação vencida (execução que caiu no meio, ver _shared/ml-claim.ts): volta para a
+    // fila em vez de ficar 'creating' para sempre.
+    await supabase
+      .from('ml_listings')
+      .update({ status: 'pending_create' })
+      .eq('status', 'creating')
+      .lt('last_synced_at', new Date(Date.now() - 10 * 60 * 1000).toISOString())
+
     const { data: mlPlataforma } = await supabase
       .from('plataformas')
       .select('id')
@@ -129,6 +138,13 @@ Deno.serve(async (req: Request) => {
 
       try {
         if (listing.status === 'pending_create') {
+          // Reserva atômica antes do POST: se o botão do painel (sync-plataforma) já está criando
+          // este veículo, o cron não cria um segundo anúncio (09/10/2026, Yaris duplicado).
+          const reserva = await claimMLCreate(supabase, listing.veiculo_id, listing.ml_item_id ?? null)
+          if (!reserva.ok) {
+            results.push({ listing_id: listing.id, status: 'skipped', reason: reserva.motivo })
+            continue
+          }
           const errMsg = await handleCreate(
             supabase,
             token,
@@ -499,6 +515,20 @@ async function handleUpdate(
   if (!updateRes.ok) {
     const errData = await updateRes.json()
     return { error: JSON.stringify(errData), cachedAttrs: mandatoryAttrs, cachedCityId: cityId }
+  }
+
+  // O PUT devolve o anúncio já atualizado: conferir o preço aqui não custa nenhuma chamada extra.
+  // Antes o log dizia "sucesso" sem nunca olhar se o preço mudou de verdade.
+  const updData = await updateRes.json().catch(() => null)
+  if (updData && mlPlataformaId && Number(updData.price) !== Number(payload.price)) {
+    await supabase.from('sync_log').insert({
+      plataforma_id: mlPlataformaId,
+      veiculo_id: veiculo.id,
+      acao: 'sync',
+      status: 'warning',
+      mensagem: `ML item ${listing.ml_item_id}: o Mercado Livre devolveu o preço R$ ${updData.price} (enviado: R$ ${payload.price}). Confira o preço no anúncio.`,
+      metadata: { preco_enviado: payload.price, preco_ml: updData.price },
+    })
   }
 
   if (veiculo.descricao && veiculo.descricao.length > 0) {
