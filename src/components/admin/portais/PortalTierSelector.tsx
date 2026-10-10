@@ -114,7 +114,7 @@ export function PortalTierSelector({ plataforma, veiculo, onUpdateAdType }: Prop
           <span
             className={`text-[10px] ${isDiamondFull ? 'text-red-600 font-bold' : 'text-gray-500'}`}
           >
-            {diamondQuota.used}/{diamondQuota.limit} anúncios Diamante utilizados
+            {diamondQuota.used}/{diamondQuota.limit} anúncios Diamante no cadastro (veículos disponíveis)
           </span>
         )}
       </div>

@@ -829,6 +829,21 @@ extração sem esse problema, a comparação real deu zero diferenças.
   no mesmo dia — caiu exatamente no bug do item acima). Corrigido e
   publicado nos dois, confirmado ao vivo.
 
+## Conferência real contra o Cockpit — 10/10/2026 (as "abas" da tela Portais)
+
+**Resultado:** o Cockpit (`cockpit.com.br/inventory?status=1&type=1&qtyItems=60`, sessão logada, placas no texto da página vêm
+com hífen, ex.: `RTX-9C97`) tinha **22 anúncios ativos**. No banco: 21 veículos com `estoque_publicacoes` = `publicado` (todos
+batem com o Cockpit, inclusive o preço) + o **Rampage GTN5D81**, ativo na Webmotors (`post_id` 73318104) mas com todas as linhas em
+`error` ("sem mapeamento de catálogo confirmado"; `wm_mapeamento_veiculos.status_sincronizacao = revisao_necessaria`,
+`confirmado_manualmente = false`) — por isso a Webmotors segue com o preço velho (R$ 189.897 contra R$ 184.897 no cadastro). A
+tabela tem 5 linhas duplicadas desse veículo, todas em erro.
+**A bandeira `publicado_webmotors` estava `true` em 31–32 veículos disponíveis**, 10–11 deles NÃO estão na Webmotors (todos com
+`error`: `43|33` "posição 33 desconhecida (tradução não confirmada)" em ETP3C11, GED3F13, OPZ2408, PYT5J89, QWV5D37, QXH1J94, TCQ0B23;
+`43|36` em FVY4J44; `43|41,43|33,43|37` em SIQ5H93 e SSF5A83). A tela Portais filtrava pela bandeira — corrigido para usar o status
+real (`veiculoIdsPublicadosReais` em `src/services/plataformas.ts`). **Não se corrige a bandeira à mão** (protocolo acima: ela dispara
+`trigger_wm_sync_on_veiculo_change`). Para a Webmotors a contagem "real" do nosso banco (21) ainda fica 1 abaixo do Cockpit (22) até o
+mapeamento do GTN5D81 ser confirmado na tela (dialog "Confirmar mapeamento").
+
 ## Diagnóstico rápido
 
 ```sql

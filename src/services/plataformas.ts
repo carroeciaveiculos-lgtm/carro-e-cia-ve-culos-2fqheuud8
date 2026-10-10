@@ -119,6 +119,30 @@ const FAIXAS_TEMPO_ESTOQUE: Record<string, { minDias?: number; maxDias?: number 
   mais_90: { minDias: 90 },
 }
 
+// Veículos realmente publicados na plataforma, pelo STATUS REAL — não pela bandeira `publicado_*`
+// do cadastro (achado 10/10/2026: 31 veículos marcados como publicados na Webmotors, mas só 21
+// estavam "publicado" em estoque_publicacoes; os outros 10 estavam em erro).
+// Mercado Livre: ml_listings.status = 'active'. Demais: a linha MAIS RECENTE de cada veículo em
+// estoque_publicacoes (a tabela guarda várias linhas por veículo+plataforma).
+// Devolve null para plataforma sem sincronização real (OLX/iCarros): aí vale a bandeira.
+async function veiculoIdsPublicadosReais(slug: string): Promise<string[] | null> {
+  if (slug === 'mercadolivre') {
+    const { data } = await supabase.from('ml_listings').select('veiculo_id').eq('status', 'active')
+    return (data || []).map((l: any) => l.veiculo_id)
+  }
+  if (slug !== 'webmotors' && slug !== 'napista') return null
+  const { data } = await supabase
+    .from('estoque_publicacoes')
+    .select('veiculo_id, status, updated_at')
+    .eq('platform', slug)
+    .order('updated_at', { ascending: false })
+  const maisRecente = new Map<string, string>()
+  for (const linha of data || []) {
+    if (!maisRecente.has(linha.veiculo_id)) maisRecente.set(linha.veiculo_id, linha.status || '')
+  }
+  return [...maisRecente.entries()].filter(([, st]) => st === 'publicado').map(([id]) => id)
+}
+
 export async function fetchVeiculosForPortais(
   search?: string,
   page?: number,
@@ -138,8 +162,18 @@ export async function fetchVeiculosForPortais(
   }
 
   if (filtros?.statusPublicacao && filtros.plataforma) {
-    const campo = SLUG_MAP_PUBLICADO[filtros.plataforma]
-    if (campo) query = query.eq(campo, filtros.statusPublicacao === 'publicado')
+    const publicados = await veiculoIdsPublicadosReais(filtros.plataforma)
+    if (publicados) {
+      if (filtros.statusPublicacao === 'publicado') {
+        if (publicados.length === 0) return { vehicles: [], total: 0 }
+        query = query.in('id', publicados)
+      } else if (publicados.length > 0) {
+        query = query.not('id', 'in', `(${publicados.join(',')})`)
+      }
+    } else {
+      const campo = SLUG_MAP_PUBLICADO[filtros.plataforma]
+      if (campo) query = query.eq(campo, filtros.statusPublicacao === 'publicado')
+    }
   }
 
   if (filtros?.plataforma === 'mercadolivre' && filtros.modalidade) {

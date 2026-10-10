@@ -2,12 +2,20 @@ import { supabase } from '@/lib/supabase/client'
 
 const DIAMOND_LIMIT = 15
 
+// Só veículo DISPONÍVEL ocupa vaga Diamante. Antes contava todas as linhas da tabela, inclusive de
+// veículos vendidos e devolvidos (achado 10/10/2026: "15/15" na tela, mas só 6 disponíveis e 9 já
+// vendidos/devolvidos). Isto é a contagem do CADASTRO; o tipo real de cada anúncio no Mercado Livre
+// pode divergir (o tipo só vai ao ML na criação do anúncio).
 export async function getDiamondQuota(): Promise<{ used: number; limit: number }> {
+  const { data: disponiveis } = await supabase.from('veiculos').select('id').eq('status', 'disponivel')
+  const ids = (disponiveis || []).map((v) => v.id)
+  if (ids.length === 0) return { used: 0, limit: DIAMOND_LIMIT }
   const { count } = await supabase
     .from('listing_preferences')
     .select('*', { count: 'exact', head: true })
     .eq('platform', 'mercadolivre')
     .eq('listing_type', 'diamante')
+    .in('veiculo_id', ids)
   return { used: count || 0, limit: DIAMOND_LIMIT }
 }
 
