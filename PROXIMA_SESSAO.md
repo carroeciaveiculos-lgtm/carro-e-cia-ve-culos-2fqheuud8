@@ -1,5 +1,8 @@
 # Prompt pra próxima sessão
 
+## Adendo 13/10/2026 — Google Ads (vale junto com o prompt abaixo)
+Leia MEMORY_WORK.MD, seção "[13/10/2026] Google Ads". Token do Google Ads renovado e funcionando; function `google-ads-leads` commitada e publicada SEM a secret `GOOGLE_ADS_LEAD_WEBHOOK_KEY` (responde 401 até gravar). Próximos passos: gravar a secret (valor aleatório, ela grava com `!`), trocar a URL do webhook no formulário do Google, ligar o formulário a uma campanha ativa (as 5 campanhas têm 0 impressões; decisão dela), "Enviar dados de teste", conferir se o lead aciona a Clara, limpar a chave de `webhook-portais`. Nada disso foi testado rodando.
+
 ## Sessão 34 (continuação, 10/10/2026) → 35 — prompt atual
 
 Copie e cole como primeira mensagem numa sessão nova do Claude Code.

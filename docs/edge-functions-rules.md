@@ -53,6 +53,7 @@ Isso quebra sincronizações de estoque, automações de leads, disparos de What
 | `ml-webhook`                    | Webhook                 | Webhook do Mercado Livre                                                   |
 | `whatsapp-webhook`              | Webhook                 | Webhook do WhatsApp/Meta                                                   |
 | `webhook-portais`               | Webhook                 | Webhook genérico de portais                                                |
+| `google-ads-leads`              | Webhook                 | Lead Form do Google Ads; valida `google_key` (secret `GOOGLE_ADS_LEAD_WEBHOOK_KEY`) |
 | `webhook-autentique`            | Webhook                 | Webhook do Autentique (assinaturas)                                        |
 | `ml-auth`                       | Server-to-Server        | Autenticação OAuth com Mercado Livre                                       |
 | `ml-sync`                       | Server-to-Server / Cron | Sincronização de anúncios com ML                                           |

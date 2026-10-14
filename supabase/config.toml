@@ -37,6 +37,9 @@ verify_jwt = true
 [functions.google-ads-agent]
 verify_jwt = true
 
+[functions.google-ads-leads]
+verify_jwt = false
+
 [functions.ai-agents]
 verify_jwt = true
 
