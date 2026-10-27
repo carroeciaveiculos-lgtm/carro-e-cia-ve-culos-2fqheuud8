@@ -43,3 +43,5 @@ screenshot.png
 # Versionar os dois causaria arquivos duplicados no repositorio.
 .claude/skills/supabase
 .claude/skills/supabase-postgres-best-practices
+
+.codex/
