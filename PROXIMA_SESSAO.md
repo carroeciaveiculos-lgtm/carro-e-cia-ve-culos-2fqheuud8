@@ -1,7 +1,7 @@
 # Prompt pra próxima sessão
 
-## Adendo 13/10/2026 — Google Ads (vale junto com o prompt abaixo)
-Leia MEMORY_WORK.MD, seção "[13/10/2026] Google Ads". Token do Google Ads renovado e funcionando; function `google-ads-leads` commitada e publicada SEM a secret `GOOGLE_ADS_LEAD_WEBHOOK_KEY` (responde 401 até gravar). Próximos passos: gravar a secret (valor aleatório, ela grava com `!`), trocar a URL do webhook no formulário do Google, ligar o formulário a uma campanha ativa (as 5 campanhas têm 0 impressões; decisão dela), "Enviar dados de teste", conferir se o lead aciona a Clara, limpar a chave de `webhook-portais`. Nada disso foi testado rodando.
+## Adendo 14/10/2026 — Google Ads (substitui o de 13/10; vale junto com o prompt abaixo)
+Leia MEMORY_WORK.MD, seção "[14/10/2026] Google Ads". Resumo: token renovado e funcionando; secret gravada; webhook `google-ads-leads` gravado no formulário `370494734291` e testado (200 com a chave certa, 401 com a errada), MAS **a conta usa leads de mensagem e de chamada, não formulário**, então o webhook não captura o lead real. Não anexar formulário às campanhas. Decisões abertas dela: (1) alerta de ligação perdida (a API não dá o telefone de quem liga; formato a escolher); (2) guardar `gclid` nos leads de WhatsApp (hoje 0 de 19 têm) para poder devolver conversão ao Google; (3) pode ou não acessar a conta "Carro e Cia – Gestão"? (o CRM só usa a 8695704366); (4) qual projeto do Google Cloud é o certo (`carroecia-google-ads-api` x `feisty-etching-505619-u9`). Ações dela: criar chave de acesso (passkey) no Google Ads até 15/10. Pendentes meus: remover vínculo inerte `~LEAD_FORM` se ela pedir; ajustar formato de resposta da function; limpar a chave de `webhook-portais`. Esta parte do 14/10 está só no disco, SEM commit (pedir commit+push juntos).
 
 ## Sessão 34 (continuação, 10/10/2026) → 35 — prompt atual
 
