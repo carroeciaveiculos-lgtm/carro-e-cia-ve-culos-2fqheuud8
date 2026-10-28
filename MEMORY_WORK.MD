@@ -1,4 +1,49 @@
+# ÍNDICE — MEMORY_WORK Carro e Cia
+
+> ESTADO ATUAL: leia `PROXIMA_SESSAO.md` primeiro. Este arquivo é histórico.
+> Última sessão registrada: 28/10/2026 (sessão 35).
+
+| Bloco | Conteúdo |
+|---|---|
+| O QUE ESTÁ NO AR HOJE | estado operacional (bloco movido para o topo no ajuste seguinte) |
+| PENDÊNCIAS ABERTAS | lista de pendências com status |
+| Sessões de outubro | histórico recente |
+| Sessões de agosto e setembro | histórico antigo — consultar só se necessário |
+| Becos sem saída | o que já falhou e por quê — evita repetir erro |
+
+REGRA: não leia este arquivo inteiro. Leia o índice, escolha o bloco, use offset/limit.
+
+---
+
 # Memória de trabalho — Carro e Cia
+
+## [28/10/2026] Consolidação de regras e memória — nenhuma mudança de código (sem commit de código)
+
+- **Escopo desta sessão:** só higiene de documentação e regras. Nenhum arquivo de produção tocado, nenhum deploy, nenhum bug corrigido. Último código em produção continua `e5e44c0`.
+
+- **Higiene de git (feito, verificado):** repositório limpo (`git status --short` vazio). Série de commits sobre o `AUDIT_REPORT.md`: `00068b5` removeu o arquivo (obsoleto) mas a mensagem afirmou algo que não se confirmou depois; `46e6798` repetiu a remoção; `808da60` corrigiu a mensagem do `00068b5` por commit novo (AUDIT_REPORT na verdade foi restaurado, não removido); `ca00c87` adicionou `.codex/` ao `.gitignore`. Não houve exclusão acidental — houve mensagem de commit inconsistente, corrigida por commit subsequente, porque mensagem de commit não se edita sem reescrever histórico. `ca00c87` está em `origin/main` e é o HEAD.
+
+- **`CLAUDE.md` geral (`C:\Users\adria\.claude\CLAUDE.md`) — 3 ajustes (feito):**
+  1. Nomes de memória deixaram de ser fixos. Antes mandava usar `memory.md` e `proxima-sessao.md`; o projeto real usa `MEMORY_WORK.MD` e `PROXIMA_SESSAO.md`. Risco identificado: o robô poderia criar um arquivo vazio e ignorar 357 KB de memória existente. Agora procura pelos dois padrões e proíbe criar arquivo novo sem verificar.
+  2. Nova seção "Ordem de leitura e hierarquia": o geral é lido primeiro; em conflito, o geral vence em segurança/dados/autorização e o `CLAUDE.md` do projeto vence em particularidade técnica. O do projeto só acrescenta, nunca contradiz segurança.
+  3. Nova seção "Ciclo de vida de uma anotação": toda pendência precisa de data e de fechamento explícito com hash/data. Pendência sem fechamento = NÃO VERIFICADA, nunca estado atual.
+
+- **`PROXIMA_SESSAO.md` reescrito (feito):** o anterior era retrato de 09/10, com 6 pendências misturadas a itens feitos e sem commit de referência. O novo tem ~120 linhas, é o estado de 28/10, com commit de referência (`ca00c87`), estado do git verificado, 7 itens no ar confirmados por commit, 6 pendências em checklist com "como verificar" em cada uma, 3 decisões recentes e as pendências de memória.
+
+- **`CLAUDE.md` do projeto — regra de leitura (feito):** nova seção "Como ler a memória do projeto (obrigatório)" na linha 425. Ordem: `PROXIMA_SESSAO.md` primeiro (cabe inteiro), depois só as primeiras 60 linhas do `MEMORY_WORK.MD`, e consulta por trecho com offset/limit. Proíbe ler as 4.400 linhas de uma vez. Motivo: o bloco operacional ficava nas últimas 22% do arquivo e o robô truncava antes de chegar nele.
+
+- **`MEMORY_WORK.MD` — índice no topo (feito):** inseridas ~20 linhas de índice acima do título original. Corrige o problema de leitura truncada: agora o robô vê o mapa antes de truncar e sabe onde está cada bloco. Verificado por `Get-Content -TotalCount 30 -Encoding UTF8`.
+
+- **`MSAO.md` — investigado e encerrado:** uma análise anterior apontava referência a `MSAO.md` como erro de digitação. Busca em todos os arquivos do projeto (`Get-ChildItem -Recurse -File` + `Select-String "MSAO"`) não retornou nada. O arquivo nunca existiu e nenhum arquivo o menciona. Assunto encerrado.
+
+- **Codificação — diagnosticado, nada a corrigir:** o `MEMORY_WORK.MD` está em UTF-8 válido. O que corrompe é o PowerShell, que lê como Windows-1252 por padrão e exibe `estÃ¡` em vez de `está`. Regra prática: todo comando de leitura deste arquivo precisa de `-Encoding UTF8`. O arquivo não será alterado.
+
+- **Junctions quebradas em `.claude\skills` (registrado, não resolvido):** `supabase` e `supabase-postgres-best-practices` são junctions apontando para `.agents\skills\...` que não existe mais. Não afeta produção, mas faz todo `Get-ChildItem -Recurse` cuspir erro de caminho. Fica para decidir: recriar o destino, remover as junctions ou deixar como está.
+
+- **Descoberta sobre o bloco operacional:** a seção "O que está no ar hoje" (linha 3.451) retrata agosto/2026 — 9 itens de 18 a 21/08. Nenhum item de outubro (FIPE fases 1–3, Google Ads, Diamante, cron de 10 min). O bloco que deveria ser o resumo operacional é um retrato de dois meses atrás. Não foi reescrito nesta sessão. A mitigação veio por outro caminho: o `PROXIMA_SESSAO.md` assumiu o papel de fonte do estado atual, e a regra do `CLAUDE.md` do projeto garante que o robô o leia primeiro. O bloco de agosto fica como histórico.
+
+- **Pendente para a próxima sessão:** (a) fechar as 9 anotações "NÃO COMMITADO" espalhadas nas sessões de setembro/outubro — 6 já têm hash confirmado (`c143fc4` Diamante, `7495c07` ML, `0659147` FIPE 3, `127ab2a` FIPE 0km, `3a60cd0` Mapeamento, `fb19a48` FIPE 2), faltam 4 (Marketing WhatsApp, Audi, 14/09–01/10, Conteúdo-blog); (b) limpar a lista "Pendências abertas" (linha ~4.230), que tem 8 itens marcados `[FECHADA]` mas ainda numerados como pendência, além de blocos "1." duplicados; (c) decidir o destino das 2 junctions quebradas; (d) verificar se o `AGENTS.md` (18 KB) contradiz o `CLAUDE.md` do projeto — nunca foi comparado.
+
 
 ## [14/10/2026] Google Ads: webhook gravado, mas a conta NÃO usa formulário de lead (sem commit desta parte)
 - **Correção de premissa (dela, 14/10):** os anúncios usam **leads de mensagem (WhatsApp) e de chamada**, não formulário de lead. O webhook `google-ads-leads` só recebe formulário, então hoje não serve ao caso real. Ela decidiu manter a function (tem chave, sem custo). Opção "anexar o formulário às campanhas ativas" foi **descartada**.
@@ -4401,3 +4446,6 @@ conferir se é o mesmo padrão (login existe, perfil não) antes de tentar
 `docs/webmotors-integracao.md` · `docs/mercadolivre-integracao.md` ·
 `docs/leads-e-sdr.md` · `docs/meta-ads-mcp.md` · `docs/edge-functions-rules.md`
 · `docs/R2_CORS_CONFIGURATION.md` · `docs/integracao-napista.md`
+
+
+

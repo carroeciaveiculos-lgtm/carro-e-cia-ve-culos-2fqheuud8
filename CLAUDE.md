@@ -420,3 +420,17 @@ específico aqui, menos eu erro:
 - [Erros sempre em português](erros-sempre-em-portugues.md) — nunca mostrar erro cru do driver/banco em inglês; usar `mensagemErroAmigavel` (revenda).
 - [Arquitetura de contas Meta](meta-contas-arquitetura.md) — 3 Business Managers (cuidado, 2 se chamam "Carro e Cia"), páginas/anúncios/catálogos/WABA/pixels mapeados.
 - [Prompt da Clara só com autorizo](clara-prompt-somente-com-autorizo.md) — nunca alterar ai_prompts_config sem "autorizo" específico da Adriana, sempre registrado.
+
+
+## Como ler a memória do projeto (obrigatório)
+
+O arquivo `MEMORY_WORK.MD` é histórico: tem mais de 4.400 linhas e NÃO deve ser lido inteiro.
+
+Ordem de leitura, sempre:
+
+1. `PROXIMA_SESSAO.md` primeiro — é o estado atual, tem ~120 linhas, cabe inteiro.
+2. `MEMORY_WORK.MD` — leia apenas as primeiras 60 linhas (índice e estado operacional).
+3. Para consultar uma sessão específica, use o índice e leia só o intervalo necessário (offset/limit), nunca o arquivo completo.
+4. Leia o arquivo inteiro somente se a tarefa for explicitamente análise histórica.
+
+Trate qualquer anotação de sessão como "indício", nunca como estado atual. O estado atual está em `PROXIMA_SESSAO.md`.
