@@ -425,10 +425,17 @@ a cada sessão.
   arriscar perda.
 - **Autocrítica antes de propor** — rodar "o que um especialista atacaria" por conta
   própria antes de propor mudança em produção.
+- **Conferência inicial em todo pedido (inegociável)** — antes de responder ou agir,
+  conferir por leitura o estado atual e as premissas e listar os argumentos contra a
+  própria resposta, sem esperar a Adriana perguntar; dizer o que foi conferido e o que
+  não deu para conferir.
 - **Prompt da Clara só com autorizo** — nunca alterar `ai_prompts_config` sem "autorizo"
   específico da Adriana, sempre registrado.
 - **Escopo só Projeto Site Carro e Cia** — nunca investigar outros projetos Supabase da
   conta (existe 2ª org com CRM/MyFinance.Ai).
+- **Alteração no CLAUDE.md segue o mesmo rito** — mostrar ANTES e DEPOIS com as linhas
+  exatas, esperar "autorizo" separado, e rodar `Select-String` da regra antes de
+  adicionar (evitar duplicata).
 
 **Git e entrega**
 - **Commit e push juntos** — ao pedir autorização de commit, já perguntar sobre o push
