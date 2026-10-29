@@ -10,16 +10,24 @@ resposta ANTES de responder ou agir, sem esperar ela perguntar. Está no `CLAUDE
 (Autorização e segurança). Mudar algo continua exigindo ANTES → DEPOIS e "autorizo".
 
 ## ONDE ESTAMOS (verificado em 29/10/2026 com `git fetch` + `git log`)
-- **Branch de trabalho:** `fix/numero-interno-nao-vira-lead`, enviada ao `origin`, 3 commits à
-  frente da `main`, SEM PR e SEM merge: `0586d9f` (número interno não vira lead nem recebe
+- **Branch de trabalho:** `fix/numero-interno-nao-vira-lead`, enviada ao `origin`, 4 commits à
+  frente da `main`. **PR #1 aberto em 29/10 (https://github.com/carroeciaveiculos-lgtm/carro-e-cia-ve-culos-2fqheuud8/pull/1):
+  OPEN, MERGEABLE, status CLEAN, check Cloudflare "Workers Builds" passou; SEM merge.** Commits:
+  `0586d9f` (número interno não vira lead nem recebe
   reengajamento: `receive-leads` + `re-engagement-cron`), `805935e` (`ai-sdr`: sem agendamento
-  duplicado no mesmo horário), `672d339` (`CLAUDE.md`: conferência inicial + rito de alteração).
+  duplicado no mesmo horário), `672d339` (`CLAUDE.md`: conferência inicial + rito de alteração),
+  `2383cb1` (documentação da sessão 36).
 - **`origin/main`:** `3a1e88e` (só documentação). Último código em produção segue `e5e44c0`:
   NADA desta sessão está no ar (o deploy de functions só roda em push na `main`).
-- **Conferir o hash:** `git log --oneline -1` pode mostrar um commit de documentação acima de
-  `672d339` (a atualização destes arquivos, se foi commitada). É esperado.
-- **Merge:** pedido à parte. Ao mesclar entram em produção `ai-sdr`, `receive-leads` e
-  `re-engagement-cron`; conferir `gh run view` depois.
+- **Conferir o hash:** o HEAD da branch é um commit de documentação (`2383cb1` ou o que registrar o
+  PR #1). O que vale até o merge: `origin/main` = `3a1e88e`. É esperado.
+- **Merge do PR #1:** pedido à parte. Ao mesclar roda o deploy de `ai-sdr`, `receive-leads` e
+  `re-engagement-cron` **e também o `deploy.yml` do site** (todo push na `main`, mesmo só
+  documentação; verificado nos 3 últimos commits de docs). Depois: `gh run view`, abrir
+  `www.carroeciamotors.com.br`, `/estoque` e `/admin/login`.
+- **Texto do PR #1:** corrigido em 29/10 (o site também publica; o check "Workers Builds" da
+  Cloudflare existe e passou, mas o que ele publica NÃO foi verificado: isso contradiz a nota do
+  `CLAUDE.md` de que a integração nunca existiu).
 
 ## BANCO ALTERADO NESTA SESSÃO (29/10/2026 07:59 BR, com backup e releitura)
 - Agendamento duplicado `33d92496-2ca8-4df2-9938-339ffe9d45e6` (lead 829c0150, avaliação 30/10

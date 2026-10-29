@@ -19,14 +19,14 @@ REGRA: não leia este arquivo inteiro. Leia o índice, escolha o bloco, use offs
 
 ## [29/10/2026] Sessão 36 (iniciada 28/10) — mensagens da Clara, 3 correções em branch, 1 linha no banco; nada em produção
 
-- **Escopo:** diagnóstico (28–29/10) de por que chegaram mensagens estranhas da Clara; correções só na branch `fix/numero-interno-nao-vira-lead` (3 commits, enviada ao `origin`, sem PR/merge). Último código em produção segue `e5e44c0`.
+- **Escopo:** diagnóstico (28–29/10) de por que chegaram mensagens estranhas da Clara; correções só na branch `fix/numero-interno-nao-vira-lead` (4 commits, enviada ao `origin`, PR #1 aberto em 29/10, sem merge). Último código em produção segue `e5e44c0`.
 - **Feito, verificado:** `receive-leads` ignora mensagem não-texto de número interno e `re-engagement-cron` pula números autorizados (`0586d9f`); `ai-sdr` devolve o agendamento existente em vez de gravar outro no mesmo horário (`805935e`); `CLAUDE.md` ganhou a regra de conferência inicial (`672d339`). Sintaxe conferida com `bun build --no-bundle`; sem Deno, sem teste de tipos nem execução real.
 - **Banco (alteração de dado):** agendamento duplicado `33d92496` cancelado em 29/10 07:59 BR, com backup e releitura; `276e261c` mantido. Rollback registrado em `PROXIMA_SESSAO.md`.
 - **Causas encontradas (verificado):** 4 avisos de agendamento = 2 linhas duplicadas × 2 envios ao mesmo número; o número da Adriana virou lead em 19/10 (mensagem tipo `system` escapava da trava de comando) e recebeu o template de reengajamento em 27/10; o roteador de comandos compara palavra exata.
 - **Inferido, não provado:** avisos e relatório em texto livre só chegam dentro da janela de 24h do WhatsApp.
 - **Webmotors:** 401 no `wm-sync` ainda em 29/10 11:40 UTC (36 em 12h); Adriana atribuiu à fatura não paga (28/10). Fila de `estoque_publicacoes` webmotors: pending_create 7, pending_update 6, pending_close 11, error 25.
 - **Becos sem saída:** `query_logs` não lê logs de Edge Function (não existem `function_logs`/`edge_logs`/`function_edge_logs`; `logs` é do Postgres). `oxfmt --check` acusa os arquivos de `supabase/functions` por causa do CRLF no disco (o blob do git, em LF, passa): não reformatar. `bun build --no-bundle` só prova sintaxe. Busca com `head_limit` corta a contagem: conferir o total antes de contar.
-- **Pendente:** merge da branch; avisos no WhatsApp (desenho v2 em `PROXIMA_SESSAO.md`, 4 passos com "autorizo" separado); fila da Webmotors após o pagamento; as pendências abertas de 28/10 abaixo continuam valendo.
+- **Pendente:** merge do PR #1 (publica também o site pelo `deploy.yml`; conferir o site depois); investigar o check "Workers Builds" (Cloudflare) do PR, que contradiz a nota de que a integração nunca existiu; avisos no WhatsApp (desenho v2 em `PROXIMA_SESSAO.md`, 4 passos com "autorizo" separado); fila da Webmotors após o pagamento; as pendências abertas de 28/10 abaixo continuam valendo.
 
 ## [28/10/2026] Consolidação de regras e memória — nenhuma mudança de código (sem commit de código)
 
