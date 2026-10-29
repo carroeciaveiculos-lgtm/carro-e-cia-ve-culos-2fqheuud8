@@ -10,15 +10,18 @@ resposta ANTES de responder ou agir, sem esperar ela perguntar. Está no `CLAUDE
 (Autorização e segurança). Mudar algo continua exigindo ANTES → DEPOIS e "autorizo".
 
 ## ONDE ESTAMOS (verificado em 29/10/2026 com `git fetch` + `git log`)
-- **Branch de trabalho:** `fix/numero-interno-nao-vira-lead`, enviada ao `origin`, 4 commits à
+- **Branch de trabalho:** `fix/numero-interno-nao-vira-lead`, enviada ao `origin`, à
   frente da `main`. **PR #1 aberto em 29/10 (https://github.com/carroeciaveiculos-lgtm/carro-e-cia-ve-culos-2fqheuud8/pull/1):
   OPEN, MERGEABLE, status CLEAN, check Cloudflare "Workers Builds" passou; SEM merge.** Commits:
   `0586d9f` (número interno não vira lead nem recebe
   reengajamento: `receive-leads` + `re-engagement-cron`), `805935e` (`ai-sdr`: sem agendamento
   duplicado no mesmo horário), `672d339` (`CLAUDE.md`: conferência inicial + rito de alteração),
-  `2383cb1` (documentação da sessão 36).
+  `2383cb1` e `e08f51e` (documentação); podem existir commits de documentação acima:
+  `git log --oneline origin/main..HEAD`.
 - **`origin/main`:** `3a1e88e` (só documentação). Último código em produção segue `e5e44c0`:
   NADA desta sessão está no ar (o deploy de functions só roda em push na `main`).
+  Conferido em 29/10: `ai-sdr` v192, `receive-leads` v242 e `re-engagement-cron` v104
+  seguem nas versões de 10/10.
 - **Conferir o hash:** o HEAD da branch é um commit de documentação (`2383cb1` ou o que registrar o
   PR #1). O que vale até o merge: `origin/main` = `3a1e88e`. É esperado.
 - **Merge do PR #1:** pedido à parte. Ao mesclar roda o deploy de `ai-sdr`, `receive-leads` e

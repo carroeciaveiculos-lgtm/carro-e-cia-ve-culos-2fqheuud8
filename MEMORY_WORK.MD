@@ -19,7 +19,7 @@ REGRA: não leia este arquivo inteiro. Leia o índice, escolha o bloco, use offs
 
 ## [29/10/2026] Sessão 36 (iniciada 28/10) — mensagens da Clara, 3 correções em branch, 1 linha no banco; nada em produção
 
-- **Escopo:** diagnóstico (28–29/10) de por que chegaram mensagens estranhas da Clara; correções só na branch `fix/numero-interno-nao-vira-lead` (4 commits, enviada ao `origin`, PR #1 aberto em 29/10, sem merge). Último código em produção segue `e5e44c0`.
+- **Escopo:** diagnóstico (28–29/10) de por que chegaram mensagens estranhas da Clara; correções só na branch `fix/numero-interno-nao-vira-lead` (commits em `git log --oneline origin/main..HEAD`, enviada ao `origin`, PR #1 aberto em 29/10, sem merge). Último código em produção segue `e5e44c0`.
 - **Feito, verificado:** `receive-leads` ignora mensagem não-texto de número interno e `re-engagement-cron` pula números autorizados (`0586d9f`); `ai-sdr` devolve o agendamento existente em vez de gravar outro no mesmo horário (`805935e`); `CLAUDE.md` ganhou a regra de conferência inicial (`672d339`). Sintaxe conferida com `bun build --no-bundle`; sem Deno, sem teste de tipos nem execução real.
 - **Banco (alteração de dado):** agendamento duplicado `33d92496` cancelado em 29/10 07:59 BR, com backup e releitura; `276e261c` mantido. Rollback registrado em `PROXIMA_SESSAO.md`.
 - **Causas encontradas (verificado):** 4 avisos de agendamento = 2 linhas duplicadas × 2 envios ao mesmo número; o número da Adriana virou lead em 19/10 (mensagem tipo `system` escapava da trava de comando) e recebeu o template de reengajamento em 27/10; o roteador de comandos compara palavra exata.

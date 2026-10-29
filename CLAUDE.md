@@ -236,12 +236,15 @@ antes de mexer em histórico de migration ou cron. Resumo:
   `npx wrangler deploy --config "<caminho completo>/wrangler.jsonc"` rodado
   pela Adriana com `!` (o Claude Code é barrado nesse comando).
   Histórico: a nota aqui já disse "automático via Cloudflare Workers
-  Builds" (confirmado 16/08/2026) — nunca existiu de fato
+  Builds" (confirmado 16/08/2026) — o achado de 22/09 dizia que nunca existiu
   (`wrangler.jsonc` não tinha nenhuma config de Git integration, achados
   de 22/09 e 28/09/2026 confirmaram push sem publicar nada). Corrigido pra
   "manual, sempre" em 28/09/2026, e horas depois trocado de novo pra esse
   workflow — não repetir o erro de assumir automático sem ver um
   `gh run view` de sucesso confirmando.
+  **Atualização 29/10/2026:** o check "Workers Builds" (Cloudflare) existe e roda em
+  todo commit de PR (build com sucesso e Version ID, verificado no PR #1). O que ele
+  PUBLICA não foi verificado; não tratar como deploy nem como inexistente.
 - **Deploy de function: automático para código, desde 28/09/2026** — via
   GitHub Actions (`.github/workflows/deploy-functions.yml`), disparado só
   quando o push mexe em algo dentro de `supabase/functions/**`. Detecta
@@ -494,8 +497,8 @@ a cada sessão.
 - **Contas GitHub e SSH** — 3 contas (uma por empresa), apelidos SSH e e-mail por
   repositório.
 - **Org Empresas-do-Grupo-Adriana** — org vazia, 3 owners; repos ficam na conta pessoal.
-- **Infra Carro e Cia** — Supabase/Workers; **site só publica com `wrangler deploy`
-  manual, push não basta.**
+- **Infra Carro e Cia** — Supabase/Workers; **o site publica por GitHub Actions (`deploy.yml`)
+  a cada push na `main`; `wrangler deploy` manual só como emergência.**
 
 **Pendências e pontos de atenção**
 - **Auth via API key — DESATUALIZADO (23/08/2026)** — indício de assinatura Claude.ai;
