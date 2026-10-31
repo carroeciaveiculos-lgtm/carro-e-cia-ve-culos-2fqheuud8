@@ -178,7 +178,7 @@ sido feitos só na aba **Aprovações** (cartões). Agora:
   `META_PAGE_ACCESS_TOKEN`) e erro registrado em `lead_errors`. Cada DM recebida avisa a dona por WhatsApp (`avisarMensagemDireta`).
 - **A Clara NÃO responde Instagram/Messenger** (verificado: nenhuma function envia por essas redes). Fica para depois (exige API de envio + permissão).
 - **Messenger do Facebook:** 0 eventos `messaging` da página em 30 dias (só `feed`). Pode ser página não inscrita em `messages` OU ninguém escreveu. A conferir na Meta.
-- **Legenda do Instagram sem convite ao direct/bio** até o direct ser atendido e a bio apontar para o WhatsApp da Clara (hoje é `5534999484285`).
+- **Legenda do Instagram sem convite ao direct/bio** até o direct ser atendido e a bio apontar para o WhatsApp da Clara (`5534997384177`). Anotação de 14/10: a bio apontava para `5534999484285`, que é de OUTRA empresa do grupo (confirmado pela Adriana em 29/10/2026) e precisa ser trocada.
 - **Sujeira pré-existente achada (não corrigida):** o idioma `.catch(() => {})` em `supabase.from(...).insert(...)` aparece em `receive-leads` (linhas ~675, 773 e
   no `catch` final ~850). O builder do Supabase não tem `.catch`: se a gravação em `lead_errors` rodar, dá `TypeError` dentro do tratamento de erro.
   Tipos: `deno check` roda via `bunx deno check --no-lock --node-modules-dir=none <arquivo>` (ainda acusa 5 erros antigos no `receive-leads` e vários em `_shared/whatsapp-*`).
