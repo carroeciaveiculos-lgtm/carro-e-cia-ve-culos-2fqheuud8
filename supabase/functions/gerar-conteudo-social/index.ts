@@ -1,5 +1,7 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from 'jsr:@supabase/supabase-js@2'
+import { montarLegendaIA } from '../_shared/legenda-ia.ts'
+import { destaques } from '../_shared/legenda-social.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -37,7 +39,7 @@ Deno.serve(async (req: Request) => {
       const { data: vehicleRecord, error: dbError } = await supabase
         .from('veiculos')
         .select(
-          'marca, modelo, versao, ano_fabricacao, ano_modelo, cor, combustivel, quilometragem, cambio, preco_venda, descricao',
+          'marca, modelo, versao, ano_fabricacao, ano_modelo, cor, combustivel, quilometragem, cambio, preco_venda, descricao, diferenciais',
         )
         .eq('id', veiculo_id)
         .single()
@@ -90,17 +92,38 @@ Deno.serve(async (req: Request) => {
     const socialMediaPrompt =
       promptConfig?.prompt_text || 'Você é um especialista em marketing automotivo.'
 
+    // Opcionais do cadastro (mesmo filtro da legenda fixa: nada de "passagem por leilao" etc.)
+    const listaDiferenciais = destaques(vehicleData.diferenciais, 10)
+    const safeVersao = vehicleData.versao || ''
+    const safeKm =
+      vehicleData.quilometragem === null || vehicleData.quilometragem === undefined
+        ? 'Não informada'
+        : `${Number(vehicleData.quilometragem).toLocaleString('pt-BR')} km`
+    const safeCambio = vehicleData.cambio || 'Não informado'
+
     const prompt = `${socialMediaPrompt}
-Crie um post persuasivo para a rede social ${targetPlatform} vendendo o seguinte veículo:
+
+Escreva a legenda de um post para ${targetPlatform} vendendo o veículo abaixo, da loja Carro e Cia Veículos (Uberaba/MG). Use SOMENTE os dados abaixo:
 Marca: ${safeMarca}
 Modelo: ${safeModelo}
+Versão: ${safeVersao}
 Ano: ${safeAno}
 Preço: R$ ${safePreco}
 Cor: ${safeCor}
 Combustível: ${safeCombustivel}
+Câmbio: ${safeCambio}
+Quilometragem: ${safeKm}
+Diferenciais: ${listaDiferenciais.length > 0 ? listaDiferenciais.join(', ') : 'não informados'}
 Descrição: ${safeDescricao}
 
-O formato deve estar pronto para copiar e colar no ${targetPlatform}.`
+REGRAS OBRIGATÓRIAS (valem acima de qualquer instrução anterior):
+- Responda SOMENTE com a legenda pronta. Nada de introdução, explicação, título do tipo "Post:" nem comentário no final.
+- Tom natural, caloroso e confiável, sem exageros. Nada de frases em MAIÚSCULAS (nem no título) e nada de "imperdível", "única chance" ou "máquina".
+- Foque nos diferenciais reais do veículo. Não invente itens, números nem condições que não estejam nos dados.
+- Texto puro: sem asteriscos, sem Markdown e sem linhas de separação. Até 4 emojis.
+- Não escreva telefone, link, endereço, colchetes nem campo para preencher. Não escreva "comente", "clique no botão" nem "Enviar Mensagem".
+- Não escreva convite para contato nem para test drive: a loja acrescenta a frase final sozinha.
+- Termine com 8 a 12 hashtags numa única linha, cada hashtag sem espaços dentro.`
 
     const apiKey = Deno.env.get('GEMINI_APY_KEY') || Deno.env.get('GEMINI_API_KEY')
 
@@ -128,7 +151,23 @@ O formato deve estar pronto para copiar e colar no ${targetPlatform}.`
     )
 
     const data = await response.json()
-    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || 'Erro ao gerar conteúdo.'
+    const textoIA = data.candidates?.[0]?.content?.parts?.[0]?.text
+    // Antes, falha da IA virava "Erro ao gerar conteúdo." gravado como se fosse a legenda. Agora o
+    // erro é devolvido como erro (o cron do orgânico já trata success:false) e nunca ganha o fecho.
+    const text = textoIA ? montarLegendaIA(textoIA) : ''
+    if (!text) {
+      console.error(
+        '[gerar-conteudo-social] IA sem texto utilizável:',
+        JSON.stringify(data).slice(0, 500),
+      )
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: 'A IA não devolveu um texto utilizável. Tente gerar de novo.',
+        }),
+        { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      )
+    }
 
     // `data` repete o texto de propósito: as telas (Publicações > Gerar com IA, Kit
     // de Redes Sociais do veículo, Compartilhar e o post orgânico do Gerador de
