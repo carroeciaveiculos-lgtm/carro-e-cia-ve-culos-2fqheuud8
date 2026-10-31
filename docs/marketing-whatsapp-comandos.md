@@ -292,6 +292,49 @@ todos dividindo o mesmo orçamento). Por isso:
 - Só a Meta tem esse nível de anúncio implementado (o `toggle_status` dela
   aceita qualquer id de objeto). Google continua só por campanha.
 
+## Confirmação SIM/NÃO, frases e lista numerada (31/10/2026)
+
+**Estado: implementado em código e migração aplicada; teste ao vivo com a Adriana pendente (ver "Teste ao vivo" abaixo).**
+
+Pedido dela (30-31/10/2026): a Clara entender frases ("Clara, pausa o anúncio X"), pedir confirmação antes de qualquer
+alteração e, depois do "sim", **confirmar de verdade** que a ação ocorreu.
+
+- **Interpretação sem IA** (`_shared/whatsapp-intencao.ts`, módulo puro): ignora acento/maiúscula, tira o prefixo
+  ("Clara", "por favor"...), aceita sinônimos (pause/pausa/desliga, ative/liga, vendi, aprova...) e frases de consulta
+  ("quais anúncios estão ativos", "quanto gastei", "me mostre os leads"). `RESPONDER` e `CORRIGIR` mantêm o texto livre intacto.
+- **Confirmação** (`_shared/whatsapp-confirmacao.ts` + tabela `comandos_pendentes_whatsapp`, migração
+  `20261031131357`, RLS ligada e sem policy: só o service role acessa). Vale para `PAUSAR`, `ATIVAR`, `ORÇAMENTO`
+  (mostra valor atual → novo), `VENDIDO`, `APROVAR` e `RESPONDER` (mostra lead e texto). `CORRIGIR` e consultas não pedem.
+  - validade de 10 minutos; só o mesmo telefone confirma (chave = últimos 8 dígitos);
+  - um pedido pendente por telefone; novo pedido cancela o anterior;
+  - uso único: o "sim" marca `usado` com UPDATE condicional **antes** de executar (um "sim" repetido não executa duas vezes);
+  - "sim" = sim/s/confirmo/confirmar/pode; "não" = não/n/cancela/cancelar; qualquer outra mensagem cancela o pedido e
+    é tratada como comando novo.
+- **Confirmação real do resultado** depois do "sim":
+  - `PAUSAR`/`ATIVAR`/`ORÇAMENTO` na Meta: relê o estado em `list_campaigns` (até 2 leituras, com espera de 3 s e 4 s) e só
+    diz "confirmado" se a Meta mostrou o novo estado; senão avisa qual item não mudou. Corrige o bug antigo: pausar vários
+    anúncios do mesmo carro dizia "pausados" mesmo se só um fosse.
+  - `VENDIDO` e `APROVAR`: relê o registro no banco depois do UPDATE.
+  - **Google**: continua só registrando solicitação; a resposta diz "ainda NÃO foi pausada, falta aprovar no painel".
+  - `RESPONDER`: a Meta só diz "aceita", não "entregue" — a resposta diz exatamente isso (e lembra a janela de 24 h).
+- **`LISTAR` (3 lacunas corrigidas)**: mostra também os **pausados** (para o `ATIVAR` ter o que ativar; `LISTAR PAUSADOS`
+  mostra só eles), itens **numerados** ("PAUSAR 2", "ATIVAR 5"; a numeração vale 10 minutos, guardada como pedido do tipo
+  `lista`) e o texto não oferece mais "ALTERAR" (que não existia) — aponta para `ORÇAMENTO`.
+- Melhorias de segurança junto: `VENDIDO` com mais de um veículo agora lista e pede para especificar (antes dizia "não
+  encontrado"); `RESPONDER` com mais de um lead idem; `RESPONDER` sem credencial do WhatsApp não diz mais "enviada";
+  termos de busca perdem vírgula/parênteses/% antes de entrar no filtro.
+- Comando novo `AJUDA` (mostra o menu).
+
+### Teste ao vivo (31/10/2026)
+
+Pendente de resultado — preencher aqui com data e o que foi visto (caminho "não" e caminho "sim").
+
+### Becos sem saída / limites
+
+- Botões interativos Sim/Não do WhatsApp: fora desta rodada (exigem outro tipo de mensagem e tratamento no webhook).
+- Número do item só existe na última lista; sem `LISTAR` recente, "pausar 2" responde pedindo `LISTAR` primeiro.
+- Mudou `_shared/`: o deploy automático publica as 56 functions.
+
 ## Em aberto
 
 - Confirmar se `whatsapp_business_tools`/`meta_social_technologies`
