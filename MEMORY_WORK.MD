@@ -1,7 +1,7 @@
 # ÍNDICE — MEMORY_WORK Carro e Cia
 
 > ESTADO ATUAL: leia `PROXIMA_SESSAO.md` primeiro. Este arquivo é histórico.
-> Última sessão registrada: 28/10/2026 (sessão 35).
+> Última sessão registrada: 31/10/2026 (sessão 36).
 
 | Bloco | Conteúdo |
 |---|---|
@@ -16,6 +16,19 @@ REGRA: não leia este arquivo inteiro. Leia o índice, escolha o bloco, use offs
 ---
 
 # Memória de trabalho — Carro e Cia
+
+## [31/10/2026] SESSÃO 36 — Clara entende frases e confirma SIM/NÃO antes de alterar (PR #2 ABERTO, NÃO MESCLADO; migração aplicada)
+
+- **Feito (verificado):** commit `d657e23` (remove fallback `5534999484285` — 9 arquivos) e `b849aa2` (feature) na branch
+  `feat/clara-confirmacao-comandos`, PR #2. Migração `20261031131357_comandos_pendentes_whatsapp` aplicada via MCP e conferida
+  (`list_migrations`; RLS ligada, 0 policies, 0 linhas). Código em `_shared/whatsapp-*.ts` (novos: `intencao`, `confirmacao`).
+- **Comportamento novo:** frases sem IA; SIM/NÃO (10 min, uso único, só o mesmo telefone) para PAUSAR/ATIVAR/ORÇAMENTO/VENDIDO/
+  APROVAR/RESPONDER; depois do "sim" relê o estado real (Meta/banco) e só diz "confirmado" se mudou; LISTAR numerado e com
+  pausados; Google só registra solicitação (resposta diz que NÃO foi alterado). Detalhe em `docs/marketing-whatsapp-comandos.md`.
+- **Testes:** `tsc` com stub do Deno ok; 75 casos de frase ok; lint 0 erros; build ok. **Não testado:** o caminho completo
+  no WhatsApp real (depende do deploy e da Adriana) — não afirmar "funcionando" antes disso.
+- **Bloqueio:** merge do PR barrado pelo classificador (publicaria em produção sem revisão). Precisa de ação da Adriana.
+- **Beco sem saída:** heredoc do Bash com aspas misturadas quebrou duas vezes; usar script `.py` em arquivo.
 
 ## [28/10/2026] Consolidação de regras e memória — nenhuma mudança de código (sem commit de código)
 

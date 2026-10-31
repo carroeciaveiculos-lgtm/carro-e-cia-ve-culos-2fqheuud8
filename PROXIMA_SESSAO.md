@@ -1,7 +1,29 @@
 # Próxima sessão — Carro e Cia Veículos
 
-Atualizado em: 27/10/2026 (sessão 35)
-Substitui: 09/10/2026 (sessão 34)
+Atualizado em: 31/10/2026 (sessão 36)
+Substitui: 27/10/2026 (sessão 35)
+
+## SESSÃO 36 (31/10/2026) — Clara: frases + confirmação SIM/NÃO (PR #2 ABERTO, NÃO MESCLADO)
+
+Estado verificado em 31/10/2026 (git/gh):
+- `origin/main` = `3a1e88e` (sem o código novo). Branch `feat/clara-confirmacao-comandos` empurrada, PR #2 aberto;
+  contém `d657e23` (remove fallback do número alheio dos avisos) e `b849aa2` (confirmação SIM/NÃO). O merge foi barrado
+  pelo classificador de segurança ("merge sem revisão"); **precisa ser feito pela Adriana** (GitHub ou `! gh pr merge 2 --merge`).
+- Migração `20261031131357_comandos_pendentes_whatsapp` JÁ APLICADA no banco (tabela vazia, RLS ligada, sem policy) —
+  arquivo local no PR. Rollback: `drop table public.comandos_pendentes_whatsapp;`.
+- Validado antes do PR: `tsc` (stub do Deno) ok, 75 casos das regras de frase ok, `bun run lint` 0 erros, `bun run build` ok.
+- Merge em `main` publica as 87 pastas de function (mexe em `_shared/`); deploy geral igual rodou com sucesso em 10/10.
+
+Pendente / com a Adriana:
+- [ ] Mesclar o PR #2 e conferir `gh run list` (deploy-functions) + `list_edge_functions` (versão nova de `receive-leads`).
+- [ ] **Teste ao vivo (D)**: LISTAR; "Clara pausar [alvo]" → "não" (nada muda) → de novo → "sim" (confirmação real);
+  alvo seguro: campanha do Google (só registra solicitação) ou campanha Meta sem anúncio ativo, a combinar.
+  Conferir depois em `comandos_pendentes_whatsapp` e `agente_interacoes`.
+- [ ] Artigo da Central de Ajuda (`ajuda_conteudos`) sobre os comandos da Clara — inserção de dado = pedido separado.
+- [ ] Mensagem "anúncios ativos no Meta" (de +55 34 9738-4177 para a Adriana) NÃO foi enviada (aguardava "enviar").
+- [ ] Em pausa: filtro "equipe não vira lead" (5 pessoas/6 números), avisos proativos por template, 401 do `ml-webhook`, FIPE 1/3/4.
+- Observação: o aviso do CLAUDE.md sobre `populate-cache-test` está defasado (a pasta não existe mais); em produção
+  `send-lead-email`, `sync-drive-videos` e `sync-google-drive` estão `verify_jwt:false` apesar de sem entrada no `config.toml`.
 
 ## AO ABRIR O CLAUDE CODE — VERIFICAÇÕES OBRIGATÓRIAS
 
