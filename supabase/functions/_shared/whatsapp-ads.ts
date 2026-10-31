@@ -432,6 +432,12 @@ async function lerStatusMeta(
   return estado
 }
 
+// Erro cru do banco/API (em ingles) vai pro log; a usuaria recebe so a versao em portugues.
+function erroSolicitacaoGoogle(data: unknown): string {
+  console.error('whatsapp-ads: falha ao registrar solicitacao no Google', data)
+  return '❌ Não consegui registrar a solicitação no Google. Nada foi alterado. Tente de novo ou peça pelo painel (Gestão de Anúncios).'
+}
+
 // PREPARA (nao altera nada): acha o alvo exato e devolve a pergunta SIM/NAO.
 // A execucao so acontece em executarToggle, depois do "sim".
 export async function prepararToggle(
@@ -539,14 +545,13 @@ export async function executarToggle(
           campanha_nome: campanha.nome,
           valor_atual: alvo.statusAtual,
           valor_novo: { status: novoStatus },
-          origem: 'whatsapp',
+          origem: 'agente_ia',
           descricao: `Solicitado via WhatsApp por ${ctx.fromPhone}`,
         },
       },
       ctx,
     )
-    if (!res.ok)
-      return `❌ Não consegui registrar a solicitação pro Google: ${res.data?.error || 'falha na API'}`
+    if (!res.ok) return erroSolicitacaoGoogle(res.data)
     return `📝 Solicitação registrada pra ${acaoVerbo} *${campanha.nome}* (Google).\n\n⚠️ Ainda NÃO foi ${novoStatus === 'PAUSED' ? 'pausada' : 'ativada'}: o Google exige aprovação em Gestão de Anúncios.`
   }
 
@@ -675,14 +680,13 @@ export async function executarOrcamento(
           campanha_nome: alvo.nome,
           valor_atual: alvo.valorAtual,
           valor_novo: { daily_budget: valor },
-          origem: 'whatsapp',
+          origem: 'agente_ia',
           descricao: `Solicitado via WhatsApp por ${ctx.fromPhone}`,
         },
       },
       ctx,
     )
-    if (!res.ok)
-      return `❌ Não consegui registrar a solicitação pro Google: ${res.data?.error || 'falha na API'}`
+    if (!res.ok) return erroSolicitacaoGoogle(res.data)
     return `📝 Solicitação registrada: *${alvo.nome}* (Google) → R$ ${valor.toFixed(2)}/dia.\n\n⚠️ Ainda NÃO foi alterado: o Google exige aprovação em Gestão de Anúncios.`
   }
 
