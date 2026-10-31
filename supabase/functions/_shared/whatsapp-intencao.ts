@@ -280,3 +280,54 @@ export function numeroDoItem(args: string): number | null {
   const m = args.trim().match(/^(?:n[ºo°]?\s*|numero\s+)?(\d{1,2})$/i)
   return m ? Number(m[1]) : null
 }
+
+// Agradecimento e saudacao curtos: resposta simpatica em vez de "comando nao reconhecido".
+// So vale quando a frase INTEIRA e cortesia (ate 6 palavras); qualquer outra coisa segue como antes.
+const AGRADECIMENTOS = new Set([
+  'obrigada',
+  'obrigado',
+  'obrigadao',
+  'brigada',
+  'brigado',
+  'valeu',
+  'muito obrigada',
+  'muito obrigado',
+  'obrigada clara',
+  'obrigado clara',
+  'valeu clara',
+  'ok obrigada',
+  'ok obrigado',
+  'ok valeu',
+  'show obrigada',
+  'show obrigado',
+  'perfeito obrigada',
+  'perfeito obrigado',
+])
+const CUMPRIMENTOS: Record<string, string> = {
+  oi: 'Oi',
+  ola: 'Olá',
+  'oi clara': 'Oi',
+  'ola clara': 'Olá',
+  'bom dia': 'Bom dia',
+  'bom dia clara': 'Bom dia',
+  'boa tarde': 'Boa tarde',
+  'boa tarde clara': 'Boa tarde',
+  'boa noite': 'Boa noite',
+  'boa noite clara': 'Boa noite',
+}
+
+export function respostaCortesia(texto: string): string | null {
+  const limpo = normalizar(texto)
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+  if (!limpo) return null
+  if (AGRADECIMENTOS.has(limpo)) {
+    return 'De nada! 😊 Qualquer coisa é só chamar. (Mande AJUDA pra ver os comandos.)'
+  }
+  const cumprimento = CUMPRIMENTOS[limpo]
+  if (cumprimento) {
+    return `${cumprimento}! 😊 Estou por aqui. O que você precisa? (Mande AJUDA pra ver os comandos.)`
+  }
+  return null
+}

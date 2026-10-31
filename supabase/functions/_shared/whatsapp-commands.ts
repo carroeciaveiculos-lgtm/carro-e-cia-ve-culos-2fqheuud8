@@ -28,7 +28,12 @@ import {
   executarAprovar,
   handleCorrigir,
 } from '../_shared/whatsapp-conteudo.ts'
-import { interpretar, respostaConfirmacao, numeroDoItem } from '../_shared/whatsapp-intencao.ts'
+import {
+  interpretar,
+  respostaConfirmacao,
+  numeroDoItem,
+  respostaCortesia,
+} from '../_shared/whatsapp-intencao.ts'
 import {
   salvarPendente,
   buscarPendente,
@@ -194,7 +199,11 @@ export async function processWhatsAppCommand(
 
   // 2) Interpreta a frase (acento, maiuscula, sinonimos, prefixo "Clara").
   const intencao = interpretar(text)
-  if (!intencao) return `${prefixo}Comando não reconhecido.\n\n${MENU}`
+  if (!intencao) {
+    const cortesia = respostaCortesia(text)
+    if (cortesia) return prefixo + cortesia
+    return `${prefixo}Comando não reconhecido.\n\n${MENU}`
+  }
   const { comando } = intencao
   let args = intencao.args
 
