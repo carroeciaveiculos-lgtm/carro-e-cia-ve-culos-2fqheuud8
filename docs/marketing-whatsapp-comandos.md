@@ -41,8 +41,8 @@ funcionando**, não documentado antes:
 - `daily-report-cron` já roda toda manhã e já manda um resumo real pro
   WhatsApp (leads 24h por origem, veículos vendidos, estoque disponível,
   anúncios ativos no ML, alerta de canal silencioso) — vai pro número em
-  `social_configuracoes.whatsapp_number` (fallback `'5534999484285'`,
-  **número diferente** do `AUTHORIZED_PHONE` que comanda).
+  `social_configuracoes.whatsapp_number` (sem fallback desde 29/10/2026: o antigo
+  `5534999484285` era de OUTRA empresa do grupo; vazio = não envia).
 - `_shared/whatsapp-ads.ts` (`handlePausar`, `handleOrcamento`) e
   `_shared/whatsapp-conteudo.ts` já mostram o padrão de arquivo por
   categoria que o roteador importa — seguir o mesmo padrão pras

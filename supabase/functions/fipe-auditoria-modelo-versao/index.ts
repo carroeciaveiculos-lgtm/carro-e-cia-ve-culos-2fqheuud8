@@ -215,9 +215,12 @@ ${marcasSemCorrespondencia.length > 0 ? `\n⚠️ Marcas no nosso banco sem corr
       .from('social_configuracoes')
       .select('whatsapp_number')
       .maybeSingle()
-    const ownerPhone = socialConfig?.whatsapp_number || '5534999484285'
+    // 29/10/2026: o fallback era 5534999484285, número de OUTRA empresa do grupo. Sem destino
+    // configurado, o relatório não é enviado (o resultado da auditoria segue na resposta).
+    const ownerPhone = socialConfig?.whatsapp_number
+    if (!ownerPhone) console.error('fipe-auditoria-modelo-versao: social_configuracoes.whatsapp_number vazio, relatório NÃO enviado')
 
-    if (waToken && waPhoneId) {
+    if (waToken && waPhoneId && ownerPhone) {
       await fetch(`https://graph.facebook.com/v20.0/${waPhoneId}/messages`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${waToken}`, 'Content-Type': 'application/json' },

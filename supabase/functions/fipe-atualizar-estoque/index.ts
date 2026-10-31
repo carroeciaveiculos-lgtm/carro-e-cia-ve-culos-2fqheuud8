@@ -97,7 +97,13 @@ async function enviarWhatsApp(supabase: any, texto: string): Promise<boolean> {
     .from('social_configuracoes')
     .select('whatsapp_number')
     .maybeSingle()
-  const dono = cfg?.whatsapp_number || '5534999484285'
+  // 29/10/2026: o fallback era 5534999484285, número de OUTRA empresa do grupo. Sem destino
+  // configurado, não envia (devolve false, como nas outras falhas de envio).
+  const dono = cfg?.whatsapp_number
+  if (!dono) {
+    console.error('fipe-atualizar-estoque: social_configuracoes.whatsapp_number vazio, aviso NÃO enviado')
+    return false
+  }
   try {
     const res = await fetch(`https://graph.facebook.com/v20.0/${waPhoneId}/messages`, {
       method: 'POST',

@@ -814,9 +814,11 @@ async function notificarNovoAgendamento(agendamento: any, leadId: string) {
       .from('social_configuracoes')
       .select('whatsapp_number')
       .maybeSingle()
-    const ownerPhone = config?.whatsapp_number || '5534999484285'
+    // 29/10/2026: o fallback era 5534999484285, número de OUTRA empresa do grupo. Sem destino
+    // configurado, só a ADRIANA_PHONE recebe o aviso.
+    const ownerPhone = config?.whatsapp_number
 
-    await sendWhatsApp(ownerPhone, texto)
+    if (ownerPhone) await sendWhatsApp(ownerPhone, texto)
     await sendWhatsApp(ADRIANA_PHONE, texto)
   } catch (err) {
     console.error('Erro ao notificar novo agendamento:', err)

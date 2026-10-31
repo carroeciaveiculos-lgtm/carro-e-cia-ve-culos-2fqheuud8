@@ -42,7 +42,10 @@ Deno.serve(async (req) => {
       .from('social_configuracoes')
       .select('whatsapp_number')
       .maybeSingle()
-    const ownerPhone = config?.whatsapp_number || '5534999484285'
+    // 29/10/2026: o fallback era 5534999484285, número de OUTRA empresa do grupo. Sem destino
+    // configurado, o aviso interno de no-show não é enviado (o follow-up ao cliente segue normal).
+    const ownerPhone = config?.whatsapp_number
+    if (!ownerPhone) console.error('agendamento-no-show-cron: social_configuracoes.whatsapp_number vazio, aviso interno NÃO enviado')
 
     let processados = 0
     for (const ag of agendamentos || []) {
@@ -74,7 +77,7 @@ Deno.serve(async (req) => {
           if (!res.ok) throw new Error(JSON.stringify(responseData))
         }
 
-        if (waToken && waPhoneId) {
+        if (waToken && waPhoneId && ownerPhone) {
           const tipoTexto = ag.tipo === 'avaliacao' ? 'avaliação' : 'visita'
           const texto = `⚠️ ${lead?.nome || 'Cliente'}${lead?.telefone ? ` (${lead.telefone})` : ''} não compareceu à ${tipoTexto} marcada. Reagendamento oferecido automaticamente.`
           await fetch(`https://graph.facebook.com/v20.0/${waPhoneId}/messages`, {

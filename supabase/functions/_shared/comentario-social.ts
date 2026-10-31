@@ -72,7 +72,13 @@ export async function enviarWhatsAppAoDono(supabase: any, corpo: string) {
       .from('social_configuracoes')
       .select('whatsapp_number')
       .maybeSingle()
-    const dono = String(cfg?.whatsapp_number || '5534999484285').replace(/\D/g, '')
+    // 29/10/2026: o fallback era 5534999484285, número de OUTRA empresa do grupo. Sem destino
+    // configurado, não envia (o registro oficial continua sendo o lead no CRM).
+    const dono = String(cfg?.whatsapp_number || '').replace(/\D/g, '')
+    if (!dono) {
+      console.error('comentario-social: social_configuracoes.whatsapp_number vazio, aviso NÃO enviado')
+      return
+    }
     const r = await fetch(`https://graph.facebook.com/v20.0/${phoneId}/messages`, {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
