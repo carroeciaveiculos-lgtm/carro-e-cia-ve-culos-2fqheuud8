@@ -18,17 +18,11 @@ import { cn } from '@/lib/utils'
 import { uploadToR2 } from '@/lib/r2-upload'
 import { mensagemErroAmigavel } from '@/lib/friendly-error'
 import {
-  FORMATOS,
-  LOGO_FUNDO_CLARO_URL,
   LOGO_FUNDO_ESCURO_URL,
   MAX_FOTOS_CRIATIVO,
-  MODELOS_CRIATIVO,
   carregarImagem,
-  desenharCriativo,
   prepararLogo,
-  type DadosCriativo,
   type FormatoCriativo,
-  type LogosCriativo,
 } from '@/lib/criativo-anuncio'
 import {
   FORMATOS_PADRAO,
@@ -51,9 +45,9 @@ import {
   ExternalLink,
 } from 'lucide-react'
 
-// Formatos que o painel oferece. Cada modelo só aparece nos formatos em que tem layout
-// próprio: os 2 modelos antigos em 4:5 e 9:16; o Padrão Carro e Cia em 1:1 e 4:5.
-// 16:9 ainda não tem layout (não basta esticar), por isso aparece desativado.
+// Formatos que o painel oferece. O único modelo é o Padrão Carro e Cia, em 1:1, 4:5 e 9:16
+// (os 2 modelos antigos foram aposentados em 01/11/2026). 16:9 ainda não tem layout
+// (não basta esticar), por isso aparece desativado.
 type FormatoSel = '1:1' | '4:5' | '9:16' | '16:9'
 const FORMATOS_SEL: { id: FormatoSel; nome: string; dimensoes: string; ativo: boolean }[] = [
   { id: '1:1', nome: 'Quadrado 1:1', dimensoes: '1080 × 1080', ativo: true },
@@ -69,16 +63,16 @@ const ESTILOS_IA = [
   { slug: 'criativo_estilo_estudio_escuro', nome: 'Estúdio escuro premium' },
 ]
 
-// Gerador de criativos de anúncio (Meta/Google Ads + post orgânico). Reescrito
-// em 30/09/2026: 1 a 4 fotos, formato Feed/Stories, 2 modelos (fundo escuro e
-// claro), logo original sem alteração, salvar no sistema e criar post orgânico.
+// Gerador de criativos de anúncio (Meta/Google Ads + post orgânico). 1 a 4 fotos,
+// formatos 1:1, 4:5 (feed) e 9:16 (Stories), modelo único "Padrão Carro e Cia", logo
+// original sem alteração, salvar no sistema e criar post orgânico.
 // Preço, km, logo e textos são desenhados por código; a IA trata só a foto
 // principal (function gerar-criativo-anuncio).
 
 interface Resultado {
   slug: string
   // 'quadrado' = 1:1 (publica como post de feed)
-  formato: FormatoCriativo | 'quadrado'
+  formato: FormatoCriativo
   rotulo: string
   blob: Blob
 }
@@ -105,11 +99,8 @@ export function CriativoAnuncioPanel({ veiculo }: { veiculo: any }) {
   const [fotosSel, setFotosSel] = useState<string[]>([])
   const [formatoSel, setFormatoSel] = useState<FormatoSel>('4:5')
   const [estiloIA, setEstiloIA] = useState(ESTILOS_IA[0].slug)
-  // Formato dos 2 modelos antigos (só existem em 4:5 = feed e 9:16 = stories).
-  const formato: FormatoCriativo = formatoSel === '9:16' ? 'stories' : 'feed'
-  const antigosDisponiveis = formatoSel === '4:5' || formatoSel === '9:16'
-  const formatoPadrao: FormatoPadrao | null =
-    formatoSel === '1:1' || formatoSel === '4:5' ? formatoSel : null
+  // 16:9 ainda não tem layout: nenhum modelo disponível.
+  const formatoPadrao: FormatoPadrao | null = formatoSel === '16:9' ? null : formatoSel
   const [gerandoSlug, setGerandoSlug] = useState<string | null>(null)
   const [resultado, setResultado] = useState<Resultado | null>(null)
   const [salvando, setSalvando] = useState(false)
@@ -125,19 +116,7 @@ export function CriativoAnuncioPanel({ veiculo }: { veiculo: any }) {
   const finalRef = useRef<HTMLCanvasElement | null>(null)
   const cacheImagens = useRef<Record<string, HTMLImageElement>>({})
 
-  const dados: DadosCriativo = {
-    marca: veiculo.marca || '',
-    modelo: veiculo.modelo || '',
-    versao: veiculo.versao || '',
-    anoModelo: veiculo.ano_modelo ? String(veiculo.ano_modelo) : '',
-    km: veiculo.quilometragem ? Number(veiculo.quilometragem).toLocaleString('pt-BR') : '',
-    cambio: veiculo.cambio || '',
-    combustivel: veiculo.combustivel || '',
-    precoVenda: Number(veiculo.preco_venda) || 0,
-  }
-  const chaveDados = JSON.stringify(dados)
-
-  // ---- Padrão Carro e Cia (novo, só Feed, foto original, sem IA) ----
+  // ---- Padrão Carro e Cia (1:1, 4:5 e 9:16; foto original ou tratada pela IA) ----
   // Campos editáveis: a condição do preço ("à vista") NUNCA é texto fixo, e a
   // linha de motor/potência começa com a cilindrada e o combustível do cadastro
   // (não existe coluna de potência — se quiser, digite aqui, ex.: "2.0 • 404 cv • Híbrido").
@@ -171,37 +150,21 @@ export function CriativoAnuncioPanel({ veiculo }: { veiculo: any }) {
     return cacheImagens.current[url]
   }
 
-  // As duas logos originais, já recortadas (e com o quadriculado da logo de fundo
-  // escuro removido). Se alguma falhar, o criativo sai sem ela em vez de quebrar.
-  const carregarLogos = async (): Promise<LogosCriativo> => {
-    const [paraFundoClaro, paraFundoEscuro] = await Promise.all([
-      imagem(LOGO_FUNDO_CLARO_URL)
-        .then((i) => prepararLogo(i, false))
-        .catch(() => null),
-      imagem(LOGO_FUNDO_ESCURO_URL)
-        .then((i) => prepararLogo(i, false))
-        .catch(() => null),
-    ])
-    return { paraFundoClaro, paraFundoEscuro }
-  }
+  // A logo branca e vermelha (transparente de verdade), já recortada. Se falhar, o
+  // criativo sai sem ela em vez de quebrar.
+  const carregarLogo = (): Promise<HTMLCanvasElement | null> =>
+    imagem(LOGO_FUNDO_ESCURO_URL)
+      .then((i) => prepararLogo(i, false))
+      .catch(() => null)
 
-  // Prévias dos 2 modelos: só desenho, não gasta IA.
+  // Prévia do modelo: só desenho, não gasta IA.
   useEffect(() => {
     if (fotosSel.length === 0) return
     let cancelado = false
     ;(async () => {
       try {
-        const [imgs, logos] = await Promise.all([
-          Promise.all(fotosSel.map(imagem)),
-          carregarLogos(),
-        ])
+        const [imgs, logo] = await Promise.all([Promise.all(fotosSel.map(imagem)), carregarLogo()])
         if (cancelado) return
-        if (antigosDisponiveis) {
-          for (const m of MODELOS_CRIATIVO) {
-            const canvas = previewRefs.current[m.slug]
-            if (canvas) desenharCriativo(canvas, formato, m, imgs, logos, dados)
-          }
-        }
         // Prévia do Padrão Carro e Cia: foto original, sem IA.
         const canvasPadrao = previewRefs.current[MODELO_PADRAO_SLUG]
         if (canvasPadrao && formatoPadrao) {
@@ -211,14 +174,14 @@ export function CriativoAnuncioPanel({ veiculo }: { veiculo: any }) {
             canvasPadrao,
             formatoPadrao,
             imgs.slice(0, MAX_FOTOS_PADRAO),
-            logos.paraFundoEscuro,
+            logo,
             dadosPadrao,
           )
         }
       } catch (err: any) {
         if (!cancelado) {
           toast({
-            title: 'Erro ao montar a prévia dos modelos',
+            title: 'Erro ao montar a prévia do modelo',
             description: mensagemErroAmigavel(err),
             variant: 'destructive',
           })
@@ -229,7 +192,7 @@ export function CriativoAnuncioPanel({ veiculo }: { veiculo: any }) {
       cancelado = true
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fotosSel, formatoSel, chaveDados, chaveDadosPadrao])
+  }, [fotosSel, formatoSel, chaveDadosPadrao])
 
   const carregarSalvos = async () => {
     if (!veiculo.id) return
@@ -263,48 +226,6 @@ export function CriativoAnuncioPanel({ veiculo }: { veiculo: any }) {
     setResultado(null)
   }
 
-  const gerar = async (slug: string) => {
-    if (!veiculo.id) {
-      toast({ title: 'Salve o veículo antes de gerar o criativo', variant: 'destructive' })
-      return
-    }
-    setGerandoSlug(slug)
-    setResultado(null)
-    try {
-      // A IA trata só a foto principal; as demais entram como estão.
-      const { data, error } = await supabase.functions.invoke('gerar-criativo-anuncio', {
-        body: { veiculo_id: veiculo.id, foto_url: fotosSel[0], template_slug: slug },
-      })
-      if (error) throw error
-      if (!data?.success) throw new Error(data?.error || 'Falha ao tratar a foto')
-
-      const [principalTratada, outras, logos] = await Promise.all([
-        carregarImagem(data.imagem_tratada),
-        Promise.all(fotosSel.slice(1).map(imagem)),
-        carregarLogos(),
-      ])
-      const canvas = finalRef.current
-      const modelo = MODELOS_CRIATIVO.find((m) => m.slug === slug)
-      if (!canvas || !modelo) throw new Error('Não foi possível montar o criativo final')
-      desenharCriativo(canvas, formato, modelo, [principalTratada, ...outras], logos, dados)
-      setResultado({
-        slug,
-        formato,
-        rotulo: FORMATOS[formato].nome,
-        blob: await canvasParaBlob(canvas, 'image/png'),
-      })
-      toast({ title: 'Criativo gerado!' })
-    } catch (err: any) {
-      toast({
-        title: 'Erro ao gerar o criativo',
-        description: mensagemErroAmigavel(err),
-        variant: 'destructive',
-      })
-    } finally {
-      setGerandoSlug(null)
-    }
-  }
-
   // Padrão Carro e Cia. Sem IA: só desenha com a foto original. Com IA: a function trata a
   // foto principal no estilo escolhido, já na proporção da janela da foto do layout (assim
   // o respiro que a IA deixa não é cortado); as demais fotos entram como estão.
@@ -331,7 +252,7 @@ export function CriativoAnuncioPanel({ veiculo }: { veiculo: any }) {
         if (!data?.success) throw new Error(data?.error || 'Falha ao tratar a foto')
         principalTratada = await carregarImagem(data.imagem_tratada)
       }
-      const [imgs, logos] = await Promise.all([Promise.all(fotosSel.map(imagem)), carregarLogos()])
+      const [imgs, logo] = await Promise.all([Promise.all(fotosSel.map(imagem)), carregarLogo()])
       await prepararFontesPadrao()
       const canvas = finalRef.current
       if (!canvas) throw new Error('Não foi possível montar o criativo final')
@@ -339,10 +260,11 @@ export function CriativoAnuncioPanel({ veiculo }: { veiculo: any }) {
         0,
         MAX_FOTOS_PADRAO,
       )
-      desenharCriativoPadrao(canvas, formatoPadrao, fotosUsadas, logos.paraFundoEscuro, dadosPadrao)
+      desenharCriativoPadrao(canvas, formatoPadrao, fotosUsadas, logo, dadosPadrao)
       setResultado({
         slug: comIA ? estiloIA : MODELO_PADRAO_SLUG,
-        formato: formatoPadrao === '1:1' ? 'quadrado' : 'feed',
+        formato:
+          formatoPadrao === '1:1' ? 'quadrado' : formatoPadrao === '9:16' ? 'stories' : 'feed',
         rotulo: `${FORMATOS_PADRAO[formatoPadrao].nome}${comIA ? ' (foto tratada pela IA)' : ' (foto original)'}`,
         blob: await canvasParaBlob(canvas, 'image/png'),
       })
@@ -519,10 +441,10 @@ export function CriativoAnuncioPanel({ veiculo }: { veiculo: any }) {
         redes sociais)
       </h3>
       <p className="text-xs text-slate-500 mb-4">
-        Escolha de 1 a {MAX_FOTOS_CRIATIVO} fotos, o formato e um dos modelos. Preço, quilometragem
-        e a logo são colocados pelo sistema com os dados reais; a IA só trata a foto principal. Nada
-        é gravado no seu computador: salve no sistema (nuvem), copie o link ou a imagem, ou crie um
-        post orgânico.
+        Escolha de 1 a {MAX_FOTOS_CRIATIVO} fotos e o formato. Preço, quilometragem e a logo são
+        colocados pelo sistema com os dados reais; a IA só trata a foto principal. Nada é gravado no
+        seu computador: salve no sistema (nuvem), copie o link ou a imagem, ou crie um post
+        orgânico.
       </p>
 
       {fotos.length === 0 ? (
@@ -607,43 +529,10 @@ export function CriativoAnuncioPanel({ veiculo }: { veiculo: any }) {
               </div>
 
               <Label className="text-xs font-bold text-slate-600 mb-2 block">
-                3. Escolha o modelo e gere com IA
+                3. Gere o criativo (foto original ou tratada pela IA)
               </Label>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4 max-w-4xl mb-6">
-                {antigosDisponiveis &&
-                  MODELOS_CRIATIVO.map((m) => (
-                    <div key={m.slug} className="space-y-2">
-                      <div
-                        className={cn(
-                          'rounded-lg overflow-hidden border-2 bg-slate-100',
-                          resultado?.slug === m.slug ? 'border-blue-600' : 'border-slate-200',
-                        )}
-                      >
-                        <canvas
-                          ref={(el) => {
-                            previewRefs.current[m.slug] = el
-                          }}
-                          className="w-full h-auto block"
-                        />
-                      </div>
-                      <Button
-                        size="sm"
-                        variant={resultado?.slug === m.slug ? 'default' : 'outline'}
-                        className="w-full"
-                        disabled={gerandoSlug !== null || !veiculo.id}
-                        onClick={() => gerar(m.slug)}
-                      >
-                        {gerandoSlug === m.slug ? (
-                          <Loader2 className="w-4 h-4 mr-1 animate-spin" />
-                        ) : (
-                          <Wand2 className="w-4 h-4 mr-1" />
-                        )}
-                        {m.nome}
-                      </Button>
-                    </div>
-                  ))}
-
-                {/* Padrão Carro e Cia (novo): 1:1 e 4:5, foto original ou tratada pela IA */}
+              <div className="max-w-sm mb-6">
+                {/* Padrão Carro e Cia: 1:1, 4:5 e 9:16, foto original ou tratada pela IA */}
                 <div className="space-y-2">
                   {formatoPadrao ? (
                     <>
@@ -674,7 +563,7 @@ export function CriativoAnuncioPanel({ veiculo }: { veiculo: any }) {
                         ) : (
                           <ImageIcon className="w-4 h-4 mr-1" />
                         )}
-                        Padrão Carro e Cia (novo)
+                        Padrão Carro e Cia
                       </Button>
                       <p className="text-[11px] text-slate-500">
                         Foto original, sem IA. Usa a 1ª foto como principal e até 2 como
@@ -749,8 +638,8 @@ export function CriativoAnuncioPanel({ veiculo }: { veiculo: any }) {
                     </>
                   ) : (
                     <p className="text-xs text-slate-500 border rounded-lg p-4 bg-slate-50">
-                      O "Padrão Carro e Cia (novo)" está disponível nos formatos 1:1 e 4:5 por
-                      enquanto.
+                      O "Padrão Carro e Cia" ainda não tem layout para este formato. Use 1:1, 4:5 ou
+                      9:16.
                     </p>
                   )}
                 </div>
