@@ -78,8 +78,9 @@ export const MAX_FOTOS_CRIATIVO = 4
 //   de verdade basta trocar a URL e passar `false`.
 export const LOGO_FUNDO_CLARO_URL =
   'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/logo%20carro%20e%20cia.png'
-export const LOGO_FUNDO_ESCURO_URL =
-  'https://htpcqdbhktmvppfemnad.supabase.co/storage/v1/object/public/logos-e-imagens/logo%20carro%20e%20cia%20para%20fundo%20preto.png'
+// Logo branca e vermelha com transparência REAL (01/11/2026), servida do próprio site
+// (public/). Não precisa remover quadriculado: usar prepararLogo(img, false).
+export const LOGO_FUNDO_ESCURO_URL = '/logo-carro-e-cia-branco-vermelho.png'
 
 export interface LogosCriativo {
   paraFundoClaro: HTMLCanvasElement | null

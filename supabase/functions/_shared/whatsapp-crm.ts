@@ -1,4 +1,5 @@
 import { createClient } from 'jsr:@supabase/supabase-js@2'
+import { VALIDADE_MINUTOS, type Preparo } from './whatsapp-confirmacao.ts'
 
 type SupabaseClient = ReturnType<typeof createClient>
 
@@ -66,37 +67,70 @@ export async function handleHoje(ctx: CommandContext): Promise<string> {
   return `📅 *Leads das últimas 24h:*\n\nTotal: ${count || 0} leads recebidos.`
 }
 
-export async function handleResponder(rest: string, ctx: CommandContext): Promise<string> {
+// PREPARA (nao envia nada): acha o lead e mostra pra quem vai e o que vai.
+export async function prepararResponder(rest: string, ctx: CommandContext): Promise<Preparo> {
   const parts = rest.trim().split(/\s+/)
-  if (parts.length < 2) return '❌ Use: RESPONDER [nome] [mensagem]'
+  if (parts.length < 2) return { resposta: '❌ Use: RESPONDER [nome] [mensagem]' }
 
-  const searchTerm = parts[0]
+  const searchTerm = parts[0].replace(/[%,()*\\]/g, '')
   const message = parts.slice(1).join(' ')
+  if (!searchTerm) return { resposta: '❌ Use: RESPONDER [nome] [mensagem]' }
 
   const { data: leads } = await ctx.supabase
     .from('leads')
     .select('nome, telefone')
     .ilike('nome', `%${searchTerm}%`)
-    .limit(1)
+    .limit(5)
 
-  if (!leads || leads.length === 0) return `❌ Lead não encontrado: "${searchTerm}"`
-  if (!leads[0].telefone) return `❌ ${leads[0].nome} não tem telefone cadastrado.`
+  if (!leads || leads.length === 0) return { resposta: `❌ Lead não encontrado: "${searchTerm}"` }
+  if (leads.length > 1) {
+    const linhas = leads.map((l, i) => `${i + 1}. ${l.nome}`).join('\n')
+    return {
+      resposta: `⚠️ Mais de um lead bate com "${searchTerm}". Use um trecho mais específico do nome:\n\n${linhas}`,
+    }
+  }
+  const lead = leads[0]
+  if (!lead.telefone) return { resposta: `❌ ${lead.nome} não tem telefone cadastrado.` }
 
-  const leadPhone = leads[0].telefone.replace(/\D/g, '')
+  const leadPhone = lead.telefone.replace(/\D/g, '')
+  return {
+    pedido: {
+      comando: 'RESPONDER',
+      alvo: { nome: lead.nome, telefone: leadPhone, mensagem: message },
+      resumo: `RESPONDER ${lead.nome}`,
+      pergunta: `💬 Quer realmente enviar esta mensagem a um *cliente*?\n\nPara: *${lead.nome}* (${leadPhone})\nMensagem: "${message}"\n\nResponda *SIM* ou *NÃO* (vale por ${VALIDADE_MINUTOS} minutos).`,
+    },
+  }
+}
 
-  if (ctx.waToken && ctx.waPhoneId) {
-    const res = await fetch(`https://graph.facebook.com/v20.0/${ctx.waPhoneId}/messages`, {
+// EXECUTA. Limite honesto: a Meta responde "aceita", nao "entregue". Texto
+// livre so chega ao cliente se ele falou com a Clara nas ultimas 24 h.
+export async function executarResponder(
+  alvo: Record<string, any>,
+  ctx: CommandContext,
+): Promise<string> {
+  if (!ctx.waToken || !ctx.waPhoneId) {
+    return '❌ Não enviei: credenciais do WhatsApp não configuradas no servidor.'
+  }
+  let res: Response
+  try {
+    res = await fetch(`https://graph.facebook.com/v20.0/${ctx.waPhoneId}/messages`, {
       method: 'POST',
       headers: { Authorization: `Bearer ${ctx.waToken}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
         messaging_product: 'whatsapp',
-        to: leadPhone,
+        to: alvo.telefone,
         type: 'text',
-        text: { body: message },
+        text: { body: alvo.mensagem },
       }),
     })
-    if (!res.ok) return `❌ Erro ao enviar mensagem para ${leads[0].nome}.`
+  } catch {
+    return `❌ Não consegui falar com a Meta. A mensagem para ${alvo.nome} NÃO foi enviada.`
   }
-
-  return `✅ Mensagem enviada para *${leads[0].nome}* (${leadPhone}):\n\n"${message}"`
+  const corpo = await res.json().catch(() => ({}))
+  if (!res.ok) {
+    return `❌ A Meta recusou o envio para ${alvo.nome}${corpo?.error?.message ? `: ${corpo.error.message}` : ''}.`
+  }
+  const idMsg = corpo?.messages?.[0]?.id ? String(corpo.messages[0].id).slice(-8) : null
+  return `✅ A Meta *aceitou* a mensagem para *${alvo.nome}* (${alvo.telefone})${idMsg ? ` — protocolo …${idMsg}` : ''}.\n\n"${alvo.mensagem}"\n\nℹ️ Aceita não é entregue: se o cliente não falou com a Clara nas últimas 24 h, o WhatsApp pode não entregar.`
 }

@@ -98,6 +98,19 @@ não foram alterados.
   ("Aqui está o post perfeito e otimizado para o Facebook, pronto para copiar e colar!") — NÃO aprovar; o orgânico
   atual será substituído pelo sistema novo na Fase 4.
 - **Falta:** aprovar os rascunhos da Frontier e conferir os 2 posts reais (IG e FB) nas páginas públicas.
+- **Achado e correção de 31/10/2026 (legenda por IA — `gerar-conteudo-social`):** os 24 rascunhos do orgânico
+  diário (07 a 31/10) traziam abertura da IA ("Aqui está o post perfeito… copiar e colar"), campos para
+  preencher (`[INSERIR LINK DO WHATSAPP AQUI]`, `(XX) XXXXX-XXXX`), aviso inventado ("Reservamo-nos o
+  direito…"), "clique em Enviar Mensagem"/"comente EU QUERO" (só existe em anúncio pago), asteriscos `**` e
+  hashtags quebradas (`#CarrosA Venda`). Causa: o pedido terminava com "pronto para copiar e colar" e a IA
+  recebia poucos dados (sem versão, km, câmbio nem opcionais). Correção: prompt novo com regras explícitas +
+  `_shared/legenda-ia.ts` (`montarLegendaIA`) que, no código, tira abertura/separadores/asteriscos/campos para
+  preencher/aviso inventado e **sempre** fecha com "Agende um teste drive agora mesmo pelo nosso WhatsApp:
+  https://wa.me/5534997384177". Falha da IA agora volta como erro (antes virava "Erro ao gerar conteúdo."
+  gravado como legenda). Limite conhecido: hashtag quebrada pela IA não é consertada pelo código (o prompt pede
+  hashtags sem espaço). Os 24 rascunhos antigos NÃO são reescritos: rejeitar/excluir pelo painel.
+  Esta correção NÃO mexe no modelo fixo da Fase 2 (`montar-post-veiculo`/`legenda-social.ts`), que tem outro
+  convite final.
 
 ## Riscos e pré-requisitos
 
@@ -178,7 +191,7 @@ sido feitos só na aba **Aprovações** (cartões). Agora:
   `META_PAGE_ACCESS_TOKEN`) e erro registrado em `lead_errors`. Cada DM recebida avisa a dona por WhatsApp (`avisarMensagemDireta`).
 - **A Clara NÃO responde Instagram/Messenger** (verificado: nenhuma function envia por essas redes). Fica para depois (exige API de envio + permissão).
 - **Messenger do Facebook:** 0 eventos `messaging` da página em 30 dias (só `feed`). Pode ser página não inscrita em `messages` OU ninguém escreveu. A conferir na Meta.
-- **Legenda do Instagram sem convite ao direct/bio** até o direct ser atendido e a bio apontar para o WhatsApp da Clara (hoje é `5534999484285`).
+- **Legenda do Instagram sem convite ao direct/bio** até o direct ser atendido e a bio apontar para o WhatsApp da Clara (`5534997384177`). Anotação de 14/10: a bio apontava para `5534999484285`, que é de OUTRA empresa do grupo (confirmado pela Adriana em 29/10/2026) e precisa ser trocada.
 - **Sujeira pré-existente achada (não corrigida):** o idioma `.catch(() => {})` em `supabase.from(...).insert(...)` aparece em `receive-leads` (linhas ~675, 773 e
   no `catch` final ~850). O builder do Supabase não tem `.catch`: se a gravação em `lead_errors` rodar, dá `TypeError` dentro do tratamento de erro.
   Tipos: `deno check` roda via `bunx deno check --no-lock --node-modules-dir=none <arquivo>` (ainda acusa 5 erros antigos no `receive-leads` e vários em `_shared/whatsapp-*`).

@@ -1,4 +1,5 @@
 import { createClient } from 'jsr:@supabase/supabase-js@2'
+import { VALIDADE_MINUTOS, type Preparo } from './whatsapp-confirmacao.ts'
 
 type SupabaseClient = ReturnType<typeof createClient>
 
@@ -86,7 +87,8 @@ export async function handleVer(ctx: CommandContext): Promise<string> {
   return `📄 *Artigo em Revisão:*\n\n*${post.title}*\n\nPalavras: ${wordCount}\nKeyword: ${post.keyword || 'N/A'}\nMeta: ${post.meta_description?.substring(0, 100) || 'N/A'}...\n\nPreview: ${previewUrl}`
 }
 
-export async function handleAprovar(ctx: CommandContext): Promise<string> {
+// PREPARA (nao altera nada): mostra qual artigo sera publicado.
+export async function prepararAprovar(ctx: CommandContext): Promise<Preparo> {
   const { data: post } = await ctx.supabase
     .from('blog_posts')
     .select('id, title, slug')
@@ -96,19 +98,48 @@ export async function handleAprovar(ctx: CommandContext): Promise<string> {
     .limit(1)
     .maybeSingle()
 
-  if (!post) return '❌ Nenhum artigo pendente para aprovação.'
+  if (!post) return { resposta: '❌ Nenhum artigo pendente para aprovação.' }
 
-  await ctx.supabase
+  return {
+    pedido: {
+      comando: 'APROVAR',
+      alvo: { id: post.id, titulo: post.title, slug: post.slug },
+      resumo: `APROVAR ${post.title}`,
+      pergunta: `📝 Quer realmente *APROVAR e PUBLICAR* este artigo?\n\n*${post.title}*\n/blog/${post.slug}\n\nResponda *SIM* ou *NÃO* (vale por ${VALIDADE_MINUTOS} minutos).`,
+    },
+  }
+}
+
+// EXECUTA e CONFIRMA: publica, le o artigo de volta e so entao diz "no ar".
+// O disparo da publicacao social e pedido a outra function; nao ha como
+// confirmar o resultado daqui, entao a resposta diz so que o pedido foi feito.
+export async function executarAprovar(
+  alvo: Record<string, any>,
+  ctx: CommandContext,
+): Promise<string> {
+  const { error } = await ctx.supabase
     .from('blog_posts')
     .update({ published: true, requires_review: false })
-    .eq('id', post.id)
+    .eq('id', alvo.id)
+  if (error) return `❌ Não consegui publicar *${alvo.titulo}*. O artigo continua em revisão.`
+
   await ctx.supabase
     .from('agenda_conteudo')
     .update({ status: 'Publicado' })
-    .eq('artigo_id', post.id)
+    .eq('artigo_id', alvo.id)
 
+  const { data: lido } = await ctx.supabase
+    .from('blog_posts')
+    .select('published, requires_review')
+    .eq('id', alvo.id)
+    .maybeSingle()
+  if (!(lido?.published === true && lido?.requires_review === false)) {
+    return `⚠️ Pedi a publicação, mas ao reler o artigo *${alvo.titulo}* ele não aparece como publicado. Confira no painel.`
+  }
+
+  let social = 'Pedido de publicação social NÃO enviado (falha ao chamar a function).'
   try {
-    await fetch(`${ctx.supabaseUrl}/functions/v1/publicar-social`, {
+    const res = await fetch(`${ctx.supabaseUrl}/functions/v1/publicar-social`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -116,11 +147,14 @@ export async function handleAprovar(ctx: CommandContext): Promise<string> {
       },
       body: JSON.stringify({}),
     })
+    social = res.ok
+      ? 'Pedido de publicação social enviado (não consigo confirmar daqui se as redes já postaram).'
+      : `Pedido de publicação social recusado (HTTP ${res.status}).`
   } catch {
-    // non-blocking
+    // mantem o texto de falha acima
   }
 
-  return `✅ Artigo aprovado e publicado!\n\n*${post.title}*\n\nO conteúdo já está no ar em /blog/${post.slug}\n\n📢 Publicação social disparada.`
+  return `✅ Confirmado: artigo *${alvo.titulo}* está publicado (conferi depois de salvar).\n\nNo ar em /blog/${alvo.slug}\n\n📢 ${social}`
 }
 
 export async function handleCorrigir(instrucoes: string, ctx: CommandContext): Promise<string> {

@@ -115,9 +115,12 @@ _Tenha um excelente dia de vendas! 🚀_`
       .select('whatsapp_number')
       .maybeSingle()
 
-    const ownerPhone = socialConfig?.whatsapp_number || '5534999484285'
+    // 29/10/2026: o fallback era 5534999484285, número de OUTRA empresa do grupo (8 relatórios
+    // foram para lá em 05–13/08/2026). Sem destino configurado, não envia e deixa o aviso no log.
+    const ownerPhone = socialConfig?.whatsapp_number
+    if (!ownerPhone) console.error('daily-report-cron: social_configuracoes.whatsapp_number vazio, relatório NÃO enviado')
 
-    if (waToken && waPhoneId) {
+    if (waToken && waPhoneId && ownerPhone) {
       await fetch(`https://graph.facebook.com/v20.0/${waPhoneId}/messages`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${waToken}`, 'Content-Type': 'application/json' },
@@ -132,7 +135,7 @@ _Tenha um excelente dia de vendas! 🚀_`
 
     await supabase.from('marketing_logs').insert({
       tipo: 'daily_report',
-      status: 'enviado',
+      status: ownerPhone ? 'enviado' : 'sem_destino',
       detalhes: {
         total_leads: totalLeads,
         leads_by_source: leadsBySource,
@@ -140,7 +143,7 @@ _Tenha um excelente dia de vendas! 🚀_`
         active_ads: totalActiveAds || 0,
         available_stock: totalAvailable || 0,
         canais_silenciosos: alertasSilencio,
-        sent_to: ownerPhone,
+        sent_to: ownerPhone || null,
       },
     })
 
