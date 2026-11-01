@@ -1,7 +1,36 @@
 # Próxima sessão — Carro e Cia Veículos
 
-Atualizado em: 01/11/2026 (sessão 37)
-Substitui: 31/10/2026 (sessão 36)
+Atualizado em: 01/11/2026, fim do dia (sessão 38)
+Substitui: 01/11/2026 (sessão 37)
+
+## SESSÃO 38 (01/11/2026, tarde/noite) — criativo no ar, PRs, auditoria da Meta
+
+Estado verificado em 01/11 ~18h30 (git, gh, MCP Supabase, MCP Meta). `origin/main` = `8f3a349` (merge do PR #8).
+- **Criativo (PR #7 MESCLADO, `f651f0e`, 21:13:45 UTC):** novos estilos de IA (`criativo_estilo_loja/_estudio_claro/_estudio_escuro`),
+  `size` validado e logo branca/vermelha com transparência real (2172x724) em `public/logo-carro-e-cia-branco-vermelho.png`,
+  `prepararLogo(img, false)`. `Deploy producao` ok; `gerar-criativo-anuncio` **v11** às 21:14:03 UTC; chunk publicado
+  `Estoque-XdCavI1c.js` contém estilos e logo (verificado).
+- **O 400 do teste dela (21:03:06 UTC) foi front local x função antiga em produção** (INFERIDO pelo código; a resposta do 400 não foi lida).
+  Função só publica no merge no `main` (workflow `deploy-functions.yml` não roda em branch).
+- **NÃO testado:** painel por dentro (gerar criativo, "Salvar no sistema", "Criar post orgânico"), nem o recorte da logo na bandeira/"&CIA".
+  Não repetir teste ponta a ponta no navegador dela sem combinar (incidente do Compass).
+- **PR #8 MESCLADO (`8f3a349`):** regra no CLAUDE.md "lembrar de commit e push a cada alteração, em toda resposta".
+- **PR #5 (CSP) ABERTO, não mesclado:** só `public/_headers` muda de verdade; mescla limpo. **Achado verificado:** GTM, GA4 (`G-BMYR1WXTT2`)
+  e Pixel da Meta (`917411362618696`) carregam direto no `index.html` SEM consentimento; o `CookieConsent` só cobre o Clarity.
+  Liberar o CSP faz Google Ads/GA4 passarem a coletar sem consentimento (decisão de LGPD dela antes do merge).
+- **PR #1 (Clara):** main trazida para dentro NA BRANCH LOCAL (`f98bba4`, 0 atrás); conflitos só nos 2 arquivos de memória (resolvidos
+  mantendo tudo). Código revisado: `ai-sdr` (agendamento idempotente), `re-engagement-cron` e `receive-leads` (número interno não vira lead);
+  `isAuthorizedPhone` existe, colunas do banco conferidas. **NÃO enviado ao GitHub, NÃO mesclado**; sem teste (sem `deno` instalado).
+- **Auditoria Meta, conta `4333456556917039` (só leitura):** 2 campanhas, gasto R$ 0 em toda a vida. "Consórcio Auto" ATIVA, mas SEM nenhum
+  anúncio (objetivo Tráfego x meta Conversas, destino indefinido, público aberto); "Consórcios Carro e Cia" PAUSADA pelo `carroecia_bot`
+  em 31/10 13:36 (parece o teste ao vivo da Clara, INFERIDO). Pixel, página/IG vinculados e saldo NÃO checados. Decisão dela pendente.
+- **Pendências sem destino:** stash de 28/09 "fix sync video" (4 arquivos, não revisado) e worktree
+  `agents/token-architecture-analysis-and-fixes` (≥10 arquivos preparados, branch nunca enviada).
+- **Criativos, perguntas em aberto (a resposta dela foi só "autorizo"):** Stories agora ou depois (recomendado: depois), aposentar os
+  2 modelos antigos, selo, potência (cv). Nada foi alterado nesses pontos.
+- **Becos sem saída novos:** (1) MCP não sobe arquivo no Storage do Supabase; usado `public/`. (2) Contrariando a nota de 29/10,
+  `query_logs` com `source='function_edge_logs'` FUNCIONA (mostra método, status e URL, não o corpo da resposta). (3) `git switch -c ... origin/main`
+  deixa o upstream em `origin/main`; empurrar com o nome da branch explícito.
 
 ## SESSÃO 37 (continuação, 01/11/2026) — novo padrão de criativo (Feed) + incidente do Compass
 

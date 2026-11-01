@@ -1,7 +1,7 @@
 # ÍNDICE — MEMORY_WORK Carro e Cia
 
 > ESTADO ATUAL: leia `PROXIMA_SESSAO.md` primeiro. Este arquivo é histórico.
-> Última sessão registrada: 01/11/2026 (sessão 37).
+> Última sessão registrada: 01/11/2026 (sessão 38).
 
 | Bloco | Conteúdo |
 |---|---|
@@ -16,6 +16,23 @@ REGRA: não leia este arquivo inteiro. Leia o índice, escolha o bloco, use offs
 ---
 
 # Memória de trabalho — Carro e Cia
+
+## [01/11/2026] SESSÃO 38 — criativo no ar (PR #7), PR #8, leitura dos PRs #5/#1 e auditoria da conta Meta `4333456556917039`
+
+- **Feito (verificado):** PR #7 mesclado (`f651f0e`, 21:13:45 UTC); `Deploy producao` ok; `gerar-criativo-anuncio` v11 (21:14:03 UTC); site publicado
+  serve o chunk com estilos e logo nova (`Estoque-XdCavI1c.js`). PR #8 (regra de lembrar commit/push) mesclado (`8f3a349`, 21:26:33 UTC).
+- **Causa do 400 no teste dela (inferida):** o front local mandou os slugs `criativo_estilo_*` para a função antiga em produção
+  (log: `POST gerar-criativo-anuncio` 400 às 21:03:06 UTC; corpo da resposta não lido). A função só sobe no merge no `main`.
+- **Não testado:** painel logado (gerar, "Salvar no sistema", "Criar post orgânico"); qualidade do recorte da logo (bandeira, "&CIA").
+- **PR #5 (CSP):** só `public/_headers` muda; mescla limpo. GTM, GA4 e Pixel da Meta carregam no `index.html` sem consentimento; o
+  `CookieConsent` só cobre o Clarity. O PR faria Google Ads/GA4 coletarem sem consentimento: decisão de LGPD dela. NÃO mesclado.
+- **PR #1 (Clara):** main trazida para a branch local (`f98bba4`); conflitos só em `PROXIMA_SESSAO.md` e `MEMORY_WORK.MD`, resolvidos
+  mantendo os dois lados. Revisão do código: 3 mudanças pequenas e coerentes (`ai-sdr`, `re-engagement-cron`, `receive-leads`). NÃO enviado, NÃO mesclado.
+- **Auditoria Meta (só leitura):** conta oficial `4333456556917039`; 2 campanhas com gasto R$ 0; a "ativa" não tem anúncio; a de Vendas
+  foi pausada pelo `carroecia_bot` em 31/10 13:36. Pixel, página/IG e saldo não checados. Decisão dela pendente.
+- **Becos sem saída:** MCP não faz upload binário no Storage (usar `public/`); `query_logs` com `function_edge_logs` funciona
+  (método/status/URL, sem corpo), contradizendo a nota de 29/10; `git switch -c ... origin/main` deixa o upstream em `origin/main`.
+- **Sem destino:** stash de 28/09 (4 arquivos) e worktree dos agentes (branch nunca enviada).
 
 ## [01/11/2026] SESSÃO 37 (continuação) — padrão novo de criativo (Feed), achado de CORS e incidente do Compass
 
