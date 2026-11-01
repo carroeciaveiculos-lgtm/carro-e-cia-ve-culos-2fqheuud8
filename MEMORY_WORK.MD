@@ -40,9 +40,13 @@ REGRA: não leia este arquivo inteiro. Leia o índice, escolha o bloco, use offs
   (`receive-leads` v244); home, `/estoque` e `/admin/login` renderizam no site publicado. Painel logado NÃO testado.
 - **PR #1 divergido** (6 atrás / 6 à frente da main; mexe em `receive-leads`, `ai-sdr`, `AGENTS.md`, `CLAUDE.md` e memória): não mesclar
   sem trazer a main para dentro e revisar. Aberto desde 29/10 e não constava nos arquivos de continuidade.
-- **PR #4** (legenda por IA): limpo; merge autorizado em 01/11; correção NÃO testada em uso real.
-- **Achado INFERIDO (CSP):** o site publicado bloqueia Google Ads, GA4, Clarity, gateway de conversões da Meta e beacon do Cloudflare
-  (console do navegador). Origem e data de início do CSP não investigadas; há histórico de CSP bloqueando a FIPE em 08/10.
+- **PR #4** (legenda por IA): FECHADO em 01/11/2026: mesclado às 14:13 UTC (`d764a17`), deploys com sucesso; só `gerar-conteudo-social`
+  (v103) e `montar-post-veiculo` (v15) ganharam versão. Correção NÃO testada em uso real.
+- **CSP (diagnóstico feito em 01/11):** bloqueio VERIFICADO (console + `curl -I`; cabeçalho publicado idêntico a `public/_headers`); impacto
+  nas campanhas é INFERIDO (`meta-capi-postback` e `google-ads-leads` registram por servidor). CSP desde `fbe7f26` (06/07); ajustes em `63f7b14`
+  (04/08) e `f1ced1a`/`46f2d81` (08/10, FIPE). Não sei desde quando o bloqueio afeta o rastreamento. Correção no PR `fix/csp-liberar-rastreamento`
+  (libera 5 origens; gateway da Meta fica FORA por decisão da Adriana). Falta: testar a pré-visualização e ler o `CookieConsent` (LGPD).
+- **Beco sem saída:** `git switch -c ... origin/main` deixa o upstream em `origin/main`; empurrar sempre com o nome da branch explícito.
 - **Não localizado:** pedido da Adriana de "imagem padrão + prompt enviado" — nada no repo além de imagem de vaga e criativos de anúncio.
 - **Beco sem saída:** `AGENTS.md` foi consolidado no `CLAUDE.md` em 28/10; PR #1 tem versão anterior dele e pode reverter isso.
 
