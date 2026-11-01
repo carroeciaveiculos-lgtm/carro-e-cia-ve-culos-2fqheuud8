@@ -1,21 +1,41 @@
 # Próxima sessão — Carro e Cia Veículos
 
-Atualizado em: 31/10/2026 (sessão 36)
-Substitui: 27/10/2026 (sessão 35)
+Atualizado em: 01/11/2026 (sessão 37)
+Substitui: 31/10/2026 (sessão 36)
 
-## SESSÃO 36 (31/10/2026) — Clara: frases + confirmação SIM/NÃO (PR #2 ABERTO, NÃO MESCLADO)
+## SESSÃO 37 (01/11/2026) — conferência do estado real (nenhum código novo)
 
-Estado verificado em 31/10/2026 (git/gh):
-- `origin/main` = `3a1e88e` (sem o código novo). Branch `feat/clara-confirmacao-comandos` empurrada, PR #2 aberto;
-  contém `d657e23` (remove fallback do número alheio dos avisos) e `b849aa2` (confirmação SIM/NÃO). O merge foi barrado
-  pelo classificador de segurança ("merge sem revisão"); **precisa ser feito pela Adriana** (GitHub ou `! gh pr merge 2 --merge`).
+Verificado em 01/11/2026, ~08:50 (git, gh, MCP do Supabase e Chrome):
+- `origin/main` = `9a754fa` (merge do PR #3). PR #2 mesclado em 31/10 13:31 UTC; PR #3 mesclado em 31/10 17:20 UTC.
+  `Deploy producao` e `Deploy Edge Functions` com sucesso nos dois (runs `41217993787` e `41243510847`).
+- Functions: todas ACTIVE; `receive-leads` v244 atualizada ~21:26 UTC de 31/10 (pós PR #3).
+- Site publicado: home, `/estoque` (58 links, 0 imagens quebradas) e `/admin/login` renderizam.
+  Painel por dentro NÃO testado (sem login).
+- **PR #1** (número interno não vira lead; aberto desde 29/10): DIVERGIU da main (6 atrás / 6 à frente) e mexe em
+  `receive-leads`, `ai-sdr`, `AGENTS.md`, `CLAUDE.md` e nestes dois arquivos de memória. Conflito provável.
+  **Não mesclar sem trazer a main para dentro dele e revisar.** O `AGENTS.md` virou stub em 28/10 e o PR pode reverter isso.
+- **PR #4** (legenda por IA): limpo e mesclável; merge autorizado pela Adriana em 01/11. Conferir o resultado com
+  `gh pr view 4` e `gh run list`. A correção NÃO foi testada em uso real — pedir para ela ver uma legenda gerada.
+- Achado (INFERIDO, não investigado a fundo): o CSP do site publicado bloqueia Google Ads (`AW-18085065720`,
+  `AW-869570436`), GA4 (`G-BMYR1WXTT2`), Microsoft Clarity, gateway de conversões da Meta e beacon do Cloudflare.
+  Falta descobrir de onde vem o CSP e desde quando. Possível impacto na medição das campanhas.
+- Pedido da Adriana sobre "imagem padrão + prompt que ela enviou": NÃO localizado no repositório (só imagem de vaga,
+  `a57c72f`, e criativos de anúncio, `1e2ce22`). Pode estar em sessão paralela — perguntar a ela onde foi pedido.
+
+## SESSÃO 36 (31/10/2026) — Clara: frases + confirmação SIM/NÃO (PR #2 MESCLADO em 31/10, verificado em 01/11)
+
+Estado registrado em 31/10/2026 (git/gh) — superado pela sessão 37 acima:
+- ~~`origin/main` = `3a1e88e`, PR #2 aberto~~ → FECHADO em 01/11: PR #2 mesclado em 31/10 13:31 UTC, deploys ok.
+  Branch `feat/clara-confirmacao-comandos` empurrada; continha `d657e23` (remove fallback do número alheio dos avisos) e
+  `b849aa2` (confirmação SIM/NÃO). Na época o merge foi barrado pelo classificador de segurança ("merge sem revisão").
 - Migração `20261031131357_comandos_pendentes_whatsapp` JÁ APLICADA no banco (tabela vazia, RLS ligada, sem policy) —
   arquivo local no PR. Rollback: `drop table public.comandos_pendentes_whatsapp;`.
 - Validado antes do PR: `tsc` (stub do Deno) ok, 75 casos das regras de frase ok, `bun run lint` 0 erros, `bun run build` ok.
 - Merge em `main` publica as 87 pastas de function (mexe em `_shared/`); deploy geral igual rodou com sucesso em 10/10.
 
 Pendente / com a Adriana:
-- [ ] Mesclar o PR #2 e conferir `gh run list` (deploy-functions) + `list_edge_functions` (versão nova de `receive-leads`).
+- [x] ~~Mesclar o PR #2 e conferir `gh run list` + `list_edge_functions`~~ — FECHADO em 01/11/2026: mesclado em 31/10,
+  deploy ok (run `41217993787`), `receive-leads` v244 no ar.
 - [ ] **Teste ao vivo (D)**: LISTAR; "Clara pausar [alvo]" → "não" (nada muda) → de novo → "sim" (confirmação real);
   alvo seguro: campanha do Google (só registra solicitação) ou campanha Meta sem anúncio ativo, a combinar.
   Conferir depois em `comandos_pendentes_whatsapp` e `agente_interacoes`.
@@ -64,14 +84,12 @@ Marcar como RESOLVIDO, PENDENTE ou BLOQUEADO.
   Se aprovado: trocar escopo no linkedin-oauth-start/callback e no
   publicar-social (detalhe em docs/linkedin-integracao.md).
 
-## ONDE ESTAMOS (verificado pelo git log em 28/10/2026)
+## ONDE ESTAMOS (verificado pelo git em 01/11/2026, ~08:50)
 
-- **Último commit:** `e327c1f` — "docs: consolida regras de leitura e memoria (sessao 35)"
-  (só documentação; último código em produção segue `e5e44c0`)
-- **Último commit de código de produção:** `e5e44c0` — "feat: function google-ads-leads
-  recebe leads do formulario do anuncio do Google Ads"
-- **Estado do working tree:** LIMPO (`git status --short` vazio em 27/10)
-- Tudo commitado e enviado ao `origin/main`
+- **`origin/main`:** `9a754fa` — merge do PR #3 (Clara: Google origem válida e cortesia). Último código em produção.
+- **Branch de trabalho:** `fix/legenda-ia-sem-preambulo` (PR #4). Working tree limpo antes desta atualização.
+- **PRs abertos:** #1 (divergido, ver sessão 37) e #4 (legenda por IA, merge autorizado em 01/11).
+- Histórico anterior (28/10): último commit era `e327c1f` (docs) e o último código era `e5e44c0` (google-ads-leads) — superado.
 
 ## O QUE ESTÁ NO AR (confirmado por commits)
 
