@@ -113,7 +113,7 @@ function lista(v: unknown): string[] {
   return saida
 }
 
-function destaques(v: unknown, max: number): string[] {
+export function destaques(v: unknown, max: number): string[] {
   const itens = lista(v).filter((i) => !ITEM_PROIBIDO.test(i))
   const peso = (i: string) => {
     const idx = PRIORIDADE_DESTAQUES.indexOf(i.toLowerCase())

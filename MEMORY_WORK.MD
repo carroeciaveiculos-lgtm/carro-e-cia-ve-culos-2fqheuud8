@@ -1,7 +1,7 @@
 # ÍNDICE — MEMORY_WORK Carro e Cia
 
 > ESTADO ATUAL: leia `PROXIMA_SESSAO.md` primeiro. Este arquivo é histórico.
-> Última sessão registrada: 31/10/2026 (sessão 36).
+> Última sessão registrada: 01/11/2026 (sessão 37).
 
 | Bloco | Conteúdo |
 |---|---|
@@ -17,7 +17,20 @@ REGRA: não leia este arquivo inteiro. Leia o índice, escolha o bloco, use offs
 
 # Memória de trabalho — Carro e Cia
 
-## [31/10/2026] SESSÃO 36 — Clara entende frases e confirma SIM/NÃO antes de alterar (PR #2 ABERTO, NÃO MESCLADO; migração aplicada)
+## [01/11/2026] SESSÃO 37 — conferência do estado real (sem código novo)
+
+- **Verificado (01/11, ~08:50):** `origin/main` = `9a754fa`; PR #2 e #3 mesclados em 31/10 com `Deploy producao` e `Deploy Edge Functions`
+  com sucesso (runs de functions: `41217993787` no PR #2 e `41243510847` no PR #3); functions todas ACTIVE
+  (`receive-leads` v244); home, `/estoque` e `/admin/login` renderizam no site publicado. Painel logado NÃO testado.
+- **PR #1 divergido** (6 atrás / 6 à frente da main; mexe em `receive-leads`, `ai-sdr`, `AGENTS.md`, `CLAUDE.md` e memória): não mesclar
+  sem trazer a main para dentro e revisar. Aberto desde 29/10 e não constava nos arquivos de continuidade.
+- **PR #4** (legenda por IA): limpo; merge autorizado em 01/11; correção NÃO testada em uso real.
+- **Achado INFERIDO (CSP):** o site publicado bloqueia Google Ads, GA4, Clarity, gateway de conversões da Meta e beacon do Cloudflare
+  (console do navegador). Origem e data de início do CSP não investigadas; há histórico de CSP bloqueando a FIPE em 08/10.
+- **Não localizado:** pedido da Adriana de "imagem padrão + prompt enviado" — nada no repo além de imagem de vaga e criativos de anúncio.
+- **Beco sem saída:** `AGENTS.md` foi consolidado no `CLAUDE.md` em 28/10; PR #1 tem versão anterior dele e pode reverter isso.
+
+## [31/10/2026] SESSÃO 36 — Clara entende frases e confirma SIM/NÃO antes de alterar (PR #2 MESCLADO em 31/10, verificado em 01/11; migração aplicada)
 
 - **Feito (verificado):** commit `d657e23` (remove fallback `5534999484285` — 9 arquivos) e `b849aa2` (feature) na branch
   `feat/clara-confirmacao-comandos`, PR #2. Migração `20261031131357_comandos_pendentes_whatsapp` aplicada via MCP e conferida
@@ -27,7 +40,7 @@ REGRA: não leia este arquivo inteiro. Leia o índice, escolha o bloco, use offs
   pausados; Google só registra solicitação (resposta diz que NÃO foi alterado). Detalhe em `docs/marketing-whatsapp-comandos.md`.
 - **Testes:** `tsc` com stub do Deno ok; 75 casos de frase ok; lint 0 erros; build ok. **Não testado:** o caminho completo
   no WhatsApp real (depende do deploy e da Adriana) — não afirmar "funcionando" antes disso.
-- **Bloqueio:** merge do PR barrado pelo classificador (publicaria em produção sem revisão). Precisa de ação da Adriana.
+- **Bloqueio:** merge do PR barrado pelo classificador (publicaria em produção sem revisão). FECHADO em 01/11/2026: PR #2 mesclado em 31/10 (13:31 UTC), deploy ok.
 - **Beco sem saída:** heredoc do Bash com aspas misturadas quebrou duas vezes; usar script `.py` em arquivo.
 
 ## [28/10/2026] Consolidação de regras e memória — nenhuma mudança de código (sem commit de código)

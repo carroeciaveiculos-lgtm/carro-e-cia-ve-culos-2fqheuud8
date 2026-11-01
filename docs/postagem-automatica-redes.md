@@ -98,6 +98,19 @@ não foram alterados.
   ("Aqui está o post perfeito e otimizado para o Facebook, pronto para copiar e colar!") — NÃO aprovar; o orgânico
   atual será substituído pelo sistema novo na Fase 4.
 - **Falta:** aprovar os rascunhos da Frontier e conferir os 2 posts reais (IG e FB) nas páginas públicas.
+- **Achado e correção de 31/10/2026 (legenda por IA — `gerar-conteudo-social`):** os 24 rascunhos do orgânico
+  diário (07 a 31/10) traziam abertura da IA ("Aqui está o post perfeito… copiar e colar"), campos para
+  preencher (`[INSERIR LINK DO WHATSAPP AQUI]`, `(XX) XXXXX-XXXX`), aviso inventado ("Reservamo-nos o
+  direito…"), "clique em Enviar Mensagem"/"comente EU QUERO" (só existe em anúncio pago), asteriscos `**` e
+  hashtags quebradas (`#CarrosA Venda`). Causa: o pedido terminava com "pronto para copiar e colar" e a IA
+  recebia poucos dados (sem versão, km, câmbio nem opcionais). Correção: prompt novo com regras explícitas +
+  `_shared/legenda-ia.ts` (`montarLegendaIA`) que, no código, tira abertura/separadores/asteriscos/campos para
+  preencher/aviso inventado e **sempre** fecha com "Agende um teste drive agora mesmo pelo nosso WhatsApp:
+  https://wa.me/5534997384177". Falha da IA agora volta como erro (antes virava "Erro ao gerar conteúdo."
+  gravado como legenda). Limite conhecido: hashtag quebrada pela IA não é consertada pelo código (o prompt pede
+  hashtags sem espaço). Os 24 rascunhos antigos NÃO são reescritos: rejeitar/excluir pelo painel.
+  Esta correção NÃO mexe no modelo fixo da Fase 2 (`montar-post-veiculo`/`legenda-social.ts`), que tem outro
+  convite final.
 
 ## Riscos e pré-requisitos
 
