@@ -437,6 +437,11 @@ a cada sessão.
   sujeira pré-existente encontrada pelo caminho.
 - **Sistema local sincronizado** — manter local alinhado com Supabase/GitHub/Cloudflare e
   avisar quando estiver sincronizado.
+- **Lembrar de commit e push a cada alteração** — em TODA resposta em que houver arquivo
+  alterado e sem commit, encerrar com um lembrete curto: quais arquivos ficaram sem commit
+  e a pergunta "commito e dou push?". Repetir enquanto houver alteração pendente. Lembrar
+  também que o deploy só acontece quando o PR é mesclado no `main`. (Regra da Adriana,
+  01/11/2026.)
 - **Enviar localhost antes de testar** — mandar link `localhost:8080` para ela testar antes
   de commit/push.
 - **Status real, não memória** — testes/implementação devem sempre ler o status real da API
