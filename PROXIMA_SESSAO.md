@@ -3,6 +3,33 @@
 Atualizado em: 01/11/2026 (sessão 37)
 Substitui: 31/10/2026 (sessão 36)
 
+## SESSÃO 37 (continuação, 01/11/2026) — novo padrão de criativo (Feed) + incidente do Compass
+
+Branch `feat/criativo-padrao-feed` (criada de `origin/main` = `d764a17`), commit e push autorizados em 01/11. Merge e deploy: NÃO pedidos.
+- **Feito (verificado):** novo `src/lib/criativo-padrao.ts` (Feed 1080x1350 na linha da arte de referência da pasta
+  `Fotos\IMAGENS PARA ANUNCIOS`) e 3º cartão "Padrão Carro e Cia (novo)" em `CriativoAnuncioPanel.tsx`. Os 2 modelos antigos
+  (`criativo-anuncio.ts`) ficaram intactos. `bun run lint` 0 erros (92 avisos, nenhum novo), `bun run build` ok.
+- **Regras combinadas com a Adriana:** só Feed (Stories depois, se houver uso real); foto ORIGINAL, sem IA; SEM selo até haver registro
+  verificável da vistoria; "à vista" é campo editável (começa em "à vista", pode apagar); manter os 2 modelos antigos até ela aprovar.
+- **Testado:** o desenho com 3 casos reais do estoque (Chrome, página temporária já apagada). Achou e corrigiu defeito: título muito
+  longo era cortado, agora quebra em 2 linhas. **NÃO testado:** o painel real (exige login dela), exportar PNG, "Salvar no sistema",
+  "Criar post orgânico".
+- **Achado (verificado no console, 01/11):** `imagens.carroeciamotors.com.br` bloqueia por CORS as fotos pedidas de `localhost:5173` e
+  `localhost:5199`. `docs/R2_CORS_CONFIGURATION.md` diz que o 5173 está liberado: está desatualizado ou não cobre esse domínio.
+  Vale para TODOS os modelos do gerador: no localhost a prévia não monta. Para testar de verdade: prévia do Cloudflare (se o PR gerar:
+  NÃO verificado) ou liberar `localhost:5173` no R2 (config externa, pedido separado).
+- **Selo "Cautelar Aprovada":** emblema salvo em `Fotos\IMAGENS PARA ANUNCIOS\Emblema Cautelar Aprovada.png` (1254x1254, fundo BRANCO,
+  sem transparência: precisa remover o fundo antes de usar no preto). `veiculos.laudo_cautelar` é caixinha manual (`VehicleFormModal`),
+  sem documento; 0 dos 65 veículos marcados; o site público já mostra selo quando marcada. Selo continua desligado.
+- **Cadastro:** não existe coluna de potência (cv); no novo padrão é texto digitado. Existe `cilindrada`.
+- **Fonte:** a Montserrat só estava declarada no tailwind, o app não a carregava; o padrão novo carrega do Google Fonts (CSP já permite).
+- **Incidente ABERTO — Jeep Compass `13ee117d-e038-4fc3-beec-c1a0e2cc51c0`:** em 01/11 11:48:22 BRT passou de `disponivel` para
+  `rascunho` (sessão logada dela, durante o teste ponta a ponta do gerador antigo); reconferido em 01/11, ainda `rascunho`. Causa NÃO
+  provada (clique da ferramenta ou ação dela). Demais campos idênticos. Restaurar só com "autorizo": opção A (Editar Veículo → Validar
+  e Salvar, recomendada) ou B (UPDATE direto, pula a validação e dispara gatilhos ML/WM). O teste gastou 2 chamadas da OpenAI.
+- **Próximos passos:** Pedido B (abrir PR + checar prévia do Cloudflare); aprovação visual dela; depois merge/deploy (pedidos dela);
+  selo (remover fundo do emblema); Stories; PR #5 (CSP) e PR #1 (divergido) seguem como descritos abaixo.
+
 ## SESSÃO 37 (01/11/2026) — conferência do estado real (nenhum código novo)
 
 Verificado em 01/11/2026, ~08:50 (git, gh, MCP do Supabase e Chrome):

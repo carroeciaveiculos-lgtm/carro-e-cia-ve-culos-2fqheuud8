@@ -17,6 +17,22 @@ REGRA: não leia este arquivo inteiro. Leia o índice, escolha o bloco, use offs
 
 # Memória de trabalho — Carro e Cia
 
+## [01/11/2026] SESSÃO 37 (continuação) — padrão novo de criativo (Feed), achado de CORS e incidente do Compass
+
+- **Feito (verificado):** branch `feat/criativo-padrao-feed` (de `d764a17`); `src/lib/criativo-padrao.ts` novo + 3º cartão no
+  `CriativoAnuncioPanel.tsx`; modelos antigos intactos. Lint 0 erros, build ok, desenho testado com 3 casos reais do estoque.
+  Insumos da Adriana: pasta `Fotos\IMAGENS PARA ANUNCIOS` (imagem de referência, `json.txt`, prompt, logo, emblema do selo).
+- **Decisões dela (01/11):** só Feed; foto original sem IA; sem selo até existir registro verificável da vistoria; "à vista" editável;
+  manter os 2 modelos antigos até aprovar o novo. Não testado no painel real (login) nem exportação/salvar/criar post.
+- **Beco sem saída (verificado no console):** testar o gerador de criativos em `localhost` não funciona: o domínio de imagens
+  (`imagens.carroeciamotors.com.br`) bloqueia por CORS `localhost:5173` e `5199`, apesar de `docs/R2_CORS_CONFIGURATION.md` listar o 5173.
+  Testar pela prévia do Cloudflare (não verificado se o PR gera) ou liberando o localhost no R2 (pedido separado).
+- **Incidente ABERTO:** Jeep Compass `13ee117d-e038-4fc3-beec-c1a0e2cc51c0` mudou `disponivel`→`rascunho` em 01/11 11:48:22 BRT durante
+  o teste ponta a ponta do gerador antigo; reconferido ainda em `rascunho`; causa não provada; restauração depende de "autorizo" dela.
+  Lição: teste de ponta a ponta no navegador dela mexe em produção — usar prévia e não clicar em salvar/criar post.
+- **Achados:** `veiculos.laudo_cautelar` é caixinha manual (0/65 marcados); não há coluna de potência (cv); Montserrat não era carregada
+  pelo app; emblema do selo tem fundo branco sem transparência.
+
 ## [01/11/2026] SESSÃO 37 — conferência do estado real (sem código novo)
 
 - **Verificado (01/11, ~08:50):** `origin/main` = `9a754fa`; PR #2 e #3 mesclados em 31/10 com `Deploy producao` e `Deploy Edge Functions`

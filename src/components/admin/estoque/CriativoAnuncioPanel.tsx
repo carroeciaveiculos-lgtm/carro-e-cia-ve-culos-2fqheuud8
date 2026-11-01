@@ -3,6 +3,7 @@ import { supabase } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
 import {
   Dialog,
@@ -30,6 +31,13 @@ import {
   type FormatoCriativo,
   type LogosCriativo,
 } from '@/lib/criativo-anuncio'
+import {
+  MAX_FOTOS_PADRAO,
+  MODELO_PADRAO_SLUG,
+  desenharCriativoPadrao,
+  prepararFontesPadrao,
+  type DadosCriativoPadrao,
+} from '@/lib/criativo-padrao'
 import {
   Image as ImageIcon,
   Wand2,
@@ -100,6 +108,33 @@ export function CriativoAnuncioPanel({ veiculo }: { veiculo: any }) {
   }
   const chaveDados = JSON.stringify(dados)
 
+  // ---- Padrão Carro e Cia (novo, só Feed, foto original, sem IA) ----
+  // Campos editáveis: a condição do preço ("à vista") NUNCA é texto fixo, e a
+  // linha de motor/potência começa com a cilindrada e o combustível do cadastro
+  // (não existe coluna de potência — se quiser, digite aqui, ex.: "2.0 • 404 cv • Híbrido").
+  const [condicao, setCondicao] = useState('à vista')
+  const [linhaMotor, setLinhaMotor] = useState(() =>
+    [veiculo.cilindrada, veiculo.combustivel].filter(Boolean).join(' • '),
+  )
+  const kmPadrao = veiculo.is_zero_km
+    ? '0 km'
+    : veiculo.nao_exibir_km || !veiculo.quilometragem
+      ? ''
+      : `${Number(veiculo.quilometragem).toLocaleString('pt-BR')} km`
+  const dadosPadrao: DadosCriativoPadrao = {
+    marca: veiculo.marca || '',
+    modelo: veiculo.modelo || '',
+    versao: veiculo.versao || '',
+    linhaMotor,
+    anoFabricacao: veiculo.ano_fabricacao ? String(veiculo.ano_fabricacao) : '',
+    anoModelo: veiculo.ano_modelo ? String(veiculo.ano_modelo) : '',
+    km: kmPadrao,
+    cambio: veiculo.cambio || '',
+    precoVenda: Number(veiculo.preco_venda) || 0,
+    condicao,
+  }
+  const chaveDadosPadrao = JSON.stringify(dadosPadrao)
+
   const imagem = async (url: string) => {
     if (!cacheImagens.current[url]) cacheImagens.current[url] = await carregarImagem(url)
     return cacheImagens.current[url]
@@ -134,6 +169,18 @@ export function CriativoAnuncioPanel({ veiculo }: { veiculo: any }) {
           const canvas = previewRefs.current[m.slug]
           if (canvas) desenharCriativo(canvas, formato, m, imgs, logos, dados)
         }
+        // Prévia do padrão novo (só Feed): foto original, sem IA.
+        const canvasPadrao = previewRefs.current[MODELO_PADRAO_SLUG]
+        if (canvasPadrao && formato === 'feed') {
+          await prepararFontesPadrao()
+          if (cancelado) return
+          desenharCriativoPadrao(
+            canvasPadrao,
+            imgs.slice(0, MAX_FOTOS_PADRAO),
+            logos.paraFundoEscuro,
+            dadosPadrao,
+          )
+        }
       } catch (err: any) {
         if (!cancelado) {
           toast({
@@ -148,7 +195,7 @@ export function CriativoAnuncioPanel({ veiculo }: { veiculo: any }) {
       cancelado = true
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fotosSel, formato, chaveDados])
+  }, [fotosSel, formato, chaveDados, chaveDadosPadrao])
 
   const carregarSalvos = async () => {
     if (!veiculo.id) return
@@ -207,6 +254,38 @@ export function CriativoAnuncioPanel({ veiculo }: { veiculo: any }) {
       if (!canvas || !modelo) throw new Error('Não foi possível montar o criativo final')
       desenharCriativo(canvas, formato, modelo, [principalTratada, ...outras], logos, dados)
       setResultado({ slug, formato, blob: await canvasParaBlob(canvas, 'image/png') })
+      toast({ title: 'Criativo gerado!' })
+    } catch (err: any) {
+      toast({
+        title: 'Erro ao gerar o criativo',
+        description: mensagemErroAmigavel(err),
+        variant: 'destructive',
+      })
+    } finally {
+      setGerandoSlug(null)
+    }
+  }
+
+  // Padrão novo: não chama a IA nem a function; só desenha com a foto original.
+  const gerarPadrao = async () => {
+    setGerandoSlug(MODELO_PADRAO_SLUG)
+    setResultado(null)
+    try {
+      const [imgs, logos] = await Promise.all([Promise.all(fotosSel.map(imagem)), carregarLogos()])
+      await prepararFontesPadrao()
+      const canvas = finalRef.current
+      if (!canvas) throw new Error('Não foi possível montar o criativo final')
+      desenharCriativoPadrao(
+        canvas,
+        imgs.slice(0, MAX_FOTOS_PADRAO),
+        logos.paraFundoEscuro,
+        dadosPadrao,
+      )
+      setResultado({
+        slug: MODELO_PADRAO_SLUG,
+        formato: 'feed',
+        blob: await canvasParaBlob(canvas, 'image/png'),
+      })
       toast({ title: 'Criativo gerado!' })
     } catch (err: any) {
       toast({
@@ -368,7 +447,7 @@ export function CriativoAnuncioPanel({ veiculo }: { veiculo: any }) {
         redes sociais)
       </h3>
       <p className="text-xs text-slate-500 mb-4">
-        Escolha de 1 a {MAX_FOTOS_CRIATIVO} fotos, o formato (Feed ou Stories) e um dos 2 modelos.
+        Escolha de 1 a {MAX_FOTOS_CRIATIVO} fotos, o formato (Feed ou Stories) e um dos modelos.
         Preço, quilometragem e a logo são colocados pelo sistema com os dados reais; a IA só trata a
         foto principal. Depois é só baixar, salvar ou criar um post orgânico.
       </p>
@@ -455,7 +534,7 @@ export function CriativoAnuncioPanel({ veiculo }: { veiculo: any }) {
               <Label className="text-xs font-bold text-slate-600 mb-2 block">
                 3. Escolha o modelo e gere com IA
               </Label>
-              <div className="grid grid-cols-2 gap-4 max-w-2xl mb-6">
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4 max-w-4xl mb-6">
                 {MODELOS_CRIATIVO.map((m) => (
                   <div key={m.slug} className="space-y-2">
                     <div
@@ -487,6 +566,77 @@ export function CriativoAnuncioPanel({ veiculo }: { veiculo: any }) {
                     </Button>
                   </div>
                 ))}
+
+                {/* Padrão Carro e Cia (novo): só Feed, foto original, sem IA */}
+                <div className="space-y-2">
+                  {formato === 'feed' ? (
+                    <>
+                      <div
+                        className={cn(
+                          'rounded-lg overflow-hidden border-2 bg-slate-100',
+                          resultado?.slug === MODELO_PADRAO_SLUG
+                            ? 'border-blue-600'
+                            : 'border-slate-200',
+                        )}
+                      >
+                        <canvas
+                          ref={(el) => {
+                            previewRefs.current[MODELO_PADRAO_SLUG] = el
+                          }}
+                          className="w-full h-auto block"
+                        />
+                      </div>
+                      <Button
+                        size="sm"
+                        variant={resultado?.slug === MODELO_PADRAO_SLUG ? 'default' : 'outline'}
+                        className="w-full"
+                        disabled={gerandoSlug !== null}
+                        onClick={gerarPadrao}
+                      >
+                        {gerandoSlug === MODELO_PADRAO_SLUG ? (
+                          <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                        ) : (
+                          <ImageIcon className="w-4 h-4 mr-1" />
+                        )}
+                        Padrão Carro e Cia (novo)
+                      </Button>
+                      <p className="text-[11px] text-slate-500">
+                        Foto original, sem IA. Usa a 1ª foto como principal e até 2 como
+                        complementares.
+                      </p>
+                      <div className="space-y-1">
+                        <Label className="text-[11px] text-slate-600">
+                          Condição do preço (deixe vazio para não mostrar)
+                        </Label>
+                        <Input
+                          value={condicao}
+                          onChange={(e) => {
+                            setCondicao(e.target.value)
+                            setResultado(null)
+                          }}
+                          placeholder="à vista"
+                          className="h-8 text-sm"
+                        />
+                        <Label className="text-[11px] text-slate-600">
+                          Motor / potência / combustível
+                        </Label>
+                        <Input
+                          value={linhaMotor}
+                          onChange={(e) => {
+                            setLinhaMotor(e.target.value)
+                            setResultado(null)
+                          }}
+                          placeholder="2.0 • 404 cv • Híbrido"
+                          className="h-8 text-sm"
+                        />
+                      </div>
+                    </>
+                  ) : (
+                    <p className="text-xs text-slate-500 border rounded-lg p-4 bg-slate-50">
+                      O "Padrão Carro e Cia (novo)" está disponível só no formato Feed por enquanto.
+                    </p>
+                  )}
+                </div>
               </div>
               {!veiculo.id && (
                 <p className="text-xs text-amber-700 mb-4">
