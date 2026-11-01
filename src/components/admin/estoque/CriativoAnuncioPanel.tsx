@@ -16,7 +16,6 @@ import {
 import { useToast } from '@/hooks/use-toast'
 import { cn } from '@/lib/utils'
 import { uploadToR2 } from '@/lib/r2-upload'
-import { downloadBlob } from '@/utils/downloadFile'
 import { mensagemErroAmigavel } from '@/lib/friendly-error'
 import {
   FORMATOS,
@@ -32,21 +31,43 @@ import {
   type LogosCriativo,
 } from '@/lib/criativo-anuncio'
 import {
+  FORMATOS_PADRAO,
   MAX_FOTOS_PADRAO,
   MODELO_PADRAO_SLUG,
+  TAMANHO_IA_PADRAO,
   desenharCriativoPadrao,
   prepararFontesPadrao,
   type DadosCriativoPadrao,
+  type FormatoPadrao,
 } from '@/lib/criativo-padrao'
 import {
   Image as ImageIcon,
   Wand2,
-  Download,
   UploadCloud,
   Trash,
   Loader2,
   Share2,
+  Copy,
+  ExternalLink,
 } from 'lucide-react'
+
+// Formatos que o painel oferece. Cada modelo só aparece nos formatos em que tem layout
+// próprio: os 2 modelos antigos em 4:5 e 9:16; o Padrão Carro e Cia em 1:1 e 4:5.
+// 16:9 ainda não tem layout (não basta esticar), por isso aparece desativado.
+type FormatoSel = '1:1' | '4:5' | '9:16' | '16:9'
+const FORMATOS_SEL: { id: FormatoSel; nome: string; dimensoes: string; ativo: boolean }[] = [
+  { id: '1:1', nome: 'Quadrado 1:1', dimensoes: '1080 × 1080', ativo: true },
+  { id: '4:5', nome: 'Feed 4:5', dimensoes: '1080 × 1350', ativo: true },
+  { id: '9:16', nome: 'Stories 9:16', dimensoes: '1080 × 1920', ativo: true },
+  { id: '16:9', nome: 'Horizontal 16:9', dimensoes: '1920 × 1080', ativo: false },
+]
+
+// Os 3 estilos de tratamento da foto pela IA (textos na tela Regras de IA).
+const ESTILOS_IA = [
+  { slug: 'criativo_estilo_loja', nome: 'Brilho sofisticado' },
+  { slug: 'criativo_estilo_estudio_claro', nome: 'Estúdio claro' },
+  { slug: 'criativo_estilo_estudio_escuro', nome: 'Estúdio escuro premium' },
+]
 
 // Gerador de criativos de anúncio (Meta/Google Ads + post orgânico). Reescrito
 // em 30/09/2026: 1 a 4 fotos, formato Feed/Stories, 2 modelos (fundo escuro e
@@ -56,7 +77,9 @@ import {
 
 interface Resultado {
   slug: string
-  formato: FormatoCriativo
+  // 'quadrado' = 1:1 (publica como post de feed)
+  formato: FormatoCriativo | 'quadrado'
+  rotulo: string
   blob: Blob
 }
 
@@ -80,7 +103,13 @@ export function CriativoAnuncioPanel({ veiculo }: { veiculo: any }) {
   const fotos: string[] = Array.isArray(veiculo.fotos) ? veiculo.fotos : []
 
   const [fotosSel, setFotosSel] = useState<string[]>([])
-  const [formato, setFormato] = useState<FormatoCriativo>('feed')
+  const [formatoSel, setFormatoSel] = useState<FormatoSel>('4:5')
+  const [estiloIA, setEstiloIA] = useState(ESTILOS_IA[0].slug)
+  // Formato dos 2 modelos antigos (só existem em 4:5 = feed e 9:16 = stories).
+  const formato: FormatoCriativo = formatoSel === '9:16' ? 'stories' : 'feed'
+  const antigosDisponiveis = formatoSel === '4:5' || formatoSel === '9:16'
+  const formatoPadrao: FormatoPadrao | null =
+    formatoSel === '1:1' || formatoSel === '4:5' ? formatoSel : null
   const [gerandoSlug, setGerandoSlug] = useState<string | null>(null)
   const [resultado, setResultado] = useState<Resultado | null>(null)
   const [salvando, setSalvando] = useState(false)
@@ -113,9 +142,8 @@ export function CriativoAnuncioPanel({ veiculo }: { veiculo: any }) {
   // linha de motor/potência começa com a cilindrada e o combustível do cadastro
   // (não existe coluna de potência — se quiser, digite aqui, ex.: "2.0 • 404 cv • Híbrido").
   const [condicao, setCondicao] = useState('à vista')
-  const [linhaMotor, setLinhaMotor] = useState(() =>
-    [veiculo.cilindrada, veiculo.combustivel].filter(Boolean).join(' • '),
-  )
+  const linhaMotorInicial = [veiculo.cilindrada, veiculo.combustivel].filter(Boolean).join(' • ')
+  const [linhaMotor, setLinhaMotor] = useState(linhaMotorInicial)
   const kmPadrao = veiculo.is_zero_km
     ? '0 km'
     : veiculo.nao_exibir_km || !veiculo.quilometragem
@@ -126,6 +154,9 @@ export function CriativoAnuncioPanel({ veiculo }: { veiculo: any }) {
     modelo: veiculo.modelo || '',
     versao: veiculo.versao || '',
     linhaMotor,
+    // No 1:1 o título é de 1 linha (como na referência): o complemento só entra se você
+    // digitou algo diferente do que veio do cadastro (ex.: "404 cv • Híbrido").
+    complementoTitulo: linhaMotor.trim() !== linhaMotorInicial.trim() ? linhaMotor : '',
     anoFabricacao: veiculo.ano_fabricacao ? String(veiculo.ano_fabricacao) : '',
     anoModelo: veiculo.ano_modelo ? String(veiculo.ano_modelo) : '',
     km: kmPadrao,
@@ -148,7 +179,7 @@ export function CriativoAnuncioPanel({ veiculo }: { veiculo: any }) {
         .then((i) => prepararLogo(i, false))
         .catch(() => null),
       imagem(LOGO_FUNDO_ESCURO_URL)
-        .then((i) => prepararLogo(i, true))
+        .then((i) => prepararLogo(i, false))
         .catch(() => null),
     ])
     return { paraFundoClaro, paraFundoEscuro }
@@ -165,17 +196,20 @@ export function CriativoAnuncioPanel({ veiculo }: { veiculo: any }) {
           carregarLogos(),
         ])
         if (cancelado) return
-        for (const m of MODELOS_CRIATIVO) {
-          const canvas = previewRefs.current[m.slug]
-          if (canvas) desenharCriativo(canvas, formato, m, imgs, logos, dados)
+        if (antigosDisponiveis) {
+          for (const m of MODELOS_CRIATIVO) {
+            const canvas = previewRefs.current[m.slug]
+            if (canvas) desenharCriativo(canvas, formato, m, imgs, logos, dados)
+          }
         }
-        // Prévia do padrão novo (só Feed): foto original, sem IA.
+        // Prévia do Padrão Carro e Cia: foto original, sem IA.
         const canvasPadrao = previewRefs.current[MODELO_PADRAO_SLUG]
-        if (canvasPadrao && formato === 'feed') {
+        if (canvasPadrao && formatoPadrao) {
           await prepararFontesPadrao()
           if (cancelado) return
           desenharCriativoPadrao(
             canvasPadrao,
+            formatoPadrao,
             imgs.slice(0, MAX_FOTOS_PADRAO),
             logos.paraFundoEscuro,
             dadosPadrao,
@@ -195,7 +229,7 @@ export function CriativoAnuncioPanel({ veiculo }: { veiculo: any }) {
       cancelado = true
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fotosSel, formato, chaveDados, chaveDadosPadrao])
+  }, [fotosSel, formatoSel, chaveDados, chaveDadosPadrao])
 
   const carregarSalvos = async () => {
     if (!veiculo.id) return
@@ -224,8 +258,8 @@ export function CriativoAnuncioPanel({ veiculo }: { veiculo: any }) {
     })
   }
 
-  const escolherFormato = (f: FormatoCriativo) => {
-    setFormato(f)
+  const escolherFormato = (f: FormatoSel) => {
+    setFormatoSel(f)
     setResultado(null)
   }
 
@@ -253,37 +287,10 @@ export function CriativoAnuncioPanel({ veiculo }: { veiculo: any }) {
       const modelo = MODELOS_CRIATIVO.find((m) => m.slug === slug)
       if (!canvas || !modelo) throw new Error('Não foi possível montar o criativo final')
       desenharCriativo(canvas, formato, modelo, [principalTratada, ...outras], logos, dados)
-      setResultado({ slug, formato, blob: await canvasParaBlob(canvas, 'image/png') })
-      toast({ title: 'Criativo gerado!' })
-    } catch (err: any) {
-      toast({
-        title: 'Erro ao gerar o criativo',
-        description: mensagemErroAmigavel(err),
-        variant: 'destructive',
-      })
-    } finally {
-      setGerandoSlug(null)
-    }
-  }
-
-  // Padrão novo: não chama a IA nem a function; só desenha com a foto original.
-  const gerarPadrao = async () => {
-    setGerandoSlug(MODELO_PADRAO_SLUG)
-    setResultado(null)
-    try {
-      const [imgs, logos] = await Promise.all([Promise.all(fotosSel.map(imagem)), carregarLogos()])
-      await prepararFontesPadrao()
-      const canvas = finalRef.current
-      if (!canvas) throw new Error('Não foi possível montar o criativo final')
-      desenharCriativoPadrao(
-        canvas,
-        imgs.slice(0, MAX_FOTOS_PADRAO),
-        logos.paraFundoEscuro,
-        dadosPadrao,
-      )
       setResultado({
-        slug: MODELO_PADRAO_SLUG,
-        formato: 'feed',
+        slug,
+        formato,
+        rotulo: FORMATOS[formato].nome,
         blob: await canvasParaBlob(canvas, 'image/png'),
       })
       toast({ title: 'Criativo gerado!' })
@@ -298,11 +305,86 @@ export function CriativoAnuncioPanel({ veiculo }: { veiculo: any }) {
     }
   }
 
-  const nomeArquivo = (r: Resultado, ext: string) =>
-    `criativo-${veiculo.placa || 'veiculo'}-${r.formato}-${r.slug.replace('criativo_', '')}.${ext}`
+  // Padrão Carro e Cia. Sem IA: só desenha com a foto original. Com IA: a function trata a
+  // foto principal no estilo escolhido, já na proporção da janela da foto do layout (assim
+  // o respiro que a IA deixa não é cortado); as demais fotos entram como estão.
+  const gerarPadrao = async (comIA: boolean) => {
+    if (!formatoPadrao) return
+    if (comIA && !veiculo.id) {
+      toast({ title: 'Salve o veículo antes de gerar com IA', variant: 'destructive' })
+      return
+    }
+    setGerandoSlug(comIA ? estiloIA : MODELO_PADRAO_SLUG)
+    setResultado(null)
+    try {
+      let principalTratada: HTMLImageElement | null = null
+      if (comIA) {
+        const { data, error } = await supabase.functions.invoke('gerar-criativo-anuncio', {
+          body: {
+            veiculo_id: veiculo.id,
+            foto_url: fotosSel[0],
+            template_slug: estiloIA,
+            size: TAMANHO_IA_PADRAO[formatoPadrao],
+          },
+        })
+        if (error) throw error
+        if (!data?.success) throw new Error(data?.error || 'Falha ao tratar a foto')
+        principalTratada = await carregarImagem(data.imagem_tratada)
+      }
+      const [imgs, logos] = await Promise.all([Promise.all(fotosSel.map(imagem)), carregarLogos()])
+      await prepararFontesPadrao()
+      const canvas = finalRef.current
+      if (!canvas) throw new Error('Não foi possível montar o criativo final')
+      const fotosUsadas = (principalTratada ? [principalTratada, ...imgs.slice(1)] : imgs).slice(
+        0,
+        MAX_FOTOS_PADRAO,
+      )
+      desenharCriativoPadrao(canvas, formatoPadrao, fotosUsadas, logos.paraFundoEscuro, dadosPadrao)
+      setResultado({
+        slug: comIA ? estiloIA : MODELO_PADRAO_SLUG,
+        formato: formatoPadrao === '1:1' ? 'quadrado' : 'feed',
+        rotulo: `${FORMATOS_PADRAO[formatoPadrao].nome}${comIA ? ' (foto tratada pela IA)' : ' (foto original)'}`,
+        blob: await canvasParaBlob(canvas, 'image/png'),
+      })
+      toast({ title: 'Criativo gerado!' })
+    } catch (err: any) {
+      toast({
+        title: 'Erro ao gerar o criativo',
+        description: mensagemErroAmigavel(err),
+        variant: 'destructive',
+      })
+    } finally {
+      setGerandoSlug(null)
+    }
+  }
 
-  const baixar = () => {
-    if (resultado) downloadBlob(resultado.blob, nomeArquivo(resultado, 'png'))
+  // Nada é gravado no computador: o criativo vai para o R2 (Cloudflare) e o link é copiado,
+  // ou a imagem é copiada para a área de transferência (sem criar arquivo).
+  const copiarTexto = async (texto: string, ok: string) => {
+    try {
+      await navigator.clipboard.writeText(texto)
+      toast({ title: ok })
+    } catch {
+      toast({
+        title: 'Não foi possível copiar automaticamente',
+        description: texto,
+        variant: 'destructive',
+      })
+    }
+  }
+
+  const copiarImagem = async () => {
+    if (!resultado) return
+    try {
+      await navigator.clipboard.write([new ClipboardItem({ 'image/png': resultado.blob })])
+      toast({ title: 'Imagem copiada. É só colar onde precisar (Ctrl+V).' })
+    } catch {
+      toast({
+        title: 'Seu navegador não permitiu copiar a imagem',
+        description: 'Use "Salvar e copiar link", que guarda no sistema e copia o endereço.',
+        variant: 'destructive',
+      })
+    }
   }
 
   const salvarNoSistema = async () => {
@@ -322,8 +404,8 @@ export function CriativoAnuncioPanel({ veiculo }: { veiculo: any }) {
         criado_por: user?.id,
       })
       if (error) throw error
-      toast({ title: 'Criativo salvo no sistema' })
       carregarSalvos()
+      await copiarTexto(publicUrl, 'Criativo salvo no sistema e link copiado')
     } catch (err: any) {
       toast({
         title: 'Erro ao salvar o criativo',
@@ -335,17 +417,9 @@ export function CriativoAnuncioPanel({ veiculo }: { veiculo: any }) {
     }
   }
 
-  const baixarSalvo = async (url: string, slug: string) => {
-    try {
-      const res = await fetch(url)
-      downloadBlob(await res.blob(), `criativo-${veiculo.placa || 'veiculo'}-${slug}.png`)
-    } catch (err: any) {
-      toast({
-        title: 'Erro ao baixar',
-        description: mensagemErroAmigavel(err),
-        variant: 'destructive',
-      })
-    }
+  // Criativo já salvo (no R2): abrir numa aba ou copiar o link. Não grava no computador.
+  const abrirSalvo = (url: string) => {
+    window.open(url, '_blank', 'noopener,noreferrer')
   }
 
   const apagarSalvo = async (id: string) => {
@@ -438,8 +512,6 @@ export function CriativoAnuncioPanel({ veiculo }: { veiculo: any }) {
     }
   }
 
-  const f = FORMATOS[formato]
-
   return (
     <div className="bg-white p-6 rounded-lg border">
       <h3 className="font-bold flex items-center gap-2 text-slate-800 mb-1">
@@ -447,9 +519,10 @@ export function CriativoAnuncioPanel({ veiculo }: { veiculo: any }) {
         redes sociais)
       </h3>
       <p className="text-xs text-slate-500 mb-4">
-        Escolha de 1 a {MAX_FOTOS_CRIATIVO} fotos, o formato (Feed ou Stories) e um dos modelos.
-        Preço, quilometragem e a logo são colocados pelo sistema com os dados reais; a IA só trata a
-        foto principal. Depois é só baixar, salvar ou criar um post orgânico.
+        Escolha de 1 a {MAX_FOTOS_CRIATIVO} fotos, o formato e um dos modelos. Preço, quilometragem
+        e a logo são colocados pelo sistema com os dados reais; a IA só trata a foto principal. Nada
+        é gravado no seu computador: salve no sistema (nuvem), copie o link ou a imagem, ou crie um
+        post orgânico.
       </p>
 
       {fotos.length === 0 ? (
@@ -517,16 +590,18 @@ export function CriativoAnuncioPanel({ veiculo }: { veiculo: any }) {
               <Label className="text-xs font-bold text-slate-600 mb-2 block">
                 2. Escolha o formato
               </Label>
-              <div className="flex gap-2 mb-6">
-                {(Object.keys(FORMATOS) as FormatoCriativo[]).map((k) => (
+              <div className="flex flex-wrap gap-2 mb-6">
+                {FORMATOS_SEL.map((k) => (
                   <Button
-                    key={k}
+                    key={k.id}
                     type="button"
                     size="sm"
-                    variant={formato === k ? 'default' : 'outline'}
-                    onClick={() => escolherFormato(k)}
+                    variant={formatoSel === k.id ? 'default' : 'outline'}
+                    disabled={!k.ativo}
+                    title={k.ativo ? undefined : 'Ainda sem layout próprio (em breve)'}
+                    onClick={() => escolherFormato(k.id)}
                   >
-                    {FORMATOS[k].nome} ({FORMATOS[k].dimensoes})
+                    {k.nome} ({k.dimensoes})
                   </Button>
                 ))}
               </div>
@@ -535,41 +610,42 @@ export function CriativoAnuncioPanel({ veiculo }: { veiculo: any }) {
                 3. Escolha o modelo e gere com IA
               </Label>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4 max-w-4xl mb-6">
-                {MODELOS_CRIATIVO.map((m) => (
-                  <div key={m.slug} className="space-y-2">
-                    <div
-                      className={cn(
-                        'rounded-lg overflow-hidden border-2 bg-slate-100',
-                        resultado?.slug === m.slug ? 'border-blue-600' : 'border-slate-200',
-                      )}
-                    >
-                      <canvas
-                        ref={(el) => {
-                          previewRefs.current[m.slug] = el
-                        }}
-                        className="w-full h-auto block"
-                      />
+                {antigosDisponiveis &&
+                  MODELOS_CRIATIVO.map((m) => (
+                    <div key={m.slug} className="space-y-2">
+                      <div
+                        className={cn(
+                          'rounded-lg overflow-hidden border-2 bg-slate-100',
+                          resultado?.slug === m.slug ? 'border-blue-600' : 'border-slate-200',
+                        )}
+                      >
+                        <canvas
+                          ref={(el) => {
+                            previewRefs.current[m.slug] = el
+                          }}
+                          className="w-full h-auto block"
+                        />
+                      </div>
+                      <Button
+                        size="sm"
+                        variant={resultado?.slug === m.slug ? 'default' : 'outline'}
+                        className="w-full"
+                        disabled={gerandoSlug !== null || !veiculo.id}
+                        onClick={() => gerar(m.slug)}
+                      >
+                        {gerandoSlug === m.slug ? (
+                          <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                        ) : (
+                          <Wand2 className="w-4 h-4 mr-1" />
+                        )}
+                        {m.nome}
+                      </Button>
                     </div>
-                    <Button
-                      size="sm"
-                      variant={resultado?.slug === m.slug ? 'default' : 'outline'}
-                      className="w-full"
-                      disabled={gerandoSlug !== null || !veiculo.id}
-                      onClick={() => gerar(m.slug)}
-                    >
-                      {gerandoSlug === m.slug ? (
-                        <Loader2 className="w-4 h-4 mr-1 animate-spin" />
-                      ) : (
-                        <Wand2 className="w-4 h-4 mr-1" />
-                      )}
-                      {m.nome}
-                    </Button>
-                  </div>
-                ))}
+                  ))}
 
-                {/* Padrão Carro e Cia (novo): só Feed, foto original, sem IA */}
+                {/* Padrão Carro e Cia (novo): 1:1 e 4:5, foto original ou tratada pela IA */}
                 <div className="space-y-2">
-                  {formato === 'feed' ? (
+                  {formatoPadrao ? (
                     <>
                       <div
                         className={cn(
@@ -591,7 +667,7 @@ export function CriativoAnuncioPanel({ veiculo }: { veiculo: any }) {
                         variant={resultado?.slug === MODELO_PADRAO_SLUG ? 'default' : 'outline'}
                         className="w-full"
                         disabled={gerandoSlug !== null}
-                        onClick={gerarPadrao}
+                        onClick={() => gerarPadrao(false)}
                       >
                         {gerandoSlug === MODELO_PADRAO_SLUG ? (
                           <Loader2 className="w-4 h-4 mr-1 animate-spin" />
@@ -604,6 +680,45 @@ export function CriativoAnuncioPanel({ veiculo }: { veiculo: any }) {
                         Foto original, sem IA. Usa a 1ª foto como principal e até 2 como
                         complementares.
                       </p>
+                      <div className="space-y-1 rounded-lg border bg-slate-50 p-2">
+                        <Label className="text-[11px] text-slate-600">
+                          Ou trate a foto principal com IA (escolha o estilo)
+                        </Label>
+                        <div className="flex flex-col gap-1">
+                          {ESTILOS_IA.map((e) => (
+                            <button
+                              key={e.slug}
+                              type="button"
+                              onClick={() => setEstiloIA(e.slug)}
+                              className={cn(
+                                'rounded border px-2 py-1 text-left text-xs',
+                                estiloIA === e.slug
+                                  ? 'border-blue-600 bg-blue-50 font-semibold text-blue-700'
+                                  : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300',
+                              )}
+                            >
+                              {e.nome}
+                            </button>
+                          ))}
+                        </div>
+                        <Button
+                          size="sm"
+                          className="w-full"
+                          disabled={gerandoSlug !== null || !veiculo.id}
+                          onClick={() => gerarPadrao(true)}
+                        >
+                          {gerandoSlug === estiloIA ? (
+                            <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                          ) : (
+                            <Wand2 className="w-4 h-4 mr-1" />
+                          )}
+                          Gerar com IA
+                        </Button>
+                        <p className="text-[11px] text-slate-500">
+                          Usa a API de imagens (tem custo por geração). A prévia acima mostra a foto
+                          original, para você comparar com o resultado.
+                        </p>
+                      </div>
                       <div className="space-y-1">
                         <Label className="text-[11px] text-slate-600">
                           Condição do preço (deixe vazio para não mostrar)
@@ -618,7 +733,8 @@ export function CriativoAnuncioPanel({ veiculo }: { veiculo: any }) {
                           className="h-8 text-sm"
                         />
                         <Label className="text-[11px] text-slate-600">
-                          Motor / potência / combustível
+                          Motor / potência / combustível (no 1:1 só entra no título se você alterar
+                          o texto)
                         </Label>
                         <Input
                           value={linhaMotor}
@@ -633,7 +749,8 @@ export function CriativoAnuncioPanel({ veiculo }: { veiculo: any }) {
                     </>
                   ) : (
                     <p className="text-xs text-slate-500 border rounded-lg p-4 bg-slate-50">
-                      O "Padrão Carro e Cia (novo)" está disponível só no formato Feed por enquanto.
+                      O "Padrão Carro e Cia (novo)" está disponível nos formatos 1:1 e 4:5 por
+                      enquanto.
                     </p>
                   )}
                 </div>
@@ -648,22 +765,27 @@ export function CriativoAnuncioPanel({ veiculo }: { veiculo: any }) {
 
           <div className={resultado ? '' : 'hidden'}>
             <Label className="text-xs font-bold text-slate-600 mb-2 block">
-              4. Resultado final ({f.nome} {f.dimensoes})
+              4. Resultado final ({resultado?.rotulo})
             </Label>
-            <div className={cn('mb-3', formato === 'stories' ? 'max-w-[260px]' : 'max-w-xs')}>
+            <div
+              className={cn(
+                'mb-3',
+                resultado?.formato === 'stories' ? 'max-w-[260px]' : 'max-w-xs',
+              )}
+            >
               <canvas ref={finalRef} className="w-full h-auto rounded-lg border" />
             </div>
             <div className="flex flex-wrap gap-2">
-              <Button size="sm" onClick={baixar}>
-                <Download className="w-4 h-4 mr-1" /> Baixar imagem
-              </Button>
-              <Button size="sm" variant="outline" onClick={salvarNoSistema} disabled={salvando}>
+              <Button size="sm" onClick={salvarNoSistema} disabled={salvando}>
                 {salvando ? (
                   <Loader2 className="w-4 h-4 mr-1 animate-spin" />
                 ) : (
                   <UploadCloud className="w-4 h-4 mr-1" />
                 )}
-                Salvar no sistema
+                Salvar e copiar link
+              </Button>
+              <Button size="sm" variant="outline" onClick={copiarImagem}>
+                <Copy className="w-4 h-4 mr-1" /> Copiar imagem
               </Button>
               <Button size="sm" variant="outline" onClick={abrirPostOrganico}>
                 <Share2 className="w-4 h-4 mr-1" /> Criar post orgânico
@@ -689,9 +811,19 @@ export function CriativoAnuncioPanel({ veiculo }: { veiculo: any }) {
                         size="icon"
                         variant="ghost"
                         className="h-7 w-7"
-                        onClick={() => baixarSalvo(c.imagem_url, c.template_slug)}
+                        title="Abrir"
+                        onClick={() => abrirSalvo(c.imagem_url)}
                       >
-                        <Download className="w-3.5 h-3.5" />
+                        <ExternalLink className="w-3.5 h-3.5" />
+                      </Button>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-7 w-7"
+                        title="Copiar link"
+                        onClick={() => copiarTexto(c.imagem_url, 'Link copiado')}
+                      >
+                        <Copy className="w-3.5 h-3.5" />
                       </Button>
                       <Button
                         size="icon"

@@ -19,7 +19,34 @@ const TEMPLATE_SLUGS = [
   'criativo_ficha_tecnica',
   'criativo_oportunidade',
   'criativo_convite_cta',
+  // 01/11/2026: os 3 estilos de tratamento da foto (valem para qualquer formato).
+  'criativo_estilo_loja',
+  'criativo_estilo_estudio_claro',
+  'criativo_estilo_estudio_escuro',
 ] as const
+
+// Tamanho da imagem pedida à IA. A API do gpt-image-2 aceita 1024x1024, 1536x1024,
+// 1024x1536 e qualquer LARGURAxALTURA com os dois lados múltiplos de 16, proporção
+// entre 1:3 e 3:1 e no máximo 3840x2160 (documentação oficial da OpenAI, conferida em
+// 01/11/2026). Aqui limitamos o lado maior a 2048 e o total de pixels, por custo.
+// Qualquer valor fora disso volta para o padrão antigo (1024x1024).
+const TAMANHO_PADRAO = '1024x1024'
+function tamanhoValido(size: unknown): string {
+  if (typeof size !== 'string') return TAMANHO_PADRAO
+  const m = /^(\d{3,4})x(\d{3,4})$/.exec(size)
+  if (!m) return TAMANHO_PADRAO
+  const w = Number(m[1])
+  const h = Number(m[2])
+  const ok =
+    w % 16 === 0 &&
+    h % 16 === 0 &&
+    Math.max(w, h) <= 2048 &&
+    w * h >= 655360 &&
+    w * h <= 4194304 &&
+    w / h <= 3 &&
+    h / w <= 3
+  return ok ? size : TAMANHO_PADRAO
+}
 
 async function fetchAsFile(url: string, name: string): Promise<File> {
   const res = await fetch(url)
@@ -46,7 +73,8 @@ Deno.serve(async (req) => {
     } = await supabase.auth.getUser()
     if (authError || !user) throw new Error('Unauthorized')
 
-    const { veiculo_id, foto_url, template_slug } = await req.json()
+    const { veiculo_id, foto_url, template_slug, size: sizePedido } = await req.json()
+    const size = tamanhoValido(sizePedido)
     if (!veiculo_id) throw new Error('Informe o veículo')
     if (!foto_url) throw new Error('Informe a foto de origem')
     if (!TEMPLATE_SLUGS.includes(template_slug)) {
@@ -86,14 +114,21 @@ Deno.serve(async (req) => {
       .select('prompt_text')
       .eq('slug', template_slug)
       .maybeSingle()
-    const prompt =
+    const promptBase =
       promptRow?.prompt_text ||
       'Realce fotorrealista da foto do veículo: iluminação de estúdio, cores fiéis ao carro real, fundo levemente desfocado/neutro. Não altere a cor, o modelo ou qualquer característica real do veículo.'
+    // O texto do prompt vem do banco (tela Regras de IA). O enquadramento depende do
+    // tamanho pedido, então é acrescentado aqui, para o respiro acompanhar o formato.
+    const [larg, alt] = size.split('x')
+    const prompt =
+      size === TAMANHO_PADRAO
+        ? promptBase
+        : `${promptBase}\n\nA imagem de saída tem ${larg}x${alt} pixels. Adapte o enquadramento a essa proporção, mantendo o veículo inteiro, centralizado e com respiro uniforme de 12% até as bordas.`
 
     const form = new FormData()
     form.append('model', 'gpt-image-2')
     form.append('prompt', prompt)
-    form.append('size', '1024x1024')
+    form.append('size', size)
     form.append('n', '1')
     form.append('image[]', await fetchAsFile(foto_url, 'foto-original.jpg'))
 
