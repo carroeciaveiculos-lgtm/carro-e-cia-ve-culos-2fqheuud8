@@ -14,11 +14,16 @@ Verificado em 01/11/2026, ~08:50 (git, gh, MCP do Supabase e Chrome):
 - **PR #1** (número interno não vira lead; aberto desde 29/10): DIVERGIU da main (6 atrás / 6 à frente) e mexe em
   `receive-leads`, `ai-sdr`, `AGENTS.md`, `CLAUDE.md` e nestes dois arquivos de memória. Conflito provável.
   **Não mesclar sem trazer a main para dentro dele e revisar.** O `AGENTS.md` virou stub em 28/10 e o PR pode reverter isso.
-- **PR #4** (legenda por IA): limpo e mesclável; merge autorizado pela Adriana em 01/11. Conferir o resultado com
-  `gh pr view 4` e `gh run list`. A correção NÃO foi testada em uso real — pedir para ela ver uma legenda gerada.
-- Achado (INFERIDO, não investigado a fundo): o CSP do site publicado bloqueia Google Ads (`AW-18085065720`,
-  `AW-869570436`), GA4 (`G-BMYR1WXTT2`), Microsoft Clarity, gateway de conversões da Meta e beacon do Cloudflare.
-  Falta descobrir de onde vem o CSP e desde quando. Possível impacto na medição das campanhas.
+- **PR #4** (legenda por IA): ~~merge autorizado~~ → FECHADO em 01/11/2026: mesclado às 14:13 UTC (`d764a17`), `Deploy producao` e
+  `Deploy Edge Functions` com sucesso; só `gerar-conteudo-social` (v103) e `montar-post-veiculo` (v15) ganharam versão nova.
+  A correção NÃO foi testada em uso real — pedir para ela ver uma legenda gerada.
+- **CSP bloqueando rastreamento** (bloqueio VERIFICADO no console e no cabeçalho publicado; impacto INFERIDO): vem de
+  `public/_headers` (idêntico ao publicado em 01/11); CSP existe desde `fbe7f26` (06/07). Bloqueia Google Ads
+  (`AW-18085065720`, `AW-869570436`), GA4 (`analytics.google.com`), Clarity, Cloudflare Insights e gateway de conversões da Meta.
+  Correção proposta no PR `fix/csp-liberar-rastreamento`: libera `googleads.g.doubleclick.net`, `www.clarity.ms`, `www.google.com`,
+  `analytics.google.com` e `*.clarity.ms`. **Fica de fora, por decisão dela:** gateway da Meta (`*.on.aws`, `conversionsapigateway.com`)
+  — pode duplicar o `meta-capi-postback`. Pendente antes de mesclar: testar a pré-visualização do Cloudflare e ler o `CookieConsent`
+  (LGPD: confirmar que o consentimento segura as tags). Cloudflare Insights e iframe do Facebook também ficaram fora.
 - Pedido da Adriana sobre "imagem padrão + prompt que ela enviou": NÃO localizado no repositório (só imagem de vaga,
   `a57c72f`, e criativos de anúncio, `1e2ce22`). Pode estar em sessão paralela — perguntar a ela onde foi pedido.
 
@@ -86,9 +91,9 @@ Marcar como RESOLVIDO, PENDENTE ou BLOQUEADO.
 
 ## ONDE ESTAMOS (verificado pelo git em 01/11/2026, ~08:50)
 
-- **`origin/main`:** `9a754fa` — merge do PR #3 (Clara: Google origem válida e cortesia). Último código em produção.
-- **Branch de trabalho:** `fix/legenda-ia-sem-preambulo` (PR #4). Working tree limpo antes desta atualização.
-- **PRs abertos:** #1 (divergido, ver sessão 37) e #4 (legenda por IA, merge autorizado em 01/11).
+- **`origin/main`:** `d764a17` — merge do PR #4 (legenda por IA), 01/11/2026 14:13 UTC. Último código em produção.
+- **Branch de trabalho:** `fix/csp-liberar-rastreamento` (criada de `d764a17`; PR do CSP aberto, NÃO mesclado).
+- **PRs abertos:** #1 (divergido, ver sessão 37) e o do CSP. O PR #4 já está mesclado.
 - Histórico anterior (28/10): último commit era `e327c1f` (docs) e o último código era `e5e44c0` (google-ads-leads) — superado.
 
 ## O QUE ESTÁ NO AR (confirmado por commits)
