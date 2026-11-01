@@ -1,17 +1,34 @@
-// Criativo "Padrão Carro e Cia" — FEED 1080 x 1350 (4:5).
+// Criativo "Padrão Carro e Cia" — layouts 1:1 e 4:5.
 // Criado em 01/11/2026 a partir da arte de referência e do prompt/JSON enviados
-// pela Adriana (pasta "IMAGENS PARA ANUNCIOS"). Arquivo NOVO e independente: os 2
-// modelos antigos (criativo-anuncio.ts) continuam como estão até ela aprovar este.
+// pela Adriana (pasta "IMAGENS PARA ANUNCIOS"). Arquivo independente: os 2 modelos
+// antigos (criativo-anuncio.ts) continuam como estão até ela aprovar este.
 //
-// Regras desta primeira entrega (combinadas em 01/11/2026):
-// - só o Feed (Stories fica pra depois, se houver uso real);
-// - foto ORIGINAL, sem IA (o JSON proíbe alterar a aparência do veículo);
-// - SEM o selo "Cautelar Aprovada" (falta um registro verificável da vistoria);
-// - "à vista" é campo editável, nunca texto fixo;
-// - tudo é desenhado por código com os dados reais — nenhum dado inventado.
+// - 1:1 (1080x1080): medido sobre a arte de referência (Jaguar, ~892x898), título em 1 linha.
+// - 4:5 (1080x1350): mesma identidade, título em 3 níveis (marca+modelo, versão, motor).
+// - 9:16 e 16:9: ainda sem layout próprio (cada formato precisa do seu, não basta esticar).
+// - SEM o selo "Cautelar Aprovada" (falta um registro verificável da vistoria).
+// - "à vista" é campo editável, nunca texto fixo; nenhum dado é inventado.
+
+export type FormatoPadrao = '1:1' | '4:5'
+
+export const FORMATOS_PADRAO: Record<
+  FormatoPadrao,
+  { nome: string; dimensoes: string; w: number; h: number }
+> = {
+  '1:1': { nome: 'Quadrado 1:1', dimensoes: '1080 × 1080', w: 1080, h: 1080 },
+  '4:5': { nome: 'Feed 4:5', dimensoes: '1080 × 1350', w: 1080, h: 1350 },
+}
+
+// Tamanho pedido à IA para a foto principal: a proporção da JANELA da foto de cada
+// layout (assim o "respiro" que a IA deixa não é cortado pelo desenho). Largura e altura
+// múltiplas de 16 e proporção entre 1:3 e 3:1, como exige a API (conferido na
+// documentação oficial em 01/11/2026).
+export const TAMANHO_IA_PADRAO: Record<FormatoPadrao, string> = {
+  '1:1': '1536x752',
+  '4:5': '1536x960',
+}
 
 export const MODELO_PADRAO_SLUG = 'criativo_padrao_carro_e_cia'
-export const FEED_PADRAO = { w: 1080, h: 1350 }
 // Fotos usadas por este padrão: 1 principal + 2 complementares.
 export const MAX_FOTOS_PADRAO = 3
 
@@ -19,8 +36,10 @@ export interface DadosCriativoPadrao {
   marca: string
   modelo: string
   versao: string
-  // 3ª linha do título: motor / potência / combustível ou propulsão (opcional).
+  // 3ª linha do título no 4:5: motor / potência / combustível ou propulsão (opcional).
   linhaMotor: string
+  // Texto extra no fim do título de 1 linha do 1:1 (ex.: "404 cv • Híbrido"). Opcional.
+  complementoTitulo: string
   anoFabricacao: string
   anoModelo: string
   km: string // já formatado ("27.000 km"); vazio = não mostra o card
@@ -33,8 +52,8 @@ const COR = {
   preto: '#0B0B0B',
   vermelho: '#D32225',
   branco: '#FFFFFF',
-  cinzaEscuro: '#242424',
-  cinzaBorda: '#3A3A3A',
+  molduraFoto: '#CFCFCF',
+  bordaCard: '#5A5A5A',
   cinzaTexto: '#C8C8C8',
 }
 
@@ -51,7 +70,7 @@ export async function prepararFontesPadrao(): Promise<void> {
       link.id = id
       link.rel = 'stylesheet'
       link.href =
-        'https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800&display=swap'
+        'https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700;800&display=swap'
       document.head.appendChild(link)
       await new Promise<void>((resolve) => {
         link.onload = () => resolve()
@@ -59,11 +78,9 @@ export async function prepararFontesPadrao(): Promise<void> {
         setTimeout(resolve, 4000)
       })
     }
-    await Promise.all([
-      document.fonts.load('800 40px Montserrat'),
-      document.fonts.load('700 40px Montserrat'),
-      document.fonts.load('600 40px Montserrat'),
-    ])
+    await Promise.all(
+      [500, 600, 700, 800].map((peso) => document.fonts.load(`${peso} 40px Montserrat`)),
+    )
   } catch {
     // segue com a fonte alternativa
   }
@@ -82,7 +99,8 @@ function caminho(
   else ctx.rect(x, y, w, h)
 }
 
-// Foto sem distorção: preenche a área e corta o excesso (cover), centralizada.
+// Foto sem distorção: preenche a área e corta o excesso (cover), centralizada,
+// com moldura cinza-clara como na referência.
 function fotoCover(
   ctx: CanvasRenderingContext2D,
   foto: HTMLImageElement,
@@ -90,20 +108,18 @@ function fotoCover(
   y: number,
   w: number,
   h: number,
-  raio = 6,
 ) {
   const escala = Math.max(w / foto.width, h / foto.height)
   const fw = foto.width * escala
   const fh = foto.height * escala
   ctx.save()
-  caminho(ctx, x, y, w, h, raio)
+  caminho(ctx, x, y, w, h, 3)
   ctx.clip()
   ctx.drawImage(foto, x + (w - fw) / 2, y + (h - fh) / 2, fw, fh)
   ctx.restore()
-  ctx.strokeStyle = COR.cinzaBorda
+  ctx.strokeStyle = COR.molduraFoto
   ctx.lineWidth = 2
-  caminho(ctx, x, y, w, h, raio)
-  ctx.stroke()
+  ctx.strokeRect(x + 1, y + 1, w - 2, h - 2)
 }
 
 // Reduz a fonte até o texto caber na largura. Nunca corta nem usa reticências.
@@ -125,19 +141,23 @@ function ajustar(
   return minimo
 }
 
-// Marca + Modelo: 1 linha no maior tamanho que couber (62 a 30). Se nem no mínimo
-// couber (nome muito longo), quebra em 2 linhas equilibradas — nunca corta o texto.
-function tituloEmLinhas(
+// 1 linha no maior tamanho que couber. Se nem no mínimo couber (nome muito longo),
+// quebra em 2 linhas equilibradas — nunca corta o texto.
+function emLinhas(
   ctx: CanvasRenderingContext2D,
   texto: string,
+  peso: number,
   largura: number,
+  maximo: number,
+  minimo: number,
 ): { linhas: string[]; tam: number } {
-  const tam1 = ajustar(ctx, texto, 800, largura, 62, 30)
+  const tam1 = ajustar(ctx, texto, peso, largura, maximo, minimo)
   if (ctx.measureText(texto).width <= largura) return { linhas: [texto], tam: tam1 }
   const palavras = texto.split(/\s+/)
-  if (palavras.length < 2)
-    return { linhas: [texto], tam: ajustar(ctx, texto, 800, largura, 30, 14) }
-  ctx.font = `800 40px ${FAMILIA}`
+  if (palavras.length < 2) {
+    return { linhas: [texto], tam: ajustar(ctx, texto, peso, largura, minimo, 12) }
+  }
+  ctx.font = `${peso} 40px ${FAMILIA}`
   let melhor = 1
   let menorLargura = Infinity
   for (let i = 1; i < palavras.length; i++) {
@@ -150,7 +170,7 @@ function tituloEmLinhas(
     }
   }
   const linhas = [palavras.slice(0, melhor).join(' '), palavras.slice(melhor).join(' ')]
-  const tam = Math.min(...linhas.map((l) => ajustar(ctx, l, 800, largura, 52, 18)))
+  const tam = Math.min(...linhas.map((l) => ajustar(ctx, l, peso, largura, maximo, 12)))
   return { linhas, tam }
 }
 
@@ -175,7 +195,7 @@ function desenharIcone(
   ctx.save()
   ctx.strokeStyle = COR.vermelho
   ctx.fillStyle = COR.vermelho
-  ctx.lineWidth = Math.max(3, s / 12)
+  ctx.lineWidth = Math.max(3, s / 11)
   ctx.lineCap = 'round'
   ctx.lineJoin = 'round'
   const r = s / 2
@@ -193,7 +213,7 @@ function desenharIcone(
     for (let i = 0; i < 3; i++)
       for (let j = 0; j < 2; j++) {
         ctx.beginPath()
-        ctx.arc(cx - r * 0.5 + i * r * 0.5, cy + r * 0.05 + j * r * 0.4, s / 22, 0, Math.PI * 2)
+        ctx.arc(cx - r * 0.5 + i * r * 0.5, cy + r * 0.05 + j * r * 0.4, s / 20, 0, Math.PI * 2)
         ctx.fill()
       }
   } else if (tipo === 'km') {
@@ -208,7 +228,7 @@ function desenharIcone(
     ctx.lineTo(cx + r * 0.5, cy - r * 0.4)
     ctx.stroke()
     ctx.beginPath()
-    ctx.arc(cx, cy + r * 0.1, s / 14, 0, Math.PI * 2)
+    ctx.arc(cx, cy + r * 0.1, s / 13, 0, Math.PI * 2)
     ctx.fill()
   } else {
     // câmbio: alavanca em "H"
@@ -230,125 +250,165 @@ function desenharIcone(
       [0.4, 0.45],
     ]) {
       ctx.beginPath()
-      ctx.arc(cx + px * r, cy + py * r, s / 16, 0, Math.PI * 2)
+      ctx.arc(cx + px * r, cy + py * r, s / 15, 0, Math.PI * 2)
       ctx.fill()
     }
   }
   ctx.restore()
 }
 
-// Desenha o Feed completo. `fotos[0]` = principal; `fotos[1..2]` = complementares.
+// Fundo preto com degradê sutil e textura leve em diagonal, como na referência.
+function desenharFundo(ctx: CanvasRenderingContext2D, W: number, H: number) {
+  const g = ctx.createLinearGradient(0, 0, W, H)
+  g.addColorStop(0, '#1B1B1B')
+  g.addColorStop(0.5, '#0E0E0E')
+  g.addColorStop(1, '#161616')
+  ctx.fillStyle = g
+  ctx.fillRect(0, 0, W, H)
+  ctx.save()
+  ctx.strokeStyle = 'rgba(255,255,255,0.035)'
+  ctx.lineWidth = 1
+  for (let k = -H; k < W; k += 9) {
+    ctx.beginPath()
+    ctx.moveTo(k, H)
+    ctx.lineTo(k + H, 0)
+    ctx.stroke()
+  }
+  ctx.restore()
+}
+
+// Desenha o criativo. `fotos[0]` = principal; `fotos[1..2]` = complementares.
 // `logo` é a logo ORIGINAL para fundo preto (já recortada), ou null.
 export function desenharCriativoPadrao(
   canvas: HTMLCanvasElement,
+  formato: FormatoPadrao,
   fotos: HTMLImageElement[],
   logo: HTMLCanvasElement | null,
   d: DadosCriativoPadrao,
 ) {
-  const { w: W, h: H } = FEED_PADRAO
+  const { w: W, h: H } = FORMATOS_PADRAO[formato]
   canvas.width = W
   canvas.height = H
   const ctx = canvas.getContext('2d')
   if (!ctx) throw new Error('Não foi possível desenhar o criativo')
 
-  const M = 32
-  const GAP = 20
-  ctx.fillStyle = COR.preto
-  ctx.fillRect(0, 0, W, H)
-  ctx.textBaseline = 'alphabetic'
-  ctx.textAlign = 'center'
-
+  const quadrado = formato === '1:1'
+  const M = quadrado ? 22 : 24
+  const GAP = quadrado ? 15 : 16
   const largura = W - 2 * M
   const base = H - M
 
-  // ---- Blocos de baixo pra cima: medimos tudo antes, pra foto principal ocupar o resto ----
+  desenharFundo(ctx, W, H)
+  ctx.textBaseline = 'alphabetic'
+  ctx.textAlign = 'center'
+
+  // ---- Medidas fixas (do 1:1, medidas na referência) ----
   const complementares = fotos.slice(1, MAX_FOTOS_PADRAO)
-  const compH = complementares.length ? 248 : 0
-  const specsH = 92
-  const precoH = d.precoVenda > 0 ? 116 : 0
-
-  // Título em 3 níveis: Marca+Modelo (maior), versão, motor/potência/combustível.
-  const linha1 = `${d.marca} ${d.modelo}`.trim().toUpperCase()
-  const linha2 = d.versao.trim()
-  const linha3 = d.linhaMotor.trim()
-  const { linhas: linhas1, tam: t1 } = tituloEmLinhas(ctx, linha1, largura)
-  const t2 = linha2 ? ajustar(ctx, linha2, 600, largura, 38, 22) : 0
-  const t3 = linha3 ? ajustar(ctx, linha3, 600, largura, 30, 20) : 0
-  const tituloH =
-    linhas1.length * t1 + (linhas1.length - 1) * 6 + (t2 ? t2 + 14 : 0) + (t3 ? t3 + 12 : 0)
-
-  const fixo =
-    GAP + tituloH + GAP + (precoH ? precoH + GAP : 0) + specsH + (compH ? GAP + compH : 0)
+  const compH = complementares.length ? (quadrado ? 249 : 270) : 0
+  const specsH = quadrado ? 63 : 84
+  const precoH = d.precoVenda > 0 ? (quadrado ? 81 : 104) : 0
+  const zonaTitulo = quadrado ? 95 : 150
+  const fixo = GAP + zonaTitulo + (precoH ? precoH + GAP : 0) + specsH + (compH ? GAP + compH : 0)
   const fotoY = M
-  const fotoH = Math.max(380, base - fotoY - fixo)
+  const fotoH = Math.max(300, base - fotoY - fixo)
 
   // ---- Foto principal ----
-  if (fotos[0]) fotoCover(ctx, fotos[0], M, fotoY, largura, fotoH, 6)
+  if (fotos[0]) fotoCover(ctx, fotos[0], M, fotoY, largura, fotoH)
 
-  // Cabeçalho: polígono preto com corte na diagonal por cima da foto, com a logo.
-  const cabH = 150
+  // Cabeçalho: polígono preto com corte na diagonal por cima da foto, com a logo
+  // (proporções tiradas da referência).
+  const polH = Math.round(0.1255 * W)
   ctx.fillStyle = COR.preto
   ctx.beginPath()
   ctx.moveTo(0, 0)
-  ctx.lineTo(520, 0)
-  ctx.lineTo(430, cabH + M)
-  ctx.lineTo(0, cabH + M)
+  ctx.lineTo(0.415 * W, 0)
+  ctx.lineTo(0.335 * W, polH)
+  ctx.lineTo(0, polH)
   ctx.closePath()
   ctx.fill()
   if (logo && logo.width) {
-    const lw = 340
+    const lw = Math.round(0.28 * W)
     const lh = (lw * logo.height) / logo.width
-    ctx.drawImage(logo, 44, M + (cabH - lh) / 2 - 6, lw, lh)
+    ctx.drawImage(logo, Math.round(0.022 * W), (polH - lh) / 2, lw, lh)
   }
 
   let y = fotoY + fotoH + GAP
 
   // ---- Título ----
   ctx.fillStyle = COR.branco
-  ctx.font = `800 ${t1}px ${FAMILIA}`
-  linhas1.forEach((l, i) => {
-    y += (i ? 6 : 0) + t1
-    ctx.fillText(l, W / 2, y - t1 * 0.12)
-  })
-  if (t2) {
-    y += 14 + t2
-    ctx.fillStyle = '#E6E6E6'
-    ctx.font = `600 ${t2}px ${FAMILIA}`
-    ctx.fillText(linha2, W / 2, y - t2 * 0.12)
+  if (quadrado) {
+    // 1 linha, como na referência: marca + modelo + versão (+ complemento opcional).
+    const texto = [d.marca, d.modelo, d.versao, d.complementoTitulo]
+      .map((p) => p.trim())
+      .filter(Boolean)
+      .join(' ')
+    const { linhas, tam } = emLinhas(ctx, texto, 600, largura - 16, 42, 22)
+    const altura = linhas.length * tam + (linhas.length - 1) * 4
+    let ty = y + (zonaTitulo - altura) / 2
+    ctx.font = `600 ${tam}px ${FAMILIA}`
+    for (const l of linhas) {
+      ty += tam
+      ctx.fillText(l, W / 2, ty - tam * 0.14)
+      ty += 4
+    }
+  } else {
+    // 3 níveis: Marca+Modelo (maior), versão, motor/potência/combustível.
+    const linha1 = `${d.marca} ${d.modelo}`.trim().toUpperCase()
+    const linha2 = d.versao.trim()
+    const linha3 = d.linhaMotor.trim()
+    const { linhas: linhas1, tam: t1 } = emLinhas(ctx, linha1, 800, largura, 56, 24)
+    const t2 = linha2 ? ajustar(ctx, linha2, 600, largura, 34, 20) : 0
+    const t3 = linha3 ? ajustar(ctx, linha3, 600, largura, 28, 18) : 0
+    const altura =
+      linhas1.length * t1 + (linhas1.length - 1) * 6 + (t2 ? t2 + 12 : 0) + (t3 ? t3 + 10 : 0)
+    let ty = y + Math.max(0, (zonaTitulo - altura) / 2)
+    ctx.fillStyle = COR.branco
+    ctx.font = `800 ${t1}px ${FAMILIA}`
+    linhas1.forEach((l, i) => {
+      ty += (i ? 6 : 0) + t1
+      ctx.fillText(l, W / 2, ty - t1 * 0.12)
+    })
+    if (t2) {
+      ty += 12 + t2
+      ctx.fillStyle = '#E6E6E6'
+      ctx.font = `600 ${t2}px ${FAMILIA}`
+      ctx.fillText(linha2, W / 2, ty - t2 * 0.12)
+    }
+    if (t3) {
+      ty += 10 + t3
+      ctx.fillStyle = COR.cinzaTexto
+      ctx.font = `600 ${t3}px ${FAMILIA}`
+      ctx.fillText(linha3, W / 2, ty - t3 * 0.12)
+    }
   }
-  if (t3) {
-    y += 12 + t3
-    ctx.fillStyle = COR.cinzaTexto
-    ctx.font = `600 ${t3}px ${FAMILIA}`
-    ctx.fillText(linha3, W / 2, y - t3 * 0.12)
-  }
-  y += GAP
+  y += zonaTitulo
 
   // ---- Preço: caixa preta com contorno vermelho + etiqueta lateral (condição) ----
   if (precoH) {
     const etiqueta = d.condicao.trim()
-    const etqW = etiqueta ? 230 : 0
-    ctx.fillStyle = '#050505'
-    ctx.fillRect(M, y, largura, precoH)
+    const caixaW = quadrado ? 775 : 820
+    const cx0 = (W - caixaW) / 2
+    const etqW = etiqueta ? Math.round(caixaW * 0.2) : 0
+    ctx.fillStyle = '#060606'
+    ctx.fillRect(cx0, y, caixaW, precoH)
     ctx.strokeStyle = COR.vermelho
-    ctx.lineWidth = 4
-    ctx.strokeRect(M + 2, y + 2, largura - 4, precoH - 4)
-    const areaPreco = largura - etqW - 40
+    ctx.lineWidth = 3
+    ctx.strokeRect(cx0 + 1.5, y + 1.5, caixaW - 3, precoH - 3)
     const preco = formatarPreco(d.precoVenda)
-    const tp = ajustar(ctx, preco, 800, areaPreco, 76, 34)
-    ctx.fillStyle = COR.branco
     ctx.textBaseline = 'middle'
-    ctx.fillText(preco, M + (largura - etqW) / 2, y + precoH / 2 + 2)
+    const tp = ajustar(ctx, preco, 800, caixaW - etqW - 40, quadrado ? 62 : 70, 30)
+    ctx.fillStyle = COR.branco
+    ctx.font = `800 ${tp}px ${FAMILIA}`
+    ctx.fillText(preco, cx0 + (caixaW - etqW) / 2, y + precoH / 2 + 2)
     if (etiqueta) {
       ctx.fillStyle = COR.vermelho
-      ctx.fillRect(M + largura - etqW, y + 2, etqW - 2, precoH - 4)
+      ctx.fillRect(cx0 + caixaW - etqW, y + 1.5, etqW - 1.5, precoH - 3)
+      const te = ajustar(ctx, etiqueta, 500, etqW - 24, quadrado ? 28 : 32, 16)
       ctx.fillStyle = COR.branco
-      const te = ajustar(ctx, etiqueta, 700, etqW - 30, 34, 18)
-      ctx.font = `700 ${te}px ${FAMILIA}`
-      ctx.fillText(etiqueta, M + largura - etqW / 2, y + precoH / 2 + 2)
+      ctx.font = `500 ${te}px ${FAMILIA}`
+      ctx.fillText(etiqueta, cx0 + caixaW - etqW / 2, y + precoH / 2 + 2)
     }
     ctx.textBaseline = 'alphabetic'
-    void tp
     y += precoH + GAP
   }
 
@@ -363,23 +423,23 @@ export function desenharCriativoPadrao(
     { icone: 'cambio' as Icone, texto: d.cambio },
   ].filter((c) => c.texto)
   if (cards.length) {
-    const gapC = 14
+    const gapC = 12
     const cw = (largura - gapC * (cards.length - 1)) / cards.length
+    const icone = Math.round(specsH * 0.56)
     cards.forEach((c, i) => {
-      const cx0 = M + i * (cw + gapC)
-      ctx.fillStyle = '#101010'
-      ctx.fillRect(cx0, y, cw, specsH)
-      ctx.strokeStyle = COR.cinzaBorda
+      const x0 = M + i * (cw + gapC)
+      ctx.fillStyle = '#121212'
+      ctx.fillRect(x0, y, cw, specsH)
+      ctx.strokeStyle = COR.bordaCard
       ctx.lineWidth = 2
-      ctx.strokeRect(cx0 + 1, y + 1, cw - 2, specsH - 2)
-      desenharIcone(ctx, c.icone, cx0 + 44, y + specsH / 2, 40)
-      const areaTexto = cw - 44 - 28 - 20
-      const ts = ajustar(ctx, c.texto, 700, areaTexto, 34, 18)
+      ctx.strokeRect(x0 + 1, y + 1, cw - 2, specsH - 2)
+      desenharIcone(ctx, c.icone, x0 + 18 + icone / 2, y + specsH / 2, icone)
+      const areaTexto = cw - 18 - icone - 14 - 14
+      const ts = ajustar(ctx, c.texto, 700, areaTexto, quadrado ? 30 : 34, 16)
       ctx.fillStyle = COR.branco
       ctx.textBaseline = 'middle'
-      ctx.textAlign = 'center'
       ctx.font = `700 ${ts}px ${FAMILIA}`
-      ctx.fillText(c.texto, cx0 + 44 + 28 + areaTexto / 2, y + specsH / 2 + 2)
+      ctx.fillText(c.texto, x0 + 18 + icone + 14 + areaTexto / 2, y + specsH / 2 + 2)
       ctx.textBaseline = 'alphabetic'
     })
   }
@@ -388,8 +448,8 @@ export function desenharCriativoPadrao(
   // ---- Fotos complementares (até 2) ----
   if (compH) {
     y += GAP
-    const gapF = 16
+    const gapF = quadrado ? 10 : 12
     const fw = (largura - gapF * (complementares.length - 1)) / complementares.length
-    complementares.forEach((img, i) => fotoCover(ctx, img, M + i * (fw + gapF), y, fw, compH, 6))
+    complementares.forEach((img, i) => fotoCover(ctx, img, M + i * (fw + gapF), y, fw, compH))
   }
 }
