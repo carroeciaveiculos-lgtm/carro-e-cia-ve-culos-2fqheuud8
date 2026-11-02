@@ -131,9 +131,14 @@ function caminho(
   else ctx.rect(x, y, w, h)
 }
 
-// Foto sem distorção: preenche a área e corta o excesso (cover), centralizada,
-// com moldura cinza-clara como na referência.
-function fotoCover(
+// Foto SEM CORTE e sem distorção, centralizada, com moldura cinza-clara como na referência.
+// Até 01/11/2026 a foto preenchia a janela e o excesso era cortado ("cover"): no 1:1 a janela
+// é 2,06:1 e as fotos de celular são 4:3, então 35% da altura sumia (teto do carro cortado).
+// Agora: se a proporção da foto é igual à da janela (caso da foto tratada pela IA, que já
+// nasce na proporção da janela), preenche como antes. Se for diferente, a foto cabe INTEIRA
+// e as sobras dos lados são preenchidas com a própria foto desfocada e escurecida (sem tarja
+// preta). Sem suporte a `ctx.filter` (Safari antigo), as sobras ficam em preto.
+function fotoInteira(
   ctx: CanvasRenderingContext2D,
   foto: HTMLImageElement,
   x: number,
@@ -141,13 +146,40 @@ function fotoCover(
   w: number,
   h: number,
 ) {
-  const escala = Math.max(w / foto.width, h / foto.height)
-  const fw = foto.width * escala
-  const fh = foto.height * escala
+  const razaoFoto = foto.width / foto.height
+  const razaoJanela = w / h
+  const mesmaProporcao = Math.abs(razaoFoto / razaoJanela - 1) < 0.03
   ctx.save()
   caminho(ctx, x, y, w, h, 3)
   ctx.clip()
-  ctx.drawImage(foto, x + (w - fw) / 2, y + (h - fh) / 2, fw, fh)
+  if (mesmaProporcao) {
+    const escala = Math.max(w / foto.width, h / foto.height)
+    const fw = foto.width * escala
+    const fh = foto.height * escala
+    ctx.drawImage(foto, x + (w - fw) / 2, y + (h - fh) / 2, fw, fh)
+  } else {
+    // Fundo: a mesma foto preenchendo a janela (um pouco maior, para o desfoque não
+    // deixar borda transparente), desfocada e escurecida.
+    ctx.fillStyle = COR.preto
+    ctx.fillRect(x, y, w, h)
+    if (typeof ctx.filter === 'string') {
+      const esc = Math.max(w / foto.width, h / foto.height) * 1.15
+      ctx.filter = 'blur(22px) brightness(0.5)'
+      ctx.drawImage(
+        foto,
+        x + (w - foto.width * esc) / 2,
+        y + (h - foto.height * esc) / 2,
+        foto.width * esc,
+        foto.height * esc,
+      )
+      ctx.filter = 'none'
+    }
+    // Frente: a foto inteira, a maior possível dentro da janela.
+    const escala = Math.min(w / foto.width, h / foto.height)
+    const fw = foto.width * escala
+    const fh = foto.height * escala
+    ctx.drawImage(foto, x + (w - fw) / 2, y + (h - fh) / 2, fw, fh)
+  }
   ctx.restore()
   ctx.strokeStyle = COR.molduraFoto
   ctx.lineWidth = 2
@@ -348,7 +380,7 @@ export function desenharCriativoPadrao(
   const fotoH = Math.max(300, base - fotoY - fixo)
 
   // ---- Foto principal ----
-  if (fotos[0]) fotoCover(ctx, fotos[0], M, fotoY, largura, fotoH)
+  if (fotos[0]) fotoInteira(ctx, fotos[0], M, fotoY, largura, fotoH)
 
   // Cabeçalho: polígono preto com corte na diagonal por cima da foto, com a logo
   // (proporções tiradas da referência).
@@ -489,6 +521,6 @@ export function desenharCriativoPadrao(
     y += GAP
     const gapF = quadrado ? 10 : 12
     const fw = (largura - gapF * (complementares.length - 1)) / complementares.length
-    complementares.forEach((img, i) => fotoCover(ctx, img, M + i * (fw + gapF), y, fw, compH))
+    complementares.forEach((img, i) => fotoInteira(ctx, img, M + i * (fw + gapF), y, fw, compH))
   }
 }
