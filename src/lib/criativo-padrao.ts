@@ -5,18 +5,47 @@
 //
 // - 1:1 (1080x1080): medido sobre a arte de referência (Jaguar, ~892x898), título em 1 linha.
 // - 4:5 (1080x1350): mesma identidade, título em 3 níveis (marca+modelo, versão, motor).
-// - 9:16 e 16:9: ainda sem layout próprio (cada formato precisa do seu, não basta esticar).
+// - 9:16 (1080x1920, Stories, 01/11/2026): mesma pilha do 4:5, só que dentro da "área segura".
+//   A interface do Instagram cobre o topo (perfil) e o rodapé (caixa de resposta), então
+//   nada importante é desenhado nos 250 px de cima nem nos 340 px de baixo (regra prática
+//   de mercado, a conferir na prévia real do Instagram). O que sobra (1330 px) é quase a
+//   altura do 4:5 (1350 px), por isso as medidas internas e o tamanho pedido à IA são parecidos.
+// - 16:9: ainda sem layout próprio (cada formato precisa do seu, não basta esticar).
 // - SEM o selo "Cautelar Aprovada" (falta um registro verificável da vistoria).
 // - "à vista" é campo editável, nunca texto fixo; nenhum dado é inventado.
 
-export type FormatoPadrao = '1:1' | '4:5'
+export type FormatoPadrao = '1:1' | '4:5' | '9:16'
 
+// seguroTopo/seguroBase: faixa (px) que fica livre de foto e texto por causa da interface
+// do Instagram (só o Stories usa; nos demais é 0).
 export const FORMATOS_PADRAO: Record<
   FormatoPadrao,
-  { nome: string; dimensoes: string; w: number; h: number }
+  { nome: string; dimensoes: string; w: number; h: number; seguroTopo: number; seguroBase: number }
 > = {
-  '1:1': { nome: 'Quadrado 1:1', dimensoes: '1080 × 1080', w: 1080, h: 1080 },
-  '4:5': { nome: 'Feed 4:5', dimensoes: '1080 × 1350', w: 1080, h: 1350 },
+  '1:1': {
+    nome: 'Quadrado 1:1',
+    dimensoes: '1080 × 1080',
+    w: 1080,
+    h: 1080,
+    seguroTopo: 0,
+    seguroBase: 0,
+  },
+  '4:5': {
+    nome: 'Feed 4:5',
+    dimensoes: '1080 × 1350',
+    w: 1080,
+    h: 1350,
+    seguroTopo: 0,
+    seguroBase: 0,
+  },
+  '9:16': {
+    nome: 'Stories 9:16',
+    dimensoes: '1080 × 1920',
+    w: 1080,
+    h: 1920,
+    seguroTopo: 250,
+    seguroBase: 340,
+  },
 }
 
 // Tamanho pedido à IA para a foto principal: a proporção da JANELA da foto de cada
@@ -26,6 +55,9 @@ export const FORMATOS_PADRAO: Record<
 export const TAMANHO_IA_PADRAO: Record<FormatoPadrao, string> = {
   '1:1': '1536x752',
   '4:5': '1536x960',
+  // Janela da foto no Stories: 1032 x 674 px (1920 - 250 - 340 - 656 fixos) = proporção 1,53.
+  // 1536x1008 = proporção 1,52, ambos lados múltiplos de 16, dentro dos limites da API.
+  '9:16': '1536x1008',
 }
 
 export const MODELO_PADRAO_SLUG = 'criativo_padrao_carro_e_cia'
@@ -99,9 +131,14 @@ function caminho(
   else ctx.rect(x, y, w, h)
 }
 
-// Foto sem distorção: preenche a área e corta o excesso (cover), centralizada,
-// com moldura cinza-clara como na referência.
-function fotoCover(
+// Foto SEM CORTE e sem distorção, centralizada, com moldura cinza-clara como na referência.
+// Até 01/11/2026 a foto preenchia a janela e o excesso era cortado ("cover"): no 1:1 a janela
+// é 2,06:1 e as fotos de celular são 4:3, então 35% da altura sumia (teto do carro cortado).
+// Agora: se a proporção da foto é igual à da janela (caso da foto tratada pela IA, que já
+// nasce na proporção da janela), preenche como antes. Se for diferente, a foto cabe INTEIRA
+// e as sobras dos lados são preenchidas com a própria foto desfocada e escurecida (sem tarja
+// preta). Sem suporte a `ctx.filter` (Safari antigo), as sobras ficam em preto.
+function fotoInteira(
   ctx: CanvasRenderingContext2D,
   foto: HTMLImageElement,
   x: number,
@@ -109,13 +146,40 @@ function fotoCover(
   w: number,
   h: number,
 ) {
-  const escala = Math.max(w / foto.width, h / foto.height)
-  const fw = foto.width * escala
-  const fh = foto.height * escala
+  const razaoFoto = foto.width / foto.height
+  const razaoJanela = w / h
+  const mesmaProporcao = Math.abs(razaoFoto / razaoJanela - 1) < 0.03
   ctx.save()
   caminho(ctx, x, y, w, h, 3)
   ctx.clip()
-  ctx.drawImage(foto, x + (w - fw) / 2, y + (h - fh) / 2, fw, fh)
+  if (mesmaProporcao) {
+    const escala = Math.max(w / foto.width, h / foto.height)
+    const fw = foto.width * escala
+    const fh = foto.height * escala
+    ctx.drawImage(foto, x + (w - fw) / 2, y + (h - fh) / 2, fw, fh)
+  } else {
+    // Fundo: a mesma foto preenchendo a janela (um pouco maior, para o desfoque não
+    // deixar borda transparente), desfocada e escurecida.
+    ctx.fillStyle = COR.preto
+    ctx.fillRect(x, y, w, h)
+    if (typeof ctx.filter === 'string') {
+      const esc = Math.max(w / foto.width, h / foto.height) * 1.15
+      ctx.filter = 'blur(22px) brightness(0.5)'
+      ctx.drawImage(
+        foto,
+        x + (w - foto.width * esc) / 2,
+        y + (h - foto.height * esc) / 2,
+        foto.width * esc,
+        foto.height * esc,
+      )
+      ctx.filter = 'none'
+    }
+    // Frente: a foto inteira, a maior possível dentro da janela.
+    const escala = Math.min(w / foto.width, h / foto.height)
+    const fw = foto.width * escala
+    const fh = foto.height * escala
+    ctx.drawImage(foto, x + (w - fw) / 2, y + (h - fh) / 2, fw, fh)
+  }
   ctx.restore()
   ctx.strokeStyle = COR.molduraFoto
   ctx.lineWidth = 2
@@ -286,7 +350,7 @@ export function desenharCriativoPadrao(
   logo: HTMLCanvasElement | null,
   d: DadosCriativoPadrao,
 ) {
-  const { w: W, h: H } = FORMATOS_PADRAO[formato]
+  const { w: W, h: H, seguroTopo, seguroBase } = FORMATOS_PADRAO[formato]
   canvas.width = W
   canvas.height = H
   const ctx = canvas.getContext('2d')
@@ -296,7 +360,10 @@ export function desenharCriativoPadrao(
   const M = quadrado ? 22 : 24
   const GAP = quadrado ? 15 : 16
   const largura = W - 2 * M
-  const base = H - M
+  // Área segura (Stories): a foto começa depois da faixa do topo e a pilha termina antes
+  // da faixa de baixo. Nos formatos de feed as duas faixas são 0 e nada muda.
+  const topo = Math.max(M, seguroTopo)
+  const base = H - Math.max(M, seguroBase)
 
   desenharFundo(ctx, W, H)
   ctx.textBaseline = 'alphabetic'
@@ -309,15 +376,18 @@ export function desenharCriativoPadrao(
   const precoH = d.precoVenda > 0 ? (quadrado ? 81 : 104) : 0
   const zonaTitulo = quadrado ? 95 : 150
   const fixo = GAP + zonaTitulo + (precoH ? precoH + GAP : 0) + specsH + (compH ? GAP + compH : 0)
-  const fotoY = M
+  const fotoY = topo
   const fotoH = Math.max(300, base - fotoY - fixo)
 
   // ---- Foto principal ----
-  if (fotos[0]) fotoCover(ctx, fotos[0], M, fotoY, largura, fotoH)
+  if (fotos[0]) fotoInteira(ctx, fotos[0], M, fotoY, largura, fotoH)
 
   // Cabeçalho: polígono preto com corte na diagonal por cima da foto, com a logo
   // (proporções tiradas da referência).
   const polH = Math.round(0.1255 * W)
+  // No Stories o cabeçalho acompanha a foto (desce junto); nos demais o deslocamento é 0.
+  ctx.save()
+  ctx.translate(0, fotoY - M)
   ctx.fillStyle = COR.preto
   ctx.beginPath()
   ctx.moveTo(0, 0)
@@ -331,6 +401,7 @@ export function desenharCriativoPadrao(
     const lh = (lw * logo.height) / logo.width
     ctx.drawImage(logo, Math.round(0.022 * W), (polH - lh) / 2, lw, lh)
   }
+  ctx.restore()
 
   let y = fotoY + fotoH + GAP
 
@@ -450,6 +521,6 @@ export function desenharCriativoPadrao(
     y += GAP
     const gapF = quadrado ? 10 : 12
     const fw = (largura - gapF * (complementares.length - 1)) / complementares.length
-    complementares.forEach((img, i) => fotoCover(ctx, img, M + i * (fw + gapF), y, fw, compH))
+    complementares.forEach((img, i) => fotoInteira(ctx, img, M + i * (fw + gapF), y, fw, compH))
   }
 }

@@ -17,22 +17,30 @@ REGRA: não leia este arquivo inteiro. Leia o índice, escolha o bloco, use offs
 
 # Memória de trabalho — Carro e Cia
 
-## [01/11/2026] SESSÃO 38 — criativo no ar (PR #7), PR #8, leitura dos PRs #5/#1 e auditoria da conta Meta `4333456556917039`
+## [01/11/2026] SESSÃO 38 — criativo no ar (PRs #7, #9, #10), PRs #5 e #8, leitura do PR #1 e auditoria da conta Meta `4333456556917039`
 
-- **Feito (verificado):** PR #7 mesclado (`f651f0e`, 21:13:45 UTC); `Deploy producao` ok; `gerar-criativo-anuncio` v11 (21:14:03 UTC); site publicado
-  serve o chunk com estilos e logo nova (`Estoque-XdCavI1c.js`). PR #8 (regra de lembrar commit/push) mesclado (`8f3a349`, 21:26:33 UTC).
-- **Causa do 400 no teste dela (inferida):** o front local mandou os slugs `criativo_estilo_*` para a função antiga em produção
-  (log: `POST gerar-criativo-anuncio` 400 às 21:03:06 UTC; corpo da resposta não lido). A função só sobe no merge no `main`.
-- **Não testado:** painel logado (gerar, "Salvar no sistema", "Criar post orgânico"); qualidade do recorte da logo (bandeira, "&CIA").
-- **PR #5 (CSP):** só `public/_headers` muda; mescla limpo. GTM, GA4 e Pixel da Meta carregam no `index.html` sem consentimento; o
-  `CookieConsent` só cobre o Clarity. O PR faria Google Ads/GA4 coletarem sem consentimento: decisão de LGPD dela. NÃO mesclado.
-- **PR #1 (Clara):** main trazida para a branch local (`f98bba4`); conflitos só em `PROXIMA_SESSAO.md` e `MEMORY_WORK.MD`, resolvidos
-  mantendo os dois lados. Revisão do código: 3 mudanças pequenas e coerentes (`ai-sdr`, `re-engagement-cron`, `receive-leads`). NÃO enviado, NÃO mesclado.
-- **Auditoria Meta (só leitura):** conta oficial `4333456556917039`; 2 campanhas com gasto R$ 0; a "ativa" não tem anúncio; a de Vendas
-  foi pausada pelo `carroecia_bot` em 31/10 13:36. Pixel, página/IG e saldo não checados. Decisão dela pendente.
-- **Becos sem saída:** MCP não faz upload binário no Storage (usar `public/`); `query_logs` com `function_edge_logs` funciona
-  (método/status/URL, sem corpo), contradizendo a nota de 29/10; `git switch -c ... origin/main` deixa o upstream em `origin/main`.
-- **Sem destino:** stash de 28/09 (4 arquivos) e worktree dos agentes (branch nunca enviada).
+- **Feito (verificado, cada PR com `Deploy producao` ok e site 200):** PR #7 `f651f0e` (estilos de IA, logo transparente, função
+  `gerar-criativo-anuncio` v11 às 21:14 UTC); PR #8 `8f3a349` (regra de lembrar commit/push); PR #5 `cba7158` (CSP libera Google Ads,
+  Clarity e GA4; decisão dela "mesclar assim"); PR #9 `289a9db` (Stories 9:16 e modelo único; mesclado por ela com `! gh pr merge`);
+  PR #10 `5af1382` (foto inteira sem corte). `origin/main` = `5af1382`. Entre o PR #7 e o #10 nenhuma função mudou (conferido com `git diff`).
+- **Causa do 400 no teste dela (inferida):** front local mandou os slugs `criativo_estilo_*` para a função antiga em produção; a função só
+  sobe no merge no `main` (o workflow não roda em branch). Log: `POST gerar-criativo-anuncio` 400 às 21:03:06 UTC; corpo não lido.
+- **Corte da foto (verificado):** janela do 1:1 = 1036x503 (2,06:1); fotos do Pajero = 4000x3000 (1,33): o `cover` mostrava 65% da altura.
+  `fotoInteira` mostra a foto toda com sobras desfocadas; tolerância de 3% na proporção preserva a foto da IA. Veio do PR #6, não do #9.
+- **Compass:** incidente de 01/11 11:48 BRT FECHADO (hoje `disponivel`, conferido no banco); causa nunca provada; gerador não escreve em `veiculos`
+  (a função só grava `logs_ia`). Escolhido por ela como veículo de teste do painel logado — teste NÃO feito ainda.
+- **CSP/consentimento (verificado):** GTM, GA4 e Pixel da Meta carregam no `index.html` sem consentimento; `CookieConsent` só cobre o Clarity.
+  Com o PR #5, Google Ads/GA4 passam a coletar sem consentimento. Pendente de decisão de LGPD.
+- **PR #1 (Clara):** revisado (3 mudanças pequenas e coerentes), main trazida para a branch LOCAL; NÃO enviado, NÃO mesclado; único PR aberto.
+- **Auditoria Meta (só leitura):** conta oficial; 2 campanhas, gasto R$ 0; a "ativa" não tem anúncio; a de Vendas foi pausada pelo `carroecia_bot`
+  em 31/10 13:36. Pixel, página/IG e saldo não checados. Decisão dela pendente.
+- **Não testado:** painel logado (Salvar e copiar link, Criar post orgânico), 9:16 com fotos reais, Safari antigo, execução do código do PR #1.
+- **Becos sem saída:** MCP não sobe binário no Storage; `query_logs` com `function_edge_logs` funciona (sem corpo), contrariando a nota de 29/10;
+  `git switch -c ... origin/main` deixa upstream em `origin/main`; `git push` travando no `git-credential-manager` (usar `!` ou concluir a janela;
+  matar processos travados); classificador barra `gh pr merge` por mim às vezes (ela roda `! gh pr merge N --merge`); `[math]::Min` do PowerShell
+  arredonda para inteiro; heredoc com aspas misturadas quebra (usar `.py`).
+- **Sem destino:** stash de 28/09 "fix sync video"; worktree dos agentes (≥10 arquivos, branch nunca enviada); artigo da Central de Ajuda do gerador;
+  limpeza dos slugs/regras de IA dos modelos antigos; selo; potência (cv); 16:9.
 
 ## [01/11/2026] SESSÃO 37 (continuação) — padrão novo de criativo (Feed), achado de CORS e incidente do Compass
 
@@ -57,9 +65,13 @@ REGRA: não leia este arquivo inteiro. Leia o índice, escolha o bloco, use offs
   (`receive-leads` v244); home, `/estoque` e `/admin/login` renderizam no site publicado. Painel logado NÃO testado.
 - **PR #1 divergido** (6 atrás / 6 à frente da main; mexe em `receive-leads`, `ai-sdr`, `AGENTS.md`, `CLAUDE.md` e memória): não mesclar
   sem trazer a main para dentro e revisar. Aberto desde 29/10 e não constava nos arquivos de continuidade.
-- **PR #4** (legenda por IA): limpo; merge autorizado em 01/11; correção NÃO testada em uso real.
-- **Achado INFERIDO (CSP):** o site publicado bloqueia Google Ads, GA4, Clarity, gateway de conversões da Meta e beacon do Cloudflare
-  (console do navegador). Origem e data de início do CSP não investigadas; há histórico de CSP bloqueando a FIPE em 08/10.
+- **PR #4** (legenda por IA): FECHADO em 01/11/2026: mesclado às 14:13 UTC (`d764a17`), deploys com sucesso; só `gerar-conteudo-social`
+  (v103) e `montar-post-veiculo` (v15) ganharam versão. Correção NÃO testada em uso real.
+- **CSP (diagnóstico feito em 01/11):** bloqueio VERIFICADO (console + `curl -I`; cabeçalho publicado idêntico a `public/_headers`); impacto
+  nas campanhas é INFERIDO (`meta-capi-postback` e `google-ads-leads` registram por servidor). CSP desde `fbe7f26` (06/07); ajustes em `63f7b14`
+  (04/08) e `f1ced1a`/`46f2d81` (08/10, FIPE). Não sei desde quando o bloqueio afeta o rastreamento. Correção no PR `fix/csp-liberar-rastreamento`
+  (libera 5 origens; gateway da Meta fica FORA por decisão da Adriana). Falta: testar a pré-visualização e ler o `CookieConsent` (LGPD).
+- **Beco sem saída:** `git switch -c ... origin/main` deixa o upstream em `origin/main`; empurrar sempre com o nome da branch explícito.
 - **Não localizado:** pedido da Adriana de "imagem padrão + prompt enviado" — nada no repo além de imagem de vaga e criativos de anúncio.
 - **Beco sem saída:** `AGENTS.md` foi consolidado no `CLAUDE.md` em 28/10; PR #1 tem versão anterior dele e pode reverter isso.
 
@@ -75,17 +87,6 @@ REGRA: não leia este arquivo inteiro. Leia o índice, escolha o bloco, use offs
   no WhatsApp real (depende do deploy e da Adriana) — não afirmar "funcionando" antes disso.
 - **Bloqueio:** merge do PR barrado pelo classificador (publicaria em produção sem revisão). FECHADO em 01/11/2026: PR #2 mesclado em 31/10 (13:31 UTC), deploy ok.
 - **Beco sem saída:** heredoc do Bash com aspas misturadas quebrou duas vezes; usar script `.py` em arquivo.
-
-## [29/10/2026] Sessão 36 (iniciada 28/10) — mensagens da Clara, 3 correções em branch, 1 linha no banco; nada em produção
-
-- **Escopo:** diagnóstico (28–29/10) de por que chegaram mensagens estranhas da Clara; correções só na branch `fix/numero-interno-nao-vira-lead` (commits em `git log --oneline origin/main..HEAD`, enviada ao `origin`, PR #1 aberto em 29/10, sem merge). Último código em produção segue `e5e44c0`.
-- **Feito, verificado:** `receive-leads` ignora mensagem não-texto de número interno e `re-engagement-cron` pula números autorizados (`0586d9f`); `ai-sdr` devolve o agendamento existente em vez de gravar outro no mesmo horário (`805935e`); `CLAUDE.md` ganhou a regra de conferência inicial (`672d339`). Sintaxe conferida com `bun build --no-bundle`; sem Deno, sem teste de tipos nem execução real.
-- **Banco (alteração de dado):** agendamento duplicado `33d92496` cancelado em 29/10 07:59 BR, com backup e releitura; `276e261c` mantido. Rollback registrado em `PROXIMA_SESSAO.md`.
-- **Causas encontradas (verificado):** 4 avisos de agendamento = 2 linhas duplicadas × 2 envios ao mesmo número; o número da Adriana virou lead em 19/10 (mensagem tipo `system` escapava da trava de comando) e recebeu o template de reengajamento em 27/10; o roteador de comandos compara palavra exata.
-- **Inferido, não provado:** avisos e relatório em texto livre só chegam dentro da janela de 24h do WhatsApp.
-- **Webmotors:** 401 no `wm-sync` ainda em 29/10 11:40 UTC (36 em 12h); Adriana atribuiu à fatura não paga (28/10). Fila de `estoque_publicacoes` webmotors: pending_create 7, pending_update 6, pending_close 11, error 25.
-- **Becos sem saída:** `query_logs` não lê logs de Edge Function (não existem `function_logs`/`edge_logs`/`function_edge_logs`; `logs` é do Postgres). `oxfmt --check` acusa os arquivos de `supabase/functions` por causa do CRLF no disco (o blob do git, em LF, passa): não reformatar. `bun build --no-bundle` só prova sintaxe. Busca com `head_limit` corta a contagem: conferir o total antes de contar.
-- **Pendente:** merge do PR #1 (publica também o site pelo `deploy.yml`; conferir o site depois); investigar o check "Workers Builds" (Cloudflare) do PR, que contradiz a nota de que a integração nunca existiu; avisos no WhatsApp (desenho v2 em `PROXIMA_SESSAO.md`, 4 passos com "autorizo" separado); fila da Webmotors após o pagamento; as pendências abertas de 28/10 abaixo continuam valendo.
 
 ## [28/10/2026] Consolidação de regras e memória — nenhuma mudança de código (sem commit de código)
 
