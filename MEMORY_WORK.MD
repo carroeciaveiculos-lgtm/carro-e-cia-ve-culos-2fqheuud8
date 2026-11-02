@@ -1,7 +1,7 @@
 # ÍNDICE — MEMORY_WORK Carro e Cia
 
 > ESTADO ATUAL: leia `PROXIMA_SESSAO.md` primeiro. Este arquivo é histórico.
-> Última sessão registrada: 01/11/2026 (sessão 37).
+> Última sessão registrada: 01/11/2026 (sessão 38).
 
 | Bloco | Conteúdo |
 |---|---|
@@ -16,6 +16,31 @@ REGRA: não leia este arquivo inteiro. Leia o índice, escolha o bloco, use offs
 ---
 
 # Memória de trabalho — Carro e Cia
+
+## [01/11/2026] SESSÃO 38 — criativo no ar (PRs #7, #9, #10), PRs #5 e #8, leitura do PR #1 e auditoria da conta Meta `4333456556917039`
+
+- **Feito (verificado, cada PR com `Deploy producao` ok e site 200):** PR #7 `f651f0e` (estilos de IA, logo transparente, função
+  `gerar-criativo-anuncio` v11 às 21:14 UTC); PR #8 `8f3a349` (regra de lembrar commit/push); PR #5 `cba7158` (CSP libera Google Ads,
+  Clarity e GA4; decisão dela "mesclar assim"); PR #9 `289a9db` (Stories 9:16 e modelo único; mesclado por ela com `! gh pr merge`);
+  PR #10 `5af1382` (foto inteira sem corte). `origin/main` = `5af1382`. Entre o PR #7 e o #10 nenhuma função mudou (conferido com `git diff`).
+- **Causa do 400 no teste dela (inferida):** front local mandou os slugs `criativo_estilo_*` para a função antiga em produção; a função só
+  sobe no merge no `main` (o workflow não roda em branch). Log: `POST gerar-criativo-anuncio` 400 às 21:03:06 UTC; corpo não lido.
+- **Corte da foto (verificado):** janela do 1:1 = 1036x503 (2,06:1); fotos do Pajero = 4000x3000 (1,33): o `cover` mostrava 65% da altura.
+  `fotoInteira` mostra a foto toda com sobras desfocadas; tolerância de 3% na proporção preserva a foto da IA. Veio do PR #6, não do #9.
+- **Compass:** incidente de 01/11 11:48 BRT FECHADO (hoje `disponivel`, conferido no banco); causa nunca provada; gerador não escreve em `veiculos`
+  (a função só grava `logs_ia`). Escolhido por ela como veículo de teste do painel logado — teste NÃO feito ainda.
+- **CSP/consentimento (verificado):** GTM, GA4 e Pixel da Meta carregam no `index.html` sem consentimento; `CookieConsent` só cobre o Clarity.
+  Com o PR #5, Google Ads/GA4 passam a coletar sem consentimento. Pendente de decisão de LGPD.
+- **PR #1 (Clara):** revisado (3 mudanças pequenas e coerentes), main trazida para a branch LOCAL; NÃO enviado, NÃO mesclado; único PR aberto.
+- **Auditoria Meta (só leitura):** conta oficial; 2 campanhas, gasto R$ 0; a "ativa" não tem anúncio; a de Vendas foi pausada pelo `carroecia_bot`
+  em 31/10 13:36. Pixel, página/IG e saldo não checados. Decisão dela pendente.
+- **Não testado:** painel logado (Salvar e copiar link, Criar post orgânico), 9:16 com fotos reais, Safari antigo, execução do código do PR #1.
+- **Becos sem saída:** MCP não sobe binário no Storage; `query_logs` com `function_edge_logs` funciona (sem corpo), contrariando a nota de 29/10;
+  `git switch -c ... origin/main` deixa upstream em `origin/main`; `git push` travando no `git-credential-manager` (usar `!` ou concluir a janela;
+  matar processos travados); classificador barra `gh pr merge` por mim às vezes (ela roda `! gh pr merge N --merge`); `[math]::Min` do PowerShell
+  arredonda para inteiro; heredoc com aspas misturadas quebra (usar `.py`).
+- **Sem destino:** stash de 28/09 "fix sync video"; worktree dos agentes (≥10 arquivos, branch nunca enviada); artigo da Central de Ajuda do gerador;
+  limpeza dos slugs/regras de IA dos modelos antigos; selo; potência (cv); 16:9.
 
 ## [01/11/2026] SESSÃO 37 (continuação) — padrão novo de criativo (Feed), achado de CORS e incidente do Compass
 
