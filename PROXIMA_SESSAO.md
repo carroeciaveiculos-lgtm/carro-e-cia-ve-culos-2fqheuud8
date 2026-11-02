@@ -1,7 +1,52 @@
 # Próxima sessão — Carro e Cia Veículos
 
-Atualizado em: 01/11/2026 (sessão 37)
-Substitui: 31/10/2026 (sessão 36)
+Atualizado em: 01/11/2026, fim do dia (sessão 38; BRT, já 02/11 em UTC)
+Substitui: 01/11/2026 (sessão 37)
+
+## SESSÃO 38 (01/11/2026, tarde/noite) — criativo no ar (Stories 9:16, modelo único, foto sem corte), CSP, auditoria Meta
+
+Estado verificado em 01/11 ~22h BRT (git, gh, MCP Supabase, MCP Meta, site publicado). **`origin/main` = `5af1382`** (merge do PR #10).
+Todos os PRs abaixo foram mesclados e o `Deploy producao` de cada um terminou com sucesso; site conferido (home, `/estoque`,
+`/admin/login` = 200) e o chunk `Estoque-*.js` publicado contém o código novo.
+
+- **PR #7** (`f651f0e`, 21:13 UTC): 3 estilos de IA, `size` validado, logo branca/vermelha transparente (`public/logo-carro-e-cia-branco-vermelho.png`).
+  Função `gerar-criativo-anuncio` **v11** (21:14 UTC). O 400 que ela viu antes foi front local x função antiga em produção (INFERIDO; corpo
+  da resposta não lido).
+- **PR #8** (`8f3a349`): regra no CLAUDE.md "lembrar de commit e push a cada alteração, em toda resposta".
+- **PR #5** (`cba7158`, 22:00 UTC): CSP libera Google Ads/Clarity/GA4. Decisão dela: "mesclar assim". **Pendente (LGPD):** GTM, GA4
+  (`G-BMYR1WXTT2`) e Pixel da Meta carregam no `index.html` SEM consentimento; o `CookieConsent` só cobre o Clarity. Com o CSP liberado o
+  Google Ads/GA4 passam a coletar sem consentimento. Ligar o consentimento às tags NÃO foi feito.
+- **PR #9** (`289a9db`, 23:55 UTC; mesclado por ela com `! gh pr merge`): **Stories 9:16** (1080x1920, área segura 250 px topo / 340 px base,
+  regra prática a conferir na prévia real do Instagram; IA em `1536x1008`) e **modelo único "Padrão Carro e Cia"** (os 2 antigos saíram do painel;
+  `criativo-anuncio.ts` de 343 para 94 linhas). Modelo antigo confirmado ausente no JS publicado.
+- **PR #10** (`5af1382`, 00:57 UTC de 02/11): **foto sem corte.** No 1:1 a janela é 2,06:1 e as fotos de celular são 4:3 (4000x3000): o `cover`
+  cortava 35% da altura. `fotoCover` virou `fotoInteira` (foto inteira + sobras desfocadas; foto da IA, já na proporção da janela, não muda).
+  Testado com as 3 fotos reais do Pajero (1:1 e 4:5).
+- **NÃO testado:** painel logado (gerar, "Salvar e copiar link", "Criar post orgânico"); 9:16 com fotos reais; Safari antigo (sem `ctx.filter`,
+  as sobras ficam pretas).
+- **PRIMEIRO PASSO DA PRÓXIMA SESSÃO — teste no Jeep Compass** (`13ee117d-e038-4fc3-beec-c1a0e2cc51c0`, ela escolheu): ela clica no site publicado
+  (Ctrl+F5): 1:1/4:5/9:16 sem IA, Salvar e copiar link, Criar post orgânico (fica Rascunho; NÃO aprovar). Eu confiro `veiculo_criativos` e
+  `social_posts` e apagamos o que for do teste só com "autorizo". Antes do teste: 0 criativos salvos; o único rascunho do Compass é o post
+  automático `post_organico_diario` (cron), não é do teste.
+- **PR #1 (Clara) segue ABERTO**, único PR aberto. Branch local `fix/numero-interno-nao-vira-lead` tem 2 commits NÃO enviados: merge da main
+  (`f98bba4`, conflitos só nos arquivos de memória) e um commit de memória (`e9428f6`) que ficou VENCIDO por este arquivo. Ao retomar: trazer a
+  main de novo, ficar com a memória da main, revisar e pedir o push. Código revisado e coerente (`ai-sdr` agendamento idempotente;
+  `re-engagement-cron` e `receive-leads` não tratam número interno como lead); sem teste de execução (sem `deno`).
+- **Auditoria Meta (só leitura), conta `4333456556917039`:** 2 campanhas, gasto R$ 0 em toda a vida. "Consórcio Auto" ATIVA mas SEM nenhum
+  anúncio (objetivo Tráfego x meta Conversas, destino indefinido, público aberto); "Consórcios Carro e Cia" PAUSADA pelo `carroecia_bot` em
+  31/10 13:36 (parece o teste ao vivo da Clara, INFERIDO). Pixel, página/IG e saldo NÃO checados. Decisão dela pendente (recriar com objetivo
+  Mensagens, WhatsApp `5534998037651`, público restrito = pedido separado; gasto real = pedido separado).
+- **Pendências sem destino:** stash de 28/09 "fix sync video" (4 arquivos, não revisado); worktree `agents/token-architecture-analysis-and-fixes`
+  (≥10 arquivos preparados, branch nunca enviada); artigo da Central de Ajuda do gerador (inserção em banco = pedido separado); limpeza dos slugs e
+  regras de IA dos 2 modelos antigos (função + `ai_prompts_config`, pedido separado); selo "Cautelar Aprovada"; potência (cv); 16:9.
+- **Becos sem saída novos:** (1) o MCP não sobe arquivo binário no Storage do Supabase (usado `public/`). (2) `query_logs` com
+  `source='function_edge_logs'` FUNCIONA (método/status/URL, sem corpo), contrariando a nota de 29/10. (3) `git switch -c ... origin/main` deixa o
+  upstream em `origin/main`: empurrar com o nome explícito. (4) `git push` travou várias vezes no `git-credential-manager` (login do GitHub no
+  Windows); resolve-se rodando o push com `!` ou concluindo a janela, nunca trocar credencial/remoto; matar os processos git travados antes de
+  tentar de novo. (5) O classificador do Claude Code barra `gh pr merge` feito por mim às vezes ("Merge Without Review"); alternativa:
+  ela roda `! gh pr merge N --merge`. (6) Script do PowerShell: `[math]::Min(1, 0.65)` arredonda para inteiro e dá 100%; usar Python para conta.
+  (7) Heredoc de Bash com aspas misturadas quebra: usar script `.py` em arquivo.
+- **Sujeira de ambiente (não verificado se ainda existe):** 4 processos do Vite de sessão anterior (portas 5173 e 5199) ficaram rodando.
 
 ## SESSÃO 37 (continuação, 01/11/2026) — novo padrão de criativo (Feed) + incidente do Compass
 
@@ -23,12 +68,12 @@ Branch `feat/criativo-padrao-feed` (criada de `origin/main` = `d764a17`), commit
   sem documento; 0 dos 65 veículos marcados; o site público já mostra selo quando marcada. Selo continua desligado.
 - **Cadastro:** não existe coluna de potência (cv); no novo padrão é texto digitado. Existe `cilindrada`.
 - **Fonte:** a Montserrat só estava declarada no tailwind, o app não a carregava; o padrão novo carrega do Google Fonts (CSP já permite).
-- **Incidente ABERTO — Jeep Compass `13ee117d-e038-4fc3-beec-c1a0e2cc51c0`:** em 01/11 11:48:22 BRT passou de `disponivel` para
-  `rascunho` (sessão logada dela, durante o teste ponta a ponta do gerador antigo); reconferido em 01/11, ainda `rascunho`. Causa NÃO
-  provada (clique da ferramenta ou ação dela). Demais campos idênticos. Restaurar só com "autorizo": opção A (Editar Veículo → Validar
-  e Salvar, recomendada) ou B (UPDATE direto, pula a validação e dispara gatilhos ML/WM). O teste gastou 2 chamadas da OpenAI.
-- **Próximos passos:** Pedido B (abrir PR + checar prévia do Cloudflare); aprovação visual dela; depois merge/deploy (pedidos dela);
-  selo (remover fundo do emblema); Stories; PR #5 (CSP) e PR #1 (divergido) seguem como descritos abaixo.
+- ~~**Incidente ABERTO — Jeep Compass**~~ **FECHADO em 01/11/2026 (noite):** ela republicou o veículo; conferido no banco, `status` = `disponivel`
+  (preço R$ 109.897,00, 20 fotos). Em 01/11 11:48:22 BRT ele tinha passado de `disponivel` para `rascunho` durante o teste do gerador antigo.
+  **Causa NUNCA provada** (clique da ferramenta ou ação dela). Verificado que o gerador não escreve na tabela `veiculos`: a função
+  `gerar-criativo-anuncio` só grava `logs_ia` e o painel não faz `update` em `veiculos`. O teste gastou 2 chamadas da OpenAI.
+- ~~**Próximos passos:** Pedido B; aprovação visual; selo; Stories; PR #5 e PR #1~~ — SUPERADO pela sessão 38 acima (PR #5 mesclado, Stories feito,
+  PR #1 ainda aberto, selo ainda desligado).
 
 ## SESSÃO 37 (01/11/2026) — conferência do estado real (nenhum código novo)
 
@@ -116,11 +161,13 @@ Marcar como RESOLVIDO, PENDENTE ou BLOQUEADO.
   Se aprovado: trocar escopo no linkedin-oauth-start/callback e no
   publicar-social (detalhe em docs/linkedin-integracao.md).
 
-## ONDE ESTAMOS (verificado pelo git em 01/11/2026, ~08:50)
+## ONDE ESTAMOS (verificado pelo git e gh em 01/11/2026, ~22h BRT)
 
-- **`origin/main`:** `d764a17` — merge do PR #4 (legenda por IA), 01/11/2026 14:13 UTC. Último código em produção.
-- **Branch de trabalho:** `fix/csp-liberar-rastreamento` (criada de `d764a17`; PR do CSP aberto, NÃO mesclado).
-- **PRs abertos:** #1 (divergido, ver sessão 37) e o do CSP. O PR #4 já está mesclado.
+- **`origin/main`:** `5af1382` — merge do PR #10 (foto sem corte), 02/11/2026 00:57 UTC. Último código em produção.
+- **Branch de trabalho:** `docs/memoria-sessao-38` (esta atualização de memória; criada de `5af1382`).
+- **PRs abertos:** só o **#1** (Clara, ver sessão 38). Mesclados em 01/11: #4, #5, #6, #7, #8, #9, #10.
+- **Funções:** `gerar-criativo-anuncio` v11 (21:14 UTC); nenhum PR após o #7 mexeu em `supabase/functions/**`.
+- ~~Anterior (08:50 de 01/11): `origin/main` = `d764a17`, PR do CSP aberto~~ — superado.
 - Histórico anterior (28/10): último commit era `e327c1f` (docs) e o último código era `e5e44c0` (google-ads-leads) — superado.
 
 ## O QUE ESTÁ NO AR (confirmado por commits)
