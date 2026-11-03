@@ -1,7 +1,31 @@
 # Próxima sessão — Carro e Cia Veículos
 
-Atualizado em: 02/11/2026 (sessão 39, continuação da 38)
-Substitui: 01/11/2026 (sessão 38, fim do dia)
+Atualizado em: 03/11/2026 (sessão 40, continuação da 39)
+Substitui: 02/11/2026 (sessão 39)
+
+## SESSÃO 40 (03/11/2026) — criativo com 4 fotos + selo (commitado), Etapa 0 da marca de IA (teste feito), WABA da Clara
+
+Estado verificado em 03/11 (git, `ls-remote`, banco, API do WhatsApp Business). **`origin/main` = `141a060`** (conferido com `git fetch`).
+Branches enviadas/locais: `docs/memoria-sessao-39` (enviada, `5a9b6fa`) e `feat/criativo-4-fotos-selo` (local, `2a4de6c`, ver o push abaixo).
+
+- **Criativo "Padrão Carro e Cia" com 4 fotos e selo "Cautelar Aprovada" — commit `2a4de6c`, SEM merge e SEM deploy.** Causa das 3 fotos: painel aceita 4
+  (`MAX_FOTOS_CRIATIVO`) e o desenho 3 (`MAX_FOTOS_PADRAO`); agora 4 (1 principal + 3). Selo no canto superior direito da foto principal, nos 3 formatos,
+  **sempre ligado** (decisão dela: todo veículo entra com cautelar aprovada). Lint 0 erros, build ok, desenho conferido no Chrome. **NÃO testado no painel
+  logado** (nem exportar/salvar). **Teste local não funciona:** o bucket bloqueia por CORS as fotos de `localhost`; testar na prévia do Cloudflare (a
+  confirmar se o PR gera) ou no site publicado depois do merge.
+- **Erros de texto no CADASTRO (verificado no banco, nada corrigido):** Jaguar F-Pace (TCT5A21) `versao` = "2.0 R-Dynamic SE 404cv (Hibrido)" sem acento;
+  Pajero (ETP3C11) `versao` = "TR4 2.0/ 2.0 Flex 16V 4x4 Aut." (repete "2.0"). **Decisão dela PENDENTE** (oferta minha: listar todos os veículos com esse tipo de erro
+  e corrigir; alteração de dado de produção = backup + pedido separado). No 9:16 a 3ª linha do título ficou apertada junto do preço (a conferir).
+- **Marca de IA nas fotos — decisão REVISADA em 03/11:** ela pediu a ferramenta e disse que "a edição não muda o estado real do carro" (palavra dela, não
+  verificável). Salvaguardas combinadas: não apagar o C2PA, original sempre intacta, preencher o canto (sem cortar). **Etapa 0 feita** (foto `OPZ2408`,
+  arquivos em `...\scratchpad\etapa0\`): marca some, emendas discretas. **Aguarda o veredito dela.** Se aprovar: itens 1–7 do plano (function
+  `tratar-marca-ia` com `verify_jwt = true`, 2 colunas em `veiculo_fotos_ia`, botão na aba "Fotos", carrossel aceitando as tratadas, textos/docs, artigo
+  da Central de Ajuda). Os comentários do código e do `CLAUDE.md` ("marcas NÃO são removidas") ficam desatualizados nessa hora.
+- **Código de 6 dígitos da Meta para o número da Clara: NÃO encontrado** (Gmail e webhook, falsos positivos de erro 131047/131042). O SMS vai ao chip do
+  número; origem do pedido NÃO identificada (o número já está `registered`). Possível problema de pagamento da conta (erro 131042, inferido).
+- **WABA da Clara reconfirmado:** `1530053735172401`; Phone Number ID `1231947963330780`; `+55 34 9738-4177`; business `carroeciaveiculos`. O "segundo WABA"
+  é provavelmente a conta de teste (inferido).
+- **Sujeira de ambiente (verificado 03/11):** 2 servidores Vite de 01/11 ainda rodando (portas 5173 e 5199); não fechei (não são desta sessão).
 
 ## SESSÃO 39 (02/11/2026) — PR #1 (Clara) pronto para mesclar; contas conferidas
 
@@ -69,7 +93,7 @@ Todos os PRs abaixo foram mesclados e o `Deploy producao` de cada um terminou co
   Mensagens, WhatsApp `5534998037651`, público restrito = pedido separado; gasto real = pedido separado).
 - **Pendências sem destino:** stash de 28/09 "fix sync video" (4 arquivos, não revisado); worktree `agents/token-architecture-analysis-and-fixes`
   (≥10 arquivos preparados, branch nunca enviada); artigo da Central de Ajuda do gerador (inserção em banco = pedido separado); limpeza dos slugs e
-  regras de IA dos 2 modelos antigos (função + `ai_prompts_config`, pedido separado); selo "Cautelar Aprovada"; potência (cv); 16:9.
+  regras de IA dos 2 modelos antigos (função + `ai_prompts_config`, pedido separado); ~~selo "Cautelar Aprovada"~~ (FEITO em 03/11, commit `2a4de6c`, ver sessão 40); potência (cv); 16:9.
 - **Becos sem saída novos:** (1) o MCP não sobe arquivo binário no Storage do Supabase (usado `public/`). (2) `query_logs` com
   `source='function_edge_logs'` FUNCIONA (método/status/URL, sem corpo), contrariando a nota de 29/10. (3) `git switch -c ... origin/main` deixa o
   upstream em `origin/main`: empurrar com o nome explícito. (4) `git push` travou várias vezes no `git-credential-manager` (login do GitHub no
@@ -77,7 +101,7 @@ Todos os PRs abaixo foram mesclados e o `Deploy producao` de cada um terminou co
   tentar de novo. (5) O classificador do Claude Code barra `gh pr merge` feito por mim às vezes ("Merge Without Review"); alternativa:
   ela roda `! gh pr merge N --merge`. (6) Script do PowerShell: `[math]::Min(1, 0.65)` arredonda para inteiro e dá 100%; usar Python para conta.
   (7) Heredoc de Bash com aspas misturadas quebra: usar script `.py` em arquivo.
-- **Sujeira de ambiente (não verificado se ainda existe):** 4 processos do Vite de sessão anterior (portas 5173 e 5199) ficaram rodando.
+- **Sujeira de ambiente:** 4 processos do Vite de sessão anterior (portas 5173 e 5199) ficaram rodando. **Verificado em 03/11/2026: continuam rodando** (2 servidores, `bun`+`node` cada).
 
 ## SESSÃO 37 (continuação, 01/11/2026) — novo padrão de criativo (Feed) + incidente do Compass
 
@@ -96,7 +120,7 @@ Branch `feat/criativo-padrao-feed` (criada de `origin/main` = `d764a17`), commit
   NÃO verificado) ou liberar `localhost:5173` no R2 (config externa, pedido separado).
 - **Selo "Cautelar Aprovada":** emblema salvo em `Fotos\IMAGENS PARA ANUNCIOS\Emblema Cautelar Aprovada.png` (1254x1254, fundo BRANCO,
   sem transparência: precisa remover o fundo antes de usar no preto). `veiculos.laudo_cautelar` é caixinha manual (`VehicleFormModal`),
-  sem documento; 0 dos 65 veículos marcados; o site público já mostra selo quando marcada. Selo continua desligado.
+  sem documento; 0 dos 65 veículos marcados; o site público já mostra selo quando marcada. ~~Selo continua desligado.~~ Ligado em 03/11/2026 (commit `2a4de6c`), sem depender da caixinha, por decisão dela.
 - **Cadastro:** não existe coluna de potência (cv); no novo padrão é texto digitado. Existe `cilindrada`.
 - **Fonte:** a Montserrat só estava declarada no tailwind, o app não a carregava; o padrão novo carrega do Google Fonts (CSP já permite).
 - ~~**Incidente ABERTO — Jeep Compass**~~ **FECHADO em 01/11/2026 (noite):** ela republicou o veículo; conferido no banco, `status` = `disponivel`

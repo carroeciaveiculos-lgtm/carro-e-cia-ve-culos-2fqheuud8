@@ -17,15 +17,16 @@ REGRA: não leia este arquivo inteiro. Leia o índice, escolha o bloco, use offs
 
 # Memória de trabalho — Carro e Cia
 
-## [03/11/2026] SESSÃO 40 — marca de IA nas fotos (decisão em revisão), código de 6 dígitos da Meta e WABA da Clara reconfirmado
+## [03/11/2026] SESSÃO 40 — criativo com 4 fotos + selo, marca de IA nas fotos (Etapa 0), código de 6 dígitos da Meta e WABA da Clara reconfirmado
 
 - **Marca de IA nas fotos (NADA implementado):** ela pediu um mecanismo na aba "Fotos" para remover a marca d'água do Galaxy AI. Recusei de início
   (decisão de 04/10/2026). Ela pediu os argumentos contra; o mais forte foi que o risco depende do que a IA editou. Ela afirmou: "a edição não muda o
   estado real do carro" (palavra dela, **não verificável por foto**). Com isso passei a aceitar a ferramenta, com salvaguardas: **não apagar o C2PA**
   (a Meta continua podendo rotular), **original sempre intacta** e botão desfazer, e preencher o canto da marca em vez de cortar (regra de card sem corte).
   Proposta feita: Etapa 0 (teste em 1 foto, antes e depois) + 7 itens (function `tratar-marca-ia` com `verify_jwt = true`, 2 colunas em
-  `veiculo_fotos_ia`, botão na aba "Fotos", carrossel aceitando as tratadas, textos/docs, artigo da Central de Ajuda). **Status: aguardando o "autorizo"
-  dela; nem a Etapa 0 foi feita.** Código lido (só leitura): a detecção olha só o C2PA (`_shared/foto-marca-ia.ts`), então foto reenviada pelo WhatsApp
+  `veiculo_fotos_ia`, botão na aba "Fotos", carrossel aceitando as tratadas, textos/docs, artigo da Central de Ajuda). ~~**Status: aguardando o "autorizo"
+  dela; nem a Etapa 0 foi feita.**~~ **Atualizado em 03/11 (mesma sessão): ela autorizou o plano e a Etapa 0. Etapa 0 FEITA (ver o bullet "Etapa 0" abaixo);
+  itens 1–7 do plano NÃO feitos, aguardam o veredito dela sobre a foto tratada.** Código lido (só leitura): a detecção olha só o C2PA (`_shared/foto-marca-ia.ts`), então foto reenviada pelo WhatsApp
   (sem metadados, com a marca visível) **não é detectada hoje**. Os comentários do código e a regra de `CLAUDE.md` ("marcas NÃO são removidas") ficam
   desatualizados se ela autorizar. O arquivo de memória do assistente `nao-remover-marca-ia-das-fotos` também diz o contrário e precisa ser revisado junto.
 - **Código de 6 dígitos da Meta para o número da Clara (verificado em 03/11 ~11h UTC): NÃO encontrado.** Gmail (Meta/Facebook/WhatsApp, 3 dias): vazio.
@@ -41,8 +42,28 @@ REGRA: não leia este arquivo inteiro. Leia o índice, escolha o bloco, use offs
   `meta_accounts` **não** tem nenhuma linha com `waba_id`/`phone_number_id`: só esta memória e o webhook sustentam o ID.
 - **Segundo WABA (pendência da sessão 24) — fechada em 03/11/2026 como INFERIDA:** a API informa 2 contas no business e 1 número de teste oculto;
   o segundo WABA é muito provavelmente a conta de teste ("Test WhatsApp Business Account"). Não consultei a conta oculta.
-- **Estado do repositório no início desta sessão:** branch `docs/memoria-sessao-39`; `MEMORY_WORK.MD` e `PROXIMA_SESSAO.md` já constavam como modificados e sem
-  commit (da sessão 39). Esta edição soma-se a essas; **continua sem commit e sem push**. `PROXIMA_SESSAO.md` NÃO foi atualizado nesta edição.
+- **Criativo "Padrão Carro e Cia": 4 fotos + selo (FEITO em 03/11, commit `2a4de6c`, branch `feat/criativo-4-fotos-selo`; sem merge, sem deploy).**
+  Causa das 3 fotos (verificada no código): `MAX_FOTOS_CRIATIVO = 4` (painel) x `MAX_FOTOS_PADRAO = 3` (desenho); a 4ª foto escolhida sumia sem aviso.
+  Agora 1 principal + 3 complementares. Selo "Cautelar Aprovada" no canto superior direito da foto principal (13% da largura, sombra leve), nos 3 formatos;
+  `public/selo-cautelar-aprovada.png` (320x320, fundo transparente, feito do emblema da pasta "IMAGENS PARA ANUNCIOS" com Pillow em venv na pasta temporária).
+  **Decisão dela (03/11): o selo aparece SEMPRE, sem depender de `laudo_cautelar`** (todo veículo entra com cautelar aprovada; em 01/11 0 dos 65 estavam
+  marcados, então condicionar apagaria o selo de todos). Se um dia entrar veículo sem cautelar aprovada, voltar a condicionar (propaganda enganosa).
+  Validado: `bun run lint` 0 erros (92 avisos), `bun run build` ok, desenho renderizado no Chrome com 4 fotos reais do Jaguar (1:1, 4:5, 9:16).
+  **NÃO testado:** painel logado, exportar/salvar, 4 fotos no 9:16 em tela real. No 9:16 a 3ª linha do título ("2.0 • Híbrido") ficou apertada junto da caixa de preço
+  (já existia, não alterado; a conferir).
+- **CORREÇÃO (03/11, verificado no banco):** o "Hibrido" sem acento NÃO é só da arte de referência: o cadastro do Jaguar (`veiculos.versao`, placa TCT5A21) é
+  "2.0 R-Dynamic SE 404cv (Hibrido)". O "2.0/ 2.0" do Pajero (placa ETP3C11) também está em `versao`. Dado de produção: NADA foi corrigido; correção = pedido
+  separado, com backup. No 4:5/9:16 o "Híbrido" aparece duas vezes (versão + linha do motor).
+- **Etapa 0 da marca de IA (FEITA em 03/11, só arquivos temporários; nada subiu para o projeto):** foto `OPZ2408` (Freelander2, 2518x2518); marca em ~x 40–795,
+  y 2415–2485 sobre o piso xadrez. Preenchimento com trechos do próprio piso por segmento (script `preencher_canto.py`). Resultado: marca some; em zoom 2×
+  há emendas discretas entre trechos; em ~75% só uma emenda muito leve. C2PA e original intactos (a original nunca é alterada). Arquivos em
+  `...\scratchpad\etapa0\` (`original.jpg`, `tratada.png`, `comparacao_real.png`). **Aguarda o veredito dela.** Pillow/numpy só no venv temporário.
+- **Becos sem saída (03/11):** (1) teste local do painel NÃO monta a prévia: `imagens.carroeciamotors.com.br` bloqueia por CORS as fotos de `localhost` (as 4 falharam
+  de novo; o doc `R2_CORS_CONFIGURATION.md` diz que o 5173 está liberado: desatualizado ou não cobre esse domínio). Dá para renderizar o desenho no Chrome sem
+  `crossOrigin` (só não exporta). (2) `Get-NetTCPConnection` não achou o Vite da porta 8080; achar por `Get-CimInstance Win32_Process` + linha de comando.
+  (3) `vite` da porta 5173 e 5199 de 01/11 continuam rodando (sujeira de sessão anterior, não fechei).
+- **Repositório:** commit `5a9b6fa` (memória das sessões 39/40) enviado em 03/11 à branch `docs/memoria-sessao-39` (push normal, conferido com `ls-remote`);
+  commit `2a4de6c` (código do criativo) na branch `feat/criativo-4-fotos-selo`, criada sobre a de memória, então um PR dela leva os dois commits.
 - **Becos sem saída:** a ferramenta `whatsapp_biz_phone_numbers` exige escolher o business (não aceita só o telefone); das 4 empresas, só
   `carroeciaveiculos` é operável (nas outras não há app administrado); `payload::text ~ 'code'` no webhook dá falso positivo com `errors[].code`.
 
