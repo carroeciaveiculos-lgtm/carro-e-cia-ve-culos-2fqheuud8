@@ -11,7 +11,11 @@
 //   de mercado, a conferir na prévia real do Instagram). O que sobra (1330 px) é quase a
 //   altura do 4:5 (1350 px), por isso as medidas internas e o tamanho pedido à IA são parecidos.
 // - 16:9: ainda sem layout próprio (cada formato precisa do seu, não basta esticar).
-// - SEM o selo "Cautelar Aprovada" (falta um registro verificável da vistoria).
+// - Selo "Cautelar Aprovada" (03/11/2026): discreto, no canto superior direito da foto principal,
+//   em todos os formatos. Antes era omitido por falta de registro verificável da vistoria; a
+//   Adriana confirmou que TODO veículo entra no estoque com a cautelar aprovada, então o selo
+//   não depende do campo `laudo_cautelar`. Se um dia entrar veículo sem cautelar aprovada,
+//   é preciso voltar a condicionar o selo (propaganda enganosa se aparecer sem ter).
 // - "à vista" é campo editável, nunca texto fixo; nenhum dado é inventado.
 
 export type FormatoPadrao = '1:1' | '4:5' | '9:16'
@@ -61,8 +65,13 @@ export const TAMANHO_IA_PADRAO: Record<FormatoPadrao, string> = {
 }
 
 export const MODELO_PADRAO_SLUG = 'criativo_padrao_carro_e_cia'
-// Fotos usadas por este padrão: 1 principal + 2 complementares.
-export const MAX_FOTOS_PADRAO = 3
+// Fotos usadas por este padrão: 1 principal + 3 complementares (03/11/2026; eram 2).
+// Deve ser igual a MAX_FOTOS_CRIATIVO (criativo-anuncio.ts): o painel deixa escolher esse
+// tanto e, se este limite for menor, a última foto escolhida some sem aviso.
+export const MAX_FOTOS_PADRAO = 4
+
+// Selo servido do próprio site (public/): PNG com transparência real, 320x320.
+export const SELO_CAUTELAR_URL = '/selo-cautelar-aprovada.png'
 
 export interface DadosCriativoPadrao {
   marca: string
@@ -341,14 +350,17 @@ function desenharFundo(ctx: CanvasRenderingContext2D, W: number, H: number) {
   ctx.restore()
 }
 
-// Desenha o criativo. `fotos[0]` = principal; `fotos[1..2]` = complementares.
+// Desenha o criativo. `fotos[0]` = principal; `fotos[1..3]` = complementares.
 // `logo` é a logo ORIGINAL para fundo preto (já recortada), ou null.
+// `selo` é o emblema "Cautelar Aprovada" (transparente), ou null (o criativo sai sem ele
+// em vez de quebrar se a imagem não carregar).
 export function desenharCriativoPadrao(
   canvas: HTMLCanvasElement,
   formato: FormatoPadrao,
   fotos: HTMLImageElement[],
   logo: HTMLCanvasElement | null,
   d: DadosCriativoPadrao,
+  selo: HTMLImageElement | null = null,
 ) {
   const { w: W, h: H, seguroTopo, seguroBase } = FORMATOS_PADRAO[formato]
   canvas.width = W
@@ -399,9 +411,26 @@ export function desenharCriativoPadrao(
   if (logo && logo.width) {
     const lw = Math.round(0.28 * W)
     const lh = (lw * logo.height) / logo.width
+    // A logo original é bem maior (2172 px) que o tamanho final: reduz com a melhor
+    // qualidade do navegador para as bordas ficarem nítidas e fiéis ao arquivo.
+    ctx.imageSmoothingEnabled = true
+    ctx.imageSmoothingQuality = 'high'
     ctx.drawImage(logo, Math.round(0.022 * W), (polH - lh) / 2, lw, lh)
   }
   ctx.restore()
+
+  // Selo "Cautelar Aprovada": canto superior direito da foto principal, pequeno (13% da
+  // largura) e com sombra leve para destacar sem gritar. O canto esquerdo já é da logo.
+  if (selo && selo.width) {
+    const lado = Math.round(0.13 * W)
+    const folga = Math.round(0.014 * W)
+    ctx.save()
+    ctx.shadowColor = 'rgba(0,0,0,0.55)'
+    ctx.shadowBlur = 10
+    ctx.shadowOffsetY = 3
+    ctx.drawImage(selo, W - M - lado - folga, fotoY + folga, lado, lado)
+    ctx.restore()
+  }
 
   let y = fotoY + fotoH + GAP
 
@@ -516,7 +545,7 @@ export function desenharCriativoPadrao(
   }
   y += specsH
 
-  // ---- Fotos complementares (até 2) ----
+  // ---- Fotos complementares (até 3) ----
   if (compH) {
     y += GAP
     const gapF = quadrado ? 10 : 12

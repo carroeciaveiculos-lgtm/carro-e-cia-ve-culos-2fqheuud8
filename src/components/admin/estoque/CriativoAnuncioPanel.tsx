@@ -28,6 +28,7 @@ import {
   FORMATOS_PADRAO,
   MAX_FOTOS_PADRAO,
   MODELO_PADRAO_SLUG,
+  SELO_CAUTELAR_URL,
   TAMANHO_IA_PADRAO,
   desenharCriativoPadrao,
   prepararFontesPadrao,
@@ -157,13 +158,21 @@ export function CriativoAnuncioPanel({ veiculo }: { veiculo: any }) {
       .then((i) => prepararLogo(i, false))
       .catch(() => null)
 
+  // Selo "Cautelar Aprovada" (transparente). Se falhar, o criativo sai sem ele em vez de quebrar.
+  const carregarSelo = (): Promise<HTMLImageElement | null> =>
+    imagem(SELO_CAUTELAR_URL).catch(() => null)
+
   // Prévia do modelo: só desenho, não gasta IA.
   useEffect(() => {
     if (fotosSel.length === 0) return
     let cancelado = false
     ;(async () => {
       try {
-        const [imgs, logo] = await Promise.all([Promise.all(fotosSel.map(imagem)), carregarLogo()])
+        const [imgs, logo, selo] = await Promise.all([
+          Promise.all(fotosSel.map(imagem)),
+          carregarLogo(),
+          carregarSelo(),
+        ])
         if (cancelado) return
         // Prévia do Padrão Carro e Cia: foto original, sem IA.
         const canvasPadrao = previewRefs.current[MODELO_PADRAO_SLUG]
@@ -176,6 +185,7 @@ export function CriativoAnuncioPanel({ veiculo }: { veiculo: any }) {
             imgs.slice(0, MAX_FOTOS_PADRAO),
             logo,
             dadosPadrao,
+            selo,
           )
         }
       } catch (err: any) {
@@ -252,7 +262,11 @@ export function CriativoAnuncioPanel({ veiculo }: { veiculo: any }) {
         if (!data?.success) throw new Error(data?.error || 'Falha ao tratar a foto')
         principalTratada = await carregarImagem(data.imagem_tratada)
       }
-      const [imgs, logo] = await Promise.all([Promise.all(fotosSel.map(imagem)), carregarLogo()])
+      const [imgs, logo, selo] = await Promise.all([
+        Promise.all(fotosSel.map(imagem)),
+        carregarLogo(),
+        carregarSelo(),
+      ])
       await prepararFontesPadrao()
       const canvas = finalRef.current
       if (!canvas) throw new Error('Não foi possível montar o criativo final')
@@ -260,7 +274,7 @@ export function CriativoAnuncioPanel({ veiculo }: { veiculo: any }) {
         0,
         MAX_FOTOS_PADRAO,
       )
-      desenharCriativoPadrao(canvas, formatoPadrao, fotosUsadas, logo, dadosPadrao)
+      desenharCriativoPadrao(canvas, formatoPadrao, fotosUsadas, logo, dadosPadrao, selo)
       setResultado({
         slug: comIA ? estiloIA : MODELO_PADRAO_SLUG,
         formato:
@@ -566,8 +580,8 @@ export function CriativoAnuncioPanel({ veiculo }: { veiculo: any }) {
                         Padrão Carro e Cia
                       </Button>
                       <p className="text-[11px] text-slate-500">
-                        Foto original, sem IA. Usa a 1ª foto como principal e até 2 como
-                        complementares.
+                        Foto original, sem IA. Usa a 1ª foto como principal e até 3 como
+                        complementares. O selo "Cautelar Aprovada" entra no canto da foto principal.
                       </p>
                       <div className="space-y-1 rounded-lg border bg-slate-50 p-2">
                         <Label className="text-[11px] text-slate-600">
