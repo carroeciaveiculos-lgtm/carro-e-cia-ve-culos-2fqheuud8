@@ -1,7 +1,37 @@
 # Próxima sessão — Carro e Cia Veículos
 
-Atualizado em: 01/11/2026, fim do dia (sessão 38; BRT, já 02/11 em UTC)
-Substitui: 01/11/2026 (sessão 37)
+Atualizado em: 02/11/2026 (sessão 39, continuação da 38)
+Substitui: 01/11/2026 (sessão 38, fim do dia)
+
+## SESSÃO 39 (02/11/2026) — PR #1 (Clara) pronto para mesclar; contas conferidas
+
+Estado verificado em 02/11 (gh, git ls-remote). **`origin/main` = `141a060`** (último merge, só docs; `5af1382` é o último de código).
+
+- **PR #1 (Clara) PRONTO, FALTA SÓ O MERGE DELA.** Branch `fix/numero-interno-nao-vira-lead` enviada ao GitHub em 02/11 (`1d18c23..a982374`,
+  push normal, sem force; ela rodou `! git push origin fix/numero-interno-nao-vira-lead` e concluiu o login). Verificado: `OPEN`,
+  `MERGEABLE`, `CLEAN`, check "Workers Builds" = SUCCESS. Altera 5 arquivos (`AGENTS.md`, `CLAUDE.md`, `ai-sdr`, `re-engagement-cron`,
+  `receive-leads`; 47 linhas); a memória ficou idêntica à da main.
+  **Próximo passo:** ela roda `! gh pr merge 1 --merge` (o `gh pr merge` anterior falhou porque o GitHub ainda tinha a versão antiga com
+  conflito). O merge dispara o deploy de 3 funções (`ai-sdr`, `re-engagement-cron`, `receive-leads`) pelo `deploy-functions.yml`.
+  Depois: eu conferir `list_edge_functions` (versão e hora das 3), `gh run list`, logs e o site (home, `/estoque`, `/admin/login`).
+  O código do PR #1 NUNCA foi executado (sem `deno`): acompanhar os primeiros leads/agendamentos da Clara.
+  Se o merge ainda não tiver acontecido ao abrir a sessão: conferir `gh pr view 1` antes de qualquer coisa.
+- **Contas (verificado por leitura em 02/11):** GitHub = `carroeciaveiculos-lgtm` (única logada no `gh`, escopos repo/read:org/gist; remoto
+  `origin` = `carroeciaveiculos-lgtm/carro-e-cia-ve-culos-2fqheuud8`; commits como "Adriana Araújo" `lgacomerciodeveiculos@gmail.com`).
+  Cloudflare = conta "Lgacomerciodeveiculos@gmail.com's Account" (`96c599909cb2c55408eceedc08a01aca`), acesso por token de conta na variável
+  `CLOUDFLARE_API_TOKEN` (permissões do token NÃO verificadas); Worker `carro-e-cia-ve-culos-2fqheuud8`. O Claude Code está logado com outro
+  e-mail (`nutriadrianaaraujo22@gmail.com`), que não é nenhuma dessas contas.
+- **Aviso de assinatura (02/11):** o Claude Code mostrou "não consegue usar sua assinatura, pagamento em atraso"; ela rodou `/login` e deu
+  sucesso. Se voltar: claude.ai/settings/billing.
+- **Dúvida dela SEM resposta:** "corrigiu a imagem da logo no modelo?" no teste do Compass. O banco mostra 0 criativos salvos e nenhum post
+  novo (o teste não gravou nada). Pedir a captura ou a descrição do que ela viu.
+- **Notas de 28 e 29/10 PERDIDAS** ao ficar com a memória da main no PR #1 (defeitos conhecidos da Clara: remarcar deixa a linha antiga
+  `agendado`/dupla reserva; lead duplicado 1093; `sendWhatsApp` do `ai-sdr` ignora a resposta da Meta; `daily-report-cron` não confere `res.ok`;
+  pendências de fotos NaPista/WM; lead 0151; Paolo; facebook_ads/instagram_ads sem lead). Decisão dela pendente: reinserir via PR de documentação?
+- **Conectores desta sessão:** os do claude.ai (Cloudflare Developer Platform, Supabase, Vercel, Windsor) desconectaram; `supabase`, `cloudflare`
+  e `meta-ads` seguem. `brevo` (401) e `n8n` (404) falham ao conectar.
+- **Becos sem saída novos:** (1) `gh pr merge` antes do push da versão corrigida não adianta (o PR continua `CONFLICTING`). (2) Dois `git push`
+  seguidos travaram no `git-credential-manager`; funcionou quando ela rodou com `!` e concluiu a janela.
 
 ## SESSÃO 38 (01/11/2026, tarde/noite) — criativo no ar (Stories 9:16, modelo único, foto sem corte), CSP, auditoria Meta
 
@@ -28,10 +58,11 @@ Todos os PRs abaixo foram mesclados e o `Deploy producao` de cada um terminou co
   (Ctrl+F5): 1:1/4:5/9:16 sem IA, Salvar e copiar link, Criar post orgânico (fica Rascunho; NÃO aprovar). Eu confiro `veiculo_criativos` e
   `social_posts` e apagamos o que for do teste só com "autorizo". Antes do teste: 0 criativos salvos; o único rascunho do Compass é o post
   automático `post_organico_diario` (cron), não é do teste.
-- **PR #1 (Clara) segue ABERTO**, único PR aberto. Branch local `fix/numero-interno-nao-vira-lead` tem 2 commits NÃO enviados: merge da main
+- ~~**PR #1 (Clara) segue ABERTO**, único PR aberto. Branch local `fix/numero-interno-nao-vira-lead` tem 2 commits NÃO enviados: merge da main
   (`f98bba4`, conflitos só nos arquivos de memória) e um commit de memória (`e9428f6`) que ficou VENCIDO por este arquivo. Ao retomar: trazer a
   main de novo, ficar com a memória da main, revisar e pedir o push. Código revisado e coerente (`ai-sdr` agendamento idempotente;
-  `re-engagement-cron` e `receive-leads` não tratam número interno como lead); sem teste de execução (sem `deno`).
+  `re-engagement-cron` e `receive-leads` não tratam número interno como lead); sem teste de execução (sem `deno`).~~
+  **Superado em 02/11 (sessão 39):** a branch foi enviada (`a982374`) e o PR está CLEAN; falta só o merge dela.
 - **Auditoria Meta (só leitura), conta `4333456556917039`:** 2 campanhas, gasto R$ 0 em toda a vida. "Consórcio Auto" ATIVA mas SEM nenhum
   anúncio (objetivo Tráfego x meta Conversas, destino indefinido, público aberto); "Consórcios Carro e Cia" PAUSADA pelo `carroecia_bot` em
   31/10 13:36 (parece o teste ao vivo da Clara, INFERIDO). Pixel, página/IG e saldo NÃO checados. Decisão dela pendente (recriar com objetivo
@@ -163,9 +194,10 @@ Marcar como RESOLVIDO, PENDENTE ou BLOQUEADO.
 
 ## ONDE ESTAMOS (verificado pelo git e gh em 01/11/2026, ~22h BRT)
 
-- **`origin/main`:** `5af1382` — merge do PR #10 (foto sem corte), 02/11/2026 00:57 UTC. Último código em produção.
-- **Branch de trabalho:** `docs/memoria-sessao-38` (esta atualização de memória; criada de `5af1382`).
-- **PRs abertos:** só o **#1** (Clara, ver sessão 38). Mesclados em 01/11: #4, #5, #6, #7, #8, #9, #10.
+- **Atualização de 02/11 (sessão 39):** `origin/main` = `141a060` (merge do PR #11, só docs). Último código em produção: `5af1382`
+  (PR #10). **PR #1 (Clara) aberto, CLEAN, aguardando o merge dela** (ver sessão 39). Branch desta memória: `docs/memoria-sessao-39`.
+- ~~**`origin/main`:** `5af1382`~~ — superado por `141a060` (PR #11 de memória da sessão 38).
+- **PRs abertos:** só o **#1** (Clara, ver sessão 39). Mesclados em 01/11: #4, #5, #6, #7, #8, #9, #10, #11.
 - **Funções:** `gerar-criativo-anuncio` v11 (21:14 UTC); nenhum PR após o #7 mexeu em `supabase/functions/**`.
 - ~~Anterior (08:50 de 01/11): `origin/main` = `d764a17`, PR do CSP aberto~~ — superado.
 - Histórico anterior (28/10): último commit era `e327c1f` (docs) e o último código era `e5e44c0` (google-ads-leads) — superado.

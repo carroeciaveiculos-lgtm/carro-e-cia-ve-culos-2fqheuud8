@@ -1,7 +1,7 @@
 # ÍNDICE — MEMORY_WORK Carro e Cia
 
 > ESTADO ATUAL: leia `PROXIMA_SESSAO.md` primeiro. Este arquivo é histórico.
-> Última sessão registrada: 01/11/2026 (sessão 38).
+> Última sessão registrada: 03/11/2026 (sessão 40).
 
 | Bloco | Conteúdo |
 |---|---|
@@ -16,6 +16,49 @@ REGRA: não leia este arquivo inteiro. Leia o índice, escolha o bloco, use offs
 ---
 
 # Memória de trabalho — Carro e Cia
+
+## [03/11/2026] SESSÃO 40 — marca de IA nas fotos (decisão em revisão), código de 6 dígitos da Meta e WABA da Clara reconfirmado
+
+- **Marca de IA nas fotos (NADA implementado):** ela pediu um mecanismo na aba "Fotos" para remover a marca d'água do Galaxy AI. Recusei de início
+  (decisão de 04/10/2026). Ela pediu os argumentos contra; o mais forte foi que o risco depende do que a IA editou. Ela afirmou: "a edição não muda o
+  estado real do carro" (palavra dela, **não verificável por foto**). Com isso passei a aceitar a ferramenta, com salvaguardas: **não apagar o C2PA**
+  (a Meta continua podendo rotular), **original sempre intacta** e botão desfazer, e preencher o canto da marca em vez de cortar (regra de card sem corte).
+  Proposta feita: Etapa 0 (teste em 1 foto, antes e depois) + 7 itens (function `tratar-marca-ia` com `verify_jwt = true`, 2 colunas em
+  `veiculo_fotos_ia`, botão na aba "Fotos", carrossel aceitando as tratadas, textos/docs, artigo da Central de Ajuda). **Status: aguardando o "autorizo"
+  dela; nem a Etapa 0 foi feita.** Código lido (só leitura): a detecção olha só o C2PA (`_shared/foto-marca-ia.ts`), então foto reenviada pelo WhatsApp
+  (sem metadados, com a marca visível) **não é detectada hoje**. Os comentários do código e a regra de `CLAUDE.md` ("marcas NÃO são removidas") ficam
+  desatualizados se ela autorizar. O arquivo de memória do assistente `nao-remover-marca-ia-das-fotos` também diz o contrário e precisa ser revisado junto.
+- **Código de 6 dígitos da Meta para o número da Clara (verificado em 03/11 ~11h UTC): NÃO encontrado.** Gmail (Meta/Facebook/WhatsApp, 3 dias): vazio.
+  `meta_webhook_logs` (3 dias): 4 registros casaram com "código + número", todos **falsos positivos** (erros de entrega `131047` e `131042`, não código).
+  O código de verificação costuma ir por SMS/ligação ao chip do número, que o assistente não lê. A origem do pedido de código **não foi identificada**.
+  Estranho porque o número já está `registered`; pode ser outro número sendo adicionado. Dúvida aberta para ela.
+- **Erro `131042` em 02/11 ~10h UTC (inferido, não verificado):** na documentação da Meta indica problema de elegibilidade/pagamento da conta. Conferir
+  o método de pagamento do WhatsApp Business.
+- **WABA da Clara reconfirmado (verificado em 03/11, duas fontes):** WABA `1530053735172401`, Phone Number ID `1231947963330780`, número
+  `+55 34 9738-4177` ("Carro e Cia Motors"), `linked` e `registered`, business `carroeciaveiculos` (`298827564319943`). Webhook: 267 eventos em 7 dias,
+  todos com `entry.id = 1530053735172401`, último em 03/11 ~11h UTC. A API de WhatsApp Business lista a conta como **CRM_IA** e mostra um segundo ID
+  (`3077222646002046`, "conta do WhatsApp"); o `1530053735172401` é o "ID da conta de mensagens". Para webhook/token da Clara, usar o `1530053735172401`.
+  `meta_accounts` **não** tem nenhuma linha com `waba_id`/`phone_number_id`: só esta memória e o webhook sustentam o ID.
+- **Segundo WABA (pendência da sessão 24) — fechada em 03/11/2026 como INFERIDA:** a API informa 2 contas no business e 1 número de teste oculto;
+  o segundo WABA é muito provavelmente a conta de teste ("Test WhatsApp Business Account"). Não consultei a conta oculta.
+- **Estado do repositório no início desta sessão:** branch `docs/memoria-sessao-39`; `MEMORY_WORK.MD` e `PROXIMA_SESSAO.md` já constavam como modificados e sem
+  commit (da sessão 39). Esta edição soma-se a essas; **continua sem commit e sem push**. `PROXIMA_SESSAO.md` NÃO foi atualizado nesta edição.
+- **Becos sem saída:** a ferramenta `whatsapp_biz_phone_numbers` exige escolher o business (não aceita só o telefone); das 4 empresas, só
+  `carroeciaveiculos` é operável (nas outras não há app administrado); `payload::text ~ 'code'` no webhook dá falso positivo com `errors[].code`.
+
+## [02/11/2026] SESSÃO 39 — PR #1 (Clara) enviado e pronto para mesclar; contas GitHub/Cloudflare conferidas
+
+- **Feito (verificado em 02/11):** branch `fix/numero-interno-nao-vira-lead` enviada ao GitHub (`1d18c23..a982374`, push normal) depois de dois
+  `git push` travados no `git-credential-manager`; ela concluiu o login rodando o push com `!`. PR #1: `OPEN`, `MERGEABLE`, `CLEAN`, check
+  "Workers Builds" SUCCESS. `origin/main` segue em `141a060`. **Falta o merge dela** (`! gh pr merge 1 --merge`), que publica `ai-sdr`,
+  `re-engagement-cron` e `receive-leads`. Código nunca executado (sem `deno`).
+- **Por que o primeiro `gh pr merge 1` falhou:** o GitHub ainda tinha a versão antiga da branch (conflito nos arquivos de memória); a versão
+  corrigida só existia no computador dela.
+- **Contas (verificado):** GitHub `carroeciaveiculos-lgtm`; Cloudflare "Lgacomerciodeveiculos@gmail.com's Account"
+  (`96c599909cb2c55408eceedc08a01aca`) via token de conta em `CLOUDFLARE_API_TOKEN`; permissões do token não verificadas. Claude Code logado
+  com outro e-mail. Aviso de assinatura em atraso resolvido com `/login`.
+- **Em aberto:** logo no Compass (sem resposta; teste não gravou nada); notas de 28 e 29/10 perdidas (reinserir?); consentimento das tags (LGPD);
+  campanha Meta; artigo da Central de Ajuda; stash de 28/09; worktree dos agentes. Detalhe em `PROXIMA_SESSAO.md`, sessão 39.
 
 ## [01/11/2026] SESSÃO 38 — criativo no ar (PRs #7, #9, #10), PRs #5 e #8, leitura do PR #1 e auditoria da conta Meta `4333456556917039`
 
@@ -1083,7 +1126,7 @@ A sessão "Olá" mandou um `git bundle` (`C:\Users\adria\Downloads\3-commits-pen
 **3. Investigação do WABA vinculado ao painel — CONCLUÍDA (sessão 24, 18/09/2026).**
 
 - **Business confirmado nos dois sentidos**: o WABA (`1530053735172401`) pertence ao business **"carroeciaveiculos"** (`298827564319943`) — o mesmo business das 4 contas de anúncio já mapeadas (`carroecia_bot_claude`, "Ca - Carro e Cia" antiga, "CRM_IA (Read-Only)", "Test WhatsApp Business Account (Read-Only)"). Confirmado por duas chamadas independentes: `WABA → owner_business_info` E `business → owned_whatsapp_business_accounts` (esse segundo listou o WABA, `business_owns_this_waba: true`).
-- **Achado novo, não investigado ainda**: esse business tem **2 WABAs** (`business_owned_waba_count: 2`), não só o da Clara. Não sei qual é o segundo — perguntar à Adriana ou investigar em sessão futura.
+- **Achado novo, não investigado ainda**: esse business tem **2 WABAs** (`business_owned_waba_count: 2`), não só o da Clara. Não sei qual é o segundo — perguntar à Adriana ou investigar em sessão futura. **[FECHADO em 03/11/2026 como INFERIDO — ver sessão 40: a API mostra 2 contas e 1 número de teste oculto; o segundo é provavelmente a conta de teste; não verificado.]**
 - Outros dados coletados no diagnóstico: `quality_rating: GREEN` (bom), `code_verification_status: EXPIRED` (não investigado se é normal ou sintoma — pode valer relacionar com a contradição do item 2, já que o problema original era mensagem "delivered" que não chegou de verdade).
 - **Causa raiz do bloqueio de permissão, pra não repetir**: o `mcp__supabase__execute_sql` conecta como `supabase_read_only_user` — não tem EXECUTE em `get_internal_service_secret()` (SECURITY DEFINER, só `postgres`/`service_role`), e isso é assim por desenho, não dá pra liberar por GRANT sem abrir uma falha de segurança maior. **O `mcp__claude_ai_Supabase__execute_sql` conecta como `postgres` e já resolve isso** — usar esse conector direto da próxima vez que precisar rodar `net.http_post` com segredo, sem precisar mexer em `settings.json` nem reiniciar sessão.
 - **Limpeza feita**: function `diag-temp-waba-info` apagada da produção (`supabase functions delete`), pasta local removida, entrada em `config.toml` removida. Nada disso foi commitado (não havia nada a desfazer no git).
