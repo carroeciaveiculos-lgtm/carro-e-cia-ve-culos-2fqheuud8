@@ -19,6 +19,13 @@ REGRA: não leia este arquivo inteiro. Leia o índice, escolha o bloco, use offs
 
 ## [03/11/2026] SESSÃO 40 — criativo com 4 fotos + selo, marca de IA nas fotos (Etapa 0), código de 6 dígitos da Meta e WABA da Clara reconfirmado
 
+- **Logo do criativo (corrigida em 03/11, mesma branch `feat/criativo-4-fotos-selo`, sem merge/deploy):** o "&" de CARRO&CIA estava branco no arquivo
+  `public/logo-carro-e-cia-branco-vermelho.png` (idêntico ao que a Adriana enviou); o oficial é vermelho. Recolorido só o "&" e o "VEÍCULOS" para
+  RGB (227, 50, 42) (cor chapada medida na `logo carro e cia.png`), mantendo tamanho 2172x724, transparência e letras brancas (conferido por número). Meu
+  primeiro script pintou 5.300 pixels de letras brancas por engano (faixa larga demais); a conferência numérica pegou, arquivo descartado e refeito só
+  com pixels vermelhos. `criativo-padrao.ts`: logo com `imageSmoothingQuality = 'high'`. Só o criativo usa esse arquivo. Limite: o "VEÍCULOS" da
+  referência é fino/borrado e não permite medir a cor real. Verificado: lint 0 erros, build ok, render nos 3 formatos. Não testado no painel logado.
+
 - **Marca de IA nas fotos (NADA implementado):** ela pediu um mecanismo na aba "Fotos" para remover a marca d'água do Galaxy AI. Recusei de início
   (decisão de 04/10/2026). Ela pediu os argumentos contra; o mais forte foi que o risco depende do que a IA editou. Ela afirmou: "a edição não muda o
   estado real do carro" (palavra dela, **não verificável por foto**). Com isso passei a aceitar a ferramenta, com salvaguardas: **não apagar o C2PA**

@@ -411,6 +411,10 @@ export function desenharCriativoPadrao(
   if (logo && logo.width) {
     const lw = Math.round(0.28 * W)
     const lh = (lw * logo.height) / logo.width
+    // A logo original é bem maior (2172 px) que o tamanho final: reduz com a melhor
+    // qualidade do navegador para as bordas ficarem nítidas e fiéis ao arquivo.
+    ctx.imageSmoothingEnabled = true
+    ctx.imageSmoothingQuality = 'high'
     ctx.drawImage(logo, Math.round(0.022 * W), (polH - lh) / 2, lw, lh)
   }
   ctx.restore()

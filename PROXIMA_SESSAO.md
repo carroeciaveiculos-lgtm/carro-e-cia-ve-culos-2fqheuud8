@@ -8,6 +8,13 @@ Substitui: 02/11/2026 (sessão 39)
 Estado verificado em 03/11 (git, `ls-remote`, banco, API do WhatsApp Business). **`origin/main` = `141a060`** (conferido com `git fetch`).
 Branches enviadas/locais: `docs/memoria-sessao-39` (enviada, `5a9b6fa`) e `feat/criativo-4-fotos-selo` (local, `2a4de6c`, ver o push abaixo).
 
+- **Logo do criativo corrigida em 03/11/2026 (commitada na mesma branch, SEM merge e SEM deploy).** Ela viu que o "&" de CARRO&CIA estava branco; o oficial é
+  vermelho. O arquivo `public/logo-carro-e-cia-branco-vermelho.png` era idêntico ao que ela enviou (o "&" branco já vinha nele). Recolori só o "&" e o
+  "VEÍCULOS" para RGB (227, 50, 42), a cor chapada da logo oficial (`logo carro e cia.png`); tamanho, transparência e letras brancas intactos (conferido
+  por número). Em `criativo-padrao.ts` a redução da logo passou a `imageSmoothingQuality = 'high'`. Lint 0 erros, build ok, desenho conferido nos 3 formatos.
+  **Limite:** o "VEÍCULOS" da arte de referência é fino e borrado (mede ≈ 98,32,40, escuro por mistura com o preto), então não deu para medir a cor real dele
+  ali; usei a da logo oficial. Se ela quiser mais escuro como na referência, é ajuste de cor. Melhor fidelidade: ela enviar o arquivo-fonte da logo. Só o
+  criativo usa esse arquivo. **NÃO testado no painel logado.**
 - **Criativo "Padrão Carro e Cia" com 4 fotos e selo "Cautelar Aprovada" — commit `2a4de6c`, SEM merge e SEM deploy.** Causa das 3 fotos: painel aceita 4
   (`MAX_FOTOS_CRIATIVO`) e o desenho 3 (`MAX_FOTOS_PADRAO`); agora 4 (1 principal + 3). Selo no canto superior direito da foto principal, nos 3 formatos,
   **sempre ligado** (decisão dela: todo veículo entra com cautelar aprovada). Lint 0 erros, build ok, desenho conferido no Chrome. **NÃO testado no painel
