@@ -1,7 +1,23 @@
 # Próxima sessão — Carro e Cia Veículos
 
-Atualizado em: 03/11/2026 (sessão 40, continuação da 39)
-Substitui: 02/11/2026 (sessão 39)
+Atualizado em: 04/11/2026 (sessão 41, continuação da 40)
+Substitui: 03/11/2026 (sessão 40)
+
+## SESSÃO 41 (04/11/2026) — PR #12 mesclado e no ar; falha do "Enviar para aprovação" = CSP bloqueia o envio ao R2
+
+- **PR #12 (criativo 4 fotos + selo + logo) MESCLADO em 03/11 22:55 UTC, commit `145f253`; deploy verde (55s); site publicado conferido em 03/11**
+  (home, `/estoque`, `/admin/login` renderizam; logo nova servida com 408.542 bytes). ~~SEM merge e SEM deploy~~ nas notas da sessão 40 abaixo = **FECHADO**.
+  **Ainda NÃO testado:** o criativo no painel logado (gerar/salvar/exportar, 9:16 com 4 fotos).
+- **Falha ao enviar post orgânico para aprovação (diagnóstico de 04/11, causa INFERIDA com evidência forte):** a CSP do site (`public/_headers`,
+  `connect-src`) **não listava o R2**, então o navegador bloqueia o `PUT` da imagem só no site publicado. Verificado: logs mostram 2 URLs pré-assinadas
+  emitidas (13:44 e 13:45 UTC) e **nenhum `POST` em `social_posts`**; `veiculo_criativos` = 0 registros no total (o "Salvar no sistema" também nunca
+  funcionou); o navegador registra `securitypolicyviolation` com `disposition: enforce` para hosts fora da lista. O CORS do bucket está certo
+  (permite `PUT` do `www`). **Correção:** acrescentar `https://*.r2.cloudflarestorage.com` ao `connect-src` (branch `fix/csp-envio-r2`, PR a mesclar).
+  **Só se confirma depois do deploy** (no localhost não há CSP): conferir o cabeçalho com `curl` e repetir "Enviar para aprovação". Outras 7 telas usam o
+  mesmo envio (cadastro de veículo, editor de imagem, conversa de leads...): testar se alguma falhava.
+- **Erro `131042` do WhatsApp CONFIRMADO nos logs de 04/11:** "conta com pagamentos pendentes" (a Meta aponta o link de cobrança). Ela precisa
+  regularizar o pagamento do WhatsApp Business na Meta; antes era só inferência.
+- **Rascunhos apagados:** os 2 posts diários automáticos (03/11 e 04/11) foram apagados às 13:46 UTC pela tela de aprovações.
 
 ## SESSÃO 40 (03/11/2026) — criativo com 4 fotos + selo (commitado), Etapa 0 da marca de IA (teste feito), WABA da Clara
 
