@@ -488,6 +488,15 @@ Deno.serve(async (req: Request) => {
                   continue
                 }
 
+                // Achado 29/10/2026: mensagem NÃO-texto do número da Adriana/Fernando
+                // (ex.: tipo "system" em 19/10) escapava da checagem acima e virava
+                // lead "Cliente WhatsApp" — a Clara respondia e o cron de
+                // reengajamento reenviava template. Número interno nunca é lead.
+                if (isAuthorizedPhone(senderPhone) && !(msg.type === 'text' && msg.text?.body)) {
+                  console.log(`Mensagem do tipo ${msg.type} de número interno ignorada (não vira lead)`)
+                  continue
+                }
+
                 // Mensagem pra guardar no histórico (o que a equipe vê no
                 // Conversador) pode ser diferente da mensagem pra Clara
                 // entender (ela não tem visão de imagem — só texto).

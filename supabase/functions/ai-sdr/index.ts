@@ -214,6 +214,26 @@ async function executeFunction(name: string, args: any, leadId: string): Promise
       return { error: `data_hora inválida ou no passado: ${dataHora}. Confirme a data certa com o cliente e tente de novo.` }
     }
 
+    // Idempotência (29/10/2026): a Clara chamou agendar_visita de novo ao receber
+    // só um "obrigado" e gravou 2 linhas iguais (2 lembretes e 2 avisos). Mesmo
+    // lead + mesmo horário já agendado = devolve o existente, sem novo INSERT nem
+    // novo aviso. Fica antes da conta de vagas pra o próprio agendamento não
+    // contar contra o limite do período.
+    const { data: existentes } = await supabase
+      .from('agendamentos_visita')
+      .select('*')
+      .eq('lead_id', leadId)
+      .eq('status', 'agendado')
+      .eq('data_hora', dataParsed.toISOString())
+      .order('created_at')
+      .limit(1)
+    if (existentes?.[0]) {
+      return {
+        agendamento: existentes[0],
+        aviso: 'Este horário já estava agendado para o cliente. Não crie outro; apenas confirme.',
+      }
+    }
+
     // 19/09/2026 (capacidade real confirmada pela Adriana: até 6 visitas por
     // dia, no máximo 3 pela manhã e 3 à tarde). Antes a Clara agendava sem
     // checar se o período já estava cheio, podendo empilhar clientes na

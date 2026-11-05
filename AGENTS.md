@@ -10,7 +10,7 @@ Este arquivo foi consolidado no `CLAUDE.md` em 28/10/2026.
 - Regras por assunto → seção "Regras do projeto por assunto" no `CLAUDE.md`
 
 **Correções que este arquivo continha e estavam ERRADAS:**
-- O deploy do front **não** é "Cloudflare Workers Builds" (nunca existiu de fato). É
+- O deploy do front **não** é "Cloudflare Workers Builds" (check confirmado em 29/10; o que ele publica não foi verificado). É
   GitHub Actions desde 28/09/2026 — `.github/workflows/deploy.yml`. Conferir com `gh run list`.
 - O deploy de functions também é automático — `.github/workflows/deploy-functions.yml`.
 
