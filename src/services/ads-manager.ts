@@ -91,14 +91,6 @@ export async function toggleStatus(
   return data
 }
 
-export async function generateAdCopy(product: string, audience: string, tone: string) {
-  const { data, error } = await supabase.functions.invoke('ad-copy-generator', {
-    body: { product, audience, tone },
-  })
-  if (error) throw error
-  return data?.data
-}
-
 export interface AccountBalance {
   balance: string
   amount_spent: string

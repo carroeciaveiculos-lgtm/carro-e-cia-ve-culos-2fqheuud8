@@ -117,6 +117,7 @@ Isso quebra sincronizações de estoque, automações de leads, disparos de What
 | `gerar-vaga-ia`           | Gera título/descrição de vaga via IA, tela `/admin/vagas`                                                                                                |
 | `gerar-imagem-vaga`       | Gera imagem padrão de vaga via IA, tela `/admin/vagas`                                                                                                   |
 | `gerar-criativo-anuncio`  | Trata a foto (IA) do gerador de criativos de anúncio, aba "Marketing IA" do cadastro de veículo (28/09/2026) — só a foto, preço/km/texto nunca vêm da IA |
+| `ad-copy-generator`       | Gera textos de anúncio (Meta/Google/Orgânico) para veículo do estoque, aba "Criador de Anúncios" de `/admin/anuncios` (05/11/2026); lê o veículo no banco e valida limites e preço no código; só browser autenticado |
 
 > `wm-sync` estava classificada aqui como Server-to-Server / Cron e declarada
 > `false` no `config.toml`, enquanto produção rodava `true`. O único chamador é

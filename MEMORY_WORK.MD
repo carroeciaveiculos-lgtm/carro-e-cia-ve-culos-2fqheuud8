@@ -1,7 +1,7 @@
 # ÍNDICE — MEMORY_WORK Carro e Cia
 
 > ESTADO ATUAL: leia `PROXIMA_SESSAO.md` primeiro. Este arquivo é histórico.
-> Última sessão registrada: 04/11/2026 (sessão 41).
+> Última sessão registrada: 05/11/2026 (sessão 42).
 
 | Bloco | Conteúdo |
 |---|---|
@@ -16,6 +16,15 @@ REGRA: não leia este arquivo inteiro. Leia o índice, escolha o bloco, use offs
 ---
 
 # Memória de trabalho — Carro e Cia
+
+## [05/11/2026] SESSÃO 42 — Criador de Anúncios Fase 1 (bloco A) pronto localmente, sem commit
+
+- Branch `feat/gerador-anuncios-fase1`: tela `/admin/anuncios` refeita (veículo do estoque × canal Meta/Google/Orgânico × tipo Estático/Carrossel/Vídeo), function
+  `ad-copy-generator` reescrita (validação por código: limites, preço = `preco_venda`, frases proibidas), tabela `ad_copies` (migration aplicada em 05/11/2026 22:38 UTC como `20261105223858_ad_copies`, conferida no `migration list` e com RLS + 1 policy).
+  Lint 0 erros e build ok em 05/11; tela logada e function NÃO testadas. Detalhes e ordem de execução em `PROXIMA_SESSAO.md`.
+- PR #14 (docs) mesclado em 05/11 (`57bd0d5`), deploy verde, site 200. Nova regra dela: pode mesclar/deployar com segurança comprovada (CLAUDE.md global atualizado).
+- Beco sem saída: `bun run format` global reescreve ~480 arquivos; usar `npx oxfmt <arquivo>`.
+
 
 ## [04/11/2026] SESSÃO 41 — PR #12 no ar; falha do "Enviar para aprovação" (criativo → post orgânico) = CSP sem o R2
 
