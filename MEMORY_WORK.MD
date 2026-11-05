@@ -1,7 +1,7 @@
 # ÍNDICE — MEMORY_WORK Carro e Cia
 
 > ESTADO ATUAL: leia `PROXIMA_SESSAO.md` primeiro. Este arquivo é histórico.
-> Última sessão registrada: 03/11/2026 (sessão 40).
+> Última sessão registrada: 04/11/2026 (sessão 41).
 
 | Bloco | Conteúdo |
 |---|---|
@@ -16,6 +16,15 @@ REGRA: não leia este arquivo inteiro. Leia o índice, escolha o bloco, use offs
 ---
 
 # Memória de trabalho — Carro e Cia
+
+## [04/11/2026] SESSÃO 41 — PR #12 no ar; falha do "Enviar para aprovação" (criativo → post orgânico) = CSP sem o R2
+
+- **PR #12 mesclado em 03/11 22:55 UTC (`145f253`), deploy verde, site conferido** (fecha o "sem merge/sem deploy" da sessão 40). Criativo no painel logado: ainda não testado.
+- **Falha do post orgânico (causa INFERIDA, evidência forte):** `public/_headers` → `connect-src` não tinha o R2; o navegador bloqueia o `PUT` da imagem no site
+  publicado (não no localhost). Logs: 2 URLs pré-assinadas emitidas, 0 `POST` em `social_posts`; `veiculo_criativos` com 0 registros desde sempre; evento
+  `securitypolicyviolation` com `enforce`. CORS do bucket OK (`GET, PUT, POST, HEAD, DELETE` do `www`; o `docs/R2_CORS_CONFIGURATION.md` estava
+  desatualizado, corrigido). Correção: `https://*.r2.cloudflarestorage.com` no `connect-src` (branch `fix/csp-envio-r2`). Confirmar só após deploy. Detalhe em `docs/R2_CORS_CONFIGURATION.md`.
+- **WhatsApp `131042` CONFIRMADO (04/11, logs):** "unsettled payments" na conta do WhatsApp Business; precisa de pagamento na Meta (link da Meta nos logs).
 
 ## [03/11/2026] SESSÃO 40 — criativo com 4 fotos + selo, marca de IA nas fotos (Etapa 0), código de 6 dígitos da Meta e WABA da Clara reconfirmado
 

@@ -86,3 +86,16 @@ Even with CORS properly configured, the frontend includes robust fallback handli
 2. **`getSafeImageUrlForCapture`** provides a transparent placeholder for `html-to-image` operations
 3. **Global error handler** in `src/App.tsx` catches all image load failures and applies the fallback
 4. **Database migration** `20260722233500` sanitizes unescaped spaces and parentheses in all vehicle photo/video URLs
+
+## Estado real e becos sem saída (verificado em 04/11/2026)
+
+- **CORS real do bucket (testado com preflight `OPTIONS`):** para `https://www.carroeciamotors.com.br` responde
+  `Access-Control-Allow-Methods: GET, PUT, POST, HEAD, DELETE` e `Allow-Headers: content-type`. O JSON acima
+  (`GET, HEAD`) está **desatualizado**; `http://localhost:5173` recebe `403` no `PUT`.
+- **O envio de imagem (`uploadToR2`, `PUT` em URL pré-assinada) também precisa da CSP.** O `connect-src` de
+  `public/_headers` precisa listar `https://*.r2.cloudflarestorage.com`. Sem isso o navegador bloqueia o envio **só no site publicado**
+  (no `localhost` não há CSP) e o painel mostra "Failed to fetch". Achado em 04/11/2026: "Salvar no sistema" e "Criar post orgânico"
+  do criativo nunca tinham gravado nada (`veiculo_criativos` e posts do botão = 0 registros). Correção: PR `fix/csp-envio-r2`.
+- Como testar: só depois do deploy. Conferir o cabeçalho com `curl -sI https://www.carroeciamotors.com.br/admin/login` e repetir o envio no painel.
+- Prova da CSP no navegador: `document.addEventListener('securitypolicyviolation', ...)` + `fetch` a um host não listado
+  gera evento com `disposition: "enforce"`.
