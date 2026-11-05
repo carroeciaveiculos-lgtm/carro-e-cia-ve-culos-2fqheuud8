@@ -18,6 +18,29 @@ Substitui: 03/11/2026 (sessão 40)
 - **Erro `131042` do WhatsApp CONFIRMADO nos logs de 04/11:** "conta com pagamentos pendentes" (a Meta aponta o link de cobrança). Ela precisa
   regularizar o pagamento do WhatsApp Business na Meta; antes era só inferência.
 - **Rascunhos apagados:** os 2 posts diários automáticos (03/11 e 04/11) foram apagados às 13:46 UTC pela tela de aprovações.
+- **ONDE PARAMOS (fim da sessão 41, 04/11):** branch `fix/csp-envio-r2` com o commit `fdace82` **só local** (arquivos: `public/_headers`,
+  `docs/R2_CORS_CONFIGURATION.md`, `MEMORY_WORK.MD`, `PROXIMA_SESSAO.md`). O 1º `git push` falhou por erro de digitação (ponto no fim do nome:
+  `invalid refspec`); o 2º, correto (`! git push -u origin fix/csp-envio-r2`), travou 120 s esperando a janela de login do Git (rodava em segundo plano,
+  resultado **NÃO verificado**). **Primeiro passo da próxima sessão:** `git fetch` e `git ls-remote origin fix/csp-envio-r2` para ver se subiu; se não,
+  ela roda o push de novo e conclui a janela de login. Depois: abrir o PR (autorizado por ela), ela mescla com `! gh pr merge <N> --merge`, conferir
+  `gh run list`, `curl -sI https://www.carroeciamotors.com.br/admin/login` (ver `*.r2.cloudflarestorage.com` no `connect-src`), abrir home, `/estoque`,
+  `/admin/login`, e ela repete "Enviar para aprovação" (e "Salvar no sistema") no painel. Nada deployado ainda para essa correção.
+- **Kit do IX35 não apareceu para aprovação (diagnóstico de 04/11, só leitura, causa verificada nos dados):** (1) a esteira de posts
+  (`esteira-proximo-post`, cron a cada 15 min) está **pausada** (`esteira_config.ativa = false`) e o carrossel do IX35 é o 1º da fila (`social_esteira`)
+  desde 06/10, então nunca gerou rascunho; (2) a tentativa manual das 13:41 UTC caiu no mesmo bloqueio da CSP acima. Ligar a esteira = mudança em
+  produção (2 posts/dia, 10:00 e 18:00, começando pelo IX35): **decisão dela PENDENTE**; recomendo ligar só depois de o envio estar testado.
+- **Fila de publicação e cron de 15 min — JÁ EXISTEM (não criar outro):** "fila" = `social_posts` com `status = 'Agendado'` e `data_agendamento <= agora`.
+  `publicar-social` roda no cron `publicar-social-cron-job` (jobid 14, `*/15 * * * *`), publica Instagram e Facebook (feed/stories e carrossel).
+  Outros crons: `esteira-proximo-post-cron-job` (jobid 20, `*/15`), `post-organico-diario-cron-job` (jobid 19, `0 11 * * *`). Hoje o botão "Aprovar" em
+  Central de Redes Sociais → Aprovações move Rascunho → Agendado.
+- **PEDIDO DELA AINDA NÃO IMPLEMENTADO (aguarda "autorizo" e 2 respostas):** botão extra **"Enviar para a fila de publicação"** no diálogo "Criar post
+  orgânico" (`CriativoAnuncioPanel.tsx`, ao lado de "Enviar para aprovação"): grava como `Agendado` com `data_agendamento` = agora, com confirmação
+  "Publicar sem revisar? Sai em até 15 min". Também renomear "Aprovar" → "Aprovar e enviar para a fila" nas Aprovações. Fazer em branch nova **depois** do PR
+  da CSP mesclado. Perguntas abertas: (a) sai no próximo ciclo de 15 min ou ela escolhe data/hora? (b) ligar a esteira? Ao entregar, escrever o artigo
+  na Central de Ajuda (regra do projeto).
+- **Melhorias sugeridas (sem autorização ainda):** mostrar horário da próxima execução e tamanho da fila; mensagem de erro clara no envio em vez de
+  "Failed to fetch"; "Aprovar todos" para os rascunhos diários; checar post duplicado por veículo/dia; corrigir o `return` silencioso de
+  `criarPostOrganico` (se `!resultado || !canvas` não avisa nada); alerta de rascunho novo (hoje os alertas de WhatsApp falham com `131042`).
 
 ## SESSÃO 40 (03/11/2026) — criativo com 4 fotos + selo (commitado), Etapa 0 da marca de IA (teste feito), WABA da Clara
 
