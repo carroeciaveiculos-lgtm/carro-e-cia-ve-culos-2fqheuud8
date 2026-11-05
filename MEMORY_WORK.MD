@@ -25,6 +25,14 @@ REGRA: não leia este arquivo inteiro. Leia o índice, escolha o bloco, use offs
   `securitypolicyviolation` com `enforce`. CORS do bucket OK (`GET, PUT, POST, HEAD, DELETE` do `www`; o `docs/R2_CORS_CONFIGURATION.md` estava
   desatualizado, corrigido). Correção: `https://*.r2.cloudflarestorage.com` no `connect-src` (branch `fix/csp-envio-r2`). Confirmar só após deploy. Detalhe em `docs/R2_CORS_CONFIGURATION.md`.
 - **WhatsApp `131042` CONFIRMADO (04/11, logs):** "unsettled payments" na conta do WhatsApp Business; precisa de pagamento na Meta (link da Meta nos logs).
+- **Estado do fim da sessão 41:** commit `fdace82` na branch `fix/csp-envio-r2` **só local**; 1º push falhou por ponto no fim do nome (`invalid refspec`), 2º
+  travou na janela de login do Git (resultado não verificado). PR ainda não aberto; nada deployado para a correção da CSP.
+- **IX35 não apareceu (verificado nos dados, 04/11):** esteira pausada (`esteira_config.ativa=false`), carrossel do IX35 é o 1º de `social_esteira` desde 06/10;
+  a tentativa manual das 13:41 UTC caiu na CSP. Ligar a esteira = decisão dela (pendente).
+- **Fila/cron de publicação já existem:** `publicar-social-cron-job` (jobid 14, `*/15 * * * *`) publica `social_posts` com `status='Agendado'` e
+  `data_agendamento<=now`; também `esteira-proximo-post-cron-job` (20) e `post-organico-diario-cron-job` (19, 11:00). **Não criar outro cron.**
+- **Pendente (pedido dela, nada codado):** botão "Enviar para a fila de publicação" no "Criar post orgânico" (grava `Agendado`, `data_agendamento`=agora,
+  com confirmação) + renomear "Aprovar" → "Aprovar e enviar para a fila"; branch nova após o PR da CSP; artigo na Central de Ajuda ao entregar.
 
 ## [03/11/2026] SESSÃO 40 — criativo com 4 fotos + selo, marca de IA nas fotos (Etapa 0), código de 6 dígitos da Meta e WABA da Clara reconfirmado
 
