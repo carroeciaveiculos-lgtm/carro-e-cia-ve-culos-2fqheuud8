@@ -1,7 +1,28 @@
 # Próxima sessão — Carro e Cia Veículos
 
-Atualizado em: 04/11/2026 (sessão 41, continuação da 40)
+Atualizado em: 05/11/2026 (sessão 42)
 Substitui: 03/11/2026 (sessão 40)
+
+## SESSÃO 42 (05/11/2026) — Criador de Anúncios, Fase 1 (bloco A) PRONTA LOCALMENTE, NÃO commitada
+
+- **Branch `feat/gerador-anuncios-fase1` (saiu de `fix/csp-envio-r2`), NADA commitado, NADA no banco, NADA deployado.** 9 arquivos:
+  `AdCopyGenerator.tsx` (reescrito), `AdCarrossel.tsx`, `AdVariacoes.tsx`, `src/lib/ad-limites.ts`, `src/lib/criativo-carrossel.ts`,
+  `src/services/ad-copies.ts`, `ads-manager.ts` (só removeu `generateAdCopy`), `supabase/functions/ad-copy-generator/index.ts` (reescrita; caminho antigo
+  mantido para compatibilidade) e a migration `supabase/migrations/20261105223858_ad_copies.sql` (aplicada em 05/11/2026 22:38 UTC, `migration list` conferido).
+- **Verificado em 05/11:** `bun run lint` = 0 erros (92 avisos antigos, nenhum nos arquivos novos); `bun run build` ok; `/admin/anuncios` responde 200 no
+  `localhost:8080`. **NÃO testado:** a tela logada, gerar texto (a function nova só roda depois do deploy), carrossel e vídeo no navegador.
+- **ORDEM DE EXECUÇÃO (os 4 riscos):** (1) conflito de memória: `MEMORY_WORK.MD`/`PROXIMA_SESSAO.md` mudam em PRs diferentes, mesclar o PR #14 antes (feito,
+  `57bd0d5`); (2) migration `ad_copies` aplicada ANTES de mesclar o front que a usa (FEITO em 05/11 com o "autorizo" dela); arquivo renomeado para o timestamp
+  real, `migration list`, regenerar tipos e tirar o `as any` de `ad-copies.ts`; (3) a function só pode ser testada depois do deploy (merge dispara
+  `deploy-functions.yml`); (4) teste manual logado no painel depois do deploy.
+- **ARMADILHA: NUNCA rodar `bun run format` no repositório inteiro.** Ele reescreveu 483 arquivos (fim de linha CRLF/LF + reformatação real) e, se
+  commitado, redeploya dezenas de functions. Usar `npx oxfmt <arquivo>` só nos arquivos próprios. Limpo em 05/11 com `git checkout HEAD -- <arquivos>`.
+- **Pendências dela:** "autorizo" da migration; "autorizo" do artigo da Central de Ajuda (dado no banco; o artigo antigo "Criar textos de anúncio com IA"
+  está desatualizado); "autorizo" de commit+push (perguntar junto); depois PR/merge/deploy (liberados com segurança comprovada). Decidir a lista
+  `FRASES_PROIBIDAS` (promessas que a loja nunca pode fazer; único `TODO(human)` em `ad-copy-generator/index.ts`). Padrões usados sem resposta dela: card 1 do
+  carrossel com preço, mínimo 3 fotos, RLS "autenticado vê tudo". Limites de caracteres por canal vêm de conhecimento geral, NÃO conferidos na doc oficial.
+- **Fase 2 (não iniciada):** catálogo de ofertas de financiamento, consignação, consórcio e seguro; checar categoria especial "Crédito" da Meta.
+
 
 ## SESSÃO 41 (04/11/2026) — PR #12 mesclado e no ar; falha do "Enviar para aprovação" = CSP bloqueia o envio ao R2
 
