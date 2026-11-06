@@ -53,7 +53,7 @@ jobs:
             if [ -d "supabase/functions/$fn" ]; then
               echo ""
               echo "== Deploy: $fn =="
-              supabase functions deploy "$fn" --project-ref "$PROJECT_REF" || FAILED="$FAILED $fn"
+              supabase functions deploy "$fn" --project-ref "$PROJECT_REF" --yes || FAILED="$FAILED $fn"
             else
               echo "Pasta $fn nao existe mais (provavelmente apagada) -- pulando"
             fi

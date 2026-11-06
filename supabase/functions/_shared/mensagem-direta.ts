@@ -11,6 +11,8 @@ export type MensagemDireta = {
   texto: string
   mid: string | null
   quando: Date
+  // De onde o cliente veio (só quando a Meta informa): anúncio, story, publicação compartilhada...
+  origemContato: string | null
 }
 
 const ROTULO_ANEXO: Record<string, string> = {
@@ -65,6 +67,23 @@ export function extrairMensagensDiretas(object: string, entry: any): MensagemDir
     // Resposta a um story: mostra que o cliente veio de lá
     if (msg.reply_to?.story) texto = `[Respondeu ao story] ${texto}`
 
+    // Origem da conversa (06/11/2026). `referral` vem quando o cliente clicou num anúncio
+    // "enviar mensagem"; story e publicação compartilhada vêm na própria mensagem.
+    const ref = m?.referral || msg?.referral
+    let origemContato: string | null = null
+    if (ref) {
+      const fonte = String(ref.source || ref.type || '').toUpperCase()
+      origemContato = fonte.includes('AD') ? 'Anúncio' : 'Link/atalho'
+      if (ref.ad_title) origemContato += `: ${String(ref.ad_title).slice(0, 80)}`
+      else if (ref.ref) origemContato += `: ${String(ref.ref).slice(0, 80)}`
+    } else if (msg.reply_to?.story) {
+      origemContato = 'Resposta a story'
+    } else if (anexos.some((a) => a?.type === 'story_mention')) {
+      origemContato = 'Menção no story'
+    } else if (anexos.some((a) => ['share', 'ig_reel', 'reel'].includes(a?.type))) {
+      origemContato = 'Publicação compartilhada'
+    }
+
     saida.push({
       plataforma,
       contatoId,
@@ -73,6 +92,7 @@ export function extrairMensagensDiretas(object: string, entry: any): MensagemDir
       texto,
       mid: msg.mid ? String(msg.mid) : null,
       quando: dataDoEvento(m.timestamp),
+      origemContato: eco ? null : origemContato,
     })
   }
   return saida

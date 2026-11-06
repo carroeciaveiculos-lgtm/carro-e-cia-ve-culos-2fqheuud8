@@ -10,6 +10,7 @@ import {
   avisarMensagemDireta,
   comentarioDemonstraInteresse,
   extrairComentario,
+  buscarPostComentado,
 } from '../_shared/comentario-social.ts'
 import { extrairMensagensDiretas } from '../_shared/mensagem-direta.ts'
 import { registrarMensagemSocial } from '../_shared/social-inbox.ts'
@@ -35,7 +36,9 @@ const VERIFY_TOKEN = Deno.env.get('META_VERIFY_TOKEN')
 const MODO_ASSINATURA = (Deno.env.get('META_WEBHOOK_SIGNATURE_MODE') || 'log').toLowerCase()
 const bloqueiaTipo = (objeto: string): boolean =>
   MODO_ASSINATURA === 'enforce' ||
-  MODO_ASSINATURA.split(',').map((t) => t.trim()).includes(objeto)
+  MODO_ASSINATURA.split(',')
+    .map((t) => t.trim())
+    .includes(objeto)
 const WHATSAPP_PHONE_NUMBER_ID = Deno.env.get('WHATSAPP_PHONE_NUMBER_ID') || '1231947963330780'
 const WHATSAPP_WABA_ID = Deno.env.get('WHATSAPP_WABA_ID') || '1530053735172401'
 
@@ -168,7 +171,10 @@ Deno.serve(async (req: Request) => {
       // 'ok_segredo_2' = bateu com o 2º segredo da lista (sem expor o valor)
       assinatura = {
         ok: r.ok,
-        motivo: r.ok && (r.segredoIndice ?? 0) > 0 ? `ok_segredo_${(r.segredoIndice ?? 0) + 1}` : r.motivo,
+        motivo:
+          r.ok && (r.segredoIndice ?? 0) > 0
+            ? `ok_segredo_${(r.segredoIndice ?? 0) + 1}`
+            : r.motivo,
       }
       if (!assinatura.ok && bloqueiaTipo(String(payload.object))) {
         console.warn('Webhook recusado: assinatura inválida (' + assinatura.motivo + ')')
@@ -246,7 +252,10 @@ Deno.serve(async (req: Request) => {
                 : { data: null }
               if (!jaExiste) {
                 const interesse = comentarioDemonstraInteresse(comentario.message)
+                const post = await buscarPostComentado(comentario.platform, comentario.postId)
                 await supabase.from('social_comments').insert({
+                  post_link: post.link,
+                  post_resumo: post.resumo,
                   demonstra_interesse: interesse,
                   post_id: comentario.postId,
                   comment_id: comentario.commentId,
@@ -455,7 +464,8 @@ Deno.serve(async (req: Request) => {
                 if (isAuthorizedPhone(senderPhone) && msg.type === 'text' && msg.text?.body) {
                   const telefoneLimpo = senderPhone.replace(/\D/g, '')
                   const waTokenAdmin = Deno.env.get('WHATSAPP_TOKEN') || ''
-                  const waPhoneIdAdmin = Deno.env.get('WHATSAPP_PHONE_NUMBER_ID') || WHATSAPP_PHONE_NUMBER_ID
+                  const waPhoneIdAdmin =
+                    Deno.env.get('WHATSAPP_PHONE_NUMBER_ID') || WHATSAPP_PHONE_NUMBER_ID
                   const respostaComando = await processWhatsAppCommand(
                     msg.text.body,
                     telefoneLimpo,
@@ -499,7 +509,8 @@ Deno.serve(async (req: Request) => {
                   const legenda = (msg.image.caption || '').trim()
                   messageTextBruto = midiaUrl
                     ? `[IMAGEM]${midiaUrl}${legenda ? '\n' + legenda : ''}`
-                    : legenda || '[Cliente enviou uma imagem — falha ao baixar do WhatsApp, confira direto no app]'
+                    : legenda ||
+                      '[Cliente enviou uma imagem — falha ao baixar do WhatsApp, confira direto no app]'
                   mensagemParaClara = legenda
                     ? `[o cliente enviou uma foto com a legenda: "${legenda}"]`
                     : '[o cliente enviou uma foto/imagem nesta mensagem]'
@@ -660,7 +671,11 @@ Deno.serve(async (req: Request) => {
                   // rejeita o evento inteiro, entao nem tenta mandar se nao
                   // capturou (evita chamada fadada a falhar). Nunca derruba
                   // a criacao do lead se a Meta falhar de qualquer jeito.
-                  if (leadId && ctwaClidDetectado && (origemDetectada === 'facebook_ads' || origemDetectada === 'instagram_ads')) {
+                  if (
+                    leadId &&
+                    ctwaClidDetectado &&
+                    (origemDetectada === 'facebook_ads' || origemDetectada === 'instagram_ads')
+                  ) {
                     try {
                       await enviarEventoMensagem({
                         eventName: 'LeadSubmitted',
@@ -669,7 +684,10 @@ Deno.serve(async (req: Request) => {
                         ctwaClid: ctwaClidDetectado,
                       })
                     } catch (err) {
-                      console.error('Erro ao enviar LeadSubmitted pro Conversions API for Messaging:', err)
+                      console.error(
+                        'Erro ao enviar LeadSubmitted pro Conversions API for Messaging:',
+                        err,
+                      )
                     }
                   }
                 }
@@ -691,7 +709,11 @@ Deno.serve(async (req: Request) => {
                     await supabase
                       .from('lead_errors')
                       .insert({
-                        lead_data: { source: 'receive-leads', lead_id: leadId, timestamp: new Date().toISOString() },
+                        lead_data: {
+                          source: 'receive-leads',
+                          lead_id: leadId,
+                          timestamp: new Date().toISOString(),
+                        },
                         error_message: `Falha ao salvar conversation_history: ${chError.message}`,
                       })
                       .catch(() => {})
@@ -748,7 +770,10 @@ Deno.serve(async (req: Request) => {
             .from('leads')
             .update({
               veiculo_interesse: payload.veiculo_interesse || undefined,
-              observacoes: anexarNotaContato(leadExistente.observacoes, payload.origem || 'site_formulario'),
+              observacoes: anexarNotaContato(
+                leadExistente.observacoes,
+                payload.origem || 'site_formulario',
+              ),
               updated_at: new Date().toISOString(),
             })
             .eq('id', leadExistente.id)

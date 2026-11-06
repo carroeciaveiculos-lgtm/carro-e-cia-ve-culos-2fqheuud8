@@ -12,6 +12,8 @@ export type Conversa = {
   plataforma: 'instagram' | 'facebook'
   contato_id: string
   contato_nome: string | null
+  contato_usuario?: string | null
+  origem_contato?: string | null
   ultima_mensagem: string | null
   ultima_mensagem_em: string
   ultima_do_cliente_em: string | null
