@@ -83,7 +83,7 @@ export function dadosPadraoDoVeiculo(v: any): DadosCriativoPadrao {
     km,
     cambio: v.cambio || '',
     precoVenda: Number(v.preco_venda) || 0,
-    condicao: 'à vista',
+    condicao: '', // sem etiqueta "à vista" (pedido da Adriana, 06/11/2026)
   }
 }
 

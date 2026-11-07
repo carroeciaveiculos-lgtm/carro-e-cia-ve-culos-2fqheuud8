@@ -118,10 +118,10 @@ export function CriativoAnuncioPanel({ veiculo }: { veiculo: any }) {
   const cacheImagens = useRef<Record<string, HTMLImageElement>>({})
 
   // ---- Padrão Carro e Cia (1:1, 4:5 e 9:16; foto original ou tratada pela IA) ----
-  // Campos editáveis: a condição do preço ("à vista") NUNCA é texto fixo, e a
+  // Campos editáveis: a etiqueta "à vista" foi removida do criativo (pedido da Adriana, 06/11/2026); a
   // linha de motor/potência começa com a cilindrada e o combustível do cadastro
   // (não existe coluna de potência — se quiser, digite aqui, ex.: "2.0 • 404 cv • Híbrido").
-  const [condicao, setCondicao] = useState('à vista')
+  const condicao = ''
   const linhaMotorInicial = [veiculo.cilindrada, veiculo.combustivel].filter(Boolean).join(' • ')
   const [linhaMotor, setLinhaMotor] = useState(linhaMotorInicial)
   const kmPadrao = veiculo.is_zero_km
@@ -623,18 +623,6 @@ export function CriativoAnuncioPanel({ veiculo }: { veiculo: any }) {
                         </p>
                       </div>
                       <div className="space-y-1">
-                        <Label className="text-[11px] text-slate-600">
-                          Condição do preço (deixe vazio para não mostrar)
-                        </Label>
-                        <Input
-                          value={condicao}
-                          onChange={(e) => {
-                            setCondicao(e.target.value)
-                            setResultado(null)
-                          }}
-                          placeholder="à vista"
-                          className="h-8 text-sm"
-                        />
                         <Label className="text-[11px] text-slate-600">
                           Motor / potência / combustível (no 1:1 só entra no título se você alterar
                           o texto)
