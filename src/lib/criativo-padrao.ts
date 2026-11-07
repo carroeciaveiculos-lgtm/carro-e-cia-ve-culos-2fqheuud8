@@ -86,7 +86,7 @@ export interface DadosCriativoPadrao {
   km: string // já formatado ("27.000 km"); vazio = não mostra o card
   cambio: string
   precoVenda: number
-  condicao: string // ex.: "à vista"; vazio = sem etiqueta
+  condicao: string // etiqueta ao lado do preço; desde 06/11/2026 os chamadores mandam vazio (sem "à vista")
 }
 
 const COR = {
@@ -513,10 +513,9 @@ export function desenharCriativoPadrao(
   }
 
   // ---- 3 cards de especificações (só os que têm dado; nada é inventado) ----
-  const anos =
-    d.anoFabricacao && d.anoModelo
-      ? `${d.anoFabricacao}/${d.anoModelo}`
-      : d.anoModelo || d.anoFabricacao
+  // 06/11/2026 (pedido da Adriana): só o ANO DO MODELO ("2025", não "2024/2025"); sem ano do
+  // modelo cai no de fabricação.
+  const anos = d.anoModelo || d.anoFabricacao
   const cards: { icone: Icone; texto: string }[] = [
     { icone: 'ano' as Icone, texto: anos },
     { icone: 'km' as Icone, texto: d.km },

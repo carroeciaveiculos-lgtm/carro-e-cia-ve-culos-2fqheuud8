@@ -5,22 +5,55 @@ import type { MensagemDireta } from './mensagem-direta.ts'
 
 // Nome de quem escreveu (melhor esforço: sem token ou sem permissão, devolve null).
 // Instagram: nome/@usuário; Messenger: nome.
-export async function buscarNomePerfilMeta(id: string, plataforma: string): Promise<string | null> {
+export type PerfilMeta = { nome: string | null; usuario: string | null }
+
+// 06/11/2026: as 23 conversas existentes ficaram sem nome porque a consulta falhava em silêncio.
+// Agora tenta mais de uma combinação de campos (um campo sem permissão derruba a consulta toda) e
+// REGISTRA o motivo da Meta no log (nunca o token).
+export async function buscarPerfilMeta(id: string, plataforma: string): Promise<PerfilMeta> {
+  const vazio: PerfilMeta = { nome: null, usuario: null }
   try {
     const token = Deno.env.get('META_PAGE_ACCESS_TOKEN')
-    if (!token) return null
-    const campos = plataforma === 'instagram' ? 'name,username' : 'name'
-    const r = await fetch(
-      `https://graph.facebook.com/v20.0/${id}?fields=${campos}&access_token=${token}`,
-      { signal: AbortSignal.timeout(4000) },
-    )
-    if (!r.ok) return null
-    const j = await r.json()
-    const nome = j?.name || (j?.username ? `@${j.username}` : null)
-    return nome ? String(nome).slice(0, 120) : null
-  } catch {
-    return null
+    if (!token) {
+      console.error('buscarPerfilMeta: META_PAGE_ACCESS_TOKEN ausente, nome não buscado')
+      return vazio
+    }
+    const tentativas =
+      plataforma === 'instagram'
+        ? ['name,username', 'username', 'name']
+        : ['name', 'first_name,last_name']
+    for (const campos of tentativas) {
+      const r = await fetch(
+        `https://graph.facebook.com/v20.0/${id}?fields=${campos}&access_token=${encodeURIComponent(token)}`,
+        { signal: AbortSignal.timeout(4000) },
+      )
+      const j = await r.json().catch(() => ({}))
+      if (!r.ok) {
+        console.error(
+          `buscarPerfilMeta ${plataforma} campos=${campos} HTTP ${r.status}:`,
+          JSON.stringify(j?.error ?? j).slice(0, 300),
+        )
+        continue
+      }
+      const completo = [j?.first_name, j?.last_name].filter(Boolean).join(' ')
+      const nome = j?.name || completo || null
+      const usuario = j?.username ? String(j.username).slice(0, 80) : null
+      if (nome || usuario) {
+        return {
+          nome: nome ? String(nome).slice(0, 120) : usuario ? `@${usuario}` : null,
+          usuario,
+        }
+      }
+    }
+    return vazio
+  } catch (e) {
+    console.error('buscarPerfilMeta falhou:', e)
+    return vazio
   }
+}
+
+export async function buscarNomePerfilMeta(id: string, plataforma: string): Promise<string | null> {
+  return (await buscarPerfilMeta(id, plataforma)).nome
 }
 
 export type ResultadoRegistro = {
@@ -30,7 +63,10 @@ export type ResultadoRegistro = {
 }
 
 // deno-lint-ignore no-explicit-any
-export async function registrarMensagemSocial(supabase: any, m: MensagemDireta): Promise<ResultadoRegistro> {
+export async function registrarMensagemSocial(
+  supabase: any,
+  m: MensagemDireta,
+): Promise<ResultadoRegistro> {
   try {
     // Reenvio do mesmo evento (a Meta repete quando demora a responder 200): não duplica.
     if (m.mid) {
@@ -45,14 +81,19 @@ export async function registrarMensagemSocial(supabase: any, m: MensagemDireta):
 
     const { data: existente } = await supabase
       .from('social_conversas')
-      .select('id, contato_nome, nao_lidas')
+      .select('id, contato_nome, nao_lidas, origem_contato')
       .eq('plataforma', m.plataforma)
       .eq('contato_id', m.contatoId)
       .maybeSingle()
 
     let conversaId: string | null = existente?.id ?? null
     let nome: string | null = existente?.contato_nome ?? null
-    if (!nome) nome = await buscarNomePerfilMeta(m.contatoId, m.plataforma)
+    let usuario: string | null = null
+    if (!nome) {
+      const perfil = await buscarPerfilMeta(m.contatoId, m.plataforma)
+      nome = perfil.nome
+      usuario = perfil.usuario
+    }
 
     const quando = m.quando.toISOString()
     const entrada = m.direcao === 'entrada'
@@ -64,6 +105,8 @@ export async function registrarMensagemSocial(supabase: any, m: MensagemDireta):
           plataforma: m.plataforma,
           contato_id: m.contatoId,
           contato_nome: nome,
+          contato_usuario: usuario,
+          origem_contato: m.origemContato,
           ultima_mensagem: m.texto.slice(0, 300),
           ultima_mensagem_em: quando,
           ultima_do_cliente_em: entrada ? quando : null,
@@ -110,6 +153,8 @@ export async function registrarMensagemSocial(supabase: any, m: MensagemDireta):
         ultima_mensagem_em: quando,
       }
       if (nome && !existente.contato_nome) patch.contato_nome = nome
+      if (usuario) patch.contato_usuario = usuario
+      if (m.origemContato && !existente.origem_contato) patch.origem_contato = m.origemContato
       if (entrada) {
         patch.ultima_do_cliente_em = quando
         patch.nao_lidas = (existente.nao_lidas ?? 0) + 1

@@ -58,6 +58,42 @@ export function extrairComentario(
   return c
 }
 
+// Qual post foi comentado (06/11/2026): link e início do texto, para a Central mostrar a ORIGEM do
+// comentário. Melhor esforço: sem token, sem permissão ou erro da Meta, devolve vazio e registra o
+// motivo no log (nunca o token).
+export async function buscarPostComentado(
+  platform: 'facebook' | 'instagram',
+  postId: string,
+): Promise<{ link: string | null; resumo: string | null }> {
+  const vazio = { link: null, resumo: null }
+  try {
+    const token = Deno.env.get('META_PAGE_ACCESS_TOKEN')
+    if (!token || !postId) return vazio
+    const campos = platform === 'instagram' ? 'permalink,caption' : 'permalink_url,message'
+    const r = await fetch(
+      `https://graph.facebook.com/v20.0/${postId}?fields=${campos}&access_token=${encodeURIComponent(token)}`,
+      { signal: AbortSignal.timeout(4000) },
+    )
+    const j = await r.json().catch(() => ({}))
+    if (!r.ok) {
+      console.error(
+        `buscarPostComentado ${platform} HTTP ${r.status}:`,
+        JSON.stringify(j?.error ?? j).slice(0, 300),
+      )
+      return vazio
+    }
+    const link = j?.permalink || j?.permalink_url || null
+    const texto = (j?.caption || j?.message || '').toString().replace(/\s+/g, ' ').trim()
+    return {
+      link: link ? String(link).slice(0, 300) : null,
+      resumo: texto ? texto.slice(0, 140) : null,
+    }
+  } catch (e) {
+    console.error('buscarPostComentado falhou:', e)
+    return vazio
+  }
+}
+
 // Envia um texto para a dona por WhatsApp (mesmo caminho do relatório diário). Nunca lança: falha de
 // aviso não pode derrubar o webhook da Meta. Limite da Meta: texto livre só chega se a destinatária
 // falou com este número nas últimas 24 h — o registro oficial é sempre o lead no CRM.
@@ -65,8 +101,7 @@ export function extrairComentario(
 export async function enviarWhatsAppAoDono(supabase: any, corpo: string) {
   try {
     const token = Deno.env.get('WHATSAPP_TOKEN') || Deno.env.get('META_WHATSAPP_ACCESS_TOKEN')
-    const phoneId =
-      Deno.env.get('WHATSAPP_PHONE_NUMBER_ID') || Deno.env.get('META_PHONE_NUMBER_ID')
+    const phoneId = Deno.env.get('WHATSAPP_PHONE_NUMBER_ID') || Deno.env.get('META_PHONE_NUMBER_ID')
     if (!token || !phoneId) return
     const { data: cfg } = await supabase
       .from('social_configuracoes')
@@ -76,7 +111,9 @@ export async function enviarWhatsAppAoDono(supabase: any, corpo: string) {
     // configurado, não envia (o registro oficial continua sendo o lead no CRM).
     const dono = String(cfg?.whatsapp_number || '').replace(/\D/g, '')
     if (!dono) {
-      console.error('comentario-social: social_configuracoes.whatsapp_number vazio, aviso NÃO enviado')
+      console.error(
+        'comentario-social: social_configuracoes.whatsapp_number vazio, aviso NÃO enviado',
+      )
       return
     }
     const r = await fetch(`https://graph.facebook.com/v20.0/${phoneId}/messages`, {

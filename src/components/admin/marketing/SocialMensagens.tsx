@@ -243,6 +243,8 @@ export function SocialMensagens({ aoMudarNaoLidas }: { aoMudarNaoLidas?: () => v
                   {selecionada.plataforma === 'instagram'
                     ? 'Direct do Instagram'
                     : 'Messenger do Facebook'}
+                  {selecionada.contato_usuario ? ` · @${selecionada.contato_usuario}` : ''}
+                  {selecionada.origem_contato ? ` · Origem: ${selecionada.origem_contato}` : ''}
                 </p>
               </div>
               <Button size="sm" variant="outline" className="h-8 text-xs" onClick={alternarStatus}>

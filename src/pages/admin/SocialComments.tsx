@@ -92,6 +92,23 @@ export default function SocialComments({ embedded = false }: { embedded?: boolea
                 </span>
               )}
             </div>
+            {(c.post_link || c.post_resumo) && (
+              <p className="text-xs text-slate-500 mb-2">
+                Comentou em:{' '}
+                {c.post_link ? (
+                  <a
+                    href={c.post_link}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-blue-600 underline"
+                  >
+                    {c.post_resumo || 'ver publicação'}
+                  </a>
+                ) : (
+                  c.post_resumo
+                )}
+              </p>
+            )}
             <p className="text-sm text-slate-700 mb-4 bg-slate-50 p-3 rounded-lg border">
               {c.message}
             </p>
