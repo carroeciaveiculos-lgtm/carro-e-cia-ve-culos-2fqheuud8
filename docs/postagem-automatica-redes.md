@@ -356,3 +356,29 @@ A Adriana contestou ("para uso da própria empresa isso não é obrigatório") e
 ### 06/10/2026 — Esteira NO AR (deploy + agendamento)
 
 `esteira-proximo-post` implantada pelo workflow (push `37bbb07`) e testada com o segredo interno: respondeu `{"acao":"pausada","novos":1,"sairam":0}` (esteira desligada; o ix35, veículo novo, entrou na fila). Agendamento `esteira-proximo-post-cron-job` (`*/15 * * * *`) criado pela migration `20261006140506`, que confere antes se já existe. A esteira continua **pausada**: nada é criado até a Adriana clicar em "Ligar esteira" na aba Aprovações; e nada sai sem o "Aprovar os dois". Colisão com `post-organico-diario-cron-job` (`0 11 * * *`, ativo) segue como decisão pendente.
+
+### 07/11/2026 — Plano: criativos estáticos na esteira (decidido, NÃO implementado)
+
+Decisões da Adriana (07/11/2026) e ajustes aceitos após a autocrítica do mesmo dia.
+
+**Fluxo:** no cadastro do veículo (aba de fotos), seção "Imagens para criativo de anúncios": o operador marca 4 fotos (qualquer uma; a regra de fotos sem marca de IA NÃO vale aqui), clica em **"Gerar criativos"** (botão explícito, não automático ao marcar a 4ª: evita arquivo órfão no R2) e o sistema monta o Modelo Padrão com os dados do cadastro e salva na biblioteca, na pasta do veículo (`veiculo_criativos`). O desenho roda no navegador (`canvas`), por isso a geração é feita ali.
+
+**Formatos:** 4:5 = feed Instagram e Facebook; 9:16 = Stories só no Instagram; 1:1 guardado (tráfego pago). O 1,91:1 (1200×628, exigido pelo Google Ads) NÃO tem layout hoje e **fica para uma etapa posterior**, com prévia para ela aprovar (adiado para não atrasar o fluxo orgânico).
+
+**Esteira:** tipo novo "criativo estático"; carrosséis (25) e vídeos (5) ficam parados na fila, sem apagar; 2 posts por dia (horários a confirmar com ela; sugestão 12:00 e 19:00); sorteio entre veículos com criativo pronto; mesmo veículo espera 15 dias; veículo NOVO no estoque passa sempre na frente; foto principal sempre original, sem IA; uma linha por rede (Facebook e Instagram aprovam e erram separados).
+
+**Aprovação e liberação do automático:** começa com aprovação (interruptor "exigir aprovação" ligado). Critério para ligar o automático (ajustado após autocrítica): **3 posts bons E 7 dias sem correção manual**, e nos primeiros envios automáticos a equipe é avisada a cada publicação. Quem decide ligar é a Adriana.
+
+**Trava antes de publicar:** compara preço, km e status atuais com os gravados na hora da geração; se mudou ou o carro foi vendido, não publica e avisa para refazer. Posts bloqueados devem aparecer em destaque (para a fila não parar em silêncio).
+
+**Aviso ao cliente:** legenda com "📅 Anúncio de [data de publicação]. Valores e disponibilidade podem mudar sem aviso prévio..." (Facebook troca "link na bio" pelo link clicável do /estoque) e linha curta SEM data no rodapé da imagem. Detalhe na memória do projeto (`aviso-data-preco-disponibilidade-posts`).
+
+**Verificação de status:** Stories já devolveu sucesso da Meta sem o Story existir (comentário de 20/08/2026 em `publicar-social`). Antes de liberar o automático, conferir o status contra a API da Meta, não só o nosso banco.
+
+**Colisão conhecida:** pausar `post-organico-diario-cron` (ativo, 1 rascunho/dia no Facebook) quando a esteira estática entrar em uso (decisão dela pendente).
+
+**Fases:** (1A) migração de banco (separada, exige "autorizo" próprio): fotos escolhidas, data da geração e cópia de preço/km/ano em `veiculos`; `formato` e `origem` em `veiculo_criativos`; (1B) seção no cadastro + aviso no rodapé do Modelo Padrão; (2) esteira + trava; (3) liberação do automático; (4) layout 1,91:1; (5) Central de Ajuda, pausa do post diário, `PROXIMA_SESSAO.md` e `MEMORY_WORK.MD`.
+
+**Pendentes de resposta dela:** os dois horários exatos e se os 2 posts são de veículos diferentes ou 1 feed + Stories do mesmo carro; confirmar o endereço da bio (`carroeciamotors.com.br/estoque`, ela escreveu "carroeciemotors"); "autorizo" de 1A e 1B. Estado em 07/11/2026: esteira desligada (`esteira_config.ativa = false`); só 2 veículos têm criativo salvo.
+
+**Atualização do mesmo dia (07/11/2026, resposta dela):** por dia, **2 veículos diferentes**, ambos às **19:00**; cada veículo gera **1 post de feed (Facebook + Instagram, formato 4:5) e 1 Stories (só Instagram, 9:16)**, ou seja, 6 linhas em `social_posts` por dia (2 × feed Facebook, 2 × feed Instagram, 2 × Stories Instagram). **Prioridade para veículos recém-cadastrados** (nunca postados, do mais novo para o mais antigo); depois, sorteio entre os elegíveis (criativo pronto e atualizado, disponível, sem post nos últimos 15 dias). Fase 1 (migração `20261107204713` + seção "Imagens para criativo de anúncios" no cadastro) feita em 07/11/2026, em teste local, sem commit. Fase 2 ainda exige: migração para aceitar o tipo `criativo_estatico` em `social_esteira` (hoje só `carrossel` e `video`), leitura da coluna `rede` pelo caminho antigo de `publicar-social` e trava contra publicação em duplicidade.
