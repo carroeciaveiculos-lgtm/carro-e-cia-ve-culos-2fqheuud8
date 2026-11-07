@@ -383,24 +383,31 @@ Deno.serve(async (req: Request) => {
             // do container chegar em "FINISHED" pode devolver sucesso sem
             // o conteúdo ir ao ar de verdade — Stories de foto processam
             // rápido mas não são instantâneas como Feed.
-            if (isVideo || isStories) {
-              readyToPublish = await waitForInstagramMediaReady(containerData.id, token)
-            }
+            // 07/11/2026: foto de feed também espera. Antes publicava na hora e o
+            // Instagram respondia 9007/2207027 ("Media ID is not available") quando
+            // demorava a processar (post do Jeep Renegade; o Facebook já tinha ido).
+            readyToPublish = await waitForInstagramMediaReady(containerData.id, token)
 
             if (readyToPublish) {
-              const publishRes = await fetch(
-                `https://graph.facebook.com/v20.0/${igId}/media_publish`,
-                {
+              const publicarContainer = async () => {
+                const res = await fetch(`https://graph.facebook.com/v20.0/${igId}/media_publish`, {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
                   body: JSON.stringify({
                     access_token: token,
                     creation_id: containerData.id,
                   }),
-                },
-              )
+                })
+                return { ok: res.ok, data: await res.json() }
+              }
 
-              const publishData = await publishRes.json()
+              let publishRes = await publicarContainer()
+              // Mesmo "pronto", a Meta às vezes ainda devolve 9007: espera e tenta 1 vez mais.
+              if (!publishRes.ok && publishRes.data?.error?.code === 9007) {
+                await delay(5000)
+                publishRes = await publicarContainer()
+              }
+              const publishData = publishRes.data
               if (publishRes.ok) {
                 igSuccess = true
                 igMediaId = publishData?.id || null
@@ -411,7 +418,7 @@ Deno.serve(async (req: Request) => {
               }
             } else {
               errorLog.instagram = {
-                error: 'O vídeo não ficou pronto para publicação no tempo limite.',
+                error: 'A mídia não ficou pronta para publicação no tempo limite.',
               }
             }
           } else {
@@ -524,7 +531,11 @@ Deno.serve(async (req: Request) => {
       const resultLog: any = {}
       if (requestedFb) {
         resultLog.facebook = fbSuccess
-          ? { success: true, post_id: fbPostId, link: fbPostId ? `https://www.facebook.com/${fbPostId}` : null }
+          ? {
+              success: true,
+              post_id: fbPostId,
+              link: fbPostId ? `https://www.facebook.com/${fbPostId}` : null,
+            }
           : { success: false, error: errorLog.facebook }
       }
       if (requestedIg) {
