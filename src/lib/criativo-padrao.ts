@@ -361,6 +361,9 @@ export function desenharCriativoPadrao(
   logo: HTMLCanvasElement | null,
   d: DadosCriativoPadrao,
   selo: HTMLImageElement | null = null,
+  // Linha de aviso no rodapé (07/11/2026), SEM data de propósito: a imagem é gerada no
+  // cadastro e publicada dias depois. Opcional: sem ela o desenho é idêntico ao de antes.
+  aviso = '',
 ) {
   const { w: W, h: H, seguroTopo, seguroBase } = FORMATOS_PADRAO[formato]
   canvas.width = W
@@ -387,7 +390,9 @@ export function desenharCriativoPadrao(
   const specsH = quadrado ? 63 : 84
   const precoH = d.precoVenda > 0 ? (quadrado ? 81 : 104) : 0
   const zonaTitulo = quadrado ? 95 : 150
-  const fixo = GAP + zonaTitulo + (precoH ? precoH + GAP : 0) + specsH + (compH ? GAP + compH : 0)
+  const avisoH = aviso ? (quadrado ? 38 : 46) : 0
+  const fixo =
+    GAP + zonaTitulo + (precoH ? precoH + GAP : 0) + specsH + (compH ? GAP + compH : 0) + avisoH
   const fotoY = topo
   const fotoH = Math.max(300, base - fotoY - fixo)
 
@@ -551,4 +556,19 @@ export function desenharCriativoPadrao(
     const fw = (largura - gapF * (complementares.length - 1)) / complementares.length
     complementares.forEach((img, i) => fotoInteira(ctx, img, M + i * (fw + gapF), y, fw, compH))
   }
+
+  // ---- Aviso ao cliente (rodapé, dentro da área segura) ----
+  if (aviso) {
+    const yAviso = y + compH
+    const ta = ajustar(ctx, aviso, 500, largura - 40, quadrado ? 20 : 22, 12)
+    ctx.fillStyle = COR.cinzaTexto
+    ctx.textBaseline = 'middle'
+    ctx.font = `500 ${ta}px ${FAMILIA}`
+    ctx.fillText(aviso, W / 2, yAviso + avisoH * 0.6)
+    ctx.textBaseline = 'alphabetic'
+  }
 }
+
+// Texto do aviso no rodapé do criativo (decisão da Adriana, 07/11/2026). Sem data.
+export const AVISO_RODAPE_CRIATIVO =
+  'Valores e disponibilidade sujeitos a alteração sem aviso prévio'

@@ -4373,6 +4373,8 @@ export type Database = {
           imagem_url: string
           template_slug: string
           veiculo_id: string
+          formato: string | null
+          origem: string | null
         }
         Insert: {
           criado_em?: string
@@ -4382,6 +4384,8 @@ export type Database = {
           imagem_url: string
           template_slug: string
           veiculo_id: string
+          formato?: string | null
+          origem?: string | null
         }
         Update: {
           criado_em?: string
@@ -4391,6 +4395,8 @@ export type Database = {
           imagem_url?: string
           template_slug?: string
           veiculo_id?: string
+          formato?: string | null
+          origem?: string | null
         }
         Relationships: [
           {
@@ -4445,6 +4451,9 @@ export type Database = {
           final_placa: string | null
           fipe_ref: string | null
           fotos: Json | null
+          fotos_criativo: Json | null
+          criativo_gerado_em: string | null
+          criativo_dados: Json | null
           garantia: boolean | null
           garantia_fabrica: string | null
           id: string
@@ -4558,6 +4567,9 @@ export type Database = {
           final_placa?: string | null
           fipe_ref?: string | null
           fotos?: Json | null
+          fotos_criativo?: Json | null
+          criativo_gerado_em?: string | null
+          criativo_dados?: Json | null
           garantia?: boolean | null
           garantia_fabrica?: string | null
           id?: string
@@ -4671,6 +4683,9 @@ export type Database = {
           final_placa?: string | null
           fipe_ref?: string | null
           fotos?: Json | null
+          fotos_criativo?: Json | null
+          criativo_gerado_em?: string | null
+          criativo_dados?: Json | null
           garantia?: boolean | null
           garantia_fabrica?: string | null
           id?: string

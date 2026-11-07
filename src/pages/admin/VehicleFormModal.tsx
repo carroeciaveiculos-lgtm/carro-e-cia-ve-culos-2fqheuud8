@@ -37,6 +37,7 @@ import { cn, sanitizePhone, extractFinalPlaca } from '@/lib/utils'
 import { resizeImages } from '@/lib/image-resize'
 import { uploadToR2 } from '@/lib/r2-upload'
 import { BatchPhotoUploader } from '@/components/admin/BatchPhotoUploader'
+import { ImagensCriativoPanel } from '@/components/admin/estoque/ImagensCriativoPanel'
 import { ImageEditorModal } from '@/components/admin/ImageEditorModal'
 import { DocumentPreviewDialog } from '@/components/admin/DocumentPreviewDialog'
 import { getFipeHistoricoVeiculo } from '@/services/fipe'
@@ -2554,6 +2555,11 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
                   </div>
                 )}
               </div>
+
+              <ImagensCriativoPanel
+                veiculo={formData}
+                onAtualizar={(parcial) => setFormData((p: any) => ({ ...p, ...parcial }))}
+              />
 
               <div className="bg-white p-6 rounded-lg border shadow-sm">
                 <div className="flex items-center justify-between gap-2 flex-wrap border-b pb-2 mb-4">
