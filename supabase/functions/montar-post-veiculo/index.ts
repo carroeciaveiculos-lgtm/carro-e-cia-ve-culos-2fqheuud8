@@ -66,6 +66,112 @@ async function fotosParaCarrossel(
   return { fotos: aceitas, limpas, marcadas, indeterminadas }
 }
 
+const URL_ESTOQUE = 'https://www.carroeciamotors.com.br/estoque'
+
+// Aviso ao cliente (decisão da Adriana, 07/11/2026): data de publicação + valores/disponibilidade
+// podem mudar. Instagram não tem link clicável na legenda, então manda para o link da bio.
+function avisoDaLegenda(rede: 'instagram' | 'facebook', dataBR: string): string {
+  const base = `📅 Anúncio de ${dataBR}. Valores e disponibilidade podem mudar sem aviso prévio. Confirme com a nossa equipe ou consulte nosso estoque atualizado`
+  return rede === 'instagram' ? `${base} pelo link na bio.` : `${base}: ${URL_ESTOQUE}`
+}
+
+// Dados que ficaram gravados na imagem x dados de agora. Se mudaram, a imagem mostra valor velho.
+// deno-lint-ignore no-explicit-any
+function criativoDesatualizado(v: any): string | null {
+  const a = v.criativo_dados
+  if (!a || !v.criativo_gerado_em)
+    return 'Gere os criativos deste veículo antes de enviar para aprovação.'
+  const km = v.is_zero_km ? 0 : Number(v.quilometragem) || 0
+  if (
+    (Number(v.preco_venda) || 0) !== Number(a.preco_venda) ||
+    km !== Number(a.quilometragem) ||
+    String(v.ano_modelo ?? '') !== String(a.ano_modelo ?? '') ||
+    String(v.status ?? '') !== String(a.status ?? '')
+  ) {
+    return 'Preço, km, ano ou situação do veículo mudaram depois que o criativo foi gerado. Gere os criativos de novo.'
+  }
+  return null
+}
+
+// Cria 3 linhas (uma por rede/formato): feed Facebook, feed Instagram e Stories Instagram.
+// Facebook Stories não é implementado, por isso o Stories vai só para o Instagram.
+// deno-lint-ignore no-explicit-any
+async function montarPostsDoCriativo(supabase: any, veiculo: any, status: string) {
+  const falha = (error: string, http = 422) => ({ http, corpo: { success: false, error } })
+  const motivo = criativoDesatualizado(veiculo)
+  if (motivo) return falha(motivo)
+
+  const { data: criativos, error: erroCriativos } = await supabase
+    .from('veiculo_criativos')
+    .select('formato, imagem_url, criado_em')
+    .eq('veiculo_id', veiculo.id)
+    .eq('origem', 'cadastro')
+    .order('criado_em', { ascending: false })
+  if (erroCriativos) throw erroCriativos
+  // deno-lint-ignore no-explicit-any
+  const porFormato = (f: string) => (criativos || []).find((c: any) => c.formato === f)?.imagem_url
+  const feed = porFormato('4:5')
+  const story = porFormato('9:16')
+  if (!feed || !story) {
+    return falha('Faltam criativos 4:5 e 9:16 deste veículo. Gere os criativos no cadastro.')
+  }
+
+  const dataBR = new Date().toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' })
+  const fraseFinal = await buscarFraseFinal(supabase)
+  const itens = [
+    { rede: 'facebook', formato: 'feed_foto', content_type: 'feed', imagem: feed },
+    { rede: 'instagram', formato: 'feed_foto', content_type: 'feed', imagem: feed },
+    { rede: 'instagram', formato: 'story_foto', content_type: 'stories', imagem: story },
+  ] as const
+
+  const resultados: Record<string, unknown> = {}
+  for (const it of itens) {
+    const chave = `${it.rede}_${it.formato}`
+    // não duplica: se já existe um igual esperando aprovação/publicação, pula
+    const { data: existente } = await supabase
+      .from('social_posts')
+      .select('id')
+      .eq('veiculo_id', veiculo.id)
+      .eq('rede', it.rede)
+      .eq('formato', it.formato)
+      .in('status', ['Rascunho', 'Agendado', 'Publicando'])
+      .limit(1)
+    if (existente && existente.length > 0) {
+      resultados[chave] = {
+        criado: false,
+        motivo: 'já existe um igual aguardando aprovação ou publicação',
+      }
+      continue
+    }
+    const legenda = montarLegendaSocial(veiculo, { rede: it.rede, fraseFinal })
+    const { data: criado, error } = await supabase
+      .from('social_posts')
+      .insert({
+        redes: [it.rede],
+        rede: it.rede,
+        texto: `${avisoDaLegenda(it.rede, dataBR)}\n\n${legenda}`,
+        imagem: it.imagem,
+        midias: [it.imagem],
+        veiculo_id: veiculo.id,
+        content_type: it.content_type,
+        formato: it.formato,
+        origem: 'manual',
+        status,
+        fotos_marcadas_ia: 0,
+        data_agendamento: new Date().toISOString(),
+      })
+      .select('id')
+      .single()
+    resultados[chave] = error
+      ? { criado: false, motivo: error.message }
+      : { criado: true, post_id: criado.id }
+  }
+  return {
+    http: 200,
+    corpo: { success: true, veiculo_id: veiculo.id, modo: 'criativo_estatico', resultados },
+  }
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
 
@@ -112,7 +218,7 @@ Deno.serve(async (req: Request) => {
     const { data: veiculo, error: erroVeiculo } = await supabase
       .from('veiculos')
       .select(
-        'id, marca, modelo, versao, categoria, ano_fabricacao, ano_modelo, cor, combustivel, cambio, quilometragem, preco_venda, slug, status, fotos, diferenciais, caracteristicas',
+        'id, marca, modelo, versao, categoria, ano_fabricacao, ano_modelo, cor, combustivel, cambio, quilometragem, preco_venda, slug, status, fotos, diferenciais, caracteristicas, is_zero_km, criativo_gerado_em, criativo_dados',
       )
       .eq('id', veiculoId)
       .maybeSingle()
@@ -123,6 +229,12 @@ Deno.serve(async (req: Request) => {
         { success: false, error: 'Só veículos disponíveis entram na fila de postagem' },
         422,
       )
+    }
+
+    // Criativos do Modelo Padrão gerados no cadastro (08/11/2026): 3 linhas por veículo.
+    if (body.modo === 'criativo_estatico') {
+      const r = await montarPostsDoCriativo(supabase, veiculo, status)
+      return resposta(r.corpo, r.http)
     }
 
     const permitirMarcadas = body.permitir_fotos_marcadas === true
@@ -150,7 +262,9 @@ Deno.serve(async (req: Request) => {
 
     // quantas das fotos ESCOLHIDAS têm marca de IA (0 quando só entram as limpas)
     const marcadasNoPost = permitirMarcadas
-      ? (await classificarFotos(supabase, veiculo.id, fotos).then((m) => fotos.filter((u) => m[u] === true).length))
+      ? await classificarFotos(supabase, veiculo.id, fotos).then(
+          (m) => fotos.filter((u) => m[u] === true).length,
+        )
       : 0
 
     const fraseFinal = await buscarFraseFinal(supabase)
