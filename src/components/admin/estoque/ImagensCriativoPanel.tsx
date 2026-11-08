@@ -12,7 +12,8 @@ import {
   gerarCriativosDoVeiculo,
   type ResultadoGeracao,
 } from '@/lib/criativo-cadastro'
-import { Wand2, Loader2, ExternalLink, AlertTriangle, Image as ImageIcon } from 'lucide-react'
+import { enviarCriativosParaAprovacao } from '@/services/social-posts'
+import { Wand2, Loader2, ExternalLink, AlertTriangle, Send, Image as ImageIcon } from 'lucide-react'
 
 // Seção "Imagens para criativo de anúncios" do cadastro do veículo (07/11/2026).
 // O operador escolhe 4 fotos (qualquer uma: a regra de foto sem marca de IA não vale aqui) e
@@ -48,6 +49,7 @@ export function ImagensCriativoPanel({ veiculo, onAtualizar }: Props) {
   const [gerando, setGerando] = useState(false)
   const [progresso, setProgresso] = useState('')
   const [salvos, setSalvos] = useState<CriativoSalvo[]>([])
+  const [enviando, setEnviando] = useState(false)
 
   // Seleção salva antes (se todas as fotos ainda existem no cadastro)
   useEffect(() => {
@@ -100,6 +102,25 @@ export function ImagensCriativoPanel({ veiculo, onAtualizar }: Props) {
     } finally {
       setGerando(false)
       setProgresso('')
+    }
+  }
+
+  const enviar = async () => {
+    setEnviando(true)
+    const r = await enviarCriativosParaAprovacao(veiculo.id)
+    setEnviando(false)
+    if (r.erro) {
+      toast({ title: 'Não foi possível enviar', description: r.erro, variant: 'destructive' })
+    } else if (r.criados === 0) {
+      toast({
+        title: 'Nada novo para enviar',
+        description: 'Já existem posts deste veículo aguardando aprovação.',
+      })
+    } else {
+      toast({
+        title: `${r.criados} post(s) enviados para aprovação`,
+        description: 'Aprove na Central Social (Aprovações).',
+      })
     }
   }
 
@@ -244,6 +265,25 @@ export function ImagensCriativoPanel({ veiculo, onAtualizar }: Props) {
                     </p>
                   </a>
                 ))}
+              </div>
+              <div className="mt-4 flex items-center gap-3 flex-wrap">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={enviar}
+                  disabled={enviando || desatualizado || gerando}
+                >
+                  {enviando ? (
+                    <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                  ) : (
+                    <Send className="w-4 h-4 mr-1" />
+                  )}
+                  Enviar para aprovação
+                </Button>
+                <span className="text-[11px] text-slate-500">
+                  Cria 3 posts para você aprovar: feed Facebook, feed Instagram e Stories Instagram.
+                  Nada é publicado antes da aprovação.
+                </span>
               </div>
             </div>
           )}

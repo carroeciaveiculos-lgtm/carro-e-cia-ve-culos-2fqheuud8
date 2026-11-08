@@ -137,6 +137,30 @@ export async function agendarPost(
   return { erro: error?.message ?? null, horario }
 }
 
+// Envia os criativos do cadastro (Modelo Padrão) para a fila de APROVAÇÃO: cria 3 linhas —
+// feed Facebook, feed Instagram e Stories Instagram — com a legenda de cada rede. Nada vai ao
+// ar antes de alguém aprovar na Central Social. (08/11/2026)
+export async function enviarCriativosParaAprovacao(
+  veiculoId: string,
+): Promise<{ erro: string | null; criados: number; ignorados: number }> {
+  const { data, error } = await supabase.functions.invoke('montar-post-veiculo', {
+    body: { veiculo_id: veiculoId, modo: 'criativo_estatico', status: 'Rascunho' },
+  })
+  let corpo: any = data
+  if (error) {
+    // resposta de erro (422 etc.): o motivo em português vem no corpo
+    corpo = await (error as any).context?.json?.().catch(() => null)
+    return { erro: corpo?.error || error.message, criados: 0, ignorados: 0 }
+  }
+  const resultados = Object.values(corpo?.resultados || {}) as { criado: boolean }[]
+  const criados = resultados.filter((r) => r.criado).length
+  return {
+    erro: corpo?.success ? null : corpo?.error || 'Falha ao enviar',
+    criados,
+    ignorados: resultados.length - criados,
+  }
+}
+
 export async function excluirPost(id: string): Promise<ResultadoAcao> {
   const { error } = await supabase.from('social_posts').delete().eq('id', id)
   return { erro: error?.message ?? null }
