@@ -1,6 +1,7 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from 'jsr:@supabase/supabase-js@2'
 import { isInternalRequestAuthorized, unauthorizedResponse } from '../_shared/internal-auth.ts'
+import { isAuthorizedPhone } from '../_shared/whatsapp-commands.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -131,7 +132,9 @@ Deno.serve(async (req) => {
     let sentCount = 0
 
     for (const lead of leads || []) {
-      if (lead.telefone) {
+      // Achado 29/10/2026: número da Adriana caiu como lead e recebeu o template
+      // de reengajamento em 27/10. Número interno nunca entra no reengajamento.
+      if (lead.telefone && !isAuthorizedPhone(lead.telefone)) {
         try {
           const waToken =
             Deno.env.get('WHATSAPP_TOKEN') || Deno.env.get('META_WHATSAPP_ACCESS_TOKEN')!
