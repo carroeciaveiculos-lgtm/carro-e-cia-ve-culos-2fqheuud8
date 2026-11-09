@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { BRAND } from '@/lib/brand'
 
@@ -130,6 +131,10 @@ interface Props {
   colunas: ColunaId[]
   filtros: string
   impressoEm: Date
+  // Prévia na tela (09/11/2026): mostra a folha A4 sobre o painel antes de imprimir
+  previa?: boolean
+  onFechar?: () => void
+  onImprimir?: () => void
 }
 
 const dataHora = (d: Date) =>
@@ -141,10 +146,28 @@ const dataHora = (d: Date) =>
 export const CSS_IMPRESSAO = `
 @page { size: A4 portrait; margin: 12mm; }
 #relatorio-impressao-root { display: none; }
+#relatorio-impressao-root.previa { display: block; position: fixed; inset: 0; z-index: 9999;
+  background: #525659; overflow: auto; }
+#relatorio-impressao-root .barra { position: sticky; top: 0; z-index: 1; display: flex;
+  align-items: center; justify-content: space-between; gap: 12px; padding: 10px 20px;
+  background: #2f3235; color: #fff; font: 13px Arial, Helvetica, sans-serif; }
+#relatorio-impressao-root .barra .acoes { display: flex; gap: 8px; }
+#relatorio-impressao-root .barra button { cursor: pointer; border: 0; border-radius: 6px;
+  padding: 8px 14px; font: bold 13px Arial, Helvetica, sans-serif; }
+#relatorio-impressao-root .barra .imp { background: #2563eb; color: #fff; }
+#relatorio-impressao-root .barra .fec { background: #e5e7eb; color: #111; }
+#relatorio-impressao-root .papel { width: 210mm; min-height: 297mm; margin: 16px auto;
+  background: #fff; padding: 12mm; box-sizing: border-box; box-shadow: 0 2px 12px rgba(0,0,0,.5);
+  background-image: repeating-linear-gradient(to bottom, transparent 0, transparent 296.6mm,
+    #f87171 296.6mm, #f87171 297mm); }
 @media print {
   body > *:not(#relatorio-impressao-root) { display: none !important; }
   html, body { background: #fff !important; margin: 0 !important; padding: 0 !important; }
-  #relatorio-impressao-root { display: block !important; }
+  #relatorio-impressao-root, #relatorio-impressao-root.previa { display: block !important;
+    position: static !important; overflow: visible !important; background: none !important; }
+  #relatorio-impressao-root .barra { display: none !important; }
+  #relatorio-impressao-root .papel { width: auto; min-height: 0; margin: 0; padding: 0;
+    box-shadow: none; background: none; }
 }
 #relatorio-impressao { font-family: Arial, Helvetica, sans-serif; color: #111; font-size: 8.5pt; }
 #relatorio-impressao .cab { display: flex; align-items: center; justify-content: space-between;
@@ -175,7 +198,23 @@ export const CSS_IMPRESSAO = `
   break-inside: avoid; }
 `
 
-export function RelatorioEstoqueImpressao({ linhas, colunas, filtros, impressoEm }: Props) {
+export function RelatorioEstoqueImpressao({
+  linhas,
+  colunas,
+  filtros,
+  impressoEm,
+  previa,
+  onFechar,
+  onImprimir,
+}: Props) {
+  // Esc fecha a prévia
+  useEffect(() => {
+    if (!previa || !onFechar) return
+    const aoTeclar = (e: KeyboardEvent) => e.key === 'Escape' && onFechar()
+    window.addEventListener('keydown', aoTeclar)
+    return () => window.removeEventListener('keydown', aoTeclar)
+  }, [previa, onFechar])
+
   const escolhidas = COLUNAS.filter((c) => colunas.includes(c.id))
   const somaNormal = escolhidas.reduce((acc, c) => acc + c.largura, 0)
   // Muitas colunas: modo compacto (letra menor, larguras justas). Se nem assim couber, encolhe tudo.
@@ -192,55 +231,71 @@ export function RelatorioEstoqueImpressao({ linhas, colunas, filtros, impressoEm
   const valorTotal = linhas.reduce((acc, v) => acc + (v.preco_venda || 0), 0)
 
   return createPortal(
-    <div id="relatorio-impressao-root">
+    <div id="relatorio-impressao-root" className={previa ? 'previa' : undefined}>
       <style>{CSS_IMPRESSAO}</style>
-      <div id="relatorio-impressao" className={denso ? 'denso' : undefined}>
-        <div className="cab">
-          <img src={BRAND.logoUrl} alt={BRAND.name} />
-          <div className="tit">
-            <h1>Relatório de Estoque</h1>
-            <p>{BRAND.name}</p>
+      <div className="barra">
+        <span>
+          Prévia da impressão (A4 vertical). As linhas vermelhas mostram, de forma aproximada, onde
+          a página termina.
+        </span>
+        <div className="acoes">
+          <button type="button" className="imp" onClick={onImprimir}>
+            Imprimir / Salvar PDF
+          </button>
+          <button type="button" className="fec" onClick={onFechar}>
+            Fechar (Esc)
+          </button>
+        </div>
+      </div>
+      <div className="papel">
+        <div id="relatorio-impressao" className={denso ? 'denso' : undefined}>
+          <div className="cab">
+            <img src={BRAND.logoUrl} alt={BRAND.name} />
+            <div className="tit">
+              <h1>Relatório de Estoque</h1>
+              <p>{BRAND.name}</p>
+            </div>
           </div>
-        </div>
-        <div className="info">
-          <span>{filtros}</span>
-          <span>Impresso em {dataHora(impressoEm)}</span>
-        </div>
-        <table>
-          <colgroup>
-            <col style={{ width: `${larguraVeiculo}mm` }} />
-            {larguras.map((l, i) => (
-              <col key={escolhidas[i].id} style={{ width: `${l}mm` }} />
-            ))}
-          </colgroup>
-          <thead>
-            <tr>
-              <th>Veículo</th>
-              {escolhidas.map((c) => (
-                <th key={c.id} className={c.dir ? 'dir' : undefined}>
-                  {c.rotulo}
-                </th>
+          <div className="info">
+            <span>{filtros}</span>
+            <span>Impresso em {dataHora(impressoEm)}</span>
+          </div>
+          <table>
+            <colgroup>
+              <col style={{ width: `${larguraVeiculo}mm` }} />
+              {larguras.map((l, i) => (
+                <col key={escolhidas[i].id} style={{ width: `${l}mm` }} />
               ))}
-            </tr>
-          </thead>
-          <tbody>
-            {linhas.map((v) => (
-              <tr key={v.id}>
-                <td>{[v.marca, v.modelo, v.versao].filter(Boolean).join(' ')}</td>
+            </colgroup>
+            <thead>
+              <tr>
+                <th>Veículo</th>
                 {escolhidas.map((c) => (
-                  <td key={c.id} className={c.dir ? 'dir' : undefined}>
-                    {c.valor(v)}
-                  </td>
+                  <th key={c.id} className={c.dir ? 'dir' : undefined}>
+                    {c.rotulo}
+                  </th>
                 ))}
               </tr>
-            ))}
-          </tbody>
-        </table>
-        <div className="tot">
-          <span>
-            {linhas.length} {linhas.length === 1 ? 'veículo' : 'veículos'}
-          </span>
-          {mostraPreco && <span>Soma dos preços de venda: {moeda(valorTotal)}</span>}
+            </thead>
+            <tbody>
+              {linhas.map((v) => (
+                <tr key={v.id}>
+                  <td>{[v.marca, v.modelo, v.versao].filter(Boolean).join(' ')}</td>
+                  {escolhidas.map((c) => (
+                    <td key={c.id} className={c.dir ? 'dir' : undefined}>
+                      {c.valor(v)}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <div className="tot">
+            <span>
+              {linhas.length} {linhas.length === 1 ? 'veículo' : 'veículos'}
+            </span>
+            {mostraPreco && <span>Soma dos preços de venda: {moeda(valorTotal)}</span>}
+          </div>
         </div>
       </div>
     </div>,

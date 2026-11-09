@@ -2,7 +2,7 @@ import { useEffect, useState, useMemo } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { supabase } from '@/lib/supabase/client'
-import { Car, DollarSign, Clock3, AlertTriangle, Download, Globe, Printer } from 'lucide-react'
+import { Car, DollarSign, Clock3, AlertTriangle, Download, Globe, Printer, Eye } from 'lucide-react'
 import { Checkbox } from '@/components/ui/checkbox'
 import {
   RelatorioEstoqueImpressao,
@@ -224,6 +224,7 @@ export function RelatorioEstoque() {
   const alternarColuna = (id: ColunaId) =>
     setColunasSel((a) => (a.includes(id) ? a.filter((x) => x !== id) : [...a, id]))
   const [impressoEm, setImpressoEm] = useState(new Date())
+  const [previa, setPrevia] = useState(false)
   const textoFiltros = `Tipos: ${
     TIPOS_VEICULO.filter((t) => statusSel.includes(t.valor))
       .map((t) => t.rotulo)
@@ -241,6 +242,11 @@ export function RelatorioEstoque() {
     setImpressoEm(new Date())
     // espera o React atualizar a data/hora antes de abrir a janela de impressão
     setTimeout(() => window.print(), 100)
+  }
+
+  const abrirPrevia = () => {
+    setImpressoEm(new Date())
+    setPrevia(true)
   }
 
   const exportarCSV = () => {
@@ -284,6 +290,9 @@ export function RelatorioEstoque() {
         colunas={colunasImpressao}
         filtros={textoFiltros}
         impressoEm={impressoEm}
+        previa={previa}
+        onFechar={() => setPrevia(false)}
+        onImprimir={imprimir}
       />
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <p className="text-slate-500 text-sm">
@@ -330,6 +339,15 @@ export function RelatorioEstoque() {
             disabled={loading || linhasImpressao.length === 0}
           >
             <Printer className="w-4 h-4 mr-2" /> Imprimir / Salvar PDF
+          </Button>
+
+          <Button
+            variant="outline"
+            className="bg-white"
+            onClick={abrirPrevia}
+            disabled={loading || linhasImpressao.length === 0}
+          >
+            <Eye className="w-4 h-4 mr-2" /> Visualizar impressão
           </Button>
         </div>
       </div>
