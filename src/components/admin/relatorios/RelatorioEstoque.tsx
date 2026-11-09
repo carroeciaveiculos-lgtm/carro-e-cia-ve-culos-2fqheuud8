@@ -2,7 +2,13 @@ import { useEffect, useState, useMemo } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { supabase } from '@/lib/supabase/client'
-import { Car, DollarSign, Clock3, AlertTriangle, Download, Globe } from 'lucide-react'
+import { Car, DollarSign, Clock3, AlertTriangle, Download, Globe, Printer } from 'lucide-react'
+import { Checkbox } from '@/components/ui/checkbox'
+import {
+  RelatorioEstoqueImpressao,
+  ROTULO_COLUNA,
+  type ColunaId,
+} from './RelatorioEstoqueImpressao'
 import {
   Select,
   SelectContent,
@@ -16,7 +22,29 @@ const STATUS_LABEL: Record<string, string> = {
   vendido: 'Vendido',
   devolvido: 'Devolvido',
   rascunho: 'Rascunho',
+  em_preparacao: 'Em preparação',
 }
+
+// Tipos de veículo que podem ser escolhidos (valor do banco -> rótulo na tela)
+const TIPOS_VEICULO = [
+  { valor: 'disponivel', rotulo: 'Ativos' },
+  { valor: 'vendido', rotulo: 'Vendidos' },
+  { valor: 'devolvido', rotulo: 'Devolvidos' },
+  { valor: 'em_preparacao', rotulo: 'Em preparação' },
+  { valor: 'rascunho', rotulo: 'Rascunhos' },
+]
+
+// Colunas que o usuário pode marcar para imprimir. Só preço de VENDA (nunca compra/FIPE).
+const COLUNAS_ESCOLHA: ColunaId[] = [
+  'ano',
+  'placa',
+  'km',
+  'cor',
+  'combustivel',
+  'cambio',
+  'preco',
+  'dias',
+]
 
 // Portais ativos de fato (OLX/iCarros não têm integração de sync, ver
 // src/services/platform-sync.ts). Nunca usar veiculos.publicado_* como fonte
@@ -44,7 +72,15 @@ export function RelatorioEstoque() {
   const [veiculos, setVeiculos] = useState<any[]>([])
   const [publicacoesPorVeiculo, setPublicacoesPorVeiculo] = useState<Record<string, string[]>>({})
   const [loading, setLoading] = useState(true)
-  const [statusFilter, setStatusFilter] = useState('disponivel')
+  const [statusSel, setStatusSel] = useState<string[]>(['disponivel'])
+  const [colunasSel, setColunasSel] = useState<ColunaId[]>([
+    'ano',
+    'placa',
+    'km',
+    'cor',
+    'preco',
+    'dias',
+  ])
   const [marcaFilter, setMarcaFilter] = useState('todas')
   const [diasFilter, setDiasFilter] = useState('todos')
 
@@ -55,9 +91,9 @@ export function RelatorioEstoque() {
       let query = supabase
         .from('veiculos')
         .select(
-          'id, marca, modelo, versao, ano_fabricacao, ano_modelo, placa, preco_venda, status, created_at',
+          'id, marca, modelo, versao, ano_fabricacao, ano_modelo, placa, preco_venda, status, created_at, quilometragem, cor, is_zero_km, combustivel, cambio',
         )
-      if (statusFilter !== 'todos') query = query.eq('status', statusFilter)
+        .in('status', statusSel.length ? statusSel : ['__nenhum__'])
 
       const { data: veicsData } = await query
       setVeiculos(veicsData || [])
@@ -112,7 +148,8 @@ export function RelatorioEstoque() {
     }
 
     loadData()
-  }, [statusFilter])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [statusSel.join('|')])
 
   const marcasDisponiveis = useMemo(
     () => Array.from(new Set(veiculos.map((v) => v.marca).filter(Boolean))).sort(),
@@ -166,6 +203,46 @@ export function RelatorioEstoque() {
     }))
   }, [veiculosFiltrados, publicacoesPorVeiculo])
 
+  // Folha de impressão: mesmos filtros da tela, em ordem de marca e modelo (A-Z)
+  const linhasImpressao = useMemo(
+    () =>
+      [...veiculosFiltrados]
+        .sort((a, b) =>
+          `${a.marca || ''} ${a.modelo || ''} ${a.versao || ''}`.localeCompare(
+            `${b.marca || ''} ${b.modelo || ''} ${b.versao || ''}`,
+            'pt-BR',
+          ),
+        )
+        .map((v) => ({ ...v, dias: diasEmEstoque(v.created_at) })),
+    [veiculosFiltrados],
+  )
+  // Com mais de um tipo marcado, a folha ganha a coluna "Situação" para distinguir as linhas
+  const colunasImpressao: ColunaId[] =
+    statusSel.length > 1 ? [...colunasSel, 'situacao'] : colunasSel
+  const alternarTipo = (valor: string) =>
+    setStatusSel((a) => (a.includes(valor) ? a.filter((x) => x !== valor) : [...a, valor]))
+  const alternarColuna = (id: ColunaId) =>
+    setColunasSel((a) => (a.includes(id) ? a.filter((x) => x !== id) : [...a, id]))
+  const [impressoEm, setImpressoEm] = useState(new Date())
+  const textoFiltros = `Tipos: ${
+    TIPOS_VEICULO.filter((t) => statusSel.includes(t.valor))
+      .map((t) => t.rotulo)
+      .join(', ') || 'nenhum'
+  } · Marca: ${marcaFilter === 'todas' ? 'Todas' : marcaFilter} · Tempo parado: ${
+    {
+      todos: 'Qualquer',
+      ate15: 'Até 15 dias',
+      '16a30': '16 a 30 dias',
+      '31a60': '31 a 60 dias',
+      mais60: 'Mais de 60 dias',
+    }[diasFilter]
+  }`
+  const imprimir = () => {
+    setImpressoEm(new Date())
+    // espera o React atualizar a data/hora antes de abrir a janela de impressão
+    setTimeout(() => window.print(), 100)
+  }
+
   const exportarCSV = () => {
     const headers = [
       'Marca',
@@ -202,26 +279,18 @@ export function RelatorioEstoque() {
 
   return (
     <div className="space-y-6">
+      <RelatorioEstoqueImpressao
+        linhas={linhasImpressao}
+        colunas={colunasImpressao}
+        filtros={textoFiltros}
+        impressoEm={impressoEm}
+      />
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <p className="text-slate-500 text-sm">
           Acompanhe o pátio: valor, tempo parado e publicação.
         </p>
 
         <div className="flex flex-wrap gap-2">
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-[160px] bg-white">
-              <Car className="w-4 h-4 mr-2" />
-              <SelectValue placeholder="Status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="disponivel">Disponível</SelectItem>
-              <SelectItem value="vendido">Vendido</SelectItem>
-              <SelectItem value="devolvido">Devolvido</SelectItem>
-              <SelectItem value="rascunho">Rascunho</SelectItem>
-              <SelectItem value="todos">Todos os status</SelectItem>
-            </SelectContent>
-          </Select>
-
           <Select value={marcaFilter} onValueChange={setMarcaFilter}>
             <SelectTrigger className="w-[160px] bg-white">
               <SelectValue placeholder="Marca" />
@@ -253,8 +322,55 @@ export function RelatorioEstoque() {
           <Button variant="outline" className="bg-white" onClick={exportarCSV}>
             <Download className="w-4 h-4 mr-2" /> Exportar CSV
           </Button>
+
+          <Button
+            variant="outline"
+            className="bg-white"
+            onClick={imprimir}
+            disabled={loading || linhasImpressao.length === 0}
+          >
+            <Printer className="w-4 h-4 mr-2" /> Imprimir / Salvar PDF
+          </Button>
         </div>
       </div>
+
+      <Card className="border-none shadow-sm">
+        <CardContent className="p-4 grid gap-4 md:grid-cols-2">
+          <div>
+            <p className="text-sm font-semibold text-slate-700 mb-2">Tipos de veículo</p>
+            <div className="flex flex-wrap gap-x-5 gap-y-2">
+              {TIPOS_VEICULO.map((t) => (
+                <label key={t.valor} className="flex items-center gap-2 text-sm text-slate-700">
+                  <Checkbox
+                    checked={statusSel.includes(t.valor)}
+                    onCheckedChange={() => alternarTipo(t.valor)}
+                  />
+                  {t.rotulo}
+                </label>
+              ))}
+            </div>
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-slate-700 mb-2">
+              Dados a imprimir <span className="font-normal text-slate-400">(além do veículo)</span>
+            </p>
+            <div className="flex flex-wrap gap-x-5 gap-y-2">
+              {COLUNAS_ESCOLHA.map((id) => (
+                <label key={id} className="flex items-center gap-2 text-sm text-slate-700">
+                  <Checkbox
+                    checked={colunasSel.includes(id)}
+                    onCheckedChange={() => alternarColuna(id)}
+                  />
+                  {ROTULO_COLUNA[id]}
+                </label>
+              ))}
+            </div>
+            <p className="text-xs text-slate-400 mt-2">
+              Só o preço de venda é impresso: preço de compra e valor FIPE não entram no relatório.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
 
       {loading ? (
         <div className="h-64 flex items-center justify-center bg-white rounded-xl shadow-sm border-none">

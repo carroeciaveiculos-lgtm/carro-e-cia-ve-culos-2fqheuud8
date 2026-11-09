@@ -13,6 +13,9 @@ export const ROTA_SETORES: Record<string, string[]> = {
   '/admin/agendamentos': ['Vendas'],
   '/admin/avaliacao': ['Vendas'],
   '/admin/relatorios': ['Institucional'],
+  // Atalho do relatório de estoque no menu Estoque/Portais (nome sem "s" de propósito: o match é
+  // por prefixo e '/admin/relatorios' pegaria esta rota e a liberaria só para Institucional)
+  '/admin/relatorio-estoque': ['Estoque/Portais'],
   '/admin/financiamento': ['Financiamentos'],
   '/admin/administrativo': ['Financeiro/Administrativo'],
   '/admin/modelos-documentos': ['Financeiro/Administrativo'],

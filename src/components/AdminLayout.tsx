@@ -67,6 +67,7 @@ const SIDEBAR_MENUS = [
         items: [
           { label: 'Estoque', path: '/admin/estoque', icon: Car },
           { label: 'Portais', path: '/admin/portais', icon: Globe },
+          { label: 'Relatórios', path: '/admin/relatorio-estoque', icon: FileText },
         ],
       },
       {
