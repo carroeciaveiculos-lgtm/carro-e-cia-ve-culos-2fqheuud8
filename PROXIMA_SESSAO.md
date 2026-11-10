@@ -1,7 +1,49 @@
 # Próxima sessão — Carro e Cia Veículos
 
-Atualizado em: 05/11/2026 (sessão 42)
-Substitui: 03/11/2026 (sessão 40)
+Atualizado em: 10/11/2026 (sessão 43)
+Substitui: 05/11/2026 (sessão 42)
+
+## SESSÃO 43 (07 a 10/11/2026) — relatório de estoque, esteira Fase 1, Central de Ajuda, vídeo narrado Etapa 1 (TUDO MESCLADO)
+
+**Estado verificado em 10/11/2026:** `main` = `origin/main` = `6cba797` (merge do PR #22); código sem pendência de commit (os 2 arquivos de memória foram commitados na branch `docs/memoria-sessao-43`). Confie no `git status`. Deploys "Deploy producao" e
+"Deploy Edge Functions" do PR #22 terminaram com sucesso; `/estoque` = 200. (Outras telas não reabertas após o PR #22: conferir home e `/admin/login`.)
+
+**Entregue e no ar:**
+- PR #18/#19: esteira de criativos estáticos, Fase 1 (4 fotos no cadastro, botão "Gerar criativos", tabela `veiculo_criativos`; migração `20261107204713`).
+- PR #20: Relatório de Estoque imprimível (PDF). PR #21: artigos da Central de Ajuda (3 novos + 3 ajustados, conferido no banco).
+- PR #22 (`6cba797`): `docs/video-narrado-padrao.md` (PADRÃO obrigatório, também citado no `CLAUDE.md`), `src/lib/roteiro-video.ts` (monta e valida o roteiro; não usado
+  por nenhuma tela ainda) e Edge Function `narrar-veiculo` v1 (`verify_jwt = true`, SÓ modo ensaio: áudio mudo, custo ElevenLabs zero; "real" devolve 501).
+  Sem login responde 401 (verificado). Chamada AUTENTICADA ao ar: NÃO testada (precisa do JWT dela).
+- 8 veículos reais testados no roteiro: todos passam no 9:16; no 4:5 o Pajero tem 72 palavras (mín. 75), o validador avisa.
+
+**Decisões dela (não reverter):** preço NÃO é falado (vai na tela final e na descrição); fecho "Chame a gente no WhatsApp e marque uma visita na loja" sem número;
+tom "próximo e confiante"; vídeos 9:16 e 4:5, montados no painel (navegador); sem gastar crédito ElevenLabs em teste; arquivos organizados em
+`criativos/<placa>/{imagens,videos,audios}` no R2. Data do relatório: filtrar pelos DOIS (entrada = `created_at`, venda = `data_venda`).
+Regra permanente: criar/ajustar artigos da Central de Ajuda com commit e push sem pedir a cada vez (09/11).
+
+**PRÓXIMOS PASSOS (nada disso foi iniciado; esperam resposta/"autorizo" dela):**
+1. **Voz:** confirmar com ela se a voz clonada que a Clara usa (secrets `ELEVENLABS_API_KEY`/`ELEVENLABS_VOICE_ID` já no Supabase, inferido) é a dela para os
+   vídeos. A chave do CLI em `.env.local` (git-ignorada, final 4190) é de OUTRA conta, só tem 21 vozes padrão: vale só para teste local. Se não for, ela envia o Voice ID.
+2. **Filtro de data no relatório** (só front, `RelatorioEstoque.tsx`): mostrar antes→depois e pedir "autorizo". Dois períodos opcionais: entrada (de/até) e venda (de/até).
+3. **Esteira Fase 2** (2 veículos/dia às 19:00, 6 linhas/dia; tipo `criativo_estatico` em `social_esteira`; `publicar-social` lê `rede` + trava de duplicidade;
+   conferência de preço/dados; "aprovar os 3 posts do veículo"; novo na frente, depois sorteio com descanso de 15 dias; Stories conferido na API da Meta).
+   Ela disse "autorizo" para a Fase 2, mas a MIGRAÇÃO DE BANCO exige pedido separado: ler `social_esteira`, trazer o SQL exato e pedir.
+4. **Vídeo narrado, Etapa 2** (voz real, cache por hash do texto, teto diário de caracteres, migração de `veiculo_criativos` para vídeo/áudio — pedido separado);
+   depois Etapa 3 (botão "Gerar vídeo narrado" no cadastro) e Etapa 4 (envio para aprovação e uso em anúncio).
+5. Apagar a branch local `feat/video-narrado-etapa1` (já mesclada; precisa do OK). NÃO mexer em `agents/token-architecture-analysis-and-fixes` nem
+   `fix/numero-interno-nao-vira-lead` sem perguntar.
+6. Os testes dela: criativos do Hilux ("Gerar criativos" / "Enviar para aprovação") e decisão sobre o rascunho antigo (id `4d60140d-ee51-45a4-acd9-100b04e45f97`).
+7. Artigos da Central de Ajuda adiados até ela testar: "Criar textos de anúncio com IA", "Agendador de Redes Sociais", "Ideias com IA". Features novas
+   (filtro de data, narração, Fase 2) precisarão de artigo.
+
+**Estado dos crons (verificado 10/11):** 14 `publicar-social-cron-job` ativo (*/15); 19 `post-organico-diario-cron-job` PAUSADO desde 08/11; 20 `esteira-proximo-post-cron-job`
+ativo mas `esteira_config.ativa=false` (a esteira só monta carrosséis).
+
+**Outras sobras:** rodapé do criativo (~26–28 px) e layout 1,91:1; operador gerar criativos dos ~29 veículos; regenerar tipos do Supabase e tirar `as any` de
+`src/services/ad-copies.ts`; `FRASES_PROIBIDAS` (`TODO(human)` em `ad-copy-generator/index.ts`); preencher nomes de 23 conversas sociais antigas (precisa "autorizo").
+
+**Armadilhas novas:** Git Bash `tar -xzf C:\...` falha (usar PowerShell); `mcp__supabase__list_edge_functions` devolve saída enorme (evitar); sem Deno local, testar
+funções com `Deno.serve` simulado em Node + `ffprobe`; `numeroPorExtenso` já corrigido para "um milhão duzentos e cinquenta mil".
 
 ## SESSÃO 42 (05/11/2026) — Criador de Anúncios, Fase 1 (bloco A) PRONTA LOCALMENTE, NÃO commitada
 
