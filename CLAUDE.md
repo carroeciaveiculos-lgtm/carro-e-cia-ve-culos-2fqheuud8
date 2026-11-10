@@ -166,6 +166,9 @@ falhou; ao descobrir algo novo, acrescente lá com data e fonte.
   navegador, limites, termos, riscos e becos sem saída)
 - `docs/google-drive-integracao.md` — fotos e vídeos do Drive (Edge Function x
   Worker, contas Google diferentes, botão de vídeo separado)
+- `docs/video-narrado-padrao.md` — **padrão obrigatório** dos vídeos de veículo com
+  fotos e narração (prompt do roteiro, formatos, pastas no R2, testes sem gastar
+  crédito da ElevenLabs, etapas). Preço nunca é falado; teste primeiro em modo de ensaio.
 
 ## Migrations
 

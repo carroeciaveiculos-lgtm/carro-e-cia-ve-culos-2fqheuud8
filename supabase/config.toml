@@ -254,6 +254,11 @@ verify_jwt = false
 [functions.montar-post-veiculo]
 verify_jwt = true
 
+# Narração dos vídeos de veículo (10/11/2026): Etapa 1, SÓ modo de ensaio (áudio mudo, não chama a
+# ElevenLabs). Chamada só pelo painel autenticado.
+[functions.narrar-veiculo]
+verify_jwt = true
+
 # FIPE do estoque (Fase 1, 09/10/2026): cron diario 07h; valida x-internal-secret no codigo.
 [functions.fipe-atualizar-estoque]
 verify_jwt = false
