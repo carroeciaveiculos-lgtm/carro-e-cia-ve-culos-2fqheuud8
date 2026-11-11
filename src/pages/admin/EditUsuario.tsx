@@ -3,7 +3,17 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '@/lib/supabase/client'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
+import { useAuth } from '@/hooks/use-auth'
+import { AtivacaoUsuarioDialog } from '@/components/admin/AtivacaoUsuarioDialog'
+import {
+  formatarWhatsApp,
+  getDadosPessoais,
+  normalizarWhatsApp,
+  salvarDadosPessoais,
+} from '@/services/usuarios'
 import {
   Select,
   SelectContent,
@@ -23,31 +33,68 @@ export default function EditUsuario() {
   const [nivel, setNivel] = useState('operador')
   const [setorIds, setSetorIds] = useState<string[]>([])
   const [salvando, setSalvando] = useState(false)
+  const [whatsapp, setWhatsapp] = useState('')
+  const [endereco, setEndereco] = useState('')
+  const [dialogAtivacao, setDialogAtivacao] = useState(false)
+  const { user } = useAuth()
+
+  const carregarUsuario = () => {
+    if (!id) return
+    supabase
+      .from('usuarios')
+      .select('*')
+      .eq('id', id)
+      .single()
+      .then(({ data }) => {
+        if (data) {
+          setUsuario(data)
+          setNivel(data.nivel || 'operador')
+        }
+      })
+  }
 
   useEffect(() => {
     if (id) {
-      supabase
-        .from('usuarios')
-        .select('*')
-        .eq('id', id)
-        .single()
-        .then(({ data }) => {
-          if (data) {
-            setUsuario(data)
-            setNivel(data.nivel || 'operador')
-          }
-        })
+      carregarUsuario()
       listSetorIdsDoUsuario(id).then(({ data }) => setSetorIds(data))
+      getDadosPessoais(id).then(({ data }) => {
+        setWhatsapp(data?.whatsapp ? formatarWhatsApp(data.whatsapp) : '')
+        setEndereco(data?.endereco || '')
+      })
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id])
+
+  const inativo = usuario?.ativo === false
 
   const handleSave = async () => {
     if (!id) return
+    if (whatsapp.trim() && !/^\d{12,13}$/.test(normalizarWhatsApp(whatsapp))) {
+      toast({
+        title: 'WhatsApp inválido',
+        description: 'Use DDD + número, por exemplo (34) 99999-9999.',
+        variant: 'destructive',
+      })
+      return
+    }
     setSalvando(true)
-    const { error } = await supabase.from('usuarios').update({ nivel }).eq('id', id)
+    // Usuário inativo fica bloqueado: o nível só muda depois de reativar.
+    if (!inativo) {
+      const { error } = await supabase.from('usuarios').update({ nivel }).eq('id', id)
+      if (error) {
+        toast({ title: 'Erro ao salvar', variant: 'destructive' })
+        setSalvando(false)
+        return
+      }
+    }
 
-    if (error) {
-      toast({ title: 'Erro ao salvar', variant: 'destructive' })
+    const { error: dadosError } = await salvarDadosPessoais(id, { whatsapp, endereco })
+    if (dadosError) {
+      toast({
+        title: 'Nível salvo, mas falha ao salvar WhatsApp/endereço',
+        description: 'Confira o número e tente de novo.',
+        variant: 'destructive',
+      })
       setSalvando(false)
       return
     }
@@ -93,7 +140,7 @@ export default function EditUsuario() {
           <CardContent className="space-y-8 pt-6">
             <div className="space-y-3">
               <Label className="text-base text-[#0D47A1]">Nível de Acesso</Label>
-              <Select value={nivel} onValueChange={setNivel}>
+              <Select value={nivel} onValueChange={setNivel} disabled={inativo}>
                 <SelectTrigger className="w-full md:w-1/2">
                   <SelectValue />
                 </SelectTrigger>
@@ -109,6 +156,38 @@ export default function EditUsuario() {
                   Usuário bloqueado não consegue mais entrar no painel.
                 </p>
               )}
+              {inativo && (
+                <p className="text-sm text-muted-foreground">
+                  Colaborador inativo. Para mudar o nível, reative primeiro.
+                </p>
+              )}
+            </div>
+
+            <div className="space-y-3">
+              <Label className="text-base text-[#0D47A1]">Contato do colaborador</Label>
+              <p className="text-xs text-muted-foreground">
+                Visível só para Admin Master e para a própria pessoa.
+              </p>
+              <div className="space-y-2">
+                <Label htmlFor="whatsapp">WhatsApp</Label>
+                <Input
+                  id="whatsapp"
+                  inputMode="tel"
+                  placeholder="(34) 99999-9999"
+                  value={whatsapp}
+                  onChange={(e) => setWhatsapp(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="endereco">Endereço</Label>
+                <Textarea
+                  id="endereco"
+                  rows={2}
+                  placeholder="Rua, número, bairro, cidade"
+                  value={endereco}
+                  onChange={(e) => setEndereco(e.target.value)}
+                />
+              </div>
             </div>
 
             <div className="space-y-3">
@@ -118,7 +197,16 @@ export default function EditUsuario() {
               <SetoresSelect selecionados={setorIds} onChange={setSetorIds} />
             </div>
 
-            <div className="flex justify-end gap-4 pt-6 border-t mt-8">
+            <div className="flex flex-wrap justify-end gap-4 pt-6 border-t mt-8">
+              {usuario.id !== user?.id && (
+                <Button
+                  variant="outline"
+                  className={`mr-auto ${inativo ? 'text-green-700' : 'text-[#C62828]'}`}
+                  onClick={() => setDialogAtivacao(true)}
+                >
+                  {inativo ? 'Reativar colaborador' : 'Desativar colaborador'}
+                </Button>
+              )}
               <Button variant="outline" onClick={() => navigate('/admin/usuarios')}>
                 Cancelar
               </Button>
@@ -133,6 +221,12 @@ export default function EditUsuario() {
           </CardContent>
         </Card>
       </div>
+      <AtivacaoUsuarioDialog
+        usuario={dialogAtivacao ? usuario : null}
+        meuId={user?.id}
+        onOpenChange={setDialogAtivacao}
+        onDone={carregarUsuario}
+      />
     </div>
   )
 }

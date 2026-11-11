@@ -19,6 +19,7 @@ import {
 import { supabase } from '@/lib/supabase/client'
 import { useToast } from '@/hooks/use-toast'
 import { SetoresSelect } from './SetoresSelect'
+import { normalizarWhatsApp } from '@/services/usuarios'
 
 interface CriarUsuarioModalProps {
   open: boolean
@@ -33,6 +34,8 @@ export function CriarUsuarioModal({ open, onOpenChange, onSuccess }: CriarUsuari
   const [senha, setSenha] = useState('')
   const [nivel, setNivel] = useState('operador')
   const [setorIds, setSetorIds] = useState<string[]>([])
+  const [whatsapp, setWhatsapp] = useState('')
+  const [endereco, setEndereco] = useState('')
   const [loading, setLoading] = useState(false)
 
   const reset = () => {
@@ -41,6 +44,8 @@ export function CriarUsuarioModal({ open, onOpenChange, onSuccess }: CriarUsuari
     setSenha('')
     setNivel('operador')
     setSetorIds([])
+    setWhatsapp('')
+    setEndereco('')
   }
 
   const handleCreate = async () => {
@@ -53,10 +58,27 @@ export function CriarUsuarioModal({ open, onOpenChange, onSuccess }: CriarUsuari
       return
     }
 
+    if (whatsapp.trim() && !/^\d{12,13}$/.test(normalizarWhatsApp(whatsapp))) {
+      toast({
+        title: 'WhatsApp inválido',
+        description: 'Use DDD + número, por exemplo (34) 99999-9999.',
+        variant: 'destructive',
+      })
+      return
+    }
+
     setLoading(true)
     try {
       const { data, error } = await supabase.functions.invoke('criar-usuario-admin', {
-        body: { nome, email, senha, nivel, setorIds },
+        body: {
+          nome,
+          email,
+          senha,
+          nivel,
+          setorIds,
+          whatsapp: normalizarWhatsApp(whatsapp),
+          endereco: endereco.trim(),
+        },
       })
 
       if (error || data?.error) {
@@ -122,6 +144,31 @@ export function CriarUsuarioModal({ open, onOpenChange, onSuccess }: CriarUsuari
               </SelectContent>
             </Select>
           </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="whatsapp">WhatsApp (opcional)</Label>
+              <Input
+                id="whatsapp"
+                inputMode="tel"
+                placeholder="(34) 99999-9999"
+                value={whatsapp}
+                onChange={(e) => setWhatsapp(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="endereco">Endereço (opcional)</Label>
+              <Input
+                id="endereco"
+                placeholder="Rua, número, bairro, cidade"
+                value={endereco}
+                onChange={(e) => setEndereco(e.target.value)}
+              />
+            </div>
+          </div>
+          <p className="text-xs text-muted-foreground -mt-2">
+            WhatsApp e endereço ficam visíveis só para Admin Master e para a própria pessoa.
+          </p>
 
           <div className="space-y-3">
             <Label>Setores (define o que a pessoa vê e acessa no painel)</Label>

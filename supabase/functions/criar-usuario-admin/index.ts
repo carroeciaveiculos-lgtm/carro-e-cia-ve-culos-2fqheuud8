@@ -2,6 +2,8 @@ import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from 'jsr:@supabase/supabase-js@2'
 import { corsHeaders } from '../_shared/cors.ts'
 
+const NIVEIS_VALIDOS = ['admin_master', 'gerente', 'operador', 'bloqueado']
+
 function jsonResponse(body: Record<string, unknown>, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
@@ -62,10 +64,18 @@ Deno.serve(async (req: Request) => {
       return jsonResponse({ error: 'Apenas administradores master podem criar usuários' }, 403)
     }
 
-    const { nome, email, senha, nivel, setorIds } = await req.json()
+    const { nome, email, senha, nivel, setorIds, whatsapp, endereco } = await req.json()
 
     if (!nome || !email || !senha) {
       return jsonResponse({ error: 'Nome, e-mail e senha são obrigatórios' }, 400)
+    }
+    // Nível vem do navegador: só aceita os que o painel conhece (antes qualquer texto era gravado).
+    if (nivel && !NIVEIS_VALIDOS.includes(nivel)) {
+      return jsonResponse({ error: 'Nível de acesso inválido' }, 400)
+    }
+    const whatsappLimpo = typeof whatsapp === 'string' ? whatsapp.replace(/\D/g, '') : ''
+    if (whatsappLimpo && !/^\d{10,15}$/.test(whatsappLimpo)) {
+      return jsonResponse({ error: 'WhatsApp em formato inválido' }, 400)
     }
     if (senha.length < 8) {
       return jsonResponse({ error: 'Senha precisa ter no mínimo 8 caracteres' }, 400)
@@ -92,6 +102,23 @@ Deno.serve(async (req: Request) => {
     if (insertErr) {
       await adminClient.auth.admin.deleteUser(created.user.id)
       return jsonResponse({ error: traduzErro(insertErr.message) }, 400)
+    }
+
+    const enderecoLimpo = typeof endereco === 'string' ? endereco.trim() : ''
+    if (whatsappLimpo || enderecoLimpo) {
+      const { error: dadosErr } = await adminClient.from('usuarios_dados_pessoais').insert({
+        usuario_id: created.user.id,
+        whatsapp: whatsappLimpo || null,
+        endereco: enderecoLimpo || null,
+      })
+      if (dadosErr) {
+        // Usuário já existe; só avisa — o admin preenche WhatsApp/endereço depois em Editar.
+        return jsonResponse({
+          success: true,
+          id: created.user.id,
+          warning: 'Usuário criado, mas falha ao salvar WhatsApp/endereço: ' + dadosErr.message,
+        })
+      }
     }
 
     if (Array.isArray(setorIds) && setorIds.length > 0) {
