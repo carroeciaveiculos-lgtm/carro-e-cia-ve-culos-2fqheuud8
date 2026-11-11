@@ -1,7 +1,7 @@
 # ÍNDICE — MEMORY_WORK Carro e Cia
 
 > ESTADO ATUAL: leia `PROXIMA_SESSAO.md` primeiro. Este arquivo é histórico.
-> Última sessão registrada: 05/11/2026 (sessão 42).
+> Última sessão registrada: 10/11/2026 (sessão 43).
 
 | Bloco | Conteúdo |
 |---|---|
@@ -16,6 +16,28 @@ REGRA: não leia este arquivo inteiro. Leia o índice, escolha o bloco, use offs
 ---
 
 # Memória de trabalho — Carro e Cia
+
+## [11/11/2026] SESSÃO 44 — conversador: Realtime, status de entrega e aviso de falha (PR #24 mesclado; `main` = `7a5ff50`)
+
+- Causa de "mensagens não aparecem": `conversation_history` fora da publicação `supabase_realtime` + `sendMessage` sem recarregar nem tratar erro. Corrigido (migrations `20261110223614` e `20261110230758`).
+- Novo: `wamid` + `status_envio` (`enviado`/`entregue`/`lido`/`falhou`) + `reacao` em `conversation_history`; `receive-leads` processa `statuses` e `reaction` da Meta; painel mostra ✓/✓✓/⚠.
+- Verificado: 24 `failed` em 7 dias (`131042` pagamento pendente do WhatsApp Business; `131047` alertas ao 0220 fora da janela). Deploys verdes, 6 funções publicadas. NÃO testado na tela logada.
+- Regra de desligar a Clara ao responder por texto (send-whatsapp) NÃO mudou: decisão A/B/C pendente. Achado de segurança: política `allow_anon_update_leads` em `leads` (não corrigido).
+- Detalhe e pendências em `PROXIMA_SESSAO.md` (sessão 44). Beco sem saída: não repetir o diagnóstico de "Clara não responde": o `ai-sdr` honra `ai_enabled=false`; o que desliga é o envio de texto livre.
+
+## [10/11/2026] SESSÃO 43 — relatório de estoque, esteira Fase 1, Central de Ajuda, vídeo narrado Etapa 1 (tudo mesclado; `main` = `6cba797`)
+
+- PRs mesclados: #18/#19 (esteira de criativos estáticos Fase 1), #20 (Relatório de Estoque imprimível), #21 (artigos da Central de Ajuda), #22 (vídeo narrado Etapa 1).
+  Deploys verdes; `/estoque` 200. Árvore limpa em 10/11.
+- Vídeo narrado: padrão em `docs/video-narrado-padrao.md` (preço nunca falado; fecho do WhatsApp sem número; 9:16 e 4:5; R2 `criativos/<placa>/{imagens,videos,audios}`).
+  `src/lib/roteiro-video.ts` (puro, testado com 8 veículos reais) e Edge Function `narrar-veiculo` v1 (`verify_jwt=true`, só ensaio, custo zero; real = 501; sem login = 401).
+  NÃO testado: chamada autenticada, voz real, montagem do vídeo. Etapas 2 a 4 pendentes (Etapa 2 exige migração, pedido separado).
+- ElevenLabs: o projeto JÁ tem os secrets da Clara (`ELEVENLABS_API_KEY`, `ELEVENLABS_VOICE_ID`, inferido); a chave do CLI em `.env.local` é de outra conta (21 vozes padrão, sem clone).
+  Pendente: confirmar com ela qual é a voz clonada dela.
+- Pendentes de decisão/autorização: filtro de data do relatório (entrada `created_at` + venda `data_venda`), esteira Fase 2 (migração = pedido separado), apagar branch
+  `feat/video-narrado-etapa1`. Detalhe em `PROXIMA_SESSAO.md` (sessão 43).
+- Becos sem saída: `tar -xzf C:\...` no Git Bash (usar PowerShell); `list_edge_functions` do MCP devolve saída gigante; `Diferenciais` do cadastro são genéricos (4x4 em carro sem 4x4),
+  por isso o roteiro usa lista segura.
 
 ## [05/11/2026] SESSÃO 42 — Criador de Anúncios Fase 1 (bloco A) pronto localmente, sem commit
 
