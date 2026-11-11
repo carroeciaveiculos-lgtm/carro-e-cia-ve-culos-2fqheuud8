@@ -42,6 +42,12 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
+import {
+  AvisoFalhaMensagem,
+  IconeStatusMensagem,
+  ReacaoMensagem,
+} from '@/components/admin/leads/StatusMensagem'
+import { assinaturaConversa } from '@/lib/whatsapp-status'
 
 interface ConversationPanelProps {
   lead: any
@@ -119,9 +125,32 @@ export function ConversationPanel({ lead, onBack, onLeadUpdated }: ConversationP
           marcarComoLida(lead.id)
         },
       )
+      // Status de entrega (entregue/lido/falhou) e reação do cliente chegam como UPDATE
+      // da mesma linha da mensagem (receive-leads grava pelo wamid).
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'conversation_history',
+          filter: `lead_id=eq.${lead.id}`,
+        },
+        (payload) => {
+          setConversation((prev) =>
+            prev.map((m) => (m.id === payload.new.id ? { ...m, ...payload.new } : m)),
+          )
+        },
+      )
       .subscribe()
 
+    // Rede de proteção: se o Realtime cair em silêncio (rede, aba em segundo plano),
+    // o painel ainda se atualiza sozinho a cada 10 s enquanto a aba está visível.
+    const recarregar = setInterval(() => {
+      if (!document.hidden) loadConversation(lead.id)
+    }, 10000)
+
     return () => {
+      clearInterval(recarregar)
       supabase.removeChannel(messagesChannel)
     }
   }, [lead?.id])
@@ -273,6 +302,7 @@ export function ConversationPanel({ lead, onBack, onLeadUpdated }: ConversationP
       })
       if (error) throw error
       toast({ title: 'Template enviado!' })
+      await loadConversation(lead.id)
       setIsTemplateModalOpen(false)
       setTemplateSelecionado(null)
     } catch (err: any) {
@@ -288,7 +318,12 @@ export function ConversationPanel({ lead, onBack, onLeadUpdated }: ConversationP
       .select('*')
       .eq('lead_id', leadId)
       .order('created_at', { ascending: true })
-    if (data) setConversation(data)
+    // Só troca o estado se algo mudou (mensagem nova, status ou reação): evita redesenhar à toa.
+    if (data) {
+      setConversation((prev) =>
+        assinaturaConversa(prev) === assinaturaConversa(data) ? prev : data,
+      )
+    }
   }
 
   // Indicador de não lida (Fase 4, item 3 do plano): grava quando um humano
@@ -300,6 +335,22 @@ export function ConversationPanel({ lead, onBack, onLeadUpdated }: ConversationP
       .eq('id', leadId)
   }
 
+  // 10/11/2026 (achado real, caso Janetty): o envio falhava em silêncio e a mensagem enviada
+  // só aparecia se o Realtime avisasse. Agora toda falha vira aviso vermelho e o texto fica na caixa.
+  const avisarFalhaEnvio = async (error: any) => {
+    let detalhe: string = error?.message || 'Falha desconhecida ao enviar.'
+    try {
+      const corpo = await error?.context?.json?.()
+      const erroMeta = corpo?.details?.error
+      if (erroMeta) {
+        detalhe = `${erroMeta.message || 'A Meta recusou o envio'}${erroMeta.code ? ` (código ${erroMeta.code})` : ''}`
+      }
+    } catch {
+      // corpo da resposta ilegível: fica a mensagem genérica acima
+    }
+    toast({ title: 'Mensagem NÃO enviada', description: detalhe, variant: 'destructive' })
+  }
+
   const sendMessage = async () => {
     if (!message.trim() || !lead) return
     try {
@@ -309,6 +360,7 @@ export function ConversationPanel({ lead, onBack, onLeadUpdated }: ConversationP
           .insert([{ lead_id: lead.id, sender: 'internal_note', message_text: message }])
         setMessage('')
         setIsInternalNote(false)
+        await loadConversation(lead.id)
         return
       }
 
@@ -318,7 +370,7 @@ export function ConversationPanel({ lead, onBack, onLeadUpdated }: ConversationP
           toast({ title: 'Número inválido', variant: 'destructive' })
           return
         }
-        const { data } = await supabase.functions.invoke('send-whatsapp', {
+        const { data, error } = await supabase.functions.invoke('send-whatsapp', {
           body: {
             action: 'text',
             to: cleanPhone,
@@ -327,6 +379,10 @@ export function ConversationPanel({ lead, onBack, onLeadUpdated }: ConversationP
             origem: 'atendente',
           },
         })
+        if (error || data?.error) {
+          await avisarFalhaEnvio(error || { message: data?.error })
+          return
+        }
         if (data?.ia_desligada_agora) {
           toast({
             title: 'Clara desligada pra este lead',
@@ -339,6 +395,8 @@ export function ConversationPanel({ lead, onBack, onLeadUpdated }: ConversationP
           .insert([{ lead_id: lead.id, sender: 'human', message_text: message }])
       }
       setMessage('')
+      // Mostra na hora a mensagem enviada, sem depender do Realtime.
+      await loadConversation(lead.id)
     } catch (err: any) {
       toast({ title: 'Erro ao enviar', description: err.message, variant: 'destructive' })
     }
@@ -376,6 +434,7 @@ export function ConversationPanel({ lead, onBack, onLeadUpdated }: ConversationP
         },
       })
       if (error) throw error
+      await loadConversation(lead.id)
     } catch (err: any) {
       toast({ title: 'Erro ao enviar imagem', description: err.message, variant: 'destructive' })
     } finally {
@@ -542,6 +601,8 @@ export function ConversationPanel({ lead, onBack, onLeadUpdated }: ConversationP
                 ) : (
                   <p className="text-sm text-slate-800 whitespace-pre-wrap">{msg.message_text}</p>
                 )}
+                {!isInternal && msg.sender !== 'client' && <AvisoFalhaMensagem msg={msg} />}
+                {!isInternal && msg.sender !== 'client' && <ReacaoMensagem msg={msg} />}
                 <div className="flex justify-end items-center mt-1 gap-4">
                   <span className="text-[10px] text-slate-400 text-right shrink-0">
                     {new Date(msg.created_at).toLocaleDateString('pt-BR', {
@@ -553,6 +614,7 @@ export function ConversationPanel({ lead, onBack, onLeadUpdated }: ConversationP
                       minute: '2-digit',
                     })}
                   </span>
+                  {!isInternal && msg.sender !== 'client' && <IconeStatusMensagem msg={msg} />}
                 </div>
               </div>
             )

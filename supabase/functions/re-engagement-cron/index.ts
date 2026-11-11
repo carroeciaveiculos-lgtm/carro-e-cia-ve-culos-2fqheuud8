@@ -162,12 +162,30 @@ Deno.serve(async (req) => {
             throw new Error(`Meta API Error: ${JSON.stringify(errorData)}`)
           }
 
-          // Grava no histórico do CRM o disparo do template
-          await supabase.from('conversation_history').insert({
+          // Grava no histórico do CRM o disparo do template. "Aceito pela Meta" não é "entregue":
+          // guarda o wamid para o webhook marcar depois entregue/lido/falhou (ex.: erro 131042,
+          // pagamento pendente). Sem as colunas novas, cai para o insert simples.
+          const wamid: string | null = errorData?.messages?.[0]?.id ?? null
+          const linhaHistorico = {
             lead_id: lead.id,
             sender: 'bot',
             message_text: MARCADOR_REENGAJAMENTO,
-          })
+          }
+          const { error: histError } = await supabase
+            .from('conversation_history')
+            .insert(
+              wamid
+                ? {
+                    ...linhaHistorico,
+                    wamid,
+                    status_envio: 'enviado',
+                    status_em: new Date().toISOString(),
+                  }
+                : linhaHistorico,
+            )
+          if (histError && wamid) {
+            await supabase.from('conversation_history').insert(linhaHistorico)
+          }
 
           // Atualiza o updated_at imediatamente para garantir que ele não caia no filtro de reengajamento novamente
           await supabase
