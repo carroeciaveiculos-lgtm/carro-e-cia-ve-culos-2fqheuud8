@@ -14,11 +14,38 @@ const ICON_MAP: Record<string, string> = {
   quota_baixa: '⚠️',
   qualidade_baixa: '📉',
   performance_baixa: '🚨',
+  novo_agendamento: '📅',
+  atendimento_humano: '🙋',
+}
+
+type PermissaoAvisos = NotificationPermission | 'indisponivel'
+
+function permissaoAtual(): PermissaoAvisos {
+  return typeof window !== 'undefined' && 'Notification' in window
+    ? Notification.permission
+    : 'indisponivel'
 }
 
 export function NotificationBell() {
   const [notifications, setNotifications] = useState<Notificacao[]>([])
+  const [permissao, setPermissao] = useState<PermissaoAvisos>(permissaoAtual())
   const unreadCount = notifications.length
+
+  // Aviso do navegador (canto da tela do computador) quando chega uma notificação nova.
+  // Só funciona com o painel aberto em alguma aba e depois de a pessoa permitir.
+  const avisarNoComputador = (n: Notificacao) => {
+    try {
+      if (permissaoAtual() !== 'granted') return
+      new Notification(n.titulo, { body: n.mensagem, tag: n.id })
+    } catch {
+      // navegador sem suporte ou bloqueado: o sino continua funcionando
+    }
+  }
+
+  const ativarAvisosNoComputador = async () => {
+    if (permissaoAtual() === 'indisponivel') return
+    setPermissao(await Notification.requestPermission())
+  }
 
   useEffect(() => {
     const loadNotifications = async () => {
@@ -33,7 +60,12 @@ export function NotificationBell() {
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'notificacoes' },
         (payload: any) => {
-          setNotifications((prev) => [payload.new as Notificacao, ...prev].slice(0, 20))
+          setNotifications((prev) =>
+            prev.some((n) => n.id === payload.new.id)
+              ? prev
+              : [payload.new as Notificacao, ...prev].slice(0, 20),
+          )
+          avisarNoComputador(payload.new as Notificacao)
         },
       )
       .on(
@@ -77,7 +109,10 @@ export function NotificationBell() {
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <button className="relative p-2 text-white/80 hover:text-white transition-colors">
+        <button
+          className="relative p-2 text-slate-500 hover:text-slate-800 transition-colors"
+          aria-label="Notificações"
+        >
           <Bell className="w-5 h-5" />
           {unreadCount > 0 && (
             <span className="absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-[#C62828] text-[10px] font-bold text-white">
@@ -101,6 +136,25 @@ export function NotificationBell() {
             </Button>
           )}
         </div>
+        {permissao === 'default' && (
+          <div className="px-4 py-2 border-b bg-amber-50 text-xs text-amber-800 flex items-center justify-between gap-2">
+            <span>Receba os avisos também no canto da tela do computador.</span>
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 text-xs shrink-0"
+              onClick={ativarAvisosNoComputador}
+            >
+              Ativar
+            </Button>
+          </div>
+        )}
+        {permissao === 'denied' && (
+          <div className="px-4 py-2 border-b bg-slate-50 text-[11px] text-slate-500">
+            Avisos no computador bloqueados neste navegador. Para ativar, libere as notificações
+            deste site nas configurações do navegador.
+          </div>
+        )}
         <div className="max-h-[350px] overflow-y-auto">
           {notifications.length === 0 ? (
             <div className="p-4 text-center text-sm text-muted-foreground">Nenhuma notificação</div>

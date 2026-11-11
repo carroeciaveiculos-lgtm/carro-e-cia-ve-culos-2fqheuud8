@@ -214,6 +214,21 @@ async function executeFunction(name: string, args: any, leadId: string): Promise
       return { error: `data_hora inválida ou no passado: ${dataHora}. Confirme a data certa com o cliente e tente de novo.` }
     }
 
+    // 11/11/2026 (caso Dryka Digital): a Clara chamou agendar_visita 3 vezes em ~4 min para o MESMO
+    // horário e criou 3 agendamentos idênticos (e 3 avisos), que ocupavam as 3 vagas da tarde do dia.
+    // Se este lead já tem o mesmo tipo de agendamento, no mesmo instante e ainda ativo, devolve o
+    // que existe: não cria outro, não conta de novo na capacidade e não avisa a equipe de novo.
+    const { data: agendamentoExistente } = await supabase
+      .from('agendamentos_visita')
+      .select('*')
+      .eq('lead_id', leadId)
+      .eq('status', 'agendado')
+      .eq('tipo', args.tipo || 'visita')
+      .eq('data_hora', dataParsed.toISOString())
+      .limit(1)
+      .maybeSingle()
+    if (agendamentoExistente) return { agendamento: agendamentoExistente, ja_existia: true }
+
     // 19/09/2026 (capacidade real confirmada pela Adriana: até 6 visitas por
     // dia, no máximo 3 pela manhã e 3 à tarde). Antes a Clara agendava sem
     // checar se o período já estava cheio, podendo empilhar clientes na
@@ -414,9 +429,12 @@ async function executeFunction(name: string, args: any, leadId: string): Promise
       .single()
     if (error) return { error: error.message }
     const texto = `🙋 Atendimento passado para humano\n\nNome: ${leadAtualizado?.nome || 'não informado'}\nTelefone: ${leadAtualizado?.telefone || 'não informado'}\nMotivo: ${args.motivo || 'não informado'}\n\nAcesse o CRM para continuar o atendimento.`
-    await sendWhatsApp(ADRIANA_PHONE, texto).catch((err) =>
-      console.error('Erro ao notificar atendimento humano:', err),
-    )
+    // 11/11/2026: mesmos canais do agendamento (WhatsApp, sino do painel e e-mail).
+    await avisarEquipe({
+      tipo: 'atendimento_humano',
+      titulo: '🙋 Atendimento passado para humano',
+      texto,
+    }).catch((err) => console.error('Erro ao notificar atendimento humano:', err))
     return { ok: true, motivo: args.motivo || null }
   }
 
@@ -810,19 +828,156 @@ async function notificarNovoAgendamento(agendamento: any, leadId: string) {
     const tipoTexto = agendamento.tipo === 'avaliacao' ? 'avaliação' : 'visita'
     const texto = `📅 Novo agendamento pela Clara!\n\n${lead?.nome || 'Cliente'}${lead?.telefone ? ` (${lead.telefone})` : ''} marcou ${tipoTexto}${veiculoTexto} para ${dataFormatada}.`
 
-    const { data: config } = await supabase
-      .from('social_configuracoes')
-      .select('whatsapp_number')
-      .maybeSingle()
-    // 29/10/2026: o fallback era 5534999484285, número de OUTRA empresa do grupo. Sem destino
-    // configurado, só a ADRIANA_PHONE recebe o aviso.
-    const ownerPhone = config?.whatsapp_number
-
-    if (ownerPhone) await sendWhatsApp(ownerPhone, texto)
-    await sendWhatsApp(ADRIANA_PHONE, texto)
+    await avisarEquipe({
+      tipo: 'novo_agendamento',
+      titulo: '📅 Novo agendamento pela Clara',
+      texto,
+      template: {
+        nome: TEMPLATE_AVISO_AGENDAMENTO,
+        parametros: [
+          lead?.nome || 'Cliente',
+          `${tipoTexto}${veiculoTexto}`,
+          dataFormatada,
+          lead?.telefone || 'não informado',
+        ].map(limparParametroTemplate),
+      },
+    })
   } catch (err) {
     console.error('Erro ao notificar novo agendamento:', err)
   }
+}
+
+// 11/11/2026 — Aviso interno da equipe em VÁRIOS canais. Antes era só texto livre no WhatsApp da
+// loja/Adriana, que a Meta só entrega se o destinatário falou com a Clara nas últimas 24 h (erro
+// 131047): os 6 avisos do caso Dryka Digital falharam assim, e o painel não tinha aviso nenhum.
+//  1) WhatsApp: tenta o template aprovado (chega a qualquer hora); se a Meta recusar (ex.: ainda
+//     não aprovado), cai para o texto livre como antes. Números repetidos recebem uma vez só.
+//  2) Sino do painel: grava em `notificacoes` (usuario_id nulo = toda a equipe logada vê).
+//  3) E-mail via Resend para EMAILS_AVISO_EQUIPE.
+// Cada canal é independente: um erro nunca impede os outros nem quebra a conversa com o cliente.
+const TEMPLATE_AVISO_AGENDAMENTO = 'aviso_novo_agendamento'
+const EMAILS_AVISO_EQUIPE = ['pedro.cardoso@carroeciamotors.com.br']
+
+function normalizarTelefoneBR(valor: string): string {
+  const digitos = (valor || '').replace(/\D/g, '')
+  return digitos.length === 10 || digitos.length === 11 ? `55${digitos}` : digitos
+}
+
+// Parâmetros de template não aceitam quebra de linha, tab nem 4+ espaços seguidos.
+function limparParametroTemplate(valor: string): string {
+  return (valor || '').replace(/[\n\r\t]+/g, ' ').replace(/ {2,}/g, ' ').trim().slice(0, 200) || '-'
+}
+
+function escaparHtml(valor: string): string {
+  return valor.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+}
+
+async function enviarTemplateWhatsApp(
+  to: string,
+  nome: string,
+  parametros: string[],
+): Promise<boolean> {
+  if (!waToken) return false
+  try {
+    const res = await fetch(`https://graph.facebook.com/v20.0/${waPhoneId}/messages`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${waToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        messaging_product: 'whatsapp',
+        to,
+        type: 'template',
+        template: {
+          name: nome,
+          language: { code: 'pt_BR' },
+          components: [
+            { type: 'body', parameters: parametros.map((text) => ({ type: 'text', text })) },
+          ],
+        },
+      }),
+    })
+    if (!res.ok) {
+      console.error(`Template ${nome} recusado pela Meta, usando texto livre:`, await res.text())
+      return false
+    }
+    return true
+  } catch (err) {
+    console.error(`Falha ao enviar template ${nome}:`, err)
+    return false
+  }
+}
+
+async function enviarEmailEquipe(assunto: string, texto: string) {
+  const chave = Deno.env.get('RESEND_API_KEY')
+  if (!chave) {
+    console.error('RESEND_API_KEY não configurada: e-mail de aviso à equipe não enviado')
+    return
+  }
+  const html = `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto">
+    <div style="background:#C0392B;padding:16px;text-align:center"><h2 style="color:#fff;margin:0">Carro e Cia Veículos</h2></div>
+    <div style="padding:24px;background:#f9f9f9;white-space:pre-line">${escaparHtml(texto)}</div>
+    <div style="background:#1A1A1A;padding:12px;text-align:center"><p style="color:#888;font-size:12px;margin:0">Aviso automático da Clara — confira os detalhes no CRM</p></div>
+  </div>`
+  const res = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${chave}` },
+    body: JSON.stringify({
+      from: 'Carro e Cia Veículos <vendas@carroeciamotors.com.br>',
+      to: EMAILS_AVISO_EQUIPE,
+      subject: assunto,
+      html,
+    }),
+  })
+  if (!res.ok) console.error('Resend recusou o e-mail de aviso:', res.status, await res.text())
+}
+
+async function avisarEquipe(opts: {
+  tipo: string
+  titulo: string
+  texto: string
+  template?: { nome: string; parametros: string[] }
+}) {
+  const { data: config } = await supabase
+    .from('social_configuracoes')
+    .select('whatsapp_number')
+    .maybeSingle()
+  // 29/10/2026: o fallback era 5534999484285, número de OUTRA empresa do grupo. Sem destino
+  // configurado, só a ADRIANA_PHONE recebe o aviso no WhatsApp.
+  const destinos = Array.from(
+    new Set(
+      [config?.whatsapp_number, ADRIANA_PHONE]
+        .map((n) => normalizarTelefoneBR(n || ''))
+        .filter((n) => n.length >= 12),
+    ),
+  )
+
+  const tarefas: Promise<unknown>[] = destinos.map((to) =>
+    (async () => {
+      if (opts.template && (await enviarTemplateWhatsApp(to, opts.template.nome, opts.template.parametros))) {
+        return
+      }
+      await sendWhatsApp(to, opts.texto)
+    })().catch((err) => console.error('Falha no aviso por WhatsApp:', err)),
+  )
+
+  tarefas.push(
+    Promise.resolve(
+      supabase
+        .from('notificacoes')
+        .insert({ usuario_id: null, tipo: opts.tipo, titulo: opts.titulo, mensagem: opts.texto }),
+    )
+      .then(({ error }) => {
+        if (error) console.error('Falha ao gravar aviso no sino do painel:', error.message)
+      })
+      .catch((err) => console.error('Falha ao gravar aviso no sino do painel:', err)),
+  )
+
+  tarefas.push(
+    enviarEmailEquipe(opts.titulo, opts.texto).catch((err) =>
+      console.error('Falha ao enviar e-mail de aviso:', err),
+    ),
+  )
+
+  await Promise.allSettled(tarefas)
 }
 
 // Roda o Gemini com histórico + funções; se ele decidir chamar alguma
