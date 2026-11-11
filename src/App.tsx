@@ -1,5 +1,6 @@
 import { Suspense, lazy, useEffect } from 'react'
 import { BrowserRouter, Routes, Route, Navigate, useParams } from 'react-router-dom'
+import ErrorBoundary from '@/components/ErrorBoundary'
 import { Toaster } from '@/components/ui/toaster'
 import { Toaster as Sonner } from '@/components/ui/sonner'
 import { TooltipProvider } from '@/components/ui/tooltip'
@@ -145,18 +146,33 @@ if (typeof window !== 'undefined' && typeof CSSStyleSheet !== 'undefined') {
 }
 
 // Helper to handle dynamically imported module failures due to stale cache/deployments
+// 11/11/2026: sessionStorage pode lançar erro no Safari (modo privado/bloqueios) — antes isso
+// derrubava a tela inteira. Agora, se a memória falhar, só não marca e segue.
+const lerMarcaRecarga = (): boolean => {
+  try {
+    return window.sessionStorage.getItem('page-has-been-force-refreshed') === 'true'
+  } catch {
+    return false
+  }
+}
+const gravarMarcaRecarga = (valor: boolean) => {
+  try {
+    window.sessionStorage.setItem('page-has-been-force-refreshed', String(valor))
+  } catch {
+    // sem memória disponível: segue sem a marca
+  }
+}
+
 const lazyWithRetry = (componentImport: () => Promise<any>) =>
   lazy(async () => {
-    const pageHasAlreadyBeenForceRefreshed = JSON.parse(
-      window.sessionStorage.getItem('page-has-been-force-refreshed') || 'false',
-    )
+    const pageHasAlreadyBeenForceRefreshed = lerMarcaRecarga()
     try {
       const component = await componentImport()
-      window.sessionStorage.setItem('page-has-been-force-refreshed', 'false')
+      gravarMarcaRecarga(false)
       return component
     } catch (error) {
       if (!pageHasAlreadyBeenForceRefreshed) {
-        window.sessionStorage.setItem('page-has-been-force-refreshed', 'true')
+        gravarMarcaRecarga(true)
         window.location.reload()
         return new Promise(() => {}) as Promise<any>
       }
@@ -460,17 +476,19 @@ const App = () => {
   const isHub = isSubdomain || isHubPath
 
   return (
-    <AuthProvider>
-      <BrowserRouter>
-        <GlobalHooks />
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <CookieConsent />
-          <Suspense fallback={<PageLoader />}>{isHub ? <HubApp /> : <MainApp />}</Suspense>
-        </TooltipProvider>
-      </BrowserRouter>
-    </AuthProvider>
+    <ErrorBoundary>
+      <AuthProvider>
+        <BrowserRouter>
+          <GlobalHooks />
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <CookieConsent />
+            <Suspense fallback={<PageLoader />}>{isHub ? <HubApp /> : <MainApp />}</Suspense>
+          </TooltipProvider>
+        </BrowserRouter>
+      </AuthProvider>
+    </ErrorBoundary>
   )
 }
 
