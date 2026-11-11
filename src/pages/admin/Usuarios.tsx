@@ -3,15 +3,20 @@ import { Link } from 'react-router-dom'
 import { supabase } from '@/lib/supabase/client'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Edit, Plus, ShieldAlert } from 'lucide-react'
+import { Edit, Plus, Power, PowerOff, ShieldAlert } from 'lucide-react'
 import { useAuth } from '@/hooks/use-auth'
 import { CriarUsuarioModal } from '@/components/admin/CriarUsuarioModal'
+import {
+  AtivacaoUsuarioDialog,
+  type UsuarioAtivacao,
+} from '@/components/admin/AtivacaoUsuarioDialog'
 
 export default function Usuarios() {
   const [usuarios, setUsuarios] = useState<any[]>([])
   const { user } = useAuth()
   const [isAdmin, setIsAdmin] = useState(false)
   const [modalAberto, setModalAberto] = useState(false)
+  const [alvoAtivacao, setAlvoAtivacao] = useState<UsuarioAtivacao | null>(null)
 
   const carregarUsuarios = useCallback(() => {
     supabase
@@ -57,10 +62,7 @@ export default function Usuarios() {
       <div className="max-w-5xl mx-auto">
         <div className="flex items-center justify-between mb-8 mt-4">
           <h1 className="text-3xl font-bold text-[#0D47A1]">Gerenciar Usuários</h1>
-          <Button
-            className="bg-[#1565C0] hover:bg-[#0D47A1]"
-            onClick={() => setModalAberto(true)}
-          >
+          <Button className="bg-[#1565C0] hover:bg-[#0D47A1]" onClick={() => setModalAberto(true)}>
             <Plus className="w-4 h-4 mr-2" /> Criar Usuário
           </Button>
         </div>
@@ -68,6 +70,12 @@ export default function Usuarios() {
           open={modalAberto}
           onOpenChange={setModalAberto}
           onSuccess={carregarUsuarios}
+        />
+        <AtivacaoUsuarioDialog
+          usuario={alvoAtivacao}
+          meuId={user?.id}
+          onOpenChange={(aberto) => !aberto && setAlvoAtivacao(null)}
+          onDone={carregarUsuarios}
         />
         <Card className="border-0 shadow-lg">
           <CardContent className="p-0">
@@ -83,15 +91,47 @@ export default function Usuarios() {
                 </thead>
                 <tbody className="divide-y bg-white">
                   {usuarios.map((u) => (
-                    <tr key={u.id} className="hover:bg-muted/30 transition-colors">
-                      <td className="px-6 py-4 font-medium text-[#0D47A1]">{u.nome}</td>
+                    <tr
+                      key={u.id}
+                      className={`hover:bg-muted/30 transition-colors ${u.ativo === false ? 'opacity-60' : ''}`}
+                    >
+                      <td className="px-6 py-4 font-medium text-[#0D47A1]">
+                        {u.nome}
+                        {u.ativo === false && (
+                          <span className="ml-2 px-2 py-0.5 bg-slate-100 text-slate-600 rounded-full text-[10px] font-bold uppercase tracking-wider border">
+                            Inativo
+                          </span>
+                        )}
+                      </td>
                       <td className="px-6 py-4 text-muted-foreground">{u.email}</td>
                       <td className="px-6 py-4">
                         <span className="px-3 py-1 bg-blue-50 text-[#1565C0] rounded-full text-[11px] font-bold uppercase tracking-wider border border-blue-100">
                           {u.nivel ? u.nivel.replace('_', ' ') : 'operador'}
                         </span>
                       </td>
-                      <td className="px-6 py-4 text-right">
+                      <td className="px-6 py-4 text-right whitespace-nowrap">
+                        {u.id !== user?.id && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className={
+                              u.ativo === false
+                                ? 'text-green-700 hover:text-green-800 hover:bg-green-50'
+                                : 'text-[#C62828] hover:text-[#B71C1C] hover:bg-red-50'
+                            }
+                            onClick={() => setAlvoAtivacao(u)}
+                          >
+                            {u.ativo === false ? (
+                              <>
+                                <Power className="w-4 h-4 mr-2" /> Reativar
+                              </>
+                            ) : (
+                              <>
+                                <PowerOff className="w-4 h-4 mr-2" /> Desativar
+                              </>
+                            )}
+                          </Button>
+                        )}
                         <Link to={`/admin/usuarios/${u.id}`}>
                           <Button
                             variant="ghost"

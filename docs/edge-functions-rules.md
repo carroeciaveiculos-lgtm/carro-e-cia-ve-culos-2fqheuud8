@@ -104,6 +104,7 @@ Isso quebra sincronizações de estoque, automações de leads, disparos de What
 | Função                    | Motivo                                                                                                                                                   |
 | ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `get-r2-presigned-url`    | Gera URLs assinadas do R2; requer JWT do usuário autenticado                                                                                             |
+| `criar-usuario-admin`     | Cadastro de colaborador; só o painel chama. Confere `admin_master` por dentro; grava também `usuarios_dados_pessoais` (declarada em 11/11/2026, já valia `true` por omissão) |
 | `migrar-storage-r2`       | Migração de storage; operação privilegiada com JWT do admin                                                                                              |
 | `linkedin-oauth-start`    | Gera link de autorização OAuth; botão "Conectar LinkedIn" no painel (21/08/2026)                                                                         |
 | `populate-cache-test`     | Função de teste com JWT verification                                                                                                                     |

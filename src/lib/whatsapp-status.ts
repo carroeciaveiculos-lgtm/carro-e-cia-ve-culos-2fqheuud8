@@ -11,14 +11,23 @@ export const ROTULO_STATUS: Record<StatusEnvio, string> = {
 }
 
 // Códigos de erro da Meta -> frase que a equipe entende (em português, sem jargão).
-// Códigos que já apareceram nos logs da loja: 131042 (pagamento pendente na conta do WhatsApp
-// Business) e 131047 (mensagem fora da janela de 24 h sem template).
-// Outros comuns: 131026 (número sem WhatsApp ou mensagem não entregável), 131049 (a Meta
-// decidiu não entregar uma mensagem de marketing), 131048 (limite por suspeita de spam),
-// 130429 (limite de envios por segundo).
+// Fonte: tabela oficial de erros do WhatsApp da Meta (conferida em 11/11/2026):
+// https://developers.facebook.com/documentation/business-messaging/whatsapp/support/error-codes
+// Só 131042 (pagamento) e 131047 (janela de 24 h) apareceram nos logs da loja até hoje; os
+// demais seguem a documentação. O 131048 é listado pela Meta, mas há relato de que ela passou
+// a usar o 131049 no lugar — por isso as duas frases existem.
 const ERROS_META: Record<string, string> = {
-  // TODO(human): escreva aqui, em linguagem simples, a frase de cada código acima.
-  // Exemplo do formato:  '131042': 'Pagamento pendente na conta do WhatsApp Business (Meta).',
+  '131042':
+    'Problema de pagamento na conta do WhatsApp Business. Confira a forma de pagamento na Meta.',
+  '131047':
+    'Passaram-se mais de 24 h desde a última mensagem do cliente. Só é possível enviar um modelo (template) aprovado.',
+  '131026':
+    'A mensagem não pôde ser entregue. O número pode não ter WhatsApp, ou o cliente pode estar com o app desatualizado ou sem aceitar os termos do WhatsApp.',
+  '131049':
+    'A Meta não entregou este modelo de divulgação para proteger o cliente. Aguarde pelo menos 24 h antes de reenviar.',
+  '131048':
+    'O número da loja tem restrição de envio, geralmente por muitas mensagens bloqueadas ou marcadas como spam. Confira a qualidade do número na Meta.',
+  '130429': 'Muitos envios ao mesmo tempo. Tente novamente em alguns minutos.',
 }
 
 /** Frase para mostrar no balão quando a mensagem falhou. */
