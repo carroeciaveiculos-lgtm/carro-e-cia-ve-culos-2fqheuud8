@@ -174,11 +174,24 @@ Deno.serve(async (req) => {
       // sender:'human' sem checar quem chamou — a foto/vídeo de veículo que
       // a própria Clara manda (ai-sdr, enviar_midia_veiculo) e a mensagem de
       // boas-vindas automática do ml-webhook ficavam com o rótulo errado.
-      const { error: dbError } = await supabase.from('conversation_history').insert({
+      // 10/11/2026: guarda o wamid (id da mensagem no WhatsApp) para o webhook da Meta poder
+      // marcar depois "entregue/lido/falhou" nesta mesma linha (receive-leads). Se as colunas
+      // novas ainda não existirem, cai para o insert simples: o histórico nunca se perde.
+      const wamid: string | null = data?.messages?.[0]?.id ?? null
+      const linha = {
         lead_id: leadId,
         sender: origem === 'atendente' ? 'human' : 'bot',
         message_text: msgText,
-      })
+      }
+      let { error: dbError } = await supabase.from('conversation_history').insert(
+        wamid
+          ? { ...linha, wamid, status_envio: 'enviado', status_em: new Date().toISOString() }
+          : linha,
+      )
+      if (dbError && wamid) {
+        console.error('Insert com status falhou, gravando sem rastreio:', dbError)
+        ;({ error: dbError } = await supabase.from('conversation_history').insert(linha))
+      }
       if (dbError) console.error('Erro ao gravar histórico do vendedor:', dbError)
 
       // Atendente respondendo texto de verdade pelo painel = assumiu a

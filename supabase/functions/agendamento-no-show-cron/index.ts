@@ -32,7 +32,7 @@ Deno.serve(async (req) => {
 
     const { data: agendamentos, error } = await supabase
       .from('agendamentos_visita')
-      .select('id, data_hora, tipo, leads(nome, telefone)')
+      .select('id, data_hora, tipo, lead_id, leads(nome, telefone)')
       .eq('status', 'agendado')
       .lt('data_hora', limite.toISOString())
 
@@ -75,6 +75,27 @@ Deno.serve(async (req) => {
           })
           const responseData = await res.json()
           if (!res.ok) throw new Error(JSON.stringify(responseData))
+
+          // 10/11/2026: o template de reagendamento não aparecia no Conversador. Grava com o
+          // wamid para o webhook marcar entregue/lido/falhou. Bloco isolado: não derruba o resto.
+          try {
+            const wamid: string | null = responseData?.messages?.[0]?.id ?? null
+            const linha = {
+              lead_id: ag.lead_id,
+              sender: 'bot',
+              message_text: '[Template: visita_reagendar] Oferta de reagendamento após falta na visita',
+            }
+            const { error: histError } = await supabase
+              .from('conversation_history')
+              .insert(
+                wamid
+                  ? { ...linha, wamid, status_envio: 'enviado', status_em: new Date().toISOString() }
+                  : linha,
+              )
+            if (histError && wamid) await supabase.from('conversation_history').insert(linha)
+          } catch (histErr) {
+            console.error('Falha ao gravar reagendamento no histórico:', histErr)
+          }
         }
 
         if (waToken && waPhoneId && ownerPhone) {

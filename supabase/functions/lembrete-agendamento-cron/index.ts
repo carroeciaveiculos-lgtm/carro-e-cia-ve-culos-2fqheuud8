@@ -34,7 +34,7 @@ Deno.serve(async (req) => {
 
     const { data: agendamentos, error } = await supabase
       .from('agendamentos_visita')
-      .select('id, data_hora, leads(nome, telefone)')
+      .select('id, data_hora, lead_id, leads(nome, telefone)')
       .eq('status', 'agendado')
       .is('lembrete_enviado_em', null)
       .gte('data_hora', janelaInicio.toISOString())
@@ -83,6 +83,27 @@ Deno.serve(async (req) => {
           .from('agendamentos_visita')
           .update({ lembrete_enviado_em: new Date().toISOString() })
           .eq('id', ag.id)
+
+        // 10/11/2026: o lembrete não aparecia no Conversador. Grava com o wamid para o webhook
+        // marcar entregue/lido/falhou. Bloco isolado: falha aqui nunca impede o envio já feito.
+        try {
+          const wamid: string | null = responseData?.messages?.[0]?.id ?? null
+          const linha = {
+            lead_id: ag.lead_id,
+            sender: 'bot',
+            message_text: `[Template: lembrete_agendamento] Lembrete da visita às ${horaFormatada}`,
+          }
+          const { error: histError } = await supabase
+            .from('conversation_history')
+            .insert(
+              wamid
+                ? { ...linha, wamid, status_envio: 'enviado', status_em: new Date().toISOString() }
+                : linha,
+            )
+          if (histError && wamid) await supabase.from('conversation_history').insert(linha)
+        } catch (histErr) {
+          console.error('Falha ao gravar lembrete no histórico:', histErr)
+        }
         enviados++
       } catch (err: any) {
         console.error(`Erro ao enviar lembrete do agendamento ${ag.id}:`, err.message)

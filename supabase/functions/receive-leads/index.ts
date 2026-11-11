@@ -131,6 +131,80 @@ async function rehospedarMidiaWhatsApp(mediaId: string): Promise<string | null> 
   }
 }
 
+// 10/11/2026 — Status de entrega e reações no Conversador.
+// A Meta avisa por webhook quando uma mensagem NOSSA foi entregue, lida ou falhou (statuses) e quando
+// o cliente reage a ela (reaction). Antes esses avisos ficavam só em meta_webhook_logs. Agora ligam à
+// linha de conversation_history pelo wamid (gravado no envio). Tudo aqui é "melhor esforço": um erro
+// nunca pode atrapalhar o atendimento da Clara, por isso cada chamada vai dentro de try/catch.
+const STATUS_DA_META: Record<string, string> = {
+  sent: 'enviado',
+  delivered: 'entregue',
+  read: 'lido',
+  failed: 'falhou',
+}
+const ORDEM_STATUS: Record<string, number> = { enviado: 1, entregue: 2, lido: 3 }
+
+async function buscarLinhaPorWamid(wamid: string) {
+  const { data, error } = await supabase
+    .from('conversation_history')
+    .select('id, status_envio')
+    .eq('wamid', wamid)
+    .limit(1)
+    .maybeSingle()
+  if (error) {
+    console.error('Não achei mensagem pelo wamid (colunas de status existem?):', error.message)
+    return null
+  }
+  return data
+}
+
+async function registrarStatusMensagem(st: any) {
+  const novo = STATUS_DA_META[st?.status]
+  const wamid = st?.id
+  // "sent" não acrescenta nada: a linha já nasce como 'enviado' quando a Meta aceita o pedido.
+  if (!wamid || !novo || novo === 'enviado') return
+
+  let linha = await buscarLinhaPorWamid(wamid)
+  if (!linha) {
+    // O aviso pode chegar antes de o envio terminar de gravar o wamid: uma segunda tentativa.
+    await new Promise((r) => setTimeout(r, 2000))
+    linha = await buscarLinhaPorWamid(wamid)
+  }
+  // Sem linha = mensagem que não está no Conversador (ex.: alerta interno). Nada a atualizar.
+  if (!linha) return
+
+  const atual: string | null = linha.status_envio
+  if (atual === 'falhou') return
+  // Nunca "rebaixa": lido não volta a entregue. Falha sempre vale.
+  if (novo !== 'falhou' && (ORDEM_STATUS[atual || ''] ?? 0) >= ORDEM_STATUS[novo]) return
+
+  const campos: Record<string, unknown> = {
+    status_envio: novo,
+    status_em: st.timestamp
+      ? new Date(Number(st.timestamp) * 1000).toISOString()
+      : new Date().toISOString(),
+  }
+  if (novo === 'falhou') {
+    const erro = st.errors?.[0]
+    campos.erro_codigo = erro?.code != null ? String(erro.code) : null
+    campos.erro_texto =
+      String(erro?.error_data?.details || erro?.message || erro?.title || '').slice(0, 500) || null
+  }
+  const { error } = await supabase.from('conversation_history').update(campos).eq('id', linha.id)
+  if (error) console.error('Falha ao gravar status da mensagem:', error.message)
+}
+
+async function registrarReacao(reacao: any) {
+  const wamid = reacao?.message_id
+  if (!wamid) return
+  // Reação removida pelo cliente chega sem emoji: limpa o campo.
+  const { error } = await supabase
+    .from('conversation_history')
+    .update({ reacao: reacao.emoji || null })
+    .eq('wamid', wamid)
+  if (error) console.error('Falha ao gravar reação:', error.message)
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
@@ -427,6 +501,19 @@ Deno.serve(async (req: Request) => {
                 `Processing WhatsApp message for Phone ID: ${WHATSAPP_PHONE_NUMBER_ID}, WABA ID: ${WHATSAPP_WABA_ID}`,
               )
 
+              // Avisos de status das mensagens que enviamos (entregue/lido/falhou). Em paralelo e
+              // isolados: erro aqui nunca interrompe o recebimento de mensagens abaixo.
+              const statuses = value.statuses || []
+              if (statuses.length > 0) {
+                await Promise.all(
+                  statuses.map((st: any) =>
+                    registrarStatusMensagem(st).catch((e) =>
+                      console.error('Erro ao processar status do WhatsApp:', e),
+                    ),
+                  ),
+                )
+              }
+
               const messages = value.messages || []
               const contacts = value.contacts || []
 
@@ -449,6 +536,15 @@ Deno.serve(async (req: Request) => {
                     // aqui não deve travar o atendimento — segue normal.
                     if (dedupError.code === '23505') continue
                   }
+                }
+
+                // Reação (emoji) do cliente a uma mensagem nossa: só marca na mensagem. Não é
+                // texto do cliente, então não cria "lead", não vira histórico e não aciona a Clara.
+                if (msg.type === 'reaction') {
+                  await registrarReacao(msg.reaction).catch((e) =>
+                    console.error('Erro ao processar reação do WhatsApp:', e),
+                  )
+                  continue
                 }
 
                 const contact = contacts.find((c: any) => c.wa_id === msg.from)

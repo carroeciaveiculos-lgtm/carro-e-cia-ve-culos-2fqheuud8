@@ -939,8 +939,18 @@ async function runGemini(
 // preço/número (mais fácil ler que ouvir, e essa decisão já é natural aqui
 // porque só ativa quando o INBOUND foi áudio). Qualquer falha na geração
 // cai pro texto normal — nunca trava a conversa por causa disso.
-async function sendWhatsApp(to: string, text: string, enviarComoAudio = false) {
-  if (!waToken) return console.log('Mocked WA to:', to, 'Msg:', text)
+// 10/11/2026: devolve o wamid (id da mensagem no WhatsApp) quando a Meta aceita, ou null. Quem
+// grava no histórico usa isso para o webhook marcar depois entregue/lido/falhou. Os demais
+// chamadores ignoram o retorno, como antes.
+async function sendWhatsApp(
+  to: string,
+  text: string,
+  enviarComoAudio = false,
+): Promise<string | null> {
+  if (!waToken) {
+    console.log('Mocked WA to:', to, 'Msg:', text)
+    return null
+  }
 
   if (enviarComoAudio) {
     const audioBytes = await gerarAudioClara(text)
@@ -959,7 +969,7 @@ async function sendWhatsApp(to: string, text: string, enviarComoAudio = false) {
             audio: { link: audioUrl },
           }),
         })
-        if (res.ok) return
+        if (res.ok) return (await res.json().catch(() => null))?.messages?.[0]?.id ?? null
         console.error('WhatsApp recusou o áudio, caindo para texto:', await res.text())
       } catch (err) {
         console.error('Falha ao enviar áudio da Clara, caindo para texto:', err)
@@ -967,7 +977,7 @@ async function sendWhatsApp(to: string, text: string, enviarComoAudio = false) {
     }
   }
 
-  await fetch(`https://graph.facebook.com/v20.0/${waPhoneId}/messages`, {
+  const resTexto = await fetch(`https://graph.facebook.com/v20.0/${waPhoneId}/messages`, {
     method: 'POST',
     headers: { Authorization: `Bearer ${waToken}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -977,6 +987,8 @@ async function sendWhatsApp(to: string, text: string, enviarComoAudio = false) {
       text: { body: text },
     }),
   })
+  if (!resTexto.ok) return null
+  return (await resTexto.json().catch(() => null))?.messages?.[0]?.id ?? null
 }
 
 Deno.serve(async (req) => {
@@ -1012,12 +1024,24 @@ Deno.serve(async (req) => {
         aiRes.text ||
         `Olá ${nome}! Sou a Clara, consultora digital da Carro e Cia. Vi que você tem interesse no ${v}. Como posso te ajudar hoje?`
 
-      await supabase
+      const { data: linhaInicial } = await supabase
         .from('conversation_history')
         .insert({ lead_id: lead.id, sender: 'bot', message_text: responseText })
+        .select('id')
+        .single()
 
       if (lead.telefone) {
-        await sendWhatsApp(lead.telefone, responseText)
+        const wamid = await sendWhatsApp(lead.telefone, responseText)
+        // 10/11/2026: mesmo vínculo da resposta contínua (ver continue_conversation).
+        if (wamid && linhaInicial?.id) {
+          await supabase
+            .from('conversation_history')
+            .update({ wamid, status_envio: 'enviado', status_em: new Date().toISOString() })
+            .eq('id', linhaInicial.id)
+            .then(({ error }: { error: any }) => {
+              if (error) console.error('Não gravou wamid da mensagem inicial:', error.message)
+            })
+        }
       }
 
       return new Response(JSON.stringify({ success: true }), {
@@ -1112,12 +1136,25 @@ Deno.serve(async (req) => {
 
         const aiRes = await runGemini(history, mensagem, lead.id, lead.veiculo_interesse)
 
-        await supabase
+        const { data: linhaBot } = await supabase
           .from('conversation_history')
           .insert({ lead_id: lead.id, sender: 'bot', message_text: aiRes.text })
+          .select('id')
+          .single()
 
         if (lead.telefone) {
-          await sendWhatsApp(lead.telefone, aiRes.text, foi_audio === true)
+          const wamid = await sendWhatsApp(lead.telefone, aiRes.text, foi_audio === true)
+          // 10/11/2026: liga a resposta da Clara ao wamid para o painel mostrar entregue/lido/
+          // falhou. Opcional: se falhar (ex.: colunas ainda não existem), a conversa segue igual.
+          if (wamid && linhaBot?.id) {
+            await supabase
+              .from('conversation_history')
+              .update({ wamid, status_envio: 'enviado', status_em: new Date().toISOString() })
+              .eq('id', linhaBot.id)
+              .then(({ error }: { error: any }) => {
+                if (error) console.error('Não gravou wamid da resposta da Clara:', error.message)
+              })
+          }
         }
 
         // ai_score recalculado a cada mensagem — não depende da Clara ter
