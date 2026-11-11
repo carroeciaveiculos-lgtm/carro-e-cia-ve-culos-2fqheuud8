@@ -35,6 +35,7 @@ import { useToast } from '@/hooks/use-toast'
 import { usePermissoes } from '@/hooks/use-permissoes'
 import { rotaLiberada } from '@/lib/setor-acesso'
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '@/components/ui/collapsible'
+import { NotificationBell } from '@/components/admin/NotificationBell'
 
 // Reorganizado em 17/08/2026 (pedido da Adriana) em 3 áreas fixas — antes
 // eram 6 grupos por assunto, misturando operacional com administração.
@@ -408,6 +409,7 @@ export default function AdminLayout() {
             </span>
           </div>
           <div className="flex items-center gap-4">
+            <NotificationBell />
             <div className="text-sm font-medium text-slate-700 bg-slate-100 px-3 py-1.5 rounded-full">
               {user?.email}
             </div>
