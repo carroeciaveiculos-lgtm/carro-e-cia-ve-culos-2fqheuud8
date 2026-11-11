@@ -1,7 +1,46 @@
 # Próxima sessão — Carro e Cia Veículos
 
-Atualizado em: 10/11/2026 (sessão 43)
-Substitui: 05/11/2026 (sessão 42)
+Atualizado em: 11/11/2026 (sessão 44)
+Substitui: 10/11/2026 (sessão 43, que continua válida logo abaixo)
+
+## SESSÃO 44 (10 e 11/11/2026) — conversador: mensagens sumiam e não havia status de entrega (PR #24 MESCLADO, `main` = `7a5ff50`)
+
+**Verificado em 11/11/2026 10:30 UTC:** PR #24 mesclado às 10:03 UTC; "Deploy producao" e "Deploy Edge Functions" = success; só as 6 funções previstas subiram
+(`receive-leads`, `ai-sdr`, `send-whatsapp`, `re-engagement-cron`, `lembrete-agendamento-cron`, `agendamento-no-show-cron`; nada em `_shared/`); `/`, `/estoque`, `/admin/login`
+= 200 e o passo "anti tela branca" do workflow passou. **NÃO testado:** execução real das funções (sem Deno local) e a tela logada. Ainda não entrou mensagem depois do deploy.
+
+**Causas encontradas (caso Janetty, lead `1b2becd9-b239-4e14-9346-7e56357b5d11`):**
+1. `conversation_history` NÃO estava na publicação `supabase_realtime` (só `leads`); nenhuma migration jamais a adicionou. O painel dependia só do Realtime e nunca recebia nada novo.
+2. `sendMessage` do `ConversationPanel` não mostrava a mensagem enviada e ignorava o `error` do envio (e limpava a caixa mesmo com falha).
+3. Os avisos da Meta (`statuses` entregue/lido/falhou e `reaction`) chegavam no webhook e ficavam só em `meta_webhook_logs`; ninguém os processava. Reação do cliente virava linha-lixo e chamava a Clara (5 vezes entre 10/09 e 14/10).
+4. Em 7 dias: 24 `failed`, 7 `sent`, 7 `delivered`, 6 `read`. `131042` (pagamento pendente da conta do WhatsApp Business) nos reengajamentos das 10h; `131047` só para o final 0220 (alerta fora da janela de 24 h). O marcador "[Template Automático de Reengajamento Enviado]" era gravado mesmo quando a mensagem falhava.
+
+**Entregue:** migrations `20261110223614_conversation_history_realtime` e `20261110230758_conversation_history_status_envio` (6 colunas anuláveis `wamid`, `status_envio`, `status_em`,
+`erro_codigo`, `erro_texto`, `reacao` + trava + índice; rollback no cabeçalho do arquivo). Painel: ✓ enviado, ✓✓ entregue, ✓✓ azul lido, ⚠ não entregue (com o motivo), reação do cliente,
+recarrega após enviar e a cada 10 s, aviso vermelho "Mensagem NÃO enviada" com o texto mantido na caixa. Mensagens antigas ficam sem ícone de propósito. Lembrete de visita e reagendamento
+agora aparecem no conversador. Detalhe: o `sent` da Meta é ignorado (a linha já nasce `enviado`); status nunca é rebaixado.
+
+**PENDENTE (esperam resposta/"autorizo" dela):**
+1. **Teste dela:** com a conversa aberta, mandar mensagem do número de teste e ver a resposta da Clara aparecer sozinha e o ✓ virar ✓✓. Se não aparecer em 10 s, avisar.
+2. **Regra de desligar a Clara ao responder por texto (A/B/C, sem resposta):** hoje texto livre do atendente desliga `ai_enabled` (send-whatsapp, regra de 17/09/2026); template/foto/documento não.
+   Foi o que fez o interruptor "parecer quebrado" na Janetty: ela ligava, enviava texto e o sistema desligava de novo. O interruptor em si grava certo (logs 204). A) manter; B) perguntar antes
+   (recomendado); C) nunca desligar sozinho. O aviso "Clara desligada" também aparece mesmo se ela já estava desligada (detalhe menor). A Janetty está com `ai_enabled = true` (ela ligou).
+3. **Frases de erro da Meta:** `ERROS_META` em `src/lib/whatsapp-status.ts` está VAZIO (único `TODO(human)` desta sessão; há outro antigo em `ad-copy-generator/index.ts`). Sem ele o painel mostra
+   "Falha no envio (código N da Meta)". Códigos: 131042, 131047, 131026, 131049, 131048, 130429.
+4. **Segurança (achado, nada alterado):** a tabela `leads` tem a política `allow_anon_update_leads` (UPDATE para `anon` com `using true`): quem tem a chave pública altera qualquer lead.
+   Investigar quem depende dela (formulários?) e propor migration de correção com rollback (pedido separado).
+5. ~~**Pagamento da conta do WhatsApp Business na Meta**~~ **Verificado em 11/11 ~10:30 UTC (`meta_webhook_logs`):** ela pagou em 10/11 e NÃO há mais nenhum `131042` desde as 22:00 UTC de 10/11
+   (o reengajamento das 10:00 UTC de 11/11 teve 4 `delivered`, 2 `read` e só `131047` para o final 0220, que é alerta fora da janela de 24 h). NÃO confirmado: quais dessas entregas foram templates de cliente.
+   Os `131047` para o 0220 seguem: o alerta interno só chega se ela tiver escrito para o número da Clara nas últimas 24 h (ou se usar template).
+6. **Perguntas abertas:** de onde vem o rótulo "sem vendedor" (não existe no código; o lead está `novo`); por que a mensagem de 10/11 22:55 saiu duplicada (22:55:35 e 22:55:36, causa não identificada).
+7. **Filtro de data do relatório de estoque (ela autorizou, mas faltam 2 respostas):** marcar "Vendidos" sozinho ao filtrar por venda? e OK do commit. Só front, em `RelatorioEstoque.tsx`
+   (`data_venda` já existe em `veiculos`). A branch local `feat/video-narrado-etapa1` foi APAGADA em 10/11 (estava mesclada).
+8. **Artigo da Central de Ajuda** "Entender os ✓ e os avisos de falha no conversador" (autorização permanente de 09/11): ainda NÃO escrito.
+9. Os pendentes da sessão 43 abaixo continuam valendo (voz do vídeo narrado, esteira Fase 2 e as demais).
+
+**Armadilhas novas:** mexer em `_shared/` redeploya as 87 funções (evitei de propósito); `mcp__supabase__query_logs` não aceita `interval '40 minutes'` (usar `iso_timestamp_start`); no `edge_logs` as chaves
+úteis são `request.method`, `request.path`, `request.search`, `response.status_code`; `leads.updated_at` NÃO muda com `ai_enabled` (sem gatilho), então não dá para datar quando a Clara foi desligada;
+PRs de memória abertos (#23) colidem com novas branches de documentação: registrar na mesma branch do PR aberto.
 
 ## SESSÃO 43 (07 a 10/11/2026) — relatório de estoque, esteira Fase 1, Central de Ajuda, vídeo narrado Etapa 1 (TUDO MESCLADO)
 

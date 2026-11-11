@@ -17,6 +17,14 @@ REGRA: não leia este arquivo inteiro. Leia o índice, escolha o bloco, use offs
 
 # Memória de trabalho — Carro e Cia
 
+## [11/11/2026] SESSÃO 44 — conversador: Realtime, status de entrega e aviso de falha (PR #24 mesclado; `main` = `7a5ff50`)
+
+- Causa de "mensagens não aparecem": `conversation_history` fora da publicação `supabase_realtime` + `sendMessage` sem recarregar nem tratar erro. Corrigido (migrations `20261110223614` e `20261110230758`).
+- Novo: `wamid` + `status_envio` (`enviado`/`entregue`/`lido`/`falhou`) + `reacao` em `conversation_history`; `receive-leads` processa `statuses` e `reaction` da Meta; painel mostra ✓/✓✓/⚠.
+- Verificado: 24 `failed` em 7 dias (`131042` pagamento pendente do WhatsApp Business; `131047` alertas ao 0220 fora da janela). Deploys verdes, 6 funções publicadas. NÃO testado na tela logada.
+- Regra de desligar a Clara ao responder por texto (send-whatsapp) NÃO mudou: decisão A/B/C pendente. Achado de segurança: política `allow_anon_update_leads` em `leads` (não corrigido).
+- Detalhe e pendências em `PROXIMA_SESSAO.md` (sessão 44). Beco sem saída: não repetir o diagnóstico de "Clara não responde": o `ai-sdr` honra `ai_enabled=false`; o que desliga é o envio de texto livre.
+
 ## [10/11/2026] SESSÃO 43 — relatório de estoque, esteira Fase 1, Central de Ajuda, vídeo narrado Etapa 1 (tudo mesclado; `main` = `6cba797`)
 
 - PRs mesclados: #18/#19 (esteira de criativos estáticos Fase 1), #20 (Relatório de Estoque imprimível), #21 (artigos da Central de Ajuda), #22 (vídeo narrado Etapa 1).
