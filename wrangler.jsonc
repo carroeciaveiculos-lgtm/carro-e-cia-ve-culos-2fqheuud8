@@ -2,11 +2,14 @@
     "$schema": "node_modules/wrangler/config-schema.json",
     "name": "carro-e-cia-ve-culos-2fqheuud8",
     "compatibility_date": "2026-08-04",
+    // 11/11/2026: porteiro que responde 404 (sem cache) para /assets/* inexistente — ver worker/index.ts
+    "main": "./worker/index.ts",
     "observability": {
         "enabled": true
     },
     "assets": {
         "directory": "./dist",
+        "binding": "ASSETS",
         "not_found_handling": "single-page-application"
     },
     "compatibility_flags": [
