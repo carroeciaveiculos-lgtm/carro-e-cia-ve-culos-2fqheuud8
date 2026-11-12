@@ -32,6 +32,10 @@ REGRA: não leia este arquivo inteiro. Leia o índice, escolha o bloco, use offs
 - **Agendamentos (12/11):** "Dryka Digital" sumida = teste dela de 11/11 cancelado com autorização + filtro "Próximos". Plano do calendário
   aprovado (número por dia, janela do dia com dados do lead e "Ir para a conversa", filtros; relatórios no 2º PR) — código aguarda "autorizo".
   Comandos da Clara analisados (SUGERIR/CORRIGIR gravam sem confirmar). Detalhes em `PROXIMA_SESSAO.md`.
+- **Calendário de Agendamentos (12/11, branch `feat/agendamentos-calendario`):** código autorizado e feito — calendário do mês com "( n )"
+  por dia, janela do dia com dados do lead e "Ir para a conversa" (`Conversas.tsx` aceita `?lead_id=`), filtros. Regra dela: o número conta
+  TUDO (cancelado e "não veio" inclusive), nada é apagado. Artigo da Central de Ajuda atualizado (migrations `20261112151727`/`151752`).
+  Testado por ela no localhost. Falta o 2º PR (relatórios). Em aberto: remarcação conta duas vezes; tabela não guarda quem marcou.
 - Beco sem saída: o print de "tela branca" vinha do navegador embutido de outro app (dados separados do Safari); limpar o Safari não resolve.
 
 ## [05/11/2026] SESSÃO 42 — Criador de Anúncios Fase 1 (bloco A) pronto localmente, sem commit
