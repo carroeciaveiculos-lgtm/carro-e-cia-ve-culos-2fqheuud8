@@ -1,7 +1,7 @@
 # ÍNDICE — MEMORY_WORK Carro e Cia
 
 > ESTADO ATUAL: leia `PROXIMA_SESSAO.md` primeiro. Este arquivo é histórico.
-> Última sessão registrada: 05/11/2026 (sessão 42).
+> Última sessão registrada: 12/11/2026 (sessão de 11–12/11).
 
 | Bloco | Conteúdo |
 |---|---|
@@ -16,6 +16,18 @@ REGRA: não leia este arquivo inteiro. Leia o índice, escolha o bloco, use offs
 ---
 
 # Memória de trabalho — Carro e Cia
+
+## [11–12/11/2026] Painel no iPhone (PR #27), Cloudflare só publica a main, retomada automática da Clara (PR #28)
+
+- **PR #27 no ar (`9d400c6`), confirmado por ela no iPhone:** asset ausente devolvia `index.html` 200 + imutável; agora 404 `no-store`
+  (`worker/index.ts`) + `ErrorBoundary`.
+- **Workers Builds publicava qualquer branch** ("Compilações para ramificações de não produção" marcada + comando `wrangler deploy`).
+  Desmarcado por ela em 11/11; verificado em 12/11 que push de branch não publica mais.
+- **PR #28 no ar (`0c7180d`, 12/11):** texto do vendedor pausa a Clara; `clara-retomada-cron` (a cada 10 min) religa depois de 2 h de cliente
+  sem resposta e ela responde; botão "Manter desligada"; sino `clara_retomou`. Testado de verdade no número dela (resposta "lida") e dados do
+  teste apagados. Migrations `20261111195636`, `20261112100532` (cron) e `20261112100534` (artigo da Central de Ajuda) aplicadas.
+  Estado e próximos passos em `PROXIMA_SESSAO.md`.
+- Beco sem saída: o print de "tela branca" vinha do navegador embutido de outro app (dados separados do Safari); limpar o Safari não resolve.
 
 ## [05/11/2026] SESSÃO 42 — Criador de Anúncios Fase 1 (bloco A) pronto localmente, sem commit
 

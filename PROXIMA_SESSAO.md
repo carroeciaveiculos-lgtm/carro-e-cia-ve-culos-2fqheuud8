@@ -1,7 +1,43 @@
 # Próxima sessão — Carro e Cia Veículos
 
-Atualizado em: 05/11/2026 (sessão 42)
-Substitui: 03/11/2026 (sessão 40)
+Atualizado em: 12/11/2026 (sessão de 11–12/11)
+Substitui: 05/11/2026 (sessão 42)
+
+## SESSÃO 11–12/11/2026 — painel no iPhone (PR #27), Cloudflare só publica a main, retomada automática da Clara (PR #28)
+
+Estado verificado em 12/11/2026 ~10:10 UTC (git, gh, Supabase, Cloudflare). **`origin/main` = `0c7180d`** (merge do PR #28).
+
+- **PR #27 (tela branca no iPhone) MESCLADO em 11/11 (`9d400c6`), no ar e confirmado por ela no iPhone.** Causa: arquivo `/assets/*.js`
+  ausente devolvia o `index.html` (200 + cache imutável). Correção: `worker/index.ts` (404 `no-store` para asset ausente) + `ErrorBoundary`
+  + recarga única em `lazyWithRetry`. Detalhe: memória `tela-branca-iphone-asset-ausente`.
+- **Cloudflare publicava QUALQUER branch em produção — RESOLVIDO em 11/11.** Causa: Configurações > Compilações do worker com
+  "Compilações para ramificações de não produção" MARCADA e "Comando da versão" = `npx wrangler deploy`. Ela desmarcou e salvou.
+  Verificado em 12/11 09:52 UTC: push de branch não gerou publicação nova e o PR #28 não teve check do Workers Builds. A `main` ainda é
+  construída pelos dois caminhos (Actions + Workers Builds, mesmo código) — redundância opcional de remover depois.
+- **PR #28 (Clara retoma sozinha) MESCLADO em 12/11 09:53 UTC (`0c7180d`).** Regra dela: texto do vendedor PAUSA a Clara
+  (`leads.ai_desligada_auto_em`); interruptor do painel = desligamento definitivo; cliente 2 h sem resposta → Clara volta, responde e o sino
+  avisa; acima de 22 h religa sem responder. Deploys verdes: `ai-sdr`, `clara-retomada-cron`, `send-whatsapp` e o front ("Manter desligada"
+  achado no JS publicado). Ensaio ok; sem `x-internal-secret` = 401.
+  **Teste real em 12/11 (número dela 5534984080220, depois de ela mandar MENU para abrir a janela de 24 h):** Clara religou, respondeu no
+  WhatsApp (status "lido"), nota `clara_retomada:respondeu` e sino criados; "Manter desligada" impediu a retomada. Dados do teste apagados
+  (1 lead, 6 mensagens, 1 notificação). `ai_prompts_config` NÃO foi tocado.
+- **Migrations aplicadas:** `20261111195636_leads_clara_pausa_automatica`, `20261112100532_cron_clara_retomada` (job
+  `clara-retomada-cron-job`, `*/10 * * * *`, ativo) e `20261112100534_artigo_ajuda_clara_retomada_automatica` (artigo conferido).
+  Arquivos renomeados para os timestamps reais na branch `chore/clara-retomada-fechamento` (com esta memória) — **commit/push pendentes.**
+- **1ª execução automática do cron: 12/11 10:10 UTC, `succeeded`, resposta 200 com 0 pausados** (verificado).
+- **Proteção pedida por ela em 12/11 (branch `chore/clara-retomada-fechamento`, commit/push pendentes):** `clara-retomada-cron` ignora lead
+  cujo telefone é de colaborador (`isAuthorizedPhone`, importado de `whatsapp-commands.ts` sem mexer em `_shared/` → só essa function
+  redeploya). Motivo: no teste a Clara respondeu como se ela fosse cliente (lead falso criado por mim com o número dela).
+- **Primeiro passo da próxima sessão:** conferir execuções do cron (`cron.job_run_details` do job e `logs_integracao` com
+  `portal='clara_retomada'`) e se houve retomada real (`conversation_history` com `clara_retomada:%`).
+- **Fila "um de cada vez" (pedido dela de 11/11), na ordem:** (1) Etapas 3 a 5 do plano do celular (alvo de navegadores, ícone no iPhone:
+  `apple-touch-icon` 180×180, ícones 192/512, manifesto na tela de login, artigo "Usar o painel no celular"; Etapa 2 FEITA); (2) PR #23
+  (memória, base antiga); (3) Item 6 (nível "Vendedor", ler RLS antes); (4) template `aviso_novo_agendamento` (id 3029790040691701, em revisão
+  na Meta); (5) e-mail de teste ao Pedro (remetente vendas@carroeciamotors.com.br a confirmar); (6) filtro de data do relatório de estoque
+  (`RelatorioEstoque.tsx`); (7) `follow-up-2h-cron` tem migration `20260921174606` mas NÃO está em `cron.job`.
+- **Achado sem correção:** `ai-sdr` não tem autenticação interna (qualquer um com a URL chama).
+- **Limpeza aguardando OK dela:** `.wrangler/`, branches mescladas (`fix/safari-tela-branca` local+remota, `feat/clara-retomada-automatica`),
+  simulador WebKit na pasta temporária do Claude.
 
 ## SESSÃO 42 (05/11/2026) — Criador de Anúncios, Fase 1 (bloco A) PRONTA LOCALMENTE, NÃO commitada
 
