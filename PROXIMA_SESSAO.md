@@ -28,6 +28,25 @@ Estado verificado em 12/11/2026 ~10:10 UTC (git, gh, Supabase, Cloudflare). **`o
 - **Proteção pedida por ela em 12/11 (branch `chore/clara-retomada-fechamento`, commit/push pendentes):** `clara-retomada-cron` ignora lead
   cujo telefone é de colaborador (`isAuthorizedPhone`, importado de `whatsapp-commands.ts` sem mexer em `_shared/` → só essa function
   redeploya). Motivo: no teste a Clara respondeu como se ela fosse cliente (lead falso criado por mim com o número dela).
+- **PR #29 MESCLADO em 12/11 10:14 UTC (`a574a8c`)** — fecha o "commit/push pendentes" acima: proteção no ar, só `clara-retomada-cron`
+  republicada; ensaio 200 e teste em modo ensaio com lead falso no número dela SEM o 9 (`553484080220`) → `ignorado:
+  telefone_de_colaborador` (lead apagado). Push de branch não mudou o site (2ª confirmação da Cloudflare).
+- **"Dryka Digital não aparece em Agendamentos" (pergunta dela em 12/11, verificado):** era o TESTE dela de 11/11 (Tucson, 15h). A Clara
+  gravou 3 cópias; em 11/11 ela autorizou "cancelar os 3 agendamentos de teste" e eu cancelei os 3 → status `cancelado`; a tela abre em
+  "Próximos", que esconde passados/cancelados (aparecem em "Todos"). Duplicação já corrigida no PR #25. Ponto do prompt (só com "autorizo"):
+  a Clara disse "Visita agendada" antes de conferir as vagas e depois desdisse.
+- **PLANO APROVADO (12/11) — calendário de Agendamentos, AGUARDA o "autorizo" do bloco de código:** respostas dela: (1) calendário do mês
+  mostrando só o NÚMERO de agendamentos no dia, ex. "( 3 )"; clicar no dia abre janela com os detalhes de cada agendamento, os dados do lead
+  e botão "Ir para a conversa"; (2) todos da equipe veem tudo (RLS `allow_auth_all_agendamentos_visita` já é assim, sem mudança no banco);
+  (3) Etapas 1 e 2 (calendário + filtros) num PR; relatórios (cartões, taxa de comparecimento, gráficos, exportar CSV/PDF) no 2º PR.
+  Bloco proposto: `src/services/agendamentos.ts` (novo), `Agendamentos.tsx` (calendário + filtros status/tipo/veículo/origem + lista),
+  `components/admin/agendamentos/AgendamentosDoDia.tsx` (novo), `Conversas.tsx` aceitar `?lead_id=` (hoje NÃO aceita), artigo da Central de
+  Ajuda. Libs já instaladas: `react-day-picker` 9, `date-fns` 4, `recharts`. Tabela tem só 5 agendamentos (todos cancelados/não veio).
+- **Comandos da Clara (análise de 12/11, só leitura):** 18 comandos reconhecidos (`_shared/whatsapp-commands.ts` + sinônimos em
+  `whatsapp-intencao.ts`); só LISTAR, PAUSAR, SIM/NÃO e MENU já foram usados de verdade. Riscos achados: SUGERIR grava temas em
+  `agenda_conteudo` sem confirmar e usa `gemini-2.0-flash` + só `GEMINI_APY_KEY` (provável quebra, INFERIDO); CORRIGIR dispara
+  `gerar-conteudo` sem pedir SIM. `docs/marketing-whatsapp-comandos.md` desatualizado (12/09). Proposta: rodada 1 de teste só leitura (LEADS,
+  QUENTES, HOJE, ESTOQUE, BUSCAR, ANUNCIOS, LISTAR, GASTO, VER) e rodada 2 com prévia + NÃO — aguarda ela.
 - **Primeiro passo da próxima sessão:** conferir execuções do cron (`cron.job_run_details` do job e `logs_integracao` com
   `portal='clara_retomada'`) e se houve retomada real (`conversation_history` com `clara_retomada:%`).
 - **Fila "um de cada vez" (pedido dela de 11/11), na ordem:** (1) Etapas 3 a 5 do plano do celular (alvo de navegadores, ícone no iPhone:

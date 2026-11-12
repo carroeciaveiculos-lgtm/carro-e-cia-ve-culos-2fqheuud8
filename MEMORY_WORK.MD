@@ -27,6 +27,11 @@ REGRA: não leia este arquivo inteiro. Leia o índice, escolha o bloco, use offs
   sem resposta e ela responde; botão "Manter desligada"; sino `clara_retomou`. Testado de verdade no número dela (resposta "lida") e dados do
   teste apagados. Migrations `20261111195636`, `20261112100532` (cron) e `20261112100534` (artigo da Central de Ajuda) aplicadas.
   Estado e próximos passos em `PROXIMA_SESSAO.md`.
+- **PR #29 no ar (`a574a8c`, 12/11):** `clara-retomada-cron` ignora lead com telefone de colaborador (`isAuthorizedPhone`); testado em
+  modo ensaio com o número dela sem o 9.
+- **Agendamentos (12/11):** "Dryka Digital" sumida = teste dela de 11/11 cancelado com autorização + filtro "Próximos". Plano do calendário
+  aprovado (número por dia, janela do dia com dados do lead e "Ir para a conversa", filtros; relatórios no 2º PR) — código aguarda "autorizo".
+  Comandos da Clara analisados (SUGERIR/CORRIGIR gravam sem confirmar). Detalhes em `PROXIMA_SESSAO.md`.
 - Beco sem saída: o print de "tela branca" vinha do navegador embutido de outro app (dados separados do Safari); limpar o Safari não resolve.
 
 ## [05/11/2026] SESSÃO 42 — Criador de Anúncios Fase 1 (bloco A) pronto localmente, sem commit
