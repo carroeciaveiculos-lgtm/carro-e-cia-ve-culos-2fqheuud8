@@ -16,6 +16,7 @@ const ICON_MAP: Record<string, string> = {
   performance_baixa: '🚨',
   novo_agendamento: '📅',
   atendimento_humano: '🙋',
+  clara_retomou: '🤖',
 }
 
 type PermissaoAvisos = NotificationPermission | 'indisponivel'

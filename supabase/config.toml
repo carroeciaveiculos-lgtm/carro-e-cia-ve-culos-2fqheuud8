@@ -262,6 +262,10 @@ verify_jwt = true
 [functions.narrar-veiculo]
 verify_jwt = true
 
+# Retomada automática da Clara (11/11/2026): cron a cada 10 min; valida x-internal-secret no código.
+[functions.clara-retomada-cron]
+verify_jwt = false
+
 # FIPE do estoque (Fase 1, 09/10/2026): cron diario 07h; valida x-internal-secret no codigo.
 [functions.fipe-atualizar-estoque]
 verify_jwt = false
