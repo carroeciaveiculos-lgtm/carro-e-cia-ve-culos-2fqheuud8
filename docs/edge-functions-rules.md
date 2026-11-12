@@ -97,6 +97,7 @@ Isso quebra sincronizações de estoque, automações de leads, disparos de What
 | `sync-drive-videos`             | Server-to-Server        | Sincronização de vídeos do Drive                                           |
 | `avaliar-qualidade-anuncios`    | Cron / Server-to-Server | Avaliação de qualidade de anúncios                                         |
 | `fipe-atualizar-estoque`        | Cron (diário 07h)       | FIPE do estoque (09/10/2026): valida `x-internal-secret` no código         |
+| `clara-retomada-cron`           | Cron (a cada 10 min)    | Retomada da Clara (11/11/2026): valida `x-internal-secret` no código       |
 | `fipe-auditoria-modelo-versao`  | Cron (dia 15)           | Auditoria mensal de nomes compostos de modelo; valida `x-internal-secret`  |
 
 ### `verify_jwt = true` (Frontend-only)

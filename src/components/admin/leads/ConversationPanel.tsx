@@ -385,8 +385,9 @@ export function ConversationPanel({ lead, onBack, onLeadUpdated }: ConversationP
         }
         if (data?.ia_desligada_agora) {
           toast({
-            title: 'Clara desligada pra este lead',
-            description: 'Você assumiu a conversa por texto — ela não responde mais sozinha aqui.',
+            title: 'Clara pausada pra este lead',
+            description:
+              'Você assumiu a conversa por texto. Se o cliente escrever e ficar 2 h sem resposta, a Clara volta sozinha. Para desligar de vez, use o botão da Clara.',
           })
         }
       } else {

@@ -2453,6 +2453,7 @@ export type Database = {
       }
       leads: {
         Row: {
+          ai_desligada_auto_em: string | null
           ai_enabled: boolean | null
           ai_processing_started_at: string | null
           ai_score: number | null
@@ -2504,6 +2505,7 @@ export type Database = {
           veiculo_interesse: string | null
         }
         Insert: {
+          ai_desligada_auto_em?: string | null
           ai_enabled?: boolean | null
           ai_processing_started_at?: string | null
           ai_score?: number | null
@@ -2555,6 +2557,7 @@ export type Database = {
           veiculo_interesse?: string | null
         }
         Update: {
+          ai_desligada_auto_em?: string | null
           ai_enabled?: boolean | null
           ai_processing_started_at?: string | null
           ai_score?: number | null

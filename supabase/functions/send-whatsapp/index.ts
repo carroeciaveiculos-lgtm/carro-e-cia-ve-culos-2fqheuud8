@@ -201,13 +201,19 @@ Deno.serve(async (req) => {
       const ehTextoLivre = !['template', 'document', 'image', 'video', 'buttons', 'location', 'product'].includes(
         action,
       )
+      // 11/11/2026: agora é uma PAUSA com hora marcada (ai_desligada_auto_em). Se o cliente
+      // escrever e ficar 2 h sem resposta, clara-retomada-cron religa a Clara. Só marca quando a
+      // Clara estava ligada (ou já pausada por texto): se alguém desligou pelo BOTÃO (marca nula e
+      // ai_enabled=false), a resposta do atendente não transforma isso em pausa.
       if (origem === 'atendente' && ehTextoLivre) {
-        const { error: aiOffError } = await supabase
+        const { data: pausados, error: aiOffError } = await supabase
           .from('leads')
-          .update({ ai_enabled: false })
+          .update({ ai_enabled: false, ai_desligada_auto_em: new Date().toISOString() })
           .eq('id', leadId)
-        if (aiOffError) console.error('Erro ao desligar IA do lead:', aiOffError)
-        else iaDesligadaAgora = true
+          .or('ai_enabled.is.null,ai_enabled.eq.true,ai_desligada_auto_em.not.is.null')
+          .select('id')
+        if (aiOffError) console.error('Erro ao pausar IA do lead:', aiOffError)
+        else iaDesligadaAgora = (pausados?.length ?? 0) > 0
       }
     }
 

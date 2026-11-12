@@ -7,7 +7,13 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import {
   CheckCircle2,
@@ -183,9 +189,32 @@ export function LeadManagementPanel({
           </div>
           <Switch
             checked={lead.ai_enabled ?? true}
-            onCheckedChange={(v) => onFieldUpdate('ai_enabled', v)}
+            onCheckedChange={(v) => {
+              onFieldUpdate('ai_enabled', v)
+              // O banco já apaga a marca de pausa ao mexer no botão; aqui só reflete na tela na hora.
+              if (lead.ai_desligada_auto_em) onFieldUpdate('ai_desligada_auto_em', null)
+            }}
           />
         </div>
+        {/* 11/11/2026: pausa automática (atendente respondeu por texto). Mexer no botão acima já
+            apaga a marca (gatilho no banco); "Manter desligada" apaga só a marca, sem religar. */}
+        {lead.ai_enabled === false && lead.ai_desligada_auto_em && (
+          <div className="-mt-3 mb-4 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">
+            <p className="mb-2">
+              Clara <strong>pausada</strong> porque um atendente respondeu por texto. Se o cliente
+              escrever e ficar 2 h sem resposta, ela volta sozinha.
+            </p>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="h-7 border-amber-300 bg-white text-xs"
+              onClick={() => onFieldUpdate('ai_desligada_auto_em', null)}
+            >
+              Manter desligada
+            </Button>
+          </div>
+        )}
 
         <div className="bg-white p-3 rounded-xl border shadow-sm mb-4">
           <Label className="text-xs font-bold text-slate-500 uppercase block mb-2">

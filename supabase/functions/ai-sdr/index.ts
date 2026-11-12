@@ -1210,7 +1210,13 @@ Deno.serve(async (req) => {
     // receive-leads quando chega mensagem nova de WhatsApp e
     // leads.ai_enabled != false.
     if (body.action === 'continue_conversation') {
-      const { lead_id, mensagem, foi_audio } = body
+      // retomada_automatica (11/11/2026): vem de clara-retomada-cron depois de religar a Clara.
+      // A mensagem do cliente já está no histórico; o texto abaixo só orienta a resposta.
+      const { lead_id, foi_audio } = body
+      const mensagem =
+        body.retomada_automatica === true
+          ? `[Nota do sistema, não é fala do cliente: um atendente humano estava cuidando desta conversa e o cliente ficou mais de 2 horas sem resposta. Você está retomando o atendimento agora. Responda à última mensagem do cliente com naturalidade, sem dizer que é uma retomada automática nem citar a demora de forma negativa. Última mensagem do cliente: "${body.mensagem}"]`
+          : body.mensagem
       if (!lead_id || !mensagem) {
         return new Response(JSON.stringify({ error: 'lead_id e mensagem são obrigatórios' }), {
           status: 400,
@@ -1282,11 +1288,19 @@ Deno.serve(async (req) => {
           .limit(30)
         const historico = (historicoDesc || []).reverse()
 
+        // 11/11/2026 (autorizado pela Adriana): mensagem do atendente humano (sender 'human')
+        // chegava ao modelo como se fosse fala do CLIENTE. Com a retomada automática, a Clara
+        // volta a uma conversa em que o vendedor já falou — então marca essas mensagens como do
+        // atendente da loja, para ela saber o que já foi dito e não confundir quem disse.
+        // Não altera o prompt (ai_prompts_config), só a leitura do histórico.
         const history = (historico || [])
           .filter((h: any) => h.message_text && h.sender !== 'internal_note')
           .map((h: any) => ({
             role: h.sender === 'bot' ? ('model' as const) : ('user' as const),
-            text: h.message_text,
+            text:
+              h.sender === 'human'
+                ? `[Mensagem enviada ao cliente por um atendente humano da loja, não pelo cliente]: ${h.message_text}`
+                : h.message_text,
           }))
 
         const aiRes = await runGemini(history, mensagem, lead.id, lead.veiculo_interesse)
