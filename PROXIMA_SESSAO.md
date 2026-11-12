@@ -6,6 +6,19 @@ Substitui: 05/11/2026 (sessão 42)
 ## SESSÃO 11–12/11/2026 — painel no iPhone (PR #27), Cloudflare só publica a main, retomada automática da Clara (PR #28)
 
 Estado verificado em 12/11/2026 ~10:10 UTC (git, gh, Supabase, Cloudflare). **`origin/main` = `0c7180d`** (merge do PR #28).
+Reconferido em 12/11/2026 ~15:15 UTC: `origin/main` = `b138698` (merge do PR #30, só memória), depois dos PRs #29 e #30.
+
+- **CALENDÁRIO DE AGENDAMENTOS — código pronto em 12/11, branch `feat/agendamentos-calendario` (PR aberto em 12/11; conferir se já foi
+  mesclado com `gh pr list` antes de confiar nesta linha).** Ela autorizou o bloco, testou no localhost e autorizou commit e push.
+  Feito: `src/services/agendamentos.ts` (novo), `Agendamentos.tsx` (calendário do mês com "( n )" por dia + filtros
+  status/tipo/veículo/origem + lista), `components/admin/agendamentos/AgendamentosDoDia.tsx` e `AcoesAgendamento.tsx` (novos),
+  `Conversas.tsx` aceita `?lead_id=`. **Regra dela (12/11): o número do dia conta TUDO, inclusive cancelado e "não veio"; nada é apagado,
+  para os relatórios gerenciais** (`contaNoNumeroDoDia` em `services/agendamentos.ts`). Artigo da Central de Ajuda atualizado (migrations
+  `20261112151727` e `20261112151752`, conferidas no banco). Lint 0 erros e build ok; tela logada testada por ela, não por mim.
+  **Pontos avisados a ela, sem decisão ainda:** (a) a tabela não guarda quem marcou (Clara x equipe) — separar exige coluna nova
+  (migração, pedido à parte); (b) remarcação conta duas vezes (a antiga vira "Cancelado" e nasce outra) — infla "marcadas" no relatório.
+  **Próximo: 2º PR com os relatórios** (marcadas x vieram x não vieram, taxa de comparecimento, gráficos, exportar CSV/PDF) — decidir (b)
+  antes de desenhar o relatório.
 
 - **PR #27 (tela branca no iPhone) MESCLADO em 11/11 (`9d400c6`), no ar e confirmado por ela no iPhone.** Causa: arquivo `/assets/*.js`
   ausente devolvia o `index.html` (200 + cache imutável). Correção: `worker/index.ts` (404 `no-store` para asset ausente) + `ErrorBoundary`
@@ -35,7 +48,8 @@ Estado verificado em 12/11/2026 ~10:10 UTC (git, gh, Supabase, Cloudflare). **`o
   gravou 3 cópias; em 11/11 ela autorizou "cancelar os 3 agendamentos de teste" e eu cancelei os 3 → status `cancelado`; a tela abre em
   "Próximos", que esconde passados/cancelados (aparecem em "Todos"). Duplicação já corrigida no PR #25. Ponto do prompt (só com "autorizo"):
   a Clara disse "Visita agendada" antes de conferir as vagas e depois desdisse.
-- **PLANO APROVADO (12/11) — calendário de Agendamentos, AGUARDA o "autorizo" do bloco de código:** respostas dela: (1) calendário do mês
+- **PLANO APROVADO (12/11) — calendário de Agendamentos (FECHADO em 12/11: código autorizado, feito e commitado na branch
+  `feat/agendamentos-calendario`, ver o bloco no topo):** respostas dela: (1) calendário do mês
   mostrando só o NÚMERO de agendamentos no dia, ex. "( 3 )"; clicar no dia abre janela com os detalhes de cada agendamento, os dados do lead
   e botão "Ir para a conversa"; (2) todos da equipe veem tudo (RLS `allow_auth_all_agendamentos_visita` já é assim, sem mudança no banco);
   (3) Etapas 1 e 2 (calendário + filtros) num PR; relatórios (cartões, taxa de comparecimento, gráficos, exportar CSV/PDF) no 2º PR.

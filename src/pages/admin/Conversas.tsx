@@ -1,4 +1,5 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { supabase } from '@/lib/supabase/client'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
@@ -26,6 +27,23 @@ export default function Conversas() {
   const [search, setSearch] = useState('')
   const [selectedLeadId, setSelectedLeadId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
+
+  // Link vindo de outra tela (ex.: "Ir para a conversa" em Agendamentos):
+  // /admin/conversas?lead_id=<id> já abre a conversa daquele lead, na aba
+  // certa (IA ou Atendendo). Roda uma vez só, depois que os leads carregam,
+  // para não brigar com o clique da pessoa na lista.
+  const [searchParams] = useSearchParams()
+  const leadIdDoLink = searchParams.get('lead_id')
+  const linkJaAplicado = useRef(false)
+
+  useEffect(() => {
+    if (!leadIdDoLink || linkJaAplicado.current || leads.length === 0) return
+    linkJaAplicado.current = true
+    const lead = leads.find((l) => l.id === leadIdDoLink)
+    if (!lead) return
+    setTab(lead.ai_enabled === false ? 'humano' : 'ia')
+    setSelectedLeadId(lead.id)
+  }, [leadIdDoLink, leads])
 
   useEffect(() => {
     loadInitialData()
