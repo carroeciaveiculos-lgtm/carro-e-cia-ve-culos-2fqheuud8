@@ -31,6 +31,36 @@ Estado verificado em 24/11/2026 ~21:10 UTC. **`origin/main` = `c17b109`** (merge
 - **Achados sem correção (baixa prioridade):** ~890 pedidos/dia do `wsrv.nl` a URLs antigas do Supabase Storage (400; o código do site
   não usa `wsrv.nl` — quem chama é externo, a descobrir); Facebook nega `pages_read_engagement` (leitura de comentários); `sync-google-drive`
   interrompe por tempo na placa CUR1D89; 0 agendamentos em 12 dias (não investigado); `bulkDelete` em `portais-sync.ts` sem uso.
+- **FILA "um de cada vez" — rodada de 24/11 (noite), estado verificado ~22:40 UTC, `main` = `5793938`:**
+  1. Ícone do iPhone — **FEITO, PR #34 no ar** (`public/painel-icone-{180,192,512}.png` do .ico oficial; hook `use-painel-pwa.ts`
+     no AdminLayout E no Login; manifest/apple-touch-icon testados no navegador; site público sem manifest). Artigo "Usar o painel no
+     celular" criado. **Falta: ela testar no iPhone de verdade** (apagar o atalho antigo e adicionar de novo). "Alvo de navegadores"
+     (Etapa 3 do plano do celular) NÃO feito: o detalhe do plano não está registrado — perguntar o que era.
+  2. PR #23 — **FECHADO** (conteúdo das sessões 43/44 trazido para a memória no PR #34).
+  3. Nível "Vendedor" — **NÃO EXISTE no sistema** (níveis: admin_master, gerente, operador, bloqueado; `usuarios.role`='vendedor' é
+     outra coisa). Ela escolheu CRIAR o nível: falta ela dizer o que Vendedor pode/não pode em relação a Operador; depois plano +
+     migração (pedido separado).
+  4. Template `aviso_novo_agendamento` — **APROVADO** pela Meta (verificado 24/11 pelo conector WhatsApp); 4 parâmetros batem com o
+     código (`ai-sdr`). Nada a fazer.
+  5. E-mail de teste ao Pedro — **ENVIADO** 24/11 21:34 UTC (vendas@ → pedro.cardoso@, Resend status "sent", domínio verificado).
+     Falta ele confirmar que chegou.
+  6. Filtro de data do Relatório de Estoque — **FEITO, PR #34 no ar** (entrada/venda + De/Até; "venda" marca só Vendidos; aviso de
+     vendidos sem data: 18 de 28 vendas são anteriores a 28/09). Artigo atualizado.
+  7. `follow-up-2h-cron` — **CORRIGIDO, cron AINDA DESLIGADO** (PRs #35/#36 no ar). Causa do desligamento de 24/09: o follow-up gravado
+     como 'bot' zerava a contagem → "tentativa 2" a cada 4 h (até 12 por cliente, 262 envios em 3 dias). Ensaio 2 (`{"ensaio":true}`):
+     3 leads receberiam `retomar_conversa`. **Religar = migração com `cron.schedule('follow-up-2h-cron-job','45 * * * *',...)`, só com
+     "autorizo" dela.** `config.toml` ganhou `verify_jwt=false` para ela.
+- **PR #1 FECHADO** — as 2 correções que faltavam (não-texto de número interno não vira lead; reengajamento pula número interno)
+  entraram no PR #35. **Pendente:** as 2 regras de CLAUDE.md do PR #1 (commit `672d339`: "conferência inicial" e "rito de alteração do
+  CLAUDE.md") não estão no CLAUDE.md — ela decide se entram.
+- **Limpeza 24/11:** 7 branches locais e 29 remotas mescladas apagadas. `.wrangler/` NÃO apagada (comando barrado pela permissão);
+  ela pode rodar `! Remove-Item -Recurse -Force .wrangler` na pasta do projeto.
+- **Investigações 24/11 (só leitura):** `wsrv.nl` = terceiros (servidores Hetzner do próprio wsrv) pedindo fotos antigas que não
+  existem mais no nosso banco; o único campo com URL antiga do Storage é `veiculos.qrcode_url` (29 veículos, 8 disponíveis) — origem
+  não identificável (wsrv não repassa referer). Facebook: comentário chega e é salvo; só o link do post falha (token sem
+  `pages_read_engagement` — ela gera token novo na Meta). Drive CUR1D89: interrupção por tempo é o previsto; terminou com 20 fotos.
+  Agendamentos: último real 27/10; 12 leads conversaram em 12 dias, nenhum erro da ferramenta; padrão = cliente some na pergunta do
+  horário (inferido). Achado: o celular da loja (final 3615) mandou 22 imagens para a Clara em 23/11 — ver se virou lead.
 - **Fila "um de cada vez" (continua a de 11/11, abaixo).**
 
 
