@@ -44,6 +44,7 @@ import {
 } from '@/services/agendamentos'
 import { AcoesAgendamento } from '@/components/admin/agendamentos/AcoesAgendamento'
 import { AgendamentosDoDia } from '@/components/admin/agendamentos/AgendamentosDoDia'
+import { RelatorioAgendamentos } from '@/components/admin/agendamentos/RelatorioAgendamentos'
 
 const TODOS = 'todos'
 const DIAS_DA_SEMANA = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
@@ -324,6 +325,8 @@ export default function Agendamentos() {
           })}
         </div>
       </div>
+
+      <RelatorioAgendamentos mes={mes} agendamentos={filtrados} />
 
       <div className="flex items-center justify-between mb-3">
         <h2 className="text-base font-semibold text-slate-800">Lista</h2>

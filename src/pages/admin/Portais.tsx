@@ -23,6 +23,7 @@ import { fetchPublicacoes } from '@/services/portais-sync'
 import { syncVehicleToPlatform } from '@/services/sync-plataforma'
 import { triggerWMSync } from '@/services/wm-sync'
 import { supabase } from '@/lib/supabase/client'
+import { mensagemErroAmigavel } from '@/lib/friendly-error'
 import { useAuth } from '@/hooks/use-auth'
 import { VehicleAccordion } from '@/components/admin/portais/VehicleAccordion'
 import { GlobalActionsBar } from '@/components/admin/portais/GlobalActionsBar'
@@ -39,7 +40,12 @@ import { ConversionMonitor } from '@/components/admin/portais/ConversionMonitor'
 import { PlatformSyncPanel } from '@/components/admin/portais/PlatformSyncPanel'
 import { ContadoresModalidadePanel } from '@/components/admin/portais/ContadoresModalidadePanel'
 import { NapistaCatalogPanel } from '@/components/admin/portais/NapistaCatalogPanel'
-import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@/components/ui/accordion'
+import {
+  Accordion,
+  AccordionItem,
+  AccordionTrigger,
+  AccordionContent,
+} from '@/components/ui/accordion'
 import {
   Select,
   SelectContent,
@@ -77,9 +83,11 @@ export default function Portais() {
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(true)
   const [syncing, setSyncing] = useState(false)
-  const [syncProgress, setSyncProgress] = useState<{ current: number; total: number; label: string } | null>(
-    null,
-  )
+  const [syncProgress, setSyncProgress] = useState<{
+    current: number
+    total: number
+    label: string
+  } | null>(null)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [sortBy, setSortBy] = useState('marca_modelo')
   const [preflightOpen, setPreflightOpen] = useState(false)
@@ -126,7 +134,9 @@ export default function Portais() {
         plataforma: filtroPlataforma !== 'todas' ? filtroPlataforma : null,
         modalidade: filtroModalidade !== 'todas' ? filtroModalidade : null,
         tempoEstoque:
-          filtroTempoEstoque !== 'todos' ? (filtroTempoEstoque as FiltrosPortais['tempoEstoque']) : null,
+          filtroTempoEstoque !== 'todos'
+            ? (filtroTempoEstoque as FiltrosPortais['tempoEstoque'])
+            : null,
         statusPublicacao:
           filtroStatusPublicacao !== 'todos'
             ? (filtroStatusPublicacao as FiltrosPortais['statusPublicacao'])
@@ -308,7 +318,10 @@ export default function Portais() {
     if (!user) return
     await supabase
       .from('estoque_publicacoes')
-      .update({ alterado_manualmente_por: user.id, alterado_manualmente_em: new Date().toISOString() })
+      .update({
+        alterado_manualmente_por: user.id,
+        alterado_manualmente_em: new Date().toISOString(),
+      })
       .eq('veiculo_id', veiculoId)
       .eq('platform', platform)
   }
@@ -420,6 +433,36 @@ export default function Portais() {
       return result
     } else if (slug === 'webmotors' || slug === 'napista') {
       try {
+        // A5 (24/11/2026): ao despublicar, confere a ficha ANTES de mexer na
+        // marcação. Antes, a marcação era desligada primeiro; o gatilho do
+        // banco (trigger_*_sync_on_veiculo_change) criava uma 2ª ficha e a
+        // busca abaixo, que esperava uma só (maybeSingle), falhava — a tela
+        // dizia "não tem anúncio ativo" e a marcação ficava desligada com o
+        // anúncio ainda no ar (caso do Audi PQE7D92).
+        let fichaAtiva: { id: string; post_id: string | null } | null = null
+        if (!publicar) {
+          const { data: fichas, error: erroFichas } = await supabase
+            .from('estoque_publicacoes')
+            .select('id, post_id')
+            .eq('veiculo_id', veiculoId)
+            .eq('platform', slug)
+            .neq('status', 'despublicado')
+            .not('post_id', 'is', null)
+            .order('created_at', { ascending: false })
+            .limit(1)
+          if (erroFichas) return { success: false, message: mensagemErroAmigavel(erroFichas) }
+          fichaAtiva = fichas?.[0] ?? null
+          if (!fichaAtiva) {
+            // Marcação NÃO é alterada: se o anúncio estiver no portal, ele
+            // continua visível como publicado aqui até a ficha ser recriada.
+            return {
+              success: false,
+              message:
+                'Não há código de anúncio registrado no sistema para esta plataforma. Se o anúncio aparece no portal, avise o suporte para recriar a ficha antes de despublicar.',
+            }
+          }
+        }
+
         await toggleVehiclePublication(slug, veiculoId, publicar)
         setVehicles((prev) =>
           prev.map((v) => (v.id !== veiculoId ? v : { ...v, [`publicado_${slug}`]: publicar })),
@@ -429,15 +472,32 @@ export default function Portais() {
         // sincronização de verdade — o veículo ficava marcado como
         // "publicado" no nosso banco sem nenhuma tentativa real na
         // plataforma. Garante que existe uma linha pendente antes de chamar.
-        const { data: existingPub } = await supabase
-          .from('estoque_publicacoes')
-          .select('id, status, post_id')
-          .eq('veiculo_id', veiculoId)
-          .eq('platform', slug)
-          .maybeSingle()
-
-        if (!publicar && !existingPub?.post_id) {
-          return { success: false, message: 'Este veículo não tem anúncio ativo nessa plataforma pra despublicar' }
+        // Pega a ficha mais recente (pode haver várias por veículo, inclusive
+        // a que o gatilho acabou de criar) em vez de exigir uma só.
+        let existingPub: { id: string; status: string; post_id: string | null } | null = null
+        if (publicar) {
+          const { data: ultimas } = await supabase
+            .from('estoque_publicacoes')
+            .select('id, status, post_id')
+            .eq('veiculo_id', veiculoId)
+            .eq('platform', slug)
+            .order('created_at', { ascending: false })
+            .limit(1)
+          existingPub = ultimas?.[0] ?? null
+        } else if (fichaAtiva) {
+          // Se o gatilho já criou um pending_close pro mesmo anúncio, reusa
+          // ele; senão, a própria ficha ativa vira pending_close. Evita dois
+          // pedidos de encerramento pro mesmo anúncio.
+          const { data: jaPendente } = await supabase
+            .from('estoque_publicacoes')
+            .select('id, status, post_id')
+            .eq('veiculo_id', veiculoId)
+            .eq('platform', slug)
+            .eq('status', 'pending_close')
+            .eq('post_id', fichaAtiva.post_id as string)
+            .order('created_at', { ascending: false })
+            .limit(1)
+          existingPub = jaPendente?.[0] ?? { ...fichaAtiva, status: 'publicado' }
         }
 
         const novoStatus = publicar
@@ -466,7 +526,9 @@ export default function Portais() {
         }
 
         const syncResult =
-          slug === 'webmotors' ? await triggerWMSync(veiculoId) : await triggerNapistaSync(veiculoId)
+          slug === 'webmotors'
+            ? await triggerWMSync(veiculoId)
+            : await triggerNapistaSync(veiculoId)
         const nomePlataforma = slug === 'webmotors' ? 'Webmotors' : 'NaPista'
         if (!syncResult.success) {
           setVehicles((prev) =>
@@ -477,7 +539,10 @@ export default function Portais() {
             message: syncResult.error || `Falha ao sincronizar com a ${nomePlataforma}`,
           }
         }
-        return { success: true, message: `${syncResult.processed ?? 0} processado(s) na ${nomePlataforma}` }
+        return {
+          success: true,
+          message: `${syncResult.processed ?? 0} processado(s) na ${nomePlataforma}`,
+        }
       } catch (err: any) {
         return { success: false, message: err.message }
       }
@@ -764,7 +829,9 @@ export default function Portais() {
       </div>
 
       <div className="bg-white rounded-lg border mt-8">
-        <h2 className="text-sm font-bold text-gray-800 p-4 border-b">Log de sincronização por plataforma</h2>
+        <h2 className="text-sm font-bold text-gray-800 p-4 border-b">
+          Log de sincronização por plataforma
+        </h2>
         <Accordion type="multiple" className="px-4">
           {plataformas
             .filter((p) => PLATAFORMAS_COM_SYNC_REAL.includes(p.slug))
@@ -802,9 +869,9 @@ export default function Portais() {
                     <NapistaCatalogPanel />
                   ) : (
                     <p className="text-xs text-gray-500 px-1">
-                      Sem integração real com {p.nome} ainda — o botão de publicar aqui só marca
-                      uma flag interna, não avisa a plataforma. Nenhum anúncio é criado, atualizado
-                      ou removido lá de verdade.
+                      Sem integração real com {p.nome} ainda — o botão de publicar aqui só marca uma
+                      flag interna, não avisa a plataforma. Nenhum anúncio é criado, atualizado ou
+                      removido lá de verdade.
                     </p>
                   )}
                 </AccordionContent>

@@ -77,3 +77,46 @@ export const atualizarStatusAgendamento = async (id: string, status: string) => 
   const { error } = await supabase.from('agendamentos_visita').update({ status }).eq('id', id)
   return { error }
 }
+
+/**
+ * Resumo para o relatório de agendamentos (A3, 24/11/2026).
+ *
+ * Regra da Adriana (24/11/2026): VISITA só conta quando o agendamento foi
+ * marcado como "Compareceu" (status `realizado`). Remarcar não vira duas
+ * visitas — o agendamento antigo fica cancelado e só o que o cliente de fato
+ * compareceu entra em "Visitas". Taxa de comparecimento considera só os
+ * agendamentos que já têm resultado (veio ou não veio); cancelado e ainda
+ * agendado ficam de fora da conta.
+ */
+export type ResumoAgendamentos = {
+  total: number
+  visitas: number
+  naoVieram: number
+  cancelados: number
+  aindaAgendados: number
+  /** Agendados com data já passada, sem resultado marcado. */
+  semResultado: number
+  /** 0 a 100, ou null quando ainda não há resultado pra calcular. */
+  taxaComparecimento: number | null
+}
+
+export const resumirAgendamentos = (
+  lista: Pick<Agendamento, 'status' | 'data_hora'>[],
+): ResumoAgendamentos => {
+  const agora = Date.now()
+  const conta = (status: string) => lista.filter((a) => a.status === status).length
+  const visitas = conta('realizado')
+  const naoVieram = conta('nao_compareceu')
+  const comResultado = visitas + naoVieram
+  return {
+    total: lista.length,
+    visitas,
+    naoVieram,
+    cancelados: conta('cancelado'),
+    aindaAgendados: conta('agendado'),
+    semResultado: lista.filter(
+      (a) => a.status === 'agendado' && new Date(a.data_hora).getTime() < agora,
+    ).length,
+    taxaComparecimento: comResultado > 0 ? Math.round((visitas / comResultado) * 100) : null,
+  }
+}
