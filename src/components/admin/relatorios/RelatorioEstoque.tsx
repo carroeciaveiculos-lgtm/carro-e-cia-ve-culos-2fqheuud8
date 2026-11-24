@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 import { supabase } from '@/lib/supabase/client'
 import { Car, DollarSign, Clock3, AlertTriangle, Download, Globe, Printer, Eye } from 'lucide-react'
 import { Checkbox } from '@/components/ui/checkbox'
+import { Input } from '@/components/ui/input'
 import {
   RelatorioEstoqueImpressao,
   ROTULO_COLUNA,
@@ -26,6 +27,17 @@ const STATUS_LABEL: Record<string, string> = {
 }
 
 // Tipos de veículo que podem ser escolhidos (valor do banco -> rótulo na tela)
+// Filtro por data (24/11/2026, regra da Adriana de 10/11): "Entrada" usa a
+// data de cadastro (created_at); "Venda" usa data_venda — preenchida sozinha
+// por gatilho desde 28/09/2026, então vendas anteriores ficam sem data e fora
+// desse filtro (a tela avisa quantas). Ao escolher "Venda", o relatório passa
+// a mostrar só Vendidos, porque só vendido tem data de venda.
+type TipoData = 'nenhuma' | 'entrada' | 'venda'
+
+// Dia no horário da loja, no formato 2026-11-24 (comparável como texto com o <input type="date">).
+const diaDaLoja = (iso: string | null | undefined) =>
+  iso ? new Date(iso).toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' }) : null
+
 const TIPOS_VEICULO = [
   { valor: 'disponivel', rotulo: 'Ativos' },
   { valor: 'vendido', rotulo: 'Vendidos' },
@@ -83,6 +95,9 @@ export function RelatorioEstoque() {
   ])
   const [marcaFilter, setMarcaFilter] = useState('todas')
   const [diasFilter, setDiasFilter] = useState('todos')
+  const [tipoData, setTipoData] = useState<TipoData>('nenhuma')
+  const [dataDe, setDataDe] = useState('')
+  const [dataAte, setDataAte] = useState('')
 
   useEffect(() => {
     async function loadData() {
@@ -91,7 +106,7 @@ export function RelatorioEstoque() {
       let query = supabase
         .from('veiculos')
         .select(
-          'id, marca, modelo, versao, ano_fabricacao, ano_modelo, placa, preco_venda, status, created_at, quilometragem, cor, is_zero_km, combustivel, cambio',
+          'id, marca, modelo, versao, ano_fabricacao, ano_modelo, placa, preco_venda, status, created_at, data_venda, quilometragem, cor, is_zero_km, combustivel, cambio',
         )
         .in('status', statusSel.length ? statusSel : ['__nenhum__'])
 
@@ -164,9 +179,31 @@ export function RelatorioEstoque() {
       if (diasFilter === '16a30' && (dias <= 15 || dias > 30)) return false
       if (diasFilter === '31a60' && (dias <= 30 || dias > 60)) return false
       if (diasFilter === 'mais60' && dias <= 60) return false
+      if (tipoData !== 'nenhuma' && (dataDe || dataAte)) {
+        const dia = diaDaLoja(tipoData === 'venda' ? v.data_venda : v.created_at)
+        if (!dia) return false
+        if (dataDe && dia < dataDe) return false
+        if (dataAte && dia > dataAte) return false
+      }
       return true
     })
-  }, [veiculos, marcaFilter, diasFilter])
+  }, [veiculos, marcaFilter, diasFilter, tipoData, dataDe, dataAte])
+
+  // Vendidos sem data de venda (vendas antes de 28/09/2026) que o filtro por venda deixa de fora.
+  const vendidosSemData =
+    tipoData === 'venda' && (dataDe || dataAte)
+      ? veiculos.filter((v) => v.status === 'vendido' && !v.data_venda).length
+      : 0
+
+  const escolherTipoData = (valor: TipoData) => {
+    setTipoData(valor)
+    if (valor === 'venda') setStatusSel(['vendido'])
+    if (valor === 'nenhuma') {
+      setDataDe('')
+      setDataAte('')
+    }
+  }
+  const formatarDia = (dia: string) => dia.split('-').reverse().join('/')
 
   const totalVeiculos = veiculosFiltrados.length
   const valorTotal = veiculosFiltrados.reduce((acc, v) => acc + (v.preco_venda || 0), 0)
@@ -237,6 +274,12 @@ export function RelatorioEstoque() {
       '31a60': '31 a 60 dias',
       mais60: 'Mais de 60 dias',
     }[diasFilter]
+  }${
+    tipoData !== 'nenhuma' && (dataDe || dataAte)
+      ? ` · Data de ${tipoData === 'venda' ? 'venda' : 'entrada'}: ${
+          dataDe ? formatarDia(dataDe) : 'início'
+        } a ${dataAte ? formatarDia(dataAte) : 'hoje'}`
+      : ''
   }`
   const imprimir = () => {
     setImpressoEm(new Date())
@@ -297,6 +340,12 @@ export function RelatorioEstoque() {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <p className="text-slate-500 text-sm">
           Acompanhe o pátio: valor, tempo parado e publicação.
+          {vendidosSemData > 0 && (
+            <span className="block text-amber-700">
+              {vendidosSemData} vendido{vendidosSemData > 1 ? 's' : ''} sem data de venda (vendas
+              antes de 28/09/2026) fica{vendidosSemData > 1 ? 'm' : ''} fora deste filtro.
+            </span>
+          )}
         </p>
 
         <div className="flex flex-wrap gap-2">
@@ -327,6 +376,37 @@ export function RelatorioEstoque() {
               <SelectItem value="mais60">Mais de 60 dias</SelectItem>
             </SelectContent>
           </Select>
+
+          <Select value={tipoData} onValueChange={(v) => escolherTipoData(v as TipoData)}>
+            <SelectTrigger className="w-[170px] bg-white" aria-label="Filtrar por data">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="nenhuma">Qualquer data</SelectItem>
+              <SelectItem value="entrada">Data de entrada</SelectItem>
+              <SelectItem value="venda">Data de venda</SelectItem>
+            </SelectContent>
+          </Select>
+          {tipoData !== 'nenhuma' && (
+            <>
+              <Input
+                type="date"
+                aria-label="De"
+                className="w-[150px] bg-white"
+                value={dataDe}
+                max={dataAte || undefined}
+                onChange={(e) => setDataDe(e.target.value)}
+              />
+              <Input
+                type="date"
+                aria-label="Até"
+                className="w-[150px] bg-white"
+                value={dataAte}
+                min={dataDe || undefined}
+                onChange={(e) => setDataAte(e.target.value)}
+              />
+            </>
+          )}
 
           <Button variant="outline" className="bg-white" onClick={exportarCSV}>
             <Download className="w-4 h-4 mr-2" /> Exportar CSV
