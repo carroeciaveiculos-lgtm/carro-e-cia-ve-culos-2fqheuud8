@@ -1,7 +1,7 @@
 # ÍNDICE — MEMORY_WORK Carro e Cia
 
 > ESTADO ATUAL: leia `PROXIMA_SESSAO.md` primeiro. Este arquivo é histórico.
-> Última sessão registrada: 12/11/2026 (sessão de 11–12/11).
+> Última sessão registrada: 24/11/2026.
 
 | Bloco | Conteúdo |
 |---|---|
@@ -16,6 +16,16 @@ REGRA: não leia este arquivo inteiro. Leia o índice, escolha o bloco, use offs
 ---
 
 # Memória de trabalho — Carro e Cia
+
+## [24/11/2026] Exclusão segura de veículo, despublicar, 55 no reengajamento, relatório de agendamentos (PR #32)
+
+- **PR #32 no ar (`c17b109`)**: A1 exclusão bloqueada quando há dados ligados (antes apagava 9 tabelas e falhava no fim — perdeu dados do
+  Audi PQE7D92 e do Land Rover FJK7E17); A5 despublicar confere `post_id` antes da flag; A2 55 no `re-engagement-cron`; A3 relatório
+  (visita = `realizado`, regra dela). Migrations `20261124192223` (FK do backup fase 4 removida) e `20261124211537` (3 artigos de ajuda).
+- Dados: 3 leads com 55; lead duplicado `3f503726` juntado em `829c0150`; fichas do Audi recriadas e encerradas (WM 500 = sucesso).
+- Beco sem saída: `bun run format` reescreve finais de linha do repositório inteiro (CRLF→LF, ~480 arquivos) — usar `npx oxfmt <arquivos>`.
+- Beco sem saída: `query_logs` usa chaves `response.status_code` / `parsed.error_severity` / `request.path` em `log_attributes`
+  (não `status_code`/`error_severity`); janela máxima de 24 h.
 
 ## [11–12/11/2026] Painel no iPhone (PR #27), Cloudflare só publica a main, retomada automática da Clara (PR #28)
 

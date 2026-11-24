@@ -1,7 +1,38 @@
 # Próxima sessão — Carro e Cia Veículos
 
-Atualizado em: 12/11/2026 (sessão de 11–12/11)
-Substitui: 05/11/2026 (sessão 42)
+Atualizado em: 24/11/2026
+Substitui: 12/11/2026 (sessão de 11–12/11)
+
+## SESSÃO 24/11/2026 — exclusão segura, despublicar, 55 no reengajamento, relatório de agendamentos (PR #32 no ar)
+
+Estado verificado em 24/11/2026 ~21:10 UTC. **`origin/main` = `c17b109`** (merge do PR #32).
+
+- **PR #32 MESCLADO em 24/11 (`c17b109`), deploys verdes** (front + `re-engagement-cron`, publicada 21:05 UTC). Conferido no JS publicado:
+  "Taxa de comparecimento" (Agendamentos), "Exclusão bloqueada"/"Nenhum dado foi apagado" (Estoque do painel), "Não há código de anúncio
+  registrado" (Portais). `/`, `/estoque`, `/admin/login` = 200. **Telas logadas não testadas por mim.**
+  - **A1 Excluir veículo:** `getBloqueiosExclusao` + `excluirVeiculo` em `services/veiculos.ts`. Bloqueia se houver anúncio ativo
+    (estoque_publicacoes != despublicado e não "error sem post_id"; ml_listings != closed), contrato, consignação, documento, despesa ou
+    agendamento. Senão apaga só `veiculos` (cascata/SET NULL do banco). Causa antiga: 9 deletes manuais antes do delete final.
+  - **A5 Despublicar WM/NaPista (`Portais.tsx`):** confere ficha com `post_id` ANTES de mudar a flag; sem ficha → aviso e nada muda. Motivo:
+    os gatilhos `trigger_*_sync_on_veiculo_change` criam uma 2ª ficha ao mudar a flag e o `maybeSingle` quebrava.
+  - **A2:** `re-engagement-cron` prefixa 55 em 10/11 dígitos (erro 131026 de 23/11). `_shared/lead-dedup.ts` NÃO mudou.
+  - **A3:** `RelatorioAgendamentos.tsx` + `resumirAgendamentos`. **Regra dela (24/11): visita só conta com status `realizado`;
+    remarcação não conta duas vezes.** Taxa = realizado ÷ (realizado + nao_compareceu). Mês do calendário + mesmos filtros; CSV com `;` e BOM.
+- **Banco (autorizados por ela em 24/11):**
+  - **B1** migration `20261124192223_soltar_fk_backup_modelo_versao_fase4` (FK da tabela de backup removida; 26 linhas intactas).
+  - **B2** 3 leads ganharam o 55 (`6588b78d`, `9809ddfa`, `7a7a300e`); desfazer = tirar o "55" do início.
+  - **Junção de lead duplicado:** `3f503726` juntado em `829c0150` (carro_km/ano/modelo e observações copiados, 1 mensagem movida,
+    duplicado apagado; transação única).
+  - **A4** migration `20261124211537_artigos_ajuda_exclusao_despublicar_relatorio_agendamentos` (3 artigos atualizados, conferido).
+  - **Audi PQE7D92:** fichas WM (82465232) e NaPista recriadas e encerradas em 24/11 17:20 UTC (WM `CodigoRetorno 500` = sucesso);
+    ela conferiu nos portais e devolveu o carro.
+- **Land Rover FJK7E17:** tentativa de exclusão em 24/11 18:16 UTC falhou depois de apagar as tabelas ligadas; ela confirmou que não
+  tinha documentos. Hoje está "devolvido".
+- **Achados sem correção (baixa prioridade):** ~890 pedidos/dia do `wsrv.nl` a URLs antigas do Supabase Storage (400; o código do site
+  não usa `wsrv.nl` — quem chama é externo, a descobrir); Facebook nega `pages_read_engagement` (leitura de comentários); `sync-google-drive`
+  interrompe por tempo na placa CUR1D89; 0 agendamentos em 12 dias (não investigado); `bulkDelete` em `portais-sync.ts` sem uso.
+- **Fila "um de cada vez" (continua a de 11/11, abaixo).**
+
 
 ## SESSÃO 11–12/11/2026 — painel no iPhone (PR #27), Cloudflare só publica a main, retomada automática da Clara (PR #28)
 
