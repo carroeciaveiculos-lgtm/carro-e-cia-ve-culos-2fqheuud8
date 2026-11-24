@@ -594,6 +594,18 @@ Deno.serve(async (req: Request) => {
                   continue
                 }
 
+                // Achado 29/10/2026 (PR #1, trazido em 24/11/2026): mensagem que NÃO
+                // é texto vinda de número interno (ex.: tipo "system" em 19/10, foto,
+                // áudio, botão) escapava da checagem acima e virava lead "Cliente
+                // WhatsApp" — a Clara respondia e o reengajamento mandava template.
+                // Número interno nunca é lead. Reação já foi tratada mais acima.
+                if (isAuthorizedPhone(senderPhone)) {
+                  console.log(
+                    `Mensagem do tipo ${msg.type} de número interno ignorada (não vira lead)`,
+                  )
+                  continue
+                }
+
                 // Mensagem pra guardar no histórico (o que a equipe vê no
                 // Conversador) pode ser diferente da mensagem pra Clara
                 // entender (ela não tem visão de imagem — só texto).

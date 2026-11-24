@@ -269,3 +269,9 @@ verify_jwt = false
 # FIPE do estoque (Fase 1, 09/10/2026): cron diario 07h; valida x-internal-secret no codigo.
 [functions.fipe-atualizar-estoque]
 verify_jwt = false
+
+# Retorno rapido 2h/4h/6h (21/09/2026; corrigido 24/11/2026): cron; valida x-internal-secret no codigo.
+# Publicada desde setembro com verify_jwt=false, mas sem entrada aqui -- um deploy
+# automatico teria ligado o verify_jwt e o cron levaria 401.
+[functions.follow-up-2h-cron]
+verify_jwt = false

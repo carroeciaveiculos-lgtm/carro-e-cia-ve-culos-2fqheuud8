@@ -1,6 +1,7 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from 'jsr:@supabase/supabase-js@2'
 import { isInternalRequestAuthorized, unauthorizedResponse } from '../_shared/internal-auth.ts'
+import { isAuthorizedPhone } from '../_shared/whatsapp-commands.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -19,18 +20,18 @@ const corsHeaders = {
 // contado a partir da última mensagem real da Clara pra esse lead.
 const MARCADOR_PREFIXO = 'followup2h:'
 
-interface Etapa {
-  tentativa: number
-  elapsedMinMs: number
-}
-
-const ETAPAS: Etapa[] = [
-  { tentativa: 1, elapsedMinMs: 2 * 60 * 60 * 1000 },
-  { tentativa: 2, elapsedMinMs: 4 * 60 * 60 * 1000 },
-  { tentativa: 3, elapsedMinMs: 6 * 60 * 60 * 1000 },
-]
-// Etapa 4 (fora da janela de 24h, exige template aprovado pela Meta).
-const ELAPSED_MIN_TEMPLATE_MS = 24 * 60 * 60 * 1000
+// Tentativas em texto livre: cada uma sai 2 h depois da anterior (2h/4h/6h
+// desde a última fala real da Clara). A 4ª etapa é o template aprovado.
+const TENTATIVAS_TEXTO = 3
+const INTERVALO_MS = 2 * 60 * 60 * 1000
+// Janela de 24 h do WhatsApp: conta a partir da última mensagem do CLIENTE.
+// Fora dela, texto livre é recusado pela Meta (131047) — só template.
+const JANELA_WHATSAPP_MS = 24 * 60 * 60 * 1000
+// Retorno rápido só para silêncio RECENTE: até 3 dias depois da última fala
+// da Clara. Mais antigo que isso é com o re-engagement-cron (48 h / 7 dias).
+// Sem este limite, ao religar o cron (desligado de 24/09 a 24/11/2026), todo
+// lead parado desde setembro receberia o template de uma vez.
+const SILENCIO_MAXIMO_MS = 3 * 24 * 60 * 60 * 1000
 
 function textoTentativa1(nome: string, veiculo: string | null): string {
   const sobreVeiculo = veiculo ? ` sobre o ${veiculo}` : ''
@@ -50,6 +51,17 @@ function textoTentativa3(nome: string, veiculo: string | null): string {
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
   if (!isInternalRequestAuthorized(req)) return unauthorizedResponse(corsHeaders)
+
+  // Modo ensaio (24/11/2026): { "ensaio": true } só lista quem receberia o
+  // quê, sem enviar nada nem gravar marcador. Usado antes de religar o cron.
+  let opcoes: { ensaio?: boolean } = {}
+  try {
+    opcoes = await req.json()
+  } catch {
+    opcoes = {}
+  }
+  const ensaio = opcoes?.ensaio === true
+  const previstos: { lead_id: string; acao: string }[] = []
 
   try {
     const supabase = createClient(
@@ -76,6 +88,8 @@ Deno.serve(async (req) => {
     let avaliados = 0
 
     for (const lead of candidatos || []) {
+      // Número interno (Adriana/Fernando) nunca recebe retorno automático.
+      if (isAuthorizedPhone(lead.telefone || '')) continue
       try {
         const { data: ultimaMsg } = await supabase
           .from('conversation_history')
@@ -87,33 +101,76 @@ Deno.serve(async (req) => {
           .maybeSingle()
 
         // Cliente já respondeu por último, ou não tem histórico — nada a fazer.
+        // ('human' = vendedor escreveu por último: a conversa está com a equipe.)
         if (!ultimaMsg || ultimaMsg.sender !== 'bot') continue
+        if (Date.now() - new Date(ultimaMsg.created_at).getTime() > SILENCIO_MAXIMO_MS) continue
         avaliados++
 
-        const elapsedMs = Date.now() - new Date(ultimaMsg.created_at).getTime()
+        // CORREÇÃO 24/11/2026 — causa do laço de 21–24/09 (cliente recebia a
+        // "tentativa 2" a cada 4 h, até 12 vezes): o send-whatsapp grava o
+        // próprio follow-up como mensagem 'bot', e a versão antiga contava as
+        // tentativas só DEPOIS da última mensagem 'bot' — ou seja, depois do
+        // follow-up que ela mesma tinha mandado —, então a contagem voltava a 1.
+        // Agora tudo é contado desde a última mensagem do CLIENTE.
+        const { data: ultimaDoCliente } = await supabase
+          .from('conversation_history')
+          .select('created_at')
+          .eq('lead_id', lead.id)
+          .eq('sender', 'client')
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle()
+        // Lead que nunca escreveu (veio de formulário): não há conversa a retomar.
+        if (!ultimaDoCliente) continue
+        const desde = ultimaDoCliente.created_at
 
         const { data: marcadores } = await supabase
           .from('conversation_history')
-          .select('message_text')
+          .select('message_text, created_at')
           .eq('lead_id', lead.id)
           .eq('sender', 'internal_note')
-          .gt('created_at', ultimaMsg.created_at)
+          .gt('created_at', desde)
           .like('message_text', `${MARCADOR_PREFIXO}%`)
+          .order('created_at', { ascending: true })
 
-        const textos = (marcadores || []).map((m) => m.message_text)
-        const jaEnviouTemplate = textos.includes(`${MARCADOR_PREFIXO}template`)
-        const jaEnviados = textos.filter((t) => t !== `${MARCADOR_PREFIXO}template`).length
+        const lista = marcadores || []
+        const jaEnviouTemplate = lista.some((m) => m.message_text === `${MARCADOR_PREFIXO}template`)
+        const textosEnviados = lista.filter((m) => m.message_text !== `${MARCADOR_PREFIXO}template`)
         const nome = lead.nome || 'Cliente'
         const veiculo = lead.veiculo_interesse || null
+        const agora = Date.now()
 
+        // Um silêncio do cliente = no máximo 3 textos + 1 template, nunca mais.
         if (jaEnviouTemplate) continue
 
-        // Etapa 4 (24h+, exige template já aprovado) — dispara assim que a
-        // janela livre fechar, mesmo que as 3 tentativas em texto livre não
-        // tenham dado tempo de rodar todas (ex: lead que já estava parado há
-        // dias antes desse cron existir) — evita ficar tentando texto livre
-        // fora da janela, que a Meta sempre recusaria.
-        if (elapsedMs >= ELAPSED_MIN_TEMPLATE_MS) {
+        const janelaFechada = agora - new Date(desde).getTime() >= JANELA_WHATSAPP_MS
+
+        let acao: 'template' | 1 | 2 | 3 | null = null
+        if (janelaFechada) {
+          acao = 'template'
+        } else if (textosEnviados.length < TENTATIVAS_TEXTO) {
+          // 1ª tentativa: 2 h depois da última fala real da Clara (a última
+          // mensagem 'bot', já que nenhum follow-up saiu desde o cliente).
+          // Seguintes: 2 h depois do marcador anterior.
+          const referencia =
+            textosEnviados.length === 0
+              ? ultimaMsg.created_at
+              : textosEnviados[textosEnviados.length - 1].created_at
+          if (agora - new Date(referencia).getTime() >= INTERVALO_MS) {
+            acao = (textosEnviados.length + 1) as 1 | 2 | 3
+          }
+        }
+        if (acao === null) continue
+
+        if (ensaio) {
+          previstos.push({
+            lead_id: lead.id,
+            acao: acao === 'template' ? 'template retomar_conversa' : `tentativa ${acao}`,
+          })
+          continue
+        }
+
+        if (acao === 'template') {
           const res = await supabase.functions.invoke('send-whatsapp', {
             body: {
               action: 'template',
@@ -124,28 +181,18 @@ Deno.serve(async (req) => {
               origem: 'clara',
             },
           })
-          if (res.error) throw new Error(res.error.message || 'Falha ao enviar template retomar_conversa')
-
-          await supabase.from('conversation_history').insert({
-            lead_id: lead.id,
-            sender: 'internal_note',
-            message_text: `${MARCADOR_PREFIXO}template`,
-          })
-          enviados++
-          continue
-        }
-
-        // Já mandou as 3 tentativas em texto livre e ainda não chegou em 24h
-        // — nada a fazer por enquanto, espera a janela fechar pra etapa 4.
-        if (jaEnviados >= ETAPAS.length) continue
-
-        const etapa = ETAPAS[jaEnviados]
-        if (elapsedMs < etapa.elapsedMinMs) continue
-
-        if (etapa.tentativa < 3) {
-          const texto = etapa.tentativa === 1 ? textoTentativa1(nome, veiculo) : textoTentativa2(nome, veiculo)
+          if (res.error)
+            throw new Error(res.error.message || 'Falha ao enviar template retomar_conversa')
+        } else if (acao < 3) {
+          const texto = acao === 1 ? textoTentativa1(nome, veiculo) : textoTentativa2(nome, veiculo)
           const res = await supabase.functions.invoke('send-whatsapp', {
-            body: { action: 'text', to: lead.telefone, text: texto, leadId: lead.id, origem: 'clara' },
+            body: {
+              action: 'text',
+              to: lead.telefone,
+              text: texto,
+              leadId: lead.id,
+              origem: 'clara',
+            },
           })
           if (res.error) throw new Error(res.error.message || 'Falha ao enviar follow-up')
         } else {
@@ -169,7 +216,7 @@ Deno.serve(async (req) => {
         await supabase.from('conversation_history').insert({
           lead_id: lead.id,
           sender: 'internal_note',
-          message_text: `${MARCADOR_PREFIXO}${etapa.tentativa}`,
+          message_text: `${MARCADOR_PREFIXO}${acao}`,
         })
         enviados++
       } catch (err: any) {
@@ -182,7 +229,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    return new Response(JSON.stringify({ success: true, avaliados, enviados }), {
+    return new Response(JSON.stringify({ success: true, ensaio, avaliados, enviados, previstos }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
   } catch (err: any) {
