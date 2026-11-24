@@ -138,7 +138,14 @@ Deno.serve(async (req) => {
           const waPhoneId =
             Deno.env.get('WHATSAPP_PHONE_NUMBER_ID') || Deno.env.get('META_PHONE_NUMBER_ID')!
 
-          const cleanPhone = lead.telefone.replace(/\D/g, '')
+          // 24/11/2026: telefone gravado sem o 55 (ex.: "34999990000") fazia a
+          // Meta recusar o envio com erro 131026 (caso real de 23/11). Número
+          // brasileiro com DDD tem 10 (fixo) ou 11 (celular) dígitos — nesse
+          // caso acrescenta o código do país. Corrigido só aqui, não em
+          // _shared/lead-dedup.ts, pra não mudar a deduplicação de leads.
+          const soDigitos = lead.telefone.replace(/\D/g, '')
+          const cleanPhone =
+            soDigitos.length === 10 || soDigitos.length === 11 ? `55${soDigitos}` : soDigitos
 
           const res = await fetch(`https://graph.facebook.com/v20.0/${waPhoneId}/messages`, {
             method: 'POST',

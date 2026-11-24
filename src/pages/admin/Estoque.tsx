@@ -42,6 +42,8 @@ import {
 import { useToast } from '@/hooks/use-toast'
 import { usePermissoes } from '@/hooks/use-permissoes'
 import { despublicarDeTodasPlataformas } from '@/services/plataformas'
+import { excluirVeiculo, getBloqueiosExclusao } from '@/services/veiculos'
+import { mensagemErroAmigavel } from '@/lib/friendly-error'
 import VehicleFormModal from './VehicleFormModal'
 import { VehicleQuickViewModal } from '@/components/admin/VehicleQuickViewModal'
 import { VehicleShareModal } from '@/components/admin/VehicleShareModal'
@@ -291,7 +293,12 @@ export default function AdminEstoque() {
         if (mlExistente) {
           await supabase
             .from('ml_listings')
-            .update({ status: 'pending_create', ml_item_id: null, ml_listing_url: null, last_synced_at: null })
+            .update({
+              status: 'pending_create',
+              ml_item_id: null,
+              ml_listing_url: null,
+              last_synced_at: null,
+            })
             .eq('id', mlExistente.id)
         } else {
           await supabase
@@ -308,27 +315,42 @@ export default function AdminEstoque() {
   }
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Deseja realmente excluir este veículo?')) return
-    try {
-      await supabase.from('estoque_publicacoes').delete().eq('veiculo_id', id)
-      await supabase.from('social_posts').delete().eq('veiculo_id', id)
-      await supabase.from('ml_listings').delete().eq('veiculo_id', id)
-      await supabase.from('documentos').delete().eq('veiculo_id', id)
-      await supabase.from('despesas').delete().eq('veiculo_id', id)
-      await supabase.from('simulacoes').delete().eq('veiculo_id', id)
-      await supabase.from('contratos_consignacao').delete().eq('veiculo_id', id)
-      await supabase.from('consignacoes').delete().eq('veiculo_id', id)
-      await supabase.from('logs_integracao').delete().eq('veiculo_id', id)
-      await supabase.from('leads').update({ veiculo_id: null }).eq('veiculo_id', id)
-      await supabase.from('notas_fiscais').update({ veiculo_id: null }).eq('veiculo_id', id)
-
-      const { error } = await supabase.from('veiculos').delete().eq('id', id)
-      if (error) throw error
-      toast({ title: 'Veículo excluído com sucesso!' })
-      loadVehicles()
-    } catch (err: any) {
-      toast({ title: 'Erro ao excluir', description: err.message, variant: 'destructive' })
+    // Confere ANTES de perguntar: se houver algo que não pode se perder, nem
+    // oferece a exclusão (ver getBloqueiosExclusao em services/veiculos.ts).
+    const { data: bloqueios, error: erroBloqueio } = await getBloqueiosExclusao(id)
+    if (erroBloqueio) {
+      toast({
+        title: 'Não foi possível conferir o veículo',
+        description: mensagemErroAmigavel(erroBloqueio),
+        variant: 'destructive',
+      })
+      return
     }
+    if (bloqueios && bloqueios.length > 0) {
+      const lista = bloqueios.map((b) => `${b.quantidade} ${b.motivo}`).join(', ')
+      toast({
+        title: 'Exclusão bloqueada',
+        description: `Este veículo tem: ${lista}. Para tirá-lo do estoque, use "Devolver" ou "Vendido" — assim nada se perde.`,
+        variant: 'destructive',
+      })
+      return
+    }
+
+    if (!confirm('Deseja realmente excluir este veículo? Essa ação não pode ser desfeita.')) return
+    const { error } = await excluirVeiculo(id)
+    if (error) {
+      toast({
+        title: 'Erro ao excluir',
+        description:
+          (error as { code?: string }).code === '23503'
+            ? 'Este veículo ainda está ligado a outro registro do sistema e não pode ser excluído. Nenhum dado foi apagado — use "Devolver" ou "Vendido".'
+            : `${mensagemErroAmigavel(error)} Nenhum dado foi apagado.`,
+        variant: 'destructive',
+      })
+      return
+    }
+    toast({ title: 'Veículo excluído com sucesso!' })
+    loadVehicles()
   }
 
   const generateMissingQRCodes = async () => {
