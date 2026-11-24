@@ -1,6 +1,7 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from 'jsr:@supabase/supabase-js@2'
 import { isInternalRequestAuthorized, unauthorizedResponse } from '../_shared/internal-auth.ts'
+import { isAuthorizedPhone } from '../_shared/whatsapp-commands.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -131,6 +132,13 @@ Deno.serve(async (req) => {
     let sentCount = 0
 
     for (const lead of leads || []) {
+      // Achado 29/10/2026 (PR #1, trazido em 24/11/2026): o número da Adriana
+      // caiu como lead e recebeu o template de reengajamento em 27/10. Número
+      // interno (Adriana/Fernando, lista de whatsapp-commands.ts) nunca entra.
+      if (lead.telefone && isAuthorizedPhone(lead.telefone)) {
+        console.log(`Lead ${lead.id} tem telefone interno, reengajamento pulado`)
+        continue
+      }
       if (lead.telefone) {
         try {
           const waToken =
@@ -178,18 +186,16 @@ Deno.serve(async (req) => {
             sender: 'bot',
             message_text: MARCADOR_REENGAJAMENTO,
           }
-          const { error: histError } = await supabase
-            .from('conversation_history')
-            .insert(
-              wamid
-                ? {
-                    ...linhaHistorico,
-                    wamid,
-                    status_envio: 'enviado',
-                    status_em: new Date().toISOString(),
-                  }
-                : linhaHistorico,
-            )
+          const { error: histError } = await supabase.from('conversation_history').insert(
+            wamid
+              ? {
+                  ...linhaHistorico,
+                  wamid,
+                  status_envio: 'enviado',
+                  status_em: new Date().toISOString(),
+                }
+              : linhaHistorico,
+          )
           if (histError && wamid) {
             await supabase.from('conversation_history').insert(linhaHistorico)
           }
