@@ -93,7 +93,7 @@ Deno.serve(async (req) => {
       try {
         const { data: ultimaMsg } = await supabase
           .from('conversation_history')
-          .select('sender, created_at')
+          .select('sender, created_at, message_text')
           .eq('lead_id', lead.id)
           .neq('sender', 'internal_note')
           .order('created_at', { ascending: false })
@@ -104,6 +104,11 @@ Deno.serve(async (req) => {
         // ('human' = vendedor escreveu por último: a conversa está com a equipe.)
         if (!ultimaMsg || ultimaMsg.sender !== 'bot') continue
         if (Date.now() - new Date(ultimaMsg.created_at).getTime() > SILENCIO_MAXIMO_MS) continue
+        // Achado no ensaio de 24/11/2026: se a última mensagem 'bot' já é um
+        // template automático (ex.: "[Template Automático de Reengajamento
+        // Enviado]" do re-engagement-cron), o cliente acabou de ser procurado —
+        // o follow-up mandaria um 2º template logo atrás. Nada a fazer.
+        if ((ultimaMsg.message_text || '').startsWith('[Template')) continue
         avaliados++
 
         // CORREÇÃO 24/11/2026 — causa do laço de 21–24/09 (cliente recebia a
