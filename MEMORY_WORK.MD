@@ -1,7 +1,7 @@
 # ÍNDICE — MEMORY_WORK Carro e Cia
 
 > ESTADO ATUAL: leia `PROXIMA_SESSAO.md` primeiro. Este arquivo é histórico.
-> Última sessão registrada: 24/11/2026.
+> Última sessão registrada: 25/11/2026.
 
 | Bloco | Conteúdo |
 |---|---|
@@ -16,6 +16,17 @@ REGRA: não leia este arquivo inteiro. Leia o índice, escolha o bloco, use offs
 ---
 
 # Memória de trabalho — Carro e Cia
+
+## [25/11/2026] Números da equipe não viram lead; Pedro recebe aviso de agendamento
+
+- Celular da loja (Roberto) virou 2 leads em 23/11 (22 fotos, "corrida" de 0,7 s); descartados (`perdido` + IA desligada).
+- `EQUIPE_PHONES`/`isEquipePhone()` em `_shared/whatsapp-commands.ts` (Roberto, Pedro `5534997150409`, sem comandos);
+  receive-leads e 3 crons usam; `ai-sdr` avisa o Pedro de agendamento novo. Branch `fix/numeros-equipe-pedro-avisos`.
+- Duplicados: só 2 casos na base inteira — sem mudança no banco.
+- Beco sem saída: `npx oxfmt` no `ai-sdr/index.ts` reformata ~100 linhas que não são da tarefa — não formatar o arquivo
+  inteiro; editar já no estilo e conferir com `git diff --stat`.
+- Beco sem saída: `npx -y deno@2 check` funciona sem instalar, mas o projeto tem ~98 erros de tipo antigos (postgrest) —
+  comparar a contagem antes/depois em vez de esperar zero.
 
 ## [24/11/2026] Exclusão segura de veículo, despublicar, 55 no reengajamento, relatório de agendamentos (PR #32)
 

@@ -383,7 +383,15 @@ específico aqui, menos eu erro:
     e no rodapé/"Onde estamos" do site.
 
   Números individuais da equipe no rodapé (Luiz, Roberto etc.) são à parte,
-  não seguem essa hierarquia. Briefing do agente `web-designer-senior.md`
+  não seguem essa hierarquia.
+  - **Números da equipe que nunca viram lead (desde 25/11/2026)**:
+    `EQUIPE_PHONES` em `_shared/whatsapp-commands.ts`, checados por
+    `isEquipePhone()` (que inclui também `AUTHORIZED_PHONES`). Hoje:
+    `5534992893615` (Roberto Junior / celular da loja — em 23/11 mandou 22
+    fotos e virou 2 leads) e `5534997150409` (Pedro Cardoso, vendedor do
+    pré-atendimento). Eles **não** dão comandos à Clara. O Pedro também
+    recebe no WhatsApp o aviso de agendamento novo
+    (`WHATSAPP_VENDEDORES_AVISO` em `ai-sdr/index.ts`). Briefing do agente `web-designer-senior.md`
   mantido em sincronia com o número da Clara.
 
 - **Leads**: o que nunca pode faltar num lead? Qual o SLA/fluxo depois que entra?

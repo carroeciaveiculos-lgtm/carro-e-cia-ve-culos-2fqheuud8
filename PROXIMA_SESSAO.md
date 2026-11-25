@@ -1,7 +1,29 @@
 # Próxima sessão — Carro e Cia Veículos
 
-Atualizado em: 24/11/2026
-Substitui: 12/11/2026 (sessão de 11–12/11)
+Atualizado em: 25/11/2026
+Substitui: 24/11/2026
+
+## SESSÃO 25/11/2026 — números da equipe, Pedro nos avisos, leads do Roberto descartados
+
+Estado em 25/11/2026. `origin/main` = `9ead2e1` no início. Branch `fix/numeros-equipe-pedro-avisos` (commit/push/PR: ver fim deste bloco).
+
+- **Celular da loja (Roberto, `553492893615`) em 23/11 10:56 UTC:** 22 fotos + ficha de uma Evoque → 2 leads em 0,7 s
+  (`2df333b9`, `ccc43690`) e 2 respostas da Clara. Causa: número fora da lista interna + "corrida" (busca e cria em paralelo).
+  **Descartados em 25/11 com autorizo dela:** status `perdido`, `ai_enabled=false`, nota em `observacoes`. Backup: os dois
+  estavam `novo`, `ai_enabled=true`, `observacoes` nulo. Nenhum evento enviado à Meta (sem `ctwa_clid`).
+- **Duplicados na base (verificado 25/11):** só 2 telefones em 147 leads (Roberto e um de 07/09, ambos encerrados). Decisão:
+  não mexer no banco agora (índice único teria de ignorar encerrados e o 9º dígito); rever se surgir 3º caso.
+- **Bloco A (autorizado em 25/11), na branch:** `EQUIPE_PHONES` + `isEquipePhone()` em `_shared/whatsapp-commands.ts`
+  (Roberto e Pedro `5534997150409`, sem comandos); `receive-leads` ignora número da equipe; `clara-retomada-cron`,
+  `follow-up-2h-cron` e `re-engagement-cron` pulam a equipe; `ai-sdr` manda o aviso de agendamento novo também ao Pedro
+  (template aprovado). Testado: regra com 6 números (com e sem o 9) OK; lint 0 erros; build ok; `deno check` com os mesmos 98
+  erros antigos antes e depois. **Mexe em `_shared/` → o deploy republica todas as funções.**
+- **Artigo da Central de Ajuda:** migration `20261125120000_artigo_ajuda_aviso_agendamento_pedro_e_numeros_equipe.sql`
+  (timestamp PROVISÓRIO) — aplicar **depois** do deploy do código e renomear para o timestamp real.
+- **Bloco B (aguarda respostas dela):** aviso de LEAD NOVO e RESUMO DIÁRIO para o Pedro. Os dois precisam de template novo
+  aprovado pela Meta (texto livre só chega na janela de 24 h). Perguntas abertas: conteúdo/horário do resumo; todo lead novo
+  ou só repasse para humano; outros números da equipe. Achado: `daily-report-cron` grava "enviado" sem checar a resposta da
+  Meta — não dá para afirmar que o resumo dela chega.
 
 ## SESSÃO 24/11/2026 — exclusão segura, despublicar, 55 no reengajamento, relatório de agendamentos (PR #32 no ar)
 
