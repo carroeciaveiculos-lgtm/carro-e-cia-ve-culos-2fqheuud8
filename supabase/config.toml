@@ -161,6 +161,12 @@ verify_jwt = false
 [functions.daily-report-cron]
 verify_jwt = false
 
+[functions.resumo-leads-cron]
+verify_jwt = false
+
+[functions.aviso-lead-novo]
+verify_jwt = false
+
 [functions.re-engagement-cron]
 verify_jwt = false
 
