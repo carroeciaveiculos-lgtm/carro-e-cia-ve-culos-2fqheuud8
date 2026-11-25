@@ -5,6 +5,22 @@ Substitui: 24/11/2026
 
 ## SESSÃO 25/11/2026 — números da equipe, Pedro nos avisos, leads do Roberto descartados
 
+- **SW4 com 7 lugares (25/11, autorizado):** versões trocadas em `wm_mapeamento_veiculos` — PYT5J89 `346612`→`346610`,
+  SSF5A83 `346612`→`348557` (backup: ambas `346612`). **Enviado em 25/11 17:50 UTC (autorizo dela): ambos `CodigoRetorno 500`** — SSF5A83 anúncio
+  novo `82664185`; PYT5J89 `82427543` editado (a edição aceita troca de versão). **Conferido por ela no painel WM em 25/11/2026.**
+  Texto da versão no cadastro corrigido em 25/11/2026 19:41 UTC (autorizo): SSF5A83 e PYT5J89 agora "SRX 4x4 7 Lug. 2.8 TDI 16V
+  Dies. Aut." (backup: SSF5A83 sem "7 Lug."; PYT5J89 com espaço duplo). Slug não mudou. O gatilho pôs os 2 no Mercado Livre como
+  `pending_update` (MLB7420419026, MLB5138629779) — **conferir na próxima sessão que o ML aceitou**. Detalhe em `docs/webmotors-integracao.md`.
+- **Checagem só leitura do estoque (25/11/2026):** 24 veículos disponíveis com versão WM. Problema real: **RUG8F56** (Hilux CD SRX 2022)
+  mapeada para `346474` (vale só 2016–2020; mapeada em 10/08, antes da trava de ano); candidata certa `348548` (SRX 2021–2026); anúncio
+  `74036318` publicado. **Corrigida em 25/11/2026 com autorizo** (mapeamento → `348548`, backup `346474`; linha
+  `af05762d…` → `pending_update`; há 3 linhas WM com o mesmo anúncio, usada a mais recente). **Enviada 19:40 UTC:
+  `AlterarCarro` `CodigoRetorno 500`, versão `348548` ecoada, `sync_log` success.** OPZ2408 com versão fora do cache
+  (não dá para checar o ano). Tiggo RTP2G79 ok (modelo TIGGO 8).
+- **Busca FIPE no cadastro:** ela escolheu (A) em 25/11 — campo "Lugares" no cadastro que guia a escolha da versão WM de 5 ou 7 lugares
+  (a FIPE não separa a SW4 SRX 2.8 por lugares: código `002146-6` único). **Plano gravado em `docs/cadastro-busca-fipe.md` (25/11)**;
+  3 decisões da busca FIPE em aberto; nada implementado.
+
 Estado em 25/11/2026. `origin/main` = `9ead2e1` no início. **Bloco A NO AR: PR #38 mesclado em 25/11 (`4e4e9d8`)**;
 "Deploy producao" e "Deploy Edge Functions" = success; `/`, `/estoque`, `/admin/login` = 200; `receive-leads` publicada tem
 `isEquipePhone` e `ai-sdr` publicada tem `WHATSAPP_VENDEDORES_AVISO` (conferido pelo `get_edge_function`). **Não testado:** aviso

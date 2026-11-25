@@ -162,6 +162,8 @@ falhou; ao descobrir algo novo, acrescente lá com data e fonte.
 - `docs/postagem-automatica-redes.md` — plano e estado da postagem automática de
   veículos no Facebook/Instagram (fases, modelo da fila `social_posts` v2,
   decisões abertas, riscos)
+- `docs/cadastro-busca-fipe.md` — plano (25/11/2026, não implementado) da busca FIPE manual no cadastro e
+  do campo "Lugares" que guia a versão Webmotors de 5 ou 7 lugares
 - `docs/tabela-fipe.md` — página pública /tabela-fipe (API FIPE v2 gratuita direto do
   navegador, limites, termos, riscos e becos sem saída)
 - `docs/google-drive-integracao.md` — fotos e vídeos do Drive (Edge Function x

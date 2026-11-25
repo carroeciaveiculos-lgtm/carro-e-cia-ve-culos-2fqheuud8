@@ -959,3 +959,35 @@ Para flex automático 2018 valem: `347051` "2.0 MPFI GL…" (2017–2022), `3470
 - **Confirmação manual:** `wm-confirmar-mapeamento` recusa, em português, versão cujo ano é conhecido e não bate (considera `ano_modelo_override_wm`); `forcar:true` no corpo ignora a trava. O diálogo mostra "Anos aceitos: …" ao lado de cada versão.
 - **Auditoria de 06/10 (mapeamentos atuais × anos):** só 3 divergem. **MWV1232** ix35 2013 (`346376`, vale 2016): veículo VENDIDO, sem ação. **RUG8F56** Hilux 2022 (nosso mapa `346474`, vale 2016–2020): o anúncio REAL na Webmotors (74036318) usa a versão **348548** com ano 2022, ou seja, o nosso mapeamento está DESATUALIZADO em relação ao anúncio; um `AlterarCarro` com o mapa atual seria recusado. **SSF5A83** Hilux SW4 2024 (`346612`, vale 2016–2020), ainda não publicada: vai falhar ao publicar. Os dois últimos ficam como pendência para decisão (não alterados).
 - **Confirmado:** a Webmotors NÃO aceita ano fora da lista da versão (Hilux real está numa versão de 2022, não na de 2016–2020), então a trava não bloqueia combinação válida.
+
+## Achado real (25/11/2026): número de lugares só existe dentro da VERSÃO — as 2 SW4 iam como 5 lugares
+
+- **Não há campo de lugares** no `IncluirCarro` nem na tabela de retornos. A Webmotors diferencia 5 e 7 lugares por
+  **versões separadas** no catálogo (`wm_versoes`: "… 7 LUGARES …" / "… 7L …"). Para mudar lugares, troca-se a versão.
+- As duas SW4 estavam com `346612` (2.8 SRX 4X4 …, 5 lugares, anos 2016–2020):
+  - **PYT5J89** (2016/2017, cadastro diz "7 Lug.", mas confirmado à mão na versão de 5) → trocado para **`346610`**
+    (2.8 SRX 4X4 7 LUGARES …, anos 2016–2020).
+  - **SSF5A83** (2023/2024, cadastro SEM "7 Lug.") → trocado para **`348557`** (2.8 D-4D TURBO DIESEL SRX 7L 4X4
+    AUTOMÁTICO, anos 2021–2024). A versão antiga nem aceitava 2024 — provável causa do `error` sem `post_id` desde 18/11
+    (INFERIDO, não conferido na resposta da Webmotors).
+- Feito em 25/11/2026 com autorizo da Adriana, direto em `wm_mapeamento_veiculos` (`codigo_versao_wm` +
+  `confirmado_manualmente=true`), igual ao que `wm-confirmar-mapeamento` grava. Backup: as duas estavam `346612`. O gatilho
+  `wm_sync_on_modalidade_change` só reage à modalidade — conferido que nenhuma linha nova entrou em `estoque_publicacoes`.
+- **Ainda não enviado à Webmotors.** Em aberto: se a edição (`AlterarCarro`) aceita troca de versão em anúncio existente
+  ou se exige excluir e publicar de novo (nunca testado). PYT5J89 ganhou anúncio `82427543` em 25/11 14:45 UTC e o
+  `81709723` ficou `error` — confirmar com a Adriana se há um ou dois anúncios antes de mexer.
+- Prevenção a fazer: dar peso a "7 Lug."/"7L"/"7 lugares" no matcher e alertar quando ficar entre versões de 5 e 7 lugares.
+- **Enviado em 25/11/2026 17:50 UTC (autorizo dela), pela fila normal do `wm-sync-cron-job`:** SSF5A83 `error`→`pending_create`
+  ⇒ `IncluirCarro` `CodigoRetorno 500`, **anúncio novo `82664185`**, versão `348557` ecoada. PYT5J89 linha `82427543`
+  `publicado`→`pending_update` ⇒ `AlterarCarro` `500`, versão `346610` ecoada — **a edição ACEITOU troca de versão** num anúncio
+  existente (responde a pergunta em aberto acima). A linha antiga `81709723` (`error`, `43|36` em 25/11 14:45) não foi tocada.
+  **Não verificado:** fotos do anúncio novo (o `wm-sync` só devolve o resultado das fotos na resposta HTTP, que o cron não
+  guarda) e a página pública/painel — conferência visual com a Adriana. **Conferido por ela no painel WM em 25/11/2026.**
+- **Checagem do estoque (25/11/2026, só leitura):** versão WM × ano do veículo nos 24 disponíveis. Achado: RUG8F56
+  (Hilux CD SRX 2022) em `346474` (só 2016–2020) → corrigida para `348548` (2021–2026) com autorizo, linha `af05762d…`
+  → `pending_update`. Obs.: o veículo tinha **3 linhas `webmotors` `publicado` com o mesmo `post_id`** (lixo de reenvios);
+  só a mais recente foi para a fila. Enviada pelo cron às 19:40 UTC: `AlterarCarro` `CodigoRetorno 500`, versão `348548`.
+  Também em 25/11: o texto `veiculos.versao` das 2 SW4 virou "SRX 4x4 7 Lug. 2.8 TDI 16V Dies. Aut." — mudar `versao` **não**
+  gera envio à Webmotors (não está na lista do `trigger_wm_sync_on_veiculo_change`), mas gera `pending_update` no Mercado Livre;
+  e salvar pelo painel não refaz o mapeamento WM de carro já `mapeado` (o `wm-mapear-veiculo` pula). Consulta usada: `wm_mapeamento_veiculos` ⋈ `veiculos` ⋈ `wm_versoes`,
+  `ano_modelo = any(anos_modelo)`. Prevenção planejada em `docs/cadastro-busca-fipe.md` (campo "Lugares").
