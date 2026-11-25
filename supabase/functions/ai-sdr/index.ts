@@ -832,6 +832,7 @@ async function notificarNovoAgendamento(agendamento: any, leadId: string) {
       tipo: 'novo_agendamento',
       titulo: '📅 Novo agendamento pela Clara',
       texto,
+      incluirVendedores: true,
       template: {
         nome: TEMPLATE_AVISO_AGENDAMENTO,
         parametros: [
@@ -857,6 +858,10 @@ async function notificarNovoAgendamento(agendamento: any, leadId: string) {
 // Cada canal é independente: um erro nunca impede os outros nem quebra a conversa com o cliente.
 const TEMPLATE_AVISO_AGENDAMENTO = 'aviso_novo_agendamento'
 const EMAILS_AVISO_EQUIPE = ['pedro.cardoso@carroeciamotors.com.br']
+// 25/11/2026 (pedido da Adriana): Pedro Cardoso, vendedor do pré-atendimento, recebe no
+// WhatsApp os avisos que pedem `incluirVendedores` (hoje: agendamento novo). Só os avisos com
+// template aprovado chegam a qualquer hora; texto livre depende da janela de 24 h (erro 131047).
+const WHATSAPP_VENDEDORES_AVISO = ['5534997150409']
 
 function normalizarTelefoneBR(valor: string): string {
   const digitos = (valor || '').replace(/\D/g, '')
@@ -935,6 +940,7 @@ async function avisarEquipe(opts: {
   titulo: string
   texto: string
   template?: { nome: string; parametros: string[] }
+  incluirVendedores?: boolean
 }) {
   const { data: config } = await supabase
     .from('social_configuracoes')
@@ -944,7 +950,11 @@ async function avisarEquipe(opts: {
   // configurado, só a ADRIANA_PHONE recebe o aviso no WhatsApp.
   const destinos = Array.from(
     new Set(
-      [config?.whatsapp_number, ADRIANA_PHONE]
+      [
+        config?.whatsapp_number,
+        ADRIANA_PHONE,
+        ...(opts.incluirVendedores ? WHATSAPP_VENDEDORES_AVISO : []),
+      ]
         .map((n) => normalizarTelefoneBR(n || ''))
         .filter((n) => n.length >= 12),
     ),

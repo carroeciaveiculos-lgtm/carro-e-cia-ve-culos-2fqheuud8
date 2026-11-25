@@ -1,7 +1,7 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from 'jsr:@supabase/supabase-js@2'
 import { isInternalRequestAuthorized, unauthorizedResponse } from '../_shared/internal-auth.ts'
-import { isAuthorizedPhone } from '../_shared/whatsapp-commands.ts'
+import { isEquipePhone } from '../_shared/whatsapp-commands.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -89,7 +89,7 @@ Deno.serve(async (req) => {
 
     for (const lead of candidatos || []) {
       // Número interno (Adriana/Fernando) nunca recebe retorno automático.
-      if (isAuthorizedPhone(lead.telefone || '')) continue
+      if (isEquipePhone(lead.telefone || '')) continue
       try {
         const { data: ultimaMsg } = await supabase
           .from('conversation_history')

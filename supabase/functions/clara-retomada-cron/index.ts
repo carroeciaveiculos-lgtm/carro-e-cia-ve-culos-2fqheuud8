@@ -2,7 +2,7 @@ import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from 'jsr:@supabase/supabase-js@2'
 import { isInternalRequestAuthorized, unauthorizedResponse } from '../_shared/internal-auth.ts'
 // Mesma lista usada pelo receive-leads para tratar a mensagem como comando de colaborador.
-import { isAuthorizedPhone } from '../_shared/whatsapp-commands.ts'
+import { isEquipePhone } from '../_shared/whatsapp-commands.ts'
 
 // Retomada automática da Clara (pedido da Adriana, 11/11/2026).
 //
@@ -69,7 +69,7 @@ Deno.serve(async (req) => {
     for (const lead of pausados || []) {
       // Proteção (12/11/2026, pedido da Adriana): telefone de colaborador nunca é tratado como
       // cliente. Se alguém da equipe foi cadastrado como lead por engano, a Clara não retoma.
-      if (isAuthorizedPhone(lead.telefone || '')) {
+      if (isEquipePhone(lead.telefone || '')) {
         resultado.push({ lead_id: lead.id, nome: lead.nome, ignorado: 'telefone_de_colaborador' })
         continue
       }

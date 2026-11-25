@@ -70,6 +70,20 @@ export function isAuthorizedPhone(fromPhone: string): boolean {
   return AUTHORIZED_PHONES.some((p) => mesmoNumeroBrasileiro(p, limpo))
 }
 
+// 25/11/2026 (pedido da Adriana): números da EQUIPE que nunca viram lead nem
+// recebem resposta/reengajamento da Clara, mas NÃO podem dar comandos (por isso
+// ficam fora de AUTHORIZED_PHONES). Achado de 23/11: o celular da loja (Roberto)
+// mandou 22 fotos, virou 2 leads e a Clara respondeu como se fosse cliente.
+//   5534992893615 = Roberto Junior / celular da loja
+//   5534997150409 = Pedro Cardoso (vendedor, pré-atendimento)
+export const EQUIPE_PHONES = ['5534992893615', '5534997150409']
+
+// Equipe = quem pode dar comandos + quem só não deve ser tratado como cliente.
+export function isEquipePhone(fromPhone: string): boolean {
+  const limpo = (fromPhone || '').replace(/\D/g, '')
+  return isAuthorizedPhone(limpo) || EQUIPE_PHONES.some((p) => mesmoNumeroBrasileiro(p, limpo))
+}
+
 type SupabaseClient = ReturnType<typeof createClient>
 
 export interface CommandContext {

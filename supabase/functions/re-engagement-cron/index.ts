@@ -1,7 +1,7 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from 'jsr:@supabase/supabase-js@2'
 import { isInternalRequestAuthorized, unauthorizedResponse } from '../_shared/internal-auth.ts'
-import { isAuthorizedPhone } from '../_shared/whatsapp-commands.ts'
+import { isEquipePhone } from '../_shared/whatsapp-commands.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -135,7 +135,7 @@ Deno.serve(async (req) => {
       // Achado 29/10/2026 (PR #1, trazido em 24/11/2026): o número da Adriana
       // caiu como lead e recebeu o template de reengajamento em 27/10. Número
       // interno (Adriana/Fernando, lista de whatsapp-commands.ts) nunca entra.
-      if (lead.telefone && isAuthorizedPhone(lead.telefone)) {
+      if (lead.telefone && isEquipePhone(lead.telefone)) {
         console.log(`Lead ${lead.id} tem telefone interno, reengajamento pulado`)
         continue
       }

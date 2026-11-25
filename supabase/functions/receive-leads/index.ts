@@ -2,7 +2,11 @@ import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from 'jsr:@supabase/supabase-js@2'
 import { corsHeaders } from '../_shared/cors.ts'
 import { encontrarLeadAtivo, anexarNotaContato, normalizarTelefone } from '../_shared/lead-dedup.ts'
-import { processWhatsAppCommand, isAuthorizedPhone } from '../_shared/whatsapp-commands.ts'
+import {
+  processWhatsAppCommand,
+  isAuthorizedPhone,
+  isEquipePhone,
+} from '../_shared/whatsapp-commands.ts'
 import { recalcularAiScore } from '../_shared/lead-score.ts'
 import { enviarEventoMensagem } from '../_shared/meta-messaging-capi.ts'
 import {
@@ -599,7 +603,9 @@ Deno.serve(async (req: Request) => {
                 // áudio, botão) escapava da checagem acima e virava lead "Cliente
                 // WhatsApp" — a Clara respondia e o reengajamento mandava template.
                 // Número interno nunca é lead. Reação já foi tratada mais acima.
-                if (isAuthorizedPhone(senderPhone)) {
+                // 25/11/2026: inclui a equipe sem comandos (Roberto, Pedro) —
+                // ver EQUIPE_PHONES em whatsapp-commands.ts.
+                if (isEquipePhone(senderPhone)) {
                   console.log(
                     `Mensagem do tipo ${msg.type} de número interno ignorada (não vira lead)`,
                   )
