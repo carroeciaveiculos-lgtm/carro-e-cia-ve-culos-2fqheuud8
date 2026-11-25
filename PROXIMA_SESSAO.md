@@ -5,7 +5,10 @@ Substitui: 24/11/2026
 
 ## SESSÃO 25/11/2026 — números da equipe, Pedro nos avisos, leads do Roberto descartados
 
-Estado em 25/11/2026. `origin/main` = `9ead2e1` no início. Branch `fix/numeros-equipe-pedro-avisos` (commit/push/PR: ver fim deste bloco).
+Estado em 25/11/2026. `origin/main` = `9ead2e1` no início. **Bloco A NO AR: PR #38 mesclado em 25/11 (`4e4e9d8`)**;
+"Deploy producao" e "Deploy Edge Functions" = success; `/`, `/estoque`, `/admin/login` = 200; `receive-leads` publicada tem
+`isEquipePhone` e `ai-sdr` publicada tem `WHATSAPP_VENDEDORES_AVISO` (conferido pelo `get_edge_function`). **Não testado:** aviso
+chegando de fato no WhatsApp do Pedro (precisa de agendamento real ou teste combinado).
 
 - **Celular da loja (Roberto, `553492893615`) em 23/11 10:56 UTC:** 22 fotos + ficha de uma Evoque → 2 leads em 0,7 s
   (`2df333b9`, `ccc43690`) e 2 respostas da Clara. Causa: número fora da lista interna + "corrida" (busca e cria em paralelo).
@@ -18,12 +21,13 @@ Estado em 25/11/2026. `origin/main` = `9ead2e1` no início. Branch `fix/numeros-
   `follow-up-2h-cron` e `re-engagement-cron` pulam a equipe; `ai-sdr` manda o aviso de agendamento novo também ao Pedro
   (template aprovado). Testado: regra com 6 números (com e sem o 9) OK; lint 0 erros; build ok; `deno check` com os mesmos 98
   erros antigos antes e depois. **Mexe em `_shared/` → o deploy republica todas as funções.**
-- **Artigo da Central de Ajuda:** migration `20261125120000_artigo_ajuda_aviso_agendamento_pedro_e_numeros_equipe.sql`
-  (timestamp PROVISÓRIO) — aplicar **depois** do deploy do código e renomear para o timestamp real.
-- **Bloco B (aguarda respostas dela):** aviso de LEAD NOVO e RESUMO DIÁRIO para o Pedro. Os dois precisam de template novo
-  aprovado pela Meta (texto livre só chega na janela de 24 h). Perguntas abertas: conteúdo/horário do resumo; todo lead novo
-  ou só repasse para humano; outros números da equipe. Achado: `daily-report-cron` grava "enviado" sem checar a resposta da
-  Meta — não dá para afirmar que o resumo dela chega.
+- **Artigo da Central de Ajuda:** aplicado em 25/11 depois do deploy, timestamp real `20261125162954` (arquivo renomeado na
+  branch `chore/renomeia-migration-artigo-25-11`); passos 3 e 6 conferidos no banco.
+- **Bloco B — respostas dela (25/11):** resumo diário do Pedro **às 8h**; aviso de **todo lead novo**; Luiz Fernando como
+  equipe = já está (é o `5534984080000` de `AUTHORIZED_PHONES`, CEO no `brand.ts`) — nada a mudar. **Ainda em aberto:** o
+  CONTEÚDO do resumo (o mesmo dela ou focado em leads) — ela respondeu só o horário. Os dois avisos precisam de template novo
+  aprovado pela Meta (texto livre só chega na janela de 24 h); criar template = ação externa, pedir autorizo. Achado:
+  `daily-report-cron` grava "enviado" sem checar a resposta da Meta — não dá para afirmar que o resumo dela chega.
 
 ## SESSÃO 24/11/2026 — exclusão segura, despublicar, 55 no reengajamento, relatório de agendamentos (PR #32 no ar)
 

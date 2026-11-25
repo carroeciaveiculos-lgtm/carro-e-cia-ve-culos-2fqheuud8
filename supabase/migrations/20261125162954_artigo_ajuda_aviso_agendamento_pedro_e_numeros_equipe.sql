@@ -1,6 +1,6 @@
 -- 25/11/2026 — Central de Ajuda: o aviso de novo agendamento passa a ir também para o WhatsApp do
 -- Pedro Cardoso (vendedor do pré-atendimento), e números da equipe não viram lead.
--- Timestamp provisório: renomear para o timestamp real depois de aplicar (docs/supabase-migrations.md).
+-- Aplicada em 25/11/2026 (timestamp real 20261125162954, conferido com list_migrations).
 
 update public.ajuda_conteudos
 set como_utilizar = replace(
