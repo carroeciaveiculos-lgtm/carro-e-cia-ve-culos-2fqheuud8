@@ -2,7 +2,25 @@ import { useEffect, useState, useMemo } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { supabase } from '@/lib/supabase/client'
-import { Car, DollarSign, Clock3, AlertTriangle, Download, Globe, Printer, Eye } from 'lucide-react'
+import {
+  Car,
+  DollarSign,
+  Clock3,
+  AlertTriangle,
+  Download,
+  Globe,
+  Printer,
+  Eye,
+  FileSpreadsheet,
+  FileCode,
+  Loader2,
+} from 'lucide-react'
+import { saveAs } from 'file-saver'
+import { useAuth } from '@/hooks/use-auth'
+import { usePermissoes } from '@/hooks/use-permissoes'
+import { useToast } from '@/hooks/use-toast'
+import { colunasDaExportacao, montarCsv, montarXml } from '@/lib/exportar-estoque'
+import { getEstoqueCompleto, registrarExportacaoEstoque } from '@/services/relatorio-estoque'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import {
@@ -98,6 +116,13 @@ export function RelatorioEstoque() {
   const [tipoData, setTipoData] = useState<TipoData>('nenhuma')
   const [dataDe, setDataDe] = useState('')
   const [dataAte, setDataAte] = useState('')
+  const [exportando, setExportando] = useState<'csv' | 'xml' | null>(null)
+  const { user } = useAuth()
+  // Espera o nível carregar: antes disso `nivel` é null e o arquivo sairia sem o proprietário.
+  const { nivel, loading: carregandoPermissao } = usePermissoes()
+  const { toast } = useToast()
+  // Dados pessoais do proprietário (LGPD): só admin_master e gerente exportam (decisão de 26/11/2026).
+  const podeExportarProprietario = nivel === 'admin_master' || nivel === 'gerente'
 
   useEffect(() => {
     async function loadData() {
@@ -326,6 +351,44 @@ export function RelatorioEstoque() {
     document.body.removeChild(link)
   }
 
+  // Relatório completo (26/11/2026): todos os campos do cadastro + publicação + entrada
+  // (+ proprietário, se o nível permitir), dos veículos que estão na tela com os filtros atuais.
+  const exportarCompleto = async (formato: 'csv' | 'xml') => {
+    const ids = veiculosFiltrados.map((v) => v.id)
+    if (!ids.length) return
+    setExportando(formato)
+    try {
+      const comProprietario = podeExportarProprietario
+      const { data, error } = await getEstoqueCompleto(ids, comProprietario)
+      if (error || !data) {
+        toast({
+          title: 'Não foi possível gerar o relatório',
+          description:
+            'Tente de novo em instantes. Se continuar, avise o setor de Desenvolvimento e TI.',
+          variant: 'destructive',
+        })
+        return
+      }
+      const colunas = colunasDaExportacao(comProprietario)
+      const agora = new Date()
+      const dia = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo' }).format(agora)
+      const arquivo =
+        formato === 'csv'
+          ? new Blob([montarCsv(data, colunas)], { type: 'text/csv;charset=utf-8' })
+          : new Blob([montarXml(data, colunas, agora)], { type: 'application/xml;charset=utf-8' })
+      saveAs(arquivo, `estoque_completo_${dia}.${formato}`)
+      await registrarExportacaoEstoque(user?.id, formato, data.length, comProprietario)
+      toast({
+        title: `Relatório ${formato.toUpperCase()} gerado`,
+        description: comProprietario
+          ? `${data.length} veículo(s), com os dados do proprietário.`
+          : `${data.length} veículo(s). Os dados do proprietário só saem para admin master e gerente.`,
+      })
+    } finally {
+      setExportando(null)
+    }
+  }
+
   return (
     <div className="space-y-6">
       <RelatorioEstoqueImpressao
@@ -410,6 +473,40 @@ export function RelatorioEstoque() {
 
           <Button variant="outline" className="bg-white" onClick={exportarCSV}>
             <Download className="w-4 h-4 mr-2" /> Exportar CSV
+          </Button>
+
+          <Button
+            variant="outline"
+            className="bg-white"
+            onClick={() => exportarCompleto('csv')}
+            disabled={
+              loading || carregandoPermissao || !!exportando || veiculosFiltrados.length === 0
+            }
+            title="Todos os dados do cadastro, publicação e entrada dos veículos filtrados"
+          >
+            {exportando === 'csv' ? (
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            ) : (
+              <FileSpreadsheet className="w-4 h-4 mr-2" />
+            )}
+            Exportar completo (CSV)
+          </Button>
+
+          <Button
+            variant="outline"
+            className="bg-white"
+            onClick={() => exportarCompleto('xml')}
+            disabled={
+              loading || carregandoPermissao || !!exportando || veiculosFiltrados.length === 0
+            }
+            title="Todos os dados do cadastro, publicação e entrada dos veículos filtrados"
+          >
+            {exportando === 'xml' ? (
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            ) : (
+              <FileCode className="w-4 h-4 mr-2" />
+            )}
+            Exportar completo (XML)
           </Button>
 
           <Button
