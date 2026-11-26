@@ -64,7 +64,7 @@ Deno.serve(async (req: Request) => {
 
     const { data: veiculo, error: veiculoErr } = await supabase
       .from('veiculos')
-      .select('id, marca, modelo, versao, combustivel, cor, cambio, ano_modelo')
+      .select('id, marca, modelo, versao, combustivel, cor, cambio, ano_modelo, lugares')
       .eq('id', veiculo_id)
       .single()
     if (veiculoErr || !veiculo) throw new Error('Veiculo nao encontrado')
@@ -205,7 +205,37 @@ Deno.serve(async (req: Request) => {
     }
 
     // Só entram no match as versões que valem para o ano do veículo (ano desconhecido nunca bloqueia)
-    const { validas, descartadas } = filtrarPorAno(versoes, veiculo.ano_modelo)
+    const { validas: validasAno, descartadas } = filtrarPorAno(versoes, veiculo.ano_modelo)
+
+    // Lugares (26/11/2026, docs/cadastro-busca-fipe.md, Parte 2). Caso real: duas SW4 de 7 lugares
+    // foram mapeadas na versão de 5 (a FIPE não separa a SW4 por lugares, a placa nem sempre diz).
+    // Só age quando o modelo tem versões de 7 E de outra lotação válidas no ano; senão segue como antes.
+    const seteLugares = validasAno.filter((v) => textoIndicaSeteLugares(v.nome_wm))
+    const outrasLotacoes = validasAno.filter((v) => !textoIndicaSeteLugares(v.nome_wm))
+    let validas = validasAno
+    if (seteLugares.length > 0 && outrasLotacoes.length > 0) {
+      if (veiculo.lugares === 7) {
+        validas = seteLugares
+      } else if (veiculo.lugares) {
+        validas = outrasLotacoes
+      } else {
+        await salvarPendencia(supabase, veiculo_id, {
+          status_sincronizacao: 'revisao_necessaria',
+          erro_msg:
+            'Informe o número de lugares no cadastro: este modelo tem versões de 5 e de 7 lugares na Webmotors.',
+          codigo_marca_wm: melhorMarca.codigo_wm,
+          codigo_modelo_wm: melhorModelo.codigo_wm,
+          confianca_marca: confiancaMarca,
+          confianca_modelo: confiancaModelo,
+          candidatos_modelo: candidatosModelo,
+          candidatos_versao: validasAno
+            .map((v) => ({ ...v, score: similaridade(textoModeloCompleto, v.nome_wm || '') }))
+            .sort((a, b) => b.score - a.score)
+            .slice(0, 5),
+        })
+        return responder({ success: true, status: 'revisao_necessaria', motivo: 'lugares' })
+      }
+    }
 
     // Match aproximado em memoria (poucas versoes por modelo, nao precisa de SQL)
     const pontuar = (lista: VersaoWM[]) =>
@@ -311,6 +341,12 @@ Deno.serve(async (req: Request) => {
     return responder({ success: false, error: err.message })
   }
 })
+
+// Mesma regra de src/lib/lugares.ts (a function não importa de src/) — mudar nos dois lugares.
+// "2.7 SRV"/"2.7L" são motor: o 7 não pode vir depois de dígito, ponto ou vírgula.
+function textoIndicaSeteLugares(texto: string | null | undefined): boolean {
+  return /(?<![\d.,])7\s*(?:lugares|lug\b\.?|l\b)/i.test(texto || '')
+}
 
 function similaridade(a: string, b: string): number {
   // Jaccard sobre trigramas em JS - usado só para a lista pequena de versões (já filtrada por modelo)

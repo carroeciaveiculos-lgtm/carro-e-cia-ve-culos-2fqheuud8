@@ -60,6 +60,7 @@ Isso quebra sincronizações de estoque, automações de leads, disparos de What
 | `on-lead-created`               | Server-to-Server        | Trigger disparada ao criar lead (database webhook)                         |
 | `daily-report-cron`             | Cron                    | Relatório diário automatizado                                              |
 | `resumo-leads-cron`             | Cron                    | Resumo de leads das 8h ao Pedro (template `resumo_diario_leads`); valida `x-internal-secret` |
+| `r2-limpeza`                    | Cron                    | Limpeza de fotos do R2 de veículos vendidos/devolvidos/excluídos (ensaio por padrão; real só com `executar` + secret `R2_LIMPEZA_ATIVA`) e inventário; valida `x-internal-secret` |
 | `aviso-lead-novo`               | Server-to-Server        | Chamada pela regra do banco ao criar lead; avisa o Pedro (template `aviso_novo_lead`); valida `x-internal-secret` |
 | `re-engagement-cron`            | Cron                    | Re-engagement de leads agendado                                            |
 | `public-inventory-feed`         | Public                  | Feed público de estoque para classificados                                 |

@@ -4475,6 +4475,7 @@ export type Database = {
           notas_internas: string | null
           placa: string | null
           portas: number | null
+          lugares: number | null
           preco_classificados: number | null
           preco_minimo: number | null
           preco_revenda: number | null
@@ -4591,6 +4592,7 @@ export type Database = {
           notas_internas?: string | null
           placa?: string | null
           portas?: number | null
+          lugares?: number | null
           preco_classificados?: number | null
           preco_minimo?: number | null
           preco_revenda?: number | null
@@ -4707,6 +4709,7 @@ export type Database = {
           notas_internas?: string | null
           placa?: string | null
           portas?: number | null
+          lugares?: number | null
           preco_classificados?: number | null
           preco_minimo?: number | null
           preco_revenda?: number | null

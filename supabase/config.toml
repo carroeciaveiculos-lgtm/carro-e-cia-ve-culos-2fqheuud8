@@ -164,6 +164,9 @@ verify_jwt = false
 [functions.resumo-leads-cron]
 verify_jwt = false
 
+[functions.r2-limpeza]
+verify_jwt = false
+
 [functions.aviso-lead-novo]
 verify_jwt = false
 
