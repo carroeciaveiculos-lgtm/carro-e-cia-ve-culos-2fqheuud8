@@ -67,7 +67,7 @@ Tamanho do problema hoje: no nosso cache do catálogo (`wm_versoes`) só 2 model
 
 ## Ordem de execução proposta
 
-1. Migration `lugares` (autorizo separado).
+1. Migration `lugares` (autorizo separado). **Feito em 26/11/2026**: `20261126184801_veiculos_coluna_lugares.sql`, coluna `smallint` 2–9, vazia nos 69 veículos.
 2. Campo no cadastro + pré-preenchimento + `wm-mapear-veiculo` + rótulos na tela de mapeamento (um PR).
 3. Busca FIPE manual (mesmo PR ou o seguinte, conforme as decisões acima).
 4. Artigo da Central de Ajuda.
