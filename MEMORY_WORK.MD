@@ -17,6 +17,38 @@ REGRA: não leia este arquivo inteiro. Leia o índice, escolha o bloco, use offs
 
 # Memória de trabalho — Carro e Cia
 
+## [26/11/2026] Plano: limpeza de fotos do R2 de veículos vendidos/devolvidos/excluídos (NÃO implementado)
+
+Pedido da Adriana: evitar lixo no R2 com segurança. Estado: **planejado, nada implementado** (26/11/2026).
+Implementação precisa de "autorizo" próprio (migration + function + regra de expiração no R2).
+
+**Decisões dela (26/11/2026):**
+1. Prazo: **30 dias corridos** depois de virar `vendido` **ou** `devolvido` (mesmo prazo). Motivo: desfazer venda é permitido
+   até 7 dias úteis (`prazoDesfazerVenda`, `Estoque.tsx`) e o carro volta aos portais precisando das fotos.
+2. **Manter 1 foto de capa** (`fotos[0]`) do vendido/devolvido, para histórico (aba Vendidos, leads antigos, relatórios).
+3. Drive: a pasta do carro é **movida para outra pasta** quando vendido/devolvido. Verificado 26/11: `sync-google-drive`
+   lista só as filhas diretas de `ROOT_FOLDER_ID` (`listDriveItems` não é recursivo), então pasta movida não ressincroniza.
+   Trava extra opcional (barata): a sync pular veículo com status vendido/devolvido — a decidir na implementação.
+
+**Fatos verificados (26/11):** fotos ficam em `media/PLACA_-_MODELO/arquivo` (Drive) ou `media/<modelo>_<placa>/<ts>_<i>.jpg`
+(upload manual); 560 URLs em 29 carros, nenhuma URL compartilhada entre carros; 26 vendidos e 14 devolvidos já estão com
+`fotos` NULL (arquivos podem ser lixo órfão no R2 — só um inventário confirma). Outras referências às fotos: 9 rascunhos de
+`social_posts`, 3 `veiculo_criativos`, 594 `veiculo_fotos_ia`. Excluir veículo apaga a linha: as URLs precisam ser
+guardadas ANTES do delete. `_shared/r2-storage.ts` não tem função de apagar; a chave R2 precisa permissão de delete.
+
+**Desenho proposto:**
+- Tabela fila `r2_limpeza_fila` (veiculo_id, placa, urls jsonb, motivo, status, agendado_para, executado_em, resultado),
+  RLS só admin. Trigger em `veiculos`: vendido/devolvido → agenda +30 dias; volta a `disponivel` → cancela; DELETE → grava
+  as URLs do `OLD` com agendamento imediato (ou +30, decidir).
+- Function diária (cron, `x-internal-secret`, `verify_jwt=false`, modo `dry_run` primeiro) que, no dia, **reconfere**:
+  status ainda vendido/devolvido (ou excluído); URL não usada por outro veículo, post, criativo; chave só dentro de
+  `media/`/`veiculos-fotos/`. **Nunca** tocar em documentos, contratos, notas fiscais, comprovantes.
+- Mantém `fotos[0]`; as demais vão para `lixeira/<chave>` (CopyObject + DeleteObject) e o campo `fotos` fica só com a capa.
+  Regra de expiração do R2 apaga `lixeira/` após 30 dias (dá para recuperar até lá).
+- Inventário único (só relatório) do lixo antigo: bucket × URLs do banco; Adriana decide o que fazer.
+- Registro de cada execução; artigo na Central de Ajuda; `docs/` com detalhe técnico na implementação.
+- Fonte da regra de expiração: developers.cloudflare.com/r2/buckets/object-lifecycles/ (consultado 26/11/2026).
+
 ## [25/11/2026] Números da equipe não viram lead; Pedro recebe aviso de agendamento
 
 - Celular da loja (Roberto) virou 2 leads em 23/11 (22 fotos, "corrida" de 0,7 s); descartados (`perdido` + IA desligada).
