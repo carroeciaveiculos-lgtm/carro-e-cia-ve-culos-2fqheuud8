@@ -39,6 +39,18 @@ chegando de fato no WhatsApp do Pedro (precisa de agendamento real ou teste comb
   erros antigos antes e depois. **Mexe em `_shared/` → o deploy republica todas as funções.**
 - **Artigo da Central de Ajuda:** aplicado em 25/11 depois do deploy, timestamp real `20261125162954` (arquivo renomeado na
   branch `chore/renomeia-migration-artigo-25-11`); passos 3 e 6 conferidos no banco.
+- **Bloco B — andamento (25/11/2026 ~20:50 UTC):** decisões dela: conta Meta carroeciaveiculos (templates na conta de
+  mensagens CRM_IA `1530053735172401`), resumo focado em leads, aviso só ao Pedro, aviso na hora. Templates `aviso_novo_lead`
+  e `resumo_diario_leads` criados e **APROVADOS (UTILITY)**; `teste_claude_apagar` apagado (sem uso no código). Funções
+  `aviso-lead-novo` e `resumo-leads-cron` **no ar (PR #41, `fa697bb`)**, verify_jwt=false, ensaio 200 e sem segredo 401;
+  números do ensaio batem com contagem direta. Gotcha: 1ª chamada pg_net estourou o timeout padrão de 5 s → usar 30 s.
+  **Regra + cron APLICADOS (25/11 ~20:49 UTC, ela liberou a ferramenta):** `trg_aviso_lead_novo` em `leads` e cron
+  `resumo-leads-pedro` `0 11 * * *` ativos; arquivo `20261125204906_...` (renomeado ao timestamp real). Artigo da Central
+  criado (`5b56d3de…`, migration `20261125205955`). 3º template `relatorio_diario_loja` criado (PENDING) — texto aprovado
+  por ela; `daily-report-cron` alterado (template → texto livre se recusado; log com resposta real) **só local, sem
+  commit/deploy**. ML das 2 SW4: `sync_log` success 19:50 UTC (API pública do ML dá 403, não deu para ler direto).
+  **Falta:** commit/push/deploy; teste real com o Pedro (lead de teste combinado; conferir `marketing_logs` tipo
+  `aviso_lead_novo`); 1º resumo real amanhã 11:00 UTC (conferir `marketing_logs` tipo `resumo_leads_pedro`).
 - **Bloco B — respostas dela (25/11):** resumo diário do Pedro **às 8h**; aviso de **todo lead novo**; Luiz Fernando como
   equipe = já está (é o `5534984080000` de `AUTHORIZED_PHONES`, CEO no `brand.ts`) — nada a mudar. **Ainda em aberto:** o
   CONTEÚDO do resumo (o mesmo dela ou focado em leads) — ela respondeu só o horário. Os dois avisos precisam de template novo

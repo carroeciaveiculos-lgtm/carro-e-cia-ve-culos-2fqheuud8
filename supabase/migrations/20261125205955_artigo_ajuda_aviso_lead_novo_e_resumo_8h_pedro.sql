@@ -1,0 +1,13 @@
+-- 25/11/2026: Central de Ajuda acompanha o Bloco B do Pedro (aviso de lead novo + resumo das 8h).
+insert into public.ajuda_conteudos (titulo, setor_id, categoria, caminho, o_que_e, para_que_serve, quando_utilizar, como_utilizar, dependencias)
+select
+  'Receber no WhatsApp o aviso de lead novo e o resumo de leads das 8h (pré-atendimento)',
+  '37b8d5ed-232c-425d-a80e-07b714c473a2',
+  'Leads',
+  'Automático, no WhatsApp do vendedor do pré-atendimento. Os leads ficam em Menu lateral → Vendas → Leads (/admin/leads)',
+  'Duas mensagens automáticas que o Pedro Cardoso (vendedor do pré-atendimento) recebe no WhatsApp, enviadas pelo número da Clara: (1) um aviso a cada lead novo que entra no CRM, de qualquer origem (WhatsApp, site, Facebook/Instagram Ads); (2) todo dia às 8h, um resumo dos leads.',
+  'O pré-atendimento saber na hora que chegou cliente novo, sem precisar ficar olhando o CRM, e começar o dia sabendo quantos leads precisam de atenção.',
+  'Todo dia. O aviso chega sozinho quando o lead é criado; o resumo chega às 8h (horário de Brasília).',
+  E'1. Aviso de lead novo: chega no instante em que o lead é criado. Traz o nome do cliente, o telefone, a origem (ex.: "Instagram Ads", "WhatsApp (contato direto)", "Site (formulário)") e o veículo de interesse (ou "-" se o cliente ainda não disse). Responda ao cliente pelo CRM e registre o andamento no lead.\n2. Cada lead gera um aviso só. Números da equipe (celular da loja, Pedro) nunca viram lead, então não geram aviso.\n3. Resumo das 8h: mostra o dia, quantos leads chegaram nas últimas 24 horas, quantos estão "Em contato", quantas visitas estão agendadas para hoje (sem contar as canceladas) e quantos leads estão parados em "Novo" há mais de 24 horas. Os parados são os primeiros a atacar.\n4. As duas mensagens usam modelos aprovados pela Meta ("aviso_novo_lead" e "resumo_diario_leads"), por isso chegam a qualquer hora, mesmo sem conversa recente com o número da Clara.\n5. Se uma mensagem não chegar: o setor de Desenvolvimento e TI consegue ver se a Meta aceitou ou recusou cada envio (o sistema guarda a resposta da Meta, sem dados do cliente).\nObservações: para trocar quem recebe ou incluir outro vendedor, fale com o setor de Desenvolvimento e TI (hoje o número fica no código das funções aviso-lead-novo e resumo-leads-cron). Escrito pela leitura do código e por teste de ensaio (sem envio); o primeiro envio real ao Pedro ainda vai ser combinado.',
+  'Setor Vendas. Modelos aviso_novo_lead e resumo_diario_leads aprovados na Meta (aprovados em 25/11/2026). Lead criado no CRM por qualquer canal.'
+where not exists (select 1 from public.ajuda_conteudos where titulo = 'Receber no WhatsApp o aviso de lead novo e o resumo de leads das 8h (pré-atendimento)');

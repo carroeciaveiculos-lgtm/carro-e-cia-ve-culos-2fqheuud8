@@ -42,7 +42,12 @@ Deno.serve(async (req) => {
     // ficam de fora por enquanto (nunca geraram lead nenhum, é achado já
     // conhecido e agendado pra depois — ver docs/origem-leads.md — incluir
     // aqui só criaria alerta repetido todo dia sobre a mesma coisa).
-    const CANAIS_MONITORADOS = ['facebook_ads', 'instagram_ads', 'whatsapp_organico', 'site_whatsapp']
+    const CANAIS_MONITORADOS = [
+      'facebook_ads',
+      'instagram_ads',
+      'whatsapp_organico',
+      'site_whatsapp',
+    ]
     const LIMITE_DIAS_SILENCIO = 7
     const alertasSilencio: string[] = []
     for (const canal of CANAIS_MONITORADOS) {
@@ -118,25 +123,92 @@ _Tenha um excelente dia de vendas! 🚀_`
     // 29/10/2026: o fallback era 5534999484285, número de OUTRA empresa do grupo (8 relatórios
     // foram para lá em 05–13/08/2026). Sem destino configurado, não envia e deixa o aviso no log.
     const ownerPhone = socialConfig?.whatsapp_number
-    if (!ownerPhone) console.error('daily-report-cron: social_configuracoes.whatsapp_number vazio, relatório NÃO enviado')
+    if (!ownerPhone)
+      console.error(
+        'daily-report-cron: social_configuracoes.whatsapp_number vazio, relatório NÃO enviado',
+      )
 
-    if (waToken && waPhoneId && ownerPhone) {
-      await fetch(`https://graph.facebook.com/v20.0/${waPhoneId}/messages`, {
+    // 25/11/2026: antes ia só como texto livre, que a Meta só entrega se a Adriana falou com a
+    // Clara nas últimas 24 h (erro 131047), e o log dizia "enviado" sem olhar a resposta. Agora
+    // tenta o template aprovado `relatorio_diario_loja` (chega a qualquer hora); se a Meta
+    // recusar, cai no texto livre como antes. O log guarda o que a Meta respondeu de verdade.
+    const umaLinha = (v: string) =>
+      v
+        .replace(/[\n\r\t]+/g, ' ')
+        .replace(/ {2,}/g, ' ')
+        .trim()
+        .slice(0, 200) || '-'
+    const rotuloDia = new Intl.DateTimeFormat('pt-BR', {
+      timeZone: 'America/Sao_Paulo',
+      weekday: 'long',
+      day: '2-digit',
+      month: '2-digit',
+    }).format(new Date())
+    const parametrosTemplate = [
+      rotuloDia,
+      String(totalLeads),
+      umaLinha(
+        Object.entries(leadsBySource)
+          .map(([src, n]) => `${src} ${n}`)
+          .join(', ') || 'nenhum',
+      ),
+      String(soldVehicles || 0),
+      String(totalAvailable || 0),
+      String(totalActiveAds || 0),
+      umaLinha(alertasSilencio.map((a) => a.replace('⚠️', '').trim()).join(', ') || 'nenhum'),
+    ]
+
+    const enviarMeta = async (payload: Record<string, unknown>) => {
+      const res = await fetch(`https://graph.facebook.com/v20.0/${waPhoneId}/messages`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${waToken}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({
           messaging_product: 'whatsapp',
-          to: ownerPhone.replace(/\D/g, ''),
-          type: 'text',
-          text: { body: reportText },
+          to: ownerPhone!.replace(/\D/g, ''),
+          ...payload,
         }),
       })
+      return {
+        ok: res.ok,
+        http: res.status,
+        corpo: res.ok ? null : (await res.text()).slice(0, 500),
+      }
+    }
+
+    let envio: { via: string; ok: boolean; http: number; corpo: string | null } | null = null
+    if (waToken && waPhoneId && ownerPhone) {
+      const viaTemplate = await enviarMeta({
+        type: 'template',
+        template: {
+          name: 'relatorio_diario_loja',
+          language: { code: 'pt_BR' },
+          components: [
+            {
+              type: 'body',
+              parameters: parametrosTemplate.map((text) => ({ type: 'text', text })),
+            },
+          ],
+        },
+      })
+      if (viaTemplate.ok) {
+        envio = { via: 'template', ...viaTemplate }
+      } else {
+        console.error(
+          'Template relatorio_diario_loja recusado, usando texto livre:',
+          viaTemplate.corpo,
+        )
+        envio = {
+          via: 'texto_livre',
+          ...(await enviarMeta({ type: 'text', text: { body: reportText } })),
+        }
+      }
     }
 
     await supabase.from('marketing_logs').insert({
       tipo: 'daily_report',
-      status: ownerPhone ? 'enviado' : 'sem_destino',
+      status: !ownerPhone ? 'sem_destino' : envio?.ok ? 'aceito_meta' : 'recusado_meta',
       detalhes: {
+        envio,
         total_leads: totalLeads,
         leads_by_source: leadsBySource,
         sold_vehicles: soldVehicles || 0,
