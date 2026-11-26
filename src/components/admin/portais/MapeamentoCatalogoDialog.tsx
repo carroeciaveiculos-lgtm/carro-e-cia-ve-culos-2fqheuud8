@@ -19,6 +19,7 @@ import {
   remapearVeiculoNapista,
 } from '@/services/plataformas'
 import { NOME_PLATAFORMA_MAPEAVEL, type PlataformaMapeavel } from '@/lib/mapeamento-catalogo'
+import { textoIndicaSeteLugares } from '@/lib/lugares'
 
 interface Candidato {
   id: string
@@ -85,6 +86,14 @@ const candidatosWm = (lista: any[] | null): Candidato[] =>
     score: c.score || 0,
     anos: c.anos_modelo ?? null,
   }))
+
+// 26/11/2026: deixa visível qual versão é de 7 lugares (caso SW4 5 x 7 lugares).
+const rotuloLugares = (nome: string | null | undefined) =>
+  textoIndicaSeteLugares(nome) ? (
+    <span className="ml-2 inline-block rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-800">
+      7 lugares
+    </span>
+  ) : null
 
 const candidatosNapista = (lista: any[] | null): Candidato[] =>
   (lista || []).map((c) => ({ id: c.id, nome: c.nome, score: c.score || 0 }))
@@ -547,6 +556,7 @@ export function MapeamentoCatalogoDialog({
               onClick={() => escolher(etapa, c.id)}
             >
               {c.nome}
+              {etapa === 'versao' && rotuloLugares(c.nome)}
             </Button>
           ))}
         </div>
@@ -567,6 +577,7 @@ export function MapeamentoCatalogoDialog({
         >
           <span className="text-left">
             {c.nome}
+            {etapa === 'versao' && rotuloLugares(c.nome)}
             {c.anos && c.anos.length > 0 && (
               <span className="block text-xs font-normal text-gray-500">
                 Anos aceitos: {c.anos.join(', ')}

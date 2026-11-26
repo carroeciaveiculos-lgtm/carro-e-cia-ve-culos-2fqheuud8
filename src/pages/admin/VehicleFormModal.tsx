@@ -54,6 +54,7 @@ import type { PlataformaMapeavel } from '@/lib/mapeamento-catalogo'
 import { CORES_PADRAO, normalizarCor } from '@/lib/cor-veiculo'
 import { checarAtributosPortais } from '@/services/catalogos-portais'
 import { montarTituloMLPreview } from '@/lib/ml-title'
+import { OPCOES_LUGARES, textoIndicaSeteLugares } from '@/lib/lugares'
 import {
   checkDiamondQuota,
   saveListingPreference,
@@ -282,6 +283,7 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
     direcao: '',
     cilindrada: '',
     portas: '',
+    lugares: '',
     ml_listing_type: 'silver',
     status: 'rascunho',
     tipo_entrada: 'consignacao',
@@ -390,6 +392,15 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
     }
   }
 
+  // Lugares (26/11/2026): versão com "7 Lug."/"7 lugares"/"7L" pré-preenche 7, só se o campo estiver
+  // vazio — quem cadastra pode trocar. Guia a escolha da versão Webmotors de 5 ou 7 lugares.
+  useEffect(() => {
+    if (!formData.lugares && textoIndicaSeteLugares(formData.versao)) {
+      setFormData((p: any) => (p.lugares ? p : { ...p, lugares: '7' }))
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formData.versao])
+
   useEffect(() => {
     if (isOpen) {
       if (vehicleId) {
@@ -450,6 +461,7 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
           direcao: '',
           cilindrada: '',
           portas: '',
+          lugares: '',
           ml_listing_type: 'silver',
           status: 'rascunho',
           tipo_entrada: 'consignacao',
@@ -850,6 +862,7 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
         'ano_modelo',
         'quilometragem',
         'portas',
+        'lugares',
         'valor_fipe',
         'preco_venda',
         'preco_minimo',
@@ -1741,6 +1754,31 @@ export default function VehicleFormModal({ isOpen, onClose, vehicleId, onSuccess
                       {validationErrors.portas && (
                         <p className="text-xs text-red-500 mt-1">{validationErrors.portas}</p>
                       )}
+                    </div>
+                    <div>
+                      <Label>Lugares</Label>
+                      <Select
+                        value={formData.lugares ? String(formData.lugares) : 'nao_informado'}
+                        onValueChange={(v) =>
+                          setFormData({ ...formData, lugares: v === 'nao_informado' ? '' : v })
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Não informado" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="nao_informado">Não informado</SelectItem>
+                          {OPCOES_LUGARES.map((n) => (
+                            <SelectItem key={n} value={String(n)}>
+                              {n} lugares
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <p className="text-[10px] text-gray-500 mt-1">
+                        Define a versão de 5 ou 7 lugares na Webmotors (ex.: Hilux SW4). Se a versão
+                        diz "7 Lug.", já vem 7; confira antes de salvar.
+                      </p>
                     </div>
                     <div>
                       <Label>Direção</Label>
