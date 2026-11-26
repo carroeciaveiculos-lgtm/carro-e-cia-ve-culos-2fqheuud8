@@ -55,11 +55,15 @@ Onde: `src/pages/admin/VehicleFormModal.tsx`, ao lado do botão de consulta por 
 Tamanho do problema hoje: no nosso cache do catálogo (`wm_versoes`) só 2 modelos têm versões de 5 e 7 lugares
 (Hilux/SW4). O cache só tem os modelos já consultados, então outros aparecerão com o tempo.
 
-## Decisões em aberto (Adriana)
+## Decisões da Adriana (26/11/2026)
 
-1. Ao escolher na busca FIPE, gravar o **nome completo da FIPE** no campo versão, ou só o código FIPE e manter o texto da placa?
-2. A conferência FIPE é **obrigatória** em carro novo, ou só um botão disponível?
-3. Carro **já publicado** que tiver versão/lugares corrigidos: reenviar ao portal sozinho (edição) ou marcar "revisar" para alguém aprovar?
+1. Ao escolher na busca FIPE, grava o **nome completo da FIPE** no campo versão (junto com o código FIPE).
+2. A conferência FIPE é **um botão disponível**, não obrigatório no cadastro.
+3. Carro **já publicado** com versão/lugares corrigidos é **reenviado ao portal sozinho** (edição), com travas:
+   - só quando o mapeamento achar **uma única** versão Webmotors compatível; na dúvida vai para "revisar" e não envia;
+   - todo reenvio fica registrado no `sync_log` (versão anterior → nova), para poder desfazer;
+   - antes de implementar, conferir na documentação do Mercado Livre se ele aceita trocar a versão em anúncio ativo
+     (hipótese não verificada em 26/11/2026).
 
 ## Ordem de execução proposta
 
@@ -73,7 +77,8 @@ Tamanho do problema hoje: no nosso cache do catálogo (`wm_versoes`) só 2 model
 
 - O texto das versões da Webmotors não é padronizado ("7 LUGARES", "7L"); a regra de texto pode falhar em modelo novo.
   Mitigação: na dúvida, revisão humana em vez de escolha automática.
-- Remapear carros já publicados muda o anúncio no portal; só com a decisão 3 tomada.
+- Remapear carros já publicados muda o anúncio no portal; decisão 3 tomada em 26/11/2026: reenvio automático
+  com as travas acima.
 - `consultar-placa` ainda tem o modo simulado (dados falsos) quando falta `API_BRASIL_TOKEN` — pendência antiga, não
   coberta por este plano.
 
