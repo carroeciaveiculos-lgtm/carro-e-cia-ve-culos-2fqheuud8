@@ -103,7 +103,8 @@ export const COLUNAS_VEICULO: ColunaExportacao[] = [
   c('veiculo', 'qtd_videos', 'Quantidade de vídeos'),
   c('veiculo', 'visualizacoes_site', 'Visualizações no site'),
   c('veiculo', 'cliques_whatsapp', 'Cliques no WhatsApp'),
-  c('veiculo', 'data_venda', 'Data da venda'),
+  c('veiculo', 'data_venda', 'Data da venda (última)'),
+  c('veiculo', 'data_devolucao', 'Data da devolução (última)'),
   c('veiculo', 'updated_at', 'Última atualização'),
 ]
 
@@ -114,7 +115,8 @@ export const COLUNAS_PUBLICACAO: ColunaExportacao[] = [
 ]
 
 export const COLUNAS_ENTRADA: ColunaExportacao[] = [
-  c('entrada', 'created_at', 'Data de entrada no estoque'),
+  c('entrada', 'created_at', 'Data do cadastro'),
+  c('entrada', 'entrada_estoque_em', 'Entrada no estoque (contagem atual)'),
   c('entrada', 'dias_em_estoque', 'Dias em estoque'),
   c('entrada', 'is_consignado', 'Consignado'),
   c('entrada', 'contrato_numero', 'Nº do contrato mais recente', true),

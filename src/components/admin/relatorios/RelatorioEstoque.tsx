@@ -127,7 +127,7 @@ export function RelatorioEstoque() {
       let query = supabase
         .from('veiculos')
         .select(
-          'id, marca, modelo, versao, ano_fabricacao, ano_modelo, placa, preco_venda, status, created_at, data_venda, quilometragem, cor, is_zero_km, combustivel, cambio',
+          'id, marca, modelo, versao, ano_fabricacao, ano_modelo, placa, preco_venda, status, created_at, entrada_estoque_em, data_venda, data_devolucao, quilometragem, cor, is_zero_km, combustivel, cambio',
         )
         .in('status', statusSel.length ? statusSel : ['__nenhum__'])
 
@@ -241,10 +241,10 @@ export function RelatorioEstoque() {
     diasConhecidos.length > 0
       ? Math.round(diasConhecidos.reduce((acc, d) => acc + d, 0) / diasConhecidos.length)
       : 0
-  // "Parado" é quem ainda está no estoque: vendido não conta.
+  // "Parado" é quem ainda está no estoque: vendido e devolvido não contam.
   const parados30 = veiculosFiltrados.filter((v) => {
     const d = diasEmEstoque(v)
-    return v.status !== 'vendido' && d !== null && d > 30
+    return v.status !== 'vendido' && v.status !== 'devolvido' && d !== null && d > 30
   }).length
 
   const porMarca = useMemo(() => {
