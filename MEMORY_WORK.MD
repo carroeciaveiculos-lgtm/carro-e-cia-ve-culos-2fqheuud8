@@ -17,6 +17,21 @@ REGRA: não leia este arquivo inteiro. Leia o índice, escolha o bloco, use offs
 
 # Memória de trabalho — Carro e Cia
 
+## [27/11/2026] Limpeza do R2 em produção, campo Lugares, erro de tradução, relatório CSV/XML (PRs #44–#50)
+
+- Detalhe e estado: `PROXIMA_SESSAO.md` (sessão 26–27/11). O plano do R2 (bloco de 26/11 abaixo) foi IMPLEMENTADO em 26–27/11.
+- Beco sem saída: regex de URL que para em `)` corta nomes como `IMG(1).jpg` — no 1º ensaio isso marcou 1,2 GB "em uso"
+  como "sem uso". Padrão correto em `r2_referencias_urls` (`20261126203218`). Conferir sempre: 560/560 fotos achadas.
+- Beco sem saída: RPC que devolve linhas é cortada em 1000 pelo PostgREST (refs eram 2.349) → devolver JSON numa linha só.
+- Beco sem saída: `net.http_post` sem `timeout_milliseconds` (cron do `wm-sync`) não grava a resposta (5 s) — não dá para
+  ler o resultado das fotos depois; o envio de fotos da WM não é registrado em lugar nenhum.
+- Beco sem saída: conector MCP `cloudflare` = conta GuiaLowCarb (R2 desabilitado). Para o R2 da revenda usar `npx wrangler`
+  (logado em Lgacomerciodeveiculos). `wrangler r2 bucket lifecycle add` SOMA regra (não substitui); a API `PUT .../lifecycle` substitui todas.
+- Beco sem saída: `create_edge_function_secret` do MCP expira em 2 min e depois ficou "Storing keys is paused" — secret pelo painel.
+- `index.html` com `lang="en"` faz o Chrome traduzir e o React quebrar (`removeChild`); o detalhe técnico chegando EM PORTUGUÊS
+  é a pista de tradutor ativo.
+- Docs do Mercado Livre (developers.mercadolivre.com.br) dão 403 para leitura automática; só os trechos da busca.
+
 ## [26/11/2026] Plano: limpeza de fotos do R2 de veículos vendidos/devolvidos/excluídos (NÃO implementado)
 
 Pedido da Adriana: evitar lixo no R2 com segurança. Estado: **planejado, nada implementado** (26/11/2026).
