@@ -25,7 +25,6 @@ import {
   Plus,
   Search,
   Car,
-  AlertTriangle,
   Eye,
   MessageCircle,
   CheckCircle,
@@ -573,9 +572,9 @@ export default function AdminEstoque() {
           </TableHeader>
           <TableBody>
             {vehicles.map((v) => {
+              // 27/11/2026 (pedido da Adriana): sem as etiquetas "Encalhado" e "Poucas Visualizações";
+              // a linha mostra só os dias ("N dias").
               const dias = diasEmEstoque(v)
-              const isEncalhado = dias !== null && dias > 60 && v.status === 'disponivel'
-              const poucaVisibilidade = v.visualizacoes_site < 50 && dias !== null && dias > 30
               return (
                 <TableRow key={v.id} className="hover:bg-slate-50/50">
                   <TableCell>
@@ -603,20 +602,6 @@ export default function AdminEstoque() {
                     <div className="text-xs text-slate-500 font-mono">
                       {v.placa || 'SEM PLACA'} • {v.ano_fabricacao} • {v.cor}
                     </div>
-                    {activeTab === 'ativos' && (isEncalhado || poucaVisibilidade) && (
-                      <div className="mt-1 flex flex-col gap-1">
-                        {isEncalhado && (
-                          <span className="text-[10px] text-red-600 bg-red-50 px-1.5 py-0.5 rounded flex items-center w-fit">
-                            <AlertTriangle className="w-3 h-3 mr-1" /> Encalhado ({dias} dias)
-                          </span>
-                        )}
-                        {poucaVisibilidade && (
-                          <span className="text-[10px] text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded flex items-center w-fit">
-                            <Eye className="w-3 h-3 mr-1" /> Poucas Visualizações
-                          </span>
-                        )}
-                      </div>
-                    )}
                   </TableCell>
                   <TableCell>
                     <p className="font-bold text-green-700">{formatCurrency(v.preco_venda)}</p>
@@ -630,10 +615,10 @@ export default function AdminEstoque() {
                           : 'Dias desde o cadastro'
                       }
                     >
-                      {v.status === 'vendido' ? 'Vendeu em: ' : 'Dias: '}
+                      {v.status === 'vendido' ? 'Vendeu em ' : ''}
                       <span className="font-bold text-slate-600">
                         {textoDias(dias)}
-                        {v.status === 'vendido' && dias !== null ? ' dias' : ''}
+                        {dias !== null ? (dias === 1 ? ' dia' : ' dias') : ''}
                       </span>
                     </p>
                   </TableCell>
