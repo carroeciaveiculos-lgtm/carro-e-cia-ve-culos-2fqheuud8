@@ -18,6 +18,8 @@ import { getR2Bucket, getR2Client } from '../_shared/r2-storage.ts'
 //   { modo: 'inventario' }      → lista o bucket e compara com o banco (relatório, nunca apaga).
 //   { modo: 'orfaos', executar?: true, limite?: 1-200 } → lixo antigo: arquivos sem uso no banco em pastas
 //                                 de veículo vendido/devolvido/excluído vão para a lixeira (em lotes).
+//   { modo: 'restaurar_capas', lixeira_dia: 'AAAA-MM-DD', executar?: true } → devolve a capa (pelo nome do
+//                                 arquivo) a vendidos/devolvidos sem fotos na ficha.
 // Apagar = copiar para lixeira/AAAA-MM-DD/<chave> e remover o original. A regra de expiração do R2
 // em lixeira/ (30 dias) apaga de vez; até lá dá para recuperar.
 // Chamada pelo cron diário com x-internal-secret (verify_jwt = false).
@@ -128,6 +130,11 @@ Deno.serve(async (req) => {
     if (corpo?.modo === 'orfaos') {
       const limite = Math.min(Math.max(Number(corpo?.limite) || 120, 1), 200)
       return json(await limparOrfaos(supabase, refsPorUrl, real, limite))
+    }
+    if (corpo?.modo === 'restaurar_capas') {
+      const dia = /^\d{4}-\d{2}-\d{2}$/.test(corpo?.lixeira_dia || '') ? corpo.lixeira_dia : null
+      if (!dia) return json({ success: false, error: 'lixeira_dia (AAAA-MM-DD) obrigatório' }, 400)
+      return json(await restaurarCapas(supabase, real, dia))
     }
 
     const agora = new Date()
@@ -248,15 +255,12 @@ Deno.serve(async (req) => {
         const fora = new Set(apagadas)
         const filtra = (arr: any) =>
           Array.isArray(arr) ? arr.filter((u: string) => !fora.has(u)) : arr
-        await supabase
-          .from('veiculos')
-          .update({
-            fotos: filtra(veiculo.fotos),
-            videos: filtra(veiculo.videos),
-            fotos_criativo: filtra(veiculo.fotos_criativo),
-            video_url: veiculo.video_url && fora.has(veiculo.video_url) ? null : veiculo.video_url,
-          })
-          .eq('id', item.veiculo_id)
+        await atualizarFotosSemMexerNoML(supabase, item.veiculo_id, {
+          fotos: filtra(veiculo.fotos),
+          videos: filtra(veiculo.videos),
+          fotos_criativo: filtra(veiculo.fotos_criativo),
+          video_url: veiculo.video_url && fora.has(veiculo.video_url) ? null : veiculo.video_url,
+        })
       }
       if (apagadas.length) {
         await supabase.from('veiculo_fotos_ia').delete().in('url', apagadas)
@@ -291,6 +295,121 @@ Deno.serve(async (req) => {
     return json({ success: false, error: err.message }, 500)
   }
 })
+
+// Mudar fotos de carro vendido/devolvido aciona o gatilho do Mercado Livre (trigger_ml_sync_veiculos), que
+// marca o anúncio para fechar de novo (pending_close). Aqui só arrumamos a ficha: devolve o status anterior.
+async function atualizarFotosSemMexerNoML(
+  supabase: any,
+  veiculoId: string,
+  campos: Record<string, any>,
+) {
+  const { data: antes } = await supabase
+    .from('ml_listings')
+    .select('id, status')
+    .eq('veiculo_id', veiculoId)
+  await supabase.from('veiculos').update(campos).eq('id', veiculoId)
+  for (const l of antes || []) {
+    await supabase
+      .from('ml_listings')
+      .update({ status: l.status })
+      .eq('id', l.id)
+      .eq('status', 'pending_close')
+      .neq('status', l.status)
+  }
+}
+
+// Capas de volta (27/11/2026, autorizado pela Adriana). O gatilho antigo clear_fotos_on_status_change
+// apagava a lista de fotos ao vender/devolver; os arquivos foram para lixeira/<dia>/ na limpeza do lixo
+// antigo. Para cada vendido/devolvido SEM fotos na ficha, procura na lixeira a foto que o nome indica ser
+// a capa ("capa" no nome, ou "01_"/"1-" no começo), copia de volta ao lugar original (a cópia da lixeira
+// fica) e grava só ela na ficha. Sem capa identificável pelo nome = não mexe.
+async function restaurarCapas(supabase: any, real: boolean, dia: string) {
+  const s3 = getR2Client()
+  const bucket = getR2Bucket()
+  const prefixoLixeira = `lixeira/${dia}/`
+
+  const porPlaca = new Map<string, string[]>()
+  let token: string | undefined
+  do {
+    const r = await s3.send(
+      new ListObjectsV2Command({
+        Bucket: bucket,
+        Prefix: prefixoLixeira,
+        ContinuationToken: token,
+      }),
+    )
+    for (const o of r.Contents || []) {
+      if (!o.Key || o.Key.endsWith('/')) continue
+      const original = o.Key.slice(prefixoLixeira.length)
+      const placa = placaDaPasta(original)
+      if (!placa) continue
+      const k = chavePlaca(placa)
+      const lista = porPlaca.get(k) || []
+      lista.push(original)
+      porPlaca.set(k, lista)
+    }
+    token = r.IsTruncated ? r.NextContinuationToken : undefined
+  } while (token)
+
+  const { data: veiculos, error } = await supabase
+    .from('veiculos')
+    .select('id, placa, status, fotos')
+    .in('status', ['vendido', 'devolvido'])
+  if (error) throw new Error(`veiculos: ${error.message}`)
+
+  const nomeArquivo = (k: string) => k.split('/').pop() || ''
+  const ehCapa = (k: string) => /capa/i.test(nomeArquivo(k))
+  const ehPrimeira = (k: string) => /^0?1[_\-. ]/.test(nomeArquivo(k))
+
+  const restauradas: { placa: string; capa: string }[] = []
+  const sem_capa: { placa: string; motivo: string }[] = []
+  const falhas: { placa: string; erro: string }[] = []
+  for (const v of veiculos || []) {
+    if (Array.isArray(v.fotos) && v.fotos.length > 0) continue
+    const placa = chavePlaca((v.placa || '').toUpperCase().replace(/[^A-Z0-9]/g, ''))
+    const arquivos = (porPlaca.get(placa) || []).sort()
+    if (!arquivos.length) {
+      sem_capa.push({ placa: v.placa, motivo: 'nenhum arquivo dele na lixeira' })
+      continue
+    }
+    const capa = arquivos.find(ehCapa) || arquivos.find(ehPrimeira)
+    if (!capa) {
+      sem_capa.push({
+        placa: v.placa,
+        motivo: `${arquivos.length} arquivo(s), nenhum com nome de capa`,
+      })
+      continue
+    }
+    if (!real) {
+      restauradas.push({ placa: v.placa, capa })
+      continue
+    }
+    try {
+      await s3.send(
+        new CopyObjectCommand({
+          Bucket: bucket,
+          CopySource: `${bucket}/${(prefixoLixeira + capa).split('/').map(encodeURIComponent).join('/')}`,
+          Key: capa,
+        }),
+      )
+      const url = BASE + capa.split('/').map(encodeURIComponent).join('/')
+      await atualizarFotosSemMexerNoML(supabase, v.id, { fotos: [url] })
+      restauradas.push({ placa: v.placa, capa })
+    } catch (e: any) {
+      falhas.push({ placa: v.placa, erro: String(e?.message || e).slice(0, 200) })
+    }
+  }
+
+  const resumo = {
+    tipo: 'restaurar_capas',
+    lixeira: prefixoLixeira,
+    [real ? 'restauradas' : 'restauraria']: restauradas,
+    sem_capa,
+    falhas,
+  }
+  await supabase.from('r2_limpeza_execucoes').insert({ modo: real ? 'real' : 'ensaio', resumo })
+  return { success: true, modo: real ? 'real' : 'ensaio', resumo }
+}
 
 // Lixo antigo (27/11/2026, decisão da Adriana: opção "a"). Arquivos que NENHUMA linha do banco usa, só em
 // pastas de veículo vendido, devolvido ou excluído (placa sem cadastro). Pastas de carro disponível,

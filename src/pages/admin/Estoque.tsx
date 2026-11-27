@@ -48,7 +48,7 @@ import { VehicleQuickViewModal } from '@/components/admin/VehicleQuickViewModal'
 import { VehicleShareModal } from '@/components/admin/VehicleShareModal'
 import { AIContentReview } from '@/components/admin/AIContentReview'
 import { Sparkles } from 'lucide-react'
-import { diasEmEstoque, textoDias } from '@/lib/dias-estoque'
+import { diasEmEstoque, rotuloDias } from '@/lib/dias-estoque'
 
 const STATUS_MAP: Record<string, string> = {
   ativos: 'disponivel',
@@ -611,15 +611,15 @@ export default function AdminEstoque() {
                         v.status === 'vendido'
                           ? dias === null
                             ? 'Venda sem data registrada: não dá para saber em quantos dias vendeu'
-                            : 'Dias do cadastro até a venda'
-                          : 'Dias desde o cadastro'
+                            : 'Dias da entrada no estoque até a venda'
+                          : v.status === 'devolvido'
+                            ? dias === null
+                              ? 'Devolução sem data registrada (anterior a 27/11/2026)'
+                              : 'Dias da entrada no estoque até a devolução'
+                            : 'Dias desde a entrada no estoque (recomeça do zero se o carro voltou)'
                       }
                     >
-                      {v.status === 'vendido' ? 'Vendeu em ' : ''}
-                      <span className="font-bold text-slate-600">
-                        {textoDias(dias)}
-                        {dias !== null ? (dias === 1 ? ' dia' : ' dias') : ''}
-                      </span>
+                      <span className="font-bold text-slate-600">{rotuloDias(v.status, dias)}</span>
                     </p>
                   </TableCell>
                   <TableCell>

@@ -4443,6 +4443,8 @@ export type Database = {
           cor: string | null
           created_at: string | null
           data_venda: string | null
+          data_devolucao: string | null
+          entrada_estoque_em: string | null
           descricao: string | null
           descricao_webmotors: string | null
           destaque: boolean | null
@@ -4560,6 +4562,8 @@ export type Database = {
           cor?: string | null
           created_at?: string | null
           data_venda?: string | null
+          data_devolucao?: string | null
+          entrada_estoque_em?: string | null
           descricao?: string | null
           descricao_webmotors?: string | null
           destaque?: boolean | null
@@ -4677,6 +4681,8 @@ export type Database = {
           cor?: string | null
           created_at?: string | null
           data_venda?: string | null
+          data_devolucao?: string | null
+          entrada_estoque_em?: string | null
           descricao?: string | null
           descricao_webmotors?: string | null
           destaque?: boolean | null
