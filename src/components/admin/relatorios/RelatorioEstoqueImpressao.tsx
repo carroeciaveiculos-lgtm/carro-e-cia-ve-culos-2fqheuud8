@@ -24,7 +24,7 @@ export interface LinhaRelatorio {
   preco_venda: number | null
   is_zero_km: boolean | null
   status: string | null
-  dias: number
+  dias: number | null
 }
 
 export type ColunaId =
@@ -108,7 +108,14 @@ export const COLUNAS: DefColuna[] = [
     dir: true,
     valor: (v) => moeda(v.preco_venda),
   },
-  { id: 'dias', rotulo: 'Dias', largura: 12, densa: 9, dir: true, valor: (v) => String(v.dias) },
+  {
+    id: 'dias',
+    rotulo: 'Dias',
+    largura: 12,
+    densa: 9,
+    dir: true,
+    valor: (v) => (v.dias === null ? '—' : String(v.dias)),
+  },
 ]
 
 export const ROTULO_COLUNA: Record<string, string> = {
