@@ -16,6 +16,8 @@ import { getR2Bucket, getR2Client } from '../_shared/r2-storage.ts'
 //   { }                         → processa a fila em ENSAIO: não apaga nada, só grava o que faria.
 //   { executar: true }          → só apaga de verdade se o secret R2_LIMPEZA_ATIVA = 'true' (trava dupla).
 //   { modo: 'inventario' }      → lista o bucket e compara com o banco (relatório, nunca apaga).
+//   { modo: 'orfaos', executar?: true, limite?: 1-200 } → lixo antigo: arquivos sem uso no banco em pastas
+//                                 de veículo vendido/devolvido/excluído vão para a lixeira (em lotes).
 // Apagar = copiar para lixeira/AAAA-MM-DD/<chave> e remover o original. A regra de expiração do R2
 // em lixeira/ (30 dias) apaga de vez; até lá dá para recuperar.
 // Chamada pelo cron diário com x-internal-secret (verify_jwt = false).
@@ -123,6 +125,10 @@ Deno.serve(async (req) => {
     }
 
     if (corpo?.modo === 'inventario') return json(await inventario(supabase, refsPorUrl))
+    if (corpo?.modo === 'orfaos') {
+      const limite = Math.min(Math.max(Number(corpo?.limite) || 120, 1), 200)
+      return json(await limparOrfaos(supabase, refsPorUrl, real, limite))
+    }
 
     const agora = new Date()
     const { data: fila, error: filaErr } = await supabase
@@ -278,15 +284,118 @@ Deno.serve(async (req) => {
     return json({ success: true, modo: real ? 'real' : 'ensaio', resumo })
   } catch (err: any) {
     console.error('r2-limpeza:', err)
-    await supabase
-      .from('r2_limpeza_execucoes')
-      .insert({
-        modo: corpo?.modo === 'inventario' ? 'inventario' : real ? 'real' : 'ensaio',
-        erro: String(err?.message || err).slice(0, 500),
-      })
+    await supabase.from('r2_limpeza_execucoes').insert({
+      modo: corpo?.modo === 'inventario' ? 'inventario' : real ? 'real' : 'ensaio',
+      erro: String(err?.message || err).slice(0, 500),
+    })
     return json({ success: false, error: err.message }, 500)
   }
 })
+
+// Lixo antigo (27/11/2026, decisão da Adriana: opção "a"). Arquivos que NENHUMA linha do banco usa, só em
+// pastas de veículo vendido, devolvido ou excluído (placa sem cadastro). Pastas de carro disponível,
+// rascunho, em preparação ou sem placa ficam de fora. Mesma trava dupla e mesma lixeira da fila.
+const PLACA = /^[A-Z]{3}[0-9][A-Z0-9][0-9]{2}$/
+// Placa antiga (ABC1234) e Mercosul (ABC1C34) do mesmo carro viram a mesma chave: o 5º caractere
+// letra A–J corresponde ao dígito 0–9. Evita tratar como "excluído" carro cadastrado com a outra forma.
+const chavePlaca = (p: string) =>
+  p.length === 7 && /[A-J]/.test(p[4]) ? p.slice(0, 4) + (p.charCodeAt(4) - 65) + p.slice(5) : p
+function placaDaPasta(chave: string): string | null {
+  const pasta = chave.split('/')[1] || ''
+  if (chave.split('/').length < 3) return null // arquivo solto na raiz da pasta, sem pasta de veículo
+  for (const parte of pasta.toUpperCase().split(/[_\-\s]+/)) if (PLACA.test(parte)) return parte
+  return null
+}
+
+async function limparOrfaos(
+  supabase: any,
+  refsPorUrl: Map<string, Ref[]>,
+  real: boolean,
+  limite: number,
+) {
+  const s3 = getR2Client()
+  const bucket = getR2Bucket()
+  const usadas = new Set<string>()
+  for (const url of refsPorUrl.keys()) {
+    const chave = chaveDaUrl(url)
+    if (chave) usadas.add(chave)
+  }
+  const { data: veiculos, error } = await supabase.from('veiculos').select('placa, status')
+  if (error) throw new Error(`veiculos: ${error.message}`)
+  const statusPorPlaca = new Map<string, string>()
+  for (const v of veiculos || []) {
+    const p = (v.placa || '').toUpperCase().replace(/[^A-Z0-9]/g, '')
+    if (p) statusPorPlaca.set(chavePlaca(p), v.status)
+  }
+
+  const candidatos: { chave: string; bytes: number; situacao: string }[] = []
+  for (const prefixo of PREFIXOS_PERMITIDOS) {
+    let token: string | undefined
+    do {
+      const r = await s3.send(
+        new ListObjectsV2Command({ Bucket: bucket, Prefix: prefixo, ContinuationToken: token }),
+      )
+      for (const o of r.Contents || []) {
+        if (!o.Key || o.Key.endsWith('/') || usadas.has(o.Key)) continue
+        const placa = placaDaPasta(o.Key)
+        if (!placa) continue
+        const status = statusPorPlaca.get(chavePlaca(placa))
+        const situacao = status ?? 'excluido'
+        if (!['vendido', 'devolvido', 'excluido'].includes(situacao)) continue
+        candidatos.push({ chave: o.Key, bytes: o.Size || 0, situacao })
+      }
+      token = r.IsTruncated ? r.NextContinuationToken : undefined
+    } while (token)
+  }
+
+  const mb = (b: number) => Math.round((b / 1024 / 1024) * 10) / 10
+  const bytesPorSituacao: Record<string, { arquivos: number; bytes: number }> = {}
+  for (const c of candidatos) {
+    const s = (bytesPorSituacao[c.situacao] ||= { arquivos: 0, bytes: 0 })
+    s.arquivos++
+    s.bytes += c.bytes
+  }
+  const porSituacao = Object.fromEntries(
+    Object.entries(bytesPorSituacao).map(([k, v]) => [
+      k,
+      { arquivos: v.arquivos, mb: mb(v.bytes) },
+    ]),
+  )
+
+  const lote = candidatos.slice(0, limite)
+  const dia = new Date().toISOString().slice(0, 10)
+  let movidos = 0
+  const falhas: { chave: string; erro: string }[] = []
+  if (real) {
+    for (const c of lote) {
+      try {
+        await s3.send(
+          new CopyObjectCommand({
+            Bucket: bucket,
+            CopySource: `${bucket}/${c.chave.split('/').map(encodeURIComponent).join('/')}`,
+            Key: `lixeira/${dia}/${c.chave}`,
+          }),
+        )
+        await s3.send(new DeleteObjectCommand({ Bucket: bucket, Key: c.chave }))
+        movidos++
+      } catch (e: any) {
+        falhas.push({ chave: c.chave, erro: String(e?.message || e).slice(0, 200) })
+      }
+    }
+  }
+
+  const resumo = {
+    tipo: 'orfaos',
+    candidatos: candidatos.length,
+    mb_candidatos: mb(candidatos.reduce((s, c) => s + c.bytes, 0)),
+    por_situacao: porSituacao,
+    ...(real
+      ? { movidos, falhas, restantes: candidatos.length - movidos, lixeira: `lixeira/${dia}/` }
+      : { moveria_neste_lote: lote.length, exemplos: lote.slice(0, 10).map((c) => c.chave) }),
+  }
+  await supabase.from('r2_limpeza_execucoes').insert({ modo: real ? 'real' : 'ensaio', resumo })
+  return { success: true, modo: real ? 'real' : 'ensaio', resumo }
+}
 
 // Relatório do lixo que já existe: arquivos nas pastas de veículo que nenhuma linha do banco usa.
 async function inventario(supabase: any, refsPorUrl: Map<string, Ref[]>) {

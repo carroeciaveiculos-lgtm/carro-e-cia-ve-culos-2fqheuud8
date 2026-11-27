@@ -1,7 +1,38 @@
 # Próxima sessão — Carro e Cia Veículos
 
-Atualizado em: 25/11/2026
-Substitui: 24/11/2026
+Atualizado em: 27/11/2026
+Substitui: 25/11/2026
+
+## SESSÃO 26–27/11/2026 — relatório CSV/XML, campo Lugares, limpeza do R2, erro de tradução, PRs #42–#50
+
+Estado verificado em 27/11/2026: `origin/main` = merge do PR #50 (conferir com `git log --oneline -1`). Deploys conferidos
+(home, `/estoque`, `/admin/login` = 200) a cada merge.
+
+- **No ar (todos mesclados e com deploy verde):**
+  - PR #42 (`833f133`): relatório das 8h via template `relatorio_diario_loja` (APROVADO). **Fecha** a nota de 25/11 "só local,
+    sem commit/deploy". Envios das 8h **aceitos pela Meta em 26/11 e 27/11** (`marketing_logs` `resumo_leads_pedro` e `daily_report`).
+  - PR #43/#46: decisões da busca FIPE (1a nome FIPE na versão, 2b botão opcional, 3a reenvio automático com travas) e
+    plano do R2 em `MEMORY_WORK.MD`. Migration `20261126184801` (coluna `veiculos.lugares`).
+  - PR #44/#45: Relatório de Estoque → "Exportar completo (CSV/XML)" (cadastro + portais + entrada; proprietário só
+    admin_master/gerente; registro em `access_log`). Artigo `20261126180933`.
+  - PR #47/#48: campo **Lugares** no cadastro (pré-preenche 7 com "7 Lug./7L"), `wm-mapear-veiculo` filtra 5×7 lugares
+    (vazio + modelo com as duas → revisão), etiqueta "7 lugares" no mapeamento. **Limpeza do R2:** fila `r2_limpeza_fila`
+    (`20261126200447`), correção dos parênteses nas URLs (`20261126203218`), cron `r2-limpeza-diaria` 03h30 BRT com
+    `executar:true` (`20261127000708`), artigos (`20261127000735`). Secret `R2_LIMPEZA_ATIVA=true` criado por ela em 27/11.
+    1ª execução real 27/11: OZW5D78 e SYZ4C18, 41 arquivos para `lixeira/2026-11-27/`, capas mantidas (conferido por HTTP).
+  - PR #49 (`f923c0f`): `index.html` `lang="pt-BR" translate="no"` + `notranslate` — causa do erro "Algo deu errado"
+    (`NotFoundError removeChild`): tradutor do Chrome traduzia a página "do inglês".
+  - **PR #50:** envio manual de fotos só reduz (lado maior 1920 px, sem corte; antes 1200×1540 cortado) e modo `orfaos` na
+    `r2-limpeza` (lixo antigo opção "a": vendido/devolvido/excluído). **Depois do deploy: rodar ensaio e lotes reais.**
+- **Cloudflare:** regra `lixeira-30-dias` (prefixo `lixeira/`, 30 dias) criada via `wrangler` (conta Lgacomerciodeveiculos) em 27/11.
+  O conector MCP `cloudflare` está na conta do GuiaLowCarb — **não usar** para a revenda.
+- **Hilux SSF5A83:** fotos sumidas na Webmotors (anúncio novo `82664185` de 25/11 sem fotos; resultado do envio não é gravado).
+  Corrigido em 27/11 marcando `pending_update` → `wm-sync` reenviou; ela confirmou nas plataformas.
+- **Pesquisa ML (27/11):** docs oficiais dão 403 para leitura automática. Trechos oficiais (busca): atributos podem ser alterados em
+  item ativo; com vendas, título/condição/modo de compra travam; categoria não muda pela API. Evidência interna: update com versão
+  nova em 25/11 deu success. **TRIM específico não confirmado.**
+- **Pendências:** ensaio + lotes do modo `orfaos` (após PR #50); aviso de lead novo ainda sem lead real desde 23/11 (último lead
+  23/11 20:22 — conferir anúncios); 3a da FIPE (reenvio automático) não implementada; documento de regras de fotos não criado.
 
 ## SESSÃO 25/11/2026 — números da equipe, Pedro nos avisos, leads do Roberto descartados
 
@@ -47,8 +78,8 @@ chegando de fato no WhatsApp do Pedro (precisa de agendamento real ou teste comb
   **Regra + cron APLICADOS (25/11 ~20:49 UTC, ela liberou a ferramenta):** `trg_aviso_lead_novo` em `leads` e cron
   `resumo-leads-pedro` `0 11 * * *` ativos; arquivo `20261125204906_...` (renomeado ao timestamp real). Artigo da Central
   criado (`5b56d3de…`, migration `20261125205955`). 3º template `relatorio_diario_loja` criado (PENDING) — texto aprovado
-  por ela; `daily-report-cron` alterado (template → texto livre se recusado; log com resposta real) **só local, sem
-  commit/deploy**. ML das 2 SW4: `sync_log` success 19:50 UTC (API pública do ML dá 403, não deu para ler direto).
+  por ela; `daily-report-cron` alterado (template → texto livre se recusado; log com resposta real) ~~só local, sem
+  commit/deploy~~ **publicado em `833f133` em 26/11; template APROVADO; envios aceitos em 26 e 27/11**. ML das 2 SW4: `sync_log` success 19:50 UTC (API pública do ML dá 403, não deu para ler direto).
   **Falta:** commit/push/deploy; teste real com o Pedro (lead de teste combinado; conferir `marketing_logs` tipo
   `aviso_lead_novo`); 1º resumo real amanhã 11:00 UTC (conferir `marketing_logs` tipo `resumo_leads_pedro`).
 - **Bloco B — respostas dela (25/11):** resumo diário do Pedro **às 8h**; aviso de **todo lead novo**; Luiz Fernando como

@@ -255,7 +255,9 @@ duplicado, com WhatsApp que o da capa não tinha):
   carros citados (Toro e HR-V: 1200x1540, retrato; Volvo: 2992x2992,
   quadrada). Trocado para `object-contain`: mostra a foto inteira,
   com uma faixa cinza nas laterais quando a proporção não bate — nunca
-  mais corta o carro.
+  mais corta o carro. **Revertido no mesmo dia (17/08/2026, commit
+  `a5466f6`)**: voltou `object-cover` com corte ancorado no topo para foto
+  em pé/quadrada. Regra atual em `docs/fotos-veiculos-regras.md` (27/11/2026).
 - **Campo "versão" removido do texto do card**: tirado de
   `buildVehicleTitle(...)` nos dois lugares. Confirmado que "versão"
   existe só pra atender exigência de cadastro da Webmotors — continua
