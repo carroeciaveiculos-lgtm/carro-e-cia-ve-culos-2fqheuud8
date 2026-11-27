@@ -3,10 +3,28 @@
 Atualizado em: 27/11/2026
 Substitui: 25/11/2026
 
-## SESSÃO 26–27/11/2026 — relatório CSV/XML, campo Lugares, limpeza do R2, erro de tradução, PRs #42–#50
+## SESSÃO 26–27/11/2026 — relatório CSV/XML, campo Lugares, limpeza do R2, erro de tradução, PRs #42–#56
 
-Estado verificado em 27/11/2026: `origin/main` = merge do PR #50 (conferir com `git log --oneline -1`). Deploys conferidos
+Estado verificado em 27/11/2026 ~18:10 UTC: `origin/main` = `d9489a6` (merge do PR #56). Deploys conferidos
 (home, `/estoque`, `/admin/login` = 200) a cada merge.
+
+- **Tarde de 27/11 (PRs #51–#56, tudo no ar):**
+  - PR #51: `docs/leads-organicos-diagnostico.md` — queda de leads = anúncios clique-para-WhatsApp sem resultado desde
+    24/09 (0 `ctwa_clid` em 30 dias); canal da Clara ok; ML webhook 401; simulador não vira lead; Merchant de veículos não
+    existe no Brasil. **Decisões dela pendentes:** campanha/orçamento, esteira parada desde 10/11, qual item do plano começar.
+  - PR #52–#54: contador de dias em regra única (`src/lib/dias-estoque.ts`); etiquetas "Encalhado"/"Poucas Visualizações"
+    retiradas (pedido dela); artigos `20261127152451`.
+  - **Gatilho `trg_clear_fotos_on_status_change` REMOVIDO** (migration `20261127174554`): apagava `veiculos.fotos` ao
+    vender/devolver (sem migration de origem; 28/30 vendidos e 14/14 devolvidos sem fotos). Mesma migration: `data_venda`
+    nunca mais é apagada; nova `data_devolucao`; `entrada_estoque_em` (contagem recomeça do zero ao voltar ao estoque — regra
+    dela); histórico em `veiculos_status_historico`. Testado em transação desfeita. Função antiga mantida como backup.
+  - PR #55: painel conta a partir de `entrada_estoque_em` ("Vendeu em N dias", "Devolvido em N dias", "—"); `r2-limpeza`
+    modo `restaurar_capas` + trava que devolve o status do `ml_listings` ao mexer em fotos de vendido. **9 capas recuperadas**
+    da lixeira (nome com "capa"); 33 sem capa identificável. Artigos `20261127180447` (PR #56).
+  - Audi PQE7D92: `entrada_estoque_em` gravada em 25/11 12:35 UTC (voltou ao estoque após devolução; inferido pelo ML
+    recriado), autorizado por ela; backup 23/06/2026 21:54 UTC. Outros com sinal fraco (só despublicação): GHU2B54, SYI6C55,
+    TCQ0B23 — não alterados, ela confirma se voltaram.
+  - Lixo antigo do R2: 481 arquivos (1,49 GB) em `lixeira/2026-11-27/` (expira ~27/12). Pastas de veículos: 6,35 → 4,77 GB.
 
 - **No ar (todos mesclados e com deploy verde):**
   - PR #42 (`833f133`): relatório das 8h via template `relatorio_diario_loja` (APROVADO). **Fecha** a nota de 25/11 "só local,
