@@ -1,7 +1,11 @@
 <!doctype html>
-<html lang="en">
+<html lang="pt-BR" translate="no">
   <head>
     <meta charset="UTF-8" />
+    <!-- 27/11/2026: a página dizia lang="en" com conteúdo em português; o Chrome traduzia "do inglês",
+         trocava os textos por elementos dele e o React quebrava (NotFoundError: removeChild) no site e no
+         painel. pt-BR + translate="no" + notranslate impedem a tradução automática. -->
+    <meta name="google" content="notranslate" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Carro e Cia Veículos</title>
     <meta
