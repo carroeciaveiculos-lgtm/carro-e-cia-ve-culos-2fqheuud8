@@ -35,6 +35,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { diasEmEstoque, textoDias } from '@/lib/dias-estoque'
 
 const STATUS_LABEL: Record<string, string> = {
   disponivel: 'Disponível',
@@ -88,11 +89,6 @@ const PORTAIS_ESTOQUE_PUBLICACOES = [
 ]
 const STATUS_PUBLICADO_PORTAIS = ['publicado']
 const STATUS_PUBLICADO_ML = ['active']
-
-function diasEmEstoque(dateString: string) {
-  if (!dateString) return 0
-  return Math.floor((new Date().getTime() - new Date(dateString).getTime()) / (1000 * 3600 * 24))
-}
 
 function formatCurrency(val: number) {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val || 0)
@@ -199,11 +195,15 @@ export function RelatorioEstoque() {
   const veiculosFiltrados = useMemo(() => {
     return veiculos.filter((v) => {
       if (marcaFilter !== 'todas' && v.marca !== marcaFilter) return false
-      const dias = diasEmEstoque(v.created_at)
-      if (diasFilter === 'ate15' && dias > 15) return false
-      if (diasFilter === '16a30' && (dias <= 15 || dias > 30)) return false
-      if (diasFilter === '31a60' && (dias <= 30 || dias > 60)) return false
-      if (diasFilter === 'mais60' && dias <= 60) return false
+      const dias = diasEmEstoque(v)
+      // Vendido sem data de venda não tem contagem: só aparece com "todos" no filtro de dias.
+      if (diasFilter !== 'todos' && dias === null) return false
+      if (dias !== null) {
+        if (diasFilter === 'ate15' && dias > 15) return false
+        if (diasFilter === '16a30' && (dias <= 15 || dias > 30)) return false
+        if (diasFilter === '31a60' && (dias <= 30 || dias > 60)) return false
+        if (diasFilter === 'mais60' && dias <= 60) return false
+      }
       if (tipoData !== 'nenhuma' && (dataDe || dataAte)) {
         const dia = diaDaLoja(tipoData === 'venda' ? v.data_venda : v.created_at)
         if (!dia) return false
@@ -232,14 +232,20 @@ export function RelatorioEstoque() {
 
   const totalVeiculos = veiculosFiltrados.length
   const valorTotal = veiculosFiltrados.reduce((acc, v) => acc + (v.preco_venda || 0), 0)
+  // Média só de quem tem contagem (vendido sem data de venda fica fora). Com só "Vendidos" marcado,
+  // vira o tempo médio até vender.
+  const diasConhecidos = veiculosFiltrados
+    .map((v) => diasEmEstoque(v))
+    .filter((d): d is number => d !== null)
   const diasMedio =
-    totalVeiculos > 0
-      ? Math.round(
-          veiculosFiltrados.reduce((acc, v) => acc + diasEmEstoque(v.created_at), 0) /
-            totalVeiculos,
-        )
+    diasConhecidos.length > 0
+      ? Math.round(diasConhecidos.reduce((acc, d) => acc + d, 0) / diasConhecidos.length)
       : 0
-  const parados30 = veiculosFiltrados.filter((v) => diasEmEstoque(v.created_at) > 30).length
+  // "Parado" é quem ainda está no estoque: vendido não conta.
+  const parados30 = veiculosFiltrados.filter((v) => {
+    const d = diasEmEstoque(v)
+    return v.status !== 'vendido' && d !== null && d > 30
+  }).length
 
   const porMarca = useMemo(() => {
     const grupos: Record<string, { count: number; valor: number }> = {}
@@ -275,7 +281,7 @@ export function RelatorioEstoque() {
             'pt-BR',
           ),
         )
-        .map((v) => ({ ...v, dias: diasEmEstoque(v.created_at) })),
+        .map((v) => ({ ...v, dias: diasEmEstoque(v) })),
     [veiculosFiltrados],
   )
   // Com mais de um tipo marcado, a folha ganha a coluna "Situação" para distinguir as linhas
@@ -334,7 +340,7 @@ export function RelatorioEstoque() {
       v.ano_modelo || v.ano_fabricacao || '',
       v.placa || '',
       v.preco_venda || 0,
-      diasEmEstoque(v.created_at),
+      textoDias(diasEmEstoque(v)),
       STATUS_LABEL[v.status] || v.status || '',
       (publicacoesPorVeiculo[v.id] || []).join(' + ') || 'Nenhum',
     ])

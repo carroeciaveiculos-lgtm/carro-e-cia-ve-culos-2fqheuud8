@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase/client'
 import { camposVeiculosParaSelect } from '@/lib/exportar-estoque'
+import { diasEmEstoque } from '@/lib/dias-estoque'
 
 // Dados do relatório completo do estoque (26/11/2026). Junta a ficha do veículo com a última
 // situação em cada portal, o contrato de consignação mais recente e a avaliação de entrada
@@ -85,7 +86,6 @@ export const getEstoqueCompleto = async (veiculoIds: string[], comProprietario: 
   }
 
   const rotulo = (s?: string) => (s ? ROTULO_PUB[s] || s : 'Nunca enviado')
-  const hoje = Date.now()
 
   const data = lista.map((v) => {
     const fotos = Array.isArray(v.fotos) ? v.fotos : []
@@ -98,9 +98,8 @@ export const getEstoqueCompleto = async (veiculoIds: string[], comProprietario: 
       qtd_fotos: fotos.length,
       foto_capa: fotos[0] || '',
       qtd_videos: videos.length,
-      dias_em_estoque: v.created_at
-        ? Math.floor((hoje - new Date(v.created_at).getTime()) / 86_400_000)
-        : '',
+      // Vendido: dias até a venda; vendido sem data de venda: vazio (src/lib/dias-estoque.ts).
+      dias_em_estoque: diasEmEstoque(v) ?? '',
       pub_webmotors: rotulo(ultimaPub.get(`${v.id}|webmotors`)),
       pub_napista: rotulo(ultimaPub.get(`${v.id}|napista`)),
       pub_mercadolivre: rotulo(ultimoMl.get(v.id)),

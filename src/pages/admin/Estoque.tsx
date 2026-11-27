@@ -49,6 +49,7 @@ import { VehicleQuickViewModal } from '@/components/admin/VehicleQuickViewModal'
 import { VehicleShareModal } from '@/components/admin/VehicleShareModal'
 import { AIContentReview } from '@/components/admin/AIContentReview'
 import { Sparkles } from 'lucide-react'
+import { diasEmEstoque, textoDias } from '@/lib/dias-estoque'
 
 const STATUS_MAP: Record<string, string> = {
   ativos: 'disponivel',
@@ -402,10 +403,6 @@ export default function AdminEstoque() {
   const formatCurrency = (val: number) =>
     val ? new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val) : '-'
 
-  const diasEmEstoque = (dateString: string) => {
-    if (!dateString) return 0
-    return Math.floor((new Date().getTime() - new Date(dateString).getTime()) / (1000 * 3600 * 24))
-  }
 
   // Conta só dias úteis (seg-sex) entre a venda e agora -- não desconta
   // feriado nacional, só fim de semana. Prazo legal do CDC é 7 dias úteis.
@@ -576,9 +573,9 @@ export default function AdminEstoque() {
           </TableHeader>
           <TableBody>
             {vehicles.map((v) => {
-              const dias = diasEmEstoque(v.created_at)
-              const isEncalhado = dias > 60 && v.status === 'disponivel'
-              const poucaVisibilidade = v.visualizacoes_site < 50 && dias > 30
+              const dias = diasEmEstoque(v)
+              const isEncalhado = dias !== null && dias > 60 && v.status === 'disponivel'
+              const poucaVisibilidade = v.visualizacoes_site < 50 && dias !== null && dias > 30
               return (
                 <TableRow key={v.id} className="hover:bg-slate-50/50">
                   <TableCell>
@@ -623,8 +620,21 @@ export default function AdminEstoque() {
                   </TableCell>
                   <TableCell>
                     <p className="font-bold text-green-700">{formatCurrency(v.preco_venda)}</p>
-                    <p className="text-[10px] text-slate-400">
-                      Dias: <span className="font-bold text-slate-600">{dias}</span>
+                    <p
+                      className="text-[10px] text-slate-400"
+                      title={
+                        v.status === 'vendido'
+                          ? dias === null
+                            ? 'Venda sem data registrada: não dá para saber em quantos dias vendeu'
+                            : 'Dias do cadastro até a venda'
+                          : 'Dias desde o cadastro'
+                      }
+                    >
+                      {v.status === 'vendido' ? 'Vendeu em: ' : 'Dias: '}
+                      <span className="font-bold text-slate-600">
+                        {textoDias(dias)}
+                        {v.status === 'vendido' && dias !== null ? ' dias' : ''}
+                      </span>
                     </p>
                   </TableCell>
                   <TableCell>
